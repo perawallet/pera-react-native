@@ -37,7 +37,7 @@ const MATCHING_HD_PATH = "m/44'/283'/0'/0/1"
 const hdAccount = {
     address: 'HD_ADDR',
     keyPairId: 'key-hd-child',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -49,12 +49,21 @@ const hdAccount = {
 const algo25Account = {
     address: 'ALGO25_ADDR',
     keyPairId: 'key-algo25-ed25519',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
 } as unknown as WalletAccount
 
 const hardwareAccount = {
     address: 'HW_ADDR',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'd',
+            deviceName: 'L',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'd',
@@ -67,7 +76,7 @@ const hardwareAccount = {
 const quantumAccount = {
     address: 'QUANTUM_ADDR',
     keyPairId: 'key-quantum-falcon',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
 } as unknown as WalletAccount
 
 const domain = 'arc60.io'
@@ -251,7 +260,7 @@ describe('signArc60AuthRequest', () => {
     test('rejects a watch-rekeyed account even when the auth has keys', async () => {
         const watchSource = {
             address: 'WATCH_ADDR',
-            type: 'watch',
+            custody: { kind: 'watch' },
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
 

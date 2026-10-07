@@ -28,7 +28,7 @@ const AUTH = 'AUTH'
 
 const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: `kp-${address}`,
         rekeyAddress,
@@ -36,7 +36,16 @@ const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address,
         rekeyAddress,
         hardwareDetails: {
@@ -50,21 +59,21 @@ const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const watch = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'watch',
+        custody: { kind: 'watch' },
         address,
         rekeyAddress,
     }) as unknown as WalletAccount
 
 const multisig = (address: string, addresses: string[] = []): WalletAccount =>
     ({
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address,
         multisigDetails: { threshold: 1, addresses, version: 1 },
     }) as unknown as WalletAccount
 
 const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'quantum',
+        custody: { kind: 'local', seed: 'quantum' },
         address,
         keyPairId: `kp-${address}`,
         rekeyAddress,
@@ -359,7 +368,7 @@ describe('quantum-signed transactions over the callback transport', () => {
     const userAddr = makeTestAddress(11)
     const dappAddr = makeTestAddress(12)
     const userAccount = {
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address: userAddr.toString(),
         keyPairId: 'key-quantum-cb',
     } as unknown as WalletAccount

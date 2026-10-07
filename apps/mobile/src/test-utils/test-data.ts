@@ -13,39 +13,6 @@
 import { Decimal } from 'decimal.js'
 import { vi } from 'vitest'
 
-// Mock wallet account data
-export const mockWalletAccount = {
-    id: 'test-account-1',
-    address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR',
-    name: 'Test Account 1',
-    balance: new Decimal('100.5'),
-    assets: [],
-    type: 'standard' as const,
-    isWatchOnly: false,
-}
-
-export const mockWalletAccounts = [
-    mockWalletAccount,
-    {
-        id: 'test-account-2',
-        address: 'ZYXWVUTSRQPONMLKJIHGFEDCBA0987654321ZYXWVUTSRQPONMLKJIH',
-        name: 'Test Account 2',
-        balance: new Decimal('250.75'),
-        assets: [],
-        type: 'standard' as const,
-        isWatchOnly: false,
-    },
-    {
-        id: 'test-account-3',
-        address: 'MNBVCXZASDFGHJKLPOIUYTREWQ1357902468MNBVCXZASDFGHJKLPOI',
-        name: 'Watch Only Account',
-        balance: new Decimal('0'),
-        assets: [],
-        type: 'watch',
-        isWatchOnly: true,
-    },
-]
-
 // Mock asset data
 export const mockAsset = {
     id: 123456,
@@ -141,12 +108,5 @@ export const createMockCurrencyAmountProps = (overrides = {}) => ({
     value: new Decimal('100.5'),
     precision: 2,
     testID: 'test-currency-display',
-    ...overrides,
-})
-
-export const createMockAccountListProps = (overrides = {}) => ({
-    accounts: mockWalletAccounts,
-    onAccountPress: vi.fn(),
-    testID: 'test-account-list',
     ...overrides,
 })

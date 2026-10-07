@@ -24,10 +24,7 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
 }))
 
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { BottomSheetIdContext } from '@modules/bottom-sheet'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
@@ -40,7 +37,7 @@ import { RekeyOptionsContent } from '@modules/accounts/components/AccountOptions
 
 const ACCOUNT = {
     id: 'a1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'A'.repeat(58),
 } as WalletAccount
 

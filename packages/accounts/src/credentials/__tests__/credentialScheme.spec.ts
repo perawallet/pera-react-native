@@ -40,7 +40,6 @@ const account = (custody: AccountCustody, keyPairId?: string): WalletAccount =>
     ({
         id: 'a',
         address: 'ADDR',
-        type: 'algo25',
         custody,
         chains: { algorand: { address: 'ADDR', keyPairId } },
     }) as WalletAccount
@@ -155,7 +154,7 @@ describe('credentialScheme', () => {
         ).toBeNull()
         expect(
             credentialScheme(
-                { id: 'a', address: 'ADDR', type: 'watch' },
+                { id: 'a', address: 'ADDR', custody: { kind: 'watch' } },
                 algorand,
                 [],
             ),

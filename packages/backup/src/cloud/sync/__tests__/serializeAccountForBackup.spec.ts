@@ -12,10 +12,7 @@
 
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountForBackup } from '../serializeAccountForBackup'
@@ -24,7 +21,7 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR',
     keyPairId: 'kp-1',
     name: 'Main',
@@ -32,7 +29,7 @@ const algo25: WalletAccount = {
 
 const quantum: WalletAccount = {
     id: '4',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'QADDR',
     keyPairId: 'kp-q',
     name: 'PQ',
@@ -99,7 +96,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn()
         const watch: WalletAccount = {
             id: '2',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'W',
             name: 'Watcher',
         }
@@ -123,7 +120,11 @@ describe('serializeAccountForBackup', () => {
         }))
         const hd: WalletAccount = {
             id: '3',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 1 },
+            },
             address: 'CHILD',
             keyPairId: 'kp',
             name: 'Child',
@@ -158,7 +159,11 @@ describe('serializeAccountForBackup', () => {
     it('returns null for an HD account when no resolveHd is provided', async () => {
         const hd: WalletAccount = {
             id: '3',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'CHILD',
             keyPairId: 'kp',
             hdWalletDetails: {

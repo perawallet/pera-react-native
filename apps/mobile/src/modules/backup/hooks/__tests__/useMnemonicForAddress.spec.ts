@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockExecuteWithMnemonic = vi.fn()
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -36,7 +33,11 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for an HD account', async () => {
         const account: WalletAccount = {
             id: 'hd-account-match',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 1, keyIndex: 0 },
+            },
             address: 'HD_ADDR',
             keyPairId: 'wallet-1',
             hdWalletDetails: {
@@ -64,7 +65,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for an algo25 account', async () => {
         const account: WalletAccount = {
             id: 'algo25-account',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A25_ADDR',
             keyPairId: 'wallet-2',
         }
@@ -86,7 +87,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for a quantum account', async () => {
         const account: WalletAccount = {
             id: 'quantum-account',
-            type: AccountTypes.quantum,
+            custody: { kind: 'local', seed: 'quantum' },
             address: 'Q_ADDR',
             keyPairId: 'wallet-q',
         }
@@ -118,7 +119,11 @@ describe('useMnemonicForAddress', () => {
     test('throws when account address does not match the requested address', async () => {
         const account: WalletAccount = {
             id: 'hd-account-mismatch',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'OTHER_ADDR',
             keyPairId: 'wallet-1',
             hdWalletDetails: {
@@ -141,7 +146,7 @@ describe('useMnemonicForAddress', () => {
     test('throws for unsupported account types', async () => {
         const account: WalletAccount = {
             id: 'watch-account',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'WATCH_ADDR',
         }
 

@@ -38,7 +38,7 @@ const makeAccount = (address: string, name?: string): WalletAccount =>
     ({
         id: address,
         address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         name,
         keyPairId: address,
     }) as WalletAccount

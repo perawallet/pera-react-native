@@ -24,7 +24,7 @@ import {
     fixtureCodec,
 } from '@perawallet/wallet-core-chain-contract/testing'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { DerivationTypes, type HdIndex, type WalletAccount } from '../../models'
+import type { HdIndex, WalletAccount } from '../../models'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import {
     canDerive,
@@ -207,20 +207,6 @@ describe('wallet eligibility and holder lookups', () => {
             expect(findPathHolder([spanning], 'hd-seed', ORIGIN, keys)).toBe(
                 spanning,
             )
-        })
-
-        test('finds a record that has only hdWalletDetails', () => {
-            const older = {
-                ...withoutCredentials(hd),
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: DerivationTypes.Peikert,
-                },
-            }
-
-            expect(findPathHolder([older], 'hd-seed', ORIGIN, keys)).toBe(older)
         })
     })
 

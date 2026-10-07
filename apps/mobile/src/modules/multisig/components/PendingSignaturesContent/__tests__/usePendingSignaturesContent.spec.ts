@@ -12,10 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     type MultisigSignRequest,
     type SignRequestStatus,
@@ -187,7 +184,7 @@ const mockQueryReturn = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address,
     keyPairId: `kp-${address}`,
 })
@@ -1171,7 +1168,16 @@ describe('usePendingSignaturesContent', () => {
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

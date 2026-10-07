@@ -20,6 +20,7 @@ import {
     SigningError,
     SIGNING_ERROR_KEYS,
 } from '@perawallet/wallet-core-signing'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     hasSigningKeys: vi.fn(),
@@ -43,19 +44,28 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const algo25Account = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR',
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
 const quantumAccount = {
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'ADDR',
     keyPairId: 'key-q',
 } as unknown as WalletAccount
 
 const unsupportedAccount = {
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'ADDR',
 } as unknown as WalletAccount
 
@@ -130,24 +140,25 @@ describe('createLocalKeyStrategy', () => {
             .mockReset()
             .mockImplementation(
                 (account: WalletAccount) =>
-                    account.type === 'algo25' ||
-                    account.type === 'hd-wallet' ||
-                    account.type === 'quantum',
+                    accountType(account) === 'algo25' ||
+                    accountType(account) === 'hd-wallet' ||
+                    accountType(account) === 'quantum',
             )
         mocks.isAlgo25Account
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'algo25',
+                (account: WalletAccount) => accountType(account) === 'algo25',
             )
         mocks.isHDWalletAccount
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'hd-wallet',
+                (account: WalletAccount) =>
+                    accountType(account) === 'hd-wallet',
             )
         mocks.isQuantumAccount
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'quantum',
+                (account: WalletAccount) => accountType(account) === 'quantum',
             )
         errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     })
@@ -396,7 +407,7 @@ describe('createLocalKeyStrategy', () => {
 
         test('throws CannotSignError for unsupported account type', async () => {
             const weirdAccount = {
-                type: 'weird-type',
+                custody: { kind: 'weird-kind' },
                 address: 'ADDR',
             } as unknown as WalletAccount
             mocks.hasSigningKeys.mockReturnValue(true)

@@ -27,12 +27,12 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => mockSigningRequest,
 }))
 
-const mockAllAccounts = vi.fn<() => Array<{ address: string; type: string }>>(
-    () => [
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
-    ],
-)
+const mockAllAccounts = vi.fn<
+    () => Array<{ address: string; custody: { kind: string; seed?: string } }>
+>(() => [
+    { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
+    { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
+])
 const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
     () => true,
 )
@@ -67,8 +67,8 @@ beforeEach(() => {
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
     mockAllAccounts.mockReturnValue([
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
+        { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
+        { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
     ])
     mockCanSignWith.mockReturnValue(true)
     mockMapToDisplayable.mockClear()
@@ -338,9 +338,9 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses contains only accounts where canSignWith returns true', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'SIGNER', type: 'algo25' },
-            { address: 'WATCH', type: 'watch' },
-            { address: 'REKEYED_UNSIGNABLE', type: 'watch' },
+            { address: 'SIGNER', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'WATCH', custody: { kind: 'watch' } },
+            { address: 'REKEYED_UNSIGNABLE', custody: { kind: 'watch' } },
         ])
         mockCanSignWith.mockImplementation(a => a.address === 'SIGNER')
 
@@ -364,8 +364,8 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses is empty when no accounts pass canSignWith', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'A', type: 'watch' },
-            { address: 'B', type: 'watch' },
+            { address: 'A', custody: { kind: 'watch' } },
+            { address: 'B', custody: { kind: 'watch' } },
         ])
         mockCanSignWith.mockReturnValue(false)
 
@@ -424,7 +424,12 @@ describe('useSigningPipeline', () => {
             matches: (s: string) => s === 'awaiting_user',
             context: {
                 signerAddress: 'A123',
-                allAccounts: [{ address: 'A123', type: 'algo25' }],
+                allAccounts: [
+                    {
+                        address: 'A123',
+                        custody: { kind: 'local', seed: 'algo25' },
+                    },
+                ],
                 groupSignerTypes: new Map([['A123', 'localKey']]),
                 request: {
                     id: 'r1',

@@ -36,7 +36,7 @@ const MOCK_ADDRESS =
 
 // Minimal mock account (algo25, local signing keys)
 const mockAlgo25Account: WalletAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -218,7 +218,7 @@ describe('transportActor', () => {
         const J2_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
         const jointSender = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: J1_ADDRESS,
             rekeyAddress: J2_ADDRESS,
             multisigDetails: {
@@ -228,7 +228,7 @@ describe('transportActor', () => {
             },
         } as unknown as WalletAccount
         const authAccount = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: J2_ADDRESS,
             multisigDetails: {
                 threshold: 2,
@@ -276,7 +276,7 @@ describe('transportActor', () => {
             rekeyAddress: MSIG_AUTH_ADDRESS,
         } as unknown as WalletAccount
         const msigAuth = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: MSIG_AUTH_ADDRESS,
             multisigDetails: {
                 threshold: 2,

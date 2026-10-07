@@ -50,7 +50,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountBalancesQuery,
@@ -80,7 +79,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'offline-cold-start-key',
     name: 'Synced',

@@ -24,10 +24,11 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
+    accountType,
     AccountTypes,
     canSignWith,
+    isHardwareWalletAccount,
     useAccountsStore,
-    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -46,7 +47,7 @@ const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-1',
     name: 'My Cold Wallet',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: LEDGER_ADDRESS,
 }
 
@@ -135,11 +136,11 @@ describe('Flow: Ledger import upgrades a watch account', () => {
                 const accounts = useAccountsStore.getState().accounts
                 expect(accounts).toHaveLength(1)
                 const upgraded = accounts[0]
-                expect(upgraded.type).toBe(AccountTypes.hardware)
+                expect(accountType(upgraded)).toBe(AccountTypes.hardware)
                 expect(upgraded.name).toBe('My Cold Wallet')
                 expect(upgraded.id).toBe('watch-1')
                 expect(
-                    upgraded.type === AccountTypes.hardware &&
+                    isHardwareWalletAccount(upgraded) &&
                         upgraded.hardwareDetails.deviceId,
                 ).toBe('test-device-id')
                 expect(canSignWith(upgraded, accounts, LEGACY_CHAIN_ID)).toBe(
@@ -165,7 +166,7 @@ describe('Flow: Ledger import upgrades a watch account', () => {
         await waitFor(
             () => {
                 const accounts = useAccountsStore.getState().accounts
-                expect(accounts).toEqual([withCustody(WATCH_ACCOUNT)])
+                expect(accounts).toEqual([WATCH_ACCOUNT])
                 expect(
                     screen.getByTestId('ledger_verify_add_accounts_button'),
                 ).toBeTruthy()

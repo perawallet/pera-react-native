@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
     getAccountHoldings,
@@ -189,7 +188,7 @@ describe('Flow: Opt into an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',
@@ -385,7 +384,7 @@ describe('Flow: Opt out of an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',

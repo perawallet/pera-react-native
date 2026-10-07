@@ -45,7 +45,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -67,7 +66,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'observer-key',
     name: 'Observer',

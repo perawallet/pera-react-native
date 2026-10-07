@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountsStore,
@@ -84,7 +83,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     })
     const sender: WalletAccount = {
         id: 'sender-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Sender',

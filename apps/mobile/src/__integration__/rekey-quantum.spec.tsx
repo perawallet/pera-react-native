@@ -46,7 +46,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -156,14 +155,14 @@ const seedRekeyInAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-in-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const quantumTarget: WalletAccount = {
         id: 'rekey-in-quantum-target',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-in-quantum-target-key',
         name: 'Quantum target',
@@ -196,14 +195,14 @@ const seedRekeyOutAccounts = async (): Promise<{
 }> => {
     const quantumSource: WalletAccount = {
         id: 'rekey-out-quantum-source',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-out-quantum-source-key',
         name: 'Quantum source',
     }
     const target: WalletAccount = {
         id: 'rekey-out-target',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: HD_TEST_ADDRESS,
         keyPairId: 'rekey-out-target-key',
         name: 'Target',

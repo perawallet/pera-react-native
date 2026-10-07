@@ -54,8 +54,9 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mocks.useAllAccounts(),
-    isMultisigAccount: (a: { type?: string } | null | undefined) =>
-        a?.type === 'multisig',
+    isMultisigAccount: (
+        a: { custody?: { kind?: string } } | null | undefined,
+    ) => a?.custody?.kind === 'multisig',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -144,7 +145,7 @@ describe('useMultisigTransportAdapters', () => {
         mocks.useNetwork.mockReturnValue({ network: 'testnet' })
         mocks.useAllAccounts.mockReturnValue([
             {
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 address: 'MSIG',
                 multisigDetails: {
                     version: 1,

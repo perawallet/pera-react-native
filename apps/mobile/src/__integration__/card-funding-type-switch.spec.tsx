@@ -56,7 +56,6 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -73,7 +72,7 @@ import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'funding-account-key',
     name: 'Main Account',

@@ -23,10 +23,10 @@ import {
     getSignerFor,
     rekeyTransitionFor,
     resolveAuthAccount,
-    AccountTypes,
     RekeyTargetNotFoundError,
     type SignerResolution,
     type WalletAccount,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
@@ -38,7 +38,7 @@ beforeAll(() => {
 
 const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: `kp-${address}`,
         ...(rekeyAddress ? { rekeyAddress } : {}),
@@ -46,20 +46,29 @@ const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const watch = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         address,
         ...(rekeyAddress ? { rekeyAddress } : {}),
     }) as WalletAccount
 
 const hardware = (address: string): WalletAccount =>
     ({
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address,
     }) as WalletAccount
 
 const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address,
         keyPairId: `kp-${address}`,
         ...(rekeyAddress ? { rekeyAddress } : {}),
@@ -71,7 +80,7 @@ const multisig = (
     rekeyAddress?: string,
 ): WalletAccount =>
     ({
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         address,
         multisigDetails: {
             threshold: 2,
@@ -603,10 +612,12 @@ describe.each(signerCases)('signer resolution: $name', c => {
     })
 
     it('reports a rekey transition only for a signable rekeyed account', () => {
-        const signerType = c.accounts.find(a => a.address === c.signer)?.type
+        const signerType = c.accounts.find(a => a.address === c.signer)
+            ? accountType(c.accounts.find(a => a.address === c.signer))
+            : undefined
         const expected =
             account.rekeyAddress && signerType
-                ? { from: account.type, to: signerType }
+                ? { from: accountType(account), to: signerType }
                 : null
         expect(
             rekeyTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
@@ -636,7 +647,7 @@ describe('signer resolution: account not in the store', () => {
 
 describe('auth-account forms on a legacy multisig record without multisigDetails', () => {
     const legacy = {
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         address: 'MS',
     } as WalletAccount
 

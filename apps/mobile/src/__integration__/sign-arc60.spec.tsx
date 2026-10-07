@@ -46,7 +46,6 @@ import {
     seedQuantumSigner,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -173,7 +172,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const authSigner = await seedAlgo25Signer()
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-arc60-signer',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: REKEYED_SIGNER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA signer',
@@ -215,7 +214,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const ownAddress = encodeAlgorandAddress(ownKey.publicKey)
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-with-own-key',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: ownAddress,
             keyPairId: ownKey.seedKey.id ?? '',
             rekeyAddress: AUTH_ADDRESS,
@@ -262,7 +261,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const authSigner = await seedAlgo25Signer()
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-arc60-account',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: REKEYED_SIGNER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA account',

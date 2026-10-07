@@ -23,7 +23,7 @@ import { createMultisigStrategy } from '../createMultisigStrategy'
 
 const makeMultisigAccount = (address: string): WalletAccount =>
     ({
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address,
         multisigDetails: {
             version: 1,
@@ -34,7 +34,7 @@ const makeMultisigAccount = (address: string): WalletAccount =>
 
 const makeAlgo25Account = (address: string): WalletAccount =>
     ({
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: 'key-1',
     }) as any

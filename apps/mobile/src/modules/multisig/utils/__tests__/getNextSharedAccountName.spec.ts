@@ -17,12 +17,12 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { getNextSharedAccountName } from '../getNextSharedAccountName'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    isMultisigAccount: (account: { type: string }) =>
-        account.type === 'multisig',
+    isMultisigAccount: (account: { custody: { kind: string } }) =>
+        account.custody.kind === 'multisig',
 }))
 
-const acc = (type: string, address: string, name?: string): WalletAccount =>
-    ({ type, address, name }) as unknown as WalletAccount
+const acc = (kind: string, address: string, name?: string): WalletAccount =>
+    ({ custody: { kind }, address, name }) as unknown as WalletAccount
 
 const BASE = 'Shared Account'
 

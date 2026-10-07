@@ -409,7 +409,7 @@ describe('useSubmitRekeyMutation', () => {
 
     it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'SRC', type: 'quantum' },
+            { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },
         ])
         // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
@@ -439,7 +439,9 @@ describe('useSubmitRekeyMutation', () => {
         )
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
             senderAddress: 'SRC',
-            accounts: [{ address: 'SRC', type: 'quantum' }],
+            accounts: [
+                { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },
+            ],
             suggestedMinFee: 1000n,
             configMinTxnFee: 1000n,
             pqMultiplier: 3n,

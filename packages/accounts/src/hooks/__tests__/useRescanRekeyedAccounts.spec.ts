@@ -21,6 +21,7 @@ import {
     registerFakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
+import { accountType } from '../../utils'
 
 const mocks = {
     get fetchRekeyedAddresses() {
@@ -53,7 +54,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
     it('classifies discovered addresses into already-imported vs importable', async () => {
         setAccounts([
             {
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -122,7 +123,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     it('fans out one indexer scan per source key and merges classified results', async () => {
         setAccounts([
             {
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -191,7 +192,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
             // must see it as already-in-wallet.
             setAccounts([
                 {
-                    type: 'algo25',
+                    custody: { kind: 'local', seed: 'algo25' },
                     address: 'LANDS_MID_SCAN',
                     keyPairId: 'k',
                 } as WalletAccount,
@@ -247,7 +248,7 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
             persisted.map(a => [a.address, a.rekeyAddress]),
         )
         expect(bySource).toEqual({ C1: 'S1', C2: 'S2', C3: 'S1' })
-        persisted.forEach(account => expect(account.type).toBe('watch'))
+        persisted.forEach(account => expect(accountType(account)).toBe('watch'))
     })
 })
 
@@ -307,7 +308,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
             'VALID_2',
         ])
         persisted.forEach(account => {
-            expect(account.type).toBe('watch')
+            expect(accountType(account)).toBe('watch')
             expect(account.rekeyAddress).toBe('SOURCE')
         })
     })

@@ -13,7 +13,11 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    accountType,
+    type HDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
 
@@ -58,7 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useCreateNextHDAccount: () => ({
             buildNextHDAccount: mockBuildNextHDAccount,
             hasHDWallet: mockUseAllAccounts().some(
-                (a: WalletAccount) => a.type === 'hdWallet',
+                (a: WalletAccount) => accountType(a) === 'hdWallet',
             ),
         }),
         useHDWalletGroups: () => ({
@@ -171,10 +175,10 @@ vi.mock('@analytics', async () => ({
     trackEvent: mockTrackEvent,
 }))
 
-const HD_ACCOUNT = {
+const HD_ACCOUNT: HDWalletAccount = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -487,7 +491,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -536,7 +544,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -564,7 +576,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'algo25-id',
             address: 'ALGO25_ADDRESS',
-            type: 'algo25' as const,
+            custody: { kind: 'local', seed: 'algo25' },
             canSign: true,
         }
         mockBuildAlgo25WalletAccount.mockResolvedValue(newAccount)
@@ -704,7 +716,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'quantum-id',
             address: 'QUANTUM_ADDRESS',
-            type: 'quantum' as const,
+            custody: { kind: 'local', seed: 'quantum' },
             canSign: true,
         }
         mockBuildQuantumWalletAccount.mockResolvedValue(newAccount)
@@ -831,7 +843,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)
@@ -991,7 +1007,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)

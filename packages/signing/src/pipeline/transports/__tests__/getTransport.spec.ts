@@ -36,13 +36,13 @@ const ALGORAND_TESTNET: ChainScope = {
 }
 
 const algo25Account: WalletAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR',
     keyPairId: 'key-1',
 } as WalletAccount
 
 const multisigAccount: WalletAccount = {
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address: 'MSIG',
     multisigDetails: {
         version: 1,

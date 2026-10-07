@@ -19,6 +19,7 @@ import {
 } from '@modules/bottom-sheet'
 import { useReceiveFundsContent } from '../useReceiveFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
@@ -28,8 +29,8 @@ const mockAccount = {
     id: 'watch-test-account',
     address: 'test-address-123',
     name: 'Test Account',
-    type: 'watch' as const,
-}
+    custody: { kind: 'watch' },
+} as WalletAccount
 
 const mockSetSelectedAccount = vi.fn()
 const mockSetCanSelectAccount = vi.fn()

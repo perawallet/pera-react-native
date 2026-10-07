@@ -12,10 +12,7 @@
 
 import { describe, expect, test, vi } from 'vitest'
 import { Address } from 'algosdk'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
@@ -35,7 +32,7 @@ const txn = (id: number): PeraTransaction =>
 
 const algo25Account = (address = SENDER): WalletAccount => ({
     id: 'acct',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address,
     keyPairId: 'key-1',
 })
@@ -141,7 +138,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ getPQSigningInfo }),
             [txn(0)],
             [0],
-            { ...algo25Account(), type: AccountTypes.quantum },
+            { ...algo25Account(), custody: { kind: 'local', seed: 'quantum' } },
         )
 
         expect(signed.pqsig).toBeDefined()
@@ -152,7 +149,7 @@ describe('signTransactionsWithLocalKey', () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
                 ...algo25Account(),
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
             } as WalletAccount),
         ).rejects.toBeTruthy()
     })
@@ -198,7 +195,16 @@ describe('signTransactionsWithLocalKey', () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
                 ...algo25Account(),
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
             } as unknown as WalletAccount),
         ).rejects.toBeTruthy()
     })

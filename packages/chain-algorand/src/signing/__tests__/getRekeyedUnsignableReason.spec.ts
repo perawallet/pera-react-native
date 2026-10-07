@@ -12,10 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getRekeyedUnsignableReason } from '../getRekeyedUnsignableReason'
 
@@ -29,27 +26,27 @@ const accounts = [
     {
         id: 'ok',
         address: OK_SENDER,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp-ok',
     },
     {
         id: 'ext',
         address: REKEYED_EXTERNAL,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp-ext',
         rekeyAddress: EXTERNAL_AUTH,
     },
     {
         id: 'rw',
         address: REKEYED_TO_WATCH,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp-rw',
         rekeyAddress: WATCH_AUTH,
     },
     {
         id: 'watch-auth',
         address: WATCH_AUTH,
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
     },
 ] as unknown as WalletAccount[]
 

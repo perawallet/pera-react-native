@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockGetKey = vi.fn()
 
@@ -41,14 +38,14 @@ import { useLegacyQuantumNotice } from '../useLegacyQuantumNotice'
 
 const LEGACY_ACCOUNT: WalletAccount = {
     id: 'legacy-account-1',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'LEGACYADDRESS',
     keyPairId: 'seed-1-quantum',
 }
 
 const CANONICAL_ACCOUNT: WalletAccount = {
     id: 'canonical-account-1',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'CANONICALADDRESS',
     keyPairId: 'seed-2-quantum-pqk1',
 }

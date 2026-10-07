@@ -45,7 +45,6 @@ import {
 } from '@test-utils/signing-review'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
     type WalletAccount,
@@ -84,7 +83,16 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device-id',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -121,7 +129,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         const authSigner = await seedAlgo25Signer()
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: REKEYED_SENDER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',
@@ -223,7 +231,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
     it('Given a WC request whose sender is rekeyed to an auth account the wallet does not hold, then the review shows the auth-missing explanation instead of the confirm control', async () => {
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: REKEYED_SENDER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',

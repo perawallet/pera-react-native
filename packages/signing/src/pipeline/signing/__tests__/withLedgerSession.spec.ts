@@ -46,7 +46,16 @@ const ADDRESS = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const makeAccount = (): HardwareWalletAccount =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 3,
+        },
         address: ADDRESS,
         hardwareDetails: {
             manufacturer: 'ledger',

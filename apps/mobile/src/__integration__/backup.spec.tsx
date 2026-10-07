@@ -30,7 +30,6 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     DerivationTypes,
     useAccountsStore,
     type WalletAccount,
@@ -77,7 +76,7 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'algo25-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
@@ -116,7 +115,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
 
     const rootAccount: WalletAccount = {
         id: 'hd-root',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: HD_TEST_ADDRESS,
         keyPairId: rootKeyId,
         name: 'HD Root',
@@ -129,7 +132,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     }
     const sibling1: WalletAccount = {
         id: 'hd-s1',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 1 },
+        },
         address: s1Address,
         keyPairId: rootKeyId,
         name: 'HD Sibling 1',
@@ -142,7 +149,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     }
     const sibling2: WalletAccount = {
         id: 'hd-s2',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 2 },
+        },
         address: s2Address,
         keyPairId: rootKeyId,
         name: 'HD Sibling 2',

@@ -18,7 +18,6 @@ import {
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
@@ -29,13 +28,13 @@ const MOCK_ACCOUNTS = [
     {
         id: '1',
         address: 'ACC1',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' } as const,
         rekeyAddress: 'REKEY',
     },
     {
         id: '2',
         address: 'ACC2',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' } as const,
         rekeyAddress: 'REKEY',
     },
 ]
@@ -167,12 +166,12 @@ describe('useImportRekeyedAddressesScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
         // Pin the persisted shape: watch + rekeyAddress, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
-            type: string
+            custody: { kind: string }
             rekeyAddress?: string
             keyPairId?: string
         }>
         for (const account of persisted) {
-            expect(account.type).toBe(AccountTypes.watch)
+            expect(account.custody.kind).toBe('watch')
             expect(account.rekeyAddress).toBe('REKEY')
             expect(account.keyPairId).toBeUndefined()
         }
@@ -184,7 +183,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         const concurrent = {
             id: 'c',
             address: 'CONCURRENT',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             keyPairId: 'pkc',
         }
         // Lands after render (useAllAccounts snapshot) but before the

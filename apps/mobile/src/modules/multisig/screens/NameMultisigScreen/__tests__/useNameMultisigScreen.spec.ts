@@ -16,6 +16,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNameMultisigScreen } from '../useNameMultisigScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 import type { NameMultisigImportParams } from '../../../routes/types'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
@@ -73,6 +74,7 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
         mutateAsync: mockMutateAsync,
     }),
     multisigAdapterFor: () => ({
+        chainId: 'algorand',
         deriveAddress: ({
             version,
             threshold,
@@ -157,6 +159,7 @@ vi.mock('react-i18next', async () => {
 
 describe('useNameMultisigScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         vi.stubGlobal(
             'requestAnimationFrame',
@@ -188,7 +191,7 @@ describe('useNameMultisigScreen', () => {
             {
                 address: 'M1',
                 name: 'Coffee fund',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['A', 'B'],
@@ -207,7 +210,7 @@ describe('useNameMultisigScreen', () => {
             {
                 address: 'W1',
                 name: 'Shared Account #1',
-                type: 'watch',
+                custody: { kind: 'watch' },
             } as WalletAccount,
         ])
 
@@ -228,7 +231,11 @@ describe('useNameMultisigScreen', () => {
 
     it('allows a name already used by another account (names need not be unique)', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'my account' } as WalletAccount,
+            {
+                address: 'A',
+                name: 'my account',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useNameMultisigScreen())
@@ -251,7 +258,13 @@ describe('useNameMultisigScreen', () => {
     })
 
     it('handleFinish calls mutation, updates accounts, selects address, plays confetti, exits', async () => {
-        const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
+        const existing = [
+            {
+                address: 'X',
+                name: 'Other',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
+        ]
         mockUseAllAccounts.mockReturnValue(existing)
 
         const { result } = renderHook(() => useNameMultisigScreen())
@@ -273,13 +286,26 @@ describe('useNameMultisigScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([
             ...existing,
             expect.objectContaining({
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 address: 'MULTISIG_ADDR',
                 name: 'Shared Account #1',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2'],
                     version: 1,
+                },
+                chains: {
+                    algorand: {
+                        address: 'MULTISIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR1', 'ADDR2'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
             }),
         ])
@@ -300,7 +326,7 @@ describe('useNameMultisigScreen', () => {
             {
                 address: 'MULTISIG_ADDR',
                 name: 'Existing Shared',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2'],
@@ -443,7 +469,13 @@ describe('useNameMultisigScreen', () => {
         })
 
         it('handleFinish verifies the derived address, then saves the imported account', async () => {
-            const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
+            const existing = [
+                {
+                    address: 'X',
+                    name: 'Other',
+                    custody: { kind: 'watch' },
+                } as WalletAccount,
+            ]
             mockUseAllAccounts.mockReturnValue(existing)
 
             const { result } = renderHook(() => useNameMultisigScreen())
@@ -468,7 +500,7 @@ describe('useNameMultisigScreen', () => {
             expect(mockSetAccounts).toHaveBeenCalledWith([
                 ...existing,
                 expect.objectContaining({
-                    type: 'multisig',
+                    custody: { kind: 'multisig' },
                     address: 'IMPORTED_SHARED_ADDR',
                     multisigDetails: {
                         threshold: 3,
@@ -488,7 +520,7 @@ describe('useNameMultisigScreen', () => {
                 {
                     address: 'IMPORTED_SHARED_ADDR',
                     name: 'Existing Shared',
-                    type: 'multisig',
+                    custody: { kind: 'multisig' },
                     multisigDetails: {
                         threshold: 3,
                         addresses: ['IMP1', 'IMP2', 'IMP3'],

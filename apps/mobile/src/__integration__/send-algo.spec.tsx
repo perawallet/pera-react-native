@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -86,7 +85,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'sender-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',
@@ -306,7 +305,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         })
         const authAccount: WalletAccount = {
             id: 'auth-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: authKey!.seedKey.id ?? '',
             name: 'Auth (signer)',
@@ -316,7 +315,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // `rekeyAddress` to find the actual signer at sign time.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender',
@@ -771,7 +770,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // surfaced as a toast, no algod traffic.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-orphan',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender (orphan)',

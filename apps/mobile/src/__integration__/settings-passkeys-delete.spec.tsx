@@ -34,7 +34,6 @@ import {
     sealNativeProviderRecord,
 } from '@perawallet/wallet-core-passkeys'
 import {
-    AccountTypes,
     DerivationTypes,
     useAccountsStore,
     type WalletAccount,
@@ -45,7 +44,7 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: HD_TEST_ADDRESS,
     name: 'Universal',
     keyPairId: 'hd-key-1',

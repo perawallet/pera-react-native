@@ -29,22 +29,19 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     return { ...actual }
 })
 
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isLegacyQuantumChild } from '../legacyQuantum'
 
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'quantum-account-1',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'QUANTUMADDRESS',
     keyPairId: 'seed-1-quantum',
 }
 
 const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-account-1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: 'WATCHADDRESS',
 }
 

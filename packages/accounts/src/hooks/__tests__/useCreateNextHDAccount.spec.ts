@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -110,7 +110,11 @@ describe('useCreateNextHDAccount', () => {
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             keyPairId: 'wallet-1-acc2-idx0-dt9',
         }
         mockCreateAccount.createHdWalletAccount.mockResolvedValue(newAccount)
@@ -133,7 +137,11 @@ describe('useCreateNextHDAccount', () => {
         mockCreateAccount.createHdWalletAccount.mockResolvedValue({
             id: 'new',
             address: 'NEW',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         })
 
         const { result } = renderHook(() => useCreateNextHDAccount())

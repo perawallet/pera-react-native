@@ -34,7 +34,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -81,7 +80,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'sender-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',
@@ -99,7 +98,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 const seedQuantumSender = (): WalletAccount => {
     const sender: WalletAccount = {
         id: 'quantum-1',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'quantum-key-1',
         name: 'Quantum sender',

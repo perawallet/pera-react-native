@@ -23,6 +23,12 @@ const mockUseAllAccounts = vi.fn(() => [] as unknown[])
 const mockFindContacts = vi.fn(() => [] as unknown[])
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountType: ({ custody }: { custody: { kind: string; seed?: string } }) =>
+        custody.kind !== 'local'
+            ? custody.kind
+            : custody.seed === 'bip39'
+              ? 'hdWallet'
+              : custody.seed,
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
     useRekeyAccount: () => null,
@@ -267,7 +273,13 @@ describe('AddressDisplay', () => {
 
         it('renders the truncated address when the address matches a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'My Wallet',
+                    address,
+                    custody: { kind: 'watch' },
+                },
+            ])
 
             render(
                 <AddressDisplay
@@ -303,7 +315,13 @@ describe('AddressDisplay', () => {
 
         it('prefers the truncated address over NFD and contact matches for a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'My Wallet',
+                    address,
+                    custody: { kind: 'watch' },
+                },
+            ])
             mockUseNfdForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,

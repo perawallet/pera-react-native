@@ -65,7 +65,7 @@ import { useCardAutoFundingSigningScreen } from '../useCardAutoFundingSigningScr
 
 const CONNECTED_ACCOUNT: WalletAccount = {
     id: 'a1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR1',
     keyPairId: 'kp1',
 } as WalletAccount

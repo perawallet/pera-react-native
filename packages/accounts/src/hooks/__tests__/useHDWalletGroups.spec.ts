@@ -36,7 +36,7 @@ const HD_ACCOUNT_WALLET_1 = {
     id: 'hd-1',
     address: 'HD_ADDRESS_1',
     name: 'My Wallet',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -49,7 +49,7 @@ const HD_ACCOUNT_WALLET_1 = {
 const HD_ACCOUNT_WALLET_1_B = {
     id: 'hd-1b',
     address: 'HD_ADDRESS_1B',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -63,7 +63,7 @@ const HD_ACCOUNT_WALLET_2 = {
     id: 'hd-2',
     address: 'HD_ADDRESS_2',
     name: 'Second Wallet',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -76,14 +76,14 @@ const HD_ACCOUNT_WALLET_2 = {
 const ALGO25_ACCOUNT = {
     id: 'algo25-1',
     address: 'ALGO25_ADDRESS',
-    type: 'algo25' as const,
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'algo25-key-1-ed25519',
 }
 
 const WATCH_ACCOUNT = {
     id: 'watch-1',
     address: 'WATCH_ADDRESS',
-    type: 'watch' as const,
+    custody: { kind: 'watch' },
 }
 
 const seedHDChildren = () => {

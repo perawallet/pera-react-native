@@ -15,10 +15,7 @@ import { waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import {
-    AccountTypes,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     deriveBackupKeys,
@@ -206,7 +203,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
                         .getState()
                         .accounts.find(a => a.address === REMOTE_WATCH_ADDRESS),
                 ).toMatchObject({
-                    type: AccountTypes.watch,
+                    custody: { kind: 'watch' },
                     name: 'Pulled Over Socket',
                 }),
             { timeout: 10_000 },

@@ -36,9 +36,9 @@ const {
     mockUpdateSwapStatus: vi.fn(),
     mockRegisterHandoff: vi.fn(),
     mockSelectedAccount: {
-        current: { address: 'SELECTED', type: 'standard' } as {
+        current: { address: 'SELECTED', custody: { kind: 'watch' } } as {
             address: string
-            type: string
+            custody: { kind: string }
         },
     },
 }))
@@ -48,8 +48,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    isMultisigAccount: (account: { type: string }) =>
-        account.type === 'multisig',
+    isMultisigAccount: (account: { custody?: { kind: string } }) =>
+        account.custody?.kind === 'multisig',
     useSelectedAccount: () => mockSelectedAccount.current,
     useSignerFor: (address: string) => ({ address: `signer-of-${address}` }),
 }))
@@ -177,7 +177,10 @@ describe('useExecuteSwapMutation', () => {
     })
 
     test('refuses a shared-account swap on a chain without co-sign support', async () => {
-        mockSelectedAccount.current = { address: 'JOINT', type: 'multisig' }
+        mockSelectedAccount.current = {
+            address: 'JOINT',
+            custody: { kind: 'multisig' },
+        }
         registerFakeSwapAdapter({ executeSwap, submitSignedGroup: undefined })
         const { result } = renderHook(() => useExecuteSwapMutation(), {
             wrapper,

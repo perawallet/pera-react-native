@@ -38,7 +38,8 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 }))
 
 const detailLessMultisig = {
-    type: 'multisig',
+    id: 'msig-id',
+    custody: { kind: 'multisig' },
     address: 'MSIG_ADDR',
     name: 'Shared Account #4',
 } as unknown as WalletAccount
@@ -73,7 +74,7 @@ describe('useMultisigDetailsBackfill', () => {
         })
 
         const complete = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: 'MSIG_ADDR',
             name: 'Shared Account #4',
             multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
@@ -108,16 +109,27 @@ describe('useMultisigDetailsBackfill', () => {
             addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
         })
         expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
-        expect(mocks.updateAccount).toHaveBeenCalledWith({
-            type: 'multisig',
-            address: 'MSIG_ADDR',
-            name: 'Shared Account #4',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
-                version: 1,
-            },
-        })
+        const details = {
+            threshold: 2,
+            addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+            version: 1,
+        }
+        expect(mocks.updateAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'msig-id',
+                custody: { kind: 'multisig' },
+                address: 'MSIG_ADDR',
+                name: 'Shared Account #4',
+                multisigDetails: details,
+                chains: {
+                    algorand: {
+                        address: 'MSIG_ADDR',
+                        native: { family: 'algorand', multisig: details },
+                    },
+                },
+            }),
+        )
+        expect(mocks.updateAccount.mock.calls[0][0]).not.toHaveProperty('type')
 
         rerender()
         expect(mocks.updateAccount).toHaveBeenCalledTimes(1)

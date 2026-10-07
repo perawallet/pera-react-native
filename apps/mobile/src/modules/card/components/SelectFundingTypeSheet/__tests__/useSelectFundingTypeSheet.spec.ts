@@ -131,7 +131,7 @@ import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
 
 const connectedAccount = {
     address: 'ADDR1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
@@ -342,7 +342,16 @@ describe('useSelectFundingTypeSheet', () => {
         mockAccounts = [
             {
                 address: 'ADDR1',
-                type: 'hardware',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: { manufacturer: 'ledger' },
             } as unknown as WalletAccount,
         ]

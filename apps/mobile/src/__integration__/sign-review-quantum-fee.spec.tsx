@@ -47,7 +47,6 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type QuantumAccount,
     type WatchAccount,
@@ -71,7 +70,7 @@ const seedQuantumSigner = async (): Promise<void> => {
     const account = await seedAlgo25Signer()
     const quantumAccount: QuantumAccount = {
         id: account.id,
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: REVIEW_SIGNER_ADDRESS,
         keyPairId: account.keyPairId ?? '',
         name: account.name,
@@ -92,7 +91,7 @@ const seedQuantumRekeyedToStandard = async (): Promise<void> => {
     const signer = await seedAlgo25Signer()
     const rekeyedQuantum: QuantumAccount = {
         id: 'rekeyed-quantum',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'unused-once-rekeyed',
         name: 'Rekeyed Quantum',
@@ -113,7 +112,7 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     await seedQuantumSigner()
     const rekeyedWatch: WatchAccount = {
         id: 'rekeyed-watch',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         address: REVIEW_RECEIVER_ADDRESS,
         name: 'Rekeyed Watch',
         rekeyAddress: REVIEW_SIGNER_ADDRESS,

@@ -19,7 +19,7 @@ import {
     resolveSignerForAccount,
 } from '../signer-resolution'
 import { RekeyTargetNotFoundError } from '../errors'
-import { AccountTypes, type WalletAccount } from '../models'
+import { type WalletAccount } from '../models'
 import {
     FAKE_CHAIN_ID,
     fakeAccountsChain,
@@ -32,7 +32,7 @@ const account = (
 ): WalletAccount =>
     ({
         id: address,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: 'k',
         ...extra,

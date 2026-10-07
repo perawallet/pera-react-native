@@ -23,7 +23,7 @@ const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAlgo25Account: WalletAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -98,7 +98,7 @@ describe('signLocalKeyGroups', () => {
         const multisigAddress =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
         const accountWithoutKeys: WalletAccount = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: multisigAddress,
         } as unknown as WalletAccount
 
@@ -136,14 +136,14 @@ describe('signLocalKeyGroups', () => {
             'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
         const participantAccount: WalletAccount = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: PARTICIPANT,
             keyPairId: 'key-participant',
             rekeyAddress: AUTH,
         } as unknown as WalletAccount
 
         const authAccount: WalletAccount = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: AUTH,
             keyPairId: 'key-auth',
         } as unknown as WalletAccount

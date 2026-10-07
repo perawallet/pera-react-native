@@ -36,6 +36,12 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountType: ({ custody }: { custody: { kind: string; seed?: string } }) =>
+        custody.kind !== 'local'
+            ? custody.kind
+            : custody.seed === 'bip39'
+              ? 'hdWallet'
+              : custody.seed,
     useAllAccounts: vi.fn(),
     useSortedAccounts: vi.fn(),
     useAccountValueTotalsQuery: vi.fn(),
@@ -220,12 +226,12 @@ describe('useAddressSearchView', () => {
             {
                 address: 'STD_ADDR',
                 name: 'Standard',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
             },
             {
                 address: 'QUANTUM_ADDR',
                 name: 'Quantum',
-                type: AccountTypes.quantum,
+                custody: { kind: 'local', seed: 'quantum' },
             },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
@@ -369,7 +375,11 @@ describe('useAddressSearchView', () => {
 
     it('returns the matched wallet account when typed address is in user wallet', () => {
         const accounts = [
-            { address: 'OWN_ADDRESS', name: 'My Account', type: 'algo25' },
+            {
+                address: 'OWN_ADDRESS',
+                name: 'My Account',
+                custody: { kind: 'local', seed: 'algo25' },
+            },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,

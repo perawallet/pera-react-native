@@ -20,11 +20,16 @@ import {
     AccountTypes,
     DerivationTypes,
     type AccountChains,
+    type AccountType,
     type WalletAccount,
 } from '../models'
+import { buildTestAccount } from './accountFactory'
 
-const account = (address: string, type: WalletAccount['type']): WalletAccount =>
-    ({ id: address, address, type, keyPairId: 'kp' }) as WalletAccount
+const account = (address: string, type: AccountType): WalletAccount => ({
+    ...buildTestAccount(type),
+    id: address,
+    address,
+})
 
 describe('toDeviceAccountType', () => {
     it('maps every account type onto its wire value', () => {
@@ -83,7 +88,7 @@ describe('buildDeviceAccountRegistrations', () => {
         expect(buildDeviceAccountRegistrations([], ['ADDR_A'])).toEqual([])
     })
 
-    it('registers custody-bearing accounts exactly as their legacy-shaped twins', () => {
+    it('registers accounts with an extra chain entry exactly as their address-only twins', () => {
         // An entry a later chain adds must not change what the devices API is
         // told. It isn't a `ChainId` member, hence the widening cast.
         const withOtherChain = (
@@ -169,7 +174,7 @@ describe('buildDeviceAccountRegistrations', () => {
                 },
             }),
         ]
-        const legacyShaped: WalletAccount[] = [
+        const addressOnly: WalletAccount[] = [
             account('ALGO25ADDR', AccountTypes.algo25),
             {
                 ...account('HDADDR', AccountTypes.hdWallet),
@@ -182,20 +187,33 @@ describe('buildDeviceAccountRegistrations', () => {
             {
                 id: 'LEDGERADDR',
                 address: 'LEDGERADDR',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: { ...ledger, accountIndex: 0 },
             },
             {
                 id: 'MSIGADDR',
                 address: 'MSIGADDR',
-                type: AccountTypes.multisig,
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 1,
                     addresses: ['MEMBERA', 'MEMBERB'],
                     version: 1,
                 },
             },
-            { id: 'WATCHADDR', address: 'WATCHADDR', type: AccountTypes.watch },
+            {
+                id: 'WATCHADDR',
+                address: 'WATCHADDR',
+                custody: { kind: 'watch' },
+            },
             account('QUANTUMADDR', AccountTypes.quantum),
         ]
 
@@ -204,7 +222,7 @@ describe('buildDeviceAccountRegistrations', () => {
         ])
 
         expect(result).toEqual(
-            buildDeviceAccountRegistrations(legacyShaped, ['WATCHADDR']),
+            buildDeviceAccountRegistrations(addressOnly, ['WATCHADDR']),
         )
         expect(result).toEqual([
             {

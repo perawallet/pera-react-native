@@ -19,7 +19,6 @@ import {
     isQuantumDowngrade,
     rekeyTransitionFor,
     resolveAuthAccount,
-    AccountTypes,
     RekeyTargetNotFoundError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -35,7 +34,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount
@@ -44,7 +43,11 @@ const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'h',
         address: overrides.address ?? 'H',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         keyPairId: 'kp-hd',
         hdWalletDetails: {
             account: 0,
@@ -59,7 +62,16 @@ const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'l',
         address: overrides.address ?? 'L',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
         ...overrides,
     }) as WalletAccount
@@ -68,7 +80,7 @@ const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'w',
         address: overrides.address ?? 'W',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         ...overrides,
     }) as WalletAccount
 
@@ -76,7 +88,7 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'm',
         address: overrides.address ?? 'M',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['P1', 'P2', 'P3'],
@@ -89,7 +101,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'f',
         address: overrides.address ?? 'F',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -97,7 +109,11 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
 describe('services/accounts/utils - account type checks', () => {
     const baseAccount = {
         id: '1',
-        type: 'hdWallet',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'ADDR1',
         keyPairId: 'pk1',
     } as any
@@ -119,14 +135,14 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith returns true for rekeyed account when auth account has keys', () => {
         const authAccount = {
             id: '2',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'AUTH_ADDR',
             keyPairId: 'pk2',
         } as any
 
         const rekeyedAccount = {
             id: '3',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
             rekeyAddress: 'AUTH_ADDR',
         } as any
@@ -139,13 +155,13 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith returns false for rekeyed account when auth account has no keys', () => {
         const authAccount = {
             id: '2',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'AUTH_ADDR',
         } as any
 
         const rekeyedAccount = {
             id: '3',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
             rekeyAddress: 'AUTH_ADDR',
         } as any
@@ -158,7 +174,7 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith returns false for rekeyed account when auth account is not in list', () => {
         const rekeyedAccount = {
             id: '3',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
             rekeyAddress: 'AUTH_ADDR',
         } as any
@@ -169,21 +185,21 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith resolves a single rekey hop only, not a chain', () => {
         const rootAccount = {
             id: '1',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'ROOT_ADDR',
             keyPairId: 'pk1',
         } as any
 
         const middleAccount = {
             id: '2',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'MIDDLE_ADDR',
             rekeyAddress: 'ROOT_ADDR',
         } as any
 
         const leafAccount = {
             id: '3',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'LEAF_ADDR',
             rekeyAddress: 'MIDDLE_ADDR',
         } as any
@@ -203,13 +219,13 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith does not recurse on a cyclic auth chain', () => {
         const a = {
             id: '1',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'A',
             rekeyAddress: 'B',
         } as any
         const b = {
             id: '2',
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'B',
             rekeyAddress: 'A',
         } as any
@@ -223,7 +239,16 @@ describe('services/accounts/utils - account type checks', () => {
 describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
     test('returns true for a non-rekeyed hardware account (no keyPairId)', () => {
         const account = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: 'HW',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -238,7 +263,16 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 
     test('returns true for rekeyed account whose auth is a hardware account', () => {
         const authAccount = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: 'AUTH',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -249,7 +283,7 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
             },
         } as any
         const account = {
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'ADDR',
             rekeyAddress: 'AUTH',
         } as any
@@ -260,12 +294,12 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 
     test('returns true for a multisig with a local signable participant', () => {
         const participant = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'P1',
             keyPairId: 'pk1',
         } as any
         const multisig = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: 'MS',
             multisigDetails: {
                 threshold: 2,
@@ -280,7 +314,7 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 
     test('returns false for a multisig with no local signable participants', () => {
         const multisig = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: 'MS',
             multisigDetails: {
                 threshold: 2,
@@ -295,12 +329,12 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 describe('services/accounts/utils - getRekeyAccount', () => {
     test('returns the auth account when rekeyed and target is in the wallet', () => {
         const auth = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'AUTH',
             keyPairId: 'pk1',
         } as any
         const rekeyed = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk2',
             rekeyAddress: 'AUTH',
@@ -312,7 +346,7 @@ describe('services/accounts/utils - getRekeyAccount', () => {
 
     test('returns null when the address is not rekeyed', () => {
         const account = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -321,7 +355,7 @@ describe('services/accounts/utils - getRekeyAccount', () => {
 
     test('returns null when the rekey target is not in the wallet', () => {
         const rekeyed = {
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'A',
             rekeyAddress: 'MISSING',
         } as any
@@ -336,7 +370,7 @@ describe('services/accounts/utils - getRekeyAccount', () => {
 describe('services/accounts/utils - getSignerFor', () => {
     test('returns the account itself when it holds its own key', () => {
         const account = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -345,12 +379,12 @@ describe('services/accounts/utils - getSignerFor', () => {
 
     test('returns the immediate auth account when rekeyed and we can sign', () => {
         const auth = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'AUTH',
             keyPairId: 'pk1',
         } as any
         const rekeyed = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk2',
             rekeyAddress: 'AUTH',
@@ -360,7 +394,7 @@ describe('services/accounts/utils - getSignerFor', () => {
 
     test('returns null for an unsignable rekeyed account', () => {
         const rekeyed = {
-            type: 'watch',
+            custody: { kind: 'watch' },
             address: 'A',
             rekeyAddress: 'MISSING',
         } as any
@@ -368,18 +402,18 @@ describe('services/accounts/utils - getSignerFor', () => {
     })
 
     test('returns null for a non-rekeyed watch account', () => {
-        const account = { type: 'watch', address: 'A' } as any
+        const account = { custody: { kind: 'watch' }, address: 'A' } as any
         expect(getSignerFor('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     test('returns the multisig itself when at least one participant is local and signable', () => {
         const participant = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'P1',
             keyPairId: 'pk1',
         } as any
         const multisig = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: 'MS',
             multisigDetails: {
                 threshold: 2,
@@ -400,7 +434,7 @@ describe('services/accounts/utils - getSignerFor', () => {
 describe('services/accounts/utils - rekeyTransitionFor', () => {
     test('returns null for a non-rekeyed account', () => {
         const account = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -411,7 +445,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
 
     test('returns null for a rekeyed account whose auth is not in the wallet', () => {
         const rekeyed = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
             rekeyAddress: 'MISSING',
@@ -423,7 +457,16 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
 
     test('returns from/to raw types for a signable rekey', () => {
         const auth = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd',
+                    deviceName: 'Ledger',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: 'AUTH',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -434,7 +477,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
             },
         } as any
         const rekeyed = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
             rekeyAddress: 'AUTH',

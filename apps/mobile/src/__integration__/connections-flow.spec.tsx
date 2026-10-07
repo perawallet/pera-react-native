@@ -79,7 +79,6 @@ import {
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -134,14 +133,14 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'conn-a-key',
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'conn-b',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: HD_TEST_ADDRESS,
     keyPairId: 'conn-b-key',
     name: 'DeFi',
@@ -150,7 +149,7 @@ const OTHER_ACCOUNT: WalletAccount = {
 // No key behind it: the approval gate only asks which account TYPE is selected.
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'conn-q',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'conn-q-key',
     name: 'Falcon',

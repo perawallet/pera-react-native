@@ -15,7 +15,6 @@ import { fireEvent, screen, waitFor } from '@test-utils/render'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -25,7 +24,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const TRADING: WalletAccount = {
     id: 'a-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'a-key',
     name: 'Trading',
@@ -33,7 +32,7 @@ const TRADING: WalletAccount = {
 
 const SAVINGS: WalletAccount = {
     id: 'a-2',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: HD_TEST_ADDRESS,
     keyPairId: 'b-key',
     name: 'Savings',

@@ -40,7 +40,7 @@ const algo25 = (
     address: string,
     extra: Partial<Algo25Account> = {},
 ): Algo25Account => ({
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address,
     keyPairId: 'kp',
     ...extra,
@@ -50,7 +50,7 @@ const hdWallet = (
     address: string,
     extra: Partial<HDWalletAccount> = {},
 ): HDWalletAccount => ({
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address,
     keyPairId: 'kp',
     hdWalletDetails: {
@@ -66,7 +66,16 @@ const hardware = (
     address: string,
     extra: Partial<HardwareWalletAccount> = {},
 ): HardwareWalletAccount => ({
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'd',
+            deviceName: 'Ledger',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -83,14 +92,14 @@ const multisig = (
     participants: string[],
     extra: Partial<MultiSigAccount> = {},
 ): MultiSigAccount => ({
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address,
     multisigDetails: { threshold: 2, addresses: participants, version: 1 },
     ...extra,
 })
 
 const watch = (address: string, rekeyAddress?: string): WatchAccount => ({
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address,
     rekeyAddress,
 })
