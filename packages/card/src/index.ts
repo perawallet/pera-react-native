@@ -59,6 +59,7 @@ export {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isInvalidCredentialsError,
     isDuplicateError,
     isUserAlreadyCreatedError,
     isNotVerifiedError,

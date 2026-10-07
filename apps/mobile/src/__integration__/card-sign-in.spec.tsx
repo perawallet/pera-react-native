@@ -392,6 +392,31 @@ describe('Flow: Card sign in', () => {
         expect(screen.queryByTestId('home-tab-stub')).toBeNull()
     })
 
+    // Baanx's public spec documents 400 for bad credentials, but its dev API
+    // answers 404 "Invalid Login Details"; that must not read as an outage.
+    it('Given Baanx rejects the credentials with a 404, when Sign In is pressed, then the inline invalid-credentials error shows', async () => {
+        server.use(
+            http.post('*/v1/auth/login', () =>
+                HttpResponse.json(
+                    { message: 'Invalid Login Details' },
+                    { status: 404 },
+                ),
+            ),
+        )
+
+        renderSignIn()
+        await fillCredentials()
+        fireEvent.click(screen.getByTestId('card-sign-in-submit'))
+
+        const password = screen.getByTestId('card-sign-in-password-input')
+        await waitFor(() =>
+            expect(getInputErrorMessage(password)).toBe(
+                'peraCard.sign_in.invalid_credentials',
+            ),
+        )
+        expect(screen.queryByTestId('home-tab-stub')).toBeNull()
+    })
+
     it('navigates to the forgot-password flow, carrying along the typed email', async () => {
         renderSignIn()
 
