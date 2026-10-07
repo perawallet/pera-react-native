@@ -73,6 +73,7 @@ export const ethereumDescriptor: ChainDescriptor = {
             secp256k1: (account, keyIndex) =>
                 `m/44'/60'/${account}'/0/${keyIndex}`,
         },
+        rawKeySchemes: ['secp256k1'],
     },
     protocol: {
         feeModel: 'gas',

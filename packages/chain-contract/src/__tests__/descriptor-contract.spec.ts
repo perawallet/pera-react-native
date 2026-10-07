@@ -71,6 +71,7 @@ const fixture: ChainDescriptor = {
             ed25519: (account, keyIndex) =>
                 `m/44'/283'/${account}'/0'/${keyIndex}'`,
         },
+        rawKeySchemes: [],
     },
     protocol: {
         feeModel: 'flat',
