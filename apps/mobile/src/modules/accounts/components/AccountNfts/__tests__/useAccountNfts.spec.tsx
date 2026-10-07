@@ -15,6 +15,8 @@ import type { MutableRefObject } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type { PWFlatListRef } from '@components/core'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useAccountNfts } from '../useAccountNfts'
 
 const mockNavigate = vi.fn()
@@ -174,6 +176,7 @@ describe('useAccountNfts', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockNavigate.mockReset()
         mockRefreshAccounts.mockResolvedValue(undefined)
         mockSortMode = 'titleAsc'
@@ -632,6 +635,14 @@ describe('useAccountNfts', () => {
     })
 
     describe('canOptIn', () => {
+        it('returns false for a signing account while manageAssets is off', () => {
+            mockUseCanSignWith.mockReturnValue(true)
+            setCapabilityOverrides({ manageAssets: false })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.canOptIn).toBe(false)
+        })
+
         it('returns true for signing accounts', () => {
             mockUseCanSignWith.mockReturnValue(true)
             const { result } = renderHook(() => useAccountNfts())

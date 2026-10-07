@@ -24,6 +24,11 @@ vi.mock('../../account-discovery', () => ({
         mockBaseDiscoverRekeyedAccounts(...args),
 }))
 
+const rekey = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsRekeyAvailable', () => ({
+    useIsRekeyAvailable: () => rekey.isAvailable,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
@@ -31,6 +36,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        rekey.isAvailable = true
         mockBaseDiscoverAccounts.mockResolvedValue(['acc'])
         mockBaseDiscoverRekeyedAccounts.mockResolvedValue(['rekeyed'])
     })
@@ -95,6 +101,21 @@ describe('useAccountDiscovery', () => {
                 accountAddresses: ['A', 'B'],
             })
             expect(discovered).toEqual(['rekeyed'])
+        })
+
+        it('finds nothing, without scanning, while rekey is unavailable', async () => {
+            rekey.isAvailable = false
+            const { result } = renderHook(() => useAccountDiscovery())
+
+            let discovered: unknown
+            await act(async () => {
+                discovered = await result.current.discoverRekeyedAccounts({
+                    accountAddresses: ['A'],
+                })
+            })
+
+            expect(discovered).toEqual([])
+            expect(mockBaseDiscoverRekeyedAccounts).not.toHaveBeenCalled()
         })
     })
 })

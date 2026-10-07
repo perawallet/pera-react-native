@@ -61,6 +61,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     getArc59Config: mockGetArc59Config,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))

@@ -20,6 +20,8 @@ import type {
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { MediaPermissionDeniedError } from '@utils/mediaErrors'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
@@ -224,6 +226,7 @@ describe('useCollectibleDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         Object.assign(mockCapabilities, { inAppWebView: true })
         mockGetImageBase64.mockResolvedValue('base64data')
         mockSaveImageToDevice.mockResolvedValue(undefined)
@@ -805,4 +808,14 @@ describe('useCollectibleDetail', () => {
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
     })
+
+    it('offers opting out only while the manageAssets capability is on', () => {
+        const { result } = renderHook(() => useCollectibleDetail('123'))
+        expect(result.current.canManageAssets).toBe(true)
+
+        act(() => setCapabilityOverrides({ manageAssets: false }))
+
+        expect(result.current.canManageAssets).toBe(false)
+    })
+
 })
