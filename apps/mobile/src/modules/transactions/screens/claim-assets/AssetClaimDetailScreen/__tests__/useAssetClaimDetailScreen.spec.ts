@@ -13,6 +13,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useAssetClaimDetailScreen } from '../useAssetClaimDetailScreen'
 
 const mockPush = vi.fn()
@@ -160,6 +162,19 @@ describe('useAssetClaimDetailScreen', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+    })
+
+    it('offers the fund tab only while the onramp capability is on', () => {
+        useRemoteConfigStore.getState().resetState()
+        const { result, rerender } = renderHook(() =>
+            useAssetClaimDetailScreen(),
+        )
+        expect(result.current.canBuy).toBe(true)
+
+        act(() => setCapabilityOverrides({ onramp: false }))
+        rerender()
+
+        expect(result.current.canBuy).toBe(false)
     })
 
     it('never navigates to processing while the claim is blocked', () => {
