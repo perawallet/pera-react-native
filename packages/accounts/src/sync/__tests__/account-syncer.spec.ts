@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('../../db', () => ({
     upsertAccountBalance: vi.fn(),
+    upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: vi.fn().mockResolvedValue(true),
     getAccountBalance: vi.fn().mockResolvedValue(undefined),
     getAccountHoldings: vi.fn().mockResolvedValue([]),
@@ -38,6 +39,7 @@ vi.mock('../../db', () => ({
 describe('fetchAndPersistAccount', () => {
     let fetchAndPersistAccount: typeof import('../account-syncer').fetchAndPersistAccount
     let useAccountsStore: typeof import('../../store').useAccountsStore
+    let useAccountChainStateStore: typeof import('../../store/accountChainState').useAccountChainStateStore
 
     beforeEach(async () => {
         vi.resetModules()
@@ -49,12 +51,22 @@ describe('fetchAndPersistAccount', () => {
         ).registerFakeAccountsChain({
             fetchAccountState: async () => ({
                 nativeBalance: new Decimal(0),
+                nativeBalanceBaseUnits: new Decimal(0),
                 minBalance: new Decimal(0),
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
                 status: 'Offline',
                 authAddress: 'S',
+                chainState: {
+                    family: 'algorand',
+                    authAddress: 'S',
+                    minBalance: new Decimal(0),
+                    status: 'Offline',
+                    totalAssetsOptedIn: 0,
+                    totalCreatedAssets: 0,
+                    totalAppsOptedIn: 0,
+                },
                 holdings: [],
                 observedRound: null,
             }),
@@ -62,6 +74,9 @@ describe('fetchAndPersistAccount', () => {
         fetchAndPersistAccount = (await import('../account-syncer'))
             .fetchAndPersistAccount
         useAccountsStore = (await import('../../store')).useAccountsStore
+        useAccountChainStateStore = (
+            await import('../../store/accountChainState')
+        ).useAccountChainStateStore
         useAccountsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([
             {
@@ -81,5 +96,18 @@ describe('fetchAndPersistAccount', () => {
         // The sync's network is threaded into the per-network state, not
         // just the active-network mirror.
         expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
+    })
+
+    it('writes the chain-state slice and keeps its reference on an unchanged sync', async () => {
+        const mainnetKey = 'algorand/mainnet' as never
+        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        const first = useAccountChainStateStore.getState().states[mainnetKey]?.A
+
+        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        const second =
+            useAccountChainStateStore.getState().states[mainnetKey]?.A
+
+        expect(first).toMatchObject({ authAddress: 'S' })
+        expect(second).toBe(first)
     })
 })

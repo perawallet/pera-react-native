@@ -24,12 +24,13 @@ export const SettingsDebugToolsScreen = () => {
     } = useSettingsDebugToolsScreen()
 
     return (
-        <PWScreen>
+        <PWScreen testID='debug_tools_screen'>
             {isFeatureFlagsAvailable && (
                 <PWListItem
                     onPress={() => handleNavigate('FeatureFlags')}
                     icon='sliders'
                     title={t('screens.feature_flags')}
+                    testID='debug_tools_feature_flags_item'
                 />
             )}
             <PWListItem

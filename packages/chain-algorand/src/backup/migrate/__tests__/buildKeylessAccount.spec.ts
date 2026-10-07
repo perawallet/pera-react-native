@@ -26,7 +26,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     },
 }))
 
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    useAccountChainStateStore,
+} from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     multisigChainAdapters,
@@ -37,6 +40,7 @@ import {
     buildWatchAccount,
     buildLedgerAccount,
     buildMultiSigAccount,
+    recordLegacyAuthority,
 } from '../buildKeylessAccount'
 
 const buildLegacyAccount = (
@@ -62,6 +66,7 @@ const deriveAddress = vi.fn(
 )
 
 beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
     deriveAddress.mockClear()
     multisigChainAdapters.reset()
     multisigChainAdapters.register({
@@ -306,6 +311,36 @@ describe('buildMultiSigAccount', () => {
 
         expect(() => buildMultiSigAccount(legacy)).toThrow(
             /Could not derive multisig threshold for ADDR_DOES_NOT_MATCH/,
+        )
+    })
+})
+
+describe('recordLegacyAuthority', () => {
+    const slice = () => useAccountChainStateStore.getState().states
+
+    it("writes the legacy auth address under the active network's scope", () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'AUTH' }))
+
+        expect(slice()['algorand/mainnet' as never]?.ADDR_LEGACY).toMatchObject(
+            {
+                family: 'algorand',
+                authAddress: 'AUTH',
+            },
+        )
+    })
+
+    it('writes nothing without an auth address', () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: null }))
+
+        expect(slice()).toEqual({})
+    })
+
+    it('does not overwrite an existing entry', () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'FIRST' }))
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'SECOND' }))
+
+        expect(slice()['algorand/mainnet' as never]?.ADDR_LEGACY).toMatchObject(
+            { authAddress: 'FIRST' },
         )
     })
 })

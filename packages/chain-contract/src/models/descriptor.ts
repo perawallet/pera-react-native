@@ -30,6 +30,8 @@ export interface ChainSigning {
     schemes: readonly SigningScheme[]
     /** Partial: a scheme whose keys are not path-derived (e.g. Algorand's Falcon) has none. */
     derivationPaths: Partial<Record<SigningScheme, DerivationPathBuilder>>
+    /** Schemes whose keys a user can import from raw private-key bytes; a subset of `schemes`. */
+    rawKeySchemes: readonly SigningScheme[]
 }
 
 export interface ChainProtocolFacts {

@@ -50,6 +50,9 @@ export const TransactionsSchema = sqliteTable(
         swapGroupDetailJson: text('swap_group_detail_json'),
         interpretedMeaningJson: text('interpreted_meaning_json'),
         balanceImpactsJson: text('balance_impacts_json'),
+        chainData: text('chain_data'),
+        assetRef: text('asset_ref'),
+        summaryJson: text('summary_json'),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [

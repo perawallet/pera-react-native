@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     upsertAccountBalance,
+    upsertAccountChainState,
     refreshAccountHoldings,
     getAccountBalance,
     getAccountHoldings,
@@ -27,6 +28,7 @@ import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
 import { useAccountsStore } from '../store'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { accountsAdapterFor } from '../chain-adapter'
+import { useAccountChainStateStore } from '../store/accountChainState'
 import {
     logger,
     type Network,
@@ -150,6 +152,7 @@ async function doFetchAndPersistAccount(
     // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
     const scope = scopeForLegacyNetwork(network)
+    const adapter = accountsAdapterFor(network)
     const prior = await getAccountBalance({ accountAddress: address, scope })
     const priorResourceCount = prior
         ? prior.totalAssetsOptedIn +
@@ -166,9 +169,11 @@ async function doFetchAndPersistAccount(
         totalAppsOptedIn = 0,
         status = 'Offline',
         authAddress,
+        nativeBalanceBaseUnits,
+        chainState,
         holdings,
         observedRound,
-    } = await accountsAdapterFor(network).fetchAccountState(address, scope, {
+    } = await adapter.fetchAccountState(address, scope, {
         priorResourceCount,
     })
 
@@ -197,6 +202,29 @@ async function doFetchAndPersistAccount(
         status,
         authAddress,
     })
+    // A failed chain-state write must not skip the rekey mirror and holdings
+    // refresh below; the next sync rewrites the row.
+    try {
+        await upsertAccountChainState({
+            accountAddress: address,
+            scope,
+            nativeBalance: nativeBalanceBaseUnits,
+            chainData: chainState,
+        })
+    } catch (error) {
+        logger.warn('Account chain-state write failed', {
+            address,
+            network,
+            error:
+                error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+        })
+    }
+
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(scope, address, chainState)
 
     useAccountsStore
         .getState()

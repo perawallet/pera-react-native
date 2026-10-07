@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { beforeEach, describe, test, expect } from 'vitest'
+import { Decimal } from 'decimal.js'
+import type {
+    AccountChainState,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useAccountChainStateStore } from '../../store/accountChainState'
 import { DerivationTypes, type WalletAccount } from '../../models'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import {
@@ -174,6 +179,22 @@ describe('accessors on every stored shape', () => {
 })
 
 describe('authorityOf', () => {
+    beforeEach(() => {
+        useAccountChainStateStore.getState().resetState()
+    })
+
+    const chainState = (authAddress?: string): AccountChainState => ({
+        family: 'algorand',
+        minBalance: new Decimal(100000),
+        status: 'Offline',
+        totalAssetsOptedIn: 0,
+        totalCreatedAssets: 0,
+        totalAppsOptedIn: 0,
+        ...(authAddress ? { authAddress } : {}),
+    })
+
+    const slice = useAccountChainStateStore.getState
+
     const rekeyed = (patch: Partial<WalletAccount>): WalletAccount => ({
         ...buildTestAccount('watch'),
         ...patch,
@@ -205,10 +226,35 @@ describe('authorityOf', () => {
         expect(authorityOf(buildTestAccount('watch'), mainnet)).toBeNull()
         expect(
             authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), {
-                chainId: 'other',
-                networkId: 'x',
-            } as unknown as ChainScope),
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
         ).toBeNull()
+    })
+
+    test('reads the slice per scope, not the stale mirror', () => {
+        const account = rekeyed({ rekeyAddress: 'STALE' })
+        const address = addressOn(account, testnet) as string
+        slice().setAccountChainState(testnet, address, chainState('AUTH'))
+        slice().setAccountChainState(mainnet, address, chainState())
+
+        expect(authorityOf(account, testnet)).toBe('AUTH')
+        expect(authorityOf(account, mainnet)).toBeNull()
+    })
+
+    test('a slice entry beats the per-network map for the same scope', () => {
+        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'OLD' } })
+        const address = addressOn(account, mainnet) as string
+        slice().setAccountChainState(mainnet, address, chainState('NEW'))
+
+        expect(authorityOf(account, mainnet)).toBe('NEW')
+    })
+
+    test("another address's entry does not answer for this account", () => {
+        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'MAP' } })
+        slice().setAccountChainState(mainnet, 'OTHER', chainState('AUTH'))
+
+        expect(authorityOf(account, mainnet)).toBe('MAP')
     })
 })
 

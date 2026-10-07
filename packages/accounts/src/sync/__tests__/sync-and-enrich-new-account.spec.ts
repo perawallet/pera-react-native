@@ -40,6 +40,7 @@ const mockGetAccountHoldings = vi.fn()
 vi.mock('../../db', () => ({
     upsertAccountBalance: (...args: unknown[]) =>
         mockUpsertAccountBalance(...args),
+    upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
@@ -62,12 +63,21 @@ describe('syncAndEnrichNewAccount', () => {
         mockGetAccountBalance.mockResolvedValue(undefined)
         fetchAccountState().mockResolvedValue({
             nativeBalance: new Decimal(1),
+            nativeBalanceBaseUnits: new Decimal(1_000_000),
             minBalance: new Decimal('0.1'),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             status: 'Offline',
             authAddress: null,
+            chainState: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Offline',
+                totalAssetsOptedIn: 1,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
             holdings: [
                 {
                     assetId: '0',

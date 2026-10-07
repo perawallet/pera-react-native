@@ -20,6 +20,7 @@ import {
     type ChainId,
     type ChainScope,
     type DeriveOpts,
+    type AccountChainState,
     type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -77,6 +78,10 @@ export type AccountHoldingSnapshot = {
 export type AccountStateSnapshot = {
     /** Display units of the chain's native asset. */
     nativeBalance: Decimal
+    /** Base units of the chain's native asset. */
+    nativeBalanceBaseUnits: Decimal
+    /** Persisted to `account_chain_state`; amounts inside are in base units. */
+    chainState: AccountChainState
     /** Display units of the chain's native asset; zero on a chain with no reserve. */
     minBalance: Decimal
     // Algorand's resource counts and participation status. A chain without
@@ -95,6 +100,19 @@ export type AccountStateSnapshot = {
      */
     observedRound: Nullable<number>
 }
+
+/** An `account_balances` row, or a legacy authority with no row. */
+export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
+    Partial<
+        Pick<
+            AccountStateSnapshot,
+            | 'minBalance'
+            | 'status'
+            | 'totalAssetsOptedIn'
+            | 'totalCreatedAssets'
+            | 'totalAppsOptedIn'
+        >
+    >
 
 export type AccountStateReadHint = {
     /** Resources the account held at its last sync; 0 when never synced. */
@@ -166,6 +184,13 @@ export interface AccountsChainAdapter {
         scope: ChainScope,
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
+    /**
+     * The chain's `AccountChainState` for state read back from storage; a sync
+     * already carries it as `AccountStateSnapshot.chainState`. A field left out
+     * takes its `account_balances` column default. `minBalance` arrives in
+     * display units.
+     */
+    toChainState(observed: ObservedChainState): AccountChainState
     /**
      * The `address` an `AccountInformation` carries for `address`; throws when
      * `address` isn't valid on this chain.

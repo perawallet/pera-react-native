@@ -66,7 +66,7 @@ const descriptor: ChainDescriptor = {
         name: 'Algo',
         decimals: 6,
     },
-    signing: { schemes: ['ed25519'], derivationPaths: {} },
+    signing: { schemes: ['ed25519'], derivationPaths: {}, rawKeySchemes: [] },
     protocol: {
         feeModel: 'flat',
         hasAccountNonce: false,

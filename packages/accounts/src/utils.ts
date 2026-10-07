@@ -14,7 +14,10 @@ import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
     type AccountCustody,
@@ -243,3 +246,14 @@ export const resolveImportAccountType = (
 
     return { success: false, wordCount }
 }
+
+// A chain whose codec isn't registered (a build-gated chain) falls back to
+// string equality rather than throwing on every account write.
+export const isSameAddress = (
+    chainId: ChainId,
+    a: string,
+    b: string,
+): boolean =>
+    addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).areEqual(a, b)
+        : a === b

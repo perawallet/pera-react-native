@@ -23,6 +23,8 @@ import m0007 from './0007_add_asset_sender.sql?raw'
 import m0008 from './0008_scope_key_network.sql?raw'
 import m0009 from './0009_transaction_identity.sql?raw'
 import m0010 from './0010_text_asset_ids.sql?raw'
+import m0011 from './0011_transactions_chain_data.sql?raw'
+import m0012 from './0012_account_chain_state.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -57,4 +59,12 @@ export const migrations: MigrationConfig = {
     // column: a decimal-mapped id parsed `0x…` as hex. The first-tick force sync
     // refills them; account_balances and account_transactions are kept.
     '0010_text_asset_ids': m0010,
+    // Nullable, and not backfilled: the syncer only fetches transactions newer
+    // than the newest cached one, so a row cached before this keeps a NULL
+    // chain_data until it is re-upserted. Readers must fall back to the old
+    // columns for such rows.
+    '0011_transactions_chain_data': m0011,
+    // Created empty rather than backfilled from account_balances: the account
+    // syncer writes both tables, so the next pass fills it.
+    '0012_account_chain_state': m0012,
 }
