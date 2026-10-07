@@ -101,7 +101,7 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
-/** One observed read, from a sync or an `account_balances` row. */
+/** An `account_balances` row, or a legacy authority with no row. */
 export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
     Partial<
         Pick<
@@ -185,7 +185,8 @@ export interface AccountsChainAdapter {
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
     /**
-     * The chain's `AccountChainState` for an observed read; a field left out
+     * The chain's `AccountChainState` for state read back from storage; a sync
+     * already carries it as `AccountStateSnapshot.chainState`. A field left out
      * takes its `account_balances` column default. `minBalance` arrives in
      * display units.
      */

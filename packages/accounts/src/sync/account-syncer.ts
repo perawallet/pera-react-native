@@ -222,18 +222,9 @@ async function doFetchAndPersistAccount(
         })
     }
 
-    useAccountChainStateStore.getState().setAccountChainState(
-        scope,
-        address,
-        adapter.toChainState({
-            minBalance,
-            status,
-            totalAssetsOptedIn,
-            totalCreatedAssets,
-            totalAppsOptedIn,
-            authAddress,
-        }),
-    )
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(scope, address, chainState)
 
     useAccountsStore
         .getState()

@@ -26,6 +26,10 @@ import { fetchAndPersistAccount } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
 import { getAccountBalance, getAccountChainStateRow } from '../../db'
 import {
+    getAccountChainState,
+    useAccountChainStateStore,
+} from '../../store/accountChainState'
+import {
     fakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
@@ -98,6 +102,7 @@ describe('fetchAndPersistAccount dual-write', () => {
         vi.mocked(fakeAccountsChain().adapter.fetchAccountState)
             .mockReset()
             .mockResolvedValue(snapshot())
+        useAccountChainStateStore.getState().resetState()
     })
 
     afterEach(() => {
@@ -122,6 +127,14 @@ describe('fetchAndPersistAccount dual-write', () => {
             totalCreatedAssets: balance.totalCreatedAssets,
             totalAppsOptedIn: balance.totalAppsOptedIn,
         })
+    })
+
+    it('hands the chain-state slice the same variant it persists', async () => {
+        await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        const { chainData } = await readBothTables()
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toEqual(chainData)
+        expect(fakeAccountsChain().adapter.toChainState).not.toHaveBeenCalled()
     })
 
     it('keeps both tables in step when a later sync changes the account', async () => {
