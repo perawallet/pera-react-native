@@ -20,7 +20,6 @@ import {
     useOnChainAccountInformationQuery,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -29,6 +28,7 @@ import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
 
@@ -79,9 +79,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account?.type === 'quantum',
 }))
 
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: vi.fn(),
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useLocalKeyTransactionSigner: vi.fn(),
@@ -204,7 +204,7 @@ describe('useTransactionConfirmationScreen', () => {
         })
         ;(useSendFunds as Mock).mockReturnValue(mockSendFundsState)
         ;(useSignerFor as Mock).mockReturnValue(null)
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
+        capabilityState.reset()
     })
 
     describe('isReady state', () => {
@@ -838,7 +838,7 @@ describe('useTransactionConfirmationScreen', () => {
         })
 
         it('does not flag a quantum fee when the feature flag is disabled', () => {
-            ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+            capabilityState.turnOff('quantumAccounts')
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
                 type: 'quantum',

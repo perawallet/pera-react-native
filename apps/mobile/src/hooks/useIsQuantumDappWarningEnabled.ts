@@ -14,13 +14,15 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { useIsQuantumAccountsEnabled } from './useIsQuantumAccountsEnabled'
+import { useCapability } from './useCapability'
 
-// Defaults ON so it can be switched *off* once dApps support PQ. Composes
-// useIsQuantumAccountsEnabled to inherit the platform capability gate.
+// Defaults ON so it can be switched *off* once dApps support PQ.
 export const useIsQuantumDappWarningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const isQuantumEnabled = useIsQuantumAccountsEnabled()
+    const isQuantumEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
     return (
         isQuantumEnabled &&
         remoteConfig.getBooleanValue(

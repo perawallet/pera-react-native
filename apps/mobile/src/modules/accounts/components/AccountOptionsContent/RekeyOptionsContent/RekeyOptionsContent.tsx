@@ -14,7 +14,7 @@ import { PWSheetLayout, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { useStyles } from './styles'
 
 /**
@@ -27,7 +27,10 @@ export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<RekeyTargetType>()
-    const isQuantumEnabled = useIsQuantumAccountsEnabled()
+    const isQuantumEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
 
     return (
         <PWSheetLayout

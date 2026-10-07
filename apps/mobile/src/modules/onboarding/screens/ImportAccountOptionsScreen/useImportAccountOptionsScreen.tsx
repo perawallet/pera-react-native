@@ -23,7 +23,7 @@ import { trackEvent, OnboardingEvent } from '@analytics'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useToast } from '@hooks/useToast'
@@ -57,7 +57,10 @@ export const useImportAccountOptionsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { chooseRestoreRoute, isReadingCredentials } =
             useRestoreBackupOptions()
-        const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+        const isQuantumAccountsEnabled = useCapability({
+            platform: 'quantum',
+            anyChain: 'quantumAccounts',
+        })
         const isCloudBackupEnabled = useIsCloudBackupEnabled()
         const {
             isReady: isLedgerSupportKnown,

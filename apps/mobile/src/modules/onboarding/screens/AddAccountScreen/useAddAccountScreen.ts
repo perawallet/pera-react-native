@@ -14,7 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { routeCapabilities } from '@routes/capabilities'
 import {
     useCreateAccount,
@@ -59,7 +59,10 @@ export const useAddAccountScreen = () => {
     const { isAuthenticated } = useCardSession()
     const hasCardSession = isDebug || isStaging ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
-    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+    const isQuantumAccountsEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
 
     const {
         isOpen: isCreatingAccount,

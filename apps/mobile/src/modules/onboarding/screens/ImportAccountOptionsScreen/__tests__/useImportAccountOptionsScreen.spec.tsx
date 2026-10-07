@@ -23,6 +23,7 @@ import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,
 } from '../useImportAccountOptionsScreen'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -114,10 +115,16 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const mockQuantumFlag = vi.hoisted(() => ({ enabled: false }))
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 const mockCloudBackupFlag = vi.hoisted(() => ({ enabled: false }))
 vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
@@ -168,7 +175,7 @@ describe('useImportAccountOptionsScreen', () => {
         mockHandoff.shouldHandOff = false
         mockCapabilities.ledgerUsb = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
-        mockQuantumFlag.enabled = false
+        setQuantumEnabled(false)
         mockCloudBackupFlag.enabled = false
         mockCloudBackupState.isConfigured = false
         mockLedgerSupport.isReady = false
@@ -498,7 +505,7 @@ describe('useImportAccountOptionsScreen', () => {
 
     describe('quantum import option', () => {
         it('is absent when the quantum accounts flag is off', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -508,13 +515,13 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('is present with the quantum title when the flag is on and adds exactly one option', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
             const { result: offResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
             const offLength = offResult.current.options.length
 
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
             const { result: onResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
@@ -531,7 +538,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('navigates to ImportAccount with the quantum account type on press', () => {
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
