@@ -675,6 +675,7 @@ describe('0003-mint-passkey-main-key', () => {
             'rematerialize-passkey-credentials',
             'mint-passkey-main-key',
             'stamp-quantum-derivation',
+            'url-safe-passkey-user-id',
         ])
     })
 })
