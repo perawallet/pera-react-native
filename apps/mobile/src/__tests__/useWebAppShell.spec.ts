@@ -30,6 +30,9 @@ const mocks = vi.hoisted(() => ({
         .mockResolvedValue(undefined),
     getDatabase: vi.fn(() => ({ __db: true })),
     seedNativeAssets: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    hydrateAccountChainStates: vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined),
     initializeSyncService: vi.fn(),
     syncStart: vi.fn(),
     syncStop: vi.fn(),
@@ -77,6 +80,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useHasAccounts: () => mocks.hasAccounts,
+        hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
     }
 })
 
@@ -185,6 +189,7 @@ describe('useWebAppShell', () => {
         vi.clearAllMocks()
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
@@ -425,6 +430,9 @@ describe('useWebAppShell', () => {
         mocks.seedNativeAssets.mockImplementation(async () => {
             callOrder.push('seedNativeAssets')
         })
+        mocks.hydrateAccountChainStates.mockImplementation(async () => {
+            callOrder.push('hydrateAccountChainStates')
+        })
 
         const { result } = renderHook(() => useWebAppShell())
 
@@ -434,6 +442,7 @@ describe('useWebAppShell', () => {
             'keystoreReady',
             'initializeDatabase',
             'seedNativeAssets',
+            'hydrateAccountChainStates',
         ])
         expect(mocks.seedNativeAssets).toHaveBeenCalledWith(
             mocks.getDatabase.mock.results[0]?.value,

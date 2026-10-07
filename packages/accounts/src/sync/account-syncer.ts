@@ -28,6 +28,7 @@ import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
 import { useAccountsStore } from '../store'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { accountsAdapterFor } from '../chain-adapter'
+import { useAccountChainStateStore } from '../store/accountChainState'
 import {
     logger,
     type Network,
@@ -151,6 +152,7 @@ async function doFetchAndPersistAccount(
     // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
     const scope = scopeForLegacyNetwork(network)
+    const adapter = accountsAdapterFor(network)
     const prior = await getAccountBalance({ accountAddress: address, scope })
     const priorResourceCount = prior
         ? prior.totalAssetsOptedIn +
@@ -171,7 +173,7 @@ async function doFetchAndPersistAccount(
         chainState,
         holdings,
         observedRound,
-    } = await accountsAdapterFor(network).fetchAccountState(address, scope, {
+    } = await adapter.fetchAccountState(address, scope, {
         priorResourceCount,
     })
 
@@ -219,6 +221,19 @@ async function doFetchAndPersistAccount(
                     : error,
         })
     }
+
+    useAccountChainStateStore.getState().setAccountChainState(
+        scope,
+        address,
+        adapter.toChainState({
+            minBalance,
+            status,
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn,
+            authAddress,
+        }),
+    )
 
     useAccountsStore
         .getState()

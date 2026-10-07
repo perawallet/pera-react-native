@@ -20,6 +20,7 @@ import {
     type ChainId,
     type ChainScope,
     type DeriveOpts,
+    type AccountChainState,
     type AccountInformation,
     type AccountChainState,
 } from '@perawallet/wallet-core-chain-contract'
@@ -101,6 +102,19 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
+/** One observed read, from a sync or an `account_balances` row. */
+export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
+    Partial<
+        Pick<
+            AccountStateSnapshot,
+            | 'minBalance'
+            | 'status'
+            | 'totalAssetsOptedIn'
+            | 'totalCreatedAssets'
+            | 'totalAppsOptedIn'
+        >
+    >
+
 export type AccountStateReadHint = {
     /** Resources the account held at its last sync; 0 when never synced. */
     priorResourceCount: number
@@ -171,6 +185,12 @@ export interface AccountsChainAdapter {
         scope: ChainScope,
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
+    /**
+     * The chain's `AccountChainState` for an observed read; a field left out
+     * takes its `account_balances` column default. `minBalance` arrives in
+     * display units.
+     */
+    toChainState(observed: ObservedChainState): AccountChainState
     /**
      * The `address` an `AccountInformation` carries for `address`; throws when
      * `address` isn't valid on this chain.

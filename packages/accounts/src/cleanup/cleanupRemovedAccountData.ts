@@ -28,6 +28,7 @@ import {
     deleteAccountChainState,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
+import { useAccountChainStateStore } from '../store/accountChainState'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -64,6 +65,9 @@ export async function cleanupRemovedAccountData({
     await deleteAllAssetHoldingsForAccount({ db, accountAddress })
     await deleteAccountBalance({ db, accountAddress })
     await deleteAccountChainState({ db, accountAddress })
+    useAccountChainStateStore
+        .getState()
+        .removeAccountChainStates(accountAddress)
 
     const prunedAssetIdsByNetwork: Record<string, string[]> = {}
 
