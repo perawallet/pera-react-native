@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     upsertAccountBalance,
+    upsertAccountChainState,
     refreshAccountHoldings,
     getAccountBalance,
     getAccountHoldings,
@@ -168,6 +169,8 @@ async function doFetchAndPersistAccount(
         totalAppsOptedIn = 0,
         status = 'Offline',
         authAddress,
+        nativeBalanceBaseUnits,
+        chainState,
         holdings,
         observedRound,
     } = await adapter.fetchAccountState(address, scope, {
@@ -199,19 +202,29 @@ async function doFetchAndPersistAccount(
         status,
         authAddress,
     })
+    // A failed chain-state write must not skip the rekey mirror and holdings
+    // refresh below; the next sync rewrites the row.
+    try {
+        await upsertAccountChainState({
+            accountAddress: address,
+            scope,
+            nativeBalance: nativeBalanceBaseUnits,
+            chainData: chainState,
+        })
+    } catch (error) {
+        logger.warn('Account chain-state write failed', {
+            address,
+            network,
+            error:
+                error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+        })
+    }
 
-    useAccountChainStateStore.getState().setAccountChainState(
-        scope,
-        address,
-        adapter.toChainState({
-            minBalance,
-            status,
-            totalAssetsOptedIn,
-            totalCreatedAssets,
-            totalAppsOptedIn,
-            authAddress,
-        }),
-    )
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(scope, address, chainState)
 
     useAccountsStore
         .getState()

@@ -26,5 +26,11 @@ export {
     type RunMigrationsOptions,
 } from './migrator'
 export { migrations } from './migrations'
-export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
+export {
+    decimalColumn,
+    decimalJsonColumn,
+    decimalSum,
+    decimalMax,
+    decimalMin,
+} from './columns'
 export { DB_WRITE_CHUNK_SIZE, forEachWriteChunk } from './chunkedWrite'

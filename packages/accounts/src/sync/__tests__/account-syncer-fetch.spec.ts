@@ -26,12 +26,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 const mockUpsertAccountBalance = vi.fn()
+const mockUpsertAccountChainState = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountBalance = vi.fn()
 
 vi.mock('../../db', () => ({
     upsertAccountBalance: (...args: unknown[]) =>
         mockUpsertAccountBalance(...args),
+    upsertAccountChainState: (...args: unknown[]) =>
+        mockUpsertAccountChainState(...args),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
@@ -42,12 +45,22 @@ const snapshot = (
     overrides: Partial<AccountStateSnapshot> = {},
 ): AccountStateSnapshot => ({
     nativeBalance: new Decimal('1.5'),
+    nativeBalanceBaseUnits: new Decimal(1_500_000),
     minBalance: new Decimal('0.1'),
     totalAssetsOptedIn: 2,
     totalCreatedAssets: 1,
     totalAppsOptedIn: 0,
     status: 'Online',
     authAddress: 'REKEY_ADDR',
+    chainState: {
+        family: 'algorand',
+        authAddress: 'REKEY_ADDR',
+        minBalance: new Decimal(100_000),
+        status: 'Online',
+        totalAssetsOptedIn: 2,
+        totalCreatedAssets: 1,
+        totalAppsOptedIn: 0,
+    },
     holdings: [
         { assetId: '0', amount: new Decimal(1_500_000), isFrozen: false },
         { assetId: '10', amount: new Decimal(500), isFrozen: true },
@@ -63,6 +76,7 @@ describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUpsertAccountBalance.mockResolvedValue(undefined)
+        mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountBalance.mockResolvedValue(undefined)
         fetchAccountState().mockResolvedValue(snapshot())
@@ -93,6 +107,12 @@ describe('fetchAndPersistAccount', () => {
             minBalance: new Decimal('0.1'),
             status: 'Online',
             authAddress: 'REKEY_ADDR',
+        })
+        expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
+            accountAddress: 'ADDR1',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            nativeBalance: new Decimal(1_500_000),
+            chainData: snapshot().chainState,
         })
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -142,7 +162,26 @@ describe('fetchAndPersistAccount', () => {
         ).rejects.toThrow('429')
 
         expect(mockUpsertAccountBalance).not.toHaveBeenCalled()
+        expect(mockUpsertAccountChainState).not.toHaveBeenCalled()
         expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
+    })
+
+    it('still mirrors the rekey and refreshes holdings when the chain-state write fails', async () => {
+        mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
+        const updateRekey = vi.spyOn(
+            useAccountsStore.getState(),
+            'updateAccountRekeyAddress',
+        )
+
+        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(updateRekey).toHaveBeenCalledWith(
+            'ADDR1',
+            'REKEY_ADDR',
+            'mainnet',
+        )
+        expect(mockRefreshAccountHoldings).toHaveBeenCalled()
+        expect(result.changed).toBe(true)
     })
 
     it('reports no change when balance and holdings are unchanged', async () => {

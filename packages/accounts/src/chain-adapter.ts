@@ -78,6 +78,10 @@ export type AccountHoldingSnapshot = {
 export type AccountStateSnapshot = {
     /** Display units of the chain's native asset. */
     nativeBalance: Decimal
+    /** Base units of the chain's native asset. */
+    nativeBalanceBaseUnits: Decimal
+    /** Persisted to `account_chain_state`; amounts inside are in base units. */
+    chainState: AccountChainState
     /** Display units of the chain's native asset; zero on a chain with no reserve. */
     minBalance: Decimal
     // Algorand's resource counts and participation status. A chain without
@@ -97,7 +101,7 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
-/** One observed read, from a sync or an `account_balances` row. */
+/** An `account_balances` row, or a legacy authority with no row. */
 export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
     Partial<
         Pick<
@@ -181,7 +185,8 @@ export interface AccountsChainAdapter {
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
     /**
-     * The chain's `AccountChainState` for an observed read; a field left out
+     * The chain's `AccountChainState` for state read back from storage; a sync
+     * already carries it as `AccountStateSnapshot.chainState`. A field left out
      * takes its `account_balances` column default. `minBalance` arrives in
      * display units.
      */

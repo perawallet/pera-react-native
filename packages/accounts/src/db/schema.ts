@@ -12,8 +12,14 @@
 
 import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { decimalColumn } from '@perawallet/wallet-core-database'
+import type {
+    AccountChainState,
+    ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+} from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
@@ -58,6 +64,23 @@ export const AccountBalancesSchema = sqliteTable(
             .default(new Decimal(0)),
         status: text('status').notNull().default('Offline'),
         authAddress: text('auth_address'),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [
+        primaryKey({
+            columns: [table.accountAddress, table.network],
+        }),
+    ],
+)
+
+export const AccountChainStateSchema = sqliteTable(
+    'account_chain_state',
+    {
+        accountAddress: text('account_address').notNull(),
+        network: text('network').notNull().$type<ChainScopeKey>(),
+        /** Base units of the chain's native asset. */
+        nativeBalance: decimalColumn('native_balance').notNull(),
+        chainData: decimalJsonColumn<AccountChainState>('chain_data').notNull(),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [
