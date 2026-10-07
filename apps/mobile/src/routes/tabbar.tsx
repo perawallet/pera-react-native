@@ -23,6 +23,7 @@ import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 import { tabScreens } from './tab-screens'
 import { getTabTransition } from './tab-transitions'
 import { AccountDrawer } from '@modules/accounts'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import type { TabBarStackParamList } from './tab-types'
 
 export type { TabBarStackParamList } from './tab-types'
@@ -33,6 +34,7 @@ export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
     const { theme } = useTheme()
     const { width } = useWindowDimensions()
+    const isAllowed = useCapabilityCheck()
     return (
         // The drawer wraps the whole shell, tab bar included, so its panel is
         // full-height and the bar slides aside with the content it belongs to.
@@ -100,18 +102,20 @@ export const TabBarStackNavigator = () => {
                 })}
                 screenListeners={screenListeners}
             >
-                {tabScreens.map(descriptor => (
-                    <TabBarStack.Screen
-                        key={descriptor.name}
-                        name={descriptor.name}
-                        component={descriptor.component}
-                        layout={descriptor.layout}
-                        options={descriptor.options}
-                        listeners={{
-                            tabPress: () => trackEvent(descriptor.event),
-                        }}
-                    />
-                ))}
+                {tabScreens
+                    .filter(({ requires }) => !requires || isAllowed(requires))
+                    .map(descriptor => (
+                        <TabBarStack.Screen
+                            key={descriptor.name}
+                            name={descriptor.name}
+                            component={descriptor.component}
+                            layout={descriptor.layout}
+                            options={descriptor.options}
+                            listeners={{
+                                tabPress: () => trackEvent(descriptor.event),
+                            }}
+                        />
+                    ))}
             </TabBarStack.Navigator>
         </AccountDrawer>
     )
