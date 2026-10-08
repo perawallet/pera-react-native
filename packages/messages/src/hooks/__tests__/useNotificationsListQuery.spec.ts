@@ -189,6 +189,25 @@ describe('useNotificationsListQuery', () => {
         expect(fetchNotificationList).not.toHaveBeenCalled()
     })
 
+    it('no-ops refetch and fetchNextPage while the device has no id', async () => {
+        // The focus refetch bypasses `enabled`; without this guard it requested
+        // /v2/devices//notifications/ and got a 404 (Sentry PERA-EXTENSION-E).
+        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(fetchNotificationList).mockClear()
+        try {
+            const { result } = renderHook(() => useNotificationsListQuery(), {
+                wrapper: createWrapper(),
+            })
+
+            await result.current.refetch()
+            await result.current.fetchNextPage()
+
+            expect(fetchNotificationList).not.toHaveBeenCalled()
+        } finally {
+            vi.mocked(useDeviceID).mockReturnValue('test-device-id')
+        }
+    })
+
     it('passes only the cursor query param (not the full next URL) when fetching the next page', async () => {
         const nextCursor = 'cD0xMjM0NTY3'
         vi.mocked(fetchNotificationList).mockResolvedValueOnce({
