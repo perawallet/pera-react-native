@@ -11,8 +11,21 @@
  */
 
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+} from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 // Importing this file is the registration: specs that resolve signers need the
-// production Algorand rules registered under the chain the pipeline signs on.
+// production Algorand rules registered under the chain the pipeline signs on,
+// and its descriptor for the signing schemes.
 accountsChainAdapters.register(algorandAccountsAdapter)
+getProvider().chains.register(
+    algorandDescriptor,
+    Object.fromEntries(
+        CHAIN_CAPABILITIES.map(capability => [capability, false]),
+    ) as ChainCapabilities,
+)

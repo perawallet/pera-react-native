@@ -11,7 +11,7 @@
  */
 
 import type { SignRequest } from '../models'
-import type { ResolvedSignerType } from '../machine/context'
+import type { SignerCustody } from '../machine/utils/resolveSignerCredential'
 import type { TransportResult } from './types'
 
 export type SigningLifecycleEvent =
@@ -20,7 +20,7 @@ export type SigningLifecycleEvent =
     | {
           type: 'signing-started'
           request: SignRequest
-          signerType: ResolvedSignerType
+          signerType: SignerCustody
       }
     | {
           type: 'transport-result'

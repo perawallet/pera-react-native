@@ -13,11 +13,13 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 
 const mockSignTransactionsWithKey = vi.fn()
 const mockGetPQSigningInfo = vi.fn()
-const networkMock = vi.fn(() => ({ network: 'mainnet' }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -28,15 +30,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => networkMock(),
-}))
-
 import { SIGNING_KEY_DOMAIN } from '../../constants'
-import { localKeySignerChainAdapters } from '../../chain-adapter'
 import { registerFakeLocalKeySignerAdapter } from '../../__tests__/fakeLocalKeySignerAdapter'
 import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
 
@@ -46,11 +40,14 @@ const account = {
     custody: { kind: 'local', seed: 'algo25' },
 } as unknown as WalletAccount
 const group = [{ id: 'txn' }] as unknown as PeraTransaction[]
+const ALGORAND_MAINNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'mainnet',
+}
 
 describe('useLocalKeyTransactionSigner', () => {
     beforeEach(() => {
         mockSignTransactionsWithKey.mockReset()
-        networkMock.mockReturnValue({ network: 'mainnet' })
     })
 
     test('hands the registered adapter the account, indexes and group it was given and returns its result', async () => {
@@ -60,7 +57,12 @@ describe('useLocalKeyTransactionSigner', () => {
         })
         const { result } = renderHook(() => useLocalKeyTransactionSigner())
 
-        const out = await result.current.signTransactions(group, [0], account)
+        const out = await result.current.signTransactions(
+            group,
+            [0],
+            account,
+            ALGORAND_MAINNET,
+        )
 
         expect(out).toBe(signed)
         expect(adapter.signTransactions).toHaveBeenCalledWith(
@@ -78,7 +80,12 @@ describe('useLocalKeyTransactionSigner', () => {
         })
         const { result } = renderHook(() => useLocalKeyTransactionSigner())
 
-        await result.current.signTransactions(group, [0], account)
+        await result.current.signTransactions(
+            group,
+            [0],
+            account,
+            ALGORAND_MAINNET,
+        )
 
         const deps = vi.mocked(adapter.signTransactions).mock.calls[0][0]
         const payloads = [new Uint8Array([1])]
@@ -95,12 +102,14 @@ describe('useLocalKeyTransactionSigner', () => {
         ])
     })
 
-    test('rejects when no signer adapter is registered for the network chain', async () => {
-        localKeySignerChainAdapters.reset()
+    test("signs with the scope chain's adapter, never another chain's", async () => {
         const { result } = renderHook(() => useLocalKeyTransactionSigner())
 
         await expect(
-            result.current.signTransactions(group, [0], account),
+            result.current.signTransactions(group, [0], account, {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
         ).rejects.toThrow(/No local-key signer adapter is registered/)
     })
 })

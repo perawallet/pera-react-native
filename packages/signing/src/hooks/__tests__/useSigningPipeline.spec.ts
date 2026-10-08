@@ -409,7 +409,9 @@ describe('useSigningPipeline', () => {
                 matches: (s: string) => s === 'signing',
                 context: {
                     error: null,
-                    groupSignerTypes: new Map([['g0', 'localKey']]),
+                    groupSigners: new Map([
+                        ['g0', { custody: 'local', scheme: 'ed25519' }],
+                    ]),
                 },
             })
         })
@@ -430,7 +432,9 @@ describe('useSigningPipeline', () => {
                         custody: { kind: 'local', seed: 'algo25' },
                     },
                 ],
-                groupSignerTypes: new Map([['A123', 'localKey']]),
+                groupSigners: new Map([
+                    ['A123', { custody: 'local', scheme: 'ed25519' }],
+                ]),
                 request: {
                     id: 'r1',
                     type: 'transactions',
@@ -454,7 +458,7 @@ describe('useSigningPipeline', () => {
         const { result } = renderHook(() => useSigningPipeline())
 
         expect(result.current.resolved).not.toBeNull()
-        expect(result.current.resolved!.signerType).toBe('localKey')
+        expect(result.current.resolved!.signerType).toBe('local')
         expect(result.current.resolved!.kind).toMatchObject({
             type: 'transactions',
             isMultisigCosign: false,

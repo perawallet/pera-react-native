@@ -79,13 +79,19 @@ export const hardwareSignActor = fromCallback<
     HardwareSigningEvent,
     HardwareSigningInput
 >(({ input, sendBack }) => {
-    const { groups, allAccounts, hardwareWalletRegistry, encodeTransaction } =
-        input
+    const {
+        groups,
+        allAccounts,
+        hardwareWalletRegistry,
+        encodeTransaction,
+        scope,
+    } = input
 
     const strategy = createHardwareStrategy({
         hardwareWalletRegistry,
         encodeTransaction,
         getAllAccounts: () => allAccounts,
+        chainId: scope.chainId,
     })
 
     let cancelled = false
@@ -149,6 +155,7 @@ export const hardwareSignActor = fromCallback<
                     group.source,
                     group.data.type,
                     allAccounts,
+                    scope.chainId,
                 )
                 if (!isHardwareWalletAccount(accountForSigning)) {
                     throw new HardwareWalletError('signer_not_found')

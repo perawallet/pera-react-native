@@ -13,10 +13,10 @@
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import type {
+    ChainScope,
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { localKeySignerAdapterFor } from '../chain-adapter'
@@ -40,6 +40,7 @@ export type UseLocalKeyTransactionSignerResult = {
         txnGroup: PeraTransaction[],
         indexesToSign: number[],
         account: WalletAccount,
+        scope: ChainScope,
     ) => Promise<PeraSignedTransaction[]>
 }
 
@@ -51,15 +52,15 @@ export type UseLocalKeyTransactionSignerResult = {
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
-        const { network } = useNetwork()
 
         const signTransactions = useCallback(
             async (
                 txnGroup: PeraTransaction[],
                 indexesToSign: number[],
                 account: WalletAccount,
+                scope: ChainScope,
             ): Promise<PeraSignedTransaction[]> =>
-                localKeySignerAdapterFor(network).signTransactions(
+                localKeySignerAdapterFor(scope).signTransactions(
                     {
                         signPayloads: (keyPairId, payloads) =>
                             signTransactionsWithKey(
@@ -73,7 +74,7 @@ export const useLocalKeyTransactionSigner =
                     indexesToSign,
                     account,
                 ),
-            [signTransactionsWithKey, getPQSigningInfo, network],
+            [signTransactionsWithKey, getPQSigningInfo],
         )
 
         return {

@@ -22,8 +22,8 @@ import type {
     SigningMachineContext,
     SigningMachineEvent,
     SigningMachineInput,
-    ResolvedSignerType,
 } from './context'
+import type { SignerCustody } from './utils/resolveSignerCredential'
 import type {
     AnalyzedSignableGroup,
     SignableAnalysis,
@@ -39,36 +39,35 @@ import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 import { broadcasterChainAdapters } from '../broadcaster'
 import {
-    localKeySignerChainAdapters,
+    localKeySignerAdapterFor,
     plannerAdapterForScope,
     type LocalKeySignerInput,
     type MultisigSignerInput,
 } from '../chain-adapter'
 
-/**
- * Returns the next signer type that hasn't been completed yet,
- * or undefined if all types are done (or groupSignerTypes is null).
- */
-const getNextPendingSignerType = (
+/** The next custody with groups left to sign, or undefined once all are done. */
+const getNextPendingCustody = (
     context: SigningMachineContext,
-): Optional<ResolvedSignerType> => {
-    if (!context.groupSignerTypes) return undefined
-    const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
-    return uniqueTypes.find(t => !context.completedSignerTypes.includes(t))
+): Optional<SignerCustody> => {
+    if (!context.groupSigners) return undefined
+    const custodies = new Set(
+        [...context.groupSigners.values()].map(signer => signer.custody),
+    )
+    return [...custodies].find(c => !context.completedCustodies.includes(c))
 }
 
-/** Zips signableGroups with their analyses, filtered by the type map. */
-const getAnalyzedGroupsForSignerType = (
+/** Zips signableGroups with their analyses, filtered to one custody. */
+const getAnalyzedGroupsForCustody = (
     context: SigningMachineContext,
-    signerType: ResolvedSignerType,
+    custody: SignerCustody,
 ): AnalyzedSignableGroup[] => {
     const allGroups = assertDefined(context.signableGroups, 'signableGroups')
     const allAnalyses = assertDefined(context.analyses, 'analyses')
-    const types = assertDefined(context.groupSignerTypes, 'groupSignerTypes')
+    const signers = assertDefined(context.groupSigners, 'groupSigners')
     return allGroups
         .map((g, i) => ({ ...g, analysis: allAnalyses[i] }))
         .filter(
-            g => types.get(g.signerAddress) === signerType,
+            g => signers.get(g.signerAddress)?.custody === custody,
         ) as AnalyzedSignableGroup[]
 }
 
@@ -90,9 +89,7 @@ export const signingMachine = setup({
         analyzerActor,
         localKeySignerActor: fromPromise<SigningResult[], LocalKeySignerInput>(
             ({ input }) =>
-                localKeySignerChainAdapters
-                    .get(input.scope.chainId)
-                    .signGroups(input),
+                localKeySignerAdapterFor(input.scope).signGroups(input),
         ),
         hardwareSigningMachine,
         multisigSignerActor: fromPromise<SigningResult[], MultisigSignerInput>(
@@ -110,15 +107,15 @@ export const signingMachine = setup({
     guards: {
         hasError: ({ context }) => context.error !== null,
         allGroupsSigned: ({ context }) =>
-            getNextPendingSignerType(context) === undefined &&
-            context.groupSignerTypes !== null,
+            getNextPendingCustody(context) === undefined &&
+            context.groupSigners !== null,
         isNextSignerLocalKey: ({ context }) =>
-            getNextPendingSignerType(context) === 'localKey',
+            getNextPendingCustody(context) === 'local',
         isNextSignerHardware: ({ context }) =>
-            getNextPendingSignerType(context) === 'hardware' &&
+            getNextPendingCustody(context) === 'hardware' &&
             context.deps.hardwareWalletRegistry !== undefined,
         isNextSignerMultisig: ({ context }) =>
-            getNextPendingSignerType(context) === 'multisig',
+            getNextPendingCustody(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
         canRetryValidating: ({ context }) =>
             isRetryableError(context.error) &&
@@ -144,16 +141,16 @@ export const signingMachine = setup({
             failedDuringState: () => 'validating' as const,
         }),
 
-        // signing — one pair per signer type (onDone appends results, onError stores failure)
+        // signing: one pair per custody (onDone appends results, onError stores failure)
         appendLocalKeyResults: assign({
             // event.output is the resolved value of the localKeySignerActor Promise
             signingResults: ({ context, event }) => [
                 ...(context.signingResults ?? []),
                 ...(event as unknown as { output: SigningResult[] }).output,
             ],
-            completedSignerTypes: ({ context }) => [
-                ...context.completedSignerTypes,
-                'localKey' as const,
+            completedCustodies: ({ context }) => [
+                ...context.completedCustodies,
+                'local' as const,
             ],
         }),
         appendHardwareChildResults: assign({
@@ -170,8 +167,8 @@ export const signingMachine = setup({
                     }
                 ).output.results,
             ],
-            completedSignerTypes: ({ context }) => [
-                ...context.completedSignerTypes,
+            completedCustodies: ({ context }) => [
+                ...context.completedCustodies,
                 'hardware' as const,
             ],
         }),
@@ -202,8 +199,8 @@ export const signingMachine = setup({
                 ...(context.signingResults ?? []),
                 ...(event as unknown as { output: SigningResult[] }).output,
             ],
-            completedSignerTypes: ({ context }) => [
-                ...context.completedSignerTypes,
+            completedCustodies: ({ context }) => [
+                ...context.completedCustodies,
                 'multisig' as const,
             ],
         }),
@@ -250,7 +247,7 @@ export const signingMachine = setup({
         resetSigningState: assign({
             error: () => null,
             failedDuringState: () => null,
-            completedSignerTypes: () => [],
+            completedCustodies: () => [],
             signingResults: () => null,
         }),
     },
@@ -327,10 +324,10 @@ export const signingMachine = setup({
         },
 
         /**
-         * Sequentially dispatches each signer type's groups to the appropriate actor.
-         * `dispatching` picks the next pending type; each actor appends its results
-         * and marks its type complete before returning to `dispatching`.
-         * When all types are complete, transitions to `transporting`.
+         * Sequentially dispatches each custody's groups to the appropriate actor.
+         * `dispatching` picks the next pending custody; each actor appends its
+         * results and marks its custody complete before returning to
+         * `dispatching`. When all are complete, transitions to `transporting`.
          */
         signing: {
             initial: 'dispatching',
@@ -341,10 +338,10 @@ export const signingMachine = setup({
                             guard: 'allGroupsSigned',
                             target: '#signingMachine.transporting',
                         },
-                        { guard: 'isNextSignerLocalKey', target: 'localKey' },
+                        { guard: 'isNextSignerLocalKey', target: 'local' },
                         { guard: 'isNextSignerHardware', target: 'hardware' },
                         { guard: 'isNextSignerMultisig', target: 'multisig' },
-                        // No pending signer type — should not happen
+                        // No pending custody; should not happen
                         {
                             target: '#signingMachine.failed',
                             actions: 'setDispatchingFallbackError',
@@ -352,13 +349,13 @@ export const signingMachine = setup({
                     ],
                 },
 
-                localKey: {
+                local: {
                     invoke: {
                         src: 'localKeySignerActor',
                         input: ({ context }) => ({
-                            groups: getAnalyzedGroupsForSignerType(
+                            groups: getAnalyzedGroupsForCustody(
                                 context,
-                                'localKey',
+                                'local',
                             ),
                             allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
@@ -382,7 +379,7 @@ export const signingMachine = setup({
                         id: 'hardwareChild',
                         src: 'hardwareSigningMachine',
                         input: ({ context }) => {
-                            const groups = getAnalyzedGroupsForSignerType(
+                            const groups = getAnalyzedGroupsForCustody(
                                 context,
                                 'hardware',
                             )
@@ -395,6 +392,7 @@ export const signingMachine = setup({
                                 ),
                                 encodeTransaction:
                                     context.deps.encodeTransaction,
+                                scope: context.deps.scope,
                                 totalTxs: groups.reduce(
                                     (sum, g) =>
                                         sum +
@@ -406,6 +404,7 @@ export const signingMachine = setup({
                                 deviceName: resolveHardwareDeviceName(
                                     groups,
                                     context.allAccounts,
+                                    context.deps.scope.chainId,
                                 ),
                                 // First group determines the operation kind
                                 // (cosign requests don't mix auth-data + tx). The
@@ -468,7 +467,7 @@ export const signingMachine = setup({
                     invoke: {
                         src: 'multisigSignerActor',
                         input: ({ context }) => ({
-                            groups: getAnalyzedGroupsForSignerType(
+                            groups: getAnalyzedGroupsForCustody(
                                 context,
                                 'multisig',
                             ),
@@ -516,6 +515,7 @@ export const signingMachine = setup({
                     ),
                     allAccounts: context.allAccounts,
                     createTransport: context.deps.createTransport,
+                    scope: context.deps.scope,
                 }),
                 onDone: {
                     target: 'completed',

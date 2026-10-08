@@ -869,7 +869,7 @@ describe('useSigningActorLifecycle', () => {
 
         act(() => {
             actor.emit({
-                value: { signing: 'localKey' },
+                value: { signing: 'local' },
                 request,
             })
         })
@@ -881,7 +881,7 @@ describe('useSigningActorLifecycle', () => {
         expect(signingEvents).toHaveLength(1)
         expect(signingEvents[0][0]).toMatchObject({
             type: 'signing-started',
-            signerType: 'localKey',
+            signerType: 'local',
         })
     })
 

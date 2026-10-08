@@ -46,6 +46,8 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
+    // Specs hold no keystore, so a scheme read falls back to custody.
+    getKeystoreStore: () => ({ state: { keys: [] } }),
     getProvider: () => ({
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,

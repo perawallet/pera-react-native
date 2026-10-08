@@ -12,7 +12,7 @@
 
 import { vi } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
-import './src/harness/registerAlgorandAccounts'
+import { registerAlgorandChain } from './src/harness/registerAlgorandAccounts'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
 // `@perawallet/wallet-core-chain-algorand/blockchain`'s network/accounts stores for their
@@ -37,21 +37,29 @@ const store = new Map<string, string>()
 // — do not reach for `importActual` of the barrel itself, which is the graph
 // this mock exists to avoid.
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const [models, utils, signerResolution, constants, errors, chainAdapter] =
-        await Promise.all([
-            vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
-            vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
-            vi.importActual<object>(
-                '@perawallet/wallet-core-accounts/signer-resolution',
-            ),
-            vi.importActual<object>(
-                '@perawallet/wallet-core-accounts/constants',
-            ),
-            vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
-            vi.importActual<object>(
-                '@perawallet/wallet-core-accounts/chain-adapter',
-            ),
-        ])
+    const [
+        models,
+        utils,
+        signerResolution,
+        constants,
+        errors,
+        chainAdapter,
+        credentialScheme,
+    ] = await Promise.all([
+        vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
+        vi.importActual<object>(
+            '@perawallet/wallet-core-accounts/signer-resolution',
+        ),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/constants'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
+        vi.importActual<object>(
+            '@perawallet/wallet-core-accounts/chain-adapter',
+        ),
+        vi.importActual<object>(
+            '@perawallet/wallet-core-accounts/credentials/credentialScheme',
+        ),
+    ])
     return {
         ...models,
         ...utils,
@@ -59,6 +67,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...constants,
         ...errors,
         ...chainAdapter,
+        ...credentialScheme,
         useAccountsStore: { getState: () => ({ accounts: [] }) },
     }
 })
@@ -66,8 +75,11 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 // The real provider always carries a chain registry, and the network store
 // resolves its `network` shim through it on every write.
 const chains = createChainRegistry()
+registerAlgorandChain(chains)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
+    // Suites hold their own keystores, so a scheme read falls back to custody.
+    getKeystoreStore: () => ({ state: { keys: [] } }),
     getProvider: () => ({
         chains,
         keyValueStorage: {

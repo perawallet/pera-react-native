@@ -218,9 +218,10 @@ no fallback and should surface as unavailable.
 ## Account types share one signing path
 
 Algo25, HD-wallet and quantum (Falcon-1024) accounts all route through
-`useLocalKeyTransactionSigner` and `createLocalKeyStrategy`. `determineSignerType` has no
-`'quantum'` case: a quantum account classifies as `'localKey'` like the others, because it satisfies
-`hasSigningKeys`. The only quantum-specific step is that the signer asks
+`useLocalKeyTransactionSigner` and `createLocalKeyStrategy`. `resolveSignerCredential` returns a custody and a
+scheme: the custody picks the signing actor, so a quantum account resolves to `local` custody like
+the others, and only its scheme (`falcon-1024`, from `credentialScheme`) differs. The signer is
+picked by the request's scope and reads the scheme off the key itself: it asks
 `useKMS().getPQSigningInfo(keyPairId)` once per call and, when that returns non-null, signs
 `pqSigningDigest(txn)` and assembles via `assemblePQSignedTransaction`.
 

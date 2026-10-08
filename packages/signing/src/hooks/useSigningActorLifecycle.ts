@@ -347,9 +347,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     })
                 }
 
-                // signing-started — published once per signer type the
-                // dispatch picks. Nested-state matcher is the XState v5
-                // object form: { signing: 'localKey' } etc.
+                // signing-started: published once per custody the dispatch
+                // picks. Nested-state matcher is the XState v5 object form:
+                // { signing: 'local' } etc.
                 const signingValue = snapshot.value as
                     | { signing?: string }
                     | string
@@ -361,7 +361,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         ? signingValue.signing
                         : undefined
                 if (
-                    signingChild === 'localKey' ||
+                    signingChild === 'local' ||
                     signingChild === 'hardware' ||
                     signingChild === 'multisig'
                 ) {

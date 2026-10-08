@@ -24,7 +24,11 @@ import {
     algodBackedTransport,
     registerFakeBroadcaster,
 } from '../../../../__tests__/fakeBroadcaster'
-import { registerFakePlannerAdapter } from '../../../../__tests__/fakePlannerAdapter'
+import {
+    fakePlannerAdapter,
+    registerFakePlannerAdapter,
+} from '../../../../__tests__/fakePlannerAdapter'
+import { plannerChainAdapters } from '../../../../chain-adapter'
 
 const ALGORAND_TESTNET: ChainScope = {
     chainId: 'algorand',
@@ -75,6 +79,7 @@ const makeInput = (
     createTransport: createTransportSelector({
         scope: ALGORAND_TESTNET,
     }),
+    scope: ALGORAND_TESTNET,
     ...overrides,
 })
 
@@ -125,6 +130,41 @@ describe('transportActor', () => {
             do: mockSendRawDo,
         })
         mockSendRawDo.mockResolvedValue({ txid: 'mock-tx-id' })
+    })
+
+    it("merges signing results with the scope chain's planner, never Algorand's", async () => {
+        const mergeSigningResults = vi.fn(
+            (results: SigningResult[]) => results[0],
+        )
+        plannerChainAdapters.register(
+            fakePlannerAdapter({ chainId: 'ethereum', mergeSigningResults }),
+        )
+        const send = vi
+            .fn()
+            .mockResolvedValue({ type: 'callback-sent', requestId: 'req-1' })
+        // Off-chain data skips the rekey hop, so only the merge reads the chain.
+        const dataResult = {
+            signedData: {
+                type: 'arbitrary-data',
+                signatures: [new Uint8Array([1])],
+            },
+            signers: [{ address: MOCK_ADDRESS }],
+        } as unknown as SigningResult
+        const input = makeInput(
+            { type: 'local' },
+            {
+                signingResults: [dataResult],
+                createTransport: () => ({ send }),
+                scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            },
+        )
+
+        const actor = createActor(transportActor, { input })
+        actor.start()
+        await toPromise(actor)
+
+        expect(mergeSigningResults).toHaveBeenCalledWith([dataResult])
+        expect(send).toHaveBeenCalled()
     })
 
     it('routes to algod transport for local source', async () => {

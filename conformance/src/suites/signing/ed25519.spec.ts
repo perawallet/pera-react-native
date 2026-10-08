@@ -30,6 +30,7 @@ import {
 } from '../../harness/build'
 import { balanceOf } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 /**
  * Baseline for the suite: a plain Ed25519 spend signed through the keystore
@@ -128,6 +129,7 @@ describe('ed25519 signing conformance', () => {
             signAuthData: () => {
                 throw new Error('not exercised by this test')
             },
+            scope: await localNetScope(),
         })
 
         expect(strategy.canSign(sender.walletAccount)).toBe(true)

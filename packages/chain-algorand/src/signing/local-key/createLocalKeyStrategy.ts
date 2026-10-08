@@ -53,7 +53,7 @@ import {
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
 ): SigningStrategy => {
-    const { signTransactions, signArbitraryData, signAuthData } = options
+    const { signTransactions, signArbitraryData, signAuthData, scope } = options
 
     return {
         canSign: (account: WalletAccount): boolean => hasSigningKeys(account),
@@ -92,6 +92,7 @@ export const createLocalKeyStrategy = (
                             transactions,
                             indicesToSign,
                             account,
+                            scope,
                         )
 
                         callbacks?.onProgress?.(

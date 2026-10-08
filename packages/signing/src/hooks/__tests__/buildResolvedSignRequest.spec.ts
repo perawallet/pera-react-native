@@ -33,7 +33,7 @@ describe('buildResolvedSignRequest', () => {
                 sourceType: 'local',
             } as TransactionSignRequest,
             allAccounts: [],
-            groupSignerTypes: null,
+            groupSigners: null,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
@@ -41,12 +41,14 @@ describe('buildResolvedSignRequest', () => {
         expect(result).toBeNull()
     })
 
-    it('resolves localKey signer for an algo25 account on a local tx', () => {
+    it('resolves a local signer for an algo25 account on a local tx', () => {
         const account = makeAccount('A123', 'algo25')
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'localKey']]),
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
             request: {
                 id: 'r1',
                 type: 'transactions',
@@ -60,7 +62,7 @@ describe('buildResolvedSignRequest', () => {
         const result = buildResolvedSignRequest(context)
 
         expect(result).not.toBeNull()
-        expect(result!.signerType).toBe('localKey')
+        expect(result!.signerType).toBe('local')
         expect(result!.signerAccount).toBe(account)
         expect(result!.source).toEqual({ kind: 'local', isInteractive: false })
         expect(result!.transport).toEqual({ kind: 'algod' })
@@ -77,7 +79,9 @@ describe('buildResolvedSignRequest', () => {
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'multisig']]),
+            groupSigners: new Map([
+                ['A123', { custody: 'multisig', scheme: 'ed25519' }],
+            ]),
             request: {
                 id: 'r1',
                 type: 'transactions',
@@ -118,7 +122,9 @@ describe('buildResolvedSignRequest', () => {
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'localKey']]),
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
             request: authDataRequest,
             signableGroups: [{ signerAddress: 'A123' }],
         } as unknown as SigningMachineContext
