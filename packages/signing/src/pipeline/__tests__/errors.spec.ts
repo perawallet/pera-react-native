@@ -12,7 +12,13 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
+import {
     CannotSignError,
+    FeeAdjustmentDeliveryError,
     HardwareWalletError,
     SIGNING_ERROR_KEYS,
     SigningError,
@@ -51,6 +57,36 @@ describe('pipeline error retryable flags', () => {
         expect(new TransportError('x').metadata.retryable).toBe(true)
         expect(
             new TransportError('x', undefined, { retryable: false }).metadata
+                .retryable,
+        ).toBe(false)
+    })
+})
+
+describe('FeeAdjustmentDeliveryError', () => {
+    // The wrap only frames the message for the user; whether RETRY can
+    // succeed is still the underlying delivery failure's call.
+    it('stays retryable when the delivery failure is', () => {
+        const cause = new AppError('socket dead', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.CONNECTIONS,
+            retryable: true,
+        })
+
+        expect(
+            new FeeAdjustmentDeliveryError('fee-adjusted', { cause }).metadata
+                .retryable,
+        ).toBe(true)
+    })
+
+    it('is not retryable when the delivery failure is not', () => {
+        const cause = new AppError('session gone', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.CONNECTIONS,
+            retryable: false,
+        })
+
+        expect(
+            new FeeAdjustmentDeliveryError('fee-adjusted', { cause }).metadata
                 .retryable,
         ).toBe(false)
     })

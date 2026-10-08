@@ -163,8 +163,9 @@ export const enqueueArc0001SignRequest = async (
             transport.respondWithReject()
         },
         error: async (err: Error) => {
-            transport.respondWithError(err)
-            removeSignRequest(signRequest)
+            if (transport.respondWithError(err)) {
+                removeSignRequest(signRequest)
+            }
         },
     } as TransactionSignRequest
 

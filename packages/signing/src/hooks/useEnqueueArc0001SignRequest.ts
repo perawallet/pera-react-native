@@ -41,7 +41,12 @@ export type ExternalSignTxnTransport = {
     // bridge socket revival via the connector registry's `ensureReady`).
     respondWithResult: (result: Nullable<string>[]) => Promise<void> | void
     respondWithReject: () => void
-    respondWithError: (error: Error) => void
+    /**
+     * Whether the peer has now been answered. `false` means the transport is
+     * holding the request open so the pipeline can RETRY a failed delivery,
+     * and the request must stay queued.
+     */
+    respondWithError: (error: Error) => boolean
     /**
      * Optional clean-reject path for multisig sync handoff. Called when the
      * pipeline finishes the propose flow via `softReject` — the dApp peer

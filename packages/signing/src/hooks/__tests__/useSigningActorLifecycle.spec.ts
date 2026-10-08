@@ -12,7 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
+import { AppError, logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Module mocks — mirror useSigningRequest.spec.ts conventions
 
@@ -92,6 +92,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 vi.mock('../../machine/createSigningMachine')
 
 const mockIsRequestGroupAlreadySubmitted = vi.hoisted(() => vi.fn())
+const mockFindStaleGroupReason = vi.hoisted(() => vi.fn())
 // Only storage-restored requests reach the ledger guard; the store's own spec
 // covers which ids get marked, so drive the flag directly here.
 const mockWasRestoredFromStorage = vi.hoisted(() => vi.fn())
@@ -107,6 +108,7 @@ vi.mock('../../store', async importOriginal => {
 // Imports (must follow vi.mock calls)
 
 import {
+    isSignRequestAwaitingPreflight,
     useSigningActorLifecycle,
     __resetSigningActorRegistryForTests,
 } from '../useSigningActorLifecycle'
@@ -114,9 +116,11 @@ import { useSigningStore } from '../../store'
 import { approvalGate } from '../../pipeline/approvalGate'
 import { signingEventBus } from '../../pipeline/signingEventBus'
 import { createSigningMachine } from '../../machine/createSigningMachine'
+import { StaleSignRequestError } from '../../pipeline/errors'
 import { flushQueue } from '../../test-utils/queue'
 import type { SignRequest, TransactionSignRequest } from '../../models'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
+import type { StaleGroupReason } from '../../broadcaster'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 
 type MockActor = {
@@ -209,8 +213,10 @@ describe('useSigningActorLifecycle', () => {
         vi.clearAllMocks()
         registerFakeBroadcaster({
             isRequestGroupAlreadySubmitted: mockIsRequestGroupAlreadySubmitted,
+            findStaleGroupReason: mockFindStaleGroupReason,
         })
         mockIsRequestGroupAlreadySubmitted.mockResolvedValue(false)
+        mockFindStaleGroupReason.mockResolvedValue(null)
         mockWasRestoredFromStorage.mockReturnValue(false)
         useSigningStore.getState().resetState()
         __resetSigningActorRegistryForTests()
@@ -273,6 +279,203 @@ describe('useSigningActorLifecycle', () => {
         )
         expect(createSigningMachine).not.toHaveBeenCalled()
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
+    })
+
+    describe('stale WalletConnect requests', () => {
+        const makeWalletConnectRequest = (
+            overrides: Partial<TransactionSignRequest> = {},
+        ) =>
+            makeTxRequest({
+                sourceType: 'walletconnect',
+                transport: 'callback',
+                reject: vi.fn(async () => {}),
+                ...overrides,
+            })
+
+        /** Holds the stale check open until the test settles it. */
+        const holdStaleCheck = () => {
+            let settle: (reason: StaleGroupReason | null) => void = () => {}
+            mockFindStaleGroupReason.mockImplementationOnce(
+                () =>
+                    new Promise<StaleGroupReason | null>(resolve => {
+                        settle = resolve
+                    }),
+            )
+            return (reason: StaleGroupReason | null) => settle(reason)
+        }
+
+        test('declines a request whose group is already on chain instead of presenting it', async () => {
+            mockFindStaleGroupReason.mockResolvedValue('already-on-chain')
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
+            renderHook(() => useSigningActorLifecycle())
+            const request = makeWalletConnectRequest()
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(request)
+            })
+            await flushQueue()
+
+            expect(createSigningMachine).not.toHaveBeenCalled()
+            expect(useSigningStore.getState().pendingSignRequests).toHaveLength(
+                0,
+            )
+            expect(request.reject).toHaveBeenCalledWith({
+                kind: 'softReject',
+                error: expect.any(StaleSignRequestError),
+            })
+            expect(error).toHaveBeenCalledWith(
+                'Declined a dApp sign request whose group is already on chain',
+                expect.objectContaining({
+                    id: 'tx-1',
+                    reason: 'already-on-chain',
+                }),
+            )
+            error.mockRestore()
+        })
+
+        test('declines an expired request without reporting it as an error', async () => {
+            mockFindStaleGroupReason.mockResolvedValue('expired')
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            renderHook(() => useSigningActorLifecycle())
+            const request = makeWalletConnectRequest()
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(request)
+            })
+            await flushQueue()
+
+            expect(request.reject).toHaveBeenCalledTimes(1)
+            expect(error).not.toHaveBeenCalled()
+            expect(warn).toHaveBeenCalledWith(
+                'Declined a dApp sign request whose group has expired',
+                expect.objectContaining({ reason: 'expired' }),
+            )
+            error.mockRestore()
+            warn.mockRestore()
+        })
+
+        test('presents a request whose group can still land', async () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+            renderHook(() => useSigningActorLifecycle())
+            const request = makeWalletConnectRequest()
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(request)
+            })
+            await flushQueue()
+
+            expect(mockFindStaleGroupReason).toHaveBeenCalledWith(request)
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
+            expect(request.reject).not.toHaveBeenCalled()
+        })
+
+        test('presents the request when the stale check itself fails', async () => {
+            mockFindStaleGroupReason.mockRejectedValue(new Error('algod down'))
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+            renderHook(() => useSigningActorLifecycle())
+
+            act(() => {
+                useSigningStore
+                    .getState()
+                    .addSignRequest(makeWalletConnectRequest())
+            })
+            await flushQueue()
+
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
+        })
+
+        test('never checks a request the wallet itself started', async () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+            renderHook(() => useSigningActorLifecycle())
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(makeTxRequest())
+            })
+            await flushQueue()
+
+            expect(mockFindStaleGroupReason).not.toHaveBeenCalled()
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
+        })
+
+        test('checks a request once while the queue re-renders around the pending check', async () => {
+            const settle = holdStaleCheck()
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+            renderHook(() => useSigningActorLifecycle())
+
+            act(() => {
+                useSigningStore
+                    .getState()
+                    .addSignRequest(makeWalletConnectRequest())
+            })
+            act(() => {
+                useSigningStore
+                    .getState()
+                    .addSignRequest(makeWalletConnectRequest({ id: 'tx-2' }))
+            })
+            await flushQueue()
+            settle(null)
+            await flushQueue()
+
+            expect(mockFindStaleGroupReason).toHaveBeenCalledTimes(1)
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
+        })
+
+        test('starts no actor for a request withdrawn while its check was pending, and keeps the queue moving', async () => {
+            // A WalletConnect expiry withdraws the request mid-check; an actor
+            // started for it afterwards would have no sheet and block the
+            // queue for every later request.
+            const settle = holdStaleCheck()
+            const nextActor = makeMockActor('tx-2')
+            vi.mocked(createSigningMachine).mockReturnValue(nextActor as never)
+            renderHook(() => useSigningActorLifecycle())
+            const withdrawn = makeWalletConnectRequest()
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(withdrawn)
+            })
+            await flushQueue()
+            act(() => {
+                useSigningStore.getState().removeSignRequest(withdrawn)
+            })
+            settle(null)
+            await flushQueue()
+            act(() => {
+                useSigningStore
+                    .getState()
+                    .addSignRequest(makeTxRequest({ id: 'tx-2' }))
+            })
+            await flushQueue()
+
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
+            expect(vi.mocked(createSigningMachine).mock.calls[0][0].id).toBe(
+                'tx-2',
+            )
+        })
+
+        test('holds the review sheet back until the check lets the request through', async () => {
+            const settle = holdStaleCheck()
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+            renderHook(() => useSigningActorLifecycle())
+            const request = makeWalletConnectRequest()
+
+            act(() => {
+                useSigningStore.getState().addSignRequest(request)
+            })
+            expect(isSignRequestAwaitingPreflight(request)).toBe(true)
+            await flushQueue()
+            expect(isSignRequestAwaitingPreflight(request)).toBe(true)
+
+            settle(null)
+            await flushQueue()
+
+            expect(isSignRequestAwaitingPreflight(request)).toBe(false)
+        })
     })
 
     test('a second hook instance does not duplicate the actor for the same request', async () => {

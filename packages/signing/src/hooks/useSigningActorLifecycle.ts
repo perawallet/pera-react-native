@@ -29,8 +29,9 @@ import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
+import { StaleSignRequestError } from '../pipeline/errors'
 import { isInteractiveSource } from '../pipeline/types'
-import { broadcasterChainAdapters } from '../broadcaster'
+import { broadcasterChainAdapters, type StaleGroupReason } from '../broadcaster'
 import { plannerAdapterFor } from '../chain-adapter'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
@@ -93,6 +94,100 @@ export const applyAppStateToHardwareSessions = (nextState: string): void => {
 const startedSet = new Set<string>()
 const signingStartedSet = new Set<string>()
 
+// Requests whose pre-presentation check is still running. The queue effect
+// re-runs on every store change, and without this a second run would start a
+// second check, and possibly a second actor or decline, for the same request.
+const preflightInFlight = new Set<string>()
+
+/** A WalletConnect bridge can redeliver a request the wallet already answered. */
+const mayBeRedelivered = (request: SignRequest): boolean =>
+    request.type === 'transactions' && request.sourceType === 'walletconnect'
+
+/**
+ * Whether the request is waiting on its pre-presentation chain check, so its
+ * review sheet would have no actor behind it. Covers the moment between it
+ * reaching the queue head and the check starting, since effect order decides
+ * whether the sheet driver or the queue effect sees it first.
+ */
+export const isSignRequestAwaitingPreflight = (request: SignRequest): boolean =>
+    mayBeRedelivered(request) &&
+    !actorRefsMap.has(request.id) &&
+    (preflightInFlight.has(request.id) ||
+        (actorRefsMap.size === 0 &&
+            useSigningStore.getState().pendingSignRequests.at(0)?.id ===
+                request.id))
+
+type PreflightOutcome =
+    | { kind: 'present' }
+    | { kind: 'suppress' }
+    | { kind: 'decline'; reason: StaleGroupReason }
+
+/** Both checks are best-effort: any failure presents the request. */
+const runPreflight = async (
+    request: SignRequest,
+    { isRestored }: { isRestored: boolean },
+): Promise<PreflightOutcome> => {
+    try {
+        const broadcaster = broadcasterChainAdapters.get(LEGACY_CHAIN_ID)
+        // Re-presented after an app kill: if the ledger already records the
+        // group as submitted, drop the request instead of inviting a
+        // re-sign/re-submit of bytes that may be on chain.
+        if (
+            isRestored &&
+            (await broadcaster.isRequestGroupAlreadySubmitted(request))
+        ) {
+            return { kind: 'suppress' }
+        }
+        if (mayBeRedelivered(request)) {
+            const reason = await broadcaster.findStaleGroupReason(request)
+            if (reason) return { kind: 'decline', reason }
+        }
+    } catch (error) {
+        logger.warn('Sign request pre-presentation check failed', {
+            id: request.id,
+            error,
+        })
+    }
+    return { kind: 'present' }
+}
+
+/**
+ * Soft, so the decline raises no connection-error banner. The dApp has usually
+ * settled this id already and ignores it; a dApp still waiting on a group that
+ * expired learns why.
+ */
+const declineStaleRequest = (
+    request: SignRequest,
+    reason: StaleGroupReason,
+): void => {
+    const context = {
+        id: request.id,
+        connectionId: request.transportId,
+        reason,
+    }
+    if (reason === 'already-on-chain') {
+        // Error level so field occurrences reach crash reporting: a confirmed
+        // group re-presented is a redelivery the transport let through.
+        logger.error(
+            'Declined a dApp sign request whose group is already on chain',
+            context,
+        )
+    } else {
+        logger.warn(
+            'Declined a dApp sign request whose group has expired',
+            context,
+        )
+    }
+    void request
+        .reject?.({ kind: 'softReject', error: new StaleSignRequestError() })
+        ?.catch((error: unknown) => {
+            logger.warn('Declining a stale sign request failed', {
+                id: request.id,
+                error,
+            })
+        })
+}
+
 /** Test-only. Call from `beforeEach` so actors never leak between tests. */
 export const __resetSigningActorRegistryForTests = (): void => {
     for (const actor of actorRefsMap.values()) {
@@ -103,6 +198,7 @@ export const __resetSigningActorRegistryForTests = (): void => {
     awaitingApprovalSet.clear()
     startedSet.clear()
     signingStartedSet.clear()
+    preflightInFlight.clear()
     approvalGate.__resetForTests()
     signingEventBus.__resetForTests()
 }
@@ -428,28 +524,41 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actorRefsMap.size,
         )
         if (!next) return
-        // Only a request restored from storage can be a re-presentation of a
-        // group that already reached algod; anything the user just initiated
-        // goes straight through, off the critical path of a ledger read.
-        if (!wasRestoredFromStorage(next.id)) {
+        // Only these can be a re-presentation of a group that already reached
+        // algod: one restored from storage, or a WalletConnect request the
+        // bridge redelivered after it was answered. Anything the user just
+        // initiated goes straight through, off the critical path of a read.
+        const isRestored = wasRestoredFromStorage(next.id)
+        if (!isRestored && !mayBeRedelivered(next)) {
             createActorRef.current(next)
             return
         }
+        if (preflightInFlight.has(next.id)) return
+        preflightInFlight.add(next.id)
         void (async () => {
-            // Re-presented after an app kill: if the ledger already records
-            // the group as submitted, drop the request instead of inviting a
-            // re-sign/re-submit of bytes that may already be on chain.
-            // Best-effort — on any ledger failure the request is re-presented.
-            if (
-                await broadcasterChainAdapters
-                    .get(LEGACY_CHAIN_ID)
-                    .isRequestGroupAlreadySubmitted(next)
-            ) {
+            const outcome = await runPreflight(next, { isRestored })
+            preflightInFlight.delete(next.id)
+            // The request can be withdrawn (a WalletConnect expiry) while the
+            // check runs; the store change has already re-run this effect for
+            // whatever is at the head now. An actor started here would sit
+            // behind no sheet and block the queue.
+            const isStillNext =
+                actorRefsMap.size === 0 &&
+                useSigningStore.getState().pendingSignRequests.at(0)?.id ===
+                    next.id
+            if (!isStillNext) return
+
+            if (outcome.kind === 'suppress') {
                 logger.info(
                     'Suppressed re-presented sign request: group already submitted',
                     { id: next.id },
                 )
                 removeSignRequestFromStoreRef.current(next)
+                return
+            }
+            if (outcome.kind === 'decline') {
+                removeSignRequestFromStoreRef.current(next)
+                declineStaleRequest(next, outcome.reason)
                 return
             }
             createActorRef.current(next)

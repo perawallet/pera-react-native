@@ -25,6 +25,7 @@ import {
     WalletConnectBridgeConnectionError,
     WalletConnectError,
 } from '../shared/errors'
+import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import type { V1ConnectorEventHandler } from './requests'
 import { scopeFor } from './scope'
 import type { WalletConnectV1SessionKeyStore } from './secrets'
@@ -40,6 +41,7 @@ export const createV1ConnectorBinding = (deps: {
     kit: HandlerKit
     connectors: Pick<WalletConnectConnectorRegistry, 'forget'>
     sessionKeys: WalletConnectV1SessionKeyStore
+    answeredRequests: WalletConnectV1AnsweredRequests
     handleSessionRequest: V1ConnectorEventHandler
     handleSignTxn: V1ConnectorEventHandler
     handleSignData: V1ConnectorEventHandler
@@ -48,6 +50,7 @@ export const createV1ConnectorBinding = (deps: {
         kit,
         connectors,
         sessionKeys,
+        answeredRequests,
         handleSessionRequest,
         handleSignTxn,
         handleSignData,
@@ -65,6 +68,7 @@ export const createV1ConnectorBinding = (deps: {
     const forgetSession = async (id: ConnectionId): Promise<void> => {
         // Tombstoned so an in-flight socket recovery aborts instead of resurrecting the peer.
         connectors.forget(id)
+        answeredRequests.forget(id)
         await sessionKeys.remove(id).catch((secretError: unknown) => {
             logger.warn('[WC v1] failed to remove a stored session key', {
                 connectionId: id,

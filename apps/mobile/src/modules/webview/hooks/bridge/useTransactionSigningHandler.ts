@@ -79,13 +79,15 @@ export const useTransactionSigningHandler = (
                             'User rejected',
                             webview,
                         ),
-                    respondWithError: err =>
+                    respondWithError: err => {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InternalError,
                             err,
                             webview,
-                        ),
+                        )
+                        return true
+                    },
                 })
             } catch (e) {
                 // Logged at the transport boundary, like the WalletConnect
