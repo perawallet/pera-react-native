@@ -1054,6 +1054,36 @@
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Smart contract rejected the transaction",
+                "body": "The smart contract rejected this transaction without giving a reason. Check the details and try again."
+            },
+            "reverted_with_reason": {
+                "title": "Smart contract rejected the transaction",
+                "body": "The contract returned: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Not enough gas",
+                "body": "This transaction needs more gas than its limit allows. Please try again and contact support if the issue persists."
+            },
+            "nonce_too_low": {
+                "title": "Transaction out of order",
+                "body": "Another transaction from this account was processed first. Please try again."
+            },
+            "replacement_underpriced": {
+                "title": "Network fee too low",
+                "body": "A pending transaction from this account can only be replaced with a higher network fee. Wait for it to complete, or try again with a higher fee."
+            },
+            "insufficient_funds": {
+                "title": "Insufficient ETH",
+                "body": "This account doesn't have enough ETH to cover the amount and the network fee. Add more ETH and try again."
+            },
+            "rate_limited": {
+                "title": "Network busy",
+                "body": "The network is receiving too many requests right now. Please wait a moment and try again."
+            }
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Transaction status unknown",

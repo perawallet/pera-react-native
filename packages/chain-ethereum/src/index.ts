@@ -14,6 +14,13 @@ export {
     createEthereumAccountStateOps,
     type EthereumAccountStateOps,
 } from './accountState'
+export {
+    EvmError,
+    EvmErrorCode,
+    isEvmError,
+    toEvmError,
+    type EvmErrorParams,
+} from './errors/translate'
 export { ethereumModule } from './module'
 export { BlockFollowingRequestError } from './pera/block-following'
 export { createEvmClient, UnconfiguredEvmRpcError } from './rpc/client'
