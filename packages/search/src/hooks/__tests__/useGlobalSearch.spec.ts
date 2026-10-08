@@ -15,7 +15,6 @@ import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
@@ -67,7 +66,7 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 const makeAccount = (address: string, name?: string): WalletAccount => ({
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address,
     keyPairId: '',
     name,

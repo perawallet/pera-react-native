@@ -17,7 +17,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAccountChainStateStore } from '../../store/accountChainState'
-import { DerivationTypes, type WalletAccount } from '../../models'
+import type { AccountType, WalletAccount } from '../../models'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import {
     addressOn,
@@ -30,34 +30,16 @@ import {
     seedOf,
     signingKeyOn,
 } from '../accessors'
-import { withCustody } from '../backfill'
 
 type Keys = NonNullable<Parameters<typeof seedOf>[1]>
 
 const mainnet: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const testnet: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
-const legacy = (type: WalletAccount['type']): WalletAccount => {
-    const {
-        custody: _custody,
-        chains: _chains,
-        ...rest
-    } = buildTestAccount(type)
+const withoutChains = (type: AccountType): WalletAccount => {
+    const { chains: _chains, ...rest } = buildTestAccount(type)
     return rest as WalletAccount
 }
-
-const withHdDetails = (account: WalletAccount): WalletAccount =>
-    account.type === 'hdWallet'
-        ? {
-              ...account,
-              hdWalletDetails: {
-                  account: 2,
-                  change: 0,
-                  keyIndex: 5,
-                  derivationType: DerivationTypes.Peikert,
-              },
-          }
-        : account
 
 const TYPES = [
     'algo25',
@@ -68,78 +50,43 @@ const TYPES = [
     'watch',
 ] as const
 
-const malformed: Array<[string, WalletAccount]> = [
-    [
-        'a multisig without details',
-        {
-            id: 'm',
-            address: 'MSIG-ADDR',
-            type: 'multisig',
-        } as unknown as WalletAccount,
-    ],
-    [
-        'a local account without a key',
-        {
-            id: 'a',
-            address: 'A-ADDR',
-            type: 'algo25',
-        } as unknown as WalletAccount,
-    ],
-]
-
-// Each form of one account: built, backfilled from its legacy fields, and the
-// legacy fields alone.
-const forms = (type: (typeof TYPES)[number]) => {
-    const built = withHdDetails(buildTestAccount(type))
-    return [
-        ['built', built],
-        ['backfilled', withCustody(legacy(type))],
-    ] as const
-}
-
 describe('accessors on every stored shape', () => {
-    test.each(TYPES)('a %s account answers the same on every shape', type => {
-        const base = withHdDetails(legacy(type))
-        const subjects = [
-            withHdDetails(buildTestAccount(type)),
-            withCustody(base),
-            base,
-        ]
-        for (const account of subjects) {
-            expect(addressOn(account, mainnet)).toBe(base.address)
-            expect(signingKeyOn(account, 'algorand')).toBe(base.keyPairId)
-            expect(chainAccountOf(account, 'algorand')?.address).toBe(
-                base.address,
-            )
-        }
+    test.each(TYPES)(
+        'a %s account answers the same with or without chains',
+        type => {
+            const built = buildTestAccount(type)
+            for (const account of [built, withoutChains(type)]) {
+                expect(addressOn(account, mainnet)).toBe(built.address)
+                expect(signingKeyOn(account, 'algorand')).toBe(built.keyPairId)
+                expect(chainAccountOf(account, 'algorand')?.address).toBe(
+                    built.address,
+                )
+            }
+        },
+    )
+
+    test.each(TYPES)('a %s account reports its custody', type => {
+        const account = buildTestAccount(type)
+
+        expect(custodyOf(account).kind).toBe(
+            type === 'hdWallet' || type === 'algo25' || type === 'quantum'
+                ? 'local'
+                : type,
+        )
+        expect(hasCustody(account, 'watch')).toBe(type === 'watch')
     })
 
-    test.each(TYPES)('a %s account has custody once built', type => {
-        for (const [, account] of forms(type)) {
-            expect(custodyOf(account)?.kind).toBe(
-                type === 'hdWallet' || type === 'algo25' || type === 'quantum'
-                    ? 'local'
-                    : type,
-            )
-            expect(hasCustody(account, 'watch')).toBe(type === 'watch')
-        }
-    })
-
-    test('hdIndexOf gives the seed position, from custody or the legacy details', () => {
-        const account = withHdDetails(legacy('hdWallet'))
-
-        expect(hdIndexOf(withCustody(account))).toEqual({
-            account: 2,
-            keyIndex: 5,
+    test('hdIndexOf gives the seed position from custody', () => {
+        expect(hdIndexOf(buildTestAccount('hdWallet'))).toEqual({
+            account: 0,
+            keyIndex: 0,
         })
-        expect(hdIndexOf(account)).toEqual({ account: 2, keyIndex: 5 })
         expect(hdIndexOf(buildTestAccount('algo25'))).toBeUndefined()
-        expect(hdIndexOf(legacy('watch'))).toBeUndefined()
+        expect(hdIndexOf(buildTestAccount('watch'))).toBeUndefined()
     })
 
     test('hardwareDeviceOf splits the device from the account index', () => {
-        const account = legacy('hardware')
-        const expected = {
+        expect(hardwareDeviceOf(buildTestAccount('hardware'))).toEqual({
             device: {
                 manufacturer: 'ledger',
                 deviceId: 'device-1',
@@ -147,10 +94,7 @@ describe('accessors on every stored shape', () => {
                 transportType: 'ble',
             },
             accountIndex: 0,
-        }
-
-        expect(hardwareDeviceOf(withCustody(account))).toEqual(expected)
-        expect(hardwareDeviceOf(account)).toEqual(expected)
+        })
         expect(hardwareDeviceOf(buildTestAccount('watch'))).toBeUndefined()
     })
 
@@ -165,17 +109,6 @@ describe('accessors on every stored shape', () => {
         expect(addressOn(account, elsewhere)).toBeUndefined()
         expect(signingKeyOn(account, 'other' as never)).toBeUndefined()
     })
-
-    test.each(malformed)(
-        'custodyOf is undefined for %s, which the legacy fields still answer',
-        (_label, account) => {
-            const stored = withCustody(account)
-
-            expect(custodyOf(stored)).toBeUndefined()
-            expect(addressOn(stored, mainnet)).toBe(account.address)
-            expect(signingKeyOn(stored, 'algorand')).toBe(account.keyPairId)
-        },
-    )
 })
 
 describe('authorityOf', () => {
@@ -279,7 +212,7 @@ describe('seedOf', () => {
     })
 
     test('reads the legacy key of a record without chains', () => {
-        const { chains: _chains, custody: _custody, ...rest } = local('child')
+        const { chains: _chains, ...rest } = local('child')
 
         expect(seedOf(rest as WalletAccount, keys)).toBe('seed')
     })

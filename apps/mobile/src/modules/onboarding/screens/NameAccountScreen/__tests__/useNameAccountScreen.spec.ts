@@ -62,7 +62,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account 1',
     isHDWalletAccount: () => false,
-    isWatchAccount: (account: { type: string }) => account?.type === 'watch',
+    isWatchAccount: (account: { custody?: { kind: string } }) =>
+        account?.custody?.kind === 'watch',
+    isHardwareWalletAccount: (account: { custody?: { kind: string } }) =>
+        account?.custody?.kind === 'hardware',
     WalletAccount: {} as unknown,
 }))
 
@@ -127,7 +130,11 @@ describe('useNameAccountScreen', () => {
             account: {
                 id: '1',
                 address: 'ADDR',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 name: 'My Wallet',
                 keyPairId: 'kp1',
             },
@@ -153,7 +160,11 @@ describe('useNameAccountScreen', () => {
         const account = {
             id: '1',
             address: 'ADDR',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             name: 'Old Name',
             keyPairId: 'kp1',
         }
@@ -190,7 +201,11 @@ describe('useNameAccountScreen', () => {
             account: {
                 id: '1',
                 address: 'ADDR',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 name: 'Old Name',
                 keyPairId: 'kp1',
             },
@@ -209,7 +224,11 @@ describe('useNameAccountScreen', () => {
     it('handleFinish creates HD wallet account when no account is provided', async () => {
         mockBuildHdWalletAccount.mockResolvedValue({
             address: 'NEW_ADDR',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         })
 
         const { result } = renderHook(() => useNameAccountScreen())
@@ -249,7 +268,11 @@ describe('useNameAccountScreen', () => {
     it('handleFinish resets isCreating after completion', async () => {
         mockBuildHdWalletAccount.mockResolvedValue({
             address: 'ADDR',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         })
 
         const { result } = renderHook(() => useNameAccountScreen())

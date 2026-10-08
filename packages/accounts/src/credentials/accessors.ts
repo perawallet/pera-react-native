@@ -28,11 +28,7 @@ import type {
 import { authAddressOf, getAccountChainState } from '../store/accountChainState'
 import type { KeystoreSnapshot } from './credentialScheme'
 
-// A record the backfill left without `custody` is answered from the legacy
-// top-level fields, which are the Algorand chain's.
-
-/** `undefined` only for a record the backfill left bare. */
-export const custodyOf = (account: WalletAccount): AccountCustody | undefined =>
+export const custodyOf = (account: WalletAccount): AccountCustody =>
     account.custody
 
 export const hasCustody = <K extends AccountCustody['kind']>(
@@ -40,8 +36,9 @@ export const hasCustody = <K extends AccountCustody['kind']>(
     kind: K,
 ): account is WalletAccount & {
     custody: Extract<AccountCustody, { kind: K }>
-} => account.custody?.kind === kind
+} => account.custody.kind === kind
 
+// `chains` is optional, so the top-level address and key answer for the legacy chain.
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
@@ -72,14 +69,8 @@ export const signingKeyOn = (
 
 export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
     const { custody } = account
-    if (custody) {
-        return custody.kind === 'local' && custody.seed === 'bip39'
-            ? custody.hd
-            : undefined
-    }
-    const details = account.type === 'hdWallet' && account.hdWalletDetails
-    return details
-        ? { account: details.account, keyIndex: details.keyIndex }
+    return custody.kind === 'local' && custody.seed === 'bip39'
+        ? custody.hd
         : undefined
 }
 
@@ -87,16 +78,9 @@ export const hardwareDeviceOf = (
     account: WalletAccount,
 ): { device: HardwareRef; accountIndex: number } | undefined => {
     const { custody } = account
-    if (custody) {
-        return custody.kind === 'hardware'
-            ? { device: custody.device, accountIndex: custody.accountIndex }
-            : undefined
-    }
-    if (account.type !== 'hardware' || !account.hardwareDetails) {
-        return undefined
-    }
-    const { accountIndex, ...device } = account.hardwareDetails
-    return { device, accountIndex }
+    return custody.kind === 'hardware'
+        ? { device: custody.device, accountIndex: custody.accountIndex }
+        : undefined
 }
 
 /**
@@ -108,7 +92,7 @@ export const seedOf = (
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,
 ): string | undefined => {
     const { custody } = account
-    if (custody && custody.kind !== 'local') return undefined
+    if (custody.kind !== 'local') return undefined
     const keyPairId =
         Object.values(account.chains ?? {}).find(entry => entry?.keyPairId)
             ?.keyPairId ?? account.keyPairId

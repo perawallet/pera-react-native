@@ -99,7 +99,11 @@ describe('useHDImportSession', () => {
             {
                 id: 'discovered-1',
                 address: 'ADDR-A',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 0 },
+                },
                 keyPairId: 'w-1',
                 hdWalletDetails: {
                     account: 1,
@@ -153,7 +157,11 @@ describe('useHDImportSession', () => {
                         {
                             id: 'discovered-1',
                             address: 'ADDR-A',
-                            type: 'hdWallet' as const,
+                            custody: {
+                                kind: 'local',
+                                seed: 'bip39',
+                                hd: { account: 1, keyIndex: 0 },
+                            },
                             keyPairId: 'w-1',
                             hdWalletDetails: {
                                 account: 1,

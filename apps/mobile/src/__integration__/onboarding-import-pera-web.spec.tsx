@@ -29,6 +29,7 @@ import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebIm
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { usePeraWebImportFlowStore } from '@modules/onboarding'
@@ -141,7 +142,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.type).toBe(AccountTypes.algo25)
+        expect(accountType(account)).toBe(AccountTypes.algo25)
         expect(account.address).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('My Web Account')
 
@@ -169,7 +170,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         expect(got).toEqual([...addresses].sort())
 
         for (const a of useAccountsStore.getState().accounts) {
-            expect(a.type).toBe(AccountTypes.algo25)
+            expect(accountType(a)).toBe(AccountTypes.algo25)
         }
     })
 
@@ -201,7 +202,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded-keypair-id',
             },
@@ -373,7 +374,7 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.type).toBe(AccountTypes.algo25)
+        expect(accountType(account)).toBe(AccountTypes.algo25)
         expect(account.address).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Scanned Account')
 

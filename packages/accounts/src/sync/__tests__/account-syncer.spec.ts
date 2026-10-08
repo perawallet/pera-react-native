@@ -80,7 +80,7 @@ describe('fetchAndPersistAccount', () => {
         useAccountsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([
             {
-                type: 'watch',
+                custody: { kind: 'watch' },
                 address: 'A',
             } as unknown as import('../../models').WalletAccount,
         ])

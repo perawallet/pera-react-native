@@ -52,7 +52,7 @@ vi.mock('@utils/shareText', () => ({
 const mockAccount = {
     address: 'test-address-123',
     name: 'Test Account',
-    type: 'watch' as const,
+    custody: { kind: 'watch' },
 }
 
 describe('useQRViewScreen', () => {

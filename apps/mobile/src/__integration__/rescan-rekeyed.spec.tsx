@@ -35,6 +35,7 @@ import {
     AccountTypes,
     useAccountsStore,
     type WalletAccount,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
@@ -50,7 +51,7 @@ import {
 
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'rescan-source-key',
     name: 'Source',
@@ -165,7 +166,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
             .accounts.filter(a => a.address !== ALGO25_TEST_ADDRESS)
         expect(imported).toHaveLength(2)
         imported.forEach(account => {
-            expect(account.type).toBe(AccountTypes.watch)
+            expect(accountType(account)).toBe(AccountTypes.watch)
             expect(account.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
         })
     })
@@ -211,7 +212,9 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         const imported = useAccountsStore
             .getState()
             .accounts.find(a => a.address === HD_TEST_ADDRESS)
-        expect(imported?.type).toBe(AccountTypes.watch)
+        expect(imported ? accountType(imported) : undefined).toBe(
+            AccountTypes.watch,
+        )
         expect(imported?.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
     })
 

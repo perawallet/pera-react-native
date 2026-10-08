@@ -22,6 +22,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
@@ -89,7 +90,7 @@ describe('watch quantum address', () => {
         })
         // The quantum-derived address has no quantum-specific branch in
         // the watch flow — it persists as a plain watch account.
-        expect(useAccountsStore.getState().accounts[0].type).toBe(
+        expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
             AccountTypes.watch,
         )
         expect(useAccountsStore.getState().accounts[0].address).toBe(
@@ -107,13 +108,10 @@ describe('watch quantum address', () => {
                 'Quantum watch',
             )
         })
-        expect(
-            useAccountsStore
-                .getState()
-                .accounts.find(
-                    account => account.address === WATCH_TARGET_ADDRESS,
-                )?.type,
-        ).toBe(AccountTypes.watch)
+        const watched = useAccountsStore
+            .getState()
+            .accounts.find(account => account.address === WATCH_TARGET_ADDRESS)
+        expect(watched && accountType(watched)).toBe(AccountTypes.watch)
         expect(useAccountsStore.getState().selectedAccountAddress).toBe(
             WATCH_TARGET_ADDRESS,
         )
@@ -126,7 +124,7 @@ describe('watch quantum address', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-1',
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: WATCH_TARGET_ADDRESS,
             },
         ])

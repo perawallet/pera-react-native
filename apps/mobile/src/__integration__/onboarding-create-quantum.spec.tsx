@@ -22,6 +22,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -79,7 +80,9 @@ describe('create quantum account', () => {
                 expect(
                     useAccountsStore
                         .getState()
-                        .accounts.some(a => a.type === AccountTypes.quantum),
+                        .accounts.some(
+                            a => accountType(a) === AccountTypes.quantum,
+                        ),
                 ).toBe(true)
             },
             { timeout: SLOW_WAIT_TIMEOUT_MS },

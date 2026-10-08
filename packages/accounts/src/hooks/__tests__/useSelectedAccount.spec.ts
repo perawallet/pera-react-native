@@ -42,14 +42,14 @@ describe('useSelectedAccount', () => {
             {
                 id: '1',
                 address: 'A',
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 canSign: true,
                 name: 'A',
             },
             {
                 id: '2',
                 address: 'B',
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 canSign: true,
                 name: 'B',
             },

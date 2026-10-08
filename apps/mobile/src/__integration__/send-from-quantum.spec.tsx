@@ -43,7 +43,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
     quantumDerivationFor,
@@ -99,7 +98,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'quantum-sender-1',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: keyResult!.signKeyId,
         name: 'Quantum sender',

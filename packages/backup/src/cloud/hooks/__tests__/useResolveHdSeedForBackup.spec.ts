@@ -60,7 +60,7 @@ const ENTROPY = Uint8Array.from({ length: 16 }, (_, i) => i)
 
 const account = {
     id: 'acc-1',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 3, keyIndex: 7 } },
     address: 'ADDR-2',
     keyPairId: 'child-1',
     hdWalletDetails: { account: 3, change: 0, keyIndex: 7, derivationType: 9 },

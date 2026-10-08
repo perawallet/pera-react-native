@@ -19,7 +19,16 @@ import type { AnalyzedSignableGroup } from '../../../pipeline/types'
 
 const ledgerAccount = (address: string, rekeyAddress?: string) =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address,
         rekeyAddress,
         hardwareDetails: {
@@ -33,7 +42,7 @@ const ledgerAccount = (address: string, rekeyAddress?: string) =>
 
 const watchAccount = (address: string, rekeyAddress?: string) =>
     ({
-        type: 'watch',
+        custody: { kind: 'watch' },
         address,
         rekeyAddress,
     }) as unknown as WalletAccount

@@ -60,7 +60,10 @@ let dappOrigin: string
 let quantumAddress: string
 const PASSWORD = 'e2e-quantum-account-password-1'
 
-type StoredAccount = { type: string; address: string }
+type StoredAccount = {
+    custody?: { kind: string; seed?: string }
+    address: string
+}
 
 const readStoredAccounts = async (): Promise<StoredAccount[]> => {
     const [serviceWorker] = context.serviceWorkers()
@@ -163,7 +166,7 @@ test('Add Account creates a quantum account through the web keystore', async () 
     })
 
     const quantumAccounts = (await readStoredAccounts()).filter(
-        account => account.type === 'quantum',
+        account => account.custody?.seed === 'quantum',
     )
     expect(quantumAccounts).toHaveLength(1)
     quantumAddress = quantumAccounts[0].address

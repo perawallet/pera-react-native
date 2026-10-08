@@ -29,7 +29,6 @@ import {
     SubmissionAttemptsSchema,
 } from '@perawallet/wallet-core-signing'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -646,7 +645,7 @@ describe('submitAndAutoRefresh (public)', () => {
         ({
             id: address,
             address,
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             keyPairId: 'kp',
         }) as WalletAccount
 

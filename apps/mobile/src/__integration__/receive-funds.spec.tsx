@@ -19,7 +19,6 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { AccountSelectionScreen } from '@modules/transactions/screens/receive-funds/AccountSelectionScreen/AccountSelectionScreen'
 import { QRViewScreen } from '@modules/transactions/screens/receive-funds/QRViewScreen/QRViewScreen'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -30,7 +29,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const PRIMARY_ACCOUNT: WalletAccount = {
     id: 'primary-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'primary-keypair',
     name: 'Primary',
@@ -38,7 +37,7 @@ const PRIMARY_ACCOUNT: WalletAccount = {
 
 const SECONDARY_ACCOUNT: WalletAccount = {
     id: 'secondary-1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: HD_TEST_ADDRESS,
     name: 'Hardware backup',
 }

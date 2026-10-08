@@ -12,8 +12,8 @@
 
 import { useMemo } from 'react'
 import {
-    AccountTypes,
     type AssetWithAccountBalance,
+    buildAccount,
     useAccountBalancesQuery,
     type WalletAccount,
     type WatchAccount,
@@ -21,6 +21,7 @@ import {
 
 import { Decimal } from 'decimal.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseRekeyedAccountInfoContentParams = {
@@ -44,12 +45,14 @@ export function useRekeyedAccountInfoContent({
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
         if (!account.rekeyAddress) return undefined
-        return {
+        const address = account.rekeyAddress
+        return buildAccount({
             // Display-only synth account, keyed by its address.
-            id: account.rekeyAddress,
-            address: account.rekeyAddress,
-            type: AccountTypes.watch,
-        }
+            id: address,
+            custody: { kind: 'watch' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address } },
+        })
     }, [account.rekeyAddress])
 
     const { accountBalances: authBalances, isPending: isAuthPending } =

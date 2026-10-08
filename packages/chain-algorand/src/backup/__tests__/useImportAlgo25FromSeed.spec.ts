@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    AccountTypes,
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -69,7 +68,7 @@ const VALID_ADDRESS =
 const importedAccount: WalletAccount = {
     id: 'acc-1',
     address: VALID_ADDRESS,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     name: null,
 } as WalletAccount
 

@@ -137,7 +137,6 @@ describe('algorandSingleKeyAccounts', () => {
                 { scheme: 'ed25519', networkId: 'mainnet' },
             )
             expect(minted.account).toMatchObject({
-                type: 'algo25',
                 address,
                 keyPairId: algo25SignKeyId('SEED1'),
                 custody: { kind: 'local', seed: 'algo25' },
@@ -192,7 +191,6 @@ describe('algorandSingleKeyAccounts', () => {
             })
             expect(minted.isNewSeed).toBe(true)
             expect(minted.account).toMatchObject({
-                type: 'quantum',
                 address: CANONICAL_ADDRESS,
                 keyPairId: 'QSEED1-quantum-pqk1',
                 custody: { kind: 'local', seed: 'quantum' },
@@ -239,7 +237,6 @@ describe('algorandSingleKeyAccounts', () => {
             })
             expect(keystore.getKey).not.toHaveBeenCalled()
             expect(account).toMatchObject({
-                type: 'algo25',
                 keyPairId: algo25SignKeyId('SEED1'),
                 custody: { kind: 'local', seed: 'algo25' },
                 chains: {

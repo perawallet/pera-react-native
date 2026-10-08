@@ -23,8 +23,22 @@ const mockState = vi.hoisted(() => ({
 }))
 const { mockSetSelected, ACCT_A, ACCT_B } = vi.hoisted(() => ({
     mockSetSelected: vi.fn(),
-    ACCT_A: { address: 'ADDR_A', type: 'hdWallet' },
-    ACCT_B: { address: 'ADDR_B', type: 'hdWallet' },
+    ACCT_A: {
+        address: 'ADDR_A',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
+    },
+    ACCT_B: {
+        address: 'ADDR_B',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
+    },
 }))
 const mockCardState = vi.hoisted(() => ({
     isAuthenticated: false as boolean,

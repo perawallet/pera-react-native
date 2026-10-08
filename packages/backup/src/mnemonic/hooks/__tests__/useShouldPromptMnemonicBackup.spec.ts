@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockRequiresBackup = vi.fn()
 vi.mock('../useRequiresMnemonicBackup', () => ({
@@ -43,7 +40,7 @@ import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'HD1',
     keyPairId: 'kp',
     hdWalletDetails: {
@@ -113,7 +110,11 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockRequiresBackup.mockReturnValue(true)
         mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
-            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+            {
+                id: 'a',
+                custody: { kind: 'local', seed: 'algo25' },
+                address: 'A',
+            },
         ])
 
         const { result } = renderHook(() =>
@@ -127,7 +128,11 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockRequiresBackup.mockReturnValue(false)
         mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
-            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+            {
+                id: 'a',
+                custody: { kind: 'local', seed: 'algo25' },
+                address: 'A',
+            },
         ])
 
         const { result } = renderHook(() =>

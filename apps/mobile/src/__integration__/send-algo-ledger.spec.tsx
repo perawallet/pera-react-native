@@ -34,7 +34,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -97,7 +96,16 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 const seedLedgerSender = (): HardwareWalletAccount => {
     const sender: HardwareWalletAccount = {
         id: 'hw-ledger-sender',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device-id',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address: LEDGER_ADDRESS,
         hardwareDetails: {
             manufacturer: 'ledger',

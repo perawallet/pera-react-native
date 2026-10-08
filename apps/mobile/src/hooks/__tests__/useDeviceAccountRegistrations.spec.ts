@@ -13,7 +13,6 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -33,7 +32,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 import { useDeviceAccountRegistrations } from '../useDeviceAccountRegistrations'
 
-type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'type'> &
+type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'custody'> &
     Partial<WalletAccount>
 
 const seedAccounts = (accounts: SeedAccount[]) => {
@@ -59,10 +58,10 @@ describe('useDeviceAccountRegistrations', () => {
             {
                 id: '1',
                 address: 'QADDR',
-                type: AccountTypes.quantum,
+                custody: { kind: 'local', seed: 'quantum' },
                 keyPairId: 'kp',
             },
-            { id: '2', address: 'WADDR', type: AccountTypes.watch },
+            { id: '2', address: 'WADDR', custody: { kind: 'watch' } },
         ])
 
         const { result } = renderHook(() => useDeviceAccountRegistrations())
@@ -86,7 +85,7 @@ describe('useDeviceAccountRegistrations', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'kp',
             },
         ])

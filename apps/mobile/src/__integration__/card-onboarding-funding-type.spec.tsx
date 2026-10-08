@@ -94,7 +94,6 @@ vi.mock('@modules/security', async () => ({
 }))
 
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
     type WalletAccount,
@@ -135,7 +134,16 @@ const BAANX_USER_ID = 'mock-baanx-user-id'
 
 const LEDGER_ACCOUNT: HardwareWalletAccount = {
     id: 'hw-ledger-1',
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device-id',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -148,7 +156,7 @@ const LEDGER_ACCOUNT: HardwareWalletAccount = {
 
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: FUNDING_ADDRESS,
     keyPairId: '',
     name: 'Main Account',

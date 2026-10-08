@@ -41,22 +41,31 @@ import { registerFakeLocalKeySignerAdapter } from '../../../__tests__/fakeLocalK
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
 const algo25Account = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'A',
 } as unknown as WalletAccount
 
 const hardwareAccount = {
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'H',
 } as unknown as WalletAccount
 
 const multisigAccount = {
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address: 'M',
 } as unknown as WalletAccount
 
 const weirdAccount = {
-    type: 'weird',
+    custody: { kind: 'weird' },
     address: 'W',
 } as unknown as WalletAccount
 
@@ -125,7 +134,9 @@ beforeEach(() => {
 
 describe('createSigningStrategySelector', () => {
     test('returns multisig strategy for multisig accounts', () => {
-        mocks.isMultisigAccount.mockImplementation(a => a.type === 'multisig')
+        mocks.isMultisigAccount.mockImplementation(
+            a => a.custody.kind === 'multisig',
+        )
         mocks.resolveAuthAccount.mockImplementation(a => a)
         const select = makeSelector()
         const strategy = select(multisigAccount, [multisigAccount])
@@ -133,7 +144,9 @@ describe('createSigningStrategySelector', () => {
     })
 
     test('returns multisig strategy when the auth account is multisig (rekeyed-to-msig sender)', () => {
-        mocks.isMultisigAccount.mockImplementation(a => a.type === 'multisig')
+        mocks.isMultisigAccount.mockImplementation(
+            a => a.custody.kind === 'multisig',
+        )
         mocks.resolveAuthAccount.mockReturnValue(multisigAccount)
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account, multisigAccount])
@@ -143,7 +156,7 @@ describe('createSigningStrategySelector', () => {
     test('returns hardware strategy when auth account is hardware', () => {
         mocks.resolveAuthAccount.mockReturnValue(hardwareAccount)
         mocks.isHardwareWalletAccount.mockImplementation(
-            a => a.type === 'hardware',
+            a => a.custody.kind === 'hardware',
         )
         const select = makeSelector()
         const strategy = select(hardwareAccount, [hardwareAccount])
@@ -154,7 +167,9 @@ describe('createSigningStrategySelector', () => {
 
     test('returns local strategy when auth account has signing keys', () => {
         mocks.resolveAuthAccount.mockReturnValue(algo25Account)
-        mocks.hasSigningKeys.mockImplementation(a => a.type === 'algo25')
+        mocks.hasSigningKeys.mockImplementation(
+            a => a.custody.seed === 'algo25',
+        )
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account])
         expect(strategy).toBe(localStrategy)
@@ -182,26 +197,37 @@ describe('createSigningStrategySelector', () => {
             signTransactions = vi.fn().mockResolvedValue([]),
         ) => {
             mocks.isMultisigAccount.mockImplementation(
-                a => a.type === 'multisig',
+                a => a.custody.kind === 'multisig',
             )
             mocks.isHardwareWalletAccount.mockImplementation(
-                a => a.type === 'hardware',
+                a => a.custody.kind === 'hardware',
             )
-            mocks.hasSigningKeys.mockImplementation(a => a.type === 'algo25')
+            mocks.hasSigningKeys.mockImplementation(
+                a => a.custody.seed === 'algo25',
+            )
             // Configure resolveAuthAccount to return a DIFFERENT-typed
             // account if it is consulted — so any unintended call would
             // pick the wrong strategy and fail the assertion.
             mocks.resolveAuthAccount.mockImplementation(
                 (account: WalletAccount) => {
-                    if (account.type === 'algo25') {
+                    if (account.custody.kind === 'local') {
                         return {
-                            type: 'hardware',
+                            custody: {
+                                kind: 'hardware',
+                                device: {
+                                    manufacturer: 'ledger',
+                                    deviceId: 'device-1',
+                                    deviceName: 'Nano X',
+                                    transportType: 'ble',
+                                },
+                                accountIndex: 0,
+                            },
                             address: `${account.address}_AUTH`,
                         } as unknown as WalletAccount
                     }
-                    if (account.type === 'hardware') {
+                    if (account.custody.kind === 'hardware') {
                         return {
-                            type: 'algo25',
+                            custody: { kind: 'local', seed: 'algo25' },
                             address: `${account.address}_AUTH`,
                         } as unknown as WalletAccount
                     }
@@ -256,7 +282,7 @@ describe('createSigningStrategySelector', () => {
 
         test('throws CannotSignError when participant has no own signing capability (rekey is not consulted as a fallback)', async () => {
             const orphan = {
-                type: 'watch',
+                custody: { kind: 'watch' },
                 address: 'WATCH',
             } as unknown as WalletAccount
             const { select } = buildSign([orphan])

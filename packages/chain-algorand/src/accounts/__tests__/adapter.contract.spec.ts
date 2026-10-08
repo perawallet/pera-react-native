@@ -23,7 +23,6 @@ import {
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
 import {
-    AccountTypes,
     DerivationTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -49,7 +48,7 @@ const QUANTUM_LEGACY =
 const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
     id,
     address,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: `${id}-key`,
     ...extra,
 })
@@ -60,7 +59,7 @@ const rekeyedWatch = (
 ): WalletAccount => ({
     id: 'rekeyed',
     address,
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     rekeyAddress,
 })
 
@@ -135,7 +134,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
         watch: {
             id: 'watch',
             address: EMPTY,
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
         },
     },
     rekeyed: {

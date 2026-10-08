@@ -111,9 +111,10 @@ vi.mock('../computeSwapAlgoShortfall', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
-    // Real predicate is `account.type === 'quantum'`.
+    // Real predicate reads the kind from custody.
     isQuantumAccount: (account: unknown) =>
-        (account as { type?: string } | undefined)?.type === 'quantum',
+        (account as { custody?: { seed?: string } } | undefined)?.custody
+            ?.seed === 'quantum',
     isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
 }))
 
@@ -225,7 +226,7 @@ const senderAccount = { address: 'SENDER_ADDR' } as unknown as WalletAccount
 const quantumAccount: WalletAccount = {
     id: 'quantum-account-1',
     address: 'QUANTUM_ADDR',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'quantum-keypair-1',
 }
 
@@ -235,7 +236,7 @@ const quantumAccount: WalletAccount = {
 const standardAccountRekeyedToQuantum: WalletAccount = {
     id: 'standard-account-1',
     address: 'STANDARD_ADDR',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'standard-keypair-1',
     rekeyAddress: quantumAccount.address,
 }
@@ -944,7 +945,7 @@ describe('executeAlgorandSwap', () => {
         const standardAccount: WalletAccount = {
             id: 'standard-account-2',
             address: 'STANDARD_ADDR_2',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             keyPairId: 'standard-keypair-2',
         }
 

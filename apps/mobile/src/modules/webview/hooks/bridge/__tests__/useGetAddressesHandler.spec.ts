@@ -17,6 +17,7 @@ import {
     isRekeyedAccount,
     useAllAccounts,
     useSigningAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useGetAddressesHandler } from '../useGetAddressesHandler'
 import {
@@ -28,15 +29,10 @@ import {
 
 vi.mock('react-native-webview', () => ({ default: {} }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     isRekeyedAccount: vi.fn(),
     canSignWith: vi.fn(),
     useSigningAccounts: vi.fn(),
@@ -46,7 +42,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 type MockAccount = {
     address: string
     name?: string
-    type: string
+    custody: WalletAccount['custody']
     rekeyAddress?: string
 }
 
@@ -92,8 +88,16 @@ describe('useGetAddressesHandler (Android parity)', () => {
     it('answers with the signing accounts only', () => {
         setupAccounts(
             [
-                { address: 'signer', name: 'Signer', type: 'hdWallet' },
-                { address: 'watch', name: 'Watch', type: 'watch' },
+                {
+                    address: 'signer',
+                    name: 'Signer',
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 0, keyIndex: 0 },
+                    },
+                },
+                { address: 'watch', name: 'Watch', custody: { kind: 'watch' } },
             ],
             new Set(['signer']),
         )
@@ -111,9 +115,34 @@ describe('useGetAddressesHandler (Android parity)', () => {
     it('preserves store order — ordering is the consumer-side concern', () => {
         setupAccounts(
             [
-                { address: 'first', name: 'First', type: 'hdWallet' },
-                { address: 'second', name: 'Second', type: 'algo25' },
-                { address: 'third', name: 'Third', type: 'hardware' },
+                {
+                    address: 'first',
+                    name: 'First',
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 0, keyIndex: 0 },
+                    },
+                },
+                {
+                    address: 'second',
+                    name: 'Second',
+                    custody: { kind: 'local', seed: 'algo25' },
+                },
+                {
+                    address: 'third',
+                    name: 'Third',
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'device-1',
+                            deviceName: 'Nano X',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 0,
+                    },
+                },
             ],
             new Set(['first', 'second', 'third']),
         )
@@ -131,7 +160,13 @@ describe('useGetAddressesHandler (Android parity)', () => {
         // Not `Algo25`: a quantum account produces a ~1.2 KB Falcon signature
         // with no recoverable Ed25519 public key.
         setupAccounts(
-            [{ address: 'quantum-addr', name: 'Quantum', type: 'quantum' }],
+            [
+                {
+                    address: 'quantum-addr',
+                    name: 'Quantum',
+                    custody: { kind: 'local', seed: 'quantum' },
+                },
+            ],
             new Set(['quantum-addr']),
         )
 
@@ -144,7 +179,11 @@ describe('useGetAddressesHandler (Android parity)', () => {
                 {
                     address: 'rekeyed',
                     name: 'Rekeyed',
-                    type: 'hdWallet',
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 0, keyIndex: 0 },
+                    },
                     rekeyAddress: 'auth',
                 },
             ],
@@ -156,7 +195,16 @@ describe('useGetAddressesHandler (Android parity)', () => {
 
     it('sends an empty name string when the account has no name', () => {
         setupAccounts(
-            [{ address: 'nameless', type: 'hdWallet' }],
+            [
+                {
+                    address: 'nameless',
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 0, keyIndex: 0 },
+                    },
+                },
+            ],
             new Set(['nameless']),
         )
 

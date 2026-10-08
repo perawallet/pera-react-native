@@ -63,6 +63,7 @@ import {
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -351,7 +352,7 @@ describe('migrateLegacyAccount with authAddress', () => {
 
         const created = await migrateLegacyAccount(buildArgs(account))
 
-        expect(created.type).toBe('watch')
+        expect(accountType(created)).toBe('watch')
         expect(created.rekeyAddress).toBe('AUTHADDR')
     })
 })

@@ -15,10 +15,14 @@ import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import type { SigningMachineContext } from '../../machine/context'
 import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
 
-const makeAccount = (
-    address: string,
-    type: 'algo25' | 'hardware' | 'multisig' = 'algo25',
-) => ({ address, type }) as any
+const CUSTODY = {
+    algo25: { kind: 'local', seed: 'algo25' },
+    hardware: { kind: 'hardware' },
+    multisig: { kind: 'multisig' },
+}
+
+const makeAccount = (address: string, type: keyof typeof CUSTODY = 'algo25') =>
+    ({ address, custody: CUSTODY[type] }) as any
 
 describe('buildResolvedSignRequest', () => {
     it('returns null when context has no signerAddress (failed pre-resolution)', () => {

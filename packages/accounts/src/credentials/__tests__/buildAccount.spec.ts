@@ -15,6 +15,7 @@ import { DerivationTypes, type AccountCustody } from '../../models'
 import { AccountError } from '../../errors'
 import { buildAccount, type BuildAccountInput } from '../buildAccount'
 import { custodyFromLegacy } from '../backfill'
+import { accountType } from '../../utils'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 const device = {
@@ -81,7 +82,6 @@ describe('buildAccount', () => {
         expect(buildAccount({ id: 'id', ...inputs.algo25 })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
-            type: 'algo25',
             keyPairId: 'seed-ed25519',
             custody: { kind: 'local', seed: 'algo25' },
             chains: {
@@ -92,14 +92,18 @@ describe('buildAccount', () => {
 
     test('builds a legacy quantum account from a quantum seed', () => {
         expect(buildAccount({ id: 'id', ...inputs.quantum })).toMatchObject({
-            type: 'quantum',
+            custody: { kind: 'local', seed: 'quantum' },
             keyPairId: 'seed-quantum-pqk1',
         })
     })
 
     test('writes the fixed legacy HD details from the custody position', () => {
         expect(buildAccount({ id: 'id', ...inputs.hdWallet })).toMatchObject({
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 1, keyIndex: 4 },
+            },
             keyPairId: 'seed-acc1-idx4-dt9',
             hdWalletDetails: {
                 account: 1,
@@ -114,7 +118,6 @@ describe('buildAccount', () => {
         expect(buildAccount({ id: 'id', ...inputs.hardware })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
-            type: 'hardware',
             hardwareDetails: { ...device, accountIndex: 2 },
             custody: inputs.hardware.custody,
             chains: { algorand: { address: 'ADDR' } },
@@ -123,7 +126,7 @@ describe('buildAccount', () => {
 
     test('derives the multisig details from the chain entry', () => {
         expect(buildAccount({ id: 'id', ...inputs.multisig })).toMatchObject({
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             multisigDetails: {
                 threshold: 2,
                 addresses: ['P1', 'P2'],
@@ -136,7 +139,6 @@ describe('buildAccount', () => {
         expect(buildAccount({ id: 'id', ...inputs.watch })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
-            type: 'watch',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR' } },
         })
@@ -156,10 +158,22 @@ describe('buildAccount', () => {
         (_kind, input) => {
             const account = buildAccount(input)
 
-            expect(custodyFromLegacy(account)).toEqual({
+            expect(
+                custodyFromLegacy({ ...account, type: accountType(account) }),
+            ).toEqual({
                 custody: input.custody,
                 chains: input.chains,
             })
+        },
+    )
+
+    test.each(Object.entries(inputs))(
+        'a %s account carries no type, and reads back as its kind',
+        (kind, input) => {
+            const account = buildAccount(input)
+
+            expect(account).not.toHaveProperty('type')
+            expect(accountType(account)).toBe(kind)
         },
     )
 

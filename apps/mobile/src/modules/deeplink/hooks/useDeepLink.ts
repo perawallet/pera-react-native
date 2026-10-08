@@ -19,7 +19,7 @@ import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { DeeplinkType, type LinkSource } from '../types'
 import {
-    AccountTypes,
+    isHDWalletAccount,
     useAccountsStore,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
@@ -454,10 +454,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         // assert nothing to sign with. Explain rather than dead-end in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
-                            .accounts.some(
-                                account =>
-                                    account.type === AccountTypes.hdWallet,
-                            )
+                            .accounts.some(isHDWalletAccount)
                         if (!hasHDWallet) {
                             void requestByType('passkey-hd-wallet-required', {})
                             // Close the QR scanner (when present) so the sheet,

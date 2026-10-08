@@ -74,7 +74,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
         address: 'TEST_ADDRESS_123',
         id: 'test-id',
         name: 'Test Account',
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         canSign: true,
     }
 

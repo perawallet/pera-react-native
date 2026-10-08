@@ -14,7 +14,6 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAuthorityTargets } from '../useAuthorityTargets'
 import { useAccountsStore } from '../../store'
-import { withCustody } from '../../credentials'
 import type { WalletAccount } from '../../models'
 import {
     fakeAccountsChain,
@@ -24,7 +23,7 @@ import {
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: 'k',
         ...extra,
@@ -55,12 +54,12 @@ describe('useAuthorityTargets', () => {
             }),
         )
 
-        expect(result.current).toEqual([withCustody(good)])
+        expect(result.current).toEqual([good])
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
             'quantum',
-            withCustody(good),
+            good,
             source,
-            [source, good, bad].map(withCustody),
+            [source, good, bad],
             { isQuantumTargetEnabled: true },
         )
     })

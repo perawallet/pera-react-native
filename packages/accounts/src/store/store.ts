@@ -14,7 +14,6 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     ACCOUNT_TYPE_RANK,
-    AccountTypes,
     LaunchAccountModes,
     type AccountsState,
     type AccountSortMode,
@@ -32,8 +31,11 @@ import {
 import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
-import { buildAccount, chainAccountOf, withCustody } from '../credentials'
-import { rebuildCustody } from '../credentials/backfill'
+import { buildAccount, chainAccountOf } from '../credentials'
+import {
+    toCurrentAccount,
+    type PersistedAccountRecord,
+} from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
 import {
     accountType,
@@ -43,7 +45,7 @@ import {
 } from '../utils'
 
 const STORE_NAME = 'accounts-store'
-const STORE_VERSION = 2
+const STORE_VERSION = 3
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -55,33 +57,43 @@ type PersistedAccountsState = Pick<
     | 'launchAccountAddress'
 >
 
+type PersistedAccountsRecordState = Omit<PersistedAccountsState, 'accounts'> & {
+    accounts?: PersistedAccountRecord[]
+}
+
 // v1 persisted `provenance`/`credentials`, which `custody`/`chains` replace.
-const stripV1Custody = (account: WalletAccount): WalletAccount => {
+// Both are dropped, with the `custody`/`chains` they were derived into, so the
+// legacy `type` decodes again.
+const stripPreV2Custody = (
+    account: PersistedAccountRecord,
+): PersistedAccountRecord => {
     const rest: Record<string, unknown> = { ...account }
     delete rest.provenance
     delete rest.credentials
-    return rest as WalletAccount
+    delete rest.custody
+    delete rest.chains
+    return rest as PersistedAccountRecord
 }
 
 /**
- * The legacy `type` and details are authoritative, so v0 and v1 both drop
- * whatever custody they carry and derive it again; the output depends only on
- * those fields, so re-running this over migrated state is a no-op.
+ * Before v2 the legacy `type` and details were authoritative, so those
+ * versions derive custody from them again. v3 stops persisting `type`, which
+ * re-running this over migrated state leaves alone.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
     version: number,
 ): PersistedAccountsState => {
-    const state = persistedState as PersistedAccountsState
-    if (version < 2) {
-        return {
-            ...state,
-            accounts: (state.accounts ?? []).map(account =>
-                rebuildCustody(stripV1Custody(account)),
+    if (version >= 3) return persistedState as PersistedAccountsState
+    const state = persistedState as PersistedAccountsRecordState
+    return {
+        ...state,
+        accounts: (state.accounts ?? []).map(account =>
+            toCurrentAccount(
+                version < 2 ? stripPreV2Custody(account) : account,
             ),
-        }
+        ),
     }
-    return state
 }
 
 type ChainAddresses = Partial<Record<ChainId, string>>
@@ -165,6 +177,32 @@ const resolveDuplicateAccounts = (
     return resolved
 }
 
+/** The account held by the hardware wallet, on the chain whose entry holds `address`; `undefined` when none does. */
+const rebindToHardware = (
+    current: WalletAccount,
+    address: string,
+    details: HardwareWalletDetails,
+): WalletAccount | undefined => {
+    for (const chainId of CHAIN_IDS) {
+        const entry = chainAccountOf(current, chainId)
+        if (!entry || !isSameAddress(chainId, entry.address, address)) continue
+        const { accountIndex, ...device } = details
+        return buildAccount({
+            id: current.id,
+            name: current.name,
+            custody: { kind: 'hardware', device, accountIndex },
+            chainId,
+            chains: {
+                ...current.chains,
+                [chainId]: { address: entry.address },
+            },
+            rekeyAddress: current.rekeyAddress,
+            rekeyAddressByNetwork: current.rekeyAddressByNetwork,
+        })
+    }
+    return undefined
+}
+
 const initialState = {
     accounts: [] as WalletAccount[],
     selectedAccountAddress: null as Nullable<string>,
@@ -203,7 +241,7 @@ export const useAccountsStore: UseBoundStore<
                 // first. Callers that need to surface duplicates to the user
                 // use addAccount or throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
-                accounts = resolveDuplicateAccounts(accounts).map(withCustody)
+                accounts = resolveDuplicateAccounts(accounts)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
@@ -399,13 +437,14 @@ export const useAccountsStore: UseBoundStore<
                 const current = accounts[idx]
                 if (!isWatchAccount(current)) return false
 
-                const upgraded: WalletAccount = {
-                    ...current,
-                    type: AccountTypes.hardware,
+                const upgraded = rebindToHardware(
+                    current,
+                    address,
                     hardwareDetails,
-                }
+                )
+                if (!upgraded) return false
                 const next = [...accounts]
-                next[idx] = rebuildCustody(upgraded)
+                next[idx] = upgraded
                 set({ accounts: next })
                 return true
             },
@@ -436,9 +475,14 @@ export const useAccountsStore: UseBoundStore<
                 )
                 if (unchanged) return false
 
-                const rebound: WalletAccount = { ...current, hardwareDetails }
+                const rebound = rebindToHardware(
+                    current,
+                    address,
+                    hardwareDetails,
+                )
+                if (!rebound) return false
                 const next = [...accounts]
-                next[idx] = rebuildCustody(rebound)
+                next[idx] = rebound
                 set({ accounts: next })
                 return true
             },

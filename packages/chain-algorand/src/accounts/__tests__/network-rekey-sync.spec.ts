@@ -48,7 +48,7 @@ let modules: Modules
 
 const account = (): WalletAccount => ({
     id: 'a',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'A',
     keyPairId: 'k',
 })

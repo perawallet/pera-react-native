@@ -45,7 +45,16 @@ const OTHER_ADDRESS =
     'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
 
 const hardwareAccount = {
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: HARDWARE_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -57,7 +66,7 @@ const hardwareAccount = {
 } as unknown as HardwareWalletAccount
 
 const nonHardwareAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: OTHER_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount

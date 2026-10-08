@@ -13,6 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    accountType,
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
@@ -98,7 +99,7 @@ export const createSigningStrategySelector = (
         if (hasSigningKeys(account)) return localStrategy
         throw new CannotSignError(
             account.address,
-            `No signing capability found for account type: ${account.type}`,
+            `No signing capability found for account type: ${accountType(account)}`,
         )
     }
 

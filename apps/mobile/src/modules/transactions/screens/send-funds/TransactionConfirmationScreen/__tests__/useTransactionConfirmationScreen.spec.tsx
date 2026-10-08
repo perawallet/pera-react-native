@@ -75,8 +75,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountAssetBalanceQuery: vi.fn(),
     useOnChainAccountInformationQuery: vi.fn(),
     useSignerFor: vi.fn(),
-    isQuantumAccount: (account: { type?: string } | null | undefined) =>
-        account?.type === 'quantum',
+    isQuantumAccount: (
+        account: { custody?: { seed?: string } } | null | undefined,
+    ) => account?.custody?.seed === 'quantum',
 }))
 
 vi.mock('@hooks/useCapability', async () =>
@@ -786,7 +787,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('flags a quantum fee when the signer is a quantum account', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,
@@ -804,7 +805,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('does not flag a quantum fee for a standard signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'STANDARD_ADDRESS',
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 1000n,
@@ -822,7 +823,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('flags a quantum fee when a standard sender is rekeyed to a quantum signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_AUTH_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,
@@ -841,7 +842,7 @@ describe('useTransactionConfirmationScreen', () => {
             capabilityState.turnOff('quantumAccounts')
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,

@@ -27,6 +27,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 import {
+    type AccountType,
     AccountTypes,
     isRekeyedAccount,
     useCanSignWith,
@@ -34,9 +35,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAccountIcon } from '../useAccountIcon'
+import { custodyForType } from '@test-utils/accountCustody'
 
-const account = (type: WalletAccount['type']): WalletAccount =>
-    ({ type, address: 'ADDR' }) as WalletAccount
+const account = (type: AccountType): WalletAccount =>
+    ({ custody: custodyForType(type), address: 'ADDR' }) as WalletAccount
 
 describe('useAccountIcon', () => {
     beforeEach(() => {

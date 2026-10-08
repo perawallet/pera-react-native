@@ -23,6 +23,7 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import {
     useAccountsStore,
     type MultiSigAccount,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
@@ -141,7 +142,7 @@ describe('Flow: Import shared account by scanning its QR code', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
         const saved = useAccountsStore.getState().accounts[0]
-        expect(saved.type).toBe('multisig')
+        expect(accountType(saved)).toBe('multisig')
         expect(saved.address).toBe(SHARED_ADDRESS)
         expect(saved.name).toBe('Team treasury')
         expect((saved as MultiSigAccount).multisigDetails).toEqual({

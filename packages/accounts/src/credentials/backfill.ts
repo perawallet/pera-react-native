@@ -11,44 +11,56 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    AccountTypes,
-    type AccountChains,
-    type AccountCustody,
-    type WalletAccount,
+import type {
+    AccountChains,
+    AccountCustody,
+    AccountType,
+    BaseWalletAccount,
+    HardwareWalletDetails,
+    HDWalletDetails,
+    MultiSigAccount,
+    MultiSigDetails,
+    WalletAccount,
 } from '../models'
+import { buildAccount } from './buildAccount'
 
 export type CustodyFields = {
     custody: AccountCustody
     chains: AccountChains
 }
 
+/** An account as store v0-v2 persisted it: `type` is authoritative and `custody` may be absent or stale. */
+export type PersistedAccountRecord = Omit<BaseWalletAccount, 'custody'> & {
+    address: string
+    type?: AccountType
+    custody?: AccountCustody
+    hdWalletDetails?: HDWalletDetails
+    hardwareDetails?: HardwareWalletDetails
+    multisigDetails?: MultiSigDetails
+}
+
 /**
- * What a legacy account's `type` and details object describe, or `undefined`
- * when the persisted record lacks what its type requires. This runs on
- * hydration, where a throw would leave the store empty and the next write
- * would persist that, so a malformed record is left alone instead.
+ * `undefined` for a shape that can't keep its kind without inventing an HD
+ * index or a device. A record missing only its key or multisig details keeps
+ * its kind without them; `useMultisigDetailsBackfill` heals the multisig.
  */
 export const custodyFromLegacy = (
-    account: WalletAccount,
+    account: PersistedAccountRecord,
 ): CustodyFields | undefined => {
     const { address } = account
+    const keyed = account.keyPairId
+        ? { address, keyPairId: account.keyPairId }
+        : { address }
     switch (account.type) {
-        case AccountTypes.algo25:
-        case AccountTypes.quantum: {
-            if (!account.keyPairId) return undefined
+        case 'algo25':
+        case 'quantum': {
             return {
                 custody: { kind: 'local', seed: account.type },
-                chains: {
-                    [LEGACY_CHAIN_ID]: {
-                        address,
-                        keyPairId: account.keyPairId,
-                    },
-                },
+                chains: { [LEGACY_CHAIN_ID]: keyed },
             }
         }
-        case AccountTypes.hdWallet: {
-            if (!account.keyPairId || !account.hdWalletDetails) return undefined
+        case 'hdWallet': {
+            if (!account.hdWalletDetails) return undefined
             const { account: hdAccount, keyIndex } = account.hdWalletDetails
             return {
                 custody: {
@@ -56,15 +68,10 @@ export const custodyFromLegacy = (
                     seed: 'bip39',
                     hd: { account: hdAccount, keyIndex },
                 },
-                chains: {
-                    [LEGACY_CHAIN_ID]: {
-                        address,
-                        keyPairId: account.keyPairId,
-                    },
-                },
+                chains: { [LEGACY_CHAIN_ID]: keyed },
             }
         }
-        case AccountTypes.hardware: {
+        case 'hardware': {
             if (!account.hardwareDetails) return undefined
             const { accountIndex, ...device } = account.hardwareDetails
             return {
@@ -72,8 +79,13 @@ export const custodyFromLegacy = (
                 chains: { [LEGACY_CHAIN_ID]: { address } },
             }
         }
-        case AccountTypes.multisig: {
-            if (!account.multisigDetails) return undefined
+        case 'multisig': {
+            if (!account.multisigDetails) {
+                return {
+                    custody: { kind: 'multisig' },
+                    chains: { [LEGACY_CHAIN_ID]: { address } },
+                }
+            }
             const { threshold, addresses, version } = account.multisigDetails
             return {
                 custody: { kind: 'multisig' },
@@ -92,7 +104,7 @@ export const custodyFromLegacy = (
                 },
             }
         }
-        case AccountTypes.watch: {
+        case 'watch': {
             return {
                 custody: { kind: 'watch' },
                 chains: { [LEGACY_CHAIN_ID]: { address } },
@@ -104,22 +116,54 @@ export const custodyFromLegacy = (
     }
 }
 
-/** Idempotent: an account that already has a custody is returned as-is. */
-export const withCustody = <T extends WalletAccount>(account: T): T => {
-    if (account.custody) return account
-    const fields = custodyFromLegacy(account)
-    return fields ? { ...account, ...fields } : account
+/**
+ * Idempotent: an existing `custody` wins over a contradicting `type`. A record
+ * that doesn't decode becomes a watch account, since a `keyPairId` left on it
+ * would read as signable (`hasSigningKeys`).
+ */
+export const toCurrentAccount = (
+    record: PersistedAccountRecord,
+): WalletAccount => {
+    const rest = { ...record }
+    delete rest.type
+    if (rest.custody) return rest as WalletAccount
+    const fields = custodyFromLegacy(record)
+    if (fields) return { ...rest, ...fields } as WalletAccount
+    return {
+        id: record.id,
+        ...(record.name !== undefined ? { name: record.name } : {}),
+        address: record.address,
+        ...(record.rekeyAddress !== undefined
+            ? { rekeyAddress: record.rekeyAddress }
+            : {}),
+        ...(record.rekeyAddressByNetwork !== undefined
+            ? { rekeyAddressByNetwork: record.rekeyAddressByNetwork }
+            : {}),
+        custody: { kind: 'watch' },
+        chains: { [LEGACY_CHAIN_ID]: { address: record.address } },
+    }
 }
 
-/**
- * For writes that may change `type` or its details: custody describing the
- * account as it was is dropped and derived again.
- */
-export const rebuildCustody = <T extends WalletAccount>(account: T): T => {
-    const fields = custodyFromLegacy(account)
-    if (fields) return { ...account, ...fields }
-    const rest = { ...account }
-    delete rest.custody
-    delete rest.chains
-    return rest
-}
+/** Heals a multisig persisted before `multisigDetails` existed. */
+export const withLegacyMultisigDetails = (
+    account: MultiSigAccount,
+    details: MultiSigDetails,
+): MultiSigAccount =>
+    buildAccount({
+        id: account.id,
+        name: account.name,
+        custody: { kind: 'multisig' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            ...account.chains,
+            [LEGACY_CHAIN_ID]: {
+                address: account.address,
+                native: {
+                    family: 'algorand',
+                    multisig: { ...details, addresses: [...details.addresses] },
+                },
+            },
+        },
+        rekeyAddress: account.rekeyAddress,
+        rekeyAddressByNetwork: account.rekeyAddressByNetwork,
+    })

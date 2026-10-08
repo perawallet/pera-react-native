@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { logger } from '@perawallet/wallet-core-shared'
 import { isMultisigAccount } from '../utils'
+import { withLegacyMultisigDetails } from '../credentials/backfill'
 import { useUpdateAccount } from './useUpdateAccount'
 
 import type { WalletAccount } from '../models'
@@ -28,7 +29,7 @@ type UseMultisigDetailsBackfillResult = {
 
 /**
  * Heals multisig accounts persisted before `multisigDetails` existed (records
- * carry only type/address/name). Pulls the participant set + threshold from the
+ * carry only custody/address/name). Pulls the participant set + threshold from the
  * joint-accounts endpoint and writes it back into the account store, since the
  * details can't be reconstructed from the address alone.
  */
@@ -76,14 +77,13 @@ export const useMultisigDetailsBackfill = (
             return
         }
 
-        updateAccount({
-            ...account,
-            multisigDetails: {
+        updateAccount(
+            withLegacyMultisigDetails(account, {
                 threshold: data.threshold,
                 addresses: data.participantAddresses,
                 version: data.version,
-            },
-        })
+            }),
+        )
     }, [account, data, network, updateAccount])
 
     return { isBackfilling: needsBackfill && isFetching }

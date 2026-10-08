@@ -28,6 +28,7 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks/asbImportFlowStore'
@@ -181,7 +182,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.type).toBe(AccountTypes.algo25)
+        expect(accountType(account)).toBe(AccountTypes.algo25)
         expect(account.address).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Algo25 from ASB')
 
@@ -231,8 +232,10 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         const watch = useAccountsStore
             .getState()
             .accounts.find(a => a.address === ASB_WATCH_ADDRESS)
-        expect(algo25?.type).toBe(AccountTypes.algo25)
-        expect(watch?.type).toBe(AccountTypes.watch)
+        expect(algo25 ? accountType(algo25) : undefined).toBe(
+            AccountTypes.algo25,
+        )
+        expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
     })
 
     it('Given a valid backup file pasted from the clipboard, the import path works without the file picker', async () => {
@@ -311,7 +314,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },
@@ -374,7 +377,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
 
         const watch = useAccountsStore
             .getState()
-            .accounts.find(a => a.type === AccountTypes.watch)
+            .accounts.find(a => accountType(a) === AccountTypes.watch)
         expect(watch?.address).toBe(ASB_WATCH_ADDRESS)
     })
 

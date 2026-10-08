@@ -70,7 +70,16 @@ const ledgerAccount = (
 ): WalletAccount => ({
     // Hardware accounts imported via the Ledger pairing flow carry no `id`
     // (they are deduped by address) — removal must still work for them.
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: accountIndex,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -116,7 +125,7 @@ describe('useRemoveAccountByAddress', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             address: 'ALICE',
             keyPairId: 'kp-alice-ed25519',
         }
@@ -138,7 +147,11 @@ describe('useRemoveAccountByAddress', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Bob',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'BOB',
             keyPairId: 'hd-1-acc0-idx0-dt9',
             hdWalletDetails: {
@@ -168,7 +181,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '1',
                 name: 'HD-1',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: 'ADDR1',
                 keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {
@@ -181,7 +198,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '2',
                 name: 'HD-2',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 0 },
+                },
                 address: 'ADDR2',
                 keyPairId: 'hd-1-acc1-idx0-dt9',
                 hdWalletDetails: {
@@ -213,7 +234,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '1',
                 name: 'HD-1',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: 'ADDR1',
                 keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {

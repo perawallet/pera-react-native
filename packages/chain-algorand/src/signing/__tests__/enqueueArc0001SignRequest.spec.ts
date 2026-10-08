@@ -20,10 +20,7 @@ import {
     decodeUnsignedTransaction,
     encodeUnsignedTransaction,
 } from 'algosdk'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
@@ -153,7 +150,7 @@ const quantumAccount = (): WalletAccount =>
     ({
         id: 'q1',
         address: QUANTUM_ADDRESS.toString(),
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
     }) as WalletAccount
 

@@ -24,22 +24,22 @@ import nacl from 'tweetnacl'
 // reachable from a Node suite. `models/accounts` has no dependencies beyond
 // types.
 import {
-    AccountTypes,
     DerivationTypes,
-    type Algo25Account,
-    type HDWalletAccount,
     type HDWalletDetails,
     type MultiSigAccount,
-    type QuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts/models/accounts'
+import { buildAccount } from '@perawallet/wallet-core-accounts/credentials/buildAccount'
 import { algorandAddressCodec } from '@perawallet/wallet-core-chain-algorand/accounts/address-codec'
 import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-algorand/accounts/bip44'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/derivation'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/quantumAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/addresses'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config/models/network'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
@@ -149,12 +149,12 @@ export const createAlgo25Account = async (
         mnemonic,
         keyId,
         kind: 'algo25',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.algo25,
-            address,
-            keyPairId: keyId,
-        } satisfies Algo25Account,
+            custody: { kind: 'local', seed: 'algo25' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -192,12 +192,12 @@ export const createQuantumAccount = async (
         mnemonic,
         keyId,
         kind: 'quantum',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.quantum,
-            address,
-            keyPairId: keyId,
-        } satisfies QuantumAccount,
+            custody: { kind: 'local', seed: 'quantum' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -285,13 +285,16 @@ export const createHdAccount = async (
         mnemonic: resolvedMnemonic,
         keyId,
         kind: 'hd',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.hdWallet,
-            address,
-            keyPairId: keyId,
-            hdWalletDetails,
-        } satisfies HDWalletAccount,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: HD_ACCOUNT, keyIndex: index },
+            },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -314,12 +317,20 @@ export const createMultisigAccount = (
         members,
         threshold,
         version,
-        walletAccount: {
+        walletAccount: buildAccount({
             id: address,
-            type: AccountTypes.multisig,
-            address,
-            multisigDetails: { threshold, addresses, version },
-        } satisfies MultiSigAccount,
+            custody: { kind: 'multisig' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: {
+                [LEGACY_CHAIN_ID]: {
+                    address,
+                    native: {
+                        family: 'algorand',
+                        multisig: { version, threshold, addresses },
+                    },
+                },
+            },
+        }),
     }
 }
 

@@ -377,7 +377,6 @@ describe('useCloudBackupImport', () => {
         expect(appended).toContainEqual(
             expect.objectContaining({
                 address: 'WATCH_ADDR',
-                type: 'watch',
                 custody: { kind: 'watch' },
                 chains: { algorand: { address: 'WATCH_ADDR' } },
             }),
@@ -409,7 +408,6 @@ describe('useCloudBackupImport', () => {
         expect(appended).toContainEqual(
             expect.objectContaining({
                 address: 'LEDGER_ADDR',
-                type: 'hardware',
                 name: 'My Ledger',
                 hardwareDetails: {
                     manufacturer: 'ledger',
@@ -457,7 +455,6 @@ describe('useCloudBackupImport', () => {
         expect(appended).toContainEqual(
             expect.objectContaining({
                 address: 'MSIG_ADDR',
-                type: 'multisig',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['A', 'B'],
@@ -632,7 +629,6 @@ describe('useCloudBackupImport', () => {
         expect(appended).toContainEqual(
             expect.objectContaining({
                 address: 'HD_KEY_ADDR',
-                type: 'hdWallet',
                 name: 'HD One',
                 custody: {
                     kind: 'local',

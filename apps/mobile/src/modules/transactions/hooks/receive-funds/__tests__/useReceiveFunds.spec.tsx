@@ -19,7 +19,7 @@ const mockAccount: WalletAccount = {
     id: 'watch-test-account',
     address: 'test-address-123',
     name: 'Test Account',
-    type: 'watch',
+    custody: { kind: 'watch' },
 }
 
 describe('useReceiveFunds', () => {

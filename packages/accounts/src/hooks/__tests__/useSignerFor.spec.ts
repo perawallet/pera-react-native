@@ -25,7 +25,7 @@ import {
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: 'k',
         ...extra,
@@ -83,7 +83,10 @@ describe('useCanSignWith', () => {
     })
 
     it('is false when the chain resolves none', () => {
-        const account = held('A', { type: 'watch', keyPairId: undefined })
+        const account = held('A', {
+            custody: { kind: 'watch' },
+            keyPairId: undefined,
+        })
         setAccounts([account])
         const { result } = renderHook(() => useCanSignWith(account))
         expect(result.current).toBe(false)

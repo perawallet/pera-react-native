@@ -52,11 +52,10 @@ import {
     type QuantumKeyResult,
 } from '@perawallet/wallet-core-kms'
 import {
-    AccountTypes,
-    useAccountsStore,
-    type QuantumAccount,
-    type WalletAccount,
+    buildAccount,
     quantumDerivationFor,
+    useAccountsStore,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
@@ -75,6 +74,7 @@ import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from '../__integration__/__fixtures__/quantum'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
 export const REVIEW_RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -109,13 +109,18 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
         })
         expect(keyResult).not.toBeNull()
     })
-    const account: WalletAccount = {
+    const account = buildAccount({
         id: 'review-signer',
-        type: AccountTypes.algo25,
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Review Signer',
-    }
+        custody: { kind: 'local', seed: 'algo25' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            [LEGACY_CHAIN_ID]: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
+    })
     useAccountsStore.getState().setAccounts([account])
     useAccountsStore.getState().setSelectedAccountAddress(account.address)
     return account
@@ -136,13 +141,18 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
         })
         expect(keyResult).not.toBeNull()
     })
-    const account: QuantumAccount = {
+    const account = buildAccount({
         id: 'review-quantum-signer',
-        type: AccountTypes.quantum,
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: keyResult!.signKeyId,
         name: 'Quantum Review Signer',
-    }
+        custody: { kind: 'local', seed: 'quantum' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            [LEGACY_CHAIN_ID]: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: keyResult!.signKeyId,
+            },
+        },
+    })
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, account])
     store.setSelectedAccountAddress(account.address)

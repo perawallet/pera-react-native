@@ -31,7 +31,7 @@ const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAlgo25Account: WalletAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -508,7 +508,7 @@ describe('signingMachine', () => {
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
         const mockMultisigAccount: WalletAccount = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: MULTISIG_ADDRESS,
         } as unknown as WalletAccount
 
@@ -763,7 +763,16 @@ describe('signingMachine', () => {
             'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 
         const hwAccount = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: HW_ADDRESS,
             hardwareDetails: {
                 manufacturer: 'ledger',

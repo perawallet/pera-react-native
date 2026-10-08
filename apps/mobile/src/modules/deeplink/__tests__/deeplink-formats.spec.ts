@@ -159,12 +159,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
     useAllAccounts: () => [
         // Include the keyreg test sender so the preflight passes.
-        { address: 'A'.repeat(58), id: 'mock-a', type: 'algo25' },
+        {
+            address: 'A'.repeat(58),
+            id: 'mock-a',
+            custody: { kind: 'local', seed: 'algo25' },
+        },
         {
             address:
                 '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA',
             id: 'mock-csv',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
         },
     ],
     resolveAuthAccount: (account: unknown) => account,
@@ -964,7 +968,7 @@ describe('deeplink format coverage', () => {
         // Resolve the recover-address import so RECOVER_ADDRESS handler
         // reaches the navigate call.
         mockImportAccount.mockResolvedValue({
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             id: 'mock-id',
             address: ADDRESS,
         })

@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useUndoRekeyConfirmScreen } from '../useUndoRekeyConfirmScreen'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -60,10 +61,14 @@ vi.mock('@modules/webview', () => ({
 const mockSourceAccount = {
     address: 'SRC',
     name: 'Source',
-    type: 'algo25' as 'algo25' | 'watch',
+    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
     rekeyAddress: 'AUTH' as string | undefined,
 }
-const mockAuthAccount = { address: 'AUTH', name: 'Auth', type: 'algo25' }
+const mockAuthAccount = {
+    address: 'AUTH',
+    name: 'Auth',
+    custody: { kind: 'local', seed: 'algo25' },
+}
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -126,7 +131,7 @@ describe('useUndoRekeyConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSourceAccount.rekeyAddress = 'AUTH'
-        mockSourceAccount.type = 'algo25'
+        mockSourceAccount.custody = { kind: 'local', seed: 'algo25' }
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         capturedSigningHandler = null
@@ -248,7 +253,7 @@ describe('useUndoRekeyConfirmScreen', () => {
     })
 
     it('uses the destructive no-auth warning variant when the source will become no-auth', async () => {
-        mockSourceAccount.type = 'watch'
+        mockSourceAccount.custody = { kind: 'watch' }
         mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
         const { result } = renderHook(() => useUndoRekeyConfirmScreen())
 

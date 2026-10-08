@@ -13,12 +13,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
-import type {
-    MultiSigAccount,
-    RekeyTransition,
-    WalletAccount,
+import {
+    type MultiSigAccount,
+    type RekeyTransition,
+    type WalletAccount,
+    type AccountType,
 } from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { custodyForType } from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -47,16 +49,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-const accountOfType = (type: WalletAccount['type']): WalletAccount =>
+const accountOfType = (type: AccountType): WalletAccount =>
     ({
-        type,
+        custody: custodyForType(type),
         address: `${type.toUpperCase()}_ADDR`,
         keyPairId: 'key-1',
     }) as WalletAccount
 
 const rekeyedAccount: WalletAccount = {
     id: 'rekeyed-account',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'REKEYED_ADDR',
     keyPairId: 'key-1',
     rekeyAddress: 'AUTH_ADDR',
@@ -64,7 +66,7 @@ const rekeyedAccount: WalletAccount = {
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address: 'MULTISIG_ADDR',
     multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'], version: 1 },
 }

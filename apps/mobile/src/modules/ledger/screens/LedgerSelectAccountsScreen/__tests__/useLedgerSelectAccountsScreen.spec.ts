@@ -83,9 +83,9 @@ const {
     const mockRequest = vi.fn().mockResolvedValue(undefined)
     const mockQueryClient = {}
     const mockRekeyedScan = vi.fn()
-    const mockAllAccounts = vi.fn<() => { address: string; type: string }[]>(
-        () => [],
-    )
+    const mockAllAccounts = vi.fn<
+        () => { address: string; custody: AccountCustody }[]
+    >(() => [])
     return {
         mockPrefetch,
         mockRequest,
@@ -108,6 +108,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useAllAccounts: () => mockAllAccounts(),
+    accountType: ({ custody }: { custody: AccountCustody }) =>
+        custody.kind !== 'local'
+            ? custody.kind
+            : custody.seed === 'bip39'
+              ? 'hdWallet'
+              : custody.seed,
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
     useLedgerRekeyedScan: mockRekeyedScan,
@@ -141,6 +147,7 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 import { useLedgerSelectAccountsScreen } from '../useLedgerSelectAccountsScreen'
+import { type AccountCustody } from '@perawallet/wallet-core-accounts'
 
 const buildTransport = (): HardwareWalletTransport =>
     ({
@@ -556,8 +563,32 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('reports areAllImported and exits the flow on continue when every discovered account is already imported', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111', type: 'hardware' },
-            { address: 'BBB222', type: 'hardware' },
+            {
+                address: 'AAA111',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+            },
+            {
+                address: 'BBB222',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+            },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -639,7 +670,9 @@ describe('useLedgerSelectAccountsScreen', () => {
     })
 
     it('keeps a derived address imported as a watch account selectable and marks it upgradeable', () => {
-        mockAllAccounts.mockReturnValue([{ address: 'AAA111', type: 'watch' }])
+        mockAllAccounts.mockReturnValue([
+            { address: 'AAA111', custody: { kind: 'watch' } },
+        ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
 
@@ -665,7 +698,19 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('still disables a derived address imported as a hardware account', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111', type: 'hardware' },
+            {
+                address: 'AAA111',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+            },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -696,7 +741,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             isScanning: false,
         })
         mockAllAccounts.mockReturnValue([
-            { address: 'REKEYED_A', type: 'watch' },
+            { address: 'REKEYED_A', custody: { kind: 'watch' } },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -709,8 +754,20 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('does not report areAllImported while a watch upgrade is still actionable', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111', type: 'watch' },
-            { address: 'BBB222', type: 'hardware' },
+            { address: 'AAA111', custody: { kind: 'watch' } },
+            {
+                address: 'BBB222',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+            },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())

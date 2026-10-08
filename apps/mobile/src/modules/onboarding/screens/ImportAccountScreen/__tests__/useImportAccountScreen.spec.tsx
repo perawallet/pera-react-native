@@ -727,7 +727,10 @@ describe('useImportAccountScreen', () => {
             it('imports the quantum account when the user picks it', async () => {
                 mockRequestBottomSheet.mockResolvedValue('import-quantum')
                 mockImportAccount.mockResolvedValue([
-                    { address: 'QUANTUMADDRESS', type: 'quantum' },
+                    {
+                        address: 'QUANTUMADDRESS',
+                        custody: { kind: 'local', seed: 'quantum' },
+                    },
                 ])
 
                 await submit25Words()
@@ -739,7 +742,10 @@ describe('useImportAccountScreen', () => {
                     type: 'quantum',
                 })
                 expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
-                    account: { address: 'QUANTUMADDRESS', type: 'quantum' },
+                    account: {
+                        address: 'QUANTUMADDRESS',
+                        custody: { kind: 'local', seed: 'quantum' },
+                    },
                 })
             })
 

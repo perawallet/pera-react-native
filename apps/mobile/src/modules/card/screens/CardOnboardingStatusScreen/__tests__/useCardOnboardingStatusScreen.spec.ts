@@ -15,7 +15,10 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    type AccountType,
+} from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -200,12 +203,14 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 }))
 
 import { useCardOnboardingStatusScreen } from '../useCardOnboardingStatusScreen'
+import { custodyForType } from '@test-utils/accountCustody'
 
 const account = (
     address: string,
-    type: WalletAccount['type'],
+    type: AccountType,
     extra: Partial<WalletAccount> = {},
-): WalletAccount => ({ address, type, ...extra }) as WalletAccount
+): WalletAccount =>
+    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()

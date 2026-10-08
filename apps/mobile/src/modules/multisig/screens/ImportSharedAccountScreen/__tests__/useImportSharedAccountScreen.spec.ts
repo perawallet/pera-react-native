@@ -141,7 +141,10 @@ describe('useImportSharedAccountScreen', () => {
 
     it('flags when the user already holds one of the participants', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'algo25' } as WalletAccount,
+            {
+                address: 'P2',
+                custody: { kind: 'local', seed: 'algo25' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -151,7 +154,11 @@ describe('useImportSharedAccountScreen', () => {
 
     it('reports canUserSign true when a held participant has its own key', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'algo25', keyPairId: 'kp' } as WalletAccount,
+            {
+                address: 'P2',
+                custody: { kind: 'local', seed: 'algo25' },
+                keyPairId: 'kp',
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -162,7 +169,7 @@ describe('useImportSharedAccountScreen', () => {
 
     it('reports canUserSign false when the held participant is watch-only', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'watch' } as WalletAccount,
+            { address: 'P2', custody: { kind: 'watch' } } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -183,7 +190,10 @@ describe('useImportSharedAccountScreen', () => {
 
     it('flags and disables when the shared account is already imported', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: SCANNED_ADDRESS, type: 'multisig' } as WalletAccount,
+            {
+                address: SCANNED_ADDRESS,
+                custody: { kind: 'multisig' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())

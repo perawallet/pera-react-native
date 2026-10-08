@@ -65,7 +65,16 @@ const makeLedgerAccount = (
     accountIndex: number = 0,
 ): HardwareWalletAccount =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: accountIndex,
+        },
         address,
         hardwareDetails: {
             manufacturer: 'ledger',
@@ -164,7 +173,7 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
             })
             const algo25Account = {
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 address: SIGNER_ADDRESS,
                 keyPairId: 'key-1',
             } as unknown as WalletAccount
@@ -410,7 +419,7 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
             })
             const algo25Account = {
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 address: SIGNER_ADDRESS,
                 keyPairId: 'key-1',
             } as unknown as WalletAccount

@@ -45,7 +45,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountsStore,
@@ -189,7 +188,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         })
         sender = {
             id: 'sender-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: 'algo25' },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',

@@ -17,9 +17,8 @@ import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { createTestQueryClient } from '@test-utils/render'
 import {
-    AccountTypes,
+    buildAccount,
     deriveHdAccount,
-    DerivationTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -42,6 +41,7 @@ import {
     HD_TEST_MNEMONIC_24_ALT_INDICES,
     HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
 // checks a BIP39 checksum, so these don't need to form a valid mnemonic.
@@ -72,13 +72,18 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
         mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
     })
     expect(key).not.toBeNull()
-    const account: WalletAccount = {
+    const account = buildAccount({
         id: 'algo25-1',
-        type: AccountTypes.algo25,
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
-    }
+        custody: { kind: 'local', seed: 'algo25' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            [LEGACY_CHAIN_ID]: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
+    })
     useAccountsStore.getState().setAccounts([account])
     return account
 }
@@ -117,21 +122,24 @@ export const seedHDWalletAccounts = async (params?: {
             seedKeyId,
             { account, keyIndex },
         )
-        return {
+        return buildAccount({
             // Scoped to the seed so a second wallet's accounts don't collide
             // with the first's on `id`.
             id: `hd-${seedKeyId}-${account}-${keyIndex}`,
-            type: AccountTypes.hdWallet,
-            address: derived.address,
-            keyPairId: derived.keyPairId,
             name,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType: DerivationTypes.Peikert,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account, keyIndex },
             },
-        }
+            chainId: LEGACY_CHAIN_ID,
+            chains: {
+                [LEGACY_CHAIN_ID]: {
+                    address: derived.address,
+                    keyPairId: derived.keyPairId,
+                },
+            },
+        })
     }
 
     const first = await make(0, 0, 'HD First')

@@ -31,6 +31,7 @@ import {
     type SingleKeyAccountKind,
 } from '../chain-adapter'
 import type { HDWalletDetails, HdIndex, WalletAccount } from '../models'
+import { accountType } from '../utils'
 import {
     accountStateCases,
     type AccountStateContractFixtures,
@@ -316,7 +317,7 @@ export const accountsContractTests = (
                     scope,
                 )
 
-                expect(minted.account.type).toBe(kind)
+                expect(accountType(minted.account)).toBe(kind)
                 expect(
                     codec.isValid(minted.account.address, scope.networkId),
                 ).toBe(true)
@@ -352,7 +353,7 @@ export const accountsContractTests = (
                 expect(accounts.length).toBeGreaterThan(0)
                 expect(accounts).toEqual(saved.map(minted => minted.account))
                 for (const account of accounts) {
-                    expect(account.type).toBe(kind)
+                    expect(accountType(account)).toBe(kind)
                     expect(
                         codec.isValid(account.address, scope.networkId),
                     ).toBe(true)

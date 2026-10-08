@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useRekeyToLedgerConfirmScreen } from '../useRekeyToLedgerConfirmScreen'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -61,10 +62,28 @@ vi.mock('@modules/webview', () => ({
 const mockSourceAccount = {
     address: 'SRC',
     name: 'Source',
+    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
     rekeyAddress: undefined as string | undefined,
 }
-const mockTargetAccount = { address: 'TGT', name: 'Target' }
-const mockAuthAccount = { address: 'AUTH', name: 'Auth' }
+const mockTargetAccount = {
+    address: 'TGT',
+    name: 'Target',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    } as WalletAccount['custody'],
+}
+const mockAuthAccount = {
+    address: 'AUTH',
+    name: 'Auth',
+    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
+}
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =

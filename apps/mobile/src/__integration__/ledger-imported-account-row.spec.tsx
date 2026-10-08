@@ -23,7 +23,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -55,7 +54,16 @@ describe('Flow: Ledger imported account row checkbox', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'hw-ledger-1',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'd',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 address: LEDGER_ADDRESS,
                 hardwareDetails: {
                     manufacturer: 'ledger',

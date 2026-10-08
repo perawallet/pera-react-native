@@ -43,7 +43,7 @@ import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
 const account = {
     address: 'ADDR',
     keyPairId: 'key-1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
 } as unknown as WalletAccount
 const group = [{ id: 'txn' }] as unknown as PeraTransaction[]
 

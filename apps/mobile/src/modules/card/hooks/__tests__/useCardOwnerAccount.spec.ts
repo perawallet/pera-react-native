@@ -28,8 +28,14 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 
 import { useCardOwnerAccount } from '../useCardOwnerAccount'
 
-const owner = { address: 'OWNER', type: 'algo25' } as WalletAccount
-const other = { address: 'OTHER', type: 'algo25' } as WalletAccount
+const owner = {
+    address: 'OWNER',
+    custody: { kind: 'local', seed: 'algo25' },
+} as WalletAccount
+const other = {
+    address: 'OTHER',
+    custody: { kind: 'local', seed: 'algo25' },
+} as WalletAccount
 
 describe('useCardOwnerAccount', () => {
     beforeEach(() => {

@@ -29,7 +29,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 const makeAccount = (address: string): WalletAccount =>
-    ({ type: 'watch', address, name: address }) as unknown as WalletAccount
+    ({
+        custody: { kind: 'watch' },
+        address,
+        name: address,
+    }) as unknown as WalletAccount
 
 const makeWrapper = () => {
     const client = new QueryClient({

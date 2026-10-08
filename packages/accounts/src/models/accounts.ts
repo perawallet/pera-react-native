@@ -15,7 +15,15 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type { Network } from '@perawallet/wallet-core-shared'
-import type { AccountChains, AccountCustody } from './credentials'
+import type {
+    AccountChains,
+    AccountCustody,
+    HardwareCustody,
+    LocalCustody,
+    MultisigCustody,
+    WatchCustody,
+} from './credentials'
+import type { SeedScheme } from '@perawallet/wallet-core-kms'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -113,7 +121,6 @@ export type BaseWalletAccount = {
      */
     id: string
     name?: string
-    type: AccountType
     /**
      * On-chain Algorand address. Required for every account kind that exists
      * today (all of them are on-chain), so it is redeclared as required on each
@@ -136,18 +143,16 @@ export type BaseWalletAccount = {
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
     /**
-     * Classification reads this (see `accountType`), falling back to `type`
-     * when absent. `setAccounts` only fills a missing one, so a write that
-     * changes `type` or its details must go through `rebuildCustody` or the old
-     * kind sticks. A record missing the details its `type` requires stays bare.
+     * The account's kind (`accountType()`) is read from here. A write that
+     * changes how the account is held builds it again with `buildAccount`.
      */
-    custody?: AccountCustody
+    custody: AccountCustody
     /** Everything that varies by chain, keyed by chain id. */
     chains?: AccountChains
 }
 
 export type Algo25Account = BaseWalletAccount & {
-    type: typeof AccountTypes.algo25
+    custody: { kind: 'local'; seed: typeof SeedScheme.Algo25 }
     address: string
     keyPairId: string
 }
@@ -161,32 +166,32 @@ export type Algo25Account = BaseWalletAccount & {
  * data migration.
  */
 export type QuantumAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.quantum
+    custody: { kind: 'local'; seed: typeof SeedScheme.Quantum }
     address: string
     keyPairId: string
 }
 
 export type HDWalletAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.hdWallet
+    custody: Extract<LocalCustody, { seed: typeof SeedScheme.Bip39 }>
     address: string
     hdWalletDetails: HDWalletDetails
     keyPairId: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.multisig
+    custody: MultisigCustody
     address: string
     multisigDetails: MultiSigDetails
 }
 
 export type HardwareWalletAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.hardware
+    custody: HardwareCustody
     address: string
     hardwareDetails: HardwareWalletDetails
 }
 
 export type WatchAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.watch
+    custody: WatchCustody
     address: string
 }
 

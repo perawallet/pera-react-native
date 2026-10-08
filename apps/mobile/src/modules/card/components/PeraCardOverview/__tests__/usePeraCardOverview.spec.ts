@@ -171,13 +171,22 @@ const tx = (id: string, dateTime: string): CardTransaction =>
 // the stored type alone is not enough — the account has to be resolvable.
 const LOCAL_ACCOUNT = {
     address: 'LINKED_ADDR',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'key-1',
 } as WalletAccount
 
 const LEDGER_ACCOUNT = {
     address: 'LINKED_ADDR',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
 

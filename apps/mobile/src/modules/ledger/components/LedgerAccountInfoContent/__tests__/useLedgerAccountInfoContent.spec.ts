@@ -13,23 +13,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import {
+    accountType,
+    AccountTypes,
+    isHardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mocks = vi.hoisted(() => ({
     useLedgerAccountPreview: vi.fn(),
     t: vi.fn((k: string, _opts?: Record<string, unknown>) => k),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useLedgerAccountPreview: mocks.useLedgerAccountPreview,
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
 }))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: mocks.t }),
@@ -62,6 +63,7 @@ const asaAsset = {
 }
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
 })
 
@@ -246,9 +248,9 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.hardware)
+            expect(accountType(acct.account)).toBe(AccountTypes.hardware)
             expect(acct.account.address).toBe('MYADDR')
-            if (acct.account.type === AccountTypes.hardware) {
+            if (isHardwareWalletAccount(acct.account)) {
                 expect(acct.account.hardwareDetails.accountIndex).toBe(2)
                 expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
             }
@@ -277,7 +279,7 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.watch)
+            expect(accountType(acct.account)).toBe(AccountTypes.watch)
             expect(acct.account.address).toBe('WATCH_ADDR')
             expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
             expect(acct.displayStateOverride).toBe('rekeyedSignable')

@@ -64,7 +64,6 @@ import {
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type QuantumAccount,
     type WalletAccount,
@@ -189,7 +188,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     })
     const account: QuantumAccount = {
         id: 'wc-quantum-signer',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: keyResult!.signKeyId,
         name: 'Quantum WC signer',

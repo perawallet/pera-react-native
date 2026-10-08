@@ -29,7 +29,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountBalancesQuery,
@@ -47,7 +46,7 @@ const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'multi-network-key',
     name: 'Multi-network Account',
