@@ -586,6 +586,40 @@ describe('assignFeeToGroup', () => {
         expect(result.adjustments.map(a => a.index)).toEqual([1])
     })
 
+    test('leaves alone what the coverage check reports funded, for a dApp-priced group', async () => {
+        const transactions = [
+            makePayment(quantumAddress, 3000n),
+            makePayment(quantumAddress, 1000n),
+        ]
+        const findFundedIndices = vi.fn(async () => new Set([0]))
+
+        const result = await assignFeeToGroup(
+            { transactions, isExternallyPriced: true },
+            { ...deps([quantum()]), findFundedIndices },
+        )
+
+        expect(findFundedIndices).toHaveBeenCalledWith({
+            transactions,
+            signableIndices: [0, 1],
+            signerOverrides: undefined,
+        })
+        expect(result.adjustments.map(a => a.index)).toEqual([1])
+        expect(result.transactions[0].fee).toBe(3000n)
+    })
+
+    test('never runs the coverage check for a wallet-built group', async () => {
+        const transactions = [makePayment(quantumAddress, 3000n)]
+        const findFundedIndices = vi.fn(async () => new Set([0]))
+
+        const result = await assignFeeToGroup(
+            { transactions },
+            { ...deps([quantum()]), findFundedIndices },
+        )
+
+        expect(findFundedIndices).not.toHaveBeenCalled()
+        expect(result.transactions[0].fee).toBe(5000n)
+    })
+
     test('leaves a quantum slot outside explicit signableIndices untouched', async () => {
         const transactions = [
             makePayment(algoAddress, 1000n),

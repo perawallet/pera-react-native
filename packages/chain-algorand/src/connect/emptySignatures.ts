@@ -43,7 +43,7 @@ import {
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { PQ_SCHEMES } from '../blockchain/pq/schemes'
 
-type EmptySignatureFields = {
+export type EmptySignatureFields = {
     msig?: EncodedMultisig
     pqsig?: EncodedPQSig
     sgnr?: Address
@@ -83,7 +83,11 @@ export const encodeEmptySignature = (fields: EmptySignatureFields): string => {
     return encodeToBase64(msgpackRawEncode(encoded))
 }
 
-const signatureFieldsOf = (
+/**
+ * The signature fields `auth`'s key produces, with no signature bytes; `null`
+ * for a key this wallet can't describe. Throws for a legacy multisig record.
+ */
+export const emptySignatureFieldsOf = (
     auth: WalletAccount,
 ): Nullable<Omit<EmptySignatureFields, 'sgnr'>> => {
     if (isQuantumAccount(auth)) {
@@ -104,7 +108,6 @@ const signatureFieldsOf = (
         }
     }
     if (isMultisigAccount(auth)) {
-        // A legacy record without `multisigDetails` throws here and is left out.
         const details = auth.multisigDetails
         return {
             msig: {
@@ -143,7 +146,7 @@ export const algorandEmptySignaturesFor = (
         const auth = getAuthAccount(account, accounts, LEGACY_CHAIN_ID)
         if (!auth) continue
         try {
-            const fields = signatureFieldsOf(auth)
+            const fields = emptySignatureFieldsOf(auth)
             if (!fields) continue
             result[address] = encodeEmptySignature(
                 auth.address === address

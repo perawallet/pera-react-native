@@ -31,6 +31,7 @@ const fixtureAdapter: DappRequestChainAdapter = {
     },
     resolveReportedNetwork: scope =>
         scope.networkId === 'custom' ? undefined : scope.networkId,
+    emptySignaturesFor: () => ({}),
     walletConnect: {
         namespace: 'algorand',
         caip2ChainIdFor: networkId =>
@@ -38,7 +39,6 @@ const fixtureAdapter: DappRequestChainAdapter = {
         networkForCaip2ChainId: caip2 =>
             caip2 === 'algorand:testnet-fixture' ? 'testnet' : null,
         toWireResult: () => null,
-        emptySignaturesFor: () => ({}),
         v1: {
             isChainIdAcceptable: (chainId, networkId) =>
                 chainId === 4160 && networkId === 'testnet',

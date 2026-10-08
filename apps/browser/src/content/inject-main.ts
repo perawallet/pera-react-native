@@ -43,7 +43,15 @@ export type PeraConnectOptions = {
     icons?: string[]
     network?: string
 }
-export type PeraConnectResult = { accounts: PeraAccount[]; network: string }
+export type PeraConnectResult = {
+    accounts: PeraAccount[]
+    network: string
+    /**
+     * Address to base64 msgpack `SignedTransaction` minus `txn`, per use-wallet's
+     * empty-signature spec. An address left out is of unknown account type.
+     */
+    emptySignatures: Record<string, string>
+}
 export type PeraEvent = keyof typeof DAPP_NOTIFICATIONS
 export type PeraSignTransactionsItem = {
     txn: string

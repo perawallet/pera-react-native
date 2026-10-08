@@ -217,6 +217,24 @@ describe('enqueueArc0001SignRequest', () => {
         expect(outcome).toBe(mockAddSignRequest.mock.calls[0][0])
     })
 
+    it('marks the group as dApp-priced for the fee planner', async () => {
+        const assignFeeToGroup = vi.fn<
+            EnqueueDappRequestDeps['assignFeeToGroup']
+        >(async params => ({
+            transactions: params.transactions,
+            adjustments: [],
+        }))
+
+        await enqueueArc0001SignRequest(makeResolved(1, 1), makeTransport(), {
+            ...makeDeps(),
+            assignFeeToGroup,
+        })
+
+        expect(assignFeeToGroup).toHaveBeenCalledWith(
+            expect.objectContaining({ isExternallyPriced: true }),
+        )
+    })
+
     it('threads signableIndices so the UI can label signed/unsigned slots', async () => {
         const transport = makeTransport()
 

@@ -40,7 +40,7 @@ import {
     createConnectorRegistry,
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
-import { walletConnectSupportFor } from '../../shared/chainSupport'
+import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -1201,10 +1201,10 @@ describe('walletconnect v1 handler behaviour', () => {
 
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
         keys.set('c1', 'restored-key')
-        const support = walletConnectSupportFor(testGetNetwork())
-        if (!support) throw new Error('no Algorand adapter registered')
+        const adapter = dappRequestAdapterFor(testGetNetwork())
+        if (!adapter) throw new Error('no Algorand adapter registered')
         const emptySignaturesFor = vi
-            .spyOn(support, 'emptySignaturesFor')
+            .spyOn(adapter, 'emptySignaturesFor')
             .mockReturnValue({ AAAA: 'gA==' })
         onTestFinished(() => emptySignaturesFor.mockRestore())
         const { onMessage, onError } = await setupRestored([SEEDED])
@@ -1212,7 +1212,12 @@ describe('walletconnect v1 handler behaviour', () => {
 
         connector.emit('algo_getEmptySignatures', null, {
             id: 11,
-            params: [{ chainId: support.caip2ChainIdFor(testGetNetwork()) }],
+            params: [
+                {
+                    chainId:
+                        adapter.walletConnect.caip2ChainIdFor(testGetNetwork()),
+                },
+            ],
         })
         await flush()
 

@@ -37,7 +37,7 @@ import {
     isWalletConnectV2Connection,
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
-import { walletConnectSupportFor } from '../../shared/chainSupport'
+import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { WalletConnectRequestExpiredError } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
 import {
@@ -791,10 +791,10 @@ describe('session requests', () => {
 
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
-        const support = walletConnectSupportFor(Networks.mainnet)
-        if (!support) throw new Error('no Algorand adapter registered')
+        const adapter = dappRequestAdapterFor(Networks.mainnet)
+        if (!adapter) throw new Error('no Algorand adapter registered')
         return vi
-            .spyOn(support, 'emptySignaturesFor')
+            .spyOn(adapter, 'emptySignaturesFor')
             .mockReturnValue({ [ADDRESS]: 'gA==' })
     }
 

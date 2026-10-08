@@ -210,6 +210,8 @@ export type AssignFeeToGroupParams = {
     signableIndices?: number[]
     /** Subset-position → authorizer address (ARC-0001 `signers`) */
     signerOverrides?: Map<number, string>
+    /** A dApp set the fees, so they may already price this wallet's signers. */
+    isExternallyPriced?: boolean
 }
 
 export type AssignMinimumFeesToGroupResult = {
@@ -238,6 +240,15 @@ export type AssignFeeToGroupDeps = {
     /** Remote-config base minimum txn fee in native base units */
     configMinTxnFee: bigint
     pqMultiplier: bigint
+    /**
+     * Indices whose partition already pays what its signers cost on chain,
+     * asked only for externally priced groups; resolves to none when unsure.
+     */
+    findFundedIndices?: (params: {
+        transactions: PeraTransaction[]
+        signableIndices: number[]
+        signerOverrides?: Map<number, string>
+    }) => Promise<ReadonlySet<number>>
 }
 
 export type EnqueueDappRequestDeps = {

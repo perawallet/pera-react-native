@@ -24,20 +24,25 @@ import {
 /** Shared by v1 and v2 (`pera/no-cross-protocol-imports` forbids them importing each other). */
 export type WalletConnectSupport = DappRequestChainAdapter['walletConnect']
 
+/** `null` when no chain adapter is registered for the chain `network` belongs to. */
+export const dappRequestAdapterFor = (
+    network: Network,
+): Nullable<DappRequestChainAdapter> => {
+    const { chainId } = scopeForLegacyNetwork(network)
+    return dappRequestChainAdapters.has(chainId)
+        ? dappRequestChainAdapters.get(chainId)
+        : null
+}
+
 /**
- * `null` when no chain adapter is registered for the chain `network` belongs
- * to. Every network resolves to one chain package, which owns the whole
+ * Every network resolves to one chain package, which owns the whole
  * `walletConnect` member; a version speaking to it never needs to know which
  * chain it reached.
  */
 export const walletConnectSupportFor = (
     network: Network,
-): Nullable<WalletConnectSupport> => {
-    const { chainId } = scopeForLegacyNetwork(network)
-    return dappRequestChainAdapters.has(chainId)
-        ? dappRequestChainAdapters.get(chainId).walletConnect
-        : null
-}
+): Nullable<WalletConnectSupport> =>
+    dappRequestAdapterFor(network)?.walletConnect ?? null
 
 /** Fails closed: no adapter, or a chain that serves no v1, accepts nothing. */
 export const isV1ChainIdAcceptable = (

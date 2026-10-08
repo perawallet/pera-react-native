@@ -23,7 +23,6 @@ import {
     arc60WireSchema,
     assertArc60RequestWithinLimits as assertArc60WireRequestWithinLimits,
 } from '../signing/message/arc60-wire'
-import { algorandEmptySignaturesFor } from './emptySignatures'
 
 /**
  * CAIP-2 chain ids, which only WalletConnect v2 speaks — v1 has no concept of
@@ -214,7 +213,6 @@ export const algorandWalletConnectSupport: DappRequestChainAdapter['walletConnec
         caip2ChainIdFor,
         networkForCaip2ChainId,
         toWireResult,
-        emptySignaturesFor: algorandEmptySignaturesFor,
         v1: {
             isChainIdAcceptable: isV1ChainIdAcceptable,
             networksFor: v1NetworksFor,

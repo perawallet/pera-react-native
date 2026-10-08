@@ -56,7 +56,6 @@ describe('parseCaip10AccountIn', () => {
         networkForCaip2ChainId: caip2 =>
             caip2 === knownChainId ? 'mainnet' : null,
         toWireResult: () => null,
-        emptySignaturesFor: () => ({}),
     })
 
     it('accepts an account on a chain id the support recognises', () => {

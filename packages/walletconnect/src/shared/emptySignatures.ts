@@ -11,7 +11,7 @@
  */
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import { walletConnectSupportFor } from './chainSupport'
+import { dappRequestAdapterFor } from './chainSupport'
 
 /**
  * use-wallet's method for an account's signature shape: public data, so it is
@@ -35,11 +35,14 @@ export const emptySignaturesResult = (
     accounts: readonly string[],
     network: Network,
 ): Nullable<Record<string, string>> => {
-    const support = walletConnectSupportFor(network)
-    if (!support) return null
+    const adapter = dappRequestAdapterFor(network)
+    if (!adapter) return null
     const chainId = requestedChainId(params)
-    if (chainId !== undefined && chainId !== support.caip2ChainIdFor(network)) {
+    if (
+        chainId !== undefined &&
+        chainId !== adapter.walletConnect.caip2ChainIdFor(network)
+    ) {
         return null
     }
-    return support.emptySignaturesFor(accounts)
+    return adapter.emptySignaturesFor(accounts)
 }

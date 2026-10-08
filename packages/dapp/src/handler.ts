@@ -169,6 +169,23 @@ export const createDappConnectionHandler = (
         })
     }
 
+    // Empty signatures are public, so they ride along with the accounts rather
+    // than costing the page a second request (use-wallet's connect-flow form).
+    const connectResult = (
+        adapter: DappRequestChainAdapter,
+        connection: DappConnection,
+        network: string,
+    ) => {
+        const accounts = accountsFor(connection)
+        return {
+            accounts,
+            network,
+            emptySignatures: adapter.emptySignaturesFor(
+                accounts.map(({ address }) => address),
+            ),
+        }
+    }
+
     // Looked up per request, not at construction: a realm may build the
     // handler before its bootstrap has registered the chain's adapters.
     const chainAdapter = (): DappRequestChainAdapter | undefined =>
@@ -277,10 +294,10 @@ export const createDappConnectionHandler = (
                 lastActiveAt: now(),
             })
             return release(
-                jsonRpcResult(request.id, {
-                    accounts: accountsFor(existing),
-                    network,
-                }),
+                jsonRpcResult(
+                    request.id,
+                    connectResult(adapter, existing, network),
+                ),
             )
         }
 
@@ -344,10 +361,10 @@ export const createDappConnectionHandler = (
                 }
                 await deliver(
                     respond,
-                    jsonRpcResult(request.id, {
-                        accounts: accountsFor(connection),
-                        network,
-                    }),
+                    jsonRpcResult(
+                        request.id,
+                        connectResult(adapter, connection, network),
+                    ),
                 )
                 return connection
             },

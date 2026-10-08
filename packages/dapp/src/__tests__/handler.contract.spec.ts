@@ -22,12 +22,12 @@ dappRequestChainAdapters.register({
     relayableErrorNames: [],
     parseSigningParams: (_type, params) => ({ ok: true, payload: params.txns }),
     resolveReportedNetwork: scope => scope.networkId,
+    emptySignaturesFor: () => ({}),
     walletConnect: {
         namespace: 'algorand',
         caip2ChainIdFor: () => null,
         networkForCaip2ChainId: () => null,
         toWireResult: () => null,
-        emptySignaturesFor: () => ({}),
     },
     validateTransactionPayload: payload =>
         Array.isArray(payload) && payload.length > 0
