@@ -13,7 +13,7 @@
 import { beforeEach, describe, it, expect } from 'vitest'
 import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
 import {
-    RekeyTargetNotFoundError,
+    DelegationTargetNotFoundError,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -96,7 +96,7 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('throws RekeyTargetNotFoundError on transactions when the rekey target is missing', () => {
+    it('throws DelegationTargetNotFoundError on transactions when the rekey target is missing', () => {
         seedAuthority(PARTICIPANT, AUTH)
         expect(() =>
             resolveSigningAccount(
@@ -106,7 +106,7 @@ describe('resolveSigningAccount', () => {
                 [rekeyedSigner],
                 'algorand',
             ),
-        ).toThrow(RekeyTargetNotFoundError)
+        ).toThrow(DelegationTargetNotFoundError)
     })
 
     it('returns the signer itself for arbitrary-data even when rekeyed', () => {

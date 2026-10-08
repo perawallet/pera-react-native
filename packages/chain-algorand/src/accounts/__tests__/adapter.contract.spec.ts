@@ -54,7 +54,7 @@ const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
     ...extra,
 })
 
-const rekeyedWatch = (address: string): WalletAccount => ({
+const delegatedWatch = (address: string): WalletAccount => ({
     id: 'rekeyed',
     address,
     custody: { kind: 'watch' },
@@ -136,7 +136,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
     },
     rekeyed: {
         accounts: {
-            account: rekeyedWatch(REKEYED),
+            account: delegatedWatch(REKEYED),
             auth: keyed('auth', FUNDED),
             next: keyed('next', EMPTY),
         },

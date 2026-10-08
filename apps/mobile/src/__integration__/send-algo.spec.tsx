@@ -769,7 +769,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // Same shape as the happy-path rekey case, but the auth
         // account is intentionally NOT registered in the
         // accounts store. `resolveAuthAccount` will throw
-        // RekeyTargetNotFoundError before any signing happens —
+        // DelegationTargetNotFoundError before any signing happens —
         // surfaced as a toast, no algod traffic.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-orphan',

@@ -57,7 +57,7 @@ export class NoHDWalletError extends AccountError {
 /**
  * Rekey target account not found in local accounts
  */
-export class RekeyTargetNotFoundError extends AccountError {
+export class DelegationTargetNotFoundError extends AccountError {
     constructor(authAddress: string) {
         super(
             `Rekey target account ${authAddress} not found in local accounts`,

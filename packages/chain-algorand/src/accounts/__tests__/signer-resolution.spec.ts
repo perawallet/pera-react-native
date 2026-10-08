@@ -24,7 +24,7 @@ import {
     rekeyTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
-    RekeyTargetNotFoundError,
+    DelegationTargetNotFoundError,
     type SignerResolution,
     type WalletAccount,
     accountType,
@@ -670,7 +670,7 @@ describe.each(signerCases)('signer resolution: $name', c => {
         if (c.auth === null) {
             expect(() =>
                 resolveAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID),
-            ).toThrow(RekeyTargetNotFoundError)
+            ).toThrow(DelegationTargetNotFoundError)
         } else {
             expect(
                 resolveAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID)

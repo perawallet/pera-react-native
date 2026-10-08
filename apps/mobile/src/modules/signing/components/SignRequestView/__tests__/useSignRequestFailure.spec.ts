@@ -12,7 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import type { SignRequestStatus } from '@perawallet/wallet-core-multisig'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { useSignRequestFailure } from '../useSignRequestFailure'
@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
 // The global mock in vitest.setup.ts omits this class, and `instanceof` needs
 // the same identity the hook imports — so re-mock the module here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    RekeyTargetNotFoundError: class RekeyTargetNotFoundError extends Error {
+    DelegationTargetNotFoundError: class DelegationTargetNotFoundError extends Error {
         readonly metadata: { params: { authAddress: string } }
         constructor(authAddress: string) {
             super(`Rekey target ${authAddress} not found`)
@@ -210,7 +210,7 @@ describe('useSignRequestFailure', () => {
         const { result } = renderHook(() =>
             useSignRequestFailure(
                 WALLETCONNECT_REQUEST,
-                new RekeyTargetNotFoundError('AUTH_ADDR'),
+                new DelegationTargetNotFoundError('AUTH_ADDR'),
             ),
         )
 

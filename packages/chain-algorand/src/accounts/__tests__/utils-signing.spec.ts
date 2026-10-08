@@ -20,7 +20,7 @@ import {
     rekeyTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
-    RekeyTargetNotFoundError,
+    DelegationTargetNotFoundError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -716,10 +716,10 @@ describe('services/accounts/utils - resolveAuthAccount', () => {
         expect(resolveAuthAccount(a, [a, b, c], ALGORAND_CHAIN_ID)).toBe(b)
     })
 
-    test('throws RekeyTargetNotFoundError when the auth account is not held', () => {
+    test('throws DelegationTargetNotFoundError when the auth account is not held', () => {
         const a = algo25({ address: 'A', authority: 'MISSING' })
         expect(() => resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toThrow(
-            RekeyTargetNotFoundError,
+            DelegationTargetNotFoundError,
         )
     })
 })

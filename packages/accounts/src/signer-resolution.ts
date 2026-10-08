@@ -20,7 +20,7 @@ import {
     isQuantumAccount,
     isRekeyedAccount,
 } from './utils'
-import { RekeyTargetNotFoundError } from './errors'
+import { DelegationTargetNotFoundError } from './errors'
 import { accountsChainAdapters } from './chain-adapter'
 
 /**
@@ -99,7 +99,7 @@ export const getAuthAccount = (
 
 /**
  * Throwing form of {@link getAuthAccount}, for the signing path: throws
- * `RekeyTargetNotFoundError`, which the signing UI maps to a specific message.
+ * `DelegationTargetNotFoundError`, which the signing UI maps to a specific message.
  */
 export const resolveAuthAccount = (
     account: WalletAccount,
@@ -108,7 +108,7 @@ export const resolveAuthAccount = (
 ): WalletAccount => {
     const auth = getAuthAccount(account, accounts, chainId)
     if (auth) return auth
-    throw new RekeyTargetNotFoundError(
+    throw new DelegationTargetNotFoundError(
         authorityOf(account, getSelectedScope(chainId)) ?? '',
     )
 }

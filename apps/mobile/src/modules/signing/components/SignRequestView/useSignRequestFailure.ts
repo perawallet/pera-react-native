@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
@@ -186,7 +186,7 @@ const resolveFailureBody = (
     // Backstop for a rekeyed-to-external sender that slipped past the up-front
     // gate (useSigningActionButtons) and failed at machine init — explain the
     // rekey state instead of the generic failure copy.
-    if (error instanceof RekeyTargetNotFoundError) {
+    if (error instanceof DelegationTargetNotFoundError) {
         return t('signing.cannot_sign.rekeyed_auth_missing_body', {
             authAddress: String(error.metadata.params?.authAddress ?? ''),
         })

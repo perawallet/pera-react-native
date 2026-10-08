@@ -19,7 +19,7 @@ import {
     resolveAuthAccount,
     resolveSignerForAccount,
 } from '../signer-resolution'
-import { RekeyTargetNotFoundError } from '../errors'
+import { DelegationTargetNotFoundError } from '../errors'
 import { type WalletAccount } from '../models'
 import { useAccountChainStateStore } from '../store'
 import {
@@ -102,7 +102,7 @@ describe('signer resolution', () => {
         expect(getRekeyAccount('A', [a, auth], FAKE_CHAIN_ID)).toBe(auth)
     })
 
-    it('throws RekeyTargetNotFoundError when the chain finds no auth account', () => {
+    it('throws DelegationTargetNotFoundError when the chain finds no auth account', () => {
         const a = account('A')
         seedAuthority('A', 'GONE')
         vi.mocked(fakeAccountsChain().adapter.getAuthAccount).mockReturnValue(
@@ -117,7 +117,7 @@ describe('signer resolution', () => {
             }),
         )
         expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
-            RekeyTargetNotFoundError,
+            DelegationTargetNotFoundError,
         )
     })
 
