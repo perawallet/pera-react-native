@@ -23,6 +23,7 @@ import {
 } from '../connection'
 import { PERA_CLIENT_META } from '../shared/constants'
 import { WalletConnectBridgeConnectionError } from '../shared/errors'
+import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import type { V1ConnectorBinding } from './binding'
 import {
     isSecureBridgeUrl,
@@ -37,9 +38,11 @@ export const createV1SessionRestorer = (deps: {
     kit: HandlerKit
     connectors: Pick<WalletConnectConnectorRegistry, 'get' | 'register'>
     sessionKeys: WalletConnectV1SessionKeyStore
+    answeredRequests: WalletConnectV1AnsweredRequests
     bindHandlers: V1ConnectorBinding['bindHandlers']
 }): { restore: () => Promise<WalletConnectV1Connection[]> } => {
-    const { kit, connectors, sessionKeys, bindHandlers } = deps
+    const { kit, connectors, sessionKeys, answeredRequests, bindHandlers } =
+        deps
     const { reportError, store } = kit
 
     const asStatus = async (
@@ -152,6 +155,7 @@ export const createV1SessionRestorer = (deps: {
                     '[WC v1] dropping a malformed stored session record',
                     { connectionId: record.id },
                 )
+                answeredRequests.forget(record.id)
                 await sessionKeys
                     .remove(record.id)
                     .catch((secretError: unknown) => {

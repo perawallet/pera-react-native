@@ -20,6 +20,7 @@ import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { createAlgodTransport } from './transports/createAlgodTransport'
+import { findStaleGroupReason } from './staleRequestGuard'
 import { setOnConfirmedHandler, submitAndAutoRefresh } from './submission'
 import {
     deriveSubmissionAttemptFromBytes,
@@ -44,6 +45,7 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
             options,
         ),
     isRequestGroupAlreadySubmitted,
+    findStaleGroupReason: request => findStaleGroupReason(request),
     // The test-only params stay off the adapter.
     reconcileOpenSubmissions: () => reconcileOpenSubmissions(),
     deriveSubmissionAttemptFromBytes,

@@ -130,7 +130,10 @@ export {
 } from './hooks/useSignAndSubmitGroup'
 // The pure applier, not the hook: the app layer owns the AppState
 // subscription and feeds it in, keeping this package free of react-native.
-export { applyAppStateToHardwareSessions } from './hooks/useSigningActorLifecycle'
+export {
+    applyAppStateToHardwareSessions,
+    isSignRequestAwaitingPreflight,
+} from './hooks/useSigningActorLifecycle'
 export { useSigningEvent } from './hooks/useSigningEvent'
 export { useSigningPipeline } from './hooks/useSigningPipeline'
 export { useSigningRequest } from './hooks/useSigningRequest'
@@ -235,6 +238,7 @@ export {
     type DerivedSubmissionAttempt,
     type OnConfirmedHandler,
     type ReconcileSummary,
+    type StaleGroupReason,
     type SubmissionSettledHandler,
     type SubmitAndAutoRefreshOptions,
 } from './broadcaster'

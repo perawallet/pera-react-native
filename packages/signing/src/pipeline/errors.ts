@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
+    isRetryableError,
 } from '@perawallet/wallet-core-shared'
 
 /**
@@ -222,6 +223,21 @@ export class HardwareWalletError extends PipelineError {
     }
 }
 
+/**
+ * A dApp asked for a group that can never land: algod already holds one of
+ * its transactions, or it is past its last valid round. Sent to the peer as
+ * the decline, so the message is written for the dApp.
+ */
+export class StaleSignRequestError extends PipelineError {
+    constructor() {
+        super(
+            'This transaction group was already submitted or has expired',
+            undefined,
+            { severity: ErrorSeverity.LOW },
+        )
+    }
+}
+
 export class InvalidSignableDataError extends PipelineError {
     constructor(reason: string) {
         super(`Invalid signable data: ${reason}`, undefined, {
@@ -254,11 +270,14 @@ export const FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER = 'fee-adjusted'
 /**
  * A fee-adjusted ARC-0001 response (`assignMinimumFeesToGroup`) failed to
  * deliver: "this dApp may not support the adjusted fees" rather than an ordinary
- * transport failure. Extends `TransportError` so `retryable` is unchanged.
+ * transport failure. Retryable only when the delivery failure is, or RETRY
+ * would loop on a session that can never answer.
  */
 export class FeeAdjustmentDeliveryError extends TransportError {
     constructor(message: string, options?: { cause?: Error }) {
-        super(message, options?.cause)
+        super(message, options?.cause, {
+            retryable: options?.cause ? isRetryableError(options.cause) : true,
+        })
     }
 }
 

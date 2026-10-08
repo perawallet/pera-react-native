@@ -57,6 +57,7 @@ export const fakeBroadcasterAdapter = (
     })),
     submitAndAutoRefresh: vi.fn(async () => []),
     isRequestGroupAlreadySubmitted: vi.fn(async () => false),
+    findStaleGroupReason: vi.fn(async () => null),
     reconcileOpenSubmissions: vi.fn(async () => ({
         probed: 0,
         confirmed: 0,

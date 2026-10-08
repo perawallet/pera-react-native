@@ -39,6 +39,7 @@ import {
     type GateRejectionCode,
     type GateResult,
 } from '../validation/inboundRequestGate'
+import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import {
     isWalletConnectV1Connection,
     type WalletConnectV1Connection,
@@ -64,13 +65,93 @@ export type V1RequestHandlers = {
     handleSignData: V1ConnectorEventHandler
 }
 
+type ReplayKind = 'answered' | 'in-flight'
+
+// Pera Connect ids are `Date.now() * 1000` plus a 3-digit random suffix. An id
+// outside this window carries no send time.
+const MIN_TIMESTAMPED_ID = 1e15
+const MAX_TIMESTAMPED_ID = 1e16
+
+const requestAgeMs = (requestId: number): number | undefined =>
+    requestId >= MIN_TIMESTAMPED_ID && requestId < MAX_TIMESTAMPED_ID
+        ? Date.now() - Math.floor(requestId / 1000)
+        : undefined
+
 export const createV1RequestHandlers = (deps: {
     kit: HandlerKit
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>
     getNetwork: () => Network
+    answeredRequests: WalletConnectV1AnsweredRequests
 }): V1RequestHandlers => {
-    const { kit, connectors, getNetwork } = deps
+    const { kit, connectors, getNetwork, answeredRequests } = deps
     const { reportError, store, recordActivity, requireContext } = kit
+
+    // Requests surfaced and not yet answered. Memory only: one lost to an app
+    // kill mid-review must come back on the next launch.
+    const inFlight = new Set<string>()
+    const requestKey = (clientId: string, requestId: number): string =>
+        `${clientId}\u0000${requestId}`
+
+    const markAnswered = (clientId: string, requestId: number): void => {
+        inFlight.delete(requestKey(clientId, requestId))
+        answeredRequests.record(clientId, requestId)
+    }
+
+    // An answer that never reached the dApp leaves it waiting, so a
+    // redelivery of that id is the dApp's only way to be answered.
+    const releaseClaim = (clientId: string, requestId: number): void => {
+        inFlight.delete(requestKey(clientId, requestId))
+    }
+
+    const replayOf = (
+        clientId: string,
+        requestId: number,
+    ): Nullable<ReplayKind> => {
+        if (inFlight.has(requestKey(clientId, requestId))) return 'in-flight'
+        // Only a send-time id is unique for the life of a session; a dApp
+        // counting ids from 1 would otherwise have its next request dropped.
+        if (requestAgeMs(requestId) === undefined) return null
+        return answeredRequests.has(clientId, requestId) ? 'answered' : null
+    }
+
+    /**
+     * Claims a request for this intake, or drops it as a repeat. Never answers
+     * a repeat: the dApp has settled (or is still awaiting) that id, and a
+     * second answer to it is at best ignored.
+     */
+    const claimRequest = (
+        clientId: string,
+        requestId: number,
+        method: string,
+    ): boolean => {
+        const ageMs = requestAgeMs(requestId)
+        const replay = replayOf(clientId, requestId)
+        if (replay) {
+            const context = {
+                clientId,
+                requestId,
+                method,
+                replayOf: replay,
+                ageMs,
+            }
+            if (replay === 'answered') {
+                // Error level so field occurrences reach crash reporting: the
+                // only trace of a bridge replay once it stops reaching the UI.
+                logger.error('[WC v1] dropped a replayed sign request', context)
+            } else {
+                logger.warn('[WC v1] dropped a duplicate sign request', context)
+            }
+            return false
+        }
+        logger.info('[WC v1] sign request received', {
+            clientId,
+            requestId,
+            method,
+            ageMs,
+        })
+        inFlight.add(requestKey(clientId, requestId))
+        return true
+    }
 
     const connectionFor = async (
         clientId: string,
@@ -89,10 +170,12 @@ export const createV1RequestHandlers = (deps: {
     ): void => {
         void connectors
             .ensureReady(clientId, WC_DELIVERY_TIMEOUT_MS)
-            .then(connector =>
-                connector.rejectRequest({ id: requestId, error }),
-            )
+            .then(connector => {
+                connector.rejectRequest({ id: requestId, error })
+                markAnswered(clientId, requestId)
+            })
             .catch((deliveryError: unknown) => {
+                releaseClaim(clientId, requestId)
                 logger.warn('[WC v1] reject delivery failed', {
                     clientId,
                     requestId,
@@ -123,6 +206,7 @@ export const createV1RequestHandlers = (deps: {
                 WC_DELIVERY_TIMEOUT_MS,
             )
             send(connector)
+            markAnswered(connection.id, requestId)
         }
 
         // The gate already required a registered adapter for this network.
@@ -152,10 +236,15 @@ export const createV1RequestHandlers = (deps: {
                         result: support.toWireResult(result),
                     }),
                 ),
+            // A failed `respond` keeps its claim: the request stays queued for
+            // RETRY. A failed `reject` is the request's last answer.
             reject: error =>
                 deliver(connector =>
                     connector.rejectRequest({ id: requestId, error }),
-                ),
+                ).catch((deliveryError: unknown) => {
+                    releaseClaim(connection.id, requestId)
+                    throw deliveryError
+                }),
         })
     }
 
@@ -239,6 +328,7 @@ export const createV1RequestHandlers = (deps: {
         )
         if (!opened) return
         const { request, connection } = opened
+        if (!claimRequest(connection.id, request.id, 'algo_signTxn')) return
 
         const verdict = gateSignTxnRequest({
             payload,
@@ -275,6 +365,7 @@ export const createV1RequestHandlers = (deps: {
         )
         if (!opened) return
         const { request, connection } = opened
+        if (!claimRequest(connection.id, request.id, 'algo_signData')) return
         const network = getNetwork()
 
         // `gateSignDataRequest` rejects the legacy array shape outright, so that
