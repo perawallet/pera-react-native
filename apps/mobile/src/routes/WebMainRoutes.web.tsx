@@ -17,7 +17,6 @@
 import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
-import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
@@ -67,7 +66,6 @@ import { createAppStackNavigator } from './createAppStackNavigator'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { useTabResume, useTabResumeResultToast } from './useTabResume.web'
-import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import type { RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
@@ -91,7 +89,6 @@ export const WebMainRoutes = ({
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
-    useDeviceRegistration(useDeviceAccountRegistrations())
     // Native mounts these in RootComponent, which the web shell replaces; without
     // them devices register with no push token and notification-tap deeplinks drop.
     useTokenListener(fcmToken)
