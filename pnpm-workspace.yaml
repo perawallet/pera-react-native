@@ -7,11 +7,11 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore-core": 1.0.0-canary.4
-  "@algorandfoundation/keystore-web": 1.0.0-canary.4
+  "@algorandfoundation/keystore-core": 1.0.0-canary.5
+  "@algorandfoundation/keystore-web": 1.0.0-canary.6
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.20
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.21
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
@@ -223,24 +223,12 @@ patchedDependencies:
   # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
   # signing opens only that child, and imported raw keys are sealed the same
   # way. Nothing is exportable. Drop once upstream takes these branches.
-  "@algorandfoundation/keystore-core@1.0.0-canary.4": patches/@algorandfoundation__keystore-core@1.0.0-canary.4.patch
-  # `getMasterKey` read-then-generates the vault master key with no locking, so
-  # every context that builds a driver (service worker, offscreen document,
-  # each extension page — all of which construct one within milliseconds at
-  # first run) can miss the read, generate its own AES-GCM key, and race the
-  # `put`. Last write wins the record while each context keeps the key IT made
-  # cached in the driver closure, so material sealed by one can never be opened
-  # by another. It surfaces as a bare `OperationError` with no message —
-  # "Pera couldn't read this request" on a legitimate dApp signing request, and
-  # the intermittent half of apps/browser/e2e/dapp-sign.spec.ts. Creation now
-  # happens under a Web Lock with a re-read once held, so the first caller
-  # creates and the rest read what it wrote. Drop once upstream takes it.
-  "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
+  "@algorandfoundation/keystore-core@1.0.0-canary.5": patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
   # `shims` is typed as an array, though it is handed unchanged to keystore-core's
   # `createKeyStore`, which also takes a lazy function. The provider needs the
   # lazy form to fold the asynchronously loaded native Falcon binding in next to
   # the secp256k1 shim. Type-only; drop once upstream widens it.
-  "@algorandfoundation/react-native-keystore@1.0.0-canary.20": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.20.patch
+  "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
   # Four unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
@@ -294,9 +282,9 @@ overrides:
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.
-  '@algorandfoundation/keystore-core': 1.0.0-canary.4
-  '@algorandfoundation/keystore-web': 1.0.0-canary.4
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.20
+  '@algorandfoundation/keystore-core': 1.0.0-canary.5
+  '@algorandfoundation/keystore-web': 1.0.0-canary.6
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.21
   # Four upstream packages (keystore-core, keystore@canary.17,
   # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
   # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
