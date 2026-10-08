@@ -110,6 +110,7 @@ export const createWalletConnectV1Handler = (
         handleSessionRequest: proposals.handleSessionRequest,
         handleSignTxn: requests.handleSignTxn,
         handleSignData: requests.handleSignData,
+        handleGetEmptySignatures: requests.handleGetEmptySignatures,
     })
     const { restore } = createV1SessionRestorer({
         kit,

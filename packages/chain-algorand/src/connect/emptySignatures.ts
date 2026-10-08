@@ -1,0 +1,158 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    addressFromPQKey,
+    ALGORAND_ZERO_ADDRESS_STRING,
+    encodeMsgpack,
+    makePaymentTxnWithSuggestedParamsFromObject,
+    msgpackRawDecodeAsMap,
+    msgpackRawEncode,
+    Address,
+    SignedTransaction,
+    type EncodedMultisig,
+    type EncodedPQSig,
+    type Transaction,
+} from 'algosdk'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    getAuthAccount,
+    isAlgo25Account,
+    isHardwareWalletAccount,
+    isHDWalletAccount,
+    isMultisigAccount,
+    isQuantumAccount,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms'
+import {
+    encodeToBase64,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import { PQ_SCHEMES } from '../blockchain/pq/schemes'
+
+type EmptySignatureFields = {
+    msig?: EncodedMultisig
+    pqsig?: EncodedPQSig
+    sgnr?: Address
+}
+
+let placeholderTxn: Transaction | undefined
+
+// Only carries the signature fields through algosdk's codec; `txn` is dropped.
+const getPlaceholderTxn = (): Transaction => {
+    placeholderTxn ??= makePaymentTxnWithSuggestedParamsFromObject({
+        sender: ALGORAND_ZERO_ADDRESS_STRING,
+        receiver: ALGORAND_ZERO_ADDRESS_STRING,
+        amount: 0,
+        suggestedParams: {
+            fee: 0,
+            minFee: 0,
+            firstValid: 0,
+            lastValid: 0,
+            genesisHash: new Uint8Array(32),
+            flatFee: true,
+        },
+    })
+    return placeholderTxn
+}
+
+/**
+ * Base64 of the canonical msgpack `SignedTransaction` minus `txn`, as use-wallet
+ * defines it. algosdk omits empty signature bytes, so plain ed25519 is `gA==`.
+ */
+export const encodeEmptySignature = (fields: EmptySignatureFields): string => {
+    const stxn = new SignedTransaction({ ...fields, txn: getPlaceholderTxn() })
+    const encoded = msgpackRawDecodeAsMap(encodeMsgpack(stxn)) as Map<
+        string,
+        unknown
+    >
+    encoded.delete('txn')
+    return encodeToBase64(msgpackRawEncode(encoded))
+}
+
+const signatureFieldsOf = (
+    auth: WalletAccount,
+): Nullable<Omit<EmptySignatureFields, 'sgnr'>> => {
+    if (isQuantumAccount(auth)) {
+        const info = resolvePQSigningInfo(
+            getKeystoreStore().state.keys,
+            auth.keyPairId,
+        )
+        if (!info) return null
+        const scheme = PQ_SCHEMES[info.schemeId]
+        const { salt } = addressFromPQKey(scheme, info.publicKey)
+        return {
+            pqsig: {
+                sch: scheme,
+                slt: salt,
+                pk: info.publicKey,
+                sig: new Uint8Array(0),
+            },
+        }
+    }
+    if (isMultisigAccount(auth)) {
+        // A legacy record without `multisigDetails` throws here and is left out.
+        const details = auth.multisigDetails
+        return {
+            msig: {
+                v: details.version,
+                thr: details.threshold,
+                subsig: details.addresses.map(address => ({
+                    pk: Address.fromString(address).publicKey,
+                })),
+            },
+        }
+    }
+    if (
+        isAlgo25Account(auth) ||
+        isHDWalletAccount(auth) ||
+        isHardwareWalletAccount(auth)
+    ) {
+        return {}
+    }
+    return null
+}
+
+/**
+ * `algo_getEmptySignatures`'s answer on the active network, whose rekey state
+ * the account records mirror. An address left out reads as unknown to the
+ * dApp, which is the honest answer for a watch authority, an auth account
+ * this wallet doesn't hold, or a key the keystore can't describe.
+ */
+export const algorandEmptySignaturesFor = (
+    addresses: readonly string[],
+): Record<string, string> => {
+    const accounts = useAccountsStore.getState().accounts
+    const result: Record<string, string> = {}
+    for (const address of addresses) {
+        const account = accounts.find(a => a.address === address)
+        if (!account) continue
+        const auth = getAuthAccount(account, accounts, LEGACY_CHAIN_ID)
+        if (!auth) continue
+        try {
+            const fields = signatureFieldsOf(auth)
+            if (!fields) continue
+            result[address] = encodeEmptySignature(
+                auth.address === address
+                    ? fields
+                    : { ...fields, sgnr: Address.fromString(auth.address) },
+            )
+        } catch (error) {
+            logger.warn('[WC] could not build an empty signature', { error })
+        }
+    }
+    return result
+}

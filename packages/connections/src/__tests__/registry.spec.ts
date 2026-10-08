@@ -47,6 +47,7 @@ const fixtureAdapter: DappRequestChainAdapter = {
         caip2ChainIdFor: () => null,
         networkForCaip2ChainId: () => null,
         toWireResult: () => null,
+        emptySignaturesFor: () => ({}),
     },
     validateTransactionPayload: payload => {
         if (!Array.isArray(payload) || payload.length === 0) {

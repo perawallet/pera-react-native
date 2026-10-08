@@ -63,6 +63,7 @@ export const BOUND_EVENTS = [
     'session_request',
     'algo_signTxn',
     'algo_signData',
+    'algo_getEmptySignatures',
     'disconnect',
     'error',
     'transport_error',

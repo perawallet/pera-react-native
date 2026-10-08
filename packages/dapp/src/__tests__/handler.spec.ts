@@ -70,6 +70,7 @@ const fakeChainAdapter = (
         caip2ChainIdFor: () => null,
         networkForCaip2ChainId: () => null,
         toWireResult: () => null,
+        emptySignaturesFor: () => ({}),
     },
     validateTransactionPayload: payload =>
         Array.isArray(payload) && payload.length > 0

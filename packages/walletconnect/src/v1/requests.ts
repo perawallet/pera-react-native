@@ -29,6 +29,10 @@ import {
     walletConnectSupportFor,
 } from '../shared/chainSupport'
 import {
+    emptySignaturesResult,
+    GET_EMPTY_SIGNATURES_METHOD,
+} from '../shared/emptySignatures'
+import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
@@ -63,6 +67,7 @@ export type V1RequestHandlers = {
     ) => Promise<Nullable<WalletConnectV1Connection>>
     handleSignTxn: V1ConnectorEventHandler
     handleSignData: V1ConnectorEventHandler
+    handleGetEmptySignatures: V1ConnectorEventHandler
 }
 
 type ReplayKind = 'answered' | 'in-flight'
@@ -397,5 +402,59 @@ export const createV1RequestHandlers = (deps: {
         })
     }
 
-    return { connectionFor, handleSignTxn, handleSignData }
+    // No replay ledger and no error toast: the answer is public, idempotent
+    // data the dApp asks for unprompted, so a repeat is simply answered again.
+    const handleGetEmptySignatures: V1ConnectorEventHandler = async (
+        connector,
+        error,
+        payload,
+    ) => {
+        const opened = await openRequest(
+            connector,
+            GET_EMPTY_SIGNATURES_METHOD,
+            error,
+            payload,
+        )
+        if (!opened) return
+        const { request, connection } = opened
+        const network = getNetwork()
+        const result = isV1ChainIdAcceptable(
+            connection.metadata.chainId,
+            network,
+        )
+            ? emptySignaturesResult(
+                  request.params,
+                  connection.accounts,
+                  network,
+              )
+            : null
+
+        try {
+            const live = await connectors.ensureReady(
+                connection.id,
+                WC_DELIVERY_TIMEOUT_MS,
+            )
+            if (result) {
+                live.approveRequest({ id: request.id, result })
+            } else {
+                live.rejectRequest({
+                    id: request.id,
+                    error: new WalletConnectInvalidNetworkError(),
+                })
+            }
+        } catch (deliveryError) {
+            logger.warn('[WC v1] empty signatures delivery failed', {
+                clientId: connection.id,
+                requestId: request.id,
+                error: deliveryError,
+            })
+        }
+    }
+
+    return {
+        connectionFor,
+        handleSignTxn,
+        handleSignData,
+        handleGetEmptySignatures,
+    }
 }

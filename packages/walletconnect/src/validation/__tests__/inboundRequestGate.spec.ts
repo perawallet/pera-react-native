@@ -37,6 +37,7 @@ const fakeAdapter: DappRequestChainAdapter = {
         caip2ChainIdFor: () => null,
         networkForCaip2ChainId: () => null,
         toWireResult: () => null,
+        emptySignaturesFor: () => ({}),
         v1: {
             isChainIdAcceptable: (chainId, networkId) =>
                 chainId === AlgorandWalletConnectChainId.mainnet &&

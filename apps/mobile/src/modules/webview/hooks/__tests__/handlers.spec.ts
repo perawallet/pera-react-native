@@ -157,6 +157,7 @@ describe('sanitizeErrorForWebview', () => {
                 caip2ChainIdFor: () => null,
                 networkForCaip2ChainId: () => null,
                 toWireResult: () => null,
+                emptySignaturesFor: () => ({}),
             },
             validateTransactionPayload: () => ({ ok: true, group: [] }),
             useEnqueueTransactionSigning: () => async () => null,

@@ -82,6 +82,11 @@ export interface DappRequestChainAdapter {
         /** The network a CAIP-2 chain id names, or `null` for none of ours. */
         networkForCaip2ChainId(caip2: string): NetworkId | null
         toWireResult(result: WalletOperationResult): unknown
+        /**
+         * Each address's empty signature on the active network, the public
+         * answer to `algo_getEmptySignatures`; an address left out is unknown.
+         */
+        emptySignaturesFor(addresses: readonly string[]): Record<string, string>
         /** Omitted by a chain v1 never served. */
         readonly v1?: {
             isChainIdAcceptable(
