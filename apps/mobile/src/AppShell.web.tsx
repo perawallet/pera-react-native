@@ -26,6 +26,7 @@ import {
     parseTypedJson,
     stringifyTypedJson,
 } from '@perawallet/wallet-core-shared'
+import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import {
     getProvider,
     PeraWalletProvider,
@@ -52,6 +53,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { useAppTheme } from '@hooks/useAppTheme'
 import { useCrashReporterBinding } from '@hooks/useCrashReporterBinding'
 import { useDatabaseResetNotice } from '@hooks/useDatabaseResetNotice'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getNavigationTheme } from '@theme/theme'
@@ -133,6 +135,13 @@ const MainSurfaceLifecycle = (): null => {
     return null
 }
 
+// Native registers from RootComponent before any account exists; a Cloud
+// Backup restore during onboarding needs that device id.
+const DeviceRegistrar = (): null => {
+    useDeviceRegistration(useDeviceAccountRegistrations())
+    return null
+}
+
 const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
@@ -184,21 +193,26 @@ const ShellRouter = (): React.JSX.Element => {
         }
         case 'onboarding': {
             return (
-                // Themed so React Navigation's DefaultTheme grey background
-                // doesn't paint the onboarding scene.
-                <NavigationContainer
-                    ref={onboardingNavigationRef}
-                    theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
-                    onReady={handleOnboardingReady}
-                    onStateChange={() =>
-                        handleLedgerTabExit(
-                            onboardingNavigationRef.getCurrentRoute()?.name,
-                        )
-                    }
-                >
-                    <OnboardingStackNavigator />
-                    <BottomSheetManager />
-                </NavigationContainer>
+                <>
+                    <DeviceRegistrar />
+                    {/* Themed so React Navigation's DefaultTheme grey background
+                        doesn't paint the onboarding scene. */}
+                    <NavigationContainer
+                        ref={onboardingNavigationRef}
+                        theme={getNavigationTheme(
+                            isDarkMode ? 'dark' : 'light',
+                        )}
+                        onReady={handleOnboardingReady}
+                        onStateChange={() =>
+                            handleLedgerTabExit(
+                                onboardingNavigationRef.getCurrentRoute()?.name,
+                            )
+                        }
+                    >
+                        <OnboardingStackNavigator />
+                        <BottomSheetManager />
+                    </NavigationContainer>
+                </>
             )
         }
         case 'main': {
@@ -206,6 +220,7 @@ const ShellRouter = (): React.JSX.Element => {
             // NavigationContainer (native parity) — do not add another here.
             return (
                 <>
+                    <DeviceRegistrar />
                     <MainSurfaceLifecycle />
                     <WebMainRoutes fcmToken={fcmToken} />
                 </>
