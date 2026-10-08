@@ -20,7 +20,7 @@ import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
@@ -64,7 +64,10 @@ export const useImportAccountOptionsScreen =
             anyChain: 'ledger',
         })
         const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
-        const isCloudBackupEnabled = useIsCloudBackupEnabled()
+        const isCloudBackupAvailable = useIsCloudBackupAvailable()
+        const canImportSecureBackup = useCapability({
+            anyChain: 'secureBackup',
+        })
         const {
             isReady: isLedgerSupportKnown,
             supportedTransportTypes: ledgerTransports,
@@ -293,7 +296,7 @@ export const useImportAccountOptionsScreen =
                           },
                       ]
                     : []),
-                ...(isCloudBackupEnabled
+                ...(isCloudBackupAvailable
                     ? [
                           {
                               testID: 'import_account_options_cloud_backup_button',
@@ -306,16 +309,20 @@ export const useImportAccountOptionsScreen =
                           },
                       ]
                     : []),
-                {
-                    testID: 'import_account_options_asb_button',
-                    titleKey: isCloudBackupEnabled
-                        ? 'onboarding.import_account_options.asb_legacy_title'
-                        : 'onboarding.import_account_options.asb_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.asb_description',
-                    leftIcon: 'shield-check' as IconName,
-                    onPress: handleImportAsb,
-                },
+                ...(canImportSecureBackup
+                    ? [
+                          {
+                              testID: 'import_account_options_asb_button',
+                              titleKey: isCloudBackupAvailable
+                                  ? 'onboarding.import_account_options.asb_legacy_title'
+                                  : 'onboarding.import_account_options.asb_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.asb_description',
+                              leftIcon: 'shield-check' as IconName,
+                              onPress: handleImportAsb,
+                          },
+                      ]
+                    : []),
             )
 
             return allOptions
@@ -328,7 +335,8 @@ export const useImportAccountOptionsScreen =
             handleImportPeraWeb,
             handleImportCloudBackup,
             handleImportQuantum,
-            isCloudBackupEnabled,
+            isCloudBackupAvailable,
+            canImportSecureBackup,
             isQuantumAccountsEnabled,
             canUseLedger,
             canUseLedgerUsb,

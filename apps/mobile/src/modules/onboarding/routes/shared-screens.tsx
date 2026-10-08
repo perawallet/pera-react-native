@@ -273,32 +273,42 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={LedgerTroubleshootingScreenWithErrorBoundary}
         />
-        <Stack.Screen
-            name='AsbImportInfo'
-            options={{ title: '' }}
-            component={AsbImportInfoScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportBackup'
-            options={{ title: '' }}
-            component={AsbImportBackupScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportKey'
-            options={{ title: '' }}
-            component={AsbImportKeyScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportSelectAccounts'
-            options={{ title: '' }}
-            component={AsbImportSelectAccountsScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportResult'
-            options={{ headerShown: false }}
-            layout={fullScreenLayout}
-            component={AsbImportResultScreenWithErrorBoundary}
-        />
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportInfo'
+                options={{ title: '' }}
+                component={AsbImportInfoScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportBackup'
+                options={{ title: '' }}
+                component={AsbImportBackupScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportKey'
+                options={{ title: '' }}
+                component={AsbImportKeyScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportSelectAccounts'
+                options={{ title: '' }}
+                component={AsbImportSelectAccountsScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportResult'
+                options={{ headerShown: false }}
+                layout={fullScreenLayout}
+                component={AsbImportResultScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='PeraWebImportInfo'
             options={{ title: '' }}

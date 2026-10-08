@@ -36,6 +36,19 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
+const mockCanBackUpMnemonic = vi.fn()
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-shared')
+        >()
+    return {
+        ...original,
+        useChainCapability: (...args: unknown[]) =>
+            mockCanBackUpMnemonic(...args),
+    }
+})
+
 import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
 
 const accountHD: WalletAccount = {
@@ -64,6 +77,23 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReset()
         mockAccountsRekeyedTo.mockReset()
         mockAccountsRekeyedTo.mockReturnValue([])
+        mockCanBackUpMnemonic.mockReset()
+        mockCanBackUpMnemonic.mockReturnValue(true)
+    })
+
+    test('false when the chain has mnemonic backup off, however funded', () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+        mockCanBackUpMnemonic.mockReturnValue(false)
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD),
+        )
+        expect(result.current).toBe(false)
+        expect(mockCanBackUpMnemonic).toHaveBeenCalledWith(
+            'algorand',
+            'mnemonicBackup',
+        )
     })
 
     test('false when the account does not require backup', () => {

@@ -163,11 +163,13 @@ export const MainRoutes = () => {
                                 ))}
                             </>
                         )}
-                        <RootStack.Screen
-                            name='BackupWallet'
-                            component={BackupStackNavigator}
-                            options={{ headerShown: false }}
-                        />
+                        {isAllowed({ anyChain: 'mnemonicBackup' }) && (
+                            <RootStack.Screen
+                                name='BackupWallet'
+                                component={BackupStackNavigator}
+                                options={{ headerShown: false }}
+                            />
+                        )}
                         {isAllowed(REKEY_REQUIREMENT) && (
                             <RootStack.Screen
                                 name='RekeyToStandard'

@@ -95,7 +95,7 @@ export const AccountOptionsContent = ({
         authAccount,
         authAddress,
         handleUndoRekey,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         removeConfirmView,
         handleConfirmBackupWarning,
         handleConfirmRemove,
@@ -116,7 +116,7 @@ export const AccountOptionsContent = ({
                     iconVariant='error'
                     title={t('account_options.backup_warning_title')}
                     message={t(
-                        isCloudBackupEnabled
+                        isCloudBackupAvailable
                             ? 'account_options.backup_warning_message_with_cloud_backup'
                             : 'account_options.backup_warning_message',
                     )}

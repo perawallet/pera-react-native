@@ -388,6 +388,40 @@ describe('useImportAccountOptionsScreen', () => {
         )
     })
 
+    it('drops the cloud restore row and the legacy ASB title when cloud backup is off on every chain', () => {
+        mockCloudBackupFlag.enabled = true
+        capabilityState.turnOff('cloudBackup')
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(testIDs).not.toContain(
+            'import_account_options_cloud_backup_button',
+        )
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_title',
+        )
+    })
+
+    it('drops the ASB row without secure backup while the cloud restore row stays', () => {
+        mockCloudBackupFlag.enabled = true
+        capabilityState.turnOff('secureBackup')
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+
+        expect(testIDs).not.toContain('import_account_options_asb_button')
+        expect(testIDs).toContain(
+            'import_account_options_recover_wallet_button',
+        )
+        expect(testIDs).toContain('import_account_options_cloud_backup_button')
+    })
+
     it('handleCloseQRScanner closes the QR scanner', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
