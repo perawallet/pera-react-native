@@ -15,15 +15,16 @@ import { join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 // Ethereum keys live only in the keystore. `pera/secp256k1-library-seam`
-// fences production source; this also covers the package's tests and
-// `viem/accounts`, which derives keys in JS through @scure/bip32.
+// fences production source (keep `isSecp256k1Library` there and this list in
+// step); this also covers the package's tests and `viem/accounts`, which
+// derives keys in JS through @scure/bip32.
 
 const PACKAGE_ROOT = resolve(__dirname, '../../..')
 const SRC = join(PACKAGE_ROOT, 'src')
 const THIS_SPEC = relative(SRC, __filename)
 
 const SPECIFIER =
-    /(?:(?:import|export)\s[^'"]*?from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g
+    /(?:(?:import|export)\s[^'"]*?from\s+|import\s*|(?:import|require|importActual|importMock)\s*\(\s*)['"]([^'"]+)['"]/g
 
 const FORBIDDEN_DEPENDENCIES = [
     '@noble/secp256k1',
@@ -72,10 +73,23 @@ describe('chain-ethereum secp256k1 firewall', () => {
         const declared = [
             ...Object.keys(manifest.dependencies ?? {}),
             ...Object.keys(manifest.devDependencies ?? {}),
+            ...Object.keys(manifest.peerDependencies ?? {}),
+            ...Object.keys(manifest.optionalDependencies ?? {}),
         ]
 
         expect(
             declared.filter(name => FORBIDDEN_DEPENDENCIES.includes(name)),
         ).toEqual([])
+    })
+
+    // The kms barrel loads react-native-mmkv; only its constants are pure.
+    it('reaches kms only through its constants entry point', () => {
+        const barrelImports = files.filter(file =>
+            [...readFileSync(join(SRC, file), 'utf8').matchAll(SPECIFIER)].some(
+                ([, specifier]) => specifier === '@perawallet/wallet-core-kms',
+            ),
+        )
+
+        expect(barrelImports).toEqual([])
     })
 })

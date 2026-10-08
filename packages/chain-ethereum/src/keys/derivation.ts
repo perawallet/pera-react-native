@@ -19,6 +19,9 @@ import type {
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 import { ethereumAddressCodec } from '../addresses'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import { ethereumHdPath } from './path'
+
+export { ethereumHdPath }
 
 const SCHEME = 'secp256k1'
 
@@ -27,10 +30,6 @@ const assertSecp256k1 = (opts: DeriveOpts): void => {
         throw new Error(`Ethereum keys are secp256k1 only, got ${opts.scheme}`)
     }
 }
-
-/** BIP-44 coin type 60, the path MetaMask and Ledger Live derive. */
-export const ethereumHdPath = (account: number, keyIndex: number): string =>
-    `m/44'/60'/${account}'/0/${keyIndex}`
 
 /**
  * Stored accounts reference this id, so its format never changes, and the
@@ -43,7 +42,7 @@ export const ethereumHdKeyId = (
     keyIndex: number,
 ): string => `${seedRef}-eth-acc${account}-idx${keyIndex}`
 
-/** Stable per key so re-imports resolve to one entry, and never carries key bytes. */
+/** Stable per key, so a re-import collides on one entry instead of adding a second; never carries key bytes. */
 export const ethereumRawKeyId = (privateKey: Uint8Array): string =>
     `ethereum-raw-${keccak256(privateKey).slice(2, 34)}`
 

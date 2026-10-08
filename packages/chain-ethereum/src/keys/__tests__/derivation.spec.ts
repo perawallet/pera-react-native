@@ -269,5 +269,21 @@ describe('ethereumKeyDerivation', () => {
                 ),
             ).resolves.toEqual([])
         })
+
+        it('rejects a non-secp256k1 scheme without reaching the KMS', async () => {
+            const { keyStore, derivations } = createVectorKeyStore()
+            const probe = vi.fn(async () => true)
+
+            await expect(
+                ethereumKeyDerivation.discover(
+                    keyStore,
+                    'seed-1',
+                    probe,
+                    ED25519,
+                ),
+            ).rejects.toThrow('Ethereum keys are secp256k1 only, got ed25519')
+            expect(derivations).toEqual([])
+            expect(probe).not.toHaveBeenCalled()
+        })
     })
 })
