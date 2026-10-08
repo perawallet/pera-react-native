@@ -21,6 +21,7 @@
   "dependencies": {
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-chain-contract": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
     "decimal.js": "catalog:",
     "viem": "catalog:",
     "zod": "catalog:"

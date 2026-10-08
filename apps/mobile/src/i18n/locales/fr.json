@@ -1054,6 +1054,36 @@
                 "body": "Le réseau a refusé la transaction. Veuillez réessayer ou contacter l’assistance si le problème persiste."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Le smart contract a refusé la transaction",
+                "body": "Le smart contract a refusé cette transaction sans en donner la raison. Vérifiez les détails, puis réessayez."
+            },
+            "reverted_with_reason": {
+                "title": "Le smart contract a refusé la transaction",
+                "body": "Le contrat a renvoyé : {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Gas insuffisant",
+                "body": "Cette transaction nécessite plus de gas que sa limite ne le permet. Veuillez réessayer et contacter le support si le problème persiste."
+            },
+            "nonce_too_low": {
+                "title": "Transaction dans le désordre",
+                "body": "Une autre transaction de ce compte a été traitée en premier. Veuillez réessayer."
+            },
+            "replacement_underpriced": {
+                "title": "Frais de réseau trop bas",
+                "body": "Une transaction en attente de ce compte ne peut être remplacée qu’avec des frais de réseau plus élevés. Attendez qu’elle soit terminée, ou réessayez avec des frais plus élevés."
+            },
+            "insufficient_funds": {
+                "title": "ETH insuffisant",
+                "body": "Ce compte ne dispose pas d’assez d’ETH pour couvrir le montant et les frais de réseau. Ajoutez plus d’ETH, puis réessayez."
+            },
+            "rate_limited": {
+                "title": "Réseau saturé",
+                "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
+            }
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Statut de la transaction inconnu",

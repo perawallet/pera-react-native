@@ -1046,6 +1046,36 @@
                 "body": "Das Netzwerk hat die Transaktion abgelehnt. Bitte versuche es erneut oder wende dich an den Support, falls das Problem weiterhin besteht."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Smart Contract hat die Transaktion abgelehnt",
+                "body": "Der Smart Contract hat diese Transaktion ohne Angabe eines Grundes abgelehnt. Prüfe die Details und versuche es erneut."
+            },
+            "reverted_with_reason": {
+                "title": "Smart Contract hat die Transaktion abgelehnt",
+                "body": "Der Contract meldete: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Nicht genug Gas",
+                "body": "Diese Transaktion benötigt mehr Gas, als ihr Limit erlaubt. Bitte versuche es erneut und wende dich an den Support, wenn das Problem weiterhin besteht."
+            },
+            "nonce_too_low": {
+                "title": "Transaktion in falscher Reihenfolge",
+                "body": "Eine andere Transaktion dieses Kontos wurde zuerst verarbeitet. Bitte versuche es erneut."
+            },
+            "replacement_underpriced": {
+                "title": "Netzwerkgebühr zu niedrig",
+                "body": "Eine ausstehende Transaktion dieses Kontos kann nur mit einer höheren Netzwerkgebühr ersetzt werden. Warte, bis sie abgeschlossen ist, oder versuche es mit einer höheren Gebühr erneut."
+            },
+            "insufficient_funds": {
+                "title": "Unzureichendes ETH",
+                "body": "Dieses Konto verfügt nicht über genügend ETH, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr ETH hinzu und versuche es erneut."
+            },
+            "rate_limited": {
+                "title": "Netzwerk ausgelastet",
+                "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
+            }
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Transaktionsstatus unbekannt",
