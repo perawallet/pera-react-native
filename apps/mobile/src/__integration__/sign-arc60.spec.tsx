@@ -24,10 +24,8 @@ import {
     vi,
 } from 'vitest'
 
-import { act, renderHook } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { renderHook } from '@testing-library/react'
 
-import { createTestQueryClient } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -37,6 +35,7 @@ import {
 } from '@test-utils/database-setup'
 import {
     buildArc60SignRequest,
+    drainPendingSignRequests,
     fireEvent,
     renderSignReview,
     screen,
@@ -51,7 +50,6 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -61,30 +59,6 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 // primitive and inspecting the childKeyId it was called with.
 const REKEYED_SIGNER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
-
-/**
- * `renderSignReview` enqueues into a persisted store that nothing drains when
- * a test ends, so the review a later test renders is the FIRST request still
- * pending — an earlier test's. Every assertion here would then be made
- * against the wrong signer, which is exactly how a rekey case below could
- * pass while the bug it covers is present.
- */
-const drainPendingSignRequests = (): void => {
-    const client = createTestQueryClient()
-    const { result, unmount } = renderHook(() => useSigningRequest(), {
-        wrapper: ({ children }) => (
-            <QueryClientProvider client={client}>
-                {children}
-            </QueryClientProvider>
-        ),
-    })
-    act(() => {
-        for (const request of [...result.current.pendingSignRequests]) {
-            result.current.removeSignRequest(request)
-        }
-    })
-    unmount()
-}
 
 describe('Flow: ARC-60 (SIWA) signing review', () => {
     beforeAll(async () => {

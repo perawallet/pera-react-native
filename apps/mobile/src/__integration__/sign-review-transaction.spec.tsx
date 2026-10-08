@@ -28,13 +28,16 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
     renderSignReview,
     screen,
     waitFor,
+    REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
@@ -49,6 +52,7 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
     })
 
     beforeEach(async () => {
+        drainPendingSignRequests()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
@@ -63,7 +67,7 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
     })
 
     it('opens the review sheet for an external payment and signs it on confirm, delivering the result to the callback transport', async () => {
-        await seedAlgo25Signer()
+        const signer = await seedAlgo25Signer()
         const { request, approve, reject } = buildTransactionSignRequest()
 
         const { confirm } = renderSignReview(request)
@@ -75,6 +79,19 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
             },
             { timeout: 10_000 },
         )
+
+        // i18n isn't initialized here, so copy renders as raw keys.
+        expect(screen.getByText('transactions.summary.payment_to')).toBeTruthy()
+        expect(
+            screen.getAllByText(
+                truncateAlgorandAddress(REVIEW_RECEIVER_ADDRESS),
+            ).length,
+        ).toBeGreaterThan(0)
+        expect(
+            screen.getByText('signing.transactions.signing_with'),
+        ).toBeTruthy()
+        expect(screen.getAllByText(signer.name ?? '').length).toBeGreaterThan(0)
+        expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
 
         confirm()
 

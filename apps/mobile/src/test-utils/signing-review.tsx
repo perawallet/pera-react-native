@@ -29,7 +29,14 @@
 import React, { useEffect, useRef } from 'react'
 import { createHash } from 'crypto'
 import { expect, vi } from 'vitest'
-import { fireEvent, screen, waitFor, renderHook } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    renderHook,
+} from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
@@ -57,6 +64,7 @@ import {
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
 import { SigningOverlays } from '@modules/signing/shell'
+import { createTestQueryClient } from './render'
 import { renderWithNavigation } from './renderWithNavigation'
 import {
     ALGO25_TEST_ADDRESS,
@@ -309,6 +317,29 @@ export const buildArc60SignRequest = ({
         ...overrides,
     }
     return { request, ...spies }
+}
+
+/**
+ * `renderSignReview` enqueues into a persisted store that nothing drains when a
+ * test ends, so the review a later test renders is the FIRST request still
+ * pending: an earlier test's. Call this in `beforeEach` of every spec that
+ * renders more than one review.
+ */
+export const drainPendingSignRequests = (): void => {
+    const client = createTestQueryClient()
+    const { result, unmount } = renderHook(() => useSigningRequest(), {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={client}>
+                {children}
+            </QueryClientProvider>
+        ),
+    })
+    act(() => {
+        for (const request of [...result.current.pendingSignRequests]) {
+            result.current.removeSignRequest(request)
+        }
+    })
+    unmount()
 }
 
 /**
