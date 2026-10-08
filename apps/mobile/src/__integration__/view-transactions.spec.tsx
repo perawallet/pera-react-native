@@ -24,6 +24,7 @@ import { Decimal } from 'decimal.js'
 import {
     act,
     fireEvent,
+    within,
     renderHook,
     screen,
     waitFor,
@@ -346,9 +347,21 @@ describe('Flow: View transactions → tap into details', () => {
             { timeout: 5000 },
         )
 
-        expect(screen.getByTestId('transaction_detail_from')).toBeTruthy()
-        expect(screen.getByTestId('transaction_detail_to')).toBeTruthy()
-        expect(screen.getByTestId('transaction_detail_fee')).toBeTruthy()
+        expect(
+            within(screen.getByTestId('transaction_detail_from')).getByText(
+                truncateAlgorandAddress(TX_PAYMENT.sender),
+            ),
+        ).toBeTruthy()
+        expect(
+            within(screen.getByTestId('transaction_detail_to')).getByText(
+                truncateAlgorandAddress(TX_PAYMENT.receiver ?? ''),
+            ),
+        ).toBeTruthy()
+        expect(
+            within(screen.getByTestId('transaction_detail_fee')).getByText(
+                /0\.001/,
+            ),
+        ).toBeTruthy()
         expect(
             screen.getAllByText(truncateAlgorandAddress(TX_PAYMENT.id)).length,
         ).toBeGreaterThan(0)

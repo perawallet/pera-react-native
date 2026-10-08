@@ -15,6 +15,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@test-utils/render'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
+    buildAlgorandAssetTransferFixture,
     buildAlgorandDisplayFixture,
     FIXTURE_RECEIVER,
     FIXTURE_SENDER,
@@ -159,13 +160,36 @@ describe('TransactionDetailBody', () => {
             expect(within(feeRow).getByText(/0\.001/)).toBeTruthy()
         })
 
-        it('renders the participants', () => {
-            for (const [label, address] of expected.participants) {
-                expect(screen.getByText(label)).toBeTruthy()
-                expect(screen.getAllByText(address).length).toBeGreaterThan(0)
-            }
-        })
+        if (expected.participants.length > 0) {
+            it('renders the participants', () => {
+                for (const [label, address] of expected.participants) {
+                    expect(screen.getByText(label)).toBeTruthy()
+                    expect(screen.getAllByText(address).length).toBeGreaterThan(
+                        0,
+                    )
+                }
+            })
+        }
     })
+
+    it.each([
+        ['opt-out', 'transactions.common.close_to', FIXTURE_RECEIVER],
+        [
+            'clawback',
+            'transactions.asset_transfer.clawback_from',
+            FIXTURE_RECEIVER,
+        ],
+    ] as const)(
+        'renders the asset %s row alongside the fee',
+        (variant, label, address) => {
+            renderDetail(buildAlgorandAssetTransferFixture(variant))
+
+            expect(screen.getByText('transactions.type.axfer')).toBeTruthy()
+            expect(screen.getByText(label)).toBeTruthy()
+            expect(screen.getAllByText(address).length).toBeGreaterThan(0)
+            expect(screen.getByTestId('transaction_detail_fee')).toBeTruthy()
+        },
+    )
 
     it.each([
         ['state-proof', 'transactions.type.stpf'],

@@ -17,9 +17,13 @@ import { screen } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionWarning } from '@perawallet/wallet-core-signing'
+import type {
+    SignRequestSource,
+    TransactionWarning,
+} from '@perawallet/wallet-core-signing'
 import {
     ALGORAND_DISPLAY_FIXTURE_KINDS,
+    buildAlgorandAssetTransferFixture,
     buildAlgorandDisplayFixture,
     FIXTURE_RECEIVER,
     FIXTURE_SENDER,
@@ -39,6 +43,14 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: () => ({ data: undefined }),
+}))
+
+vi.mock('@perawallet/wallet-core-projects', async () => ({
+    ...(await vi.importActual<
+        typeof import('@packages/projects/src/utils/verification')
+    >('@packages/projects/src/utils/verification')),
+    useProjectByUrlQuery: () => ({ data: null, isLoading: false }),
+    useApplicationQuery: () => ({ data: null, isLoading: false }),
 }))
 
 // Balance rendering has its own spec; here the signing account's identity is what matters.
@@ -74,11 +86,16 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 const SIGNER_NAME = 'Fixture Signer'
 
 // FeeDisplay navigates to the details screen, so the body mounts inside a navigator.
-const renderReview = (transaction: PeraDisplayableTransaction) => {
+const renderReview = (
+    transaction: PeraDisplayableTransaction,
+    origin: { source?: SignRequestSource; verifiedOrigin?: string } = {},
+) => {
     mockPipeline.allTransactions = [transaction]
     const Review = () => (
         <TransactionReviewBody
             transaction={{ family: 'algorand', transaction }}
+            source={origin.source}
+            verifiedOrigin={origin.verifiedOrigin}
         />
     )
     return renderWithNavigation(Review, 'Review')
@@ -171,6 +188,28 @@ describe('TransactionReviewBody', () => {
                 kind === 'key-registration',
             )
         })
+    })
+
+    it.each([
+        ['opt-in', 'transactions.summary.opt_in'],
+        ['opt-out', 'transactions.summary.opt_out'],
+        ['clawback', 'transactions.summary.clawback'],
+    ] as const)('titles an asset %s with its own summary', (variant, title) => {
+        renderReview(buildAlgorandAssetTransferFixture(variant))
+
+        expect(screen.getByText(title)).toBeTruthy()
+        expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
+    })
+
+    it('shows the requesting dApp and the origin the platform observed', () => {
+        renderReview(buildAlgorandDisplayFixture('payment'), {
+            source: { name: 'Fixture dApp', url: 'https://dapp.test' },
+            verifiedOrigin: 'https://elsewhere.test',
+        })
+
+        expect(screen.getByText('Fixture dApp')).toBeTruthy()
+        expect(screen.getByText('dapp.test')).toBeTruthy()
+        expect(screen.getByText('dapp.approval.request_origin')).toBeTruthy()
     })
 
     it('renders no summary title for an asset freeze', () => {

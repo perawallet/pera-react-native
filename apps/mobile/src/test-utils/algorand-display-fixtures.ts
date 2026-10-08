@@ -150,6 +150,42 @@ const byKind: Record<
     unknown: () => ({ ...base, txType: '' }),
 }
 
+export type AlgorandAssetTransferVariant = 'opt-in' | 'opt-out' | 'clawback'
+
+export const ALGORAND_ASSET_TRANSFER_VARIANTS: readonly AlgorandAssetTransferVariant[] =
+    ['opt-in', 'opt-out', 'clawback']
+
+// Classified from the transfer's shape: self + zero amount, a close-to, or an asset sender.
+const assetTransferVariant: Record<
+    AlgorandAssetTransferVariant,
+    NonNullable<PeraDisplayableTransaction['assetTransferTransaction']>
+> = {
+    'opt-in': {
+        amount: 0n,
+        assetId: FIXTURE_ASSET_ID,
+        receiver: FIXTURE_SENDER,
+    },
+    'opt-out': {
+        amount: 0n,
+        assetId: FIXTURE_ASSET_ID,
+        receiver: FIXTURE_RECEIVER,
+        closeTo: FIXTURE_RECEIVER,
+    },
+    clawback: {
+        amount: 5_000_000n,
+        assetId: FIXTURE_ASSET_ID,
+        receiver: FIXTURE_SENDER,
+        sender: FIXTURE_RECEIVER,
+    },
+}
+
+export const buildAlgorandAssetTransferFixture = (
+    variant: AlgorandAssetTransferVariant,
+): PeraDisplayableTransaction => ({
+    ...byKind['asset-transfer'](),
+    assetTransferTransaction: assetTransferVariant[variant],
+})
+
 export const buildAlgorandDisplayFixture = (
     kind: AlgorandDisplayFixtureKind,
     overrides: Partial<PeraDisplayableTransaction> = {},

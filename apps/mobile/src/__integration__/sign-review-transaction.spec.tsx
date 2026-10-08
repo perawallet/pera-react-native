@@ -67,7 +67,7 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
     })
 
     it('opens the review sheet for an external payment and signs it on confirm, delivering the result to the callback transport', async () => {
-        const signer = await seedAlgo25Signer()
+        await seedAlgo25Signer()
         const { request, approve, reject } = buildTransactionSignRequest()
 
         const { confirm } = renderSignReview(request)
@@ -90,7 +90,7 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
         expect(
             screen.getByText('signing.transactions.signing_with'),
         ).toBeTruthy()
-        expect(screen.getAllByText(signer.name ?? '').length).toBeGreaterThan(0)
+        expect(screen.getAllByText('Review Signer').length).toBeGreaterThan(0)
         expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
 
         confirm()
