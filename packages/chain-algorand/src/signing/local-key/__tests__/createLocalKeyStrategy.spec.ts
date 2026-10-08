@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { accountType } from '@perawallet/wallet-core-accounts'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const mocks = vi.hoisted(() => ({
     hasSigningKeys: vi.fn(),
     isAlgo25Account: vi.fn(),
@@ -172,6 +173,7 @@ describe('createLocalKeyStrategy', () => {
             signTransactions,
             signArbitraryData,
             signAuthData,
+            scope: ALGORAND_MAINNET,
         })
 
     describe('canSign', () => {
@@ -234,6 +236,7 @@ describe('createLocalKeyStrategy', () => {
                     ? group.data.indicesToSign
                     : undefined,
                 algo25Account,
+                ALGORAND_MAINNET,
             )
         })
 
@@ -256,6 +259,7 @@ describe('createLocalKeyStrategy', () => {
                     ? group.data.indicesToSign
                     : undefined,
                 quantumAccount,
+                ALGORAND_MAINNET,
             )
         })
 

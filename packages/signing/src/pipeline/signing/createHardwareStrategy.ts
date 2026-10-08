@@ -39,12 +39,15 @@ import {
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
-import {
-    LEGACY_CHAIN_ID,
-    type PeraTransaction,
-    type PeraSignedTransaction,
+import type {
+    ChainId,
+    PeraTransaction,
+    PeraSignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { legacyPlannerAdapter } from '../../chain-adapter'
+import {
+    plannerChainAdapters,
+    type PlannerChainAdapter,
+} from '../../chain-adapter'
 import {
     messageSignerFor,
     type MessageSignerChainAdapter,
@@ -68,6 +71,7 @@ export type HardwareStrategyOptions = {
     encodeTransaction: EncodeTransactionFunction
     /** Read at auth-data sign time, for the signer / rekey cross-check. */
     getAllAccounts: () => WalletAccount[]
+    chainId: ChainId
 }
 
 /**
@@ -111,6 +115,7 @@ const signTransactions = async (
     data: TransactionSignableData,
     hwAccount: HardwareWalletAccount,
     encodeTransaction: EncodeTransactionFunction,
+    planner: PlannerChainAdapter,
     guard: DisconnectGuard,
     callbacks?: SigningCallbacks,
 ): Promise<PeraSignedTransaction[]> => {
@@ -129,7 +134,7 @@ const signTransactions = async (
         const txn = transactions[index]
 
         if (!indicesToSign.includes(index)) {
-            signed.push(legacyPlannerAdapter().assembleSignedTransaction(txn))
+            signed.push(planner.assembleSignedTransaction(txn))
             continue
         }
 
@@ -155,7 +160,7 @@ const signTransactions = async (
         )
 
         signed.push(
-            legacyPlannerAdapter().assembleSignedTransaction(txn, {
+            planner.assembleSignedTransaction(txn, {
                 sig: signature,
                 signerAddress: hwAccount.address,
             }),
@@ -168,6 +173,7 @@ const signTransactions = async (
 
 type SignTransactionsOnHardwareWalletOptions = LedgerSessionOptions & {
     encodeTransaction: EncodeTransactionFunction
+    planner: PlannerChainAdapter
 }
 
 type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
@@ -185,7 +191,7 @@ const signTransactionsOnHardwareWallet = (
     indicesToSign: number[],
     options: SignTransactionsOnHardwareWalletOptions,
 ): Promise<PeraSignedTransaction[]> => {
-    const { encodeTransaction, callbacks } = options
+    const { encodeTransaction, planner, callbacks } = options
 
     return withLedgerSession(hwAccount, options, ({ transport, guard }) =>
         signTransactions(
@@ -193,6 +199,7 @@ const signTransactionsOnHardwareWallet = (
             { type: 'transactions', transactions, indicesToSign },
             hwAccount,
             encodeTransaction,
+            planner,
             guard,
             callbacks,
         ),
@@ -262,8 +269,12 @@ const signAuthDataOnHardwareWallet = (
 export const createHardwareStrategy = (
     options: HardwareStrategyOptions,
 ): SigningStrategy => {
-    const { hardwareWalletRegistry, encodeTransaction, getAllAccounts } =
-        options
+    const {
+        hardwareWalletRegistry,
+        encodeTransaction,
+        getAllAccounts,
+        chainId,
+    } = options
 
     return {
         canSign: (account: WalletAccount): boolean => {
@@ -285,10 +296,7 @@ export const createHardwareStrategy = (
             if (group.data.type === 'auth-data') {
                 // Resolved before any Ledger session so a chain with no
                 // message signer is refused without a device prompt.
-                const messageSigner = messageSignerFor(
-                    LEGACY_CHAIN_ID,
-                    account.address,
-                )
+                const messageSigner = messageSignerFor(chainId, account.address)
                 const signature = await signAuthDataOnHardwareWallet(
                     account,
                     group.data.authData,
@@ -316,6 +324,7 @@ export const createHardwareStrategy = (
                 {
                     registry: hardwareWalletRegistry,
                     encodeTransaction,
+                    planner: plannerChainAdapters.get(chainId),
                     callbacks,
                 },
             )

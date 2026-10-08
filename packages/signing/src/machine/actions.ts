@@ -11,12 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    accountType,
-    hasSigningKeys,
-    isHardwareWalletAccount,
-    isMultisigAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     SignableGroup,
     SigningResult,
@@ -30,9 +25,9 @@ import {
 } from '../pipeline/errors'
 import { plannerAdapterForScope } from '../chain-adapter'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
+import { resolveSignerCredential } from './utils/resolveSignerCredential'
 import type {
-    GroupSignerTypeMap,
-    ResolvedSignerType,
+    GroupSignerMap,
     SigningMachineContext,
     SigningMachineDeps,
     SigningMachineInput,
@@ -45,37 +40,18 @@ import {
 } from '../models'
 
 /**
- * Routes on the AUTH account — whatever actually authorizes the signature once
- * {@link resolveSigningAccount} has applied the rekey/cosign rules, not the
- * sender. That also covers the externally-rekeyed multisig (one whose on-chain
- * auth is a standard/Ledger account we hold): the auth key signs, rather than
- * failing with NoLocalParticipantsError.
+ * Resolves each group's signer from the AUTH account, whatever authorizes the
+ * signature once {@link resolveSigningAccount} has applied the rekey/cosign
+ * rules, not the sender. That also covers the externally-rekeyed multisig (one
+ * whose on-chain auth is a standard/Ledger account we hold): the auth key
+ * signs, rather than failing with NoLocalParticipantsError.
  */
-const determineSignerType = (
-    signerAccount: WalletAccount,
-    authAccount: WalletAccount,
-): ResolvedSignerType => {
-    if (isMultisigAccount(authAccount)) {
-        return 'multisig'
-    }
-    if (isHardwareWalletAccount(authAccount)) {
-        return 'hardware'
-    }
-    if (hasSigningKeys(authAccount)) {
-        return 'localKey'
-    }
-    throw new CannotSignError(
-        signerAccount.address,
-        `No signing capability found for account type: ${accountType(authAccount)}`,
-    )
-}
-
-/** Rekey and multisig-cosign handling live in {@link resolveSigningAccount}. */
-export const buildGroupSignerTypeMap = (
+export const buildGroupSignerMap = (
     groups: SignableGroup[],
     allAccounts: WalletAccount[],
-): GroupSignerTypeMap => {
-    const map: GroupSignerTypeMap = new Map()
+    chainId: ChainId,
+): GroupSignerMap => {
+    const map: GroupSignerMap = new Map()
     for (const group of groups) {
         if (map.has(group.signerAddress)) continue
         const signerAccount = allAccounts.find(
@@ -92,10 +68,11 @@ export const buildGroupSignerTypeMap = (
             group.source,
             group.data.type,
             allAccounts,
+            chainId,
         )
         map.set(
             group.signerAddress,
-            determineSignerType(signerAccount, authAccount),
+            resolveSignerCredential(authAccount, chainId),
         )
     }
     return map
@@ -363,13 +340,14 @@ export const resolveInitialContext = (
     }
 
     const signerAddress = signableGroups[0].signerAddress
-    const groupSignerTypes = buildGroupSignerTypeMap(
+    const groupSigners = buildGroupSignerMap(
         signableGroups,
         allAccounts,
+        input.scope.chainId,
     )
 
-    const hasHardwareSigners = [...groupSignerTypes.values()].includes(
-        'hardware',
+    const hasHardwareSigners = [...groupSigners.values()].some(
+        signer => signer.custody === 'hardware',
     )
     if (hasHardwareSigners && !input.hardwareWalletRegistry) {
         throw new HardwareWalletError('registry_required')
@@ -379,8 +357,8 @@ export const resolveInitialContext = (
         request,
         allAccounts,
         signerAddress,
-        groupSignerTypes,
-        completedSignerTypes: [],
+        groupSigners,
+        completedCustodies: [],
         signableGroups,
         analyses: null,
         signingResults: null,
@@ -403,8 +381,8 @@ export const makeFailedContext = (
     request: input.request,
     allAccounts: input.allAccounts,
     signerAddress: null,
-    groupSignerTypes: null,
-    completedSignerTypes: [],
+    groupSigners: null,
+    completedCustodies: [],
     signableGroups: null,
     analyses: null,
     signingResults: null,

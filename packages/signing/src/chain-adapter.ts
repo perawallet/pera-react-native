@@ -299,10 +299,12 @@ export type LocalKeySigningDeps = {
     yieldBetweenBatches?: () => Promise<void>
 }
 
+/** `scope` picks the chain's local-key signer, which reads the scheme off the account's key. */
 export type LocalSigningFunction = (
     txnGroup: PeraSignedTransaction['txn'][],
     indexesToSign: number[],
     account: WalletAccount,
+    scope: ChainScope,
 ) => Promise<PeraSignedTransaction[]>
 
 export type LocalArbitrarySigningFunction = (
@@ -320,6 +322,7 @@ export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
+    scope: ChainScope
 }
 
 export type LocalKeySignerInput = {
@@ -809,9 +812,8 @@ export const localKeySignerChainAdapters =
     createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
 
 export const localKeySignerAdapterFor = (
-    network: Network,
-): LocalKeySignerChainAdapter =>
-    localKeySignerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    scope: ChainScope,
+): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
 export const resolveMinFeeForSender = (
     params: ResolveMinFeeForSenderParams,

@@ -217,6 +217,11 @@ export { createSigningStrategySelector } from './pipeline/signing/getSigningStra
 export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
+export {
+    resolveSignerCredential,
+    type SignerCredential,
+    type SignerCustody,
+} from './machine/utils/resolveSignerCredential'
 export { signGroupsBySignerAccount } from './machine/actors/signers/signGroupsBySignerAccount'
 export type {
     AnalyzedSignableGroup,

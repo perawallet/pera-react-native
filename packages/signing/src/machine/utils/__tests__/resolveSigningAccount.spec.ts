@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import type { SourceMetadata } from '../../../pipeline/types'
 import { resolveSigningAccount } from '../resolveSigningAccount'
 
@@ -61,6 +62,7 @@ describe('resolveSigningAccount', () => {
             cosignSource,
             'transactions',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
@@ -71,6 +73,7 @@ describe('resolveSigningAccount', () => {
             localSource,
             'transactions',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
         expect(result.address).toBe(AUTH)
     })
@@ -81,15 +84,20 @@ describe('resolveSigningAccount', () => {
             localSource,
             'transactions',
             [plainSigner],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
 
     it('throws RekeyTargetNotFoundError on transactions when the rekey target is missing', () => {
         expect(() =>
-            resolveSigningAccount(rekeyedSigner, localSource, 'transactions', [
+            resolveSigningAccount(
                 rekeyedSigner,
-            ]),
+                localSource,
+                'transactions',
+                [rekeyedSigner],
+                'algorand',
+            ),
         ).toThrow(RekeyTargetNotFoundError)
     })
 
@@ -101,6 +109,7 @@ describe('resolveSigningAccount', () => {
             localSource,
             'arbitrary-data',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
@@ -114,6 +123,7 @@ describe('resolveSigningAccount', () => {
             localSource,
             'auth-data',
             [keylessRekeyedSigner, authAccount],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
@@ -124,6 +134,7 @@ describe('resolveSigningAccount', () => {
             localSource,
             'auth-data',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
@@ -134,6 +145,7 @@ describe('resolveSigningAccount', () => {
             localSource,
             'auth-data',
             [keylessRekeyedSigner],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
     })
@@ -144,7 +156,20 @@ describe('resolveSigningAccount', () => {
             localSource,
             'auth-data',
             [plainSigner],
+            'algorand',
         )
         expect(result.address).toBe(PARTICIPANT)
+    })
+
+    it("follows the rekey hop through the given chain's rules, never Algorand's", () => {
+        expect(() =>
+            resolveSigningAccount(
+                rekeyedSigner,
+                localSource,
+                'transactions',
+                [rekeyedSigner, authAccount],
+                'ethereum',
+            ),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

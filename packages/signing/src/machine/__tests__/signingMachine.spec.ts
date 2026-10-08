@@ -121,7 +121,7 @@ describe('signingMachine', () => {
         vi.clearAllMocks()
     })
 
-    it('reaches completed for a localKey account via algod', async () => {
+    it('reaches completed for a local-key account via algod', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
@@ -354,15 +354,16 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/network error/)
     })
 
-    it('resolves signerAddress and groupSignerTypes in context', async () => {
+    it('resolves signerAddress and groupSigners in context', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
-            'localKey',
-        )
+        expect(state.context.groupSigners?.get(MOCK_ADDRESS)).toEqual({
+            custody: 'local',
+            scheme: 'ed25519',
+        })
     })
 
     it('stores analyses in context after validating', async () => {
@@ -402,9 +403,10 @@ describe('signingMachine', () => {
 
         // signerAddress should be the override (user), not the contract sender
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
-            'localKey',
-        )
+        expect(state.context.groupSigners?.get(MOCK_ADDRESS)).toEqual({
+            custody: 'local',
+            scheme: 'ed25519',
+        })
         // The group should use the overridden address
         expect(state.context.signableGroups?.[0]?.signerAddress).toBe(
             MOCK_ADDRESS,
@@ -503,7 +505,7 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/no signable/i)
     })
 
-    it('signs groups sequentially for a mixed localKey + multisig request', async () => {
+    it('signs groups sequentially for a mixed local + multisig request', async () => {
         const MULTISIG_ADDRESS =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
@@ -582,7 +584,7 @@ describe('signingMachine', () => {
 
         const state = await waitFor(actor, s => s.matches('completed'))
 
-        // localKeySignerActor received only the localKey group
+        // localKeySignerActor received only the local group
         expect(capturedLocalKeyGroups).toHaveLength(1)
         expect(capturedLocalKeyGroups[0]?.signerAddress).toBe(MOCK_ADDRESS)
 
@@ -595,8 +597,8 @@ describe('signingMachine', () => {
         expect(state.context.signingResults).toEqual(
             expect.arrayContaining([localKeyResult, multisigResult]),
         )
-        expect(state.context.completedSignerTypes).toEqual(
-            expect.arrayContaining(['localKey', 'multisig']),
+        expect(state.context.completedCustodies).toEqual(
+            expect.arrayContaining(['local', 'multisig']),
         )
     })
 
@@ -924,7 +926,7 @@ describe('signingMachine', () => {
 
             const state = await waitFor(actor, s => s.matches('completed'))
             expect(state.context.signingResults).toEqual([hwResult])
-            expect(state.context.completedSignerTypes).toContain('hardware')
+            expect(state.context.completedCustodies).toContain('hardware')
         })
 
         it('hardware child rejected → machine reaches rejected state', async () => {

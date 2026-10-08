@@ -231,18 +231,29 @@ describe('local-key signer chain adapters', () => {
         localKeySignerChainAdapters.reset()
     })
 
-    it('resolves the registered adapter for a legacy network', () => {
+    it("resolves the adapter registered for the scope's chain", () => {
         const adapter = registerFakeLocalKeySignerAdapter()
 
-        expect(localKeySignerAdapterFor('mainnet')).toBe(adapter)
-        expect(localKeySignerAdapterFor('testnet')).toBe(adapter)
+        expect(
+            localKeySignerAdapterFor({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBe(adapter)
+        expect(
+            localKeySignerAdapterFor({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(adapter)
     })
 
     it('throws ChainAdapterNotRegisteredError when no local-key signer is registered', () => {
-        expect(() => localKeySignerAdapterFor('mainnet')).toThrow(
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+        expect(() => localKeySignerAdapterFor(scope)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => localKeySignerAdapterFor('mainnet')).toThrow(
+        expect(() => localKeySignerAdapterFor(scope)).toThrow(
             'No local-key signer adapter is registered for chain "algorand"',
         )
     })

@@ -57,7 +57,7 @@ export type ConformanceAccount = {
     /**
      * The app's own account model for this key. Suites hand this to real app
      * code (`signTransactionsWithLocalKey`, `resolveSigningAccount`,
-     * `buildGroupSignerTypeMap`) rather than to a harness stand-in, so the
+     * `buildGroupSignerMap`) rather than to a harness stand-in, so the
      * type-dispatch those functions perform is the dispatch under test.
      */
     walletAccount: WalletAccount

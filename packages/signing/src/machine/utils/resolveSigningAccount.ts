@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveAuthAccount,
     type WalletAccount,
@@ -46,10 +46,11 @@ export const resolveSigningAccount = (
     source: SourceMetadata,
     dataType: SignableData['type'],
     allAccounts: WalletAccount[],
+    chainId: ChainId,
 ): WalletAccount => {
     if (source.type === 'multisig-cosign') return signerAccount
     if (dataType === 'arbitrary-data' || dataType === 'auth-data') {
         return signerAccount
     }
-    return resolveAuthAccount(signerAccount, allAccounts, LEGACY_CHAIN_ID)
+    return resolveAuthAccount(signerAccount, allAccounts, chainId)
 }

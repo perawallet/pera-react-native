@@ -57,7 +57,7 @@ const buildInput = (
     signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     ...overrides,
 })
 
@@ -81,6 +81,7 @@ describe('signLocalKeyGroups', () => {
                 mockGroup.data.transactions,
                 mockGroup.data.indicesToSign,
                 mockAlgo25Account,
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
         }
     })

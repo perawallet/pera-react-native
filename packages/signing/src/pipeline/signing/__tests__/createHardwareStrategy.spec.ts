@@ -27,8 +27,15 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
 })
 
 import { createHardwareStrategy } from '../createHardwareStrategy'
-import { registerFakeMessageSignerAdapter } from '../../../__tests__/fakeMessageSignerAdapter'
-import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
+import {
+    fakeMessageSignerAdapter,
+    registerFakeMessageSignerAdapter,
+} from '../../../__tests__/fakeMessageSignerAdapter'
+import {
+    fakePlannerAdapter,
+    registerFakePlannerAdapter,
+} from '../../../__tests__/fakePlannerAdapter'
+import { plannerChainAdapters } from '../../../chain-adapter'
 import { messageSignerChainAdapters } from '../../../message-signer'
 import { CannotSignError } from '../../errors'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
@@ -162,6 +169,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             expect(strategy.canSign(makeLedgerAccount())).toBe(true)
         })
@@ -171,6 +179,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const algo25Account = {
                 custody: { kind: 'local', seed: 'algo25' },
@@ -182,11 +191,38 @@ describe('createHardwareStrategy', () => {
     })
 
     describe('sign', () => {
+        it("assembles through the strategy chain's planner, never Algorand's", async () => {
+            const assembleSignedTransaction = vi.fn(
+                (txn: unknown, signature?: { sig: Uint8Array }) =>
+                    ({ txn, sig: signature?.sig }) as never,
+            )
+            plannerChainAdapters.register(
+                fakePlannerAdapter({
+                    chainId: 'ethereum',
+                    assembleSignedTransaction,
+                }),
+            )
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+                getAllAccounts: () => [],
+                chainId: 'ethereum',
+            })
+
+            await strategy.sign(
+                makeGroup([mockTransaction()], [0]),
+                makeLedgerAccount(),
+            )
+
+            expect(assembleSignedTransaction).toHaveBeenCalledTimes(1)
+        })
+
         it('signs transactions sequentially and returns result', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [mockTransaction(), mockTransaction()]
             const group = makeGroup(txns, [0, 1])
@@ -223,6 +259,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [mockTransaction(), mockTransaction()]
             const group = makeGroup(txns, [0, 1])
@@ -248,6 +285,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [
                 mockTransaction(),
@@ -282,6 +320,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
 
             const txns = [
@@ -301,6 +340,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [
                 mockTransaction(),
@@ -326,6 +366,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [mockTransaction(DIFFERENT_SENDER)]
             const group = makeGroup(txns, [0], SIGNER_ADDRESS)
@@ -345,6 +386,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [mockTransaction(), mockTransaction()]
             const group = makeGroup(txns, [1])
@@ -369,6 +411,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -383,6 +426,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
             await strategy.sign(group, makeLedgerAccount(SIGNER_ADDRESS, 3))
@@ -395,6 +439,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [
                 mockTransaction(),
@@ -417,6 +462,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const algo25Account = {
                 custody: { kind: 'local', seed: 'algo25' },
@@ -434,6 +480,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -452,6 +499,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const usbAccount = {
                 ...makeLedgerAccount(),
@@ -475,6 +523,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
             const onSigningStart = vi.fn()
@@ -497,6 +546,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
             const onError = vi.fn()
@@ -520,6 +570,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
             const onPhaseChange = vi.fn()
@@ -547,6 +598,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const txns = [
                 mockTransaction(),
@@ -600,6 +652,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -615,6 +668,7 @@ describe('createHardwareStrategy', () => {
                     hardwareWalletRegistry: mockRegistry,
                     encodeTransaction,
                     getAllAccounts: () => [],
+                    chainId: 'algorand',
                 })
                 const group = makeGroup([mockTransaction()], [0])
 
@@ -653,6 +707,7 @@ describe('createHardwareStrategy', () => {
                     hardwareWalletRegistry: registry,
                     encodeTransaction,
                     getAllAccounts: () => [],
+                    chainId: 'algorand',
                 })
                 const group = makeGroup([mockTransaction()], [0])
 
@@ -689,6 +744,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -711,6 +767,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -742,6 +799,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -764,6 +822,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
 
             await expect(
@@ -787,6 +846,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
             const onError = vi.fn()
@@ -809,6 +869,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = {
                 ...makeGroup([], []),
@@ -864,6 +925,37 @@ describe('createHardwareStrategy', () => {
     })
 
     describe('auth-data hardware signing', () => {
+        it("validates through the strategy chain's message signer, never Algorand's", async () => {
+            const transport = makeAuthDataTransport({
+                getAppVersion: vi
+                    .fn()
+                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+                signData: vi.fn().mockResolvedValue(Uint8Array.from([1])),
+            })
+            const signerPublicKey = vi.fn(() => new Uint8Array(32).fill(0xaa))
+            messageSignerChainAdapters.register(
+                fakeMessageSignerAdapter({
+                    chainId: 'ethereum',
+                    signerPublicKey,
+                }),
+            )
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+                getAllAccounts: () => [],
+                chainId: 'ethereum',
+            })
+
+            await strategy.sign(
+                makeAuthDataGroup(),
+                makeLedgerAccount(SIGNER_ADDRESS, 0),
+            )
+
+            expect(signerPublicKey).toHaveBeenCalledWith(SIGNER_ADDRESS)
+        })
+
         it('signs with a supported app version', async () => {
             const authDataSignature = Uint8Array.from([1, 2, 3])
             const transport = makeAuthDataTransport({
@@ -881,6 +973,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeAuthDataGroup()
             const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
@@ -920,6 +1013,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
 
             await expect(
@@ -947,6 +1041,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
 
             await expect(
@@ -975,6 +1070,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => accounts,
+                chainId: 'algorand',
             })
             const group = makeAuthDataGroup()
 
@@ -994,6 +1090,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: makeRegistry(provider),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             messageSignerChainAdapters.reset()
 
@@ -1013,6 +1110,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = {
                 ...makeAuthDataGroup(),
@@ -1041,6 +1139,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup(
                 [mockTransaction(), mockTransaction()],
@@ -1076,6 +1175,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -1106,6 +1206,7 @@ describe('createHardwareStrategy', () => {
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -1141,6 +1242,7 @@ describe('createHardwareStrategy', () => {
                 ),
                 encodeTransaction,
                 getAllAccounts: () => [],
+                chainId: 'algorand',
             })
 
             const signPromise = strategy.sign(

@@ -10,9 +10,26 @@
  limitations under the License
  */
 
+import { beforeEach } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { algorandAccountsAdapter } from '../accounts'
+import {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '../capability-defaults'
+import { algorandDescriptor } from '../descriptor'
 
 // Importing this file is the registration: specs that resolve signers need the
 // production Algorand rules registered under the chain the pipeline signs on.
 accountsChainAdapters.register(algorandAccountsAdapter)
+
+// The setup resets the chain registry before each test; the signer dispatch
+// reads Algorand's signing schemes from it.
+beforeEach(() => {
+    getProvider().chains.register(
+        algorandDescriptor,
+        algorandCapabilityDefaults,
+        algorandCapabilityRestrictions,
+    )
+})

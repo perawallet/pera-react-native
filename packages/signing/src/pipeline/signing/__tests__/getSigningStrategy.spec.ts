@@ -11,12 +11,11 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
-    isMultisigAccount: vi.fn(),
     isHardwareWalletAccount: vi.fn(),
-    hasSigningKeys: vi.fn(),
     resolveAuthAccount: vi.fn(),
 }))
 
@@ -27,9 +26,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...original,
-        isMultisigAccount: mocks.isMultisigAccount,
         isHardwareWalletAccount: mocks.isHardwareWalletAccount,
-        hasSigningKeys: mocks.hasSigningKeys,
         resolveAuthAccount: mocks.resolveAuthAccount,
     }
 })
@@ -43,6 +40,7 @@ import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapte
 const algo25Account = {
     custody: { kind: 'local', seed: 'algo25' },
     address: 'A',
+    keyPairId: 'key-a',
 } as unknown as WalletAccount
 
 const hardwareAccount = {
@@ -126,17 +124,12 @@ beforeEach(() => {
             return multisigStrategy
         }),
     })
-    mocks.isMultisigAccount.mockReset().mockReturnValue(false)
     mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
-    mocks.hasSigningKeys.mockReset().mockReturnValue(false)
     mocks.resolveAuthAccount.mockReset()
 })
 
 describe('createSigningStrategySelector', () => {
     test('returns multisig strategy for multisig accounts', () => {
-        mocks.isMultisigAccount.mockImplementation(
-            a => a.custody.kind === 'multisig',
-        )
         mocks.resolveAuthAccount.mockImplementation(a => a)
         const select = makeSelector()
         const strategy = select(multisigAccount, [multisigAccount])
@@ -144,9 +137,6 @@ describe('createSigningStrategySelector', () => {
     })
 
     test('returns multisig strategy when the auth account is multisig (rekeyed-to-msig sender)', () => {
-        mocks.isMultisigAccount.mockImplementation(
-            a => a.custody.kind === 'multisig',
-        )
         mocks.resolveAuthAccount.mockReturnValue(multisigAccount)
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account, multisigAccount])
@@ -167,9 +157,6 @@ describe('createSigningStrategySelector', () => {
 
     test('returns local strategy when auth account has signing keys', () => {
         mocks.resolveAuthAccount.mockReturnValue(algo25Account)
-        mocks.hasSigningKeys.mockImplementation(
-            a => a.custody.seed === 'algo25',
-        )
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account])
         expect(strategy).toBe(localStrategy)
@@ -177,7 +164,6 @@ describe('createSigningStrategySelector', () => {
 
     test('throws CannotSignError when no signing capability', () => {
         mocks.resolveAuthAccount.mockReturnValue(weirdAccount)
-        mocks.hasSigningKeys.mockReturnValue(false)
         mocks.isHardwareWalletAccount.mockReturnValue(false)
 
         const select = makeSelector()
@@ -196,14 +182,8 @@ describe('createSigningStrategySelector', () => {
             participants: WalletAccount[],
             signTransactions = vi.fn().mockResolvedValue([]),
         ) => {
-            mocks.isMultisigAccount.mockImplementation(
-                a => a.custody.kind === 'multisig',
-            )
             mocks.isHardwareWalletAccount.mockImplementation(
                 a => a.custody.kind === 'hardware',
-            )
-            mocks.hasSigningKeys.mockImplementation(
-                a => a.custody.seed === 'algo25',
             )
             // Configure resolveAuthAccount to return a DIFFERENT-typed
             // account if it is consulted — so any unintended call would
