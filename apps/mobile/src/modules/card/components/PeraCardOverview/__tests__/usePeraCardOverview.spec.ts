@@ -13,6 +13,8 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -216,6 +218,7 @@ const setLinkedAlgo = (balance: Nullable<string>) => {
 describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockWithdraw.pending = null
         mockWithdraw.isReady = false
         mockWithdraw.complete.mockResolvedValue(undefined)
@@ -426,6 +429,33 @@ describe('usePeraCardOverview', () => {
             screen: 'Swap',
             params: { assetInId: '0', assetOutId: '31566704' },
         })
+    })
+
+    it('falls back to the Fund tab when the linked account holds ALGO but swap is off', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('12.5')
+        setCapabilityOverrides({ swap: false })
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(result.current.canFundLinkedAccount).toBe(true)
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: 'USDC_ALGORAND' },
+        })
+    })
+
+    it('offers no way to fund the linked account when neither swap nor onramp is available', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('12.5')
+        setCapabilityOverrides({ swap: false, onramp: false })
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(result.current.canFundLinkedAccount).toBe(false)
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('does nothing when the linked account is not in the wallet', () => {

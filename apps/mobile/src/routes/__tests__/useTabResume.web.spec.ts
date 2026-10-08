@@ -39,6 +39,10 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: () => surfaceState.current,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ successToast: mockSuccessToast }),
 }))
@@ -54,6 +58,7 @@ vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
 }))
 
+import { capabilityState } from '@test-utils/capability-mock'
 import {
     TAB_RESUME_MAX_AGE_MS,
     TAB_RESUME_RESULT_MAX_AGE_MS,
@@ -66,6 +71,27 @@ const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 describe('useTabResume (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
+    })
+
+    it('does not reopen a swap while the swap capability is off', async () => {
+        capabilityState.turnOff('swap')
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'swap',
+            accountAddress: 'LEDGER_ADDR',
+            assetInId: '0',
+            assetOutId: '31566704',
+            payAmount: '2.5',
+            createdAt: Date.now(),
+        })
+        const navigate = vi.fn()
+
+        const { result } = renderHook(() => useTabResume(navigate))
+        result.current()
+        await flush()
+
+        expect(navigate).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
     })
 
     it('reopens the swap on the same account with its pair and amount', async () => {

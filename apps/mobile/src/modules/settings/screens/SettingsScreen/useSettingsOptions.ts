@@ -12,6 +12,8 @@
 
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { config } from '@perawallet/wallet-core-config'
@@ -42,6 +44,7 @@ export const useSettingsOptions = () => {
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
+    const canRekey = useCapability(REKEY_REQUIREMENT)
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
         const sections: SettingsOptionSection[] = [
@@ -112,7 +115,7 @@ export const useSettingsOptions = () => {
                               } satisfies SettingsOptionItem,
                           ]
                         : []),
-                    ...(routeCapabilities.rekeyFlows
+                    ...(canRekey
                         ? [
                               {
                                   // Sweeps every signable key for on-chain
@@ -203,6 +206,7 @@ export const useSettingsOptions = () => {
         isLanguageSelectionEnabled,
         isCloudBackupEnabled,
         isCloudBackupConfigured,
+        canRekey,
     ])
 
     return {

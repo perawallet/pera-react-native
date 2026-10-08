@@ -45,6 +45,7 @@ export type UseAccountDrawerResult = {
     markClosed: () => void
     handleSelected: () => void
     handleAddAccount: () => void
+    canSearch: boolean
     handleSearch: () => void
     handlePeraCardActivate: () => void
     handlePeraCardOpen: () => void
@@ -54,6 +55,7 @@ export type UseAccountDrawerResult = {
 export const useAccountDrawer = (): UseAccountDrawerResult => {
     const [isOpen, setIsOpen] = useState(false)
     const {
+        canSearch,
         goToAddAccount,
         goToSearch,
         goToPeraCardActivation,
@@ -161,6 +163,7 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         markClosed,
         handleSelected: closeDrawer,
         handleAddAccount,
+        canSearch,
         handleSearch,
         handlePeraCardActivate,
         handlePeraCardOpen,

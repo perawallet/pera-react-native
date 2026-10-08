@@ -20,6 +20,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -237,6 +239,7 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
@@ -385,6 +388,62 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+    })
+
+    describe('capability gating', () => {
+        const idsFor = (account: WalletAccount): string[] => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current.options.map(o => o.id)
+        }
+
+        it('hides the rekey rows when rekey is off', () => {
+            setCapabilityOverrides({ rekey: false })
+
+            const ids = idsFor(algo25Account)
+
+            expect(ids).not.toContain('rekey-account')
+            expect(ids).not.toContain('scan-rekeyed')
+            expect(ids).toContain('rename-account')
+        })
+
+        it('keeps a rekeyed account recognised and signable, with only its undo entry hidden', () => {
+            setCapabilityOverrides({ rekey: false })
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isRekeyed).toBe(true)
+            expect(result.current.canUndoRekey).toBe(false)
+            expect(mockUseCanSignWith).toHaveReturnedWith(true)
+        })
+
+        it('hides the shared-account rows and the shared rekey when multisig is off', () => {
+            setCapabilityOverrides({ multisig: false })
+
+            const ids = idsFor(multisigAccount)
+
+            expect(ids).not.toContain('shared-account-detail')
+            expect(ids).not.toContain('export-share-account')
+            expect(ids).not.toContain('rekey-account')
+            expect(ids).toContain('scan-rekeyed')
+        })
+
+        it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {
+            setCapabilityOverrides({ notifications: false })
+
+            expect(idsFor(algo25Account)).toContain('toggle-notifications')
         })
     })
 

@@ -34,6 +34,7 @@ import {
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
+import { useAssetActionButtons } from './useAssetActionButtons'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -57,6 +58,7 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
     const isFrozen = assetHolding?.isFrozen ?? false
     const nativeAsset = useNativeAsset()
+    const { canSwap, canBuy } = useAssetActionButtons()
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -150,24 +152,28 @@ export const AssetActionButtons = ({
 
     return (
         <PWView style={styles.container}>
-            <RoundButton
-                title={t('asset_details.action_buttons.swap')}
-                icon='swap'
-                variant='primary'
-                onPress={handleSwap}
-                disabled={isFrozen}
-                badgeIcon={isFrozen ? 'snowflake' : undefined}
-                style={styles.buttonFour}
-                testID='asset_detail_swap_button'
-            />
-            <RoundButton
-                title={t('asset_details.action_buttons.buy')}
-                icon='dollar'
-                variant='secondary'
-                onPress={() => goToRootPage('Fund')}
-                style={styles.buttonFour}
-                testID='asset_detail_buy_button'
-            />
+            {canSwap && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.swap')}
+                    icon='swap'
+                    variant='primary'
+                    onPress={handleSwap}
+                    disabled={isFrozen}
+                    badgeIcon={isFrozen ? 'snowflake' : undefined}
+                    style={styles.buttonFour}
+                    testID='asset_detail_swap_button'
+                />
+            )}
+            {canBuy && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.buy')}
+                    icon='dollar'
+                    variant='secondary'
+                    onPress={() => goToRootPage('Fund')}
+                    style={styles.buttonFour}
+                    testID='asset_detail_buy_button'
+                />
+            )}
             <RoundButton
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'

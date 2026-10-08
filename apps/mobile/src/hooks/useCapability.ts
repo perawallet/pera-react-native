@@ -11,7 +11,7 @@
  */
 
 import {
-    useChainCapabilityRequirement,
+    useChainCapabilityCheck,
     useSelectedChainMode,
     type ChainCapabilityRequirement,
 } from '@perawallet/wallet-core-chain-shared'
@@ -29,18 +29,20 @@ export type CapabilityRequirement = ChainCapabilityRequirement & {
     platform?: RouteCapability
 }
 
-/** True when every present part holds. A false capability hides; nothing renders disabled. */
-export const useCapability = ({
-    platform,
-    ...chainRequirement
-}: CapabilityRequirement): boolean => {
-    const isChainAllowed = useChainCapabilityRequirement(chainRequirement)
+/** A checker over one subscription, for a list of requirements or one chosen at call time. */
+export const useCapabilityCheck = (): ((
+    requirement: CapabilityRequirement,
+) => boolean) => {
+    const checkChain = useChainCapabilityCheck()
     // The active chain is Algorand while it is the only registered chain.
     const mode = useSelectedChainMode(LEGACY_CHAIN_ID)
-    return (
-        isChainAllowed &&
+    return ({ platform, ...chainRequirement }) =>
+        checkChain(chainRequirement) &&
         (platform === undefined ||
             (routeCapabilities[platform] &&
                 !isRestrictedIn(routeCapabilityRestrictions, platform, mode)))
-    )
 }
+
+/** True when every present part holds. A false capability hides; nothing renders disabled. */
+export const useCapability = (requirement: CapabilityRequirement): boolean =>
+    useCapabilityCheck()(requirement)

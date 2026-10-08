@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import { useIsQuantumAccountsEnabled } from '../useIsQuantumAccountsEnabled'
+import { useCapability } from '../useCapability'
 import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -23,9 +23,7 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     },
 }))
 
-vi.mock('../useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: vi.fn(),
-}))
+vi.mock('../useCapability', () => ({ useCapability: vi.fn() }))
 
 describe('useIsQuantumDappWarningEnabled', () => {
     const mockGetBooleanValue = vi.fn()
@@ -35,7 +33,7 @@ describe('useIsQuantumDappWarningEnabled', () => {
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
+        ;(useCapability as Mock).mockReturnValue(true)
     })
 
     it('defaults to enabled when the remote value is unset', () => {
@@ -62,7 +60,7 @@ describe('useIsQuantumDappWarningEnabled', () => {
 
     it('is disabled when quantum accounts are disabled, even with the warning flag on', () => {
         mockGetBooleanValue.mockReturnValue(true)
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+        ;(useCapability as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useIsQuantumDappWarningEnabled())
 

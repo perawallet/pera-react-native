@@ -54,6 +54,7 @@ export const AccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
+        canManageAssets,
         listRef,
         headerState,
         setSearchFilter,
@@ -68,6 +69,7 @@ export const AccountAssetList = ({
         ({ item }: { item: AccountHoldingsLiteRow }) => {
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
+                renderItemProps.canManageAssets &&
                 !isNativeAssetId(item.assetId) &&
                 item.amount.isZero()
 
@@ -104,15 +106,17 @@ export const AccountAssetList = ({
                             </PWText>
                         </PWView>
                         <PWView style={styles.titleBarButtonContainer}>
-                            <PWButton
-                                testID='manage_assets_button'
-                                icon='sliders'
-                                variant='helper'
-                                paddingStyle='none'
-                                onPress={handleOpenManage}
-                                style={styles.manageButton}
-                            />
-                            {!isReadOnly && (
+                            {canManageAssets && (
+                                <PWButton
+                                    testID='manage_assets_button'
+                                    icon='sliders'
+                                    variant='helper'
+                                    paddingStyle='none'
+                                    onPress={handleOpenManage}
+                                    style={styles.manageButton}
+                                />
+                            )}
+                            {!isReadOnly && canManageAssets && (
                                 <PWButton
                                     testID='add_asset_button'
                                     icon='plus'

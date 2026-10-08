@@ -22,6 +22,7 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockShowToast = vi.fn()
 const mockErrorToast = vi.fn()
@@ -31,13 +32,17 @@ const mockGoBack = vi.fn()
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 const mockFindQuantumAccount = vi.fn()
-const { mockIsQuantumEnabled } = vi.hoisted(() => ({
-    mockIsQuantumEnabled: { value: true },
-}))
 
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockIsQuantumEnabled.value,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 vi.mock('react-native', () => ({
     Keyboard: {
@@ -196,7 +201,7 @@ describe('useImportAccountScreen', () => {
             mockFindQuantumAccount,
         )
         mockFindQuantumAccount.mockResolvedValue(null)
-        mockIsQuantumEnabled.value = true
+        setQuantumEnabled(true)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
@@ -747,7 +752,7 @@ describe('useImportAccountScreen', () => {
             })
 
             it('imports the standard account without checking where the platform has no quantum support', async () => {
-                mockIsQuantumEnabled.value = false
+                setQuantumEnabled(false)
                 mockImportAccount.mockResolvedValue({ type: 'algo25' })
 
                 await submit25Words()

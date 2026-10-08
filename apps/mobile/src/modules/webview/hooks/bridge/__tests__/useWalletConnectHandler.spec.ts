@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-connections'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
+import { capabilityState } from '@test-utils/capability-mock'
 import { useWalletConnectHandler } from '../useWalletConnectHandler'
 import {
     TRUSTED,
@@ -28,6 +29,10 @@ import {
 } from './fixtures'
 
 vi.mock('react-native-webview', () => ({ default: {} }))
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => languageMockValue(),
@@ -145,6 +150,7 @@ describe('useWalletConnectHandler', () => {
         // The handshake-topic join in useConnectionPairing is module-level;
         // clear it so one test's pending pairing can't swallow another's.
         resetConnectionPairingStateForTesting()
+        capabilityState.reset()
     })
 
     const render = (sourceUrl: string | null = null) => {
@@ -161,6 +167,16 @@ describe('useWalletConnectHandler', () => {
                 ),
         }
     }
+
+    it('refuses with Unauthorized and never pairs while dappConnect is off', () => {
+        capabilityState.turnOff('dappConnect')
+        const { webview, connect } = render()
+
+        act(() => connect('wc-off'))
+
+        expect(mockConnect).not.toHaveBeenCalled()
+        expect(injectedScript(webview)).toContain('"code":-32001')
+    })
 
     it('rejects non-WalletConnect URIs with InvalidParams', () => {
         const { webview, connect } = render()

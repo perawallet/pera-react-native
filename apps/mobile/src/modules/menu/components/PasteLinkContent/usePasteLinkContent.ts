@@ -41,7 +41,8 @@ export type UsePasteLinkContentResult = {
 export const usePasteLinkContent = (
     onClose: () => void,
 ): UsePasteLinkContentResult => {
-    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const { handleDeepLink, isValidDeepLink, isDeepLinkAvailable } =
+        useDeepLink()
     const [value, setRawValue] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [errorKind, setErrorKind] = useState<ErrorKind>('none')
@@ -61,6 +62,11 @@ export const usePasteLinkContent = (
 
         if (!isValidDeepLink(trimmed)) {
             setErrorKind('invalid')
+            return
+        }
+        // Refused here rather than in the dispatcher, whose toast would double the inline error.
+        if (!isDeepLinkAvailable(trimmed)) {
+            setErrorKind('failed')
             return
         }
 
@@ -85,10 +91,10 @@ export const usePasteLinkContent = (
             'qr',
             () => {
                 // The dispatcher already toasts where a toast applies; the
-                // inline error covers the capability-gated paths that drop
-                // silently. Sheet stays open for another attempt. This is
-                // "recognised but couldn't open" — distinct copy from an
-                // isValidDeepLink rejection above.
+                // inline error covers the paths that drop silently. Sheet
+                // stays open for another attempt. This is "recognised but
+                // couldn't open" — distinct copy from an isValidDeepLink
+                // rejection above.
                 settle()
                 setErrorKind('failed')
             },
@@ -116,7 +122,7 @@ export const usePasteLinkContent = (
             })
             settle()
         })
-    }, [value, isValidDeepLink, handleDeepLink, onClose])
+    }, [value, isValidDeepLink, isDeepLinkAvailable, handleDeepLink, onClose])
 
     const hasError = errorKind !== 'none'
     const errorMessageKey =

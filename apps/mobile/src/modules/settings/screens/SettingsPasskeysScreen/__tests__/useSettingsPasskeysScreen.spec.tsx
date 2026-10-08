@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { capabilityState } from '@test-utils/capability-mock'
 import { act, renderHook } from '@testing-library/react'
 import { AppState } from 'react-native'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
@@ -112,6 +113,10 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),
     PasskeysEvent: { Deleted: 'passkeys_deleted' },
@@ -164,6 +169,7 @@ const expectBannerGates = (gates: {
 describe('useSettingsPasskeysScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
         mocks.passkeys = []
         mocks.isPasskeysLoading = false
         mocks.isPasskeysError = false
@@ -214,6 +220,15 @@ describe('useSettingsPasskeysScreen', () => {
         expect(result.current.state).toBe('disabled')
         expect(result.current.canScan).toBe(true)
         expectBannerGates({ isManaging: false, isProviderActive: false })
+    })
+
+    it('withholds the scanner, but keeps the list manageable, while liquidAuth is off', () => {
+        capabilityState.turnOff('liquidAuth')
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canScan).toBe(false)
+        expect(result.current.state).toBe('empty')
     })
 
     it('lets the banner show once the provider is on and the list is empty', () => {

@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 
-// No remote flag: quantum accounts are on wherever the platform can run Falcon.
-export const useIsQuantumAccountsEnabled = (): boolean =>
-    routeCapabilities.quantum
+export type UseAssetActionButtonsResult = {
+    canSwap: boolean
+    canBuy: boolean
+}
+
+export const useAssetActionButtons = (): UseAssetActionButtonsResult => ({
+    canSwap: useCapability({ anyChain: 'swap' }),
+    canBuy: useCapability({ anyChain: 'onramp' }),
+})

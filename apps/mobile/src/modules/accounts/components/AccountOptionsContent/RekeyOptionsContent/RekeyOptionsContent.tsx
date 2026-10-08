@@ -14,7 +14,7 @@ import { PWSheetLayout, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { useStyles } from './styles'
 
 /**
@@ -27,7 +27,11 @@ export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<RekeyTargetType>()
-    const isQuantumEnabled = useIsQuantumAccountsEnabled()
+    const canUseLedger = useCapability({ anyChain: 'ledger' })
+    const isQuantumEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
 
     return (
         <PWSheetLayout
@@ -35,16 +39,18 @@ export const RekeyOptionsContent = () => {
             header={<SheetHeader title={t('account_options.rekey_account')} />}
         >
             <PWView style={styles.optionsContainer}>
-                <PanelButton
-                    testID='rekey_option_ledger'
-                    title={t('account_options.rekey_option_ledger_title')}
-                    description={t(
-                        'account_options.rekey_option_ledger_description',
-                    )}
-                    titleWeight='h3'
-                    leftIcon='ledger'
-                    onPress={() => resolve('ledger')}
-                />
+                {canUseLedger && (
+                    <PanelButton
+                        testID='rekey_option_ledger'
+                        title={t('account_options.rekey_option_ledger_title')}
+                        description={t(
+                            'account_options.rekey_option_ledger_description',
+                        )}
+                        titleWeight='h3'
+                        leftIcon='ledger'
+                        onPress={() => resolve('ledger')}
+                    />
+                )}
                 <PanelButton
                     testID='rekey_option_standard'
                     title={t('account_options.rekey_option_standard_title')}

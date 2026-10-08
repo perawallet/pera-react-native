@@ -48,7 +48,6 @@ const PRODUCTION_ALGORAND_CAPABILITIES = {
     giftCards: true,
     discover: true,
     feeDelegation: true,
-    arc0027: true,
     liquidAuth: true,
     notifications: true,
     cloudBackup: true,
@@ -64,6 +63,7 @@ const PRODUCTION_ALGORAND_CAPABILITIES = {
     assetFavorites: true,
     priceAlerts: true,
     csvExport: true,
+    peraWebImport: true,
 }
 
 const mocks = vi.hoisted(() => ({

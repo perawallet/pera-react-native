@@ -21,6 +21,7 @@ const PERA_BACKED = [
     'assetFavorites',
     'priceAlerts',
     'csvExport',
+    'peraWebImport',
     'notifications',
     'assetInbox',
 ] as const

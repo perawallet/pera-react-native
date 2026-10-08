@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import { bottomSheetNotifier } from '@components/core'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -101,7 +101,9 @@ export const useTransactionConfirmationScreen =
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
-        const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+        // Platform part only: an existing quantum account still pays the
+        // premium after remote config switches `quantumAccounts` off.
+        const isQuantumAccountsEnabled = useCapability({ platform: 'quantum' })
         const signer = useSignerFor(selectedAccount?.address)
         const isQuantumFee =
             isQuantumAccountsEnabled &&

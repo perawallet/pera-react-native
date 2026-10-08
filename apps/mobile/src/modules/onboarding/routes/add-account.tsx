@@ -19,6 +19,7 @@ import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
 import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
 import { screenListeners } from '@routes/listeners'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { fullScreenLayout } from '@layouts/index'
 
 import type { AddAccountStackParamList } from './types'
@@ -40,6 +41,7 @@ const WatchAccountScreenWithErrorBoundary =
 const AddAccountStack = createAppStackNavigator<AddAccountStackParamList>()
 
 export const AddAccountStackNavigator = () => {
+    const isAllowed = useCapabilityCheck()
     return (
         <AddAccountStack.Navigator
             initialRouteName='AddAccountHome'
@@ -63,18 +65,23 @@ export const AddAccountStackNavigator = () => {
                 options={{ title: '' }}
                 component={SelectHDWalletScreenWithErrorBoundary}
             />
-            <AddAccountStack.Screen
-                name='WatchInfo'
-                options={{ title: '' }}
-                component={WatchInfoScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='WatchAccount'
-                options={{ title: '' }}
-                component={WatchAccountScreenWithErrorBoundary}
-            />
+            {isAllowed({ anyChain: 'watchAccounts' }) && (
+                <AddAccountStack.Screen
+                    name='WatchInfo'
+                    options={{ title: '' }}
+                    component={WatchInfoScreenWithErrorBoundary}
+                />
+            )}
+            {isAllowed({ anyChain: 'watchAccounts' }) && (
+                <AddAccountStack.Screen
+                    name='WatchAccount'
+                    options={{ title: '' }}
+                    component={WatchAccountScreenWithErrorBoundary}
+                />
+            )}
             {renderImportFlowScreens(
                 AddAccountStack as unknown as ImportFlowStack,
+                isAllowed,
             )}
         </AddAccountStack.Navigator>
     )

@@ -35,6 +35,7 @@ export const PeraCardOverview = () => {
         onWithdraw,
         onAddFunds,
         onFundLinkedAccount,
+        canFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
@@ -58,6 +59,7 @@ export const PeraCardOverview = () => {
                 onWithdraw={onWithdraw}
                 onAddFunds={onAddFunds}
                 onFundLinkedAccount={onFundLinkedAccount}
+                canFundLinkedAccount={canFundLinkedAccount}
             />
 
             <PeraCardCreditsSection

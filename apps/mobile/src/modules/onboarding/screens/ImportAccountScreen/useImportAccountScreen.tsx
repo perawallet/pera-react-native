@@ -38,7 +38,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useDeepLink, DeeplinkType } from '@modules/deeplink'
@@ -60,7 +60,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
     const findQuantumAccount = useFindQuantumAccountForMnemonic()
-    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+    const isQuantumAccountsEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
     const markBackupComplete = useMarkMnemonicBackupComplete()
     const { showToast, errorToast } = useToast()
     const { t } = useLanguage()

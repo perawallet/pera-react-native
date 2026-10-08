@@ -18,11 +18,13 @@ import { DeeplinkType } from '@modules/deeplink/types'
 
 const mockHandleDeepLink = vi.fn()
 const mockParseDeeplink = vi.fn()
+const mockIsDeepLinkAvailable = vi.fn()
 
 vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         handleDeepLink: mockHandleDeepLink,
         parseDeeplink: mockParseDeeplink,
+        isDeepLinkAvailable: mockIsDeepLinkAvailable,
     }),
 }))
 
@@ -35,6 +37,8 @@ beforeEach(() => {
     mockHandleDeepLink.mockReset()
     mockParseDeeplink.mockReset()
     mockParseDeeplink.mockReturnValue(null)
+    mockIsDeepLinkAvailable.mockReset()
+    mockIsDeepLinkAvailable.mockReturnValue(true)
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
 })
 
@@ -62,6 +66,15 @@ describe('useBannerLinkRouter', () => {
             false,
             'in-app',
         )
+        expect(Linking.openURL).not.toHaveBeenCalled()
+    })
+
+    it('refuses silently a deeplink whose capability is off', () => {
+        mockParseDeeplink.mockReturnValue({ type: DeeplinkType.STAKING })
+        mockIsDeepLinkAvailable.mockReturnValue(false)
+        const { result } = renderHook(() => useBannerLinkRouter())
+        act(() => result.current.route({ url: 'pera://staking' }))
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
         expect(Linking.openURL).not.toHaveBeenCalled()
     })
 

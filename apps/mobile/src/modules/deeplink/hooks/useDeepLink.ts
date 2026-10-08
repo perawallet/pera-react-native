@@ -34,8 +34,9 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
 import {
@@ -67,6 +68,8 @@ type HandleDeepLink = (
 
 type UseDeepLinkResult = {
     isValidDeepLink: (url: string) => boolean
+    /** False when the link parses to a type whose capability is off. */
+    isDeepLinkAvailable: (url: string) => boolean
     handleDeepLink: HandleDeepLink
     parseDeeplink: typeof parseDeeplink
     buildAccountDeeplink: typeof buildAccountDeeplink
@@ -88,6 +91,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
+    const isAllowed = useCapabilityCheck()
+
+    // CARDS and SELL gate on flag hooks that already fold in their capability.
+    const isTypeAvailable = (type: DeeplinkType): boolean => {
+        if (type === DeeplinkType.CARDS) return isPeraCardEnabled
+        if (type === DeeplinkType.SELL) return isGiftCardsEnabled
+        const requirement = capabilityRequirementForDeeplink(type)
+        return !requirement || isAllowed(requirement)
+    }
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -155,6 +167,21 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 logger.warn('Blocked notification deeplink', {
                     type: parsedData.type,
                 })
+                onError?.()
+                return
+            }
+
+            if (!isTypeAvailable(parsedData.type)) {
+                logger.warn('Blocked deeplink for an unavailable capability', {
+                    type: parsedData.type,
+                })
+                // A notification refusal stays silent, like the policy above.
+                if (source !== 'notification') {
+                    errorToast(
+                        t('common.network_unavailable.title'),
+                        t('common.network_unavailable.generic_body'),
+                    )
+                }
                 onError?.()
                 return
             }
@@ -342,13 +369,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    // The PeraCard navigator is only registered when the remote-config
-                    // flag is on. `onError`, not a bare return: the QR scanner locks
-                    // until one of its callbacks fires. Same below for SELL.
-                    if (!isPeraCardEnabled) {
-                        onError?.()
-                        return
-                    }
                     navigateToScreen(replaceCurrentScreen, 'PeraCard', {
                         screen: 'PeraCardIntro',
                     })
@@ -389,10 +409,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 case DeeplinkType.SELL: {
                     // The same Bidali sheet and gate as the Menu's "Buy Gift Card"
                     // button, inheriting its bidaliProvider JS bridge wiring.
-                    if (!isGiftCardsEnabled) {
-                        onError?.()
-                        return
-                    }
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
@@ -410,12 +426,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-                    // `onError` rather than a bare return: the QR scanner stays
-                    // locked until one of its callbacks fires.
-                    if (!routeCapabilities.sharedAccounts) {
-                        onError?.()
-                        return
-                    }
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },
@@ -534,8 +544,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
         [],
     )
 
+    // For callers with their own refusal UI (or none), so the dispatcher's toast never doubles it.
+    const isTypeAvailableRef = useRef(isTypeAvailable)
+    isTypeAvailableRef.current = isTypeAvailable
+    const isDeepLinkAvailable = useCallback((url: string): boolean => {
+        const parsed = parseDeeplink(url)
+        return !parsed || isTypeAvailableRef.current(parsed.type)
+    }, [])
+
     return {
         isValidDeepLink,
+        isDeepLinkAvailable,
         handleDeepLink,
         parseDeeplink,
         buildAccountDeeplink,

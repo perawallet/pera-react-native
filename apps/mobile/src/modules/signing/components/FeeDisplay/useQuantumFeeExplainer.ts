@@ -17,7 +17,7 @@ import {
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 
 type UseQuantumFeeExplainerResult = {
     isQuantumFee: boolean
@@ -41,7 +41,9 @@ type UseQuantumFeeExplainerResult = {
 export const useQuantumFeeExplainer = (
     transaction?: PeraDisplayableTransaction,
 ): UseQuantumFeeExplainerResult => {
-    const enabled = useIsQuantumAccountsEnabled()
+    // Platform part only: an existing quantum account still pays the premium
+    // after remote config switches `quantumAccounts` off.
+    const enabled = useCapability({ platform: 'quantum' })
     const { resolved } = useSigningPipeline()
 
     const authorizerAddress = transaction

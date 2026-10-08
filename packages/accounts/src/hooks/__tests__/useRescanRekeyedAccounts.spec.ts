@@ -35,12 +35,18 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
+const rekey = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsRekeyAvailable', () => ({
+    useIsRekeyAvailable: () => rekey.isAvailable,
+}))
+
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
 describe('useRescanRekeyedAccounts — scan', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        rekey.isAvailable = true
         useAccountsStore.getState().resetState()
     })
 
@@ -65,6 +71,23 @@ describe('useRescanRekeyedAccounts — scan', () => {
             importedAddresses: ['IN_WALLET'],
             notImportedAddresses: ['NEW_ONE'],
         })
+    })
+
+    it('scans nothing while rekey is unavailable', async () => {
+        rekey.isAvailable = false
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+
+        expect(await result.current.scan('SOURCE')).toEqual({
+            importedAddresses: [],
+            notImportedAddresses: [],
+        })
+        expect(await result.current.scanAll(['SOURCE'])).toEqual({
+            importedAddresses: [],
+            candidates: [],
+            failedSources: [],
+        })
+        expect(mocks.fetchRekeyedAddresses).not.toHaveBeenCalled()
     })
 
     it('fails closed on a chain without rekey', async () => {

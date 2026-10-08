@@ -879,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "Non disponible sur ce réseau",
-            "body": "Ceci nécessite Pera services, qui ne sont pas disponibles sur BetaNet ni sur les nœuds personnalisés. Basculez vers MainNet ou TestNet."
+            "body": "Ceci nécessite Pera services, qui ne sont pas disponibles sur BetaNet ni sur les nœuds personnalisés. Basculez vers MainNet ou TestNet.",
+            "generic_body": "Cette fonctionnalité n’est pas disponible pour le moment."
         },
         "yes": "Oui",
         "no": "Non",
@@ -2659,7 +2660,7 @@
             "error_title": "Une erreur est survenue",
             "error_body": "Une erreur inattendue s’est produite. Veuillez réessayer.",
             "inbox_unavailable_title": "Boîte de réception d’actifs indisponible",
-            "inbox_unavailable_body": "Le destinataire n’a pas ajouté cet actif et la boîte de réception d’actifs n’est pas disponible sur ce réseau. Passez sur MainNet ou TestNet pour l’envoyer.",
+            "inbox_unavailable_body": "Le destinataire n’a pas ajouté cet actif et la boîte de réception d’actifs n’est pas disponible pour le moment, il ne peut donc pas être envoyé.",
             "nfd_mismatch_title": "Le nom ne correspond pas à la chaîne",
             "nfd_mismatch_body": "Le contrat NFD de {{name}} ne répertorie pas cette adresse. Collez l'adresse directement si vous lui faites confiance.",
             "nfd_unavailable_title": "Impossible de vérifier {{name}}",
