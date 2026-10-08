@@ -12,23 +12,28 @@
 
 import { z } from 'zod'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { partition, queryClient } from '@perawallet/wallet-core-shared'
+import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 
 export const BLOCK_FOLLOWING_SERVICE = 'blockFollowing'
 
-// Provisional: the backend has no agreed Ethereum spec yet. The shape mirrors
-// Algorand's /v1/accounts/should-refresh/ with blocks in place of rounds.
-export const SHOULD_REFRESH_PATH = '/v1/ethereum/accounts/should-refresh/'
+export const SHOULD_REFRESH_PATH = '/api/v4/accounts/should-refresh/'
 
-export const shouldRefreshResponseSchema = z.object({
-    refresh: z.boolean(),
-    block: z.number().int().nonnegative(),
-})
+// The backend rejects a request with more EVM addresses than this (422).
+const SHOULD_REFRESH_MAX_ADDRESSES = 1000
+
+/** `round` is the chain tip's block number; it is omitted when `refresh` is false. */
+const shouldRefreshResponseSchema = z.union([
+    z.object({
+        refresh: z.literal(true),
+        round: z.number().int().nonnegative().optional(),
+    }),
+    z.object({ refresh: z.literal(false) }),
+])
 
 export type ShouldRefreshResponse = z.infer<typeof shouldRefreshResponseSchema>
 
-/** `lastBlock` is null when the scope has never synced. Rejects with a `PeraNetworkError` on a failed request. */
-export const fetchShouldRefresh = async (
+const requestShouldRefresh = async (
     scope: ChainScope,
     addresses: string[],
     lastBlock: number | null,
@@ -40,9 +45,35 @@ export const fetchShouldRefresh = async (
         method: 'POST',
         url: SHOULD_REFRESH_PATH,
         data: {
+            chain: `eip155:${eip155ChainIdOf(scope)}`,
             account_addresses: addresses,
-            last_refreshed_block: lastBlock,
+            last_refreshed_round: lastBlock,
         },
     })
     return shouldRefreshResponseSchema.parse(data)
+}
+
+/**
+ * `lastBlock` is null when the scope has never synced. Address lists past the
+ * backend limit go out in chunks: any refresh wins, with the highest tip. No
+ * addresses make no request (the backend rejects an empty list) and no refresh.
+ * Rejects with a `PeraNetworkError` on a failed request.
+ */
+export const fetchShouldRefresh = async (
+    scope: ChainScope,
+    addresses: string[],
+    lastBlock: number | null,
+): Promise<ShouldRefreshResponse> => {
+    const answers = await Promise.all(
+        partition(addresses, SHOULD_REFRESH_MAX_ADDRESSES).map(part =>
+            requestShouldRefresh(scope, part, lastBlock),
+        ),
+    )
+    if (!answers.some(answer => answer.refresh)) return { refresh: false }
+    const rounds = answers.flatMap(answer =>
+        answer.refresh && answer.round !== undefined ? [answer.round] : [],
+    )
+    return rounds.length > 0
+        ? { refresh: true, round: Math.max(...rounds) }
+        : { refresh: true }
 }

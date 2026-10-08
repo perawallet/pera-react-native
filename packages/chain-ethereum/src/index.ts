@@ -18,13 +18,21 @@ export {
     type EthereumAccountStateOps,
 } from './accounts'
 export {
+    createEthereumAssetOps,
+    ETHEREUM_NATIVE_ASSET,
+    type EthereumAssetOps,
+    type EthereumAssetPersistence,
+} from './assets'
+export {
     createEvmClient,
     EvmError,
     EvmErrorCode,
     evmHttpTransport,
+    InvalidCaip19Error,
     isEvmError,
     toEvmError,
     UnconfiguredEvmRpcError,
+    UnknownEvmNetworkError,
     type EvmErrorParams,
 } from './blockchain'
 export { ethereumModule } from './module'

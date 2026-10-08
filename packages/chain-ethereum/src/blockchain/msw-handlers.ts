@@ -12,11 +12,20 @@
 
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import {
+    decodeAbiParameters,
+    decodeFunctionData,
+    encodeAbiParameters,
+    encodeFunctionResult,
+    getAddress,
+    isAddressEqual,
     keccak256,
+    multicall3Abi,
+    toFunctionSelector,
     type Hex,
     type RpcFeeHistory,
     type RpcTransactionReceipt,
 } from 'viem'
+import { MULTICALL3_ADDRESS } from './utils/erc20'
 
 export type EvmRpcResults = {
     eth_chainId: Hex
@@ -183,3 +192,99 @@ export const evmRpcHandlers = ({
         }),
     ]
 }
+
+export type Erc20Fixture = {
+    name: string
+    symbol: string
+    decimals: number
+    /** Base units. */
+    totalSupply: bigint
+    /** Base units, keyed by checksummed holder; a holder left out has 0. */
+    balances?: Record<string, bigint>
+    /** Every call "succeeds" with empty return data, as a target with no code does. */
+    noCode?: boolean
+    /** Every call succeeds with fewer than 32 bytes of return data. */
+    shortReturn?: boolean
+}
+
+const ERC20_READS = {
+    name: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'string' }], [token.name]),
+    symbol: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'string' }], [token.symbol]),
+    decimals: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'uint8' }], [token.decimals]),
+    totalSupply: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'uint256' }], [token.totalSupply]),
+} as const
+
+const ERC20_SELECTORS = Object.entries(ERC20_READS).map(
+    ([name, encode]) => [toFunctionSelector(`${name}()`), encode] as const,
+)
+
+const BALANCE_OF_SELECTOR = toFunctionSelector('balanceOf(address)')
+
+/** The encoded answer, or null where the contract would revert. */
+const answerErc20Call = (
+    tokens: Record<string, Erc20Fixture>,
+    to: Hex,
+    data: Hex,
+): Hex | null => {
+    const token = tokens[getAddress(to)]
+    if (!token) return null
+    if (token.noCode) return '0x'
+    if (token.shortReturn) return `0x${'00'.repeat(16)}`
+    if (data.startsWith(BALANCE_OF_SELECTOR)) {
+        const [holder] = decodeAbiParameters(
+            [{ type: 'address' }],
+            `0x${data.slice(BALANCE_OF_SELECTOR.length)}`,
+        )
+        return encodeAbiParameters(
+            [{ type: 'uint256' }],
+            [token.balances?.[getAddress(holder)] ?? 0n],
+        )
+    }
+    const encode = ERC20_SELECTORS.find(([selector]) =>
+        data.startsWith(selector),
+    )?.[1]
+    return encode ? encode(token) : null
+}
+
+const answerAggregate3 = (
+    tokens: Record<string, Erc20Fixture>,
+    data: Hex,
+): Hex => {
+    const { args } = decodeFunctionData({ abi: multicall3Abi, data })
+    const calls = args[0] as readonly { target: Hex; callData: Hex }[]
+    return encodeFunctionResult({
+        abi: multicall3Abi,
+        functionName: 'aggregate3',
+        result: calls.map(({ target, callData }) => {
+            const returnData = answerErc20Call(tokens, target, callData)
+            return {
+                success: returnData !== null,
+                returnData: returnData ?? '0x',
+            }
+        }),
+    })
+}
+
+/**
+ * `eth_call` answers for ERC-20 metadata and `balanceOf` reads, keyed by
+ * checksummed contract, direct or through Multicall3 `aggregate3`; anything
+ * else reverts.
+ */
+export const erc20CallResponder =
+    (
+        tokens: Record<string, Erc20Fixture>,
+    ): ((params: readonly unknown[]) => Hex | EvmRpcErrorFixture) =>
+    params => {
+        const { to, data } = params[0] as { to: Hex; data: Hex }
+        if (isAddressEqual(to, MULTICALL3_ADDRESS)) {
+            return answerAggregate3(tokens, data)
+        }
+        return (
+            answerErc20Call(tokens, to, data) ??
+            new EvmRpcErrorFixture(3, 'execution reverted')
+        )
+    }

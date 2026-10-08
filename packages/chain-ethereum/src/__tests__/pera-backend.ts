@@ -16,7 +16,7 @@ export const PERA_URL = 'https://pera.test'
 
 /**
  * A config-module mock giving every Ethereum scope a Pera deployment that
- * serves block following, for specs reaching it through queryClient:
+ * serves block following and assets, for specs reaching it through queryClient:
  * `vi.mock('@perawallet/wallet-core-config', async original =>
  * (await import('./pera-backend')).withEthereumPeraBackend(original))`.
  */
@@ -35,7 +35,7 @@ export const withEthereumPeraBackend = async (
                 : actual.getPeraServicesConfig(scope),
         hasPeraService: (scope, service) =>
             scope.chainId === 'ethereum'
-                ? service === 'blockFollowing'
+                ? service === 'blockFollowing' || service === 'assets'
                 : actual.hasPeraService(scope, service),
     }
 }
