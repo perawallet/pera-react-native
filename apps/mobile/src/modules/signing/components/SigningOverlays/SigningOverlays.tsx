@@ -10,61 +10,14 @@
  limitations under the License
  */
 
-import React, { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { AppState } from 'react-native'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    applyAppStateToHardwareSessions,
-    isInteractiveSource,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
+import { applyAppStateToHardwareSessions } from '@perawallet/wallet-core-signing'
 import { useLedgerSigningDriver } from './useLedgerSigningDriver'
 import { useLedgerConnectionIssueDriver } from './useLedgerConnectionIssueDriver'
 import { useSigningCompletedDriver } from './useSigningCompletedDriver'
 import { useSignRequestDriver } from './useSignRequestDriver'
-
-const FAQ_SEEN_KEY = 'hasSeenTransactionRequestFAQ'
-
-/**
- * Watches for the first transaction sign request and shows the FAQ sheet
- * via the centralized bottom sheet manager — once per device.
- */
-const useTransactionRequestFAQDriver = () => {
-    const { pendingSignRequests } = useSigningRequest()
-    const { getPreference, setPreference } = usePreferences()
-    const { request: requestBottomSheet } = useBottomSheet()
-    // No app-lock gate: BottomSheetManager holds presentation while the lock
-    // overlay is up, so requesting while locked is safe.
-    const openIdRef = useRef<string | null>(null)
-
-    useEffect(() => {
-        const next = pendingSignRequests.find(
-            r =>
-                isInteractiveSource(r.sourceType) &&
-                r.type === 'transactions' &&
-                r.sourceType !== 'multisig-cosign',
-        )
-        if (!next) return
-        if (openIdRef.current === next.id) return
-        if (getPreference(FAQ_SEEN_KEY)) return
-        openIdRef.current = next.id
-        let cancelled = false
-        void (async () => {
-            await requestBottomSheet<void>({
-                contents: <TransactionRequestFAQContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (cancelled) return
-            setPreference(FAQ_SEEN_KEY, true)
-            openIdRef.current = null
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [pendingSignRequests, getPreference, setPreference, requestBottomSheet])
-}
+import { useTransactionRequestFAQDriver } from './useTransactionRequestFAQDriver'
 
 /**
  * Owns the `AppState` subscription for the hardware-signing backgrounding
