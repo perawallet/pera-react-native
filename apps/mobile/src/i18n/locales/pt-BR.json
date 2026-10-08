@@ -4223,5 +4223,14 @@
     },
     "integrityCheck": {
         "frame_title": "Verificação da Pera Wallet"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Ajude a melhorar a Pera",
+            "body": "Você permite que a Pera colete dados de uso do app, como as telas que você abre, pelo Google Analytics for Firebase? Isso nos ajuda a ver o que funciona e a corrigir o que não funciona. Nada é coletado sem a sua permissão, e você pode mudar sua escolha a qualquer momento nas Configurações.",
+            "allow": "Permitir",
+            "decline": "Não permitir"
+        },
+        "settings_label": "Compartilhar dados de uso"
     }
 }

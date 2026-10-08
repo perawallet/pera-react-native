@@ -155,6 +155,13 @@ vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
     ),
 }))
 
+vi.mock('@perawallet/wallet-core-settings', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-settings')
+    >()),
+    useAnalyticsConsent: () => ({ consent: 'granted', setConsent: vi.fn() }),
+}))
+
 // AutoLockGuard's own JSX (the display-hiding wrapper + LockOverlayProvider)
 // stays real; only its two data-fetching hooks are stubbed so the guard's
 // active/inactive state is directly controllable per test.

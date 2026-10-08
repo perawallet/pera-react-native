@@ -15,18 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-    },
-    row: {
-        paddingHorizontal: theme.spacing.xs,
-    },
-    toggleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xs,
-    },
-    toggleLabel: {
-        flex: 1,
-        minWidth: 0,
+        backgroundColor: theme.colors.background,
     },
 }))

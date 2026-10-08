@@ -21,8 +21,13 @@ import { usePromptStore } from '@modules/prompts/store'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
+const { mockUseAnalyticsConsent } = vi.hoisted(() => ({
+    mockUseAnalyticsConsent: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(),
+    useAnalyticsConsent: () => mockUseAnalyticsConsent(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -127,8 +132,10 @@ describe('usePromptContainer', () => {
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
         })
-        // Default: terms already accepted, so the T&C prompt is out of the way.
+        // Default: terms accepted and analytics answered, so both gates are
+        // out of the way.
         mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+        mockUseAnalyticsConsent.mockReturnValue({ consent: 'denied' })
         mockUseBannerPrompt.mockReturnValue({ isDue: false, isForced: false })
         mockUseLegacyQuantumPrompt.mockReturnValue({
             isDue: false,
@@ -477,6 +484,38 @@ describe('usePromptContainer', () => {
         })
 
         expect(result.current.nextPrompt?.id).toBe('terms_acceptance_prompt')
+    })
+
+    it('asks for analytics consent as a gate, after the terms', async () => {
+        mockGetPreference.mockReturnValue(false)
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+        mockUseAnalyticsConsent.mockReturnValue({ consent: null })
+
+        const { result, rerender } = renderHook(() => usePromptContainer())
+        await act(async () => {})
+        expect(result.current.nextPrompt?.id).toBe('terms_acceptance_prompt')
+
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+        rerender()
+        await act(async () => {})
+
+        expect(result.current.nextPrompt).toMatchObject({
+            id: 'analytics-consent-prompt',
+            isGate: true,
+        })
+    })
+
+    it('does not ask for analytics consent once it is answered', () => {
+        mockGetPreference.mockReturnValue(true)
+        mockUseAnalyticsConsent.mockReturnValue({ consent: 'granted' })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
     })
 
     it('does not show the terms prompt once terms are accepted', () => {

@@ -10,16 +10,26 @@
  limitations under the License
  */
 
-import { PWListItem, PWScreen, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWListItem,
+    PWScreen,
+    PWSwitch,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { routeCapabilities } from '@routes/capabilities'
 import { useStyles } from './styles'
+import { useSettingsAdvancedScreen } from './useSettingsAdvancedScreen'
 
 export const SettingsAdvancedScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useAppNavigation()
+    const { isAnalyticsEnabled, handleAnalyticsToggle } =
+        useSettingsAdvancedScreen()
 
     return (
         <PWScreen testID='settings_advanced_screen'>
@@ -40,6 +50,20 @@ export const SettingsAdvancedScreen = () => {
                         testID='settings_advanced_confirmation_item'
                     />
                 )}
+                <PWView style={styles.toggleRow}>
+                    <PWIcon name='chart' />
+                    <PWText
+                        style={styles.toggleLabel}
+                        truncate
+                    >
+                        {t('analytics_consent.settings_label')}
+                    </PWText>
+                    <PWSwitch
+                        value={isAnalyticsEnabled}
+                        onValueChange={handleAnalyticsToggle}
+                        testID='settings_advanced_analytics_toggle'
+                    />
+                </PWView>
             </PWView>
         </PWScreen>
     )

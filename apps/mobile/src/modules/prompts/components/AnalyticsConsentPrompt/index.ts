@@ -10,23 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    row: {
-        paddingHorizontal: theme.spacing.xs,
-    },
-    toggleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xs,
-    },
-    toggleLabel: {
-        flex: 1,
-        minWidth: 0,
-    },
-}))
+export {
+    AnalyticsConsentPrompt,
+    ANALYTICS_CONSENT_PROMPT_ID,
+} from './AnalyticsConsentPrompt'

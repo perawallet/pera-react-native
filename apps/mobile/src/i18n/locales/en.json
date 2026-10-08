@@ -4194,5 +4194,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet check"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Help improve Pera",
+            "body": "Allow Pera to collect app usage data, such as which screens you open, through Google Analytics for Firebase? It helps us see what works and fix what doesn’t. Nothing is collected unless you allow it, and you can change your choice anytime in Settings.",
+            "allow": "Allow",
+            "decline": "Don’t allow"
+        },
+        "settings_label": "Share usage analytics"
     }
 }

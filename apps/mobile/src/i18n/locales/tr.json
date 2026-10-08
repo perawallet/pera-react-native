@@ -4194,5 +4194,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet doğrulaması"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Pera’yı geliştirmemize yardım et",
+            "body": "Pera, Google Analytics for Firebase aracılığıyla hangi ekranları açtığın gibi uygulama kullanım verilerini toplayabilir mi? Bu, neyin işe yaradığını görmemize ve yaramayanı düzeltmemize yardımcı olur. İzin vermezsen hiçbir şey toplanmaz ve seçimini istediğin zaman Ayarlar’dan değiştirebilirsin.",
+            "allow": "İzin ver",
+            "decline": "İzin verme"
+        },
+        "settings_label": "Kullanım analizlerini paylaş"
     }
 }
