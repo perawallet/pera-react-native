@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         watch: 'watch',
     },
     isMultisigAccount: () => false,
-    isRekeyedAccount: () => false,
+    useAuthorityOf: () => null,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({

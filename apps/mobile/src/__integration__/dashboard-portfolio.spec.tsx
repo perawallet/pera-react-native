@@ -120,7 +120,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await upsertAccountBalance({
             accountAddress: ACCOUNT_B.address,
@@ -131,7 +131,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         // ALGO holdings — ALGO is a regular holding row now (base units /

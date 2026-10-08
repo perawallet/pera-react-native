@@ -11,13 +11,14 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 
 import {
     accountType,
     type AccountType,
     AccountTypes,
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
     useRekeyAccount,
     type WalletAccount,
@@ -116,12 +117,12 @@ export const useAccountIcon = (
     const { ignoreRekey, displayState, authType } = options
     const rekeyAccount = useRekeyAccount(account?.address)
     const canSign = useCanSignWith(account)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     return useMemo(() => {
         if (!account) return null
 
-        const isRekeyed =
-            !ignoreRekey && isRekeyedAccount(account, LEGACY_CHAIN_ID)
+        const isRekeyed = !ignoreRekey && authority !== null
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed
@@ -154,5 +155,13 @@ export const useAccountIcon = (
         // rekeyAccount keeps the memo invalidating when the auth account
         // changes (which can flip canSign).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, displayState, authType, canSign, rekeyAccount])
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        authType,
+        canSign,
+        rekeyAccount,
+        authority,
+    ])
 }

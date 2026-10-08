@@ -52,7 +52,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 0,
                 minBalance: new Decimal('0.1'),
                 status: 'Offline',
-                authAddress: 'AUTH',
+                authorityAddress: 'AUTH',
             }
             await upsertAccountBalance({
                 ...row,
@@ -63,14 +63,14 @@ describe('account balances repository', () => {
                 ...row,
                 accountAddress: 'ADDR1',
                 scope: scopeForLegacyNetwork('testnet'),
-                authAddress: null,
+                authorityAddress: null,
             })
 
             const rows = await getAllAccountBalances({ db })
 
             expect(
                 rows
-                    .map(r => [r.accountAddress, r.network, r.authAddress])
+                    .map(r => [r.accountAddress, r.network, r.authorityAddress])
                     .sort(),
             ).toEqual([
                 ['ADDR1', 'algorand/mainnet', 'AUTH'],
@@ -89,7 +89,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 2,
                 minBalance: 100000n,
                 status: 'Online',
-                authAddress: null,
+                authorityAddress: null,
             })
 
             const result = await getAccountBalance({
@@ -116,7 +116,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 2,
                 minBalance: 100000n,
                 status: 'Online',
-                authAddress: null,
+                authorityAddress: null,
             })
 
             await upsertAccountBalance({
@@ -129,7 +129,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 3,
                 minBalance: 200000n,
                 status: 'Offline',
-                authAddress: 'AUTH1',
+                authorityAddress: 'AUTH1',
             })
 
             const result = await getAccountBalance({
@@ -143,7 +143,7 @@ describe('account balances repository', () => {
             expect(result!.totalAssetsOptedIn).toBe(5)
             expect(result!.minBalance).toEqual(new Decimal(200000))
             expect(result!.status).toBe('Offline')
-            expect(result!.authAddress).toBe('AUTH1')
+            expect(result!.authorityAddress).toBe('AUTH1')
         })
 
         it('returns undefined for unknown account', async () => {

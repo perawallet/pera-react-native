@@ -389,7 +389,7 @@ describe('resolveSignerFor', () => {
         expect(resolveSignerFor('A', [a], ALGORAND_CHAIN_ID)).toEqual({
             kind: 'authMissing',
             account: a,
-            authAddress: 'MISSING',
+            authorityAddress: 'MISSING',
         })
     })
 

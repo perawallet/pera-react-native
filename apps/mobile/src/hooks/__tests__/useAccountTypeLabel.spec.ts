@@ -11,7 +11,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import {
     useAccountChainStateStore,
@@ -77,11 +79,28 @@ const multisigAccount: MultiSigAccount = {
 describe('useAccountTypeLabel', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useNetworkStore.getState().setNetwork('mainnet')
         useAccountChainStateStore.getState().resetState()
         seedAuthority(rekeyedAccount.address, 'AUTH_ADDR')
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
+    })
+
+    it('turns rekeyed when the network moves to the scope that holds the authority', () => {
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority(
+            rekeyedAccount.address,
+            'AUTH_ADDR',
+            scopeForLegacyNetwork('testnet'),
+        )
+        useNetworkStore.getState().setNetwork('mainnet')
+        const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
+        expect(result.current.label).toBe('account_info.type_algo25')
+
+        act(() => useNetworkStore.getState().setNetwork('testnet'))
+
+        expect(result.current.label).toBe('account_info.type_rekeyed')
     })
 
     it('returns an empty label when no account is provided', () => {

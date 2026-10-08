@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { accountsChainAdapters } from '../chain-adapter'
-import { useAccountsStore } from '../store'
+import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 
 /**
@@ -26,10 +26,12 @@ export const useAccountsRekeyedTo = (
     address: string | null | undefined,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
+    // Reads every legacy scope, so any slice write can change the result.
+    const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(() => {
         const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
         return address && authority
             ? authority.accountsDelegatedTo(address, accounts)
             : []
-    }, [address, accounts])
+    }, [address, accounts, chainStates])
 }

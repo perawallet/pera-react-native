@@ -129,7 +129,7 @@ const seedRekeyedSource = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(0.1),
         status: 'Offline',
-        authAddress: authAccount.address,
+        authorityAddress: authAccount.address,
     })
     return { source, authAccount }
 }

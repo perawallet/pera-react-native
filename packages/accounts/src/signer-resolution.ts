@@ -36,7 +36,7 @@ export type SignerResolution =
     | {
           kind: 'authMissing'
           account: WalletAccount
-          authAddress: string
+          authorityAddress: string
       }
     | { kind: 'authIsWatch'; account: WalletAccount; auth: WalletAccount }
     | {

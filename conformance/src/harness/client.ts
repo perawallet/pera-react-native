@@ -71,7 +71,7 @@ export const balanceOf = async (address: string): Promise<bigint> =>
 export const authAddrOf = async (
     address: string,
 ): Promise<string | undefined> =>
-    (await accountInformationOf(address)).authAddress
+    (await accountInformationOf(address)).authorityAddress
 
 /**
  * The raw indexer JSON for an account's transactions — hyphenated keys, no

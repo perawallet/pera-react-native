@@ -19,6 +19,7 @@ import {
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
 import { useAllAccounts } from './useAllAccounts'
+import { useSelectedChainStates } from './useSelectedChainStates'
 
 export type UseAuthorityTargetsOptions = {
     isQuantumTargetEnabled?: boolean
@@ -35,6 +36,7 @@ export const useAuthorityTargets = (
 ): WalletAccount[] => {
     const accounts = useAllAccounts()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
 
     return useMemo(() => {
         const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
@@ -44,5 +46,5 @@ export const useAuthorityTargets = (
                 isQuantumTargetEnabled,
             }),
         )
-    }, [accounts, scope, source, kind, isQuantumTargetEnabled])
+    }, [accounts, scope, chainStates, source, kind, isQuantumTargetEnabled])
 }

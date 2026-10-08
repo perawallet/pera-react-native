@@ -128,7 +128,7 @@ describe('useLedgerAccountInfoContent', () => {
                 algoBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH' },
+                rekey: { kind: 'rekeyedTo', authorityAddress: 'AUTH' },
             },
             isLoading: false,
             isError: false,
@@ -259,14 +259,14 @@ describe('useLedgerAccountInfoContent', () => {
         }
     })
 
-    it('builds a watch+rekeyAddress synth account on the account item when rekeyedTo', () => {
+    it('builds a watch synth account on the account item when rekeyedTo', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'WATCH_ADDR',
                 algoBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH_ADDR' },
+                rekey: { kind: 'rekeyedTo', authorityAddress: 'AUTH_ADDR' },
             },
             isLoading: false,
             isError: false,
@@ -281,7 +281,6 @@ describe('useLedgerAccountInfoContent', () => {
         if (acct?.kind === 'account') {
             expect(accountType(acct.account)).toBe(AccountTypes.watch)
             expect(acct.account.address).toBe('WATCH_ADDR')
-            expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
             expect(acct.displayStateOverride).toBe('rekeyedSignable')
         }
     })

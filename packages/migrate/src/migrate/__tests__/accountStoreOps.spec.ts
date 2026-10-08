@@ -11,9 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    authorityOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -22,7 +20,6 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
-    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
     removeAccountFromStore,
 } from '../accountStoreOps'
@@ -322,47 +319,5 @@ describe('removeAccountFromStore', () => {
         expect(
             useAccountsStore.getState().accounts.map(a => a.address),
         ).toEqual(['ADDR_B'])
-    })
-})
-
-describe('applyRekeyAddressToStoreAccount', () => {
-    it('records the authority on the matching account', () => {
-        useAccountsStore.getState().setAccounts([
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_A',
-            }),
-        ])
-
-        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
-
-        expect(
-            authorityOf(
-                useAccountsStore.getState().accounts[0],
-                scopeForLegacyNetwork('mainnet'),
-            ),
-        ).toBe('AUTH')
-    })
-
-    it('leaves other accounts untouched', () => {
-        useAccountsStore.getState().setAccounts([
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_A',
-            }),
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_B',
-            }),
-        ])
-
-        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
-
-        const untouched = useAccountsStore
-            .getState()
-            .accounts.find(a => a.address === 'ADDR_B')!
-        expect(
-            authorityOf(untouched, scopeForLegacyNetwork('mainnet')),
-        ).toBeNull()
     })
 })

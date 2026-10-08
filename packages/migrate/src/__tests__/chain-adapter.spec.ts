@@ -26,6 +26,7 @@ const fakeAdapter = (): MigrationChainAdapter => ({
     migrateAccount: vi.fn(),
     isKeylessAccount: vi.fn(() => false),
     classifyAccountRoute: vi.fn(() => 'route'),
+    recordLegacyAuthority: vi.fn(),
 })
 
 describe('migrationChainAdapters', () => {

@@ -69,7 +69,7 @@ describe('syncAndEnrichNewAccount', () => {
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
             chainState: {
                 family: 'algorand',
                 minBalance: new Decimal(100_000),

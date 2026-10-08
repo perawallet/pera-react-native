@@ -168,7 +168,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: account.address,

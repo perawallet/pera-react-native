@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRekeyTransition } from '../useRekeyTransition'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
@@ -55,6 +56,25 @@ describe('useRekeyTransition', () => {
         setAccounts([held('A')])
         const { result } = renderHook(() => useRekeyTransition('A'))
         expect(result.current).toBeNull()
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const signer = held('S')
+        useNetworkStore.getState().setNetwork('mainnet')
+        setAccounts([
+            held('A', { custody: { kind: 'watch' }, keyPairId: undefined }),
+            signer,
+        ])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockReturnValue({
+            kind: 'ok',
+            signer,
+        })
+        const { result } = renderHook(() => useRekeyTransition('A'))
+        expect(result.current).toBeNull()
+
+        act(() => seedAuthority('A', 'S'))
+
+        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
     })
 
     it("returns the from/to types from the chain's signer for a rekeyed account", () => {

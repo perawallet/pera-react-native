@@ -28,7 +28,7 @@ export const mapOnChainAccountInformation = (
             amount: asset.amount,
             isFrozen: asset.isFrozen,
         })),
-        authAddress: response.authAddr
+        authorityAddress: response.authAddr
             ? response.authAddr.toString()
             : undefined,
     }

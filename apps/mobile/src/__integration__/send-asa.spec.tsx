@@ -175,7 +175,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
@@ -255,7 +255,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
     }
 
@@ -402,7 +402,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         const InputAmountStub = () => <View testID='input-amount-stub' />

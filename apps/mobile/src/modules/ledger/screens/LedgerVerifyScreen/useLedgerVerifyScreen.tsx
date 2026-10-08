@@ -20,6 +20,7 @@ import {
     isLedgerAccount,
     isWatchAccount,
     type LedgerSelectableAccount,
+    recordAuthority,
     useAccountsStore,
     useSelectedAccountAddress,
     useSetAccounts,
@@ -40,6 +41,7 @@ import {
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -213,6 +215,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const byAddress = new Map(current.map(a => [a.address, a]))
         const added = new Set<string>()
         const batch: WalletAccount[] = []
+        const authorities: Array<{
+            address: string
+            authorityAddress: string
+        }> = []
         const upgrades: Array<{
             address: string
             details: HardwareWalletDetails
@@ -289,11 +295,11 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // account. A watch auth always queues an upgrade above, so a
                 // present-but-watch auth can no longer slip through into an
                 // unsignable pair.
-                const authAddress = sel.authAccount.address
-                const presentAuth = byAddress.get(authAddress)
+                const authorityAddress = sel.authAccount.address
+                const presentAuth = byAddress.get(authorityAddress)
                 const authPresent =
-                    added.has(authAddress) ||
-                    upgrades.some(u => u.address === authAddress) ||
+                    added.has(authorityAddress) ||
+                    upgrades.some(u => u.address === authorityAddress) ||
                     (presentAuth !== undefined && !isWatchAccount(presentAuth))
                 if (
                     authPresent &&
@@ -312,9 +318,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                             chains: {
                                 [LEGACY_CHAIN_ID]: { address: sel.address },
                             },
-                            rekeyAddress: sel.authAccount.address,
                         }),
                     )
+                    authorities.push({
+                        address: sel.address,
+                        authorityAddress,
+                    })
                 }
             }
         }
@@ -350,6 +359,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             store.updateHardwareDetails(rebind.address, rebind.details)
         }
         if (batch.length > 0) {
+            const scope = getSelectedScope(LEGACY_CHAIN_ID)
+            for (const { address, authorityAddress } of authorities) {
+                recordAuthority(scope, address, authorityAddress)
+            }
             setAccounts([...useAccountsStore.getState().accounts, ...batch])
         }
 

@@ -22,6 +22,7 @@ import {
     scopeForLegacyNetwork,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import { authorityOf } from '../../credentials/accessors'
@@ -29,6 +30,7 @@ import { AccountBalancesSchema, upsertAccountBalance } from '../../db'
 import type { WalletAccount } from '../../models'
 import { useAccountChainStateStore } from '../accountChainState'
 import { hydrateAccountChainStates } from '../hydrateAccountChainStates'
+import { stripLegacyAuthority } from '../legacyAuthority'
 import { useAccountsStore } from '../store'
 
 const MAINNET = scopeForLegacyNetwork('mainnet')
@@ -41,7 +43,7 @@ describe('hydrateAccountChainStates', () => {
     const seedRow = (
         address: string,
         scope: typeof MAINNET,
-        authAddress: string | null,
+        authorityAddress: string | null,
     ) =>
         upsertAccountBalance({
             db,
@@ -53,13 +55,24 @@ describe('hydrateAccountChainStates', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal('0.1'),
             status: 'Offline',
-            authAddress,
+            authorityAddress,
         })
 
-    const holdAccount = (patch: Partial<WalletAccount> = {}): WalletAccount => {
-        const account = { ...buildTestAccount('watch'), ...patch }
+    const holdAccount = (): WalletAccount => {
+        const account = buildTestAccount('watch')
         useAccountsStore.getState().setAccounts([account])
         return account
+    }
+
+    // What a pre-upgrade persisted payload leaves behind after rehydrate.
+    const holdLegacyAuthority = (
+        account: WalletAccount,
+        fields: {
+            rekeyAddress?: string
+            rekeyAddressByNetwork?: Record<string, string>
+        },
+    ): void => {
+        stripLegacyAuthority([{ ...account, ...fields }])
     }
 
     beforeEach(async () => {
@@ -85,16 +98,60 @@ describe('hydrateAccountChainStates', () => {
         expect(authorityOf(account, MAINNET)).toBe('AUTH')
     })
 
-    it('seeds a scope with no row from rekeyAddressByNetwork', async () => {
-        const account = holdAccount({ rekeyAddressByNetwork: { testnet: 'T' } })
+    it('seeds a scope with no row from the per-network authority', async () => {
+        const account = holdAccount()
+        holdLegacyAuthority(account, {
+            rekeyAddressByNetwork: { testnet: 'T' },
+        })
 
         await hydrateAccountChainStates({ db })
 
         expect(authorityOf(account, TESTNET)).toBe('T')
     })
 
+    it('seeds a lone scalar under the selected scope', async () => {
+        const account = holdAccount()
+        holdLegacyAuthority(account, { rekeyAddress: 'S' })
+        useNetworkStore.getState().setNetwork('testnet')
+
+        await hydrateAccountChainStates({ db })
+
+        expect(authorityOf(account, TESTNET)).toBe('S')
+        expect(authorityOf(account, MAINNET)).toBeNull()
+    })
+
+    it('ignores the scalar once a per-network map exists', async () => {
+        const account = holdAccount()
+        holdLegacyAuthority(account, {
+            rekeyAddress: 'SCALAR',
+            rekeyAddressByNetwork: { testnet: 'T' },
+        })
+        useNetworkStore.getState().setNetwork('mainnet')
+
+        await hydrateAccountChainStates({ db })
+
+        expect(authorityOf(account, TESTNET)).toBe('T')
+        expect(authorityOf(account, MAINNET)).toBeNull()
+    })
+
+    it('seeds once, so a second hydrate adds nothing', async () => {
+        const account = holdAccount()
+        holdLegacyAuthority(account, {
+            rekeyAddressByNetwork: { testnet: 'T' },
+        })
+        await hydrateAccountChainStates({ db })
+        useAccountChainStateStore.getState().resetState()
+
+        await hydrateAccountChainStates({ db })
+
+        expect(authorityOf(account, TESTNET)).toBeNull()
+    })
+
     it('lets the row beat the seed', async () => {
-        const account = holdAccount({ rekeyAddressByNetwork: { mainnet: 'M' } })
+        const account = holdAccount()
+        holdLegacyAuthority(account, {
+            rekeyAddressByNetwork: { mainnet: 'M' },
+        })
         await seedRow(account.address as string, MAINNET, null)
 
         await hydrateAccountChainStates({ db })

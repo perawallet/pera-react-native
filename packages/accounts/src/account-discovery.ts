@@ -15,6 +15,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { HDWalletAccount, WalletAccount } from './models/accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { buildAccount } from './credentials'
+import { recordAuthority } from './store/accountChainState'
 import {
     accountsAdapterFor,
     addressCodecFor,
@@ -207,18 +208,19 @@ export async function discoverRekeyedAccounts({
 }: DiscoverRekeyedAccountsParams): Promise<WalletAccount[]> {
     const network = useNetworkStore.getState().network
     const { chainId } = accountsAdapterFor(network)
+    const scope = scopeForLegacyNetwork(network)
 
     const tasks = accountAddresses.map(async address => {
         const rekeyedAddresses = await fetchRekeyedAddresses(address, network)
 
-        return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
-            buildAccount({
+        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => {
+            recordAuthority(scope, rekeyedAddress, address)
+            return buildAccount({
                 custody: { kind: 'watch' },
                 chainId,
                 chains: { [chainId]: { address: rekeyedAddress } },
-                rekeyAddress: address,
-            }),
-        )
+            })
+        })
     })
 
     const results = await Promise.all(tasks)

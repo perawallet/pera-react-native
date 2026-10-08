@@ -10,12 +10,15 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAccountsRekeyedTo } from '../useAccountsRekeyedTo'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    MAINNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
     seedAuthority,
@@ -62,6 +65,23 @@ describe('useAccountsRekeyedTo', () => {
             rekeyed,
             target,
         ])
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const rekeyed = held('A')
+        setAccounts([rekeyed, held('PQ')])
+        useNetworkStore.getState().setNetwork('mainnet')
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.accountsDelegatedTo,
+        ).mockImplementation((address, accounts) =>
+            accounts.filter(a => authorityOf(a, MAINNET_SCOPE) === address),
+        )
+        const { result } = renderHook(() => useAccountsRekeyedTo('PQ'))
+        expect(result.current).toEqual([])
+
+        act(() => seedAuthority('A', 'PQ'))
+
+        expect(result.current).toEqual([rekeyed])
     })
 
     it('returns an empty list on a chain without an authority', () => {

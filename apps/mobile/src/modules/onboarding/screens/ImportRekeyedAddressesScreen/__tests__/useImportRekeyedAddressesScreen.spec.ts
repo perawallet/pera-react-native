@@ -21,21 +21,18 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
-// Real rekeyed candidates are watch accounts WITHOUT keyPairId, pointing at
-// the discovered auth address (account-discovery.ts) — LRK-022 fixture
-// realism, so shape drift in the discovery output fails loudly here.
+// Real rekeyed candidates are watch accounts WITHOUT keyPairId; the discovered
+// auth address lives in the chain-state slice, not on the account.
 const MOCK_ACCOUNTS = [
     {
         id: '1',
         address: 'ACC1',
         custody: { kind: 'watch' } as const,
-        rekeyAddress: 'REKEY',
     },
     {
         id: '2',
         address: 'ACC2',
         custody: { kind: 'watch' } as const,
-        rekeyAddress: 'REKEY',
     },
 ]
 
@@ -164,15 +161,13 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
-        // Pin the persisted shape: watch + rekeyAddress, never a signer type.
+        // Pin the persisted shape: watch with no key, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
             custody: { kind: string }
-            rekeyAddress?: string
             keyPairId?: string
         }>
         for (const account of persisted) {
             expect(account.custody.kind).toBe('watch')
-            expect(account.rekeyAddress).toBe('REKEY')
             expect(account.keyPairId).toBeUndefined()
         }
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()

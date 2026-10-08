@@ -12,19 +12,18 @@
 
 import {
     InvalidScopeKeyError,
-    parseScopeKey,
-    rekeyLegacyNetworkRecord,
+    LEGACY_CHAIN_ID,
     scopeFromNetworkColumn,
     toScopeKey,
     type AccountChainState,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
-import { addressOn } from '../credentials/accessors'
 import { getAllAccountBalances } from '../db'
-import { useAccountsStore } from './store'
+import { takeLegacyAuthoritySeeds } from './legacyAuthority'
 import {
     useAccountChainStateStore,
     type AccountChainStateSlice,
@@ -44,7 +43,7 @@ const put = (
 
 /**
  * Fills the chain-state slice from the `account_balances` rows, then seeds
- * scopes with no row from `rekeyAddressByNetwork`. Entries already held win:
+ * scopes with no row from the authority fields a pre-upgrade payload carried. Entries already held win:
  * an in-session write is newer than the read. Never throws.
  */
 export async function hydrateAccountChainStates({
@@ -74,29 +73,25 @@ export async function hydrateAccountChainStates({
         }
 
         // A row is observed state, so it beats the seed.
-        for (const account of useAccountsStore.getState().accounts) {
-            for (const [key, authAddress] of Object.entries(
-                rekeyLegacyNetworkRecord(account.rekeyAddressByNetwork),
-            )) {
-                if (!authAddress) continue
-                const scope = parseScopeKey(key)
-                const address = addressOn(account, scope)
-                if (
-                    address === undefined ||
-                    !accountsChainAdapters.has(scope.chainId) ||
-                    built[key]?.[address]
-                ) {
-                    continue
-                }
-                put(
-                    built,
-                    scope,
-                    address,
-                    accountsChainAdapters
-                        .get(scope.chainId)
-                        .toChainState({ authAddress }),
-                )
+        for (const {
+            scope,
+            address,
+            authorityAddress,
+        } of takeLegacyAuthoritySeeds(getSelectedScope(LEGACY_CHAIN_ID))) {
+            if (
+                !accountsChainAdapters.has(scope.chainId) ||
+                built[toScopeKey(scope)]?.[address]
+            ) {
+                continue
             }
+            put(
+                built,
+                scope,
+                address,
+                accountsChainAdapters
+                    .get(scope.chainId)
+                    .toChainState({ authorityAddress }),
+            )
         }
 
         useAccountChainStateStore

@@ -133,12 +133,6 @@ export const toCurrentAccount = (
         id: record.id,
         ...(record.name !== undefined ? { name: record.name } : {}),
         address: record.address,
-        ...(record.rekeyAddress !== undefined
-            ? { rekeyAddress: record.rekeyAddress }
-            : {}),
-        ...(record.rekeyAddressByNetwork !== undefined
-            ? { rekeyAddressByNetwork: record.rekeyAddressByNetwork }
-            : {}),
         custody: { kind: 'watch' },
         chains: { [LEGACY_CHAIN_ID]: { address: record.address } },
     }
@@ -164,6 +158,4 @@ export const withLegacyMultisigDetails = (
                 },
             },
         },
-        rekeyAddress: account.rekeyAddress,
-        rekeyAddressByNetwork: account.rekeyAddressByNetwork,
     })

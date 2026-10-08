@@ -67,7 +67,7 @@ describe('useAccountInformationQuery', () => {
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
-            authAddress: null,
+            authorityAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([
             { assetId: '123', amount: new Decimal(500), isFrozen: true },
@@ -147,7 +147,7 @@ describe('useAccountInformationQuery', () => {
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
-            authAddress: null,
+            authorityAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([])
 

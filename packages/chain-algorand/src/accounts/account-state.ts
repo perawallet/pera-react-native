@@ -143,7 +143,7 @@ export async function fetchAlgorandAccountState(
     const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0
     const totalCreatedAssets = info.totalCreatedAssets ?? 0
     const totalAppsOptedIn = info.totalAppsOptedIn ?? 0
-    const authAddress = info.authAddr?.toString() ?? null
+    const authorityAddress = info.authAddr?.toString() ?? null
 
     return {
         nativeBalance: microAlgosToAlgos(info.amount),
@@ -153,10 +153,12 @@ export async function fetchAlgorandAccountState(
         totalCreatedAssets,
         totalAppsOptedIn,
         status: info.status ?? 'Offline',
-        authAddress,
+        authorityAddress,
         chainState: {
             family: 'algorand',
-            ...(authAddress === null ? {} : { authAddress }),
+            ...(authorityAddress === null
+                ? {}
+                : { authAddress: authorityAddress }),
             minBalance: new Decimal(info.minBalance.toString()),
             status: toParticipationStatus(info.status),
             totalAssetsOptedIn,

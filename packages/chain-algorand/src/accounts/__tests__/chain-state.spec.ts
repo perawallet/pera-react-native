@@ -19,7 +19,7 @@ describe('toAlgorandChainState', () => {
         const state = toAlgorandChainState({
             minBalance: new Decimal('0.1'),
             status: 'Online',
-            authAddress: 'AUTH',
+            authorityAddress: 'AUTH',
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 2,
             totalAppsOptedIn: 3,
@@ -36,20 +36,23 @@ describe('toAlgorandChainState', () => {
         })
     })
 
-    it('leaves authAddress out when null', () => {
-        expect(toAlgorandChainState({ authAddress: null })).not.toHaveProperty(
-            'authAddress',
-        )
+    it('leaves the authority out when null', () => {
+        expect(
+            toAlgorandChainState({ authorityAddress: null }),
+        ).not.toHaveProperty('authAddress')
     })
 
     it('reads an unknown status as Offline', () => {
         expect(
-            toAlgorandChainState({ authAddress: null, status: 'Weird' }).status,
+            toAlgorandChainState({
+                authorityAddress: null,
+                status: 'Weird',
+            }).status,
         ).toBe('Offline')
     })
 
     it('takes the column defaults for a bare authority', () => {
-        expect(toAlgorandChainState({ authAddress: 'X' })).toEqual({
+        expect(toAlgorandChainState({ authorityAddress: 'X' })).toEqual({
             family: 'algorand',
             minBalance: new Decimal(0),
             status: 'Offline',

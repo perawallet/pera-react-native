@@ -109,7 +109,7 @@ describe('fetchAlgorandAccountState', () => {
             totalCreatedAssets: 1,
             totalAppsOptedIn: 0,
             status: 'Online',
-            authAddress: 'REKEY_ADDR',
+            authorityAddress: 'REKEY_ADDR',
             chainState: {
                 family: 'algorand',
                 authAddress: 'REKEY_ADDR',
@@ -160,7 +160,7 @@ describe('fetchAlgorandAccountState', () => {
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
             chainState: {
                 family: 'algorand',
                 minBalance: new Decimal(0),

@@ -11,11 +11,12 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 import {
     accountType,
     AccountTypes,
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
     useRekeyTransition,
     type WalletAccount,
@@ -55,11 +56,12 @@ export const useAccountTypeLabel = (
     const { t } = useLanguage()
     const canSign = useCanSignWith(account)
     const rekeyTransition = useRekeyTransition(account?.address)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     return useMemo(() => {
         if (!account) return plain('')
 
-        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
+        if (authority !== null) {
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }
@@ -96,5 +98,5 @@ export const useAccountTypeLabel = (
                 return plain(t('account_info.type_unknown'))
             }
         }
-    }, [account, canSign, rekeyTransition, t])
+    }, [account, authority, canSign, rekeyTransition, t])
 }

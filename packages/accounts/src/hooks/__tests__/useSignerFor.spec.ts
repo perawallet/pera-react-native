@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useSignerFor } from '../useSignerFor'
 import { useCanSignWith } from '../useCanSignWith'
@@ -18,6 +20,7 @@ import { useRekeyAccount } from '../useRekeyAccount'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
     seedAuthority,
@@ -38,6 +41,7 @@ const setAccounts = (accounts: WalletAccount[]) =>
 beforeEach(() => {
     useAccountsStore.getState().resetState()
     useAccountChainStateStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('mainnet')
     registerFakeAccountsChain()
 })
 
@@ -67,6 +71,32 @@ describe('useSignerFor', () => {
         const { result } = renderHook(() => useSignerFor('A'))
 
         expect(result.current).toBeNull()
+    })
+
+    it('follows a rekey held on one network across a network switch', () => {
+        const auth = held('S')
+        const account = held('A')
+        setAccounts([account, auth])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockImplementation(
+            (target, accounts, scope) => ({
+                kind: 'ok',
+                signer:
+                    accounts.find(
+                        a => a.address === authorityOf(target, scope),
+                    ) ?? target,
+            }),
+        )
+        seedAuthority('A', 'S', TESTNET_SCOPE)
+        useNetworkStore.getState().setNetwork('mainnet')
+
+        const { result } = renderHook(() => useSignerFor('A'))
+        expect(result.current).toBe(account)
+
+        act(() => useNetworkStore.getState().setNetwork('testnet'))
+        expect(result.current).toBe(auth)
+
+        act(() => seedAuthority('A', null, TESTNET_SCOPE))
+        expect(result.current).toBe(account)
     })
 
     it('returns null for an unknown address', () => {

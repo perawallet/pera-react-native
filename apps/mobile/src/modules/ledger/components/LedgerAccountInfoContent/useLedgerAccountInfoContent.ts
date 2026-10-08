@@ -79,16 +79,12 @@ const ledgerDisplayAccount = (
         chains: { [LEGACY_CHAIN_ID]: { address } },
     })
 
-const watchDisplayAccount = (
-    address: string,
-    rekeyAddress?: string,
-): WatchAccount =>
+const watchDisplayAccount = (address: string): WatchAccount =>
     buildAccount({
         id: address,
         custody: { kind: 'watch' },
         chainId: LEGACY_CHAIN_ID,
         chains: { [LEGACY_CHAIN_ID]: { address } },
-        rekeyAddress,
     })
 
 export const useLedgerAccountInfoContent = (
@@ -106,14 +102,11 @@ export const useLedgerAccountInfoContent = (
 
         // Build the synth account for the sheet's own address.
         // If the account is rekeyed to an auth address, render it as a watch
-        // account with rekeyAddress set. Otherwise render it as a hardware
+        // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
             preview.rekey.kind === 'rekeyedTo'
-                ? watchDisplayAccount(
-                      preview.address,
-                      preview.rekey.authAddress,
-                  )
+                ? watchDisplayAccount(preview.address)
                 : ledgerDisplayAccount(preview.address, accountIndex)
 
         // Extract usdPrice from the ALGO preview asset for the account row.
@@ -169,7 +162,7 @@ export const useLedgerAccountInfoContent = (
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
             // only reads kind/address/name for display.
             const authSynthAccount = ledgerDisplayAccount(
-                preview.rekey.authAddress,
+                preview.rekey.authorityAddress,
                 0,
             )
             list.push(
@@ -180,7 +173,7 @@ export const useLedgerAccountInfoContent = (
                 },
                 {
                     kind: 'authorityAccount',
-                    key: `rekey-${preview.rekey.authAddress}`,
+                    key: `rekey-${preview.rekey.authorityAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
                 },

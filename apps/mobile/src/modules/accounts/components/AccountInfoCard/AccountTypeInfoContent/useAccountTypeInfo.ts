@@ -11,13 +11,14 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useMemo } from 'react'
 import {
     accountType,
     type AccountType,
     AccountTypes,
     isMultisigAccount,
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
     useRekeyTransition,
     type WalletAccount,
@@ -100,6 +101,7 @@ export const useAccountTypeInfo = ({
     const { pushWebView } = useWebView()
     const canSign = useCanSignWith(account)
     const rekeyTransition = useRekeyTransition(account.address)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const { title, titleQualifier, description } = useMemo(() => {
         if (rekeyTransition) {
@@ -114,7 +116,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
+        if (authority !== null) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N
@@ -139,7 +141,7 @@ export const useAccountTypeInfo = ({
             titleQualifier: null,
             description: t(i18n.description),
         }
-    }, [account, canSign, rekeyTransition, t])
+    }, [account, authority, canSign, rekeyTransition, t])
 
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own

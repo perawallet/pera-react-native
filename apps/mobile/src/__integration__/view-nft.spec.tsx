@@ -151,7 +151,7 @@ describe('Flow: View NFT collectible detail', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         server.use(

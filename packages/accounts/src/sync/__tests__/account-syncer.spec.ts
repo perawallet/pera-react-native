@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
-import { authorityOf } from '../../credentials/accessors'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
@@ -59,7 +58,7 @@ describe('fetchAndPersistAccount', () => {
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
                 status: 'Offline',
-                authAddress: 'S',
+                authorityAddress: 'S',
                 chainState: {
                     family: 'algorand',
                     authAddress: 'S',
@@ -88,9 +87,11 @@ describe('fetchAndPersistAccount', () => {
         ])
     })
 
-    it('mirrors the chain authAddr into the Zustand account', async () => {
+    it('records the chain authAddr as the account authority', async () => {
         await fetchAndPersistAccount('A', 'mainnet' as Network)
 
+        // Imported after resetModules, so it reads this graph's slice.
+        const { authorityOf } = await import('../../credentials/accessors')
         const account = useAccountsStore
             .getState()
             .accounts.find(a => a.address === 'A')

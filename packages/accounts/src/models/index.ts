@@ -33,12 +33,6 @@ export type AccountsState = BaseStoreState & {
     selectedAccountAddress: Nullable<string>
     sortMode: AccountSortMode
     manualAccountOrder: string[]
-    /**
-     * The network the `rekeyAddress` mirrors currently reflect. Session-only;
-     * null until the first `applyNetworkRekeyState` call, during which rekey
-     * writes treat their own network as the active one.
-     */
-    activeRekeyNetwork: Nullable<Network>
     /** Which account a cold start selects. See `applyLaunchAccountPreference`. */
     launchAccountMode: LaunchAccountMode
     /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
@@ -69,27 +63,8 @@ export type AccountsState = BaseStoreState & {
      */
     applyLaunchAccountPreference: () => void
     setManualAccountOrder: (order: string[]) => void
-    /**
-     * Record the auth-addr observed for `address` on `network`, and update
-     * the active-network `rekeyAddress` mirror when `network` is the active
-     * one. Rekeys are per-network on-chain, so an inactive-network sync must
-     * never overwrite the mirror.
-     */
-    updateAccountRekeyAddress: (
-        address: string,
-        rekeyAddress: string | null,
-        network: Network,
-    ) => void
-    /**
-     * Re-derive every account's `rekeyAddress` mirror from its per-network
-     * state for `network`. Called on network switch so badges and
-     * signability are correct immediately, without a sync round-trip.
-     * Accounts persisted before per-network state existed keep their mirror
-     * until a sync tick writes the map.
-     */
-    applyNetworkRekeyState: (network: Network) => void
-    /** Append watch-only accounts whose rekeyAddress points at `sourceAddress`
-     * (scanned on `network`), skipping addresses that are already present in
+    /** Append watch-only accounts and record `sourceAddress` as each one's
+     * authority on `network`, skipping addresses that are already present in
      * the store. Returns the number of accounts actually appended. Validation
      * (Algorand-address shape) is the caller's responsibility. */
     addRekeyedWatchAccounts: (
@@ -99,7 +74,7 @@ export type AccountsState = BaseStoreState & {
     ) => number
     /**
      * Replace the watch account at `address` with a hardware account bound to
-     * `hardwareDetails`, preserving its id, name and rekey state. Returns
+     * `hardwareDetails`, preserving its id and name. Returns
      * whether an upgrade happened; refuses (false) when the address is
      * missing or not a watch account. Callers own the user confirmation.
      */

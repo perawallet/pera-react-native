@@ -152,7 +152,7 @@ describe('resolveSignerForAccount — tagged resolution', () => {
         ).toEqual({
             kind: 'authMissing',
             account,
-            authAddress: 'GONE',
+            authorityAddress: 'GONE',
         })
     })
 
@@ -304,7 +304,7 @@ describe('the adapter resolves on the scope it is given', () => {
 
         expect(
             algorandAccountsAdapter.resolveSigner(account, [account], testnet),
-        ).toEqual({ kind: 'authMissing', account, authAddress: 'GONE' })
+        ).toEqual({ kind: 'authMissing', account, authorityAddress: 'GONE' })
     })
 })
 
