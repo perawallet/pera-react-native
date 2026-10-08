@@ -45,16 +45,23 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
 import {
     buildAccount,
+    canDerive,
     canImportRawKey,
     chainAccountOf,
     findAddressHolder,
+    findPathHolder,
     isKeyReferenced,
+    seedMintableScheme,
 } from '../credentials'
 import {
     toCurrentAccount,
     type PersistedAccountRecord,
 } from '../credentials/backfill'
-import { DuplicateAccountError, RawKeyImportUnsupportedError } from '../errors'
+import {
+    DuplicateAccountError,
+    RawKeyImportUnsupportedError,
+    WalletCannotDeriveError,
+} from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
 import { liftLegacyAuthority } from './legacyAuthority'
 import {
@@ -409,6 +416,72 @@ export const useAccountsStore: UseBoundStore<
                 } finally {
                     zeroBytes(privateKey)
                 }
+            },
+            addChainAccount: async (walletId, chainId, index, name) => {
+                const scheme = seedMintableScheme(chainId)
+                if (
+                    scheme === undefined ||
+                    !canDerive(get().accounts, walletId, chainId)
+                ) {
+                    throw new WalletCannotDeriveError(walletId, chainId)
+                }
+                const networkId = selectChainNetworkId(
+                    useNetworkStore.getState(),
+                    chainId,
+                )
+                const { address, keyPairId } = await keyDerivations
+                    .get(chainId)
+                    .deriveAccount(
+                        kmsCore,
+                        walletId,
+                        index.account,
+                        index.keyIndex,
+                        { scheme, networkId },
+                    )
+
+                // Read after the derivation: the store can change across the await.
+                const { accounts } = get()
+                const addressHolder = findAddressHolder(
+                    accounts,
+                    { chainId, networkId },
+                    address,
+                )
+                if (addressHolder) {
+                    throw new DuplicateAccountError(address, addressHolder)
+                }
+
+                const entry = { address, keyPairId }
+                const holder = findPathHolder(accounts, walletId, index)
+                if (!holder) {
+                    const account = buildAccount({
+                        name,
+                        custody: {
+                            kind: 'local',
+                            seed: 'bip39',
+                            hd: {
+                                account: index.account,
+                                keyIndex: index.keyIndex,
+                            },
+                        },
+                        chainId,
+                        chains: { [chainId]: entry },
+                    })
+                    get().addAccount(account)
+                    return account
+                }
+                const existing = chainAccountOf(holder, chainId)
+                if (existing) {
+                    throw new DuplicateAccountError(existing.address, holder)
+                }
+                // Not `buildAccount`: it would rewrite the top-level fields from this chain.
+                const updated = {
+                    ...holder,
+                    chains: { ...holder.chains, [chainId]: entry },
+                }
+                get().setAccounts(
+                    accounts.map(a => (a.id === holder.id ? updated : a)),
+                )
+                return updated
             },
             setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts

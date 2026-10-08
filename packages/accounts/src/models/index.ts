@@ -17,6 +17,7 @@ import type {
     HardwareWalletDetails,
     LaunchAccountMode,
 } from './accounts'
+import type { HdIndex } from './credentials'
 import type {
     BaseStoreState,
     Network,
@@ -80,6 +81,19 @@ export type AccountsState = BaseStoreState & {
     importAccountFromPrivateKey: (
         chainId: ChainId,
         privateKey: Uint8Array,
+        name?: string,
+    ) => Promise<WalletAccount>
+    /**
+     * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
+     * (the seed's KMS id, as `seedOf` returns), or creates an account there.
+     * Throws `WalletCannotDeriveError` when the wallet can't mint on the chain,
+     * and `DuplicateAccountError` naming the holder when the address or the
+     * chain entry is already held. `name` applies only to a new account.
+     */
+    addChainAccount: (
+        walletId: string,
+        chainId: ChainId,
+        index: HdIndex,
         name?: string,
     ) => Promise<WalletAccount>
     setSelectedAccountAddress: (address: Nullable<string>) => void

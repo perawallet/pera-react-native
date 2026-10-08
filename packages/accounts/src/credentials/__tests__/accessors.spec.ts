@@ -113,6 +113,15 @@ describe('accessors on every stored shape', () => {
         expect(addressOn(account, elsewhere)).toBeUndefined()
         expect(signingKeyOn(account, 'other' as never)).toBeUndefined()
     })
+
+    test("a chains map answers alone, so another chain's top-level address is not Algorand's", () => {
+        const account = {
+            ...buildTestAccount('hdWallet'),
+            chains: { other: { address: '0xabc' } },
+        } as unknown as WalletAccount
+
+        expect(chainAccountOf(account, 'algorand')).toBeUndefined()
+    })
 })
 
 describe('authorityOf', () => {

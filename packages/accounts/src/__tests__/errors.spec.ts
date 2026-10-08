@@ -11,7 +11,12 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { AccountError, DuplicateAccountError, NoHDWalletError } from '../errors'
+import {
+    AccountError,
+    DuplicateAccountError,
+    NoHDWalletError,
+    WalletCannotDeriveError,
+} from '../errors'
 
 describe('account error copy', () => {
     test('NoHDWalletError declares its key and walletKeyId param', () => {
@@ -25,6 +30,19 @@ describe('account error copy', () => {
         const error = new AccountError('some internal detail')
 
         expect(error.metadata.messageKey).toBe('errors.account.generic')
+    })
+
+    test('WalletCannotDeriveError keeps the generic key and names wallet and chain', () => {
+        const error = new WalletCannotDeriveError(
+            'hd-seed',
+            'fixturehex' as never,
+        )
+
+        expect(error.metadata.messageKey).toBe('errors.account.generic')
+        expect(error.metadata.params).toEqual({
+            walletId: 'hd-seed',
+            chainId: 'fixturehex',
+        })
     })
 
     test('DuplicateAccountError surfaces generic account copy', () => {
