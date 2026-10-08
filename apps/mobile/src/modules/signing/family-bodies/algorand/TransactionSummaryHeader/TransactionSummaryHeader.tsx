@@ -20,7 +20,7 @@ import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 import { AppCallSummaryHeader } from './AppCallSummaryHeader'
 import { GenericSummaryHeader } from './GenericSummaryHeader'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { SourceMetadataBadge } from '../SourceMetadataBadge'
+import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
 
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction

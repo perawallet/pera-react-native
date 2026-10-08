@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { AlgorandTransactionDetailBody } from './algorand/AlgorandTransactionDetailBody'
+import { AlgorandTransactionReviewBody } from './algorand/AlgorandTransactionReviewBody'
+import type { TransactionBodyRegistry } from './types'
 
-export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        flexGrow: 1,
-        gap: theme.spacing.lg,
-        justifyContent: 'space-between',
+export const transactionBodyRegistry: TransactionBodyRegistry = {
+    algorand: {
+        reviewBody: AlgorandTransactionReviewBody,
+        detailBody: AlgorandTransactionDetailBody,
     },
-}))
+}

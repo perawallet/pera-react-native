@@ -113,11 +113,11 @@ describe('useTransactionDetailsScreen', () => {
 
         expect(result.current.renderState.kind).toBe('content')
         if (result.current.renderState.kind === 'content') {
-            expect(result.current.renderState.transaction.id).toBe('TX123')
-            expect(
-                result.current.renderState.transaction.paymentTransaction
-                    ?.amount,
-            ).toBe(2_500_000n)
+            const { family, transaction } =
+                result.current.renderState.transaction
+            expect(family).toBe('algorand')
+            expect(transaction.id).toBe('TX123')
+            expect(transaction.paymentTransaction?.amount).toBe(2_500_000n)
         }
     })
 
@@ -211,7 +211,10 @@ describe('useTransactionDetailsScreen', () => {
 
         expect(result.current.renderState.kind).toBe('content')
         if (result.current.renderState.kind === 'content') {
-            expect(result.current.renderState.transaction).toBe(fetched)
+            expect(result.current.renderState.transaction).toEqual({
+                family: 'algorand',
+                transaction: fetched,
+            })
         }
     })
 
@@ -226,9 +229,10 @@ describe('useTransactionDetailsScreen', () => {
 
         expect(result.current.renderState.kind).toBe('content')
         if (result.current.renderState.kind === 'content') {
-            expect(result.current.renderState.transaction).toBe(
-                paramTransaction,
-            )
+            expect(result.current.renderState.transaction).toEqual({
+                family: 'algorand',
+                transaction: paramTransaction,
+            })
         }
         expect(mockUseTransactionDetailQuery).toHaveBeenCalledWith(
             expect.objectContaining({ isEnabled: false }),
@@ -264,7 +268,7 @@ describe('useTransactionDetailsScreen', () => {
         expect(mockRefetch).not.toHaveBeenCalled()
     })
 
-    it('pushes a new details screen for inner transactions', () => {
+    it('pushes a new details screen for a group transaction', () => {
         routeParams.current = {
             transactionId: 'TX123',
             historyTransaction: historyItem,
@@ -275,6 +279,28 @@ describe('useTransactionDetailsScreen', () => {
         const inner = { id: 'INNER' } as unknown as PeraDisplayableTransaction
         act(() => {
             result.current.handleTransactionPress(inner)
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
+            transaction: inner,
+            groupId: 'GROUP1',
+        })
+    })
+
+    it('pushes a new details screen with the unwrapped related transaction', () => {
+        routeParams.current = {
+            transactionId: 'TX123',
+            historyTransaction: historyItem,
+            groupId: 'GROUP1',
+        }
+
+        const { result } = renderHook(() => useTransactionDetailsScreen())
+        const inner = { id: 'INNER' } as unknown as PeraDisplayableTransaction
+        act(() => {
+            result.current.handleRelatedTransactionPress({
+                family: 'algorand',
+                transaction: inner,
+            })
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {

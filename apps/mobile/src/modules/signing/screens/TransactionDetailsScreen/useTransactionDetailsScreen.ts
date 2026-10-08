@@ -28,6 +28,7 @@ import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
+import type { FamilyTransaction } from '@modules/signing/family-bodies/types'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<
@@ -41,7 +42,7 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 type TransactionDetailsRenderState =
-    | { kind: 'content'; transaction: PeraDisplayableTransaction }
+    | { kind: 'content'; transaction: FamilyTransaction }
     | { kind: 'loading' }
     | { kind: 'offline' }
     | { kind: 'error'; titleKey: string; bodyKey: string }
@@ -52,6 +53,7 @@ type UseTransactionDetailsScreenResult = {
     currentTransactionId: string
     isExternal: boolean
     handleTransactionPress: (tx: PeraDisplayableTransaction) => void
+    handleRelatedTransactionPress: (related: FamilyTransaction) => void
     handleRetry: () => void
 }
 
@@ -97,7 +99,11 @@ export const useTransactionDetailsScreen =
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
             if (transaction) {
-                return { kind: 'content', transaction }
+                // Both sources here (indexer, Algorand history row) are Algorand-only.
+                return {
+                    kind: 'content',
+                    transaction: { family: 'algorand', transaction },
+                }
             }
             // Offline wins over a stale error: a device that goes offline
             // carrying a prior error (e.g. `timeout`) must show the offline
@@ -136,6 +142,13 @@ export const useTransactionDetailsScreen =
             [navigation, groupId],
         )
 
+        const handleRelatedTransactionPress = useCallback(
+            (related: FamilyTransaction) => {
+                handleTransactionPress(related.transaction)
+            },
+            [handleTransactionPress],
+        )
+
         const handleRetry = useCallback(() => {
             // Offline: skip the doomed request (30 s timeout) — the offline
             // copy on screen already promises a refresh on reconnect. Matches
@@ -152,6 +165,7 @@ export const useTransactionDetailsScreen =
             currentTransactionId: transaction?.id ?? transactionId ?? '',
             isExternal: isExternal ?? false,
             handleTransactionPress,
+            handleRelatedTransactionPress,
             handleRetry,
         }
     }

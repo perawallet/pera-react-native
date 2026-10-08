@@ -10,12 +10,16 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { DetailBodyProps } from '../../types'
+import { TransactionDisplay } from '../TransactionDisplay'
 
-export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        flexGrow: 1,
-        gap: theme.spacing.lg,
-        justifyContent: 'space-between',
-    },
-}))
+export const AlgorandTransactionDetailBody = ({
+    transaction,
+    onRelatedTransactionPress,
+}: DetailBodyProps<PeraDisplayableTransaction>) => (
+    <TransactionDisplay
+        transaction={transaction}
+        onInnerTransactionsPress={onRelatedTransactionPress}
+    />
+)

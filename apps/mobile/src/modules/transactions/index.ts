@@ -14,12 +14,18 @@
 // own navigator), live in `@modules/transactions/routes`.
 export { QuantumFeeExplainer } from './components/QuantumFeeExplainer'
 export {
+    AppCallTransactionDisplay,
+    AssetConfigDisplay,
+    AssetFreezeDisplay,
+    AssetTransferDisplay,
     GroupTransactionsPanel,
+    HeartbeatDisplay,
+    KeyRegistrationDisplay,
+    PaymentTransactionDisplay,
     TransactionPreview,
 } from './components/transaction-details'
 export { getKeyRegType } from './components/transaction-details/KeyRegistrationDisplay/utils'
 export { TransactionDateHeader } from './components/TransactionDateHeader'
-export { TransactionDisplay } from './components/TransactionDisplay'
 export { TransactionListItem } from './components/TransactionListItem'
 export { useReceiveFunds, useSendFunds, useSendFundsStore } from './hooks'
 export {
