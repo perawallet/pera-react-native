@@ -76,6 +76,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    getSelectedScope: vi.fn((chainId: string) => ({
+        chainId,
+        networkId: 'testnet',
+    })),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -106,6 +110,7 @@ vi.mock('../../store', async importOriginal => {
 
 // Imports (must follow vi.mock calls)
 
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningActorLifecycle,
     __resetSigningActorRegistryForTests,
@@ -231,6 +236,24 @@ describe('useSigningActorLifecycle', () => {
         expect(createSigningMachine).toHaveBeenCalledTimes(1)
         expect(actor.start).toHaveBeenCalled()
         expect(actor.subscribe).toHaveBeenCalled()
+    })
+
+    test("captures the request chain's selected scope for the machine and its transports", async () => {
+        const actor = makeMockActor('tx-1')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+
+        renderHook(() => useSigningActorLifecycle())
+        act(() => {
+            useSigningStore.getState().addSignRequest(makeTxRequest())
+        })
+        await flushQueue()
+
+        const deps = vi.mocked(createSigningMachine).mock.calls[0][2]
+        expect(getSelectedScope).toHaveBeenCalledWith('algorand')
+        expect(deps.scope).toEqual({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
     })
 
     test("hands the machine an encoder that returns the planner's unsigned bytes", async () => {

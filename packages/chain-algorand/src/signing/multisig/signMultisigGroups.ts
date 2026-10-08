@@ -62,7 +62,7 @@ export const signMultisigGroups = async (
         encodeTransaction,
         hardwareWalletRegistry,
         signingCallbacks,
-        network,
+        scope,
     } = input
 
     const selectStrategy = createSigningStrategySelector({
@@ -73,7 +73,7 @@ export const signMultisigGroups = async (
         hardwareWalletRegistry,
         getLocalParticipants: getProposeParticipants,
         getAllAccounts: () => allAccounts,
-        network,
+        scope,
     })
 
     return signGroupsBySignerAccount(

@@ -30,6 +30,7 @@ import {
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
+import { algorandNetworkOf } from '../legacy-network'
 
 /**
  * Creates the standard analyzer that provides basic analysis:
@@ -59,10 +60,11 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     )
                 }
 
+                const network = algorandNetworkOf(context.scope)
                 assertTransactionsMatchNetwork(
                     transactions,
-                    context.network,
-                    getExpectedGenesisHash(context.network),
+                    network,
+                    getExpectedGenesisHash(network),
                 )
 
                 const accountAddresses = new Set(

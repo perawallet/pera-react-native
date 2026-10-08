@@ -13,16 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetworkStore: {
-        getState: () => ({ network: 'testnet' }),
-        subscribe: () => () => {},
-    },
-}))
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { transportActor, type TransportActorInput } from '../transportActor'
 import { createTransportSelector } from '../../../../pipeline/transports/getTransport'
@@ -33,6 +25,11 @@ import {
     registerFakeBroadcaster,
 } from '../../../../__tests__/fakeBroadcaster'
 import { registerFakePlannerAdapter } from '../../../../__tests__/fakePlannerAdapter'
+
+const ALGORAND_TESTNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'testnet',
+}
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -76,7 +73,7 @@ const makeInput = (
     signerAddress: MOCK_ADDRESS,
     allAccounts: [mockAlgo25Account],
     createTransport: createTransportSelector({
-        network: 'testnet',
+        scope: ALGORAND_TESTNET,
     }),
     ...overrides,
 })
@@ -84,6 +81,8 @@ const makeInput = (
 describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useNetworkStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('testnet')
         registerFakeBroadcaster({
             createSubmitTransport: () =>
                 algodBackedTransport(mockAlgokit, mockEncodeSignedTransactions),
@@ -164,7 +163,7 @@ describe('transportActor', () => {
         const input = makeInput(source, {
             createTransport: createTransportSelector({
                 addSignatures: mockAddSignatures,
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             }),
         })
         const actor = createActor(transportActor, { input })
@@ -248,7 +247,7 @@ describe('transportActor', () => {
                 signerAddress: J1_ADDRESS,
                 allAccounts: [jointSender, authAccount],
                 createTransport: createTransportSelector({
-                    network: 'testnet',
+                    scope: ALGORAND_TESTNET,
                     proposeSignRequest: proposeMock,
                     getMsigMetadata: () => undefined,
                     getDeviceId: () => 'device-1',
@@ -295,7 +294,7 @@ describe('transportActor', () => {
             {
                 allAccounts: [rekeyedSender, msigAuth],
                 createTransport: createTransportSelector({
-                    network: 'testnet',
+                    scope: ALGORAND_TESTNET,
                     proposeSignRequest: proposeMock,
                     getMsigMetadata: () => undefined,
                     getDeviceId: () => 'device-1',
@@ -330,7 +329,7 @@ describe('transportActor', () => {
             allAccounts: [rekeyedParticipant],
             createTransport: createTransportSelector({
                 addSignatures: mockAddSignatures,
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             }),
         })
         const actor = createActor(transportActor, { input })

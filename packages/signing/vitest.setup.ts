@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, vi } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeBroadcaster } from './src/__tests__/fakeBroadcaster'
 import { registerFakeLocalKeySignerAdapter } from './src/__tests__/fakeLocalKeySignerAdapter'
 import { registerFakeMessageSignerAdapter } from './src/__tests__/fakeMessageSignerAdapter'
@@ -18,6 +19,10 @@ import { registerFakePlannerAdapter } from './src/__tests__/fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './src/__tests__/fakeReviewerAdapter'
 
 const store = new Map<string, string>()
+
+// One instance for the whole file: the network store's per-chain selection
+// reads it through getProvider().
+const chains = createChainRegistry()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
@@ -49,6 +54,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 store.delete(key)
             },
         },
+        chains,
     }),
 }))
 

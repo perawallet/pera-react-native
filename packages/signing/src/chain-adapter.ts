@@ -123,10 +123,6 @@ export interface ReviewerChainAdapter {
 export const reviewerChainAdapters =
     createChainAdapterRegistry<ReviewerChainAdapter>('reviewer')
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const reviewerAdapterFor = (network: Network): ReviewerChainAdapter =>
-    reviewerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
-
 export type WithChain<F extends (...args: never[]) => unknown> = (
     chainId: ChainId,
     ...args: Parameters<F>
@@ -332,7 +328,7 @@ export type LocalKeySignerInput = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
-    network: Network
+    scope: ChainScope
 }
 
 export type MultisigSignerInput = LocalKeySignerInput & {
@@ -751,14 +747,14 @@ export interface PlannerChainAdapter {
     signMultisigGroups(input: MultisigSignerInput): Promise<SigningResult[]>
     createMultisigProposeTransport(
         proposeSignRequest: ProposeSignRequestFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
         getMsigMetadata: GetMsigMetadataFn,
         getDeviceId: GetDeviceIdFn,
         createDraftSignRequest?: CreateDraftSignRequestFn,
     ): DataTransport
     createMultisigCosignTransport(
         addSignatures: AddSignaturesFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
     ): DataTransport
     /** Removes and returns the stashed context; call once, after the bootstrap propose succeeded. */
     takeDraftProposeContext(

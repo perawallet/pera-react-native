@@ -10,27 +10,26 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { toError, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
+import { toError } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../types'
-import { NetworkChangedError, TransportError } from '../errors'
+import { TransportError } from '../errors'
 
 /**
  * Creates a transport that sends signed data back to a WalletConnect dApp.
  * The dApp is responsible for submitting to the network.
  *
- * @param capturedNetwork - The network that was active when the signing actor
- *   was created. The live network is re-checked before handing signed bytes
- *   back to the dApp — if the user switched networks mid-flow we abort so the
- *   dApp never receives signatures intended for the wrong chain.
+ * @param capturedScope - Re-checked with `assertScopeUnchanged` before the
+ *   signed bytes are handed back to the dApp.
  */
 export const createWalletConnectTransport = (
-    capturedNetwork: Network,
+    capturedScope: ChainScope,
 ): DataTransport => {
     return {
         send: async (
@@ -51,10 +50,7 @@ export const createWalletConnectTransport = (
                 )
             }
 
-            const liveNetwork = useNetworkStore.getState().network
-            if (liveNetwork !== capturedNetwork) {
-                throw new NetworkChangedError(capturedNetwork, liveNetwork)
-            }
+            assertScopeUnchanged(capturedScope)
 
             try {
                 // Call the approve callback with the signing result

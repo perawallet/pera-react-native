@@ -137,7 +137,7 @@ const buildInput = (
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
     encodeTransaction: vi.fn(),
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     ...overrides,
 })
 

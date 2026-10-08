@@ -18,7 +18,6 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningMachineContext,
     SigningMachineEvent,
@@ -40,8 +39,8 @@ import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 import { broadcasterChainAdapters } from '../broadcaster'
 import {
-    localKeySignerAdapterFor,
-    plannerAdapterFor,
+    localKeySignerChainAdapters,
+    plannerAdapterForScope,
     type LocalKeySignerInput,
     type MultisigSignerInput,
 } from '../chain-adapter'
@@ -91,12 +90,14 @@ export const signingMachine = setup({
         analyzerActor,
         localKeySignerActor: fromPromise<SigningResult[], LocalKeySignerInput>(
             ({ input }) =>
-                localKeySignerAdapterFor(input.network).signGroups(input),
+                localKeySignerChainAdapters
+                    .get(input.scope.chainId)
+                    .signGroups(input),
         ),
         hardwareSigningMachine,
         multisigSignerActor: fromPromise<SigningResult[], MultisigSignerInput>(
             ({ input }) =>
-                plannerAdapterFor(input.network).signMultisigGroups(input),
+                plannerAdapterForScope(input.scope).signMultisigGroups(input),
         ),
         transportActor,
     },
@@ -236,7 +237,7 @@ export const signingMachine = setup({
         setTransportTimeoutError: assign({
             error: ({ context }) =>
                 broadcasterChainAdapters
-                    .get(scopeForLegacyNetwork(context.deps.network).chainId)
+                    .get(context.deps.scope.chainId)
                     .submitTimeoutError(config.signingTransportTimeout),
             failedDuringState: () => 'transporting' as const,
         }),
@@ -293,7 +294,7 @@ export const signingMachine = setup({
                         'signableGroups',
                     ),
                     context: {
-                        network: context.deps.network,
+                        scope: context.deps.scope,
                         accounts: context.allAccounts,
                     },
                 }),
@@ -363,7 +364,7 @@ export const signingMachine = setup({
                             signTransactions: context.deps.signTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
                             signAuthData: context.deps.signAuthData,
-                            network: context.deps.network,
+                            scope: context.deps.scope,
                         }),
                         onDone: {
                             target: 'dispatching',
@@ -478,7 +479,7 @@ export const signingMachine = setup({
                             encodeTransaction: context.deps.encodeTransaction,
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry,
-                            network: context.deps.network,
+                            scope: context.deps.scope,
                         }),
                         onDone: {
                             target: 'dispatching',

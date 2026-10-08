@@ -11,6 +11,11 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { createTransportSelector } from '../getTransport'
 import {
     algodBackedTransport,
@@ -25,12 +30,10 @@ import type {
 import type { DataTransport } from '../../types'
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: {
-        getState: () => ({ network: 'testnet' }),
-        subscribe: () => () => {},
-    },
-}))
+const ALGORAND_TESTNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'testnet',
+}
 
 const algo25Account: WalletAccount = {
     type: 'algo25',
@@ -55,7 +58,7 @@ const MSIG_METADATA = {
 }
 
 const baseOptions = () => ({
-    network: 'testnet' as const,
+    scope: ALGORAND_TESTNET,
     getMsigMetadata: () => MSIG_METADATA,
     getDeviceId: () => 'device-1',
 })
@@ -74,6 +77,8 @@ describe('createTransportSelector', () => {
     let planner: ReturnType<typeof registerFakePlannerAdapter>
 
     beforeEach(() => {
+        useNetworkStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('testnet')
         planner = registerFakePlannerAdapter({
             createMultisigProposeTransport: vi.fn(() => proposeTransport),
             createMultisigCosignTransport: vi.fn(() => cosignTransport),
@@ -180,7 +185,7 @@ describe('createTransportSelector', () => {
         expect(transport).toBe(cosignTransport)
         expect(planner.createMultisigCosignTransport).toHaveBeenCalledWith(
             addSignatures,
-            'testnet',
+            ALGORAND_TESTNET,
         )
     })
 
@@ -211,7 +216,7 @@ describe('createTransportSelector', () => {
         expect(transport).toBe(proposeTransport)
         expect(planner.createMultisigProposeTransport).toHaveBeenCalledWith(
             proposeSignRequest,
-            'testnet',
+            ALGORAND_TESTNET,
             options.getMsigMetadata,
             options.getDeviceId,
             createDraftSignRequest,
@@ -288,12 +293,27 @@ describe('createTransportSelector', () => {
         expect(transport.send).toBeInstanceOf(Function)
     })
 
-    test('default (local, non-multisig, no callback) returns algod transport', () => {
+    test("default (local, non-multisig, no callback) returns the scope chain's submit transport", () => {
+        const broadcaster = registerFakeBroadcaster()
         const selector = createTransportSelector(baseOptions())
         const transport = selector(
             { type: 'local' } as SourceMetadata,
             algo25Account,
         )
         expect(transport.send).toBeInstanceOf(Function)
+        expect(broadcaster.createSubmitTransport).toHaveBeenCalledWith(
+            ALGORAND_TESTNET,
+        )
+    })
+
+    test('the default route never falls back to another chain', () => {
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+        })
+
+        expect(() =>
+            selector({ type: 'local' } as SourceMetadata, algo25Account),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

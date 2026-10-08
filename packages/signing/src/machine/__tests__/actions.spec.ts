@@ -372,7 +372,7 @@ describe('quantum-signed transactions over the callback transport', () => {
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            network: 'mainnet' as never,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             encodeTransaction: vi.fn(),
         }) as unknown as SigningMachineInput
 

@@ -268,20 +268,6 @@ export const isFeeAdjustmentDeliveryError = (error: Error): boolean =>
     error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER)
 
 /**
- * The active network changed between actor creation and submission.
- * Aborts rather than submitting signed bytes to the wrong chain.
- */
-export class NetworkChangedError extends PipelineError {
-    constructor(expected: string, actual: string) {
-        super(
-            `Network changed during signing: expected ${expected} but active network is ${actual}`,
-            undefined,
-            { params: { expected, actual } },
-        )
-    }
-}
-
-/**
  * A transaction's genesisHash does not match the active network. Treated as
  * exceptional/malicious (e.g. mainnet-genesis bytes delivered over a testnet
  * session) — aborts signing entirely rather than producing a cross-chain
