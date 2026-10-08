@@ -22,7 +22,7 @@ import {
     KeyRegistrationDisplay,
     HeartbeatDisplay,
     AppCallTransactionDisplay,
-} from '../transaction-details'
+} from '@modules/transactions'
 
 export type TransactionDisplayProps = {
     transaction: PeraDisplayableTransaction

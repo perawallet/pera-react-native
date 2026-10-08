@@ -10,12 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        flexGrow: 1,
-        gap: theme.spacing.lg,
-        justifyContent: 'space-between',
-    },
-}))
+export { TransactionReviewBody } from './TransactionReviewBody'
+export type { TransactionReviewBodyProps } from './TransactionReviewBody'
