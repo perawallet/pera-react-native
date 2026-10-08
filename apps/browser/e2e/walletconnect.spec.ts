@@ -478,13 +478,15 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         expect(context.pages()).toHaveLength(0)
 
         // A real unsigned ARC-0001 transaction (0-microAlgo self-payment) so the
-        // wallet's decoder has something genuine to decode.
+        // wallet's decoder has something genuine to decode. Its window is far
+        // ahead of mainnet: a window already behind the chain is declined as
+        // expired before any review opens.
         const genesisHash = getNetworkConfig(Networks.mainnet).genesisHash
         const suggestedParams = {
             fee: 1000n,
             minFee: 1000n,
-            firstValid: 1000n,
-            lastValid: 2000n,
+            firstValid: 1_000_000_000n,
+            lastValid: 1_000_001_000n,
             genesisID: 'mainnet-v1.0',
             genesisHash: new Uint8Array(Buffer.from(genesisHash, 'base64')),
             flatFee: true,
