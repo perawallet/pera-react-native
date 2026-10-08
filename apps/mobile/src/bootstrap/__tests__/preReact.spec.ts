@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => {
             return Promise.resolve()
         }),
         initDecimalConfig: record('initDecimalConfig'),
+        syncAnalyticsConsent: record('syncAnalyticsConsent'),
         preventAutoHideAsync: vi.fn(() => {
             calls.push('preventAutoHideAsync')
             return Promise.resolve(true)
@@ -56,6 +57,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         hardwareWalletRegistry: mocks.hardwareWalletRegistry,
     }),
 }))
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    syncAnalyticsConsent: mocks.syncAnalyticsConsent,
+}))
 vi.mock('@modules/network', () => ({
     initNetworkStatus: mocks.initNetworkStatus,
 }))
@@ -78,7 +82,7 @@ describe('initRuntime (native)', () => {
         expect(mocks.calls).toEqual([])
     })
 
-    it('registers sheets, the tour, hardware-wallet transports and chain adapters, seeds network status, configures Decimal and holds the splash', () => {
+    it('registers sheets, the tour, hardware-wallet transports and chain adapters, seeds network status, configures Decimal, gates analytics on consent and holds the splash', () => {
         initRuntime()
 
         expect(mocks.calls).toEqual([
@@ -88,6 +92,7 @@ describe('initRuntime (native)', () => {
             'registerChainAdapters',
             'initNetworkStatus',
             'initDecimalConfig',
+            'syncAnalyticsConsent',
             'preventAutoHideAsync',
         ])
         expect(mocks.registerHardwareWalletTransports).toHaveBeenCalledWith(

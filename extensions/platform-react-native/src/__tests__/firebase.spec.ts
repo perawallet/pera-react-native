@@ -56,6 +56,9 @@ vi.mock('@react-native-firebase/remote-config', () => ({
 vi.mock('@react-native-firebase/analytics', () => ({
     getAnalytics: vi.fn(() => ({})),
     logEvent: vi.fn(),
+    setAnalyticsCollectionEnabled: vi.fn(() => Promise.resolve()),
+    setConsent: vi.fn(() => Promise.resolve()),
+    resetAnalyticsData: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@react-native-firebase/messaging', () => ({
@@ -808,6 +811,7 @@ describe('RNFirebaseService', () => {
     describe('Analytics', () => {
         beforeEach(() => {
             service.initializeAnalytics()
+            service.setCollectionEnabled(true)
         })
 
         it('logEvent forwards payload to Firebase analytics', () => {
@@ -831,6 +835,71 @@ describe('RNFirebaseService', () => {
 
         it('initializeAnalytics is callable without throwing', () => {
             expect(() => service.initializeAnalytics()).not.toThrow()
+        })
+    })
+
+    describe('Analytics consent', () => {
+        it('starts with collection off and analytics storage denied', () => {
+            service.initializeAnalytics()
+
+            expect(
+                analytics.setAnalyticsCollectionEnabled,
+            ).toHaveBeenLastCalledWith(expect.anything(), false)
+            expect(analytics.setConsent).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.objectContaining({ analytics_storage: false }),
+            )
+        })
+
+        it('drops events until collection is enabled', () => {
+            service.initializeAnalytics()
+
+            service.logEvent('before')
+            service.setCollectionEnabled(true)
+            service.logEvent('after')
+
+            expect(analytics.logEvent).toHaveBeenCalledExactlyOnceWith(
+                expect.anything(),
+                'after',
+                undefined,
+            )
+        })
+
+        it('grants analytics storage but never the ad consent types', () => {
+            service.initializeAnalytics()
+
+            service.setCollectionEnabled(true)
+
+            expect(analytics.setConsent).toHaveBeenLastCalledWith(
+                expect.anything(),
+                {
+                    analytics_storage: true,
+                    ad_storage: false,
+                    ad_user_data: false,
+                    ad_personalization: false,
+                },
+            )
+        })
+
+        it('applies a choice made before analytics initializes', () => {
+            service.setCollectionEnabled(true)
+
+            service.initializeAnalytics()
+
+            expect(
+                analytics.setAnalyticsCollectionEnabled,
+            ).toHaveBeenLastCalledWith(expect.anything(), true)
+        })
+
+        it('clears stored analytics data only when consent is withdrawn', () => {
+            service.initializeAnalytics()
+
+            service.setCollectionEnabled(false)
+            expect(analytics.resetAnalyticsData).not.toHaveBeenCalled()
+
+            service.setCollectionEnabled(true)
+            service.setCollectionEnabled(false)
+            expect(analytics.resetAnalyticsData).toHaveBeenCalledOnce()
         })
     })
 

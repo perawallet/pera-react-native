@@ -36,6 +36,9 @@ import {
     type Analytics,
     getAnalytics,
     logEvent as logEventGA,
+    resetAnalyticsData,
+    setAnalyticsCollectionEnabled,
+    setConsent,
 } from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
 import notifee, {
@@ -129,6 +132,7 @@ export class RNFirebaseService
     private remoteConfigInitInFlight: Promise<void> | null = null
     messaging: Messaging | null = null
     analytics: Analytics | null = null
+    private isAnalyticsCollectionEnabled = false
     crashlytics: Crashlytics | null = null
 
     // Single listener (the app registers one at the root). A cold-start tap
@@ -484,13 +488,36 @@ export class RNFirebaseService
 
     initializeAnalytics(): void {
         this.analytics = getAnalytics()
+        this.applyAnalyticsConsent(this.analytics)
     }
 
     logEvent(key: string, payload?: Record<string, unknown>): void {
-        if (this.analytics) {
+        if (this.analytics && this.isAnalyticsCollectionEnabled) {
             // Fire-and-forget: analytics delivery must never surface to or
             // block the caller.
             void logEventGA<string>(this.analytics, key, payload)
         }
+    }
+
+    setCollectionEnabled(isEnabled: boolean): void {
+        const isWithdrawal = this.isAnalyticsCollectionEnabled && !isEnabled
+        this.isAnalyticsCollectionEnabled = isEnabled
+        if (!this.analytics) return
+        this.applyAnalyticsConsent(this.analytics)
+        if (isWithdrawal) void resetAnalyticsData(this.analytics)
+    }
+
+    // firebase.json keeps collection off and every consent type denied at
+    // launch; this is the only place either is switched on. The ad types stay
+    // denied regardless, since the app serves no ads.
+    private applyAnalyticsConsent(analytics: Analytics): void {
+        const isEnabled = this.isAnalyticsCollectionEnabled
+        void setConsent(analytics, {
+            analytics_storage: isEnabled,
+            ad_storage: false,
+            ad_user_data: false,
+            ad_personalization: false,
+        })
+        void setAnalyticsCollectionEnabled(analytics, isEnabled)
     }
 }
