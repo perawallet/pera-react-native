@@ -13,19 +13,22 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType } from '@perawallet/wallet-core-card'
+import { EXTENDED_TOAST_DURATION_MS } from '@constants/ui'
 
 const {
     mockSetSelectedFundingType,
     mockInvalidateCardQueries,
     mockSuccessToast,
-    mockInfoToast,
+    mockShowToast,
     mockNavigate,
+    scheduled,
 } = vi.hoisted(() => ({
     mockSetSelectedFundingType: vi.fn(),
     mockInvalidateCardQueries: vi.fn(),
     mockSuccessToast: vi.fn(),
-    mockInfoToast: vi.fn(),
+    mockShowToast: vi.fn(),
     mockNavigate: vi.fn(),
+    scheduled: { callback: null as (() => void) | null },
 }))
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -51,18 +54,20 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
         errorToast: vi.fn(),
-        infoToast: mockInfoToast,
-        showToast: vi.fn(),
+        infoToast: vi.fn(),
+        showToast: mockShowToast,
     }),
 }))
 
 vi.mock('@hooks/useLanguage')
 
-// Runs the scheduled callback synchronously so tests don't need fake timers —
-// the delay itself isn't this hook's behavior under test.
+// Captures the scheduled callback so tests can assert what happens before and
+// after the delay without fake timers.
 vi.mock('@hooks/useRunAfterDelay', () => ({
     useRunAfterDelay: () => ({
-        schedule: (callback: () => void) => callback(),
+        schedule: (callback: () => void) => {
+            scheduled.callback = callback
+        },
         flush: vi.fn(),
         cancel: vi.fn(),
     }),
@@ -74,12 +79,18 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 import { useFinishCardCreation } from '../useFinishCardCreation'
 
+const runScheduled = () => {
+    expect(scheduled.callback).not.toBeNull()
+    scheduled.callback?.()
+}
+
 describe('useFinishCardCreation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        scheduled.callback = null
     })
 
-    it('persists the funding type, invalidates queries, and redirects on success', () => {
+    it('persists the funding type and invalidates queries immediately, then redirects and shows the success toast after the delay', () => {
         const { result } = renderHook(() => useFinishCardCreation())
 
         result.current.finish(FundingType.Manual, false)
@@ -88,24 +99,51 @@ describe('useFinishCardCreation', () => {
             FundingType.Manual,
         )
         expect(mockInvalidateCardQueries).toHaveBeenCalled()
-        expect(mockSuccessToast).toHaveBeenCalled()
-        expect(mockInfoToast).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockSuccessToast).not.toHaveBeenCalled()
+
+        runScheduled()
+
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
             params: { screen: 'PeraCardAccount' },
         })
+        expect(mockSuccessToast).toHaveBeenCalledTimes(1)
+        expect(mockShowToast).not.toHaveBeenCalled()
     })
 
-    it('shows the degraded toast instead of the success toast when auto-funding degraded', () => {
+    it('shows the degraded toast on the dashboard with an extended duration when auto-funding degraded', () => {
         const { result } = renderHook(() => useFinishCardCreation())
 
         result.current.finish(FundingType.Manual, true)
+        expect(mockShowToast).not.toHaveBeenCalled()
 
-        expect(mockInfoToast).toHaveBeenCalled()
-        expect(mockSuccessToast).not.toHaveBeenCalled()
+        runScheduled()
+
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
             params: { screen: 'PeraCardAccount' },
         })
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'peraCard.setup_status.auto_funding_degraded_title',
+                body: 'peraCard.setup_status.auto_funding_degraded_body',
+                type: 'info',
+            },
+            { duration: EXTENDED_TOAST_DURATION_MS },
+        )
+        expect(mockSuccessToast).not.toHaveBeenCalled()
+    })
+
+    it('shows the toast only after navigating so it lands on the dashboard', () => {
+        const order: string[] = []
+        mockNavigate.mockImplementation(() => order.push('navigate'))
+        mockShowToast.mockImplementation(() => order.push('toast'))
+        const { result } = renderHook(() => useFinishCardCreation())
+
+        result.current.finish(FundingType.Manual, true)
+        runScheduled()
+
+        expect(order).toEqual(['navigate', 'toast'])
     })
 })
