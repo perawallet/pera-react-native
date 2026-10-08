@@ -46,6 +46,7 @@ import {
     CameraTabResult,
     useCameraTabResultStore,
 } from '@components/CameraTabResult'
+import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { PWButton, PWText, PWView } from '@components/core'
@@ -196,6 +197,7 @@ const ShellRouter = (): React.JSX.Element => {
                         )
                     }
                 >
+                    <DeviceRegistrar />
                     <OnboardingStackNavigator />
                     <BottomSheetManager />
                 </NavigationContainer>
@@ -207,6 +209,7 @@ const ShellRouter = (): React.JSX.Element => {
             return (
                 <>
                     <MainSurfaceLifecycle />
+                    <DeviceRegistrar />
                     <WebMainRoutes fcmToken={fcmToken} />
                 </>
             )

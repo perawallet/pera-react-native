@@ -18,10 +18,10 @@ import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { OfflineBanner } from '@components/OfflineBanner'
+import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useAllAccounts,
@@ -35,7 +35,6 @@ import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
-import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
@@ -115,12 +114,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
             </PWView>
         </ErrorBoundary>
     )
-}
-
-const DeviceRegistrar = () => {
-    const registrations = useDeviceAccountRegistrations()
-    useDeviceRegistration(registrations)
-    return null
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
