@@ -13,7 +13,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useRekeyTransition } from '../useRekeyTransition'
+import { useDelegatedTransition } from '../useDelegatedTransition'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -34,7 +34,7 @@ const held = (address: string, extra: Partial<WalletAccount> = {}) =>
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
-describe('useRekeyTransition', () => {
+describe('useDelegatedTransition', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
@@ -42,19 +42,19 @@ describe('useRekeyTransition', () => {
     })
 
     it('returns null when no address is provided', () => {
-        const { result } = renderHook(() => useRekeyTransition(null))
+        const { result } = renderHook(() => useDelegatedTransition(null))
         expect(result.current).toBeNull()
     })
 
     it('returns null when the address is not in the wallet', () => {
         setAccounts([])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
         expect(result.current).toBeNull()
     })
 
     it('returns null for a non-rekeyed account', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
         expect(result.current).toBeNull()
     })
 
@@ -69,7 +69,7 @@ describe('useRekeyTransition', () => {
             kind: 'ok',
             signer,
         })
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
         expect(result.current).toBeNull()
 
         act(() => seedAuthority('A', 'S'))
@@ -92,7 +92,7 @@ describe('useRekeyTransition', () => {
             signer,
         })
 
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
 
         expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
     })

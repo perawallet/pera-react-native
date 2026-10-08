@@ -105,7 +105,7 @@ export const useLedgerAccountInfoContent = (
         // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
-            preview.rekey.kind === 'rekeyedTo'
+            preview.rekey.kind === 'delegatedTo'
                 ? watchDisplayAccount(preview.address)
                 : ledgerDisplayAccount(preview.address, accountIndex)
 
@@ -129,7 +129,7 @@ export const useLedgerAccountInfoContent = (
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
                 // already yields the right icon, no override needed.
-                ...(preview.rekey.kind === 'rekeyedTo'
+                ...(preview.rekey.kind === 'delegatedTo'
                     ? { displayStateOverride: 'rekeyedSignable' as const }
                     : {}),
             },
@@ -157,7 +157,7 @@ export const useLedgerAccountInfoContent = (
             })),
         ]
 
-        if (preview.rekey.kind === 'rekeyedTo') {
+        if (preview.rekey.kind === 'delegatedTo') {
             // Build a synth hardware account for the auth address (it's a Ledger
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
             // only reads kind/address/name for display.

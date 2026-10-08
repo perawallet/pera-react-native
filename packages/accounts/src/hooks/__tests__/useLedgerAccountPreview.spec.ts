@@ -285,7 +285,7 @@ describe('useLedgerAccountPreview', () => {
         const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
 
         expect(result.current.preview?.rekey).toEqual({
-            kind: 'rekeyedTo',
+            kind: 'delegatedTo',
             authorityAddress: 'AUTHADDR',
         })
     })

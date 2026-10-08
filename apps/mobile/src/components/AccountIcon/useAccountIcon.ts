@@ -20,7 +20,7 @@ import {
     AccountTypes,
     useAuthorityOf,
     useCanSignWith,
-    useRekeyAccount,
+    useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { IconName } from '@components/core'
@@ -103,7 +103,7 @@ export type UseAccountIconOptions = {
     displayState?: AccountDisplayState
     /**
      * The type of the auth account, for callers that force `rekeyedSignable`
-     * on a synthetic account. `useRekeyAccount` can only resolve an auth
+     * on a synthetic account. `useDelegatedAccount` can only resolve an auth
      * address that is already in the store, so without this a rekeyed-to-Ledger
      * preview falls back to the turquoise standard glyph.
      */
@@ -115,7 +115,7 @@ export const useAccountIcon = (
     options: UseAccountIconOptions = {},
 ): AccountGlyph | null => {
     const { ignoreRekey, displayState, authType } = options
-    const rekeyAccount = useRekeyAccount(account?.address)
+    const rekeyAccount = useDelegatedAccount(account?.address)
     const canSign = useCanSignWith(account)
     const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 

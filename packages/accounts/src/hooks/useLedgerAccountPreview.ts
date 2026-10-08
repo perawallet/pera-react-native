@@ -123,7 +123,7 @@ export const useLedgerAccountPreview = (
 
         let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
         if (authorityAddress && authorityAddress !== address) {
-            rekey = { kind: 'rekeyedTo', authorityAddress }
+            rekey = { kind: 'delegatedTo', authorityAddress }
         } else if (
             !rekeyed.isError &&
             rekeyed.rekeyedAddresses &&

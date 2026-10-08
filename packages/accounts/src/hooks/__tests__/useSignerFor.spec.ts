@@ -16,7 +16,7 @@ import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useSignerFor } from '../useSignerFor'
 import { useCanSignWith } from '../useCanSignWith'
-import { useRekeyAccount } from '../useRekeyAccount'
+import { useDelegatedAccount } from '../useDelegatedAccount'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -125,7 +125,7 @@ describe('useCanSignWith', () => {
     })
 })
 
-describe('useRekeyAccount', () => {
+describe('useDelegatedAccount', () => {
     it("returns the chain's auth account for a rekeyed account", () => {
         const auth = held('S')
         seedAuthority('A', 'S')
@@ -133,14 +133,14 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useDelegatedAccount('A'))
 
         expect(result.current).toBe(auth)
     })
 
     it('returns null when the account is not rekeyed', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useDelegatedAccount('A'))
         expect(result.current).toBeNull()
     })
 
@@ -150,7 +150,7 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(null)
 
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useDelegatedAccount('A'))
 
         expect(result.current).toBeNull()
     })

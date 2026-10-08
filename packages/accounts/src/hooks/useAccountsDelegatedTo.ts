@@ -22,7 +22,7 @@ import type { WalletAccount } from '../models'
  * cheap enough to call from render paths, unlike `useRekeyedAddressesQuery`,
  * which asks the indexer.
  */
-export const useAccountsRekeyedTo = (
+export const useAccountsDelegatedTo = (
     address: string | null | undefined,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)

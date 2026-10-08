@@ -18,7 +18,7 @@ import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import {
     useAccountChainStateStore,
     type MultiSigAccount,
-    type RekeyTransition,
+    type DelegateTransition,
     type WalletAccount,
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
@@ -42,7 +42,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 const mockUseCanSignWith = vi.fn<() => boolean>()
-const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
+const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useCanSignWith: () => mockUseCanSignWith(),
-        useRekeyTransition: () => mockUseRekeyTransition(),
+        useDelegatedTransition: () => mockUseDelegatedTransition(),
     }
 })
 
@@ -84,7 +84,7 @@ describe('useAccountTypeLabel', () => {
         seedAuthority(rekeyedAccount.address, 'AUTH_ADDR')
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
     })
 
     it('turns rekeyed when the network moves to the scope that holds the authority', () => {
@@ -155,7 +155,7 @@ describe('useAccountTypeLabel', () => {
 
     it('splits the signer qualifier for a rekeyed signable account', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
+        mockUseDelegatedTransition.mockReturnValue({
             from: 'watch',
             to: 'hardware',
         })
@@ -169,7 +169,7 @@ describe('useAccountTypeLabel', () => {
 
     it('falls back to a plain rekeyed label when the auth account is unknown', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({
             label: 'account_info.type_rekeyed',
@@ -180,7 +180,7 @@ describe('useAccountTypeLabel', () => {
 
     it('renders the no-auth label for a rekeyed account when we cannot sign', () => {
         mockUseCanSignWith.mockReturnValue(false)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({
             label: 'account_info.type_no_auth',

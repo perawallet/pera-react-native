@@ -20,7 +20,7 @@ import {
     isMultisigAccount,
     useAuthorityOf,
     useCanSignWith,
-    useRekeyTransition,
+    useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -100,13 +100,13 @@ export const useAccountTypeInfo = ({
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const canSign = useCanSignWith(account)
-    const rekeyTransition = useRekeyTransition(account.address)
+    const delegateTransition = useDelegatedTransition(account.address)
     const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const { title, titleQualifier, description } = useMemo(() => {
-        if (rekeyTransition) {
+        if (delegateTransition) {
             const { labelKey, signerKey, descriptionKey } =
-                getRekeyLabelI18n(rekeyTransition)
+                getRekeyLabelI18n(delegateTransition)
             const label = t(labelKey, { to: t(signerKey) })
             const { main, qualifier } = splitAccountTypeLabel(label)
             return {
@@ -141,14 +141,14 @@ export const useAccountTypeInfo = ({
             titleQualifier: null,
             description: t(i18n.description),
         }
-    }, [account, authority, canSign, rekeyTransition, t])
+    }, [account, authority, canSign, delegateTransition, t])
 
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own
         // type, so the article has to follow the same type to match.
-        const type = rekeyTransition?.to ?? accountType(account)
+        const type = delegateTransition?.to ?? accountType(account)
         pushWebView({ url: SUPPORT_URL[type] })
-    }, [pushWebView, account, rekeyTransition])
+    }, [pushWebView, account, delegateTransition])
 
     return {
         title,

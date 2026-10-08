@@ -144,7 +144,7 @@ export const isMultisigUnsignable = (
 ): boolean =>
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
-export type RekeyTransition = {
+export type DelegateTransition = {
     /** Type of the rekeyed account itself, not followed through the rekey. */
     from: AccountType
     /** Type of the account it is now rekeyed to. */
@@ -152,11 +152,11 @@ export type RekeyTransition = {
 }
 
 /** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
-export const rekeyTransitionFor = (
+export const delegateTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): RekeyTransition | null => {
+): DelegateTransition | null => {
     if (!isRekeyedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
     return r.kind === 'ok'

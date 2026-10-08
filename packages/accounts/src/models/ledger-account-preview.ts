@@ -43,7 +43,7 @@ export type LedgerAccountPreviewAsset = {
 }
 
 export type LedgerAccountRekeyRelationship =
-    | { kind: 'rekeyedTo'; authorityAddress: string }
+    | { kind: 'delegatedTo'; authorityAddress: string }
     | { kind: 'canSignFor'; addresses: string[] }
     | { kind: 'none' }
 
