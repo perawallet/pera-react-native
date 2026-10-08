@@ -188,7 +188,7 @@ const resolveFailureBody = (
     // rekey state instead of the generic failure copy.
     if (error instanceof RekeyTargetNotFoundError) {
         return t('signing.cannot_sign.rekeyed_auth_missing_body', {
-            authAddress: String(error.metadata.params?.rekeyAddress ?? ''),
+            authAddress: String(error.metadata.params?.authAddress ?? ''),
         })
     }
 

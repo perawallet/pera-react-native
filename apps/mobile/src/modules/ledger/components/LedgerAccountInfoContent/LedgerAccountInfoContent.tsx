@@ -129,7 +129,7 @@ export const LedgerAccountInfoContent = ({
                     )
                 }
 
-                case 'rekeyAddress': {
+                case 'authorityAccount': {
                     return (
                         <AccountDisplay
                             account={item.account}

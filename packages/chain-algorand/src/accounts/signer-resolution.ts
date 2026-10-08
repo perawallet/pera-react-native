@@ -11,12 +11,14 @@
  */
 
 import {
+    authorityOf,
     canSignDirectly,
     canSignViaParticipants,
     isMultisigAccount,
     type SignerResolution,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 type AuthHop =
     | { kind: 'self'; auth: WalletAccount }
@@ -35,19 +37,22 @@ type AuthHop =
 const followAuthHop = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    scope: ChainScope,
 ): AuthHop => {
-    if (!account.rekeyAddress) return { kind: 'self', auth: account }
-    const auth = accounts.find(a => a.address === account.rekeyAddress)
+    const authAddress = authorityOf(account, scope)
+    if (!authAddress) return { kind: 'self', auth: account }
+    const auth = accounts.find(a => a.address === authAddress)
     return auth
         ? { kind: 'rekeyed', auth }
-        : { kind: 'authMissing', authAddress: account.rekeyAddress }
+        : { kind: 'authMissing', authAddress }
 }
 
 export const resolveAlgorandSigner = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    scope: ChainScope,
 ): SignerResolution => {
-    const hop = followAuthHop(account, accounts)
+    const hop = followAuthHop(account, accounts, scope)
     if (hop.kind === 'authMissing') {
         return { kind: 'authMissing', account, authAddress: hop.authAddress }
     }
@@ -70,7 +75,8 @@ export const resolveAlgorandSigner = (
 export const getAlgorandAuthAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    scope: ChainScope,
 ): WalletAccount | null => {
-    const hop = followAuthHop(account, accounts)
+    const hop = followAuthHop(account, accounts, scope)
     return hop.kind === 'authMissing' ? null : hop.auth
 }

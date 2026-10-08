@@ -60,8 +60,8 @@ export type UseRescanRekeyedAccountsResult = {
         sourceAddresses: string[],
         options?: ScanAllOptions,
     ) => Promise<RekeyedSweepResult>
-    /** Persists the chosen addresses as watch accounts whose rekeyAddress
-     *  points at `sourceAddress`. Mirrors Android's `addNewAccount` call
+    /** Persists the chosen addresses as watch accounts whose authority
+     *  is `sourceAddress`. Mirrors Android's `addNewAccount` call
      *  with `Type.NoAuth, creationType = REKEYED`. Resolves with the number
      *  of accounts actually persisted — 0 when every address was invalid or
      *  already in the wallet — so callers can react accordingly. */

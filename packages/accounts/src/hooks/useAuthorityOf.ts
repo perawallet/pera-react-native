@@ -17,8 +17,10 @@ import { useAccountChainStateStore } from '../store'
 
 /** Re-renders only when `authorityOf(account, scope)` changes. */
 export const useAuthorityOf = (
-    account: WalletAccount,
+    account: WalletAccount | null | undefined,
     scope: ChainScope,
 ): string | null =>
     // authorityOf reads this same snapshot via getState(); selecting its primitive result re-renders only when the authority changes.
-    useAccountChainStateStore(() => authorityOf(account, scope))
+    useAccountChainStateStore(() =>
+        account ? authorityOf(account, scope) : null,
+    )

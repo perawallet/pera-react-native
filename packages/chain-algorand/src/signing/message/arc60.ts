@@ -27,7 +27,12 @@ import type {
     AuthData,
     AuthDataMetadata,
 } from '@perawallet/wallet-core-signing'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    authorityOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 /**
  * ARC-60 scope value for `AUTH` (the only scope defined by the spec today).
@@ -186,19 +191,21 @@ export const validateArc60AuthRequest = (
     // wallet only checks the result: an account that is not rekeyed signs for
     // itself; a rekeyed one must be signed for by its auth address, never by
     // its own (revoked) key.
+    const scope = getSelectedScope(ALGORAND_CHAIN_ID)
     if (siwa.account_address === authData.signer) {
         const named = accounts.find(a => a.address === authData.signer)
-        if (named?.rekeyAddress) {
+        const authority = named ? authorityOf(named, scope) : null
+        if (authority) {
             throw new Arc60InvalidSignerError(
                 authData.signer,
-                `"${siwa.account_address}" is rekeyed to "${named.rekeyAddress}" on the active network; the SIWA signer must be that auth address`,
+                `"${siwa.account_address}" is rekeyed to "${authority}" on the active network; the SIWA signer must be that auth address`,
             )
         }
     } else if (
         !accounts.find(
             a =>
                 a.address === siwa.account_address &&
-                a.rekeyAddress === authData.signer,
+                authorityOf(a, scope) === authData.signer,
         )
     ) {
         throw new Arc60InvalidSignerError(

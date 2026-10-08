@@ -15,13 +15,15 @@ import {
     type AssetWithAccountBalance,
     buildAccount,
     useAccountBalancesQuery,
+    useAuthorityOf,
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 
 import { Decimal } from 'decimal.js'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseRekeyedAccountInfoContentParams = {
@@ -42,18 +44,18 @@ export function useRekeyedAccountInfoContent({
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], true)
     const isNativeAssetId = useIsNativeAssetId()
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
-        if (!account.rekeyAddress) return undefined
-        const address = account.rekeyAddress
+        if (!authority) return undefined
         return buildAccount({
             // Display-only synth account, keyed by its address.
-            id: address,
+            id: authority,
             custody: { kind: 'watch' },
             chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address } },
+            chains: { [LEGACY_CHAIN_ID]: { address: authority } },
         })
-    }, [account.rekeyAddress])
+    }, [authority])
 
     const { accountBalances: authBalances, isPending: isAuthPending } =
         useAccountBalancesQuery(authAccount ? [authAccount] : [], !!authAccount)
@@ -88,7 +90,7 @@ export function useRekeyedAccountInfoContent({
     return {
         rekeyedAccountBalances: rekeyedAccountData.balances,
         rekeyedAccountAlgoValue: rekeyedAccountData.algoValue,
-        authAddress: account.rekeyAddress,
+        authAddress: authority ?? undefined,
         authAccountAlgoValue,
         isPending: isRekeyedPending || isAuthPending,
     }

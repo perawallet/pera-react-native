@@ -11,6 +11,8 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { authorityOf } from './credentials'
 import type { AccountType, MultiSigAccount, WalletAccount } from './models'
 import {
     accountType,
@@ -25,7 +27,7 @@ import { accountsChainAdapters } from './chain-adapter'
  * Every "who signs for this account" question derives from this resolution.
  * An account can span chains, so `chainId` names the chain the question is
  * asked on (the transaction's, or the active network's), and that chain's
- * adapter decides.
+ * adapter decides. It is answered on the chain's selected network.
  */
 export type SignerResolution =
     | { kind: 'ok'; signer: WalletAccount }
@@ -50,7 +52,9 @@ export const resolveSignerForAccount = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): SignerResolution =>
-    accountsChainAdapters.get(chainId).resolveSigner(account, accounts)
+    accountsChainAdapters
+        .get(chainId)
+        .resolveSigner(account, accounts, getSelectedScope(chainId))
 
 export const resolveSignerFor = (
     address: string,
@@ -89,7 +93,9 @@ export const getAuthAccount = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): WalletAccount | null =>
-    accountsChainAdapters.get(chainId).getAuthAccount(account, accounts)
+    accountsChainAdapters
+        .get(chainId)
+        .getAuthAccount(account, accounts, getSelectedScope(chainId))
 
 /**
  * Throwing form of {@link getAuthAccount}, for the signing path: throws
@@ -102,7 +108,9 @@ export const resolveAuthAccount = (
 ): WalletAccount => {
     const auth = getAuthAccount(account, accounts, chainId)
     if (auth) return auth
-    throw new RekeyTargetNotFoundError(account.rekeyAddress ?? '')
+    throw new RekeyTargetNotFoundError(
+        authorityOf(account, getSelectedScope(chainId)) ?? '',
+    )
 }
 
 /**

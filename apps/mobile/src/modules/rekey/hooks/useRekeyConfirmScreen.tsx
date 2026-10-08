@@ -11,12 +11,14 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
     isQuantumDowngrade,
     isRekeyedAccount,
     useAllAccounts,
+    useAuthorityOf,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -84,7 +86,11 @@ export const useRekeyConfirmScreen = ({
 
     const source = useFindAccountByAddress(sourceAddress)
     const target = useFindAccountByAddress(targetAddress)
-    const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+    const sourceAuthority = useAuthorityOf(
+        source,
+        useSelectedScope(LEGACY_CHAIN_ID),
+    )
+    const currentAuth = useFindAccountByAddress(sourceAuthority ?? '')
     const accounts = useAllAccounts()
 
     // A shared-account rekey is signed via the multisig propose flow, whose
@@ -130,7 +136,7 @@ export const useRekeyConfirmScreen = ({
         }
         if (isUnderfunded) return
 
-        if (target.address === source.rekeyAddress) {
+        if (target.address === sourceAuthority) {
             // Unreachable via the select-target screens (eligibility excludes
             // the current auth), but guard against a stale route param
             // producing a fee-burning no-op rekey.
@@ -162,6 +168,7 @@ export const useRekeyConfirmScreen = ({
         navigation,
         handleRekeyError,
         source,
+        sourceAuthority,
         target,
         isUnderfunded,
         onSubmitSuccess,

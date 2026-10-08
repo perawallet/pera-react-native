@@ -45,7 +45,7 @@ export type AlgodAccountInformationResponse = {
     round?: number
     status?: 'Offline' | 'Online' | 'NotParticipating'
     /**
-     * `fetchAndPersistAccount` overwrites the local `account.rekeyAddress` from
+     * `fetchAndPersistAccount` overwrites the account's synced authority from
      * this, so a test covering rekeyed accounts MUST set it — otherwise the
      * wallet silently un-rekeys.
      */
