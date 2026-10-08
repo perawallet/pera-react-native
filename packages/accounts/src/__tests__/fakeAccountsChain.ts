@@ -17,14 +17,17 @@ import {
     keyDerivations,
     type AddressCodec,
     type ChainId,
+    type ChainScope,
     type KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import { authorityOf } from '../credentials/accessors'
 import { AccountError } from '../errors'
 import { DerivationTypes } from '../models'
+import { useAccountChainStateStore } from '../store/accountChainState'
 import { canSignDirectly } from '../utils'
 
 // Every legacy `Network` resolves to this id, so the fakes register under it.
@@ -128,14 +131,14 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
         findQuantumAccountForAlgo25Mnemonic: vi.fn(),
     },
     fetchRekeyedAddresses: vi.fn(async () => []),
-    resolveSigner: vi.fn((account, _accounts) =>
+    resolveSigner: vi.fn((account, _accounts, _scope) =>
         canSignDirectly(account)
             ? { kind: 'ok' as const, signer: account }
             : { kind: 'watch' as const, account },
     ),
     getAuthAccount: vi.fn(account => account),
     authority: {
-        isDelegated: vi.fn(account => !!account.rekeyAddress),
+        isDelegated: vi.fn((account, scope) => !!authorityOf(account, scope)),
         accountsDelegatedTo: vi.fn(() => []),
         isEligibleTarget: vi.fn(() => false),
         canSignProgram: vi.fn(() => false),
@@ -166,3 +169,20 @@ export const fakeAccountsChain = (): FakeAccountsChain => {
     if (!current) throw new Error('registerFakeAccountsChain has not run')
     return current
 }
+
+/**
+ * Records `authAddress` as `address`'s authority on `scope`; `null` is an
+ * observed "signs for itself", which shadows the legacy record fields.
+ */
+export const seedAuthority = (
+    address: string,
+    authAddress: string | null,
+    scope: ChainScope = MAINNET_SCOPE,
+): void =>
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(
+            scope,
+            address,
+            fakeAccountsChain().adapter.toChainState({ authAddress }),
+        )

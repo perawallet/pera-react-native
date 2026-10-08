@@ -13,14 +13,18 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountInfoCard } from '../useAccountInfoCard'
-import type {
-    HDWalletAccount,
-    HardwareWalletAccount,
-    MultiSigAccount,
-    RekeyTransition,
-    WalletAccount,
+import {
+    useAccountChainStateStore,
+    type HDWalletAccount,
+    type HardwareWalletAccount,
+    type MultiSigAccount,
+    type RekeyTransition,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 
 const mockNavigate = vi.fn()
 vi.mock('@routes/navigationRef', () => ({
@@ -133,6 +137,7 @@ const quantumAccount: WalletAccount = {
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         mockUseAccountInformationQuery.mockReturnValue({
             data: { minBalance: BigInt(100_000) },
@@ -275,7 +280,8 @@ describe('useAccountInfoCard', () => {
             from: 'algo25',
             to: 'hardware',
         })
-        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
+        const rekeyed = ledgerAccount
+        seedAuthority(rekeyed.address, 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
@@ -287,7 +293,8 @@ describe('useAccountInfoCard', () => {
     test('RekeyedSignable account without a known auth account falls back to generic label', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
-        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
+        const rekeyed = ledgerAccount
+        seedAuthority(rekeyed.address, 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )

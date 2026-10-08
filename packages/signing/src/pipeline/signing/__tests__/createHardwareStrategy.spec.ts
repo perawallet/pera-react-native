@@ -1057,9 +1057,7 @@ describe('createHardwareStrategy', () => {
         it('validates against the accounts current at sign time', async () => {
             const transport = makeAuthDataTransport()
             const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
-            const accounts = [
-                { ...account, rekeyAddress: 'AUTHADDR' } as WalletAccount,
-            ]
+            const accounts = [{ ...account, name: 'Renamed' } as WalletAccount]
             const validateAuthData = vi.fn(() => ({
                 decodedData: new Uint8Array(),
             }))

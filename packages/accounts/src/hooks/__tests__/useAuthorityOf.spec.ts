@@ -151,6 +151,12 @@ describe('useAuthorityOf', () => {
         expect(result.current).toBeNull()
     })
 
+    it.each([null, undefined])('is null for a %s account', missing => {
+        const { result } = renderHook(() => useAuthorityOf(missing, mainnet))
+
+        expect(result.current).toBeNull()
+    })
+
     it('is null on a chain the account has no address for', () => {
         const { result } = mount(account, {
             chainId: 'ethereum',

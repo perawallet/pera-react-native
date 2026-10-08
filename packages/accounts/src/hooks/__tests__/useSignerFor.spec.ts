@@ -15,11 +15,12 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useSignerFor } from '../useSignerFor'
 import { useCanSignWith } from '../useCanSignWith'
 import { useRekeyAccount } from '../useRekeyAccount'
-import { useAccountsStore } from '../../store'
+import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
@@ -36,6 +37,7 @@ const setAccounts = (accounts: WalletAccount[]) =>
 
 beforeEach(() => {
     useAccountsStore.getState().resetState()
+    useAccountChainStateStore.getState().resetState()
     registerFakeAccountsChain()
 })
 
@@ -96,7 +98,8 @@ describe('useCanSignWith', () => {
 describe('useRekeyAccount', () => {
     it("returns the chain's auth account for a rekeyed account", () => {
         const auth = held('S')
-        setAccounts([held('A', { rekeyAddress: 'S' }), auth])
+        seedAuthority('A', 'S')
+        setAccounts([held('A'), auth])
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
@@ -112,7 +115,8 @@ describe('useRekeyAccount', () => {
     })
 
     it('returns null when the chain cannot find the auth account', () => {
-        setAccounts([held('A', { rekeyAddress: 'MISSING' })])
+        seedAuthority('A', 'MISSING')
+        setAccounts([held('A')])
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(null)
 

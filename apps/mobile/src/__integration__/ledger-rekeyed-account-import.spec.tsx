@@ -25,10 +25,12 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    authorityOf,
     canSignWith,
     useAccountsStore,
     accountType,
 } from '@perawallet/wallet-core-accounts'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
@@ -156,7 +158,9 @@ describe('Flow: Ledger rekeyed-account import', () => {
                 expect(watch ? accountType(watch) : undefined).toBe(
                     AccountTypes.watch,
                 )
-                expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
+                expect(
+                    authorityOf(watch!, getSelectedScope(LEGACY_CHAIN_ID)),
+                ).toBe(LEDGER_ADDRESS)
                 expect(hw ? accountType(hw) : undefined).toBe(
                     AccountTypes.hardware,
                 )

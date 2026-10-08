@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
     canSignWith,
@@ -20,6 +20,7 @@ import {
     isRekeyedUnsignable,
     rekeyTransitionFor,
     resolveSignerFor,
+    useAccountChainStateStore,
     AccountTypes,
     type Algo25Account,
     type HDWalletAccount,
@@ -30,11 +31,24 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { seedAuthority } from './seedAuthority'
 
 beforeAll(() => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
 })
+
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
+
+const rekeyedTo = <T extends WalletAccount>(
+    account: T,
+    authority: string,
+): T => {
+    seedAuthority(account.address as string, authority)
+    return account
+}
 
 const algo25 = (
     address: string,
@@ -98,11 +112,10 @@ const multisig = (
     ...extra,
 })
 
-const watch = (address: string, rekeyAddress?: string): WatchAccount => ({
-    custody: { kind: 'watch' },
-    address,
-    rekeyAddress,
-})
+const watch = (address: string, authority?: string): WatchAccount => {
+    const account: WatchAccount = { custody: { kind: 'watch' }, address }
+    return authority ? rekeyedTo(account, authority) : account
+}
 
 describe('getRekeyAccount', () => {
     it('returns null when the address is not in the wallet', () => {
@@ -118,18 +131,18 @@ describe('getRekeyAccount', () => {
 
     it('returns the auth account when the target is held', () => {
         const auth = algo25('AUTH')
-        const a = algo25('A', { rekeyAddress: 'AUTH' })
+        const a = rekeyedTo(algo25('A'), 'AUTH')
         expect(getRekeyAccount('A', [a, auth], ALGORAND_CHAIN_ID)).toBe(auth)
     })
 
     it('returns null when the auth target is unknown locally', () => {
-        const a = algo25('A', { rekeyAddress: 'MISSING' })
+        const a = rekeyedTo(algo25('A'), 'MISSING')
         expect(getRekeyAccount('A', [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('reports the immediate auth — does not follow chains', () => {
-        const mid = algo25('B', { rekeyAddress: 'C' })
-        const a = algo25('A', { rekeyAddress: 'B' })
+        const mid = rekeyedTo(algo25('B'), 'C')
+        const a = rekeyedTo(algo25('A'), 'B')
         const c = algo25('C')
         expect(getRekeyAccount('A', [a, mid, c], ALGORAND_CHAIN_ID)).toBe(mid)
     })
@@ -218,7 +231,7 @@ describe('getSignerFor', () => {
     it('counts a rekeyed participant as signable — slots are bound to own key', () => {
         // The participant being rekeyed itself doesn't matter; the multisig
         // slot is bound to the participant's own pubkey.
-        const participant = algo25('P1', { rekeyAddress: 'ELSEWHERE' })
+        const participant = rekeyedTo(algo25('P1'), 'ELSEWHERE')
         const ms = multisig('M', ['P1', 'P2'])
         expect(getSignerFor('M', [ms, participant], ALGORAND_CHAIN_ID)).toBe(ms)
     })
@@ -305,7 +318,7 @@ describe('rekeyTransitionFor', () => {
     })
 
     it('returns null when the auth account is missing locally', () => {
-        const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'MISSING' }
+        const a: WalletAccount = rekeyedTo(algo25('A'), 'MISSING')
         expect(rekeyTransitionFor(a, [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
@@ -317,7 +330,7 @@ describe('rekeyTransitionFor', () => {
 
     it('returns from/to raw account types for a signable algo25 → hardware rekey', () => {
         const auth = hardware('S')
-        const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'S' }
+        const a: WalletAccount = rekeyedTo(algo25('A'), 'S')
         expect(rekeyTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toEqual({
             from: AccountTypes.algo25,
             to: AccountTypes.hardware,
@@ -327,10 +340,7 @@ describe('rekeyTransitionFor', () => {
     it('returns from/to for a multisig rekeyed to a multisig', () => {
         const participant = algo25('P1')
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = {
-            ...multisig('A', ['P1', 'P3']),
-            rekeyAddress: 'M',
-        }
+        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P1', 'P3']), 'M')
         expect(
             rekeyTransitionFor(a, [a, authMs, participant], ALGORAND_CHAIN_ID),
         ).toEqual({
@@ -343,7 +353,7 @@ describe('rekeyTransitionFor', () => {
         // A → B → C; from B's perspective the auth is C. The transition is
         // from algo25 to algo25, regardless of A pointing at B.
         const c = algo25('C')
-        const b: WalletAccount = { ...algo25('B'), rekeyAddress: 'C' }
+        const b: WalletAccount = rekeyedTo(algo25('B'), 'C')
         expect(rekeyTransitionFor(b, [b, c], ALGORAND_CHAIN_ID)).toEqual({
             from: AccountTypes.algo25,
             to: AccountTypes.algo25,
@@ -490,10 +500,7 @@ describe('isMultisigUnsignable', () => {
 
     it('returns true for a multisig rekeyed to an unsignable multisig', () => {
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = {
-            ...multisig('A', ['P3', 'P4']),
-            rekeyAddress: 'M',
-        }
+        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
         expect(isMultisigUnsignable(a, [a, authMs], ALGORAND_CHAIN_ID)).toBe(
             true,
         )
@@ -502,10 +509,7 @@ describe('isMultisigUnsignable', () => {
     it('returns false for a multisig rekeyed to a signable multisig', () => {
         const participant = algo25('P1')
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = {
-            ...multisig('A', ['P3', 'P4']),
-            rekeyAddress: 'M',
-        }
+        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
         expect(
             isMultisigUnsignable(
                 a,

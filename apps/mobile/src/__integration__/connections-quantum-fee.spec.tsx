@@ -51,6 +51,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -64,6 +65,7 @@ import {
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type QuantumAccount,
     type WalletAccount,
@@ -420,6 +422,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
     afterEach(async () => {
         useRemoteConfigStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         await getProvider().connections.store.clear()
     })
     afterAll(async () => {
@@ -772,16 +775,9 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
     }
 
     /** A landed rekey: `undefined` clears the auth address (the undo direction). */
-    const applyRekey = (address: string, rekeyAddress?: string) => {
+    const applyRekey = (address: string, authAddress?: string) => {
         act(() => {
-            const { accounts, setAccounts } = useAccountsStore.getState()
-            setAccounts(
-                accounts.map(account =>
-                    account.address === address
-                        ? { ...account, rekeyAddress }
-                        : account,
-                ),
-            )
+            seedAuthority(address, authAddress ?? null)
         })
     }
 

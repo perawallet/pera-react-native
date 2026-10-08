@@ -30,6 +30,10 @@ const network = vi.hoisted(() => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: network.current,
+    }),
     useNetworkStore: {
         getState: () => ({ network: network.current }),
         subscribe: (cb: (state: unknown, prev: unknown) => void) => {

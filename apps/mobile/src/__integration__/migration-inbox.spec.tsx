@@ -91,7 +91,7 @@ const legacyAlgo25Account = (address: string): LegacyAccount => ({
 })
 
 // A keyless (watch) account rekeyed to a signing account: `buildWatchAccount`
-// mirrors `authAddress` onto `rekeyAddress`, which is what lets
+// records `authAddress` as the account's authority, which is what lets
 // `canSignWith` follow the rekey to the signable auth account and pull this
 // address into the inbox signing set.
 const legacyKeylessAccount = (
@@ -268,7 +268,7 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
 
         // The inbox request scopes to BOTH migrated addresses — the
         // rekeyed keyless account is only present because `buildWatchAccount`
-        // mirrors its legacy authAddress onto rekeyAddress, making it signable.
+        // records its legacy authAddress as its authority, making it signable.
         await waitFor(
             () =>
                 expect(inboxBodies.at(-1)?.addresses).toEqual(

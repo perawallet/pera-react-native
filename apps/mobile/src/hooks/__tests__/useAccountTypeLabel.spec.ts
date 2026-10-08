@@ -14,12 +14,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import {
+    useAccountChainStateStore,
     type MultiSigAccount,
     type RekeyTransition,
     type WalletAccount,
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { custodyForType } from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -61,7 +65,6 @@ const rekeyedAccount: WalletAccount = {
     custody: { kind: 'local', seed: 'algo25' },
     address: 'REKEYED_ADDR',
     keyPairId: 'key-1',
-    rekeyAddress: 'AUTH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
@@ -74,6 +77,8 @@ const multisigAccount: MultiSigAccount = {
 describe('useAccountTypeLabel', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority(rekeyedAccount.address, 'AUTH_ADDR')
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)

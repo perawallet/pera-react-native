@@ -10,42 +10,61 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import '../../../__tests__/registerAlgorandAccounts'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
 import { resolveHardwareDeviceName } from '../resolveHardwareDeviceName'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { AnalyzedSignableGroup } from '../../../pipeline/types'
 
-const ledgerAccount = (address: string, rekeyAddress?: string) =>
-    ({
-        custody: {
-            kind: 'hardware',
-            device: {
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
+
+const withAuthority = (
+    account: WalletAccount,
+    authority?: string,
+): WalletAccount => {
+    if (authority) seedAuthority(account.address as string, authority)
+    return account
+}
+
+const ledgerAccount = (address: string, authority?: string) =>
+    withAuthority(
+        {
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+            address,
+            hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'dev-1',
                 deviceName: 'Nano X',
+                accountIndex: 0,
                 transportType: 'ble',
             },
-            accountIndex: 0,
-        },
-        address,
-        rekeyAddress,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'dev-1',
-            deviceName: 'Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
-    }) as unknown as WalletAccount
+        } as unknown as WalletAccount,
+        authority,
+    )
 
-const watchAccount = (address: string, rekeyAddress?: string) =>
-    ({
-        custody: { kind: 'watch' },
-        address,
-        rekeyAddress,
-    }) as unknown as WalletAccount
+const watchAccount = (address: string, authority?: string) =>
+    withAuthority(
+        {
+            custody: { kind: 'watch' },
+            address,
+        } as unknown as WalletAccount,
+        authority,
+    )
 
 const group = (
     signerAddress: string,

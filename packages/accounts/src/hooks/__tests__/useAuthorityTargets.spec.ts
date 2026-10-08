@@ -13,9 +13,12 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAuthorityTargets } from '../useAuthorityTargets'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
@@ -35,6 +38,7 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain()
     })
 
@@ -60,7 +64,26 @@ describe('useAuthorityTargets', () => {
             good,
             source,
             [source, good, bad],
+            MAINNET_SCOPE,
             { isQuantumTargetEnabled: true },
+        )
+    })
+
+    it('asks the chain on the selected network', () => {
+        const source = held('SRC')
+        setAccounts([source, held('A')])
+        const { authority } = fakeAccountsChain().adapter
+        useNetworkStore.getState().setNetwork('testnet')
+
+        renderHook(() => useAuthorityTargets(source, 'standard'))
+
+        expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'standard',
+            expect.anything(),
+            source,
+            expect.any(Array),
+            TESTNET_SCOPE,
+            { isQuantumTargetEnabled: false },
         )
     })
 

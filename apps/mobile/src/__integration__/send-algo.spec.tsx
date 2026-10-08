@@ -26,6 +26,7 @@ import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -35,6 +36,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -125,6 +127,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         useSendFundsStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
 
@@ -311,16 +314,16 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             name: 'Auth (signer)',
         }
         // The rekeyed account has no signing key of its own —
-        // `keyPairId` is omitted on purpose. The wallet relies on
-        // `rekeyAddress` to find the actual signer at sign time.
+        // `keyPairId` is omitted on purpose. The wallet relies on the
+        // recorded authority to find the actual signer at sign time.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-1',
             custody: { kind: 'local', seed: 'algo25' },
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender',
-            rekeyAddress: authAccount.address,
         }
+        seedAuthority(rekeyedAccount.address, authAccount.address)
         useAccountsStore.getState().setAccounts([rekeyedAccount, authAccount])
         useAccountsStore
             .getState()
@@ -334,10 +337,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // Override algod's account info for the rekeyed sender so
         // it reports the same `auth-addr` the wallet has on the
         // local account. `fetchAndPersistAccount` reads this on
-        // every refresh and writes it back into
-        // `account.rekeyAddress` — without it, the wallet's
-        // local rekey state gets cleared mid-send and the signing
-        // pipeline fails to resolve an auth account.
+        // every refresh and writes it back into the account's
+        // synced authority — without it, the wallet's local rekey
+        // state gets cleared mid-send and the signing pipeline
+        // fails to resolve an auth account.
         server.use(
             mockAlgodAccountInformation({
                 address: rekeyedAccount.address,
@@ -774,8 +777,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender (orphan)',
-            rekeyAddress: ALGO25_TEST_ADDRESS,
         }
+        seedAuthority(rekeyedAccount.address, ALGO25_TEST_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedAccount])
         useAccountsStore
             .getState()

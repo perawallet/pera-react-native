@@ -31,6 +31,7 @@ import { Decimal } from 'decimal.js'
 import { decodeSignedTransaction } from 'algosdk'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -50,6 +51,7 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type HardwareWalletAccount,
     type WalletAccount,
@@ -237,6 +239,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         // execute() runs a balance preflight against algod before prepare;
         // fund the senders so the 1-ALGO quote (plus fees and the receive
         // asset's opt-in MBR) clears it.
@@ -334,9 +337,9 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
             id: 'rekeyed-swapper',
             custody: { kind: 'watch' },
             address: LEDGER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed swapper',
         }
+        seedAuthority(LEDGER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
         useAccountsStore
             .getState()

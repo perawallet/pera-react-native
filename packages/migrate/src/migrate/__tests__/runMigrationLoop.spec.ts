@@ -17,7 +17,7 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
         accounts: [] as Array<{
             address: string
             custody?: { kind: string }
-            rekeyAddress?: string
+            authority?: string
         }>,
     },
     loggerMock: {
@@ -30,6 +30,8 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsStoreMock },
+    isRekeyedAccount: (account?: { authority?: string } | null) =>
+        !!account?.authority,
     isWatchAccount: (account: { custody?: { kind?: string } }) =>
         account.custody?.kind === 'watch',
 }))
@@ -87,7 +89,7 @@ const watchAccount = (
 ): {
     address: string
     custody: { kind: string }
-    rekeyAddress?: string
+    authority?: string
 } => ({
     address,
     custody: { kind: 'watch' },
@@ -447,7 +449,7 @@ describe('runMigrationLoop', () => {
         )
     })
 
-    it('leaves rekeyAddress alone when the import already carries the mirror', async () => {
+    it('leaves the authority alone when the import already carries it', async () => {
         const legacy = buildAccount({
             address: 'WATCHED',
             type: 'watch',
@@ -456,7 +458,7 @@ describe('runMigrationLoop', () => {
         })
         migrateLegacyAccount.mockResolvedValue({
             address: 'WATCHED',
-            rekeyAddress: 'AUTH',
+            authority: 'AUTH',
         } as never)
 
         await runMigrationLoop({
@@ -528,7 +530,7 @@ describe('runMigrationLoop', () => {
         expect(applyLegacyAccountOrder).not.toHaveBeenCalled()
     })
 
-    it('backfills rekeyAddress on an existing watch account without reimporting', async () => {
+    it('backfills the authority on an existing watch account without reimporting', async () => {
         accountsStoreMock.accounts = [watchAccount('REKEYED')]
         const legacy = buildAccount({
             address: 'REKEYED',

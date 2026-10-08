@@ -22,7 +22,7 @@ import { useQuantumDappWarning } from '../useQuantumDappWarning'
 type TestAccount = {
     address: string
     custody: { kind: string }
-    rekeyAddress?: string
+    authority?: string
 }
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -32,8 +32,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getSignerFor: (address: string, accounts: TestAccount[]) => {
         const account = accounts.find(a => a.address === address)
         if (!account) return null
-        if (!account.rekeyAddress) return account
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!account.authority) return account
+        const auth = accounts.find(a => a.address === account.authority)
         // Mirrors resolveSignerForAccount: an unresolvable or watch-only auth
         // account yields no signer.
         return auth && auth.custody.kind !== 'watch' ? auth : null
@@ -80,7 +80,7 @@ describe('useQuantumDappWarning', () => {
             {
                 address: REKEYED_TO_QUANTUM_ADDRESS,
                 custody: { kind: 'local', seed: 'algo25' },
-                rekeyAddress: QUANTUM_ADDRESS,
+                authority: QUANTUM_ADDRESS,
             },
         ])
         mockGetPreference.mockReturnValue(null)

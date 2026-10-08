@@ -14,9 +14,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { trackEvent, AccountOptionsEvent } from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
@@ -199,14 +205,12 @@ describe('useAccountOptions', () => {
         address: 'REKEYEDADDRESS',
         custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'key-3',
-        rekeyAddress: 'AUTHADDRESS',
     }
 
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
         address: 'REKEYEDWATCHADDRESS',
         custody: { kind: 'watch' },
-        rekeyAddress: 'ALGO25ADDRESS',
     }
 
     const hardwareAccount: WalletAccount = {
@@ -245,6 +249,9 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority(rekeyedAccount.address, 'AUTHADDRESS')
+        seedAuthority(rekeyedWatchAccount.address, 'ALGO25ADDRESS')
         useRemoteConfigStore.getState().resetState()
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
@@ -431,6 +438,7 @@ describe('useAccountOptions', () => {
             )
 
             expect(result.current.isRekeyed).toBe(true)
+            expect(result.current.authAddress).toBe('AUTHADDRESS')
             expect(result.current.canUndoRekey).toBe(false)
             expect(mockUseCanSignWith).toHaveReturnedWith(true)
         })
@@ -1247,8 +1255,8 @@ describe('useAccountOptions', () => {
                 address: 'SOMEOTHERADDRESS',
                 custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'key-rekeyed',
-                rekeyAddress: 'ALGO25ADDRESS',
             }
+            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>
@@ -1276,8 +1284,8 @@ describe('useAccountOptions', () => {
                 address: 'SOMEOTHERADDRESS',
                 custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'key-rekeyed',
-                rekeyAddress: 'ALGO25ADDRESS',
             }
+            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>

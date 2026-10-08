@@ -13,7 +13,10 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
     UserRejectedSigningError,
@@ -21,6 +24,7 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import {
+    useAccountChainStateStore,
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -176,6 +180,7 @@ const publishProposed = (
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
         sendFundsState.amount = undefined
@@ -316,8 +321,8 @@ describe('useTransactionProcessingScreen', () => {
         const sender = {
             address: 'SRC',
             custody: { kind: 'watch' },
-            rekeyAddress: 'LEDGER_AUTH',
         }
+        seedAuthority('SRC', 'LEDGER_AUTH')
         const ledgerAuth = {
             address: 'LEDGER_AUTH',
             custody: {

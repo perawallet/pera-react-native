@@ -10,30 +10,12 @@
  limitations under the License
  */
 
+import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
 import {
-    accountsChainAdapters,
-    useAccountChainStateStore,
-} from '@perawallet/wallet-core-accounts'
-import {
-    CHAIN_CAPABILITIES,
     scopeForLegacyNetwork,
-    type ChainCapabilities,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-
-// Importing this file is the registration: specs that resolve signers need the
-// production Algorand rules registered under the chain the pipeline signs on,
-// and its descriptor for the signing schemes.
-accountsChainAdapters.register(algorandAccountsAdapter)
-getProvider().chains.register(
-    algorandDescriptor,
-    Object.fromEntries(
-        CHAIN_CAPABILITIES.map(capability => [capability, false]),
-    ) as ChainCapabilities,
-)
+import { toAlgorandChainState } from '../chain-state'
 
 /**
  * Records `authAddress` as `address`'s authority on `scope` the way the syncer
@@ -50,5 +32,5 @@ export const seedAuthority = (
         .setAccountChainState(
             scope,
             address,
-            algorandAccountsAdapter.toChainState({ authAddress }),
+            toAlgorandChainState({ authAddress }),
         )

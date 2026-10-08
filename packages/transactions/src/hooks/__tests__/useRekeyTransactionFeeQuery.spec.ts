@@ -318,7 +318,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         // itself performs the auth-chain walk (getSignerFor); here we assert
         // the hook forwards the full accounts array and applies the guard.
         const accounts = [
-            algo25({ address: 'SRC', rekeyAddress: 'QADDR' }),
+            algo25({ address: 'SRC' }),
             quantum({ address: 'QADDR' }),
         ]
         mockUseAllAccounts.mockReturnValue(accounts)

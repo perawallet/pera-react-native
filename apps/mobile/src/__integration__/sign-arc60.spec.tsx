@@ -46,9 +46,11 @@ import {
     seedQuantumSigner,
 } from '@test-utils/signing-review'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -73,6 +75,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         await seedAlgo25Signer()
     })
 
@@ -174,9 +177,9 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
             id: 'rekeyed-arc60-signer',
             custody: { kind: 'watch' },
             address: REKEYED_SIGNER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA signer',
         }
+        seedAuthority(REKEYED_SIGNER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
 
         const { request, approve, error } = buildArc60SignRequest({
@@ -217,9 +220,9 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: ownAddress,
             keyPairId: ownKey.seedKey.id ?? '',
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA signer with key',
         }
+        seedAuthority(ownAddress, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
 
         const { request, approve, error } = buildArc60SignRequest({
@@ -263,9 +266,9 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
             id: 'rekeyed-arc60-account',
             custody: { kind: 'watch' },
             address: REKEYED_SIGNER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA account',
         }
+        seedAuthority(REKEYED_SIGNER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedAccount, authSigner])
 
         const { request, approve, reject } = buildArc60SignRequest({

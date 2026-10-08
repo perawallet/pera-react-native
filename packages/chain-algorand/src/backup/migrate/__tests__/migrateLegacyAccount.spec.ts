@@ -60,6 +60,8 @@ import {
     buildWatchAccount,
     recordLegacyAuthority,
 } from '../buildKeylessAccount'
+import { authorityOf } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
@@ -353,6 +355,8 @@ describe('migrateLegacyAccount with authAddress', () => {
         const created = await migrateLegacyAccount(buildArgs(account))
 
         expect(accountType(created)).toBe('watch')
-        expect(created.rekeyAddress).toBe('AUTHADDR')
+        expect(authorityOf(created, scopeForLegacyNetwork('mainnet'))).toBe(
+            'AUTHADDR',
+        )
     })
 })

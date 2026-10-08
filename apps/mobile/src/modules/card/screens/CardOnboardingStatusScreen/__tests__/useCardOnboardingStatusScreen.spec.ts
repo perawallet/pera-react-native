@@ -84,8 +84,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-// Keep the real account-type helpers (they read `type`/`rekeyAddress` off the
-// account) and only stub the accounts list so the eligibility filter is real.
+// Keep the real account-type helpers (they read `type` off the account) and only stub the accounts list so the eligibility filter is real.
 let mockAccounts: WalletAccount[] = []
 let mockSelectedAddress: string | null = null
 vi.mock('@perawallet/wallet-core-accounts', async () => {

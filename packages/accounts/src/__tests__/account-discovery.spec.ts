@@ -13,7 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
-import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
+import { authorityOf } from '../credentials'
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
+} from './fakeAccountsChain'
 import { accountType } from '../utils'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -224,7 +229,7 @@ describe('discoverRekeyedAccounts', () => {
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
         expect(accountType(accounts[0])).toBe('watch')
-        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
+        expect(authorityOf(accounts[0], MAINNET_SCOPE)).toBe('EXPLICIT_ADDRESS')
         expect(accounts[0].custody).toEqual({ kind: 'watch' })
         expect(accounts[0].chains).toEqual({
             algorand: { address: 'REKEYED_FROM_EXPLICIT' },

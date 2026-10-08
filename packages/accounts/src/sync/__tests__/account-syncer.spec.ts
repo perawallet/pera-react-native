@@ -11,7 +11,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
+import { authorityOf } from '../../credentials/accessors'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
@@ -92,10 +94,9 @@ describe('fetchAndPersistAccount', () => {
         const account = useAccountsStore
             .getState()
             .accounts.find(a => a.address === 'A')
-        expect(account?.rekeyAddress).toBe('S')
-        // The sync's network is threaded into the per-network state, not
-        // just the active-network mirror.
-        expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
+        expect(authorityOf(account!, scopeForLegacyNetwork('mainnet'))).toBe(
+            'S',
+        )
     })
 
     it('writes the chain-state slice and keeps its reference on an unchanged sync', async () => {

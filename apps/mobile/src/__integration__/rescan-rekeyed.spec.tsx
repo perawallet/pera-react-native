@@ -33,10 +33,13 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    authorityOf,
     useAccountsStore,
     type WalletAccount,
     accountType,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -167,7 +170,9 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         expect(imported).toHaveLength(2)
         imported.forEach(account => {
             expect(accountType(account)).toBe(AccountTypes.watch)
-            expect(account.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
+            expect(
+                authorityOf(account, getSelectedScope(LEGACY_CHAIN_ID)),
+            ).toBe(ALGO25_TEST_ADDRESS)
         })
     })
 
@@ -215,7 +220,9 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         expect(imported ? accountType(imported) : undefined).toBe(
             AccountTypes.watch,
         )
-        expect(imported?.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
+        expect(authorityOf(imported!, getSelectedScope(LEGACY_CHAIN_ID))).toBe(
+            ALGO25_TEST_ADDRESS,
+        )
     })
 
     it('Given the indexer reports no rekeyed accounts, when the screen scans, then the empty state renders', async () => {

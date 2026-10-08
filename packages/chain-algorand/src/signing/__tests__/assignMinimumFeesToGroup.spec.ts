@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { Address, computeGroupID, Transaction } from 'algosdk'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import {
     encodeTransactionRaw,
     groupTransactions,
@@ -73,6 +77,10 @@ const encode = (tx: PeraTransaction): string =>
     encodeToBase64(encodeTransactionRaw(tx))
 
 describe('assignMinimumFeesToGroup', () => {
+    beforeEach(() => {
+        useAccountChainStateStore.getState().resetState()
+    })
+
     test('raises a quantum-signed fee below the PQ minimum', () => {
         const tx = makePayment(quantumAddress, 1000n)
 
@@ -426,15 +434,13 @@ describe('assignMinimumFeesToGroup', () => {
 
     test('follows the rekey: ed25519 sender rekeyed to quantum auth is raised', () => {
         const tx = makePayment(algoAddress, 1000n)
+        seedAuthority(algoAddress.toString(), quantumAddress.toString())
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: [tx],
             signableIndices: [0],
-            accounts: [
-                algo25({ rekeyAddress: quantumAddress.toString() }),
-                quantum(),
-            ],
+            accounts: [algo25(), quantum()],
         })
 
         expect(result.transactions[0].fee).toBe(3000n)
@@ -450,15 +456,13 @@ describe('assignMinimumFeesToGroup', () => {
 
     test('follows the rekey: quantum sender rekeyed to ed25519 auth is untouched', () => {
         const transactions = [makePayment(quantumAddress, 1000n)]
+        seedAuthority(quantumAddress.toString(), algoAddress.toString())
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
-            accounts: [
-                quantum({ rekeyAddress: algoAddress.toString() }),
-                algo25(),
-            ],
+            accounts: [quantum(), algo25()],
         })
 
         expect(result.transactions).toBe(transactions)

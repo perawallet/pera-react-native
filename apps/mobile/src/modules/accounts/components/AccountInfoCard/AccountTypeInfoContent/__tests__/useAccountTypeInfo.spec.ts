@@ -14,11 +14,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
 import {
+    useAccountChainStateStore,
     type RekeyTransition,
     type WalletAccount,
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { custodyForType } from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -70,18 +74,21 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 const accountOfType = (
     type: AccountType,
-    rekeyAddress?: string,
-): WalletAccount =>
-    ({
+    authority?: string,
+): WalletAccount => {
+    const address = `${type.toUpperCase()}_ADDR`
+    if (authority) seedAuthority(address, authority)
+    return {
         custody: custodyForType(type),
-        address: `${type.toUpperCase()}_ADDR`,
+        address,
         keyPairId: 'key-1',
-        rekeyAddress,
-    }) as WalletAccount
+    } as WalletAccount
+}
 
 describe('useAccountTypeInfo', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
