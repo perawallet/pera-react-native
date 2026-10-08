@@ -33,6 +33,8 @@ const CONTRACT_SUITES = {
         '../nfd/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-onramp/testing':
         '../onramp/src/__tests__/adapter-contract.ts',
+    '@perawallet/wallet-core-signing/testing':
+        '../signing/src/__tests__/testing.ts',
     '@perawallet/wallet-core-swaps/testing':
         '../swaps/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-transactions/testing':

@@ -168,9 +168,13 @@ export {
     type DelegatedUnsignableReason,
     type RequestStructure,
     type ReviewerChainAdapter,
+    type ReviewPolicy,
     type SingleTransactionItem,
+    type TransactionDecoder,
     type TransactionListItem,
+    type WarningDetector,
 } from './chain-adapter'
+export { composeAnalysis } from './pipeline/composeAnalysis'
 
 export {
     isExternalCallbackSource,
@@ -184,6 +188,7 @@ export {
     type AuthDataSignableData,
     type AuthData,
     type DataAnalyzer,
+    type DecodedGroup,
     type RejectReason,
     type DataTransport,
     type SigningResult,

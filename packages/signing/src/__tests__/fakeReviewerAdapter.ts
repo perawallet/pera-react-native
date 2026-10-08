@@ -24,6 +24,15 @@ export const fakeReviewerAdapter = (
     overrides: Partial<ReviewerChainAdapter> = {},
 ): ReviewerChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
+    decoder: {
+        decode: vi.fn(async () => ({
+            totalFees: 0n,
+            transactionSummaries: [],
+            signableAddresses: [],
+        })),
+    },
+    warnings: { detect: vi.fn(() => []) },
+    policy: { autoApproveLocal: vi.fn(() => true) },
     analyze: vi.fn(async () => ({
         totalFees: 0n,
         transactionSummaries: [],

@@ -41,10 +41,12 @@ import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequ
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     AnalysisContext,
+    AnalysisWarning,
     AnalyzedSignableGroup,
     AuthData,
     AuthDataMetadata,
     DataTransport,
+    DecodedGroup,
     SignableAnalysis,
     SignableGroup,
     SignRequestStatus,
@@ -88,9 +90,40 @@ export type ArbitraryDataDisplay =
     | { kind: 'text'; text: string }
     | { kind: 'hex'; hex: string }
 
+/**
+ * Explains a group without guessing: what the chain can't identify comes back
+ * unrecognised, never as an error. A transaction for another network throws.
+ */
+export interface TransactionDecoder {
+    decode(
+        group: SignableGroup,
+        context: AnalysisContext,
+    ): Promise<DecodedGroup>
+}
+
+export interface WarningDetector {
+    /**
+     * Reads the decoder's result, so warnings follow what it recognised.
+     * Transactions carry warnings only when a wallet account signs them.
+     */
+    detect(
+        group: SignableGroup,
+        decoded: DecodedGroup,
+        context: AnalysisContext,
+    ): AnalysisWarning[]
+}
+
+export interface ReviewPolicy {
+    /** Whether a request the app built itself may sign without the review screen. */
+    autoApproveLocal(analysis: SignableAnalysis): boolean
+}
+
 /** The chain-specific legs of reviewing a sign request; registered by the chain package. */
 export interface ReviewerChainAdapter {
     chainId: ChainId
+    decoder: TransactionDecoder
+    warnings: WarningDetector
+    policy: ReviewPolicy
     analyze(
         group: SignableGroup,
         context: AnalysisContext,

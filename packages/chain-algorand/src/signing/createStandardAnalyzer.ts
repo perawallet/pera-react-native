@@ -12,6 +12,7 @@
 
 import {
     AnalysisError,
+    composeAnalysis,
     GenesisHashMismatchError,
     isAuthDataOriginMismatch,
     TransactionRoundTripError,
@@ -19,7 +20,7 @@ import {
     type AnalysisContext,
     type AnalysisWarning,
     type DataAnalyzer,
-    type SignableAnalysis,
+    type DecodedGroup,
     type SignableGroup,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -32,122 +33,106 @@ import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { algorandNetworkOf } from '../legacy-network'
 
-/**
- * Creates the standard analyzer that provides basic analysis:
- * - Fee calculation
- * - Transaction summaries
- * - Warning detection (close, rekey, etc.)
- * - Signable address extraction
- */
-export const createStandardAnalyzer = (): DataAnalyzer => {
-    return {
-        analyze: async (
-            group: SignableGroup,
-            context: AnalysisContext,
-        ): Promise<SignableAnalysis> => {
-            try {
-                // Only analyze transaction data
-                if (group.data.type !== 'transactions') {
-                    return createNonTransactionAnalysis(group, context)
-                }
-
-                const { transactions, rawTransactionsBase64 } = group.data
-
-                if (rawTransactionsBase64) {
-                    validateTransactionRoundTrip(
-                        transactions,
-                        rawTransactionsBase64,
-                    )
-                }
-
-                const network = algorandNetworkOf(context.scope)
-                assertTransactionsMatchNetwork(
-                    transactions,
-                    network,
-                    getExpectedGenesisHash(network),
-                )
-
-                const accountAddresses = new Set(
-                    context.accounts.map(a => a.address),
-                )
-
-                // The machine already split the request into one group per
-                // authorizer, so gate on `group.signerAddress`; `tx.sender`
-                // misses ARC-0001 `signers` / `authAddr` overrides.
-                const isSignedByUs = accountAddresses.has(group.signerAddress)
-
-                const totalFees = isSignedByUs
-                    ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
-                    : 0n
-
-                const transactionSummaries = transactions.map(tx =>
-                    summarizeTransaction(tx),
-                )
-
-                const warnings = isSignedByUs
-                    ? detectWarnings(transactions)
-                    : []
-
-                const riskLevel = calculateRiskLevel(warnings)
-
-                return {
-                    totalFees,
-                    transactionSummaries,
-                    warnings,
-                    signableAddresses: isSignedByUs
-                        ? [group.signerAddress]
-                        : [],
-                    riskLevel,
-                }
-            } catch (error) {
-                if (error instanceof TransactionRoundTripError) throw error
-                if (error instanceof GenesisHashMismatchError) throw error
-                throw new AnalysisError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
-            }
-        },
-    }
+// The round-trip and genesis errors are user-facing as they are; anything else
+// is an analysis fault.
+const toAnalysisError = (error: unknown): Error => {
+    if (error instanceof TransactionRoundTripError) return error
+    if (error instanceof GenesisHashMismatchError) return error
+    return new AnalysisError(
+        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error : undefined,
+    )
 }
 
-/**
- * Creates analysis for non-transaction signable data (arbitrary data, auth data).
- *
- * There are no transaction details to summarise here, but ARC-60 carries one
- * analysable risk: the sign-in `domain` is self-asserted by the request, so a
- * relayed/phishing request can bind to a domain the user trusts while actually
- * originating elsewhere. When the platform observed a trustworthy origin (the
- * webview host) and it doesn't match `domain`, flag it as a danger.
- */
-const createNonTransactionAnalysis = (
+/** Fees, summaries and signers of a group, after the round-trip and genesis checks. */
+export const decodeStandardGroup = async (
     group: SignableGroup,
     context: AnalysisContext,
-): SignableAnalysis => {
-    const warnings: AnalysisWarning[] = []
+): Promise<DecodedGroup> => {
+    try {
+        if (group.data.type !== 'transactions') {
+            return {
+                totalFees: 0n,
+                transactionSummaries: [],
+                signableAddresses: context.accounts.map(a => a.address),
+            }
+        }
 
-    if (
-        group.data.type === 'auth-data' &&
-        isAuthDataOriginMismatch(
-            group.data.authData.domain,
-            group.source.verifiedOrigin,
+        const { transactions, rawTransactionsBase64 } = group.data
+
+        if (rawTransactionsBase64) {
+            validateTransactionRoundTrip(transactions, rawTransactionsBase64)
+        }
+
+        const network = algorandNetworkOf(context.scope)
+        assertTransactionsMatchNetwork(
+            transactions,
+            network,
+            getExpectedGenesisHash(network),
         )
-    ) {
-        warnings.push({
-            type: 'suspicious',
-            severity: 'danger',
-            message: `The sign-in domain "${group.data.authData.domain}" does not match the site that requested it (${group.source.verifiedOrigin}).`,
-        })
-    }
 
-    return {
-        totalFees: 0n,
-        transactionSummaries: [],
-        warnings,
-        signableAddresses: context.accounts.map(a => a.address),
-        riskLevel: calculateRiskLevel(warnings),
+        // The machine already split the request into one group per authorizer,
+        // so gate on `group.signerAddress`; `tx.sender` misses ARC-0001
+        // `signers` / `authAddr` overrides.
+        const signedByUs = context.accounts.some(
+            a => a.address === group.signerAddress,
+        )
+        return {
+            totalFees: signedByUs
+                ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+                : 0n,
+            transactionSummaries: transactions.map(tx =>
+                summarizeTransaction(tx),
+            ),
+            signableAddresses: signedByUs ? [group.signerAddress] : [],
+        }
+    } catch (error) {
+        throw toAnalysisError(error)
     }
 }
+
+/**
+ * Close-out and rekey warnings on transactions a wallet account signs. An ARC-60
+ * `domain` is self-asserted, so one that doesn't match the origin the platform
+ * saw is a relayed or phishing sign-in.
+ */
+export const detectStandardWarnings = (
+    group: SignableGroup,
+    decoded: DecodedGroup,
+): AnalysisWarning[] => {
+    try {
+        if (group.data.type === 'transactions') {
+            return decoded.signableAddresses.length > 0
+                ? detectWarnings(group.data.transactions)
+                : []
+        }
+        if (
+            group.data.type === 'auth-data' &&
+            isAuthDataOriginMismatch(
+                group.data.authData.domain,
+                group.source.verifiedOrigin,
+            )
+        ) {
+            return [
+                {
+                    type: 'suspicious',
+                    severity: 'danger',
+                    message: `The sign-in domain "${group.data.authData.domain}" does not match the site that requested it (${group.source.verifiedOrigin}).`,
+                },
+            ]
+        }
+        return []
+    } catch (error) {
+        throw toAnalysisError(error)
+    }
+}
+
+export const createStandardAnalyzer = (): DataAnalyzer => ({
+    analyze: async (group, context) => {
+        const decoded = await decodeStandardGroup(group, context)
+        return composeAnalysis(decoded, detectStandardWarnings(group, decoded))
+    },
+})
 
 /**
  * Create a human-readable summary of a transaction
@@ -232,18 +217,4 @@ const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {
     }
 
     return warnings
-}
-
-/**
- * Calculate overall risk level based on warnings
- */
-const calculateRiskLevel = (
-    warnings: AnalysisWarning[],
-): 'low' | 'medium' | 'high' => {
-    const hasDanger = warnings.some(w => w.severity === 'danger')
-    const hasWarning = warnings.some(w => w.severity === 'warning')
-
-    if (hasDanger) return 'high'
-    if (hasWarning) return 'medium'
-    return 'low'
 }
