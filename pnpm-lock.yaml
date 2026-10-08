@@ -2531,6 +2531,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract

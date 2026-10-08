@@ -160,25 +160,177 @@ describe('createEthereumAccountStateOps', () => {
     })
 
     describe('fetchChangeSignal over Pera block following', () => {
-        it('sends the addresses and the cursor to the scope backend', async () => {
+        const signalWith = (
+            cursor: number | null,
+            addresses: string[] = [ADDRESS],
+        ) =>
+            createEthereumAccountStateOps(
+                contextWith(['blockFollowing']),
+            ).fetchChangeSignal(addresses, SCOPE, cursor)
+
+        it('sends the CAIP-2 chain, the addresses and the cursor to the scope backend', async () => {
             const requests: ShouldRefreshRequest[] = []
             server.use(
                 ...peraEvmHandlers({
                     baseUrl: PERA_URL,
                     blockFollowing: request => {
                         requests.push(request)
-                        return { refresh: true, block: 42 }
+                        return { refresh: true, round: 42 }
                     },
                 }),
             )
 
-            await createEthereumAccountStateOps(
-                contextWith(['blockFollowing']),
-            ).fetchChangeSignal([ADDRESS], SCOPE, 40)
+            await signalWith(40)
 
             expect(requests).toEqual([
-                { account_addresses: [ADDRESS], last_refreshed_block: 40 },
+                {
+                    chain: 'eip155:1',
+                    account_addresses: [ADDRESS],
+                    last_refreshed_round: 40,
+                },
             ])
+        })
+
+        it('takes the tip as the cursor on a refresh', async () => {
+            server.use(
+                ...peraEvmHandlers({
+                    blockFollowing: { refresh: true, round: 42 },
+                }),
+            )
+
+            await expect(signalWith(40)).resolves.toEqual({
+                changed: true,
+                cursor: 42,
+            })
+        })
+
+        it('never moves the cursor back when the tip is behind it', async () => {
+            server.use(
+                ...peraEvmHandlers({
+                    blockFollowing: { refresh: true, round: 30 },
+                }),
+            )
+
+            await expect(signalWith(40)).resolves.toEqual({
+                changed: true,
+                cursor: 40,
+            })
+        })
+
+        it('keeps the cursor when nothing changed', async () => {
+            server.use(
+                ...peraEvmHandlers({ blockFollowing: { refresh: false } }),
+            )
+
+            await expect(signalWith(40)).resolves.toEqual({
+                changed: false,
+                cursor: 40,
+            })
+        })
+
+        it('keeps the cursor on a fail-open refresh without a round', async () => {
+            server.use(
+                ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
+            )
+
+            await expect(signalWith(40)).resolves.toEqual({
+                changed: true,
+                cursor: 40,
+            })
+        })
+
+        it('seeds a never-synced cursor from the RPC head when the backend gives no round', async () => {
+            server.use(
+                ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+
+            await expect(signalWith(null)).resolves.toEqual({
+                changed: true,
+                cursor: 48,
+            })
+        })
+
+        it('reports a never-synced scope as changed even when the backend says no refresh', async () => {
+            server.use(
+                ...peraEvmHandlers({ blockFollowing: { refresh: false } }),
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+
+            await expect(signalWith(null)).resolves.toEqual({
+                changed: true,
+                cursor: 48,
+            })
+        })
+
+        it('makes no backend request for no addresses and keeps the cursor', async () => {
+            const requests: ShouldRefreshRequest[] = []
+            server.use(
+                ...peraEvmHandlers({
+                    blockFollowing: request => {
+                        requests.push(request)
+                        return { refresh: true, round: 42 }
+                    },
+                }),
+            )
+
+            await expect(signalWith(40, [])).resolves.toEqual({
+                changed: false,
+                cursor: 40,
+            })
+            expect(requests).toEqual([])
+        })
+
+        it('seeds a never-synced cursor from the RPC head for no addresses, without a backend request', async () => {
+            const requests: ShouldRefreshRequest[] = []
+            server.use(
+                ...peraEvmHandlers({
+                    blockFollowing: request => {
+                        requests.push(request)
+                        return { refresh: true, round: 42 }
+                    },
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+
+            await expect(signalWith(null, [])).resolves.toEqual({
+                changed: true,
+                cursor: 48,
+            })
+            expect(requests).toEqual([])
+        })
+
+        it('splits more than 1000 addresses into chunks and combines the answers', async () => {
+            const addresses: Hex[] = Array.from(
+                { length: 1001 },
+                (_, i): Hex => `0x${i.toString(16).padStart(40, '0')}`,
+            )
+            const sizes: number[] = []
+            server.use(
+                ...peraEvmHandlers({
+                    blockFollowing: request => {
+                        sizes.push(request.account_addresses.length)
+                        return request.account_addresses.length === 1
+                            ? { refresh: true, round: 45 }
+                            : { refresh: false }
+                    },
+                }),
+            )
+
+            await expect(signalWith(40, addresses)).resolves.toEqual({
+                changed: true,
+                cursor: 45,
+            })
+            expect(sizes.sort((a, b) => a - b)).toEqual([1, 1000])
         })
 
         it('rejects with the status when the backend fails', async () => {
@@ -201,10 +353,7 @@ describe('createEthereumAccountStateOps', () => {
                 ...peraEvmHandlers({
                     baseUrl: PERA_URL,
                     blockFollowing: () =>
-                        ({ refresh: 'yes' }) as unknown as {
-                            refresh: boolean
-                            block: number
-                        },
+                        ({ refresh: 'yes' }) as unknown as { refresh: false },
                 }),
             )
 

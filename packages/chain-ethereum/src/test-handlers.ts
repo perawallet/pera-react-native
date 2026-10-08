@@ -12,9 +12,11 @@
 
 export {
     DEFAULT_EVM_RPC_RESPONSES,
+    erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmTransactionReceipt,
+    type Erc20Fixture,
     type EvmRpcFixtures,
     type EvmRpcMethod,
     type EvmRpcResponder,
@@ -25,3 +27,11 @@ export {
     type PeraEvmFixtures,
     type ShouldRefreshRequest,
 } from './accounts/msw-handlers'
+export {
+    nativeWhitelistItem,
+    unknownAssetItem,
+} from './assets/api/msw-handlers'
+export type {
+    AssetItemResponse,
+    WhitelistItemResponse,
+} from './assets/api/schema'

@@ -43,6 +43,10 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/__tests__/adapter-contract.ts',
             ),
+            '@perawallet/wallet-core-assets/testing/metadata': path.resolve(
+                __dirname,
+                '../assets/src/__tests__/assets-metadata-contract.ts',
+            ),
             '@perawallet/wallet-core-chain-contract/testing': path.resolve(
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',
