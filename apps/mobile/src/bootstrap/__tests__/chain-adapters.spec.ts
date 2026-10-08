@@ -78,6 +78,8 @@ const mocks = vi.hoisted(() => ({
         algodSubmitTimeout: 30_000,
     },
     getChainConfig: vi.fn(),
+    getPeraServicesConfig: vi.fn(),
+    peraServicesFor: vi.fn(),
     registerModule: vi.fn(),
     registerEthereumModule: vi.fn(),
     ethereumChainModule: undefined as ChainModule | undefined,
@@ -96,6 +98,8 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     >()),
     config: mocks.config,
     getChainConfig: mocks.getChainConfig,
+    getPeraServicesConfig: mocks.getPeraServicesConfig,
+    peraServicesFor: mocks.peraServicesFor,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -383,6 +387,26 @@ describe('registerChainAdapters', () => {
             expect(() => contextGivenToEthereum().getEndpoints()).toThrow(
                 'config broken',
             )
+        })
+
+        it("hands over the scope's Pera backend URL and services", () => {
+            mocks.getPeraServicesConfig.mockReturnValue({
+                backendUrl: 'https://pera.test',
+            })
+            mocks.peraServicesFor.mockReturnValue(new Set(['blockFollowing']))
+            const scope: ChainScope = {
+                chainId: 'ethereum',
+                networkId: 'sepolia',
+            }
+
+            const backend = contextGivenToEthereum().getPeraBackend(scope)
+
+            expect(mocks.getPeraServicesConfig).toHaveBeenCalledWith(scope)
+            expect(mocks.peraServicesFor).toHaveBeenCalledWith(scope)
+            expect(backend).toEqual({
+                baseUrl: 'https://pera.test',
+                services: new Set(['blockFollowing']),
+            })
         })
 
         it('hands over the KMS core as the key store', () => {

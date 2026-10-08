@@ -174,7 +174,7 @@ describe('cleanupRemovedAccountData', () => {
             accountAddress: 'ADDR1',
             scope: MAINNET_SCOPE,
             nativeBalance: new Decimal(1_000_000),
-            chainData: { family: 'evm' },
+            chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
         })
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })

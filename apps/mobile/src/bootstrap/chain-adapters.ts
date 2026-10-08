@@ -30,6 +30,8 @@ import {
 import {
     config,
     getChainConfig,
+    getPeraServicesConfig,
+    peraServicesFor,
     UnconfiguredScopeError,
 } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
@@ -67,6 +69,10 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
         entry.chainId === 'ethereum'
             ? ethereumRpcEndpoints(entry)
             : entry.endpoints,
+    getPeraBackend: scope => ({
+        baseUrl: getPeraServicesConfig(scope).backendUrl,
+        services: peraServicesFor(scope),
+    }),
     timeouts: {
         readMs: config.algodReadTimeout,
         submitMs: config.algodSubmitTimeout,
