@@ -31,7 +31,19 @@ cleanup_secret_files() {
   # modification someone could commit.
   git checkout -- apps/mobile/config/google-services.json 2>/dev/null || true
 }
-trap cleanup_secret_files EXIT
+# The Gradle daemon detaches from the job, so it outlives it, timeout kill
+# included: idle for three hours with a 6 GB heap through the iOS build that
+# follows on this 8 GB host.
+stop_gradle_daemon() {
+  if [ -x apps/mobile/android/gradlew ]; then
+    (cd apps/mobile/android && ./gradlew --stop -q) || true
+  fi
+}
+cleanup() {
+  cleanup_secret_files
+  stop_gradle_daemon
+}
+trap cleanup EXIT
 
 install_pinned_pnpm
 
