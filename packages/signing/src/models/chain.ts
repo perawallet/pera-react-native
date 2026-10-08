@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-export * from './store/network-store'
-export * from './store/selected-scope'
-export * from './hooks/useSelectedScope'
-export * from './hooks/useChainCapability'
-export * from './hooks/useNetwork'
-export * from './hooks/useOnNetworkSwitch'
-export * from './utils/clearCustomNetworkCache'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import type { SignRequest } from './index'
+
+// The one place a request's chain is decided. It cannot come from the signer
+// account, which may hold addresses on several chains. Every SignRequest shape
+// carries Algorand payloads (PeraTransaction, MX and ARC-60 data); a shape for
+// another chain must answer here.
+export const chainIdOfSignRequest = (_request: SignRequest): ChainId =>
+    LEGACY_CHAIN_ID

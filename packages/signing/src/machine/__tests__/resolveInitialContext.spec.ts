@@ -60,7 +60,7 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         signArbitraryData: vi.fn(),
         signAuthData: vi.fn(),
         createTransport: vi.fn(),
-        network: 'mainnet' as never,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as unknown as SigningMachineInput
 
@@ -435,7 +435,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            network: 'mainnet' as never,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             encodeTransaction: vi.fn(),
             hardwareWalletRegistry: opts.hardwareWalletRegistry,
         }) as unknown as SigningMachineInput

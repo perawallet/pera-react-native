@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
@@ -19,12 +19,11 @@ import {
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { SigningStrategy } from '../types'
 import { CannotSignError } from '../errors'
 import {
-    localKeySignerAdapterFor,
-    plannerAdapterFor,
+    localKeySignerChainAdapters,
+    plannerAdapterForScope,
     type LocalSigningFunction,
     type LocalArbitrarySigningFunction,
     type LocalAuthDataSigningFunction,
@@ -63,7 +62,7 @@ export interface GetSigningStrategyOptions {
     hardwareWalletRegistry?: HardwareWalletRegistry
 
     /** Picks the chain whose local-key and multisig strategies are built. */
-    network: Network
+    scope: ChainScope
 }
 
 /**
@@ -76,13 +75,13 @@ export const createSigningStrategySelector = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ) => SigningStrategy) => {
-    const localStrategy = localKeySignerAdapterFor(
-        options.network,
-    ).createStrategy({
-        signTransactions: options.signTransactions,
-        signArbitraryData: options.signArbitraryData,
-        signAuthData: options.signAuthData,
-    })
+    const localStrategy = localKeySignerChainAdapters
+        .get(options.scope.chainId)
+        .createStrategy({
+            signTransactions: options.signTransactions,
+            signArbitraryData: options.signArbitraryData,
+            signAuthData: options.signAuthData,
+        })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,
@@ -103,8 +102,8 @@ export const createSigningStrategySelector = (
         )
     }
 
-    const multisigStrategy = plannerAdapterFor(
-        options.network,
+    const multisigStrategy = plannerAdapterForScope(
+        options.scope,
     ).createMultisigStrategy({
         getLocalParticipants: options.getLocalParticipants,
         // Multisig participant slots are bound to the participant's OWN pubkey
@@ -128,7 +127,7 @@ export const createSigningStrategySelector = (
         const authAccount = resolveAuthAccount(
             account,
             allAccounts,
-            LEGACY_CHAIN_ID,
+            options.scope.chainId,
         )
         if (isMultisigAccount(authAccount)) return multisigStrategy
         return selectStrategyForAccount(authAccount)

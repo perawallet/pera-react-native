@@ -49,7 +49,7 @@ const makeGroup = (signerAddress: string): SignableGroup =>
 
 const makeContext = (): AnalysisContext =>
     ({
-        network: 'mainnet',
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         accounts: [],
     }) as AnalysisContext
 
@@ -122,5 +122,23 @@ describe('analyzerActor', () => {
         await expect(toPromise(actor)).rejects.toBeInstanceOf(
             ChainAdapterNotRegisteredError,
         )
+    })
+
+    it("resolves the reviewer of the scope's chain, never another chain's", async () => {
+        const actor = createActor(analyzerActor, {
+            input: {
+                groups: [makeGroup('A')],
+                context: {
+                    ...makeContext(),
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                },
+            },
+        })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(mocks.analyze).not.toHaveBeenCalled()
     })
 })

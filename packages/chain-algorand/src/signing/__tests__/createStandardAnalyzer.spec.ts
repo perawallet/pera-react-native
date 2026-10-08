@@ -52,7 +52,7 @@ const EXTERNAL_ADDR = 'EXTERNAL_ADDR'
 
 const makeContext = (accounts: string[] = [ACCOUNT_A]): AnalysisContext =>
     ({
-        network: 'mainnet',
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         accounts: accounts.map(address => ({ address }) as never),
     }) as AnalysisContext
 

@@ -13,8 +13,7 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
 import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
@@ -31,9 +30,10 @@ import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
 import { broadcasterChainAdapters } from '../broadcaster'
-import { plannerAdapterFor } from '../chain-adapter'
+import { plannerAdapterForScope } from '../chain-adapter'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
+import { chainIdOfSignRequest } from '../models/chain'
 
 // Module scope, not a per-hook `useRef`, so every mounted consumer shares one
 // Map: the first effect to run for a request creates the actor and the rest
@@ -152,7 +152,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signAuthData } = useAuthDataSigner()
-    const { network } = useNetwork()
     const allAccounts = useAllAccounts()
     const {
         proposeSignRequest,
@@ -167,24 +166,27 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     removeSignRequestFromStoreRef.current = removeSignRequestFromStore
 
     const buildDeps = useCallback(
-        (_request: SignRequest): SigningMachineDeps => {
+        (request: SignRequest): SigningMachineDeps => {
+            const scope = getSelectedScope(chainIdOfSignRequest(request))
             return {
                 signTransactions,
                 signArbitraryData,
                 signAuthData,
                 createTransport: createTransportSelector({
-                    network,
+                    scope,
                     proposeSignRequest,
                     addSignatures,
                     getMsigMetadata,
                     getDeviceId,
                     createDraftSignRequest,
                 }),
-                network,
+                scope,
                 // Hardware-wallet actor consumes this. The device adds the
                 // signing-domain prefix itself, so the bytes are unprefixed.
                 encodeTransaction: txn =>
-                    plannerAdapterFor(network).encodeUnsignedTransaction(txn),
+                    plannerAdapterForScope(scope).encodeUnsignedTransaction(
+                        txn,
+                    ),
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
             }
         },
@@ -192,7 +194,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signTransactions,
             signArbitraryData,
             signAuthData,
-            network,
             proposeSignRequest,
             addSignatures,
             getMsigMetadata,
@@ -442,7 +443,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             // Best-effort — on any ledger failure the request is re-presented.
             if (
                 await broadcasterChainAdapters
-                    .get(LEGACY_CHAIN_ID)
+                    .get(chainIdOfSignRequest(next))
                     .isRequestGroupAlreadySubmitted(next)
             ) {
                 logger.info(

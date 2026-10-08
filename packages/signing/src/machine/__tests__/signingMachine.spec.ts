@@ -85,7 +85,7 @@ const mockDeps = {
     },
     proposeSignRequest: vi.fn(),
     addSignatures: vi.fn(),
-    network: 'mainnet' as never,
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
 }
 
 const makeInput = (

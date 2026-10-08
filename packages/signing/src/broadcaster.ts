@@ -13,6 +13,7 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type ChainScope,
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -64,12 +65,8 @@ export type SubmitAndAutoRefreshOptions = {
 /** The chain-specific leg of submitting signed transactions; registered by the chain package. */
 export interface BroadcasterChainAdapter {
     chainId: ChainId
-    /**
-     * @param capturedNetwork - The network active when the signing actor was
-     *   created; re-compared at send time so a mid-flow network switch aborts
-     *   instead of submitting to the wrong chain.
-     */
-    createSubmitTransport(capturedNetwork: Network): DataTransport
+    /** The transport re-checks `capturedScope` with `assertScopeUnchanged` at send time. */
+    createSubmitTransport(capturedScope: ChainScope): DataTransport
     /** Resolves with the tx ids once the node accepts; confirmation is awaited in the background. */
     submitAndAutoRefresh(
         signedTxns: PeraSignedTransaction[],

@@ -12,15 +12,14 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { DataTransport, SourceMetadata } from '../types'
 import { isExternalCallbackSource } from '../types'
 import { broadcasterChainAdapters } from '../../broadcaster'
 import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
-    plannerAdapterFor,
+    plannerAdapterForScope,
     type AddSignaturesFn,
     type CreateDraftSignRequestFn,
     type GetDeviceIdFn,
@@ -33,11 +32,8 @@ import {
  * throw at selection time, rather than forcing every caller to pass stubs.
  */
 export interface CreateTransportSelectorOptions {
-    /**
-     * Captured at actor creation and re-checked at send time, so a mid-flow
-     * network switch can't deliver signatures intended for another chain.
-     */
-    network: Network
+    /** Captured at actor creation; its chain picks the transports, which re-check it at send time. */
+    scope: ChainScope
     /** Function to propose a multisig transaction (required only for multisig flows) */
     proposeSignRequest?: ProposeSignRequestFn
     /** Function to add signatures to an existing request (required only for multisig flows) */
@@ -71,11 +67,11 @@ export const createTransportSelector = (
                     'Multisig co-sign transport requires addSignatures',
                 )
             }
-            return plannerAdapterFor(
-                options.network,
+            return plannerAdapterForScope(
+                options.scope,
             ).createMultisigCosignTransport(
                 options.addSignatures,
-                options.network,
+                options.scope,
             )
         }
 
@@ -102,11 +98,11 @@ export const createTransportSelector = (
                     'Multisig propose transport requires getDeviceId',
                 )
             }
-            return plannerAdapterFor(
-                options.network,
+            return plannerAdapterForScope(
+                options.scope,
             ).createMultisigProposeTransport(
                 options.proposeSignRequest,
-                options.network,
+                options.scope,
                 options.getMsigMetadata,
                 options.getDeviceId,
                 options.createDraftSignRequest,
@@ -123,7 +119,7 @@ export const createTransportSelector = (
             source.transport !== 'algod' &&
             isExternalCallbackSource(source.type)
         ) {
-            return createWalletConnectTransport(options.network)
+            return createWalletConnectTransport(options.scope)
         }
 
         // Hands signed bytes back rather than submitting (swap assembles and
@@ -136,7 +132,7 @@ export const createTransportSelector = (
 
         // Everything else is submitted by the chain's broadcaster.
         return broadcasterChainAdapters
-            .get(LEGACY_CHAIN_ID)
-            .createSubmitTransport(options.network)
+            .get(options.scope.chainId)
+            .createSubmitTransport(options.scope)
     }
 }

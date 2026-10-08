@@ -70,7 +70,7 @@ const emptyResult = (address: string): SigningResult => ({
 
 const makeSelector = () =>
     createSigningStrategySelector({
-        network: 'mainnet',
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
         signAuthData: vi.fn(),
@@ -210,7 +210,7 @@ describe('createSigningStrategySelector', () => {
             )
 
             const select = createSigningStrategySelector({
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 signTransactions,
                 signArbitraryData: vi.fn(),
                 signAuthData: vi.fn(),

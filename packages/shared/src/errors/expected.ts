@@ -42,8 +42,14 @@ export const isRawPlatformNetworkError = (error: unknown): boolean => {
 
 // `AbortSignal.timeout()` rejects with a DOMException named 'TimeoutError',
 // which is not ky's TimeoutError class, so ky's brand-check guards miss every
-// algod and indexer timeout.
-const EXPECTED_ERROR_NAMES = new Set(['TimeoutError', 'AbortError'])
+// algod and indexer timeout. `ScopeChangedError` is the user switching a
+// chain's network mid-request; chain-contract depends on nothing, so it can't
+// be an AppError.
+const EXPECTED_ERROR_NAMES = new Set([
+    'TimeoutError',
+    'AbortError',
+    'ScopeChangedError',
+])
 
 const readStatus = (error: unknown): number | undefined => {
     if (typeof error !== 'object' || error === null) return undefined
