@@ -65,7 +65,9 @@ export const createFakeChainKeyStore = (
             return {
                 keyPairId: request.id,
                 publicKey: shapePublicKey(
-                    fakeKeyBytes(`${seedRef}|${request.scheme}|${request.path}`),
+                    fakeKeyBytes(
+                        `${seedRef}|${request.scheme}|${request.path}`,
+                    ),
                 ),
             }
         },

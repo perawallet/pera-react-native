@@ -80,13 +80,8 @@ export const ethereumKeyDerivation: KeyDerivation = {
     // Only the first address: wallets that share this path hand out index 0
     // first, so it is the one a restored seed has activity on.
     discover: async (kms, seedRef, probe, opts) => {
-        const { address, keyPairId } = await ethereumKeyDerivation.deriveAccount(
-            kms,
-            seedRef,
-            0,
-            0,
-            opts,
-        )
+        const { address, keyPairId } =
+            await ethereumKeyDerivation.deriveAccount(kms, seedRef, 0, 0, opts)
         return (await probe(address))
             ? [{ account: 0, keyIndex: 0, address, keyPairId }]
             : []
