@@ -307,6 +307,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: vi.fn(),

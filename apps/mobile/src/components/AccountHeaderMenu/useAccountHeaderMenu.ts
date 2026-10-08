@@ -18,6 +18,7 @@ import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { routeCapabilities } from '@routes/capabilities'
 import { lockWallet } from './lockWallet'
 
@@ -39,6 +40,7 @@ export const useAccountHeaderMenu = ({
     const mode = useNetworkStore(state => state.mode)
     const setMode = useNetworkStore(state => state.setMode)
     const isDeveloperMode = mode === 'developer'
+    const canSearch = useCapability({ anyChain: 'assetSearch' })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const isDebugToolsEnabled = !!getPreference(
@@ -65,13 +67,16 @@ export const useAccountHeaderMenu = ({
                 icon: 'eye',
                 onPress: () => setPrivacyMode(!privacyMode),
             },
-            {
+        ]
+
+        if (canSearch) {
+            baseItems.push({
                 label: t('search.title'),
                 icon: 'magnifying-glass',
                 onPress: () =>
                     navigation.navigate('Search', { screen: 'SearchScreen' }),
-            },
-        ]
+            })
+        }
 
         if (showChartToggle) {
             baseItems.unshift({
@@ -122,6 +127,7 @@ export const useAccountHeaderMenu = ({
         return baseItems
     }, [
         showChartToggle,
+        canSearch,
         chartVisible,
         privacyMode,
         t,

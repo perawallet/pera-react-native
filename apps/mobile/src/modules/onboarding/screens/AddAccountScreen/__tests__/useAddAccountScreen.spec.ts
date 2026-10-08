@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -153,10 +154,16 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
 }))
 
-const mockQuantumFlag = vi.hoisted(() => ({ enabled: true }))
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 vi.mock('@analytics', async () => ({
@@ -183,7 +190,7 @@ describe('useAddAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })
         mockPeraCardFlag.enabled = true
-        mockQuantumFlag.enabled = true
+        setQuantumEnabled(true)
     })
 
     it('mainOptions excludes add account option when no HD wallet exists', () => {
@@ -609,8 +616,32 @@ describe('useAddAccountScreen', () => {
         ).toBeDefined()
     })
 
+    it('mainOptions excludes the multisig option when the multisig capability is off', () => {
+        capabilityState.turnOff('multisig')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.some(
+                o => o.testID === 'add_account_create_multisig_button',
+            ),
+        ).toBe(false)
+    })
+
+    it('otherOptions excludes the watch option when the watchAccounts capability is off', () => {
+        capabilityState.turnOff('watchAccounts')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.otherOptions.some(
+                o => o.testID === 'add_account_watch_button',
+            ),
+        ).toBe(false)
+    })
+
     it('mainOptions excludes quantum option when the flag is disabled', () => {
-        mockQuantumFlag.enabled = false
+        setQuantumEnabled(false)
 
         const { result } = renderHook(() => useAddAccountScreen())
 

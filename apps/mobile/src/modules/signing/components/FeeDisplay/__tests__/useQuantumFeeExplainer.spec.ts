@@ -20,9 +20,9 @@ import {
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useQuantumFeeExplainer } from '../useQuantumFeeExplainer'
+import { capabilityState } from '@test-utils/capability-mock'
 
 // Rekey resolution is what these cases exercise, so opt out of the unit
 // setup's blanket accounts mock and run against the real store and the real
@@ -38,9 +38,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
 }))
 
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: vi.fn(),
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 const QUANTUM_ADDRESS = 'QUANTUM_ADDR'
 const STANDARD_ADDRESS = 'STANDARD_ADDR'
@@ -78,7 +78,7 @@ describe('useQuantumFeeExplainer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandAccountsAdapter()
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
+        capabilityState.reset()
         ;(useSigningPipeline as Mock).mockReturnValue({ resolved: null })
         useAccountsStore.getState().setAccounts([])
     })
@@ -198,14 +198,14 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('returns false when the feature flag is disabled', () => {
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+    it('still explains the premium an existing quantum account pays after quantumAccounts is switched off', () => {
+        capabilityState.turnOff('quantumAccounts')
         useAccountsStore.getState().setAccounts([quantumAccount()])
 
         const { result } = renderHook(() =>
             useQuantumFeeExplainer(buildTransaction()),
         )
 
-        expect(result.current.isQuantumFee).toBe(false)
+        expect(result.current.isQuantumFee).toBe(true)
     })
 })

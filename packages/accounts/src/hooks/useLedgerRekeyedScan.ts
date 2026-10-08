@@ -20,6 +20,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'
+import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 import { useAllAccounts } from './useAllAccounts'
 import type { LedgerSelectableAccount } from '../models'
 
@@ -44,12 +45,14 @@ export const useLedgerRekeyedScan = (
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const allAccounts = useAllAccounts()
+    const isRekeyAvailable = useIsRekeyAvailable(LEGACY_CHAIN_ID)
 
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
             queryKey: getRekeyedAddressesQueryKey(acc.address, scope),
             queryFn: () => fetchRekeyedAddresses(acc.address, network),
             staleTime: 30_000,
+            enabled: isRekeyAvailable,
         })),
     })
 
@@ -68,6 +71,10 @@ export const useLedgerRekeyedScan = (
         .join('||')
 
     return useMemo(() => {
+        // A disabled query stays pending forever, so it must not read as scanning.
+        if (!isRekeyAvailable) {
+            return { rekeyed: [], isScanning: false }
+        }
         const derivedAddresses = new Set(derivedAccounts.map(a => a.address))
         const importedAddresses = new Set(allAccounts.map(a => a.address))
         const seen = new Set<string>()
@@ -95,5 +102,5 @@ export const useLedgerRekeyedScan = (
         // `resultsSig` encodes everything we read from `results`; depending
         // on `results` itself would force a re-compute every render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, derivedAccounts, allAccounts])
+    }, [resultsSig, derivedAccounts, allAccounts, isRekeyAvailable])
 }

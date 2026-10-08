@@ -15,20 +15,26 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 
 /**
  * Gates swapping FROM a quantum (or rekeyed-to-quantum) account. It depends on
  * the backend pricing the pqsig fee surcharge into prepared swap groups — the
  * flag is the kill switch if that pricing regresses. Defaults on in dev &
  * staging for testing, off in production until Firebase enables it, and gated
- * by routeCapabilities.quantum.
+ * by the `quantumAccounts` and `swap` chain capabilities.
  */
 export const useIsQuantumSwapEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
+    const isQuantumAvailable = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
+    const isSwapAvailable = useCapability({ anyChain: 'swap' })
     const fallback = __DEV__ || config.appEnvironment === 'staging'
     return (
-        routeCapabilities.quantum &&
+        isQuantumAvailable &&
+        isSwapAvailable &&
         remoteConfig.getBooleanValue(
             RemoteConfigKeys.enable_quantum_swap,
             fallback,

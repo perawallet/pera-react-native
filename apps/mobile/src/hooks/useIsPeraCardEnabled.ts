@@ -20,14 +20,17 @@ import { useCapability } from '@hooks/useCapability'
 /**
  * Pera Card is in progress and hidden from store users. Defaults visible in
  * debug and staging builds so the team can keep testing; Firebase Remote
- * Config can override. Also folds in the platform capability so callers have
- * a single check.
+ * Config can override. Also folds in the platform gate and the `card` chain
+ * capability so callers have a single check.
  */
 export const useIsPeraCardEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const isPlatformEnabled = useCapability({ platform: 'peraCard' })
+    const isCardAvailable = useCapability({
+        platform: 'peraCard',
+        anyChain: 'card',
+    })
     return (
-        isPlatformEnabled &&
+        isCardAvailable &&
         remoteConfig.getBooleanValue(
             RemoteConfigKeys.enable_pera_card,
             isDebug || isStaging,

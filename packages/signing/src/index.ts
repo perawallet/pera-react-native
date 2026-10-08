@@ -202,7 +202,6 @@ export {
     FeeAdjustmentDeliveryError,
     GenesisHashMismatchError,
     InvalidSignableDataError,
-    NetworkChangedError,
     NoLocalParticipantsError,
     SigningError,
     SourceError,

@@ -13,6 +13,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
 
 const mockErrorToast = vi.fn()
@@ -63,7 +65,41 @@ const asInboxItem = (item: unknown): InboxItem => item as InboxItem
 describe('useHandleInboxItemPress', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
     })
+
+    it('ignores an asa_inbox item while the assetInbox capability is off', () => {
+        setCapabilityOverrides({ assetInbox: false })
+        const asaItem = {
+            type: 'asa_inbox' as const,
+            data: { address: 'ADDR1', inboxAddress: 'INBOX1', requestCount: 3 },
+            createdAt: new Date(0),
+        }
+
+        const { result } = renderHook(() => useHandleInboxItemPress())
+        act(() => {
+            result.current(asInboxItem(asaItem))
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it.each(['multisig_sign', 'multisig_import'] as const)(
+        'ignores a %s item while the multisig capability is off',
+        type => {
+            setCapabilityOverrides({ multisig: false })
+
+            const { result } = renderHook(() => useHandleInboxItemPress())
+            act(() => {
+                result.current(
+                    asInboxItem({ type, data: {}, createdAt: new Date(0) }),
+                )
+            })
+
+            expect(mockHandleMultisigSignTap).not.toHaveBeenCalled()
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        },
+    )
 
     it('navigates to AssetTransferRequests for asa_inbox', () => {
         const asaItem = {

@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
+import { useCapability } from '@hooks/useCapability'
 import { useIsGiftCardsEnabled } from '../useIsGiftCardsEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -20,20 +21,14 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     RemoteConfigKeys: { enable_gift_cards: 'enable_gift_cards' },
 }))
 
-const { mockRouteCapabilities } = vi.hoisted(() => ({
-    mockRouteCapabilities: { giftCards: true },
-}))
-
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockRouteCapabilities,
-}))
+vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
 describe('useIsGiftCardsEnabled', () => {
     const mockGetBooleanValue = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRouteCapabilities.giftCards = true
+        vi.mocked(useCapability).mockReturnValue(true)
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
@@ -60,9 +55,21 @@ describe('useIsGiftCardsEnabled', () => {
         expect(result2.current).toBe(false)
     })
 
-    it('stays disabled when routeCapabilities.giftCards is off, even if the remote flag is on', () => {
+    it('stays disabled when the capability is off, even if the remote flag is on', () => {
         mockGetBooleanValue.mockReturnValue(true)
-        mockRouteCapabilities.giftCards = false
+        vi.mocked(useCapability).mockReturnValue(false)
+
+        const { result } = renderHook(() => useIsGiftCardsEnabled())
+
+        expect(useCapability).toHaveBeenCalledWith({
+            platform: 'giftCards',
+            anyChain: 'giftCards',
+        })
+        expect(result.current).toBe(false)
+    })
+
+    it('stays disabled when the remote flag is off, even if the capability is on', () => {
+        mockGetBooleanValue.mockReturnValue(false)
 
         const { result } = renderHook(() => useIsGiftCardsEnabled())
 

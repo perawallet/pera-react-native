@@ -13,6 +13,8 @@
 import React from 'react'
 import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 // Stands in for the navigator factory so rendering records the registered
 // screens instead of mounting real ones. Screens must be registered
@@ -66,6 +68,7 @@ const registeredNames = (): string[] => {
 describe('AccountStackNavigator', () => {
     beforeEach(() => {
         mockIsPeraCardEnabled.mockReturnValue(true)
+        useRemoteConfigStore.getState().resetState()
     })
 
     // The Home tab renders this stack, so a screen registered here is a screen
@@ -94,5 +97,13 @@ describe('AccountStackNavigator', () => {
         expect(names).not.toContain('PeraCardAccount')
         expect(names).not.toContain('CardTransactions')
         expect(names).not.toContain('CardTransactionDetail')
+    })
+
+    it('registers the remove-assets screen unless manageAssets is off', () => {
+        expect(registeredNames()).toContain('RemoveAssets')
+
+        setCapabilityOverrides({ manageAssets: false })
+
+        expect(registeredNames()).not.toContain('RemoveAssets')
     })
 })

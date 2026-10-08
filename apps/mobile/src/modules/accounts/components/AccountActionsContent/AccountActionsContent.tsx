@@ -46,6 +46,7 @@ export const AccountActionsContent = ({
     const { dismiss } = useBottomSheetResult<void>()
     const {
         existingContact,
+        canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
         openContact,
@@ -77,13 +78,17 @@ export const AccountActionsContent = ({
             subtitle: t('address_actions.send_transaction_subtitle'),
             onPress: openSendTransaction,
         },
-        {
-            id: 'watch-address',
-            icon: 'eye',
-            title: t('address_actions.watch_address'),
-            subtitle: t('address_actions.watch_address_subtitle'),
-            onPress: openWatchAddress,
-        },
+        ...(canAddWatchAccount
+            ? [
+                  {
+                      id: 'watch-address',
+                      icon: 'eye' as const,
+                      title: t('address_actions.watch_address'),
+                      subtitle: t('address_actions.watch_address_subtitle'),
+                      onPress: openWatchAddress,
+                  },
+              ]
+            : []),
         contactAction,
     ]
 

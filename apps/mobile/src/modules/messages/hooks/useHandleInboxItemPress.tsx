@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
 import { pushScreen } from '@modules/deeplink/core'
+import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useHandleMultisigSignTap } from '@modules/multisig'
@@ -51,6 +52,8 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
     const { errorToast } = useToast()
     const handleMultisigSignTap = useHandleMultisigSignTap()
     const { request: requestBottomSheet } = useBottomSheet()
+    const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
+    const canUseMultisig = useCapability({ anyChain: 'multisig' })
 
     const openInvitationDetail = useCallback(
         async (invitation: MultisigInvitationParam) => {
@@ -84,6 +87,7 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
         (item: InboxItem) => {
             switch (item.type) {
                 case 'asa_inbox': {
+                    if (!canUseAssetInbox) return
                     const asaInbox = item.data as ASAInbox
                     pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
@@ -92,10 +96,12 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                     return
                 }
                 case 'multisig_import': {
+                    if (!canUseMultisig) return
                     void openInvitationDetail(toInvitationParam(item.data))
                     return
                 }
                 case 'multisig_sign': {
+                    if (!canUseMultisig) return
                     handleMultisigSignTap(item.data)
                     return
                 }
@@ -107,6 +113,12 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                 }
             }
         },
-        [errorToast, handleMultisigSignTap, openInvitationDetail],
+        [
+            errorToast,
+            handleMultisigSignTap,
+            openInvitationDetail,
+            canUseAssetInbox,
+            canUseMultisig,
+        ],
     )
 }

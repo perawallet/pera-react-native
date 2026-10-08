@@ -15,6 +15,7 @@ import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
+import { useCapability } from '@hooks/useCapability'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 
 import {
@@ -30,6 +31,7 @@ import { MultisigInvitationNameScreen } from '../screens/MultisigInvitationNameS
 const MessagesStack = createAppStackNavigator<MessagesStackParamList>()
 
 export const MessagesStackNavigator = () => {
+    const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
     return (
         <MessagesStack.Navigator
             initialRouteName='MessagesHome'
@@ -48,40 +50,48 @@ export const MessagesStackNavigator = () => {
                 options={{ title: 'screens.messages' }}
                 component={MessagesScreen}
             />
-            <MessagesStack.Screen
-                name='AssetTransferRequests'
-                component={AssetTransferRequestsScreen}
-                options={{
-                    title: 'messages.claim.asset_transfer_requests_title',
-                }}
-            />
+            {canUseAssetInbox && (
+                <MessagesStack.Screen
+                    name='AssetTransferRequests'
+                    component={AssetTransferRequestsScreen}
+                    options={{
+                        title: 'messages.claim.asset_transfer_requests_title',
+                    }}
+                />
+            )}
 
-            <MessagesStack.Screen
-                name='AssetClaimDetail'
-                component={AssetClaimDetailScreen}
-                options={{
-                    title: 'messages.claim.asset_transfer_request_title',
-                }}
-            />
+            {canUseAssetInbox && (
+                <MessagesStack.Screen
+                    name='AssetClaimDetail'
+                    component={AssetClaimDetailScreen}
+                    options={{
+                        title: 'messages.claim.asset_transfer_request_title',
+                    }}
+                />
+            )}
 
-            <MessagesStack.Screen
-                name='ClaimProcessing'
-                component={ClaimProcessingScreen}
-                options={{
-                    headerShown: false,
-                    gestureEnabled: false,
-                }}
-            />
+            {canUseAssetInbox && (
+                <MessagesStack.Screen
+                    name='ClaimProcessing'
+                    component={ClaimProcessingScreen}
+                    options={{
+                        headerShown: false,
+                        gestureEnabled: false,
+                    }}
+                />
+            )}
 
-            <MessagesStack.Screen
-                name='ClaimSuccess'
-                component={TransactionSuccessScreen}
-                layout={safeAreaLayout}
-                options={{
-                    headerShown: false,
-                    gestureEnabled: false,
-                }}
-            />
+            {canUseAssetInbox && (
+                <MessagesStack.Screen
+                    name='ClaimSuccess'
+                    component={TransactionSuccessScreen}
+                    layout={safeAreaLayout}
+                    options={{
+                        headerShown: false,
+                        gestureEnabled: false,
+                    }}
+                />
+            )}
 
             <MessagesStack.Screen
                 name='MultisigInvitationName'

@@ -13,9 +13,11 @@
 import { useCallback } from 'react'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
 export type UseButtonPanelResult = {
+    canSwap: boolean
     handleSwap: () => void
     handleSend: () => void
     handleReceive: () => void
@@ -24,6 +26,7 @@ export type UseButtonPanelResult = {
 
 export const useButtonPanel = (): UseButtonPanelResult => {
     const navigation = useAppNavigation()
+    const canSwap = useCapability({ anyChain: 'swap' })
     const { openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
 
@@ -33,6 +36,7 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     }, [navigation])
 
     return {
+        canSwap,
         handleSwap,
         handleSend: openSendFunds,
         handleReceive: openReceiveFunds,

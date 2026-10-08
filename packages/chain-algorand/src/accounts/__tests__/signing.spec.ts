@@ -13,7 +13,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
-    canInitiateRekey,
     canSignWith,
     getRekeyAccount,
     getSignerFor,
@@ -505,36 +504,5 @@ describe('isMultisigUnsignable', () => {
                 ALGORAND_CHAIN_ID,
             ),
         ).toBe(false)
-    })
-})
-
-describe('canInitiateRekey', () => {
-    it('matches canSignWith — same condition under a clearer name', () => {
-        const auth = algo25('S')
-        const a = watch('A', 'S')
-        const accounts: WalletAccount[] = [a, auth]
-        expect(canInitiateRekey(a, accounts, ALGORAND_CHAIN_ID)).toBe(
-            canSignWith(a, accounts, ALGORAND_CHAIN_ID),
-        )
-        expect(canInitiateRekey(auth, accounts, ALGORAND_CHAIN_ID)).toBe(
-            canSignWith(auth, accounts, ALGORAND_CHAIN_ID),
-        )
-    })
-
-    it('returns true for an already-rekeyed account whose auth we hold', () => {
-        // The re-rekey would be signed by the existing auth chain.
-        const auth = algo25('S')
-        const a = watch('A', 'S')
-        expect(canInitiateRekey(a, [a, auth], ALGORAND_CHAIN_ID)).toBe(true)
-    })
-
-    it('returns false for a stranded rekey (auth missing)', () => {
-        const a = watch('A', 'MISSING')
-        expect(canInitiateRekey(a, [a], ALGORAND_CHAIN_ID)).toBe(false)
-    })
-
-    it('returns false for a pure watch account', () => {
-        const a = watch('A')
-        expect(canInitiateRekey(a, [a], ALGORAND_CHAIN_ID)).toBe(false)
     })
 })

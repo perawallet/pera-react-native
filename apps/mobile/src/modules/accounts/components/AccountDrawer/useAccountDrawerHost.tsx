@@ -38,6 +38,7 @@ export const useAccountDrawerHost = (): UseAccountDrawerHostResult => {
         markClosed,
         handleSelected,
         handleAddAccount,
+        canSearch,
         handleSearch,
         handlePeraCardActivate,
         handlePeraCardOpen,
@@ -91,7 +92,7 @@ export const useAccountDrawerHost = (): UseAccountDrawerHostResult => {
                 onPeraCardOpen={handlePeraCardOpen}
                 headerContent={picker.headerContent}
                 hideDefaultHeader={picker.hideDefaultHeader}
-                showSearch={picker.showSearch}
+                showSearch={picker.showSearch && canSearch}
                 accountFilter={picker.accountFilter}
                 showPeraCardActivation={picker.showPeraCardActivation}
             />
@@ -99,6 +100,7 @@ export const useAccountDrawerHost = (): UseAccountDrawerHostResult => {
         [
             handleAccountSelected,
             handleAddAccount,
+            canSearch,
             handleSearch,
             handleOpenSort,
             handlePeraCardActivate,

@@ -29,6 +29,8 @@ import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -52,6 +54,7 @@ type UseAccountAssetListResult = {
     convertFiat: AssetFiatConverter
     isPending: boolean
     isReadOnly: boolean
+    canManageAssets: boolean
     hideZeroBalance: boolean
     searchFilter: string
     headerState: ModalState
@@ -65,6 +68,7 @@ type UseAccountAssetListResult = {
     getEmptyBody: () => string
     renderItemProps: {
         isReadOnly: boolean
+        canManageAssets: boolean
         goToAssetScreen: (item: AccountHoldingsLiteRow) => void
         handleOptOut: (item: AccountHoldingsLiteRow) => void
     }
@@ -81,6 +85,9 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
+    const canManageAssets = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'manageAssets' },
+    })
     const { request: requestBottomSheet } = useBottomSheet()
 
     // Search is debounced locally and pushed into the DB query so pagination
@@ -295,10 +302,11 @@ export const useAccountAssetList = ({
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
+            canManageAssets,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isReadOnly, goToAssetScreen, handleOptOut],
+        [isReadOnly, canManageAssets, goToAssetScreen, handleOptOut],
     )
 
     return {
@@ -306,6 +314,7 @@ export const useAccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
+        canManageAssets,
         listRef,
         hideZeroBalance,
         searchFilter,

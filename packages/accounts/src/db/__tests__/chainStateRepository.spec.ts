@@ -87,7 +87,7 @@ describe('account chain state repository', () => {
             accountAddress: 'ADDR1',
             scope: MAINNET_SCOPE,
             nativeBalance: new Decimal(0),
-            chainData: { family: 'evm' },
+            chainData: { family: 'evm', nonce: { latest: 3, pending: 4 } },
         })
 
         const row = await getAccountChainStateRow({
@@ -96,7 +96,10 @@ describe('account chain state repository', () => {
             scope: MAINNET_SCOPE,
         })
 
-        expect(row?.chainData).toEqual({ family: 'evm' })
+        expect(row?.chainData).toEqual({
+            family: 'evm',
+            nonce: { latest: 3, pending: 4 },
+        })
     })
 
     it('replaces the row on conflict', async () => {

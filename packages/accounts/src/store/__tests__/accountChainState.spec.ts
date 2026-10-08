@@ -112,7 +112,9 @@ describe('account chain-state slice', () => {
 
     it('authAddressOf is null without an authAddress, including for evm', () => {
         expect(authAddressOf(algorandState())).toBeNull()
-        expect(authAddressOf({ family: 'evm' })).toBeNull()
+        expect(
+            authAddressOf({ family: 'evm', nonce: { latest: 0, pending: 0 } }),
+        ).toBeNull()
         expect(authAddressOf(algorandState({ authAddress: 'X' }))).toBe('X')
     })
 })

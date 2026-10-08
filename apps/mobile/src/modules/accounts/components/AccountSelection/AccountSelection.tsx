@@ -74,6 +74,7 @@ export const AccountSelection = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const drawerControls = useAccountDrawerControls()
     const {
+        canSearch,
         goToAddAccount,
         goToSearch,
         goToPeraCardActivation,
@@ -88,7 +89,7 @@ export const AccountSelection = ({
                 <AccountMenuContent
                     headerContent={headerContent}
                     hideDefaultHeader={hideDefaultHeader}
-                    showSearch={showSearch}
+                    showSearch={showSearch && canSearch}
                     accountFilter={accountFilter}
                     showPeraCardActivation={showPeraCardActivation}
                 />
@@ -136,6 +137,7 @@ export const AccountSelection = ({
         headerContent,
         hideDefaultHeader,
         showSearch,
+        canSearch,
         accountFilter,
         showPeraCardActivation,
         onSelected,

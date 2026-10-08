@@ -15,7 +15,10 @@ import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
@@ -49,8 +52,13 @@ export const useNfdForAddressQuery = (
 ): UseNfdForAddressQueryResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
+    const isNameServiceEnabled = useChainCapability(
+        LEGACY_CHAIN_ID,
+        'nameService',
+    )
     const enabled =
         (options?.enabled ?? true) &&
+        isNameServiceEnabled &&
         nameServiceAdapterFor(scope).isValidAddress(address)
 
     const query = useQuery({

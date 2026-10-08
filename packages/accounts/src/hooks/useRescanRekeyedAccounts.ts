@@ -12,9 +12,11 @@
 
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { addressCodecFor, fetchRekeyedAddresses } from '../chain-adapter'
 import { useAccountsStore } from '../store'
+import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 
 export type RekeyedScanResult = {
     /** Accounts the indexer reports are rekeyed to `sourceAddress` AND are
@@ -77,9 +79,13 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
         state => state.addRekeyedWatchAccounts,
     )
     const { network } = useNetwork()
+    const isRekeyAvailable = useIsRekeyAvailable(LEGACY_CHAIN_ID)
 
     const scan = useCallback(
         async (sourceAddress: string): Promise<RekeyedScanResult> => {
+            if (!isRekeyAvailable) {
+                return { importedAddresses: [], notImportedAddresses: [] }
+            }
             const addresses = await fetchRekeyedAddresses(
                 sourceAddress,
                 network,
@@ -105,7 +111,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                 notImportedAddresses: notImported,
             }
         },
-        [network],
+        [network, isRekeyAvailable],
     )
 
     const scanAll = useCallback(
@@ -113,6 +119,13 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             sourceAddresses: string[],
             options?: ScanAllOptions,
         ): Promise<RekeyedSweepResult> => {
+            if (!isRekeyAvailable) {
+                return {
+                    importedAddresses: [],
+                    candidates: [],
+                    failedSources: [],
+                }
+            }
             const sources = Array.from(new Set(sourceAddresses))
             const total = sources.length
             let settled = 0
@@ -178,7 +191,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                 failedSources,
             }
         },
-        [network],
+        [network, isRekeyAvailable],
     )
 
     const importSelected = useCallback(

@@ -377,7 +377,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),
-        canInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         getRekeyAccount: vi.fn(() => null),
         getSignerFor: vi.fn(
             (address: string, accs: any[] = []) =>

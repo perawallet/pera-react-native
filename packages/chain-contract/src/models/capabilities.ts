@@ -37,7 +37,6 @@ export const CHAIN_CAPABILITIES = [
     'giftCards',
     'discover',
     'feeDelegation',
-    'arc0027',
     'liquidAuth',
     'notifications',
     'cloudBackup',
@@ -58,6 +57,8 @@ export const CHAIN_CAPABILITIES = [
     'assetFavorites',
     'priceAlerts',
     'csvExport',
+    // Fetching a Pera Web backup needs the Pera backend.
+    'peraWebImport',
 ] as const
 
 /**

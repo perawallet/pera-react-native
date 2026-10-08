@@ -36,7 +36,9 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -59,6 +61,7 @@ type UseCollectibleDetailResult = {
     collectible: Optional<PeraCollectible>
     isPending: boolean
     isReadOnly: boolean
+    canManageAssets: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     hasImage: boolean
@@ -94,6 +97,9 @@ export const useCollectibleDetail = (
     const account = useSelectedAccount()
     const { network } = useNetwork()
     const isReadOnly = !useCanSignWith(account)
+    const canManageAssets = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'manageAssets' },
+    })
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
@@ -412,6 +418,7 @@ export const useCollectibleDetail = (
         collectible,
         isPending,
         isReadOnly,
+        canManageAssets,
         traits,
         media,
         hasImage,

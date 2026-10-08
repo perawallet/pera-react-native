@@ -31,7 +31,7 @@ type UseBannerLinkRouterResult = {
 }
 
 export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
-    const { parseDeeplink, handleDeepLink } = useDeepLink()
+    const { parseDeeplink, handleDeepLink, isDeepLinkAvailable } = useDeepLink()
 
     const route = useCallback(
         ({ url }: RouteInput) => {
@@ -45,7 +45,11 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
             if (parsed) {
                 // CMS content sits in the same trust class as a push payload:
                 // the server picks the destination, the user navigated nowhere.
-                if (!isNotificationAllowedDeeplinkType(parsed.type)) {
+                // Refusals stay silent, like a notification's.
+                if (
+                    !isNotificationAllowedDeeplinkType(parsed.type) ||
+                    !isDeepLinkAvailable(candidate)
+                ) {
                     logger.warn('Blocked banner-initiated deeplink', {
                         type: parsed.type,
                     })
@@ -68,7 +72,7 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
             }
             openValidatedBrowserUrl(url)
         },
-        [parseDeeplink, handleDeepLink],
+        [parseDeeplink, handleDeepLink, isDeepLinkAvailable],
     )
 
     return { route }

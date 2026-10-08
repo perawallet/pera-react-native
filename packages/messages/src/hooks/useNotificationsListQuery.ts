@@ -119,20 +119,21 @@ export const useNotificationsListQuery =
         const { isPaused, isError } = getQueryRenderState(query)
 
         // The observer's fetchNextPage()/refetch() ignore `enabled` and would
-        // still fire the doomed Pera request on a non-backed network. Both
-        // guards MUST be referentially stable: NotificationsScreen refetches on
+        // still fire the doomed Pera request on a non-backed network, or with
+        // no device id (`/v2/devices//notifications/`, a 404). Both guards
+        // MUST be referentially stable: NotificationsScreen refetches on
         // focus with `refetch` in its effect deps, so a per-render identity
         // re-runs the effect after every render the refetch itself causes — an
         // infinite request loop with the refresh spinner pinned.
         const fetchNextPage = useCallback(() => {
-            if (isUnavailableOnNetwork) return
+            if (!isEnabled) return
             void query.fetchNextPage()
-        }, [isUnavailableOnNetwork, query.fetchNextPage])
+        }, [isEnabled, query.fetchNextPage])
 
         const refetch = useCallback(() => {
-            if (isUnavailableOnNetwork) return
+            if (!isEnabled) return
             void query.refetch()
-        }, [isUnavailableOnNetwork, query.refetch])
+        }, [isEnabled, query.refetch])
 
         return {
             data: query.data ?? [],

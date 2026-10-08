@@ -80,6 +80,12 @@ describe('parseChainOverrides', () => {
         ).toEqual({ enabled: false, capabilities: {} })
     })
 
+    test('ignores the retired arc0027 capability', () => {
+        expect(
+            parseChainOverrides('{"capabilities":{"arc0027":false}}', KEY),
+        ).toEqual({ capabilities: {} })
+    })
+
     test.each([
         ['invalid JSON', '{"enabled":'],
         ['a wrong-typed kill switch', '{"enabled":"false"}'],

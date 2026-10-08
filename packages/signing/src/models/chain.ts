@@ -10,8 +10,15 @@
  limitations under the License
  */
 
-import { routeCapabilities } from '@routes/capabilities'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import type { SignRequest } from './index'
 
-// No remote flag: quantum accounts are on wherever the platform can run Falcon.
-export const useIsQuantumAccountsEnabled = (): boolean =>
-    routeCapabilities.quantum
+// The one place a request's chain is decided. It cannot come from the signer
+// account, which may hold addresses on several chains. Every SignRequest shape
+// carries Algorand payloads (PeraTransaction, MX and ARC-60 data); a shape for
+// another chain must answer here.
+export const chainIdOfSignRequest = (_request: SignRequest): ChainId =>
+    LEGACY_CHAIN_ID

@@ -41,7 +41,6 @@ export const algorandCapabilityDefaults: ChainCapabilities = {
     giftCards: true,
     discover: true,
     feeDelegation: true,
-    arc0027: true,
     liquidAuth: true,
     notifications: true,
     cloudBackup: true,
@@ -57,6 +56,7 @@ export const algorandCapabilityDefaults: ChainCapabilities = {
     assetFavorites: true,
     priceAlerts: true,
     csvExport: true,
+    peraWebImport: true,
 }
 
 // These need the Pera backend, which BetaNet and custom nodes don't have.
@@ -71,6 +71,7 @@ export const algorandCapabilityRestrictions: ChainCapabilityRestrictions = {
     assetFavorites: PERA_BACKED,
     priceAlerts: PERA_BACKED,
     csvExport: PERA_BACKED,
+    peraWebImport: PERA_BACKED,
     notifications: PERA_BACKED,
     assetInbox: PERA_BACKED,
 }

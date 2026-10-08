@@ -16,13 +16,12 @@ import {
     resolveImportAccountType,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 import { DeeplinkType } from '@modules/deeplink/types'
 import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,
 } from '../useImportAccountOptionsScreen'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -114,10 +113,16 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const mockQuantumFlag = vi.hoisted(() => ({ enabled: false }))
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 const mockCloudBackupFlag = vi.hoisted(() => ({ enabled: false }))
 vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
@@ -168,14 +173,11 @@ describe('useImportAccountOptionsScreen', () => {
         mockHandoff.shouldHandOff = false
         mockCapabilities.ledgerUsb = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
-        mockQuantumFlag.enabled = false
+        setQuantumEnabled(false)
         mockCloudBackupFlag.enabled = false
         mockCloudBackupState.isConfigured = false
         mockLedgerSupport.isReady = false
         mockLedgerSupport.supportedTransportTypes = []
-        vi.mocked(useNetwork).mockReturnValue({
-            network: Networks.mainnet,
-        } as ReturnType<typeof useNetwork>)
     })
 
     it('returns 5 options without Ledger USB', () => {
@@ -498,7 +500,7 @@ describe('useImportAccountOptionsScreen', () => {
 
     describe('quantum import option', () => {
         it('is absent when the quantum accounts flag is off', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -508,13 +510,13 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('is present with the quantum title when the flag is on and adds exactly one option', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
             const { result: offResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
             const offLength = offResult.current.options.length
 
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
             const { result: onResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
@@ -531,7 +533,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('navigates to ImportAccount with the quantum account type on press', () => {
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -621,58 +623,52 @@ describe('useImportAccountOptionsScreen', () => {
         })
     })
 
-    describe('non-Pera-backed networks', () => {
-        it.each([Networks.betanet, Networks.custom])(
-            'disables the Pera Web option with the network-unavailable reason on %s',
-            network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
-
-                const { result } = renderHook(() =>
-                    useImportAccountOptionsScreen(),
-                )
-
-                const peraWebOption = result.current.options.find(
-                    o => o.testID === 'import_account_options_pera_web_button',
-                )!
-
-                expect(peraWebOption.isDisabled).toBe(true)
-                expect(peraWebOption.descriptionKey).toBe(
-                    'common.network_unavailable.body',
-                )
-            },
-        )
-
-        it('keeps the other options untouched on a non-Pera-backed network', () => {
-            vi.mocked(useNetwork).mockReturnValue({
-                network: Networks.betanet,
-            } as ReturnType<typeof useNetwork>)
-
+    describe('capability gating', () => {
+        const optionIds = (): string[] => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
+            return result.current.options.map(o => o.testID)
+        }
 
-            const otherOptions = result.current.options.filter(
-                o => o.testID !== 'import_account_options_pera_web_button',
+        it('removes the Pera Web row, and only it, when peraWebImport is off', () => {
+            const before = optionIds()
+            capabilityState.turnOff('peraWebImport')
+
+            const after = optionIds()
+
+            expect(after).not.toContain(
+                'import_account_options_pera_web_button',
             )
-
-            expect(otherOptions.every(o => !o.isDisabled)).toBe(true)
+            expect(after).toEqual(
+                before.filter(
+                    id => id !== 'import_account_options_pera_web_button',
+                ),
+            )
         })
 
-        it('enables the Pera Web option with its original description on mainnet', () => {
-            vi.mocked(useNetwork).mockReturnValue({
-                network: Networks.mainnet,
-            } as ReturnType<typeof useNetwork>)
+        it('removes both Ledger rows when the ledger capability is off', () => {
+            mockCapabilities.ledgerUsb = true
+            const before = optionIds()
+            expect(before).toContain(
+                'import_account_options_pair_ledger_button',
+            )
+            capabilityState.turnOff('ledger')
+
+            const after = optionIds()
+
+            expect(after).not.toContain(
+                'import_account_options_pair_ledger_button',
+            )
+            expect(after).not.toContain(
+                'import_account_options_pair_ledger_usb_button',
+            )
+        })
+
+        it('keeps every other row enabled', () => {
+            capabilityState.turnOff('peraWebImport')
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const peraWebOption = result.current.options.find(
-                o => o.testID === 'import_account_options_pera_web_button',
-            )!
-
-            expect(peraWebOption.isDisabled).toBe(false)
-            expect(peraWebOption.descriptionKey).toBe(
-                'onboarding.import_account_options.pera_web_description',
-            )
+            expect(result.current.options.every(o => !o.isDisabled)).toBe(true)
         })
     })
 

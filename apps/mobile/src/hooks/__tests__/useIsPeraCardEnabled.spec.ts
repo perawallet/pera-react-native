@@ -58,13 +58,24 @@ describe('useIsPeraCardEnabled', () => {
         )
     })
 
-    it('is off whenever the platform capability is off, whatever the remote flag says', () => {
+    it('is off whenever the capability is off, whatever the remote flag says', () => {
         vi.mocked(useCapability).mockReturnValue(false)
         mockGetBooleanValue.mockReturnValue(true)
 
         const { result } = renderHook(() => useIsPeraCardEnabled())
 
-        expect(useCapability).toHaveBeenCalledWith({ platform: 'peraCard' })
+        expect(useCapability).toHaveBeenCalledWith({
+            platform: 'peraCard',
+            anyChain: 'card',
+        })
+        expect(result.current).toBe(false)
+    })
+
+    it('is off whenever the remote flag is off, whatever the capability says', () => {
+        mockGetBooleanValue.mockReturnValue(false)
+
+        const { result } = renderHook(() => useIsPeraCardEnabled())
+
         expect(result.current).toBe(false)
     })
 

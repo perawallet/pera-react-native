@@ -24,18 +24,20 @@ export type ChainCapabilityRequirement = {
 }
 
 /**
+ * Subscribes once and returns a checker, so a list of requirements (tabs) or
+ * one chosen at call time (deeplinks) needs no hook per requirement.
+ *
  * The one rendering rule for every capability gate: a false capability hides
  * the element that depends on it. Nothing is ever rendered disabled because
  * a capability is off, and no hook here checks whether the capability's
  * adapter is registered — that's a build-time concern the
  * capability-to-adapter parity test owns, not something the UI branches on.
  *
- * True when every present part holds; an empty requirement holds.
+ * The checker holds when every present part holds; an empty requirement holds.
  */
-export const useChainCapabilityRequirement = ({
-    chain,
-    anyChain,
-}: ChainCapabilityRequirement): boolean => {
+export const useChainCapabilityCheck = (): ((
+    requirement: ChainCapabilityRequirement,
+) => boolean) => {
     // Feature Flags changes re-render through this subscription, and the
     // capabilities() reads below pick up whatever remote config holds then too.
     useRemoteConfigOverrides()
@@ -47,18 +49,25 @@ export const useChainCapabilityRequirement = ({
             .map(({ id }) => `${id}:${selectChainMode(state, id)}`)
             .join(),
     )
-    const { chains } = getProvider()
-    return (
-        (chain === undefined ||
-            chains.capabilities(chain.chainId)[chain.capability]) &&
-        (anyChain === undefined ||
-            chains
-                .list()
-                .some(
-                    descriptor => chains.capabilities(descriptor.id)[anyChain],
-                ))
-    )
+    return ({ chain, anyChain }) => {
+        const { chains } = getProvider()
+        return (
+            (chain === undefined ||
+                chains.capabilities(chain.chainId)[chain.capability]) &&
+            (anyChain === undefined ||
+                chains
+                    .list()
+                    .some(
+                        descriptor =>
+                            chains.capabilities(descriptor.id)[anyChain],
+                    ))
+        )
+    }
 }
+
+export const useChainCapabilityRequirement = (
+    requirement: ChainCapabilityRequirement,
+): boolean => useChainCapabilityCheck()(requirement)
 
 export const useChainCapability = (
     chainId: ChainId,

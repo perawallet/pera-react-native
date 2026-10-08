@@ -37,6 +37,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         getState: () => ({ network: 'testnet' }),
         subscribe: () => () => {},
     },
+    assertScopeUnchanged: vi.fn(),
 }))
 
 import {
@@ -144,7 +145,7 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
         }
         const transport = algorandPlannerAdapter.createMultisigProposeTransport(
             vi.fn(),
-            'testnet',
+            { chainId: 'algorand', networkId: 'testnet' },
             () => undefined,
             () => undefined,
             () => 'draft-1',

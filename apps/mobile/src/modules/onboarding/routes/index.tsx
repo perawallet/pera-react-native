@@ -16,6 +16,7 @@ import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
 import { screenListeners } from '@routes/listeners'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { fullScreenLayout } from '@layouts/index'
 
 import type { OnboardingStackParamList } from './types'
@@ -34,6 +35,7 @@ const OnboardingScreenWithErrorBoundary =
 const OnboardingStack = createAppStackNavigator<OnboardingStackParamList>()
 
 export const OnboardingStackNavigator = () => {
+    const isAllowed = useCapabilityCheck()
     return (
         <OnboardingStack.Navigator
             initialRouteName='OnboardingHome'
@@ -54,6 +56,7 @@ export const OnboardingStackNavigator = () => {
             />
             {renderImportFlowScreens(
                 OnboardingStack as unknown as ImportFlowStack,
+                isAllowed,
             )}
         </OnboardingStack.Navigator>
     )

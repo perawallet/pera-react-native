@@ -51,6 +51,7 @@ export const CollectibleDetailScreen = ({
         collectible,
         isPending,
         isReadOnly,
+        canManageAssets,
         traits,
         media,
         hasImage,
@@ -190,7 +191,7 @@ export const CollectibleDetailScreen = ({
                         </PWView>
                     )}
 
-                    {isOptedInNotOwned && !isReadOnly && (
+                    {isOptedInNotOwned && !isReadOnly && canManageAssets && (
                         <PWView style={styles.optOutNotice}>
                             <PWView style={styles.optOutNoticeRow}>
                                 <PWIcon

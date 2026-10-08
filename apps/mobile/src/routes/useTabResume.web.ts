@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useSendFundsDeeplink } from '@modules/deeplink'
+import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
 import type { TabResumeIntent } from '@utils/tabResumeIntent'
 
@@ -74,6 +75,7 @@ export const useTabResume = (
     const accounts = useAllAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const openSendFunds = useSendFundsDeeplink()
+    const canSwap = useCapability({ platform: 'swapTab', anyChain: 'swap' })
 
     return useCallback(() => {
         void (async () => {
@@ -91,6 +93,8 @@ export const useTabResume = (
             if (!accounts.some(account => account.address === accountAddress)) {
                 return
             }
+            // The Swap tab isn't registered while the capability is off.
+            if (intent.flow === 'swap' && !canSwap) return
             // Before the screen mounts: Swap resets its form when the account
             // changes, and Send signs with the selected account.
             setSelectedAccountAddress(accountAddress)
@@ -114,7 +118,7 @@ export const useTabResume = (
                 shouldContinueToConfirm: true,
             })
         })()
-    }, [accounts, setSelectedAccountAddress, navigate, openSendFunds])
+    }, [accounts, setSelectedAccountAddress, navigate, openSendFunds, canSwap])
 }
 
 /**

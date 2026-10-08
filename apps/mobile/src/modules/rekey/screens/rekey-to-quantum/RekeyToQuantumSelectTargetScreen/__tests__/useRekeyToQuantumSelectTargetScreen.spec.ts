@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useRekeyToQuantumSelectTargetScreen } from '../useRekeyToQuantumSelectTargetScreen'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const sourceAccount = { address: 'SRC', name: 'Src' } as WalletAccount
 const targetA = { address: 'A', name: 'A' } as WalletAccount
@@ -33,10 +34,9 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-let quantumEnabled = true
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => quantumEnabled,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 const mockUseAuthorityTargets = vi.fn(
     (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 describe('useRekeyToQuantumSelectTargetScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        quantumEnabled = true
+        capabilityState.reset()
     })
 
     it('returns the targets the chain accepts for the resolved source', () => {
@@ -74,7 +74,7 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
     })
 
     it('passes the quantum flag through when quantum accounts are disabled', () => {
-        quantumEnabled = false
+        capabilityState.turnOff('quantumAccounts')
 
         renderHook(() => useRekeyToQuantumSelectTargetScreen())
 

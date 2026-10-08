@@ -15,6 +15,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { useConnectionsSettingsScreen } from '../useConnectionsSettingsScreen'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockRequestBottomSheet = vi.fn()
 
@@ -27,6 +28,10 @@ vi.mock('@components/ConfirmActionContent', () => ({
 }))
 
 vi.mock('@hooks/useLanguage')
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: vi.fn(),
@@ -82,7 +87,17 @@ describe('useConnectionsSettingsScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
         mockList([walletConnectRow, dappRow])
+    })
+
+    it('keeps existing connections listed but offers no new one while dappConnect is off', () => {
+        capabilityState.turnOff('dappConnect')
+
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        expect(result.current.canConnect).toBe(false)
+        expect(result.current.connections).toHaveLength(2)
     })
 
     it('maps every registry row through toUnifiedConnection, most recent first', () => {

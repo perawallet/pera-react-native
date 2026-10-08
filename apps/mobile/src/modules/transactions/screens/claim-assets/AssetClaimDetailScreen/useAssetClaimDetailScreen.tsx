@@ -23,6 +23,7 @@ import { useClaimAssets } from '@modules/transactions/hooks'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import type { MessagesStackParamList } from '@modules/messages'
 import { Decimal } from 'decimal.js'
+import { useCapability } from '@hooks/useCapability'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -43,6 +44,7 @@ type UseAssetClaimDetailScreenResult = {
     isRejectBlocked: boolean
     handleClaim: () => void
     handleRejectPress: () => void
+    canBuy: boolean
     handleAddFunds: () => void
     handleCopyAssetId: () => void
 }
@@ -59,6 +61,7 @@ export const useAssetClaimDetailScreen =
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
         const { showToast, errorToast } = useToast()
+        const canBuy = useCapability({ anyChain: 'onramp' })
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
@@ -183,6 +186,7 @@ export const useAssetClaimDetailScreen =
             isClaimBlocked,
             isRejectBlocked,
             handleClaim,
+            canBuy,
             handleAddFunds,
             handleRejectPress: () => void handleRejectPress(),
             handleCopyAssetId,

@@ -18,7 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useCapability } from '@hooks/useCapability'
 
 import type { RekeyToQuantumStackParamList } from '../../../routes/rekey-to-quantum/types'
 
@@ -40,7 +40,10 @@ export const useRekeyToQuantumSelectTargetScreen =
             >()
         const sourceAddress = route.params.sourceAddress
         const source = useFindAccountByAddress(sourceAddress)
-        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
+        const isQuantumTargetEnabled = useCapability({
+            platform: 'quantum',
+            anyChain: 'quantumAccounts',
+        })
 
         const targets = useAuthorityTargets(source, 'quantum', {
             isQuantumTargetEnabled,

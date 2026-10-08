@@ -21,6 +21,7 @@ import {
     type InboxItem,
 } from '@perawallet/wallet-core-messages'
 import { navigateToScreen } from '@modules/deeplink/core'
+import { useCapability } from '@hooks/useCapability'
 import { useHandleInboxItemPress } from './useHandleInboxItemPress'
 
 export type MultisigIntentKind = 'sign' | 'import'
@@ -95,9 +96,11 @@ export const useHandleMultisigNotification =
     (): UseHandleMultisigNotificationResult => {
         const { refetch: refetchInbox } = useInboxQuery()
         const handleInboxItemPress = useHandleInboxItemPress()
+        const canUseMultisig = useCapability({ anyChain: 'multisig' })
 
         const handleMultisigNotification = useCallback(
             (kind: MultisigIntentKind, accountAddress: Maybe<string>) => {
+                if (!canUseMultisig) return
                 // Switch to the Inbox tab first so the user lands there while
                 // we fetch. Nested-navigator targeting (`params.screen`) is
                 // required because the `initialTab` route param is only read by
@@ -125,7 +128,7 @@ export const useHandleMultisigNotification =
                         // surface the item once it settles.
                     })
             },
-            [refetchInbox, handleInboxItemPress],
+            [refetchInbox, handleInboxItemPress, canUseMultisig],
         )
 
         return { handleMultisigNotification }
