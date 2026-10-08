@@ -158,7 +158,8 @@ export const useSignRequestApprovalScreen =
         const isAwaitingPreflight =
             !!ownRequest && isSignRequestAwaitingPreflight(ownRequest)
         return {
-            isLoading: isLoading || (!ownRequest && !error) || isAwaitingPreflight,
+            isLoading:
+                isLoading || (!ownRequest && !error) || isAwaitingPreflight,
             error,
             request: ownRequest,
             origin: approval?.origin ?? '',
