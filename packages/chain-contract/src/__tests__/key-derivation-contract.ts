@@ -28,6 +28,8 @@ export interface KeyDerivationContractFixtures {
     /** Options naming a scheme this chain cannot derive; omit when it derives every scheme. */
     unsupportedOpts?: DeriveOpts
     rawKey: Uint8Array
+    /** Maps the suite's 32 fake key bytes to a public key this chain's codec accepts; identity when omitted. */
+    shapePublicKey?: (fakeKeyBytes: Uint8Array) => Uint8Array
 }
 
 type FakeKeyStore = ChainKeyStore & {
@@ -50,7 +52,9 @@ const fakeKeyBytes = (text: string): Uint8Array => {
     return bytes
 }
 
-export const createFakeChainKeyStore = (): FakeKeyStore => {
+export const createFakeChainKeyStore = (
+    shapePublicKey: (fakeKeyBytes: Uint8Array) => Uint8Array = bytes => bytes,
+): FakeKeyStore => {
     const derivations: KeyDerivationRequest[] = []
     const imports: KeyImportRequest[] = []
     return {
@@ -60,8 +64,8 @@ export const createFakeChainKeyStore = (): FakeKeyStore => {
             derivations.push(request)
             return {
                 keyPairId: request.id,
-                publicKey: fakeKeyBytes(
-                    `${seedRef}|${request.scheme}|${request.path}`,
+                publicKey: shapePublicKey(
+                    fakeKeyBytes(`${seedRef}|${request.scheme}|${request.path}`),
                 ),
             }
         },
@@ -69,7 +73,9 @@ export const createFakeChainKeyStore = (): FakeKeyStore => {
             imports.push(request)
             return {
                 keyPairId: request.id,
-                publicKey: fakeKeyBytes(`${request.scheme}|${bytes.join(',')}`),
+                publicKey: shapePublicKey(
+                    fakeKeyBytes(`${request.scheme}|${bytes.join(',')}`),
+                ),
             }
         },
         sign: async () => new Uint8Array(64),
@@ -83,12 +89,13 @@ export const keyDerivationContractTests = (
     makeDerivation: () => KeyDerivation,
     fixtures: KeyDerivationContractFixtures,
 ): void => {
-    const { codec, deriveOpts } = fixtures
+    const { codec, deriveOpts, shapePublicKey } = fixtures
+    const createKeyStore = () => createFakeChainKeyStore(shapePublicKey)
 
     describe(`KeyDerivation contract: ${makeDerivation().chainId}`, () => {
         it('derives the same key id and a valid address for the same coordinates', async () => {
             const derivation = makeDerivation()
-            const kms = createFakeChainKeyStore()
+            const kms = createKeyStore()
 
             const first = await derivation.deriveAccount(
                 kms,
@@ -114,7 +121,7 @@ export const keyDerivationContractTests = (
 
         it('derives distinct keys for distinct coordinates', async () => {
             const derivation = makeDerivation()
-            const kms = createFakeChainKeyStore()
+            const kms = createKeyStore()
 
             const derived = await Promise.all(
                 [
@@ -138,7 +145,7 @@ export const keyDerivationContractTests = (
 
         it('encodes the derived public key with its own codec', async () => {
             const derived = await makeDerivation().deriveAccount(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 SEED,
                 0,
                 0,
@@ -157,12 +164,12 @@ export const keyDerivationContractTests = (
             const derivation = makeDerivation()
 
             const first = await derivation.importRawKey(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 fixtures.rawKey,
                 deriveOpts,
             )
             const second = await derivation.importRawKey(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 fixtures.rawKey,
                 deriveOpts,
             )
@@ -179,7 +186,7 @@ export const keyDerivationContractTests = (
             async () => {
                 await expect(
                     makeDerivation().deriveAccount(
-                        createFakeChainKeyStore(),
+                        createKeyStore(),
                         SEED,
                         0,
                         0,
@@ -192,7 +199,7 @@ export const keyDerivationContractTests = (
         it('discovers nothing when no address has activity', async () => {
             await expect(
                 makeDerivation().discover(
-                    createFakeChainKeyStore(),
+                    createKeyStore(),
                     SEED,
                     async () => false,
                     deriveOpts,
@@ -203,7 +210,7 @@ export const keyDerivationContractTests = (
         it('discovers only active addresses, each re-derivable from its coordinates', async () => {
             const derivation = makeDerivation()
             const active = await derivation.deriveAccount(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 SEED,
                 0,
                 0,
@@ -211,7 +218,7 @@ export const keyDerivationContractTests = (
             )
 
             const found = await derivation.discover(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 SEED,
                 async address => codec.areEqual(address, active.address),
                 deriveOpts,
@@ -220,7 +227,7 @@ export const keyDerivationContractTests = (
             expect(found.map(c => c.address)).toEqual([active.address])
             const [candidate] = found
             const rederived = await derivation.deriveAccount(
-                createFakeChainKeyStore(),
+                createKeyStore(),
                 SEED,
                 candidate.account,
                 candidate.keyIndex,
