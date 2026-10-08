@@ -279,6 +279,12 @@ export interface SignableAnalysis {
     riskLevel: 'low' | 'medium' | 'high'
 }
 
+/** What a group does, before any warning or risk is attached. */
+export type DecodedGroup = Pick<
+    SignableAnalysis,
+    'totalFees' | 'transactionSummaries' | 'signableAddresses'
+>
+
 export interface AnalysisContext {
     scope: ChainScope
     /** All user accounts, for detecting internal transfers. */
