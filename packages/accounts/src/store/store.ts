@@ -24,6 +24,7 @@ import {
     type WalletAccount,
 } from '../models'
 import {
+    generateOrderedUniqueId,
     logger,
     registerStore,
     type Network,
@@ -118,8 +119,16 @@ const currentShapeOf = (
           }
         : undefined
 
-const decodeRecord = (raw: PersistedRecord): WalletAccount | undefined => {
-    if (typeof raw.id !== 'string') return undefined
+type IdentifiedRecord = PersistedRecord & { id: string }
+
+// No migration ever wrote ids, so a record persisted without one gets a fresh
+// id rather than losing the account.
+const withId = (raw: PersistedRecord): IdentifiedRecord =>
+    typeof raw.id === 'string' && raw.id !== ''
+        ? (raw as IdentifiedRecord)
+        : { ...raw, id: generateOrderedUniqueId() }
+
+const decodeRecord = (raw: IdentifiedRecord): WalletAccount | undefined => {
     const decoded =
         CHAIN_IDS.flatMap(chainId =>
             accountsChainAdapters.has(chainId)
@@ -150,12 +159,11 @@ const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
 /** The id of the account that held `address` before the migration; `null` when none did. */
 const idForLegacyAddress = (
     address: Nullable<string> | undefined,
-    raws: readonly PersistedRecord[],
+    raws: readonly IdentifiedRecord[],
     accounts: readonly WalletAccount[],
 ): Nullable<string> => {
     if (!address) return null
-    const raw = raws.find(record => record.address === address)
-    const id = typeof raw?.id === 'string' ? raw.id : undefined
+    const id = raws.find(record => record.address === address)?.id
     return id && accounts.some(account => account.id === id) ? id : null
 }
 
@@ -204,7 +212,7 @@ export const migrateAccountsState = (
             version < 2 ? stripPreV2Custody(raw) : raw,
         ),
     )
-    const raws = lifted.records
+    const raws = lifted.records.map(withId)
     const accounts = raws.flatMap(raw => decodeRecord(raw) ?? [])
     const idOf = (address: Nullable<string> | undefined) =>
         idForLegacyAddress(address, raws, accounts)

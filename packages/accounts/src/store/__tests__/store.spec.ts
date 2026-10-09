@@ -613,8 +613,6 @@ describe('services/accounts/store', () => {
             { id: 'w', address: 'W-ADDR' },
             // Nothing the registered chain decodes.
             { id: 'undecodable', somethingElse: true },
-            // No id to keep.
-            { address: 'NO-ID' },
         ]
         const legacyState = () => ({
             accounts: legacyRecords(),
@@ -800,6 +798,53 @@ describe('services/accounts/store', () => {
                 })
             }
         })
+
+        test.each([2, 3, 4])(
+            'gives a v%s record persisted without an id a fresh one, and keeps what pointed at its address',
+            async version => {
+                const { migrateAccountsState } = await import('../store')
+
+                const migrated = migrateAccountsState(
+                    {
+                        ...legacyState(),
+                        accounts: [
+                            ...legacyRecords(),
+                            { address: 'NO-ID', keyPairId: 'k-n' },
+                            { id: '', address: 'EMPTY-ID' },
+                        ],
+                        selectedAccountAddress: 'NO-ID',
+                        manualAccountOrder: ['NO-ID', 'A-ADDR', 'EMPTY-ID'],
+                        launchAccountAddress: 'EMPTY-ID',
+                    },
+                    version,
+                )
+
+                const noId = migrated.accounts.find(
+                    a => a.chains.algorand?.address === 'NO-ID',
+                )
+                const emptyId = migrated.accounts.find(
+                    a => a.chains.algorand?.address === 'EMPTY-ID',
+                )
+                expect(noId).toMatchObject({
+                    custody: { kind: 'local' },
+                    chains: { algorand: { keyPairId: 'k-n' } },
+                })
+                expect(noId?.id).toEqual(expect.any(String))
+                expect(emptyId?.id).toEqual(expect.any(String))
+                expect(new Set(migrated.accounts.map(a => a.id)).size).toBe(
+                    migrated.accounts.length,
+                )
+                expect(migrated.accounts.map(a => a.id)).not.toContain('')
+                expect(migrated.selectedAccountId).toBe(noId?.id)
+                expect(migrated.manualAccountOrder).toEqual([
+                    noId?.id,
+                    'a',
+                    emptyId?.id,
+                ])
+                expect(migrated.launchAccountId).toBe(emptyId?.id)
+                expect(migrated.launchAccountMode).toBe('specific')
+            },
+        )
 
         test('falls back to lastUsed when the launch pin names no surviving account', async () => {
             const { migrateAccountsState } = await import('../store')

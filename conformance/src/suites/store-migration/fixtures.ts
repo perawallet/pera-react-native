@@ -428,4 +428,26 @@ export const STORE_FIXTURES: StoreFixture[] = [
             version: 4,
         }),
     },
+    {
+        // A record held without an id gets a fresh one, and the order entry
+        // that named it by address follows it.
+        name: 'v4 with a record held without an id',
+        payload: a => ({
+            state: {
+                accounts: v4Records(a).map(record => {
+                    if (record.id !== a.watch.id) return record
+                    const { id: _id, ...rest } = record
+                    return rest
+                }),
+                ...topLevel(a),
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 4,
+        }),
+    },
 ]
