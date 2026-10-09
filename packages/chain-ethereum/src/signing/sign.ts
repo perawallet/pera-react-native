@@ -45,8 +45,19 @@ const decodeSignature = (
 /**
  * Transactions get `yParity` (what `serializeTransaction` consumes); messages
  * and typed data get `v` of 27 or 28 (what `serializeSignature` consumes).
- * `_auth` is inert so a per-signature prompt can be added without touching callers.
  */
+export const toViemSignature = (
+    bytes: Uint8Array,
+    tag: TaggedDigest['tag'],
+): Signature => {
+    const { r, s, recovery } = decodeSignature(bytes)
+    const components = { r: bytesToHex(r), s: bytesToHex(s) }
+    return tag === 'eip155-tx'
+        ? { ...components, yParity: recovery }
+        : { ...components, v: BigInt(27 + recovery) }
+}
+
+/** `_auth` is inert so a per-signature prompt can be added without touching callers. */
 export const signTagged = async (
     kms: Pick<ChainKeyStore, 'sign'>,
     keyPairId: string,
@@ -54,11 +65,8 @@ export const signTagged = async (
     _auth?: AuthContext,
 ): Promise<Signature> => {
     const { tag, digest: bytes } = openTaggedDigest(digest)
-    const { r, s, recovery } = decodeSignature(
+    return toViemSignature(
         await kms.sign(keyPairId, bytes, SIGNING_ACCESS_DOMAIN),
+        tag,
     )
-    const components = { r: bytesToHex(r), s: bytesToHex(s) }
-    return tag === 'eip155-tx'
-        ? { ...components, yParity: recovery }
-        : { ...components, v: BigInt(27 + recovery) }
 }
