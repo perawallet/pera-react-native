@@ -15,7 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCapability } from '@hooks/useCapability'
 import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { config } from '@perawallet/wallet-core-config'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { routeCapabilities } from '@routes/capabilities'
@@ -40,7 +40,7 @@ export type SettingsOptionSection = {
 export const useSettingsOptions = () => {
     const { t, currentLanguage } = useLanguage()
     const isLanguageSelectionEnabled = useIsLanguageSelectionEnabled()
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
@@ -51,7 +51,7 @@ export const useSettingsOptions = () => {
             {
                 title: t('settings.main.account_section'),
                 items: [
-                    ...(isCloudBackupEnabled
+                    ...(isCloudBackupAvailable
                         ? [
                               {
                                   route: 'CloudBackupSettings',
@@ -204,7 +204,7 @@ export const useSettingsOptions = () => {
         t,
         currentLanguage,
         isLanguageSelectionEnabled,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         isCloudBackupConfigured,
         canRekey,
     ])

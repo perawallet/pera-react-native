@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountFundedNetworksQuery,
     useAccountsRekeyedTo,
@@ -28,9 +30,18 @@ export const useShouldPromptMnemonicBackup = (
     // warning that disappears on a network switch teaches the wrong lesson.
     const { isFunded } = useAccountFundedNetworksQuery(account?.address)
     const rekeyedToThisAccount = useAccountsRekeyedTo(account?.address)
+    // Accounts belong to the legacy chain until WalletAccount carries a chain id.
+    const canBackUpMnemonic = useChainCapability(
+        LEGACY_CHAIN_ID,
+        'mnemonicBackup',
+    )
 
     // An unfunded account still holds the keys for anything rekeyed to it, so
     // losing its passphrase strands those accounts — funding is not the only
     // reason to prompt.
-    return requiresBackup && (isFunded || rekeyedToThisAccount.length > 0)
+    return (
+        canBackUpMnemonic &&
+        requiresBackup &&
+        (isFunded || rekeyedToThisAccount.length > 0)
+    )
 }

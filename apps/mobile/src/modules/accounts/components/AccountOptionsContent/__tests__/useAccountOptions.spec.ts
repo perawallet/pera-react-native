@@ -454,6 +454,49 @@ describe('useAccountOptions', () => {
             expect(ids).toContain('scan-rekeyed')
         })
 
+        it('hides view-passphrase for every passphrase-backed account when mnemonic backup is off', () => {
+            setCapabilityOverrides({ mnemonicBackup: false })
+
+            for (const account of [algo25Account, quantumAccount]) {
+                const ids = idsFor(account)
+
+                expect(ids).not.toContain('view-passphrase')
+                expect(ids).toContain('rename-account')
+            }
+        })
+
+        it('removes a backed-up account without the backup choice when cloud backup is off on every chain', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            setCapabilityOverrides({ cloudBackup: false })
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isCloudBackupAvailable).toBe(false)
+            await act(async () => {
+                await result.current.options
+                    .find(o => o.id === 'remove-account')
+                    ?.onPress()
+            })
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
+            await act(async () => {
+                await result.current.handleConfirmRemove()
+            })
+
+            expect(result.current.removeConfirmView).not.toBe(
+                'cloud-backup-delete',
+            )
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
+        })
+
         it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {
             setCapabilityOverrides({ notifications: false })
 

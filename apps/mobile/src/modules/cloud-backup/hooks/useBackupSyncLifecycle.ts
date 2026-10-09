@@ -38,7 +38,7 @@ import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { isActiveAppState } from '@utils/app-state'
 
 type BackupSyncCallbacks = {
@@ -247,7 +247,7 @@ const useForegroundBackupSync = (isActive: boolean) => {
 }
 
 export const useBackupSyncLifecycle = () => {
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const backupId = useCloudBackupStore(state => state.backupId)
     // Mounted outside AutoLockGuard, which only hides its children. The store
     // defaults this to `true` and the guard's listener clears it, so a cold
@@ -259,6 +259,6 @@ export const useBackupSyncLifecycle = () => {
     // is what starts the manager when backup is enabled mid-session —
     // `start()` silently no-ops while there are no credentials.
     useForegroundBackupSync(
-        isCloudBackupEnabled && backupId != null && !isAppLockActive,
+        isCloudBackupAvailable && backupId != null && !isAppLockActive,
     )
 }

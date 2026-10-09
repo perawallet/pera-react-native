@@ -110,6 +110,21 @@ describe('renderImportFlowScreens', () => {
         expect(names).toContain('ImportAccountOptions')
     })
 
+    it('leaves out every ASB import screen while secure backup is off, keeping the cloud restore screens', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(
+                Stack,
+                ({ anyChain }) => anyChain !== 'secureBackup',
+            ),
+        ).map(child => child.props.name)
+
+        expect(names.filter(name => name.startsWith('AsbImport'))).toEqual([])
+        expect(names).toContain('ImportAccountOptions')
+        expect(names).toContain('CloudBackupRestoreScan')
+    })
+
     it('leaves out the rekeyed-address import while rekey is off', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 

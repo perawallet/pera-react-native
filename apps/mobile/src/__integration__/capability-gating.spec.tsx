@@ -24,6 +24,7 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
 }))
 
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { BottomSheetIdContext } from '@modules/bottom-sheet'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -191,5 +192,70 @@ describe('Flow: capability gating', () => {
                 ).toBe(isOptionShown)
             },
         )
+    })
+
+    describe('Backup entry points', () => {
+        // The cloud backup flag and its capability are separate switches, and
+        // the restore row needs both.
+        it.each([
+            ['flag on, capability off', true, false, false],
+            ['flag off, capability on', false, true, false],
+            ['flag on, capability on', true, true, true],
+        ])(
+            'the cloud restore row with %s',
+            async (_, isFlagOn, isCapabilityOn, isRowShown) => {
+                await enableOverrides()
+                useRemoteConfigStore
+                    .getState()
+                    .setConfigOverride('enable_cloud_backup', isFlagOn)
+                setCapabilityOverrides({ cloudBackup: isCapabilityOn })
+
+                renderWithNavigation(
+                    ImportAccountOptionsScreen,
+                    'ImportOptions',
+                )
+
+                expect(
+                    screen.queryByTestId(
+                        'import_account_options_cloud_backup_button',
+                    ) !== null,
+                ).toBe(isRowShown)
+            },
+        )
+
+        it('offers the secure backup row at the defaults', () => {
+            renderWithNavigation(ImportAccountOptionsScreen, 'ImportOptions')
+
+            expect(
+                screen.getByTestId('import_account_options_asb_button'),
+            ).toBeTruthy()
+        })
+
+        it('removes the secure backup row, and only it, when secure backup is off', async () => {
+            await enableOverrides()
+            setCapabilityOverrides({ secureBackup: false })
+
+            renderWithNavigation(ImportAccountOptionsScreen, 'ImportOptions')
+
+            expect(
+                screen.getByTestId(
+                    'import_account_options_recover_wallet_button',
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('import_account_options_asb_button'),
+            ).toBeNull()
+        })
+
+        it('leaves the cloudBackup capability on when the flag is off', async () => {
+            await enableOverrides()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_cloud_backup', false)
+
+            expect(
+                getProvider().chains.capabilities('algorand').cloudBackup,
+            ).toBe(true)
+        })
     })
 })

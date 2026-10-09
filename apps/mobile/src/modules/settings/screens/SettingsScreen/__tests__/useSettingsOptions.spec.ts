@@ -407,6 +407,18 @@ describe('useSettingsOptions', () => {
         ).toBe(false)
     })
 
+    it('hides the cloud backup row when no enabled chain supports cloud backup', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+        capabilityState.turnOff('cloudBackup')
+
+        const { result } = renderHook(() => useSettingsOptions())
+        const accountItems = result.current.settingsOptions[0].items
+
+        expect(
+            accountItems.some(item => item.route === 'CloudBackupSettings'),
+        ).toBe(false)
+    })
+
     it('shows the cloud backup row first, marked off until it is configured', () => {
         ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
 

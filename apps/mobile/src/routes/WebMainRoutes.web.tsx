@@ -193,11 +193,13 @@ export const WebMainRoutes = ({
                         name='AddAccount'
                         component={AddAccountStackNavigator}
                     />
-                    <RootStack.Screen
-                        name='BackupWallet'
-                        component={BackupStackNavigator}
-                        options={{ headerShown: false }}
-                    />
+                    {isAllowed({ anyChain: 'mnemonicBackup' }) && (
+                        <RootStack.Screen
+                            name='BackupWallet'
+                            component={BackupStackNavigator}
+                            options={{ headerShown: false }}
+                        />
+                    )}
                     <RootStack.Screen
                         name='GroupTransactionList'
                         layout={fullScreenLayout}

@@ -44,7 +44,7 @@ import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggl
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { useIsAccountBackedUp } from '@modules/cloud-backup'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { ExportShareAccountContent } from '@modules/multisig'
 import {
     SharedAccountDetailsContent,
@@ -88,7 +88,7 @@ type BackupChoice = 'delete' | 'keep'
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
-    isCloudBackupEnabled: boolean
+    isCloudBackupAvailable: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
     authAccount: WalletAccount | undefined
@@ -121,7 +121,7 @@ export const useAccountOptions = ({
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isBackedUp = useIsAccountBackedUp(account.address)
 
     useMultisigDetailsBackfill(account)
@@ -134,7 +134,11 @@ export const useAccountOptions = ({
     })
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
+    const canBackUpMnemonic = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'mnemonicBackup' },
+    })
     const showPassphrase =
+        canBackUpMnemonic &&
         !isRekeyed &&
         (isAlgo25Account(account) ||
             isHDWalletAccount(account) ||
@@ -400,14 +404,14 @@ export const useAccountOptions = ({
             onClose()
             return
         }
-        if (isCloudBackupEnabled && isBackedUp) {
+        if (isCloudBackupAvailable && isBackedUp) {
             setRemoveConfirmView('cloud-backup-delete')
             return
         }
         finishRemove()
     }, [
         blockedByRekeyedDependents,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         isBackedUp,
         onClose,
         finishRemove,
@@ -613,7 +617,7 @@ export const useAccountOptions = ({
 
     return {
         options,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         isRekeyed,
         canUndoRekey,
         authAccount: authAccount ?? undefined,

@@ -20,7 +20,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '@modules/cloud-backup'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
@@ -37,7 +37,7 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
     const { request } = useBottomSheet()
     const { showToast } = useToast()
     const { t } = useLanguage()
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const { run } = useSingleFlight()
 
@@ -46,7 +46,7 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
             // The backup keys on the raw keystore id, not the base64url `id`
             // WebAuthn uses.
             if (
-                !isCloudBackupEnabled ||
+                !isCloudBackupAvailable ||
                 !isPasskeyBackedUp(syncState, passkey.keyId)
             )
                 return true
@@ -92,7 +92,7 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
             })
             return false
         },
-        [isCloudBackupEnabled, syncState, request, showToast, t],
+        [isCloudBackupAvailable, syncState, request, showToast, t],
     )
 
     return useCallback(

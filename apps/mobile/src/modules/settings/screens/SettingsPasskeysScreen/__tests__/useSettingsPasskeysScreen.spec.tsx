@@ -409,6 +409,17 @@ describe('useSettingsPasskeysScreen', () => {
             expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
         })
 
+        it('removes without asking when no enabled chain supports cloud backup', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+            capabilityState.turnOff('cloudBackup')
+
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
+            expect(mocks.keepPasskeyInBackup).not.toHaveBeenCalled()
+            expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
+        })
+
         it('keeps the backup copy when the user declines, then removes', async () => {
             mocks.isPasskeyBackedUp.mockReturnValue(true)
             mocks.requestSheet
