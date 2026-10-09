@@ -10,14 +10,40 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
+import {
+    accountsChainAdapters,
+    type AccountsChainAdapter,
+} from '@perawallet/wallet-core-accounts'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
+import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../__tests__/fakeReviewerAdapter'
+import {
+    plannerChainAdapters,
+    reviewerChainAdapters,
+} from '../../chain-adapter'
 import { signingMachine } from '../signingMachine'
-import { SubmissionError } from '../../pipeline/errors'
+import { analyzerActor } from '../actors/analyzerActor'
+import {
+    GenesisHashMismatchError,
+    ReviewRequiredError,
+    SubmissionError,
+} from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -980,6 +1006,120 @@ describe('signingMachine', () => {
             const state = await waitFor(actor, s => s.matches('failed'))
             expect(state.context.error).toBe(cause)
             expect(state.context.failedDuringState).toBe('signing')
+        })
+    })
+
+    describe('on a chain other than Algorand', () => {
+        const SECOND_CHAIN_ID: ChainId = 'ethereum'
+        const secondScope = { chainId: SECOND_CHAIN_ID, networkId: 'mainnet' }
+
+        // Algorand's account rules and schemes under the second chain's id, so
+        // the machine resolves a signer there without that chain's package. A
+        // real id, since scope keys in the stores accept no other.
+        beforeAll(() => {
+            accountsChainAdapters.register({
+                ...algorandAccountsAdapter,
+                chainId: SECOND_CHAIN_ID,
+            } as AccountsChainAdapter)
+            getProvider().chains.register(
+                { ...algorandDescriptor, id: SECOND_CHAIN_ID },
+                Object.fromEntries(
+                    CHAIN_CAPABILITIES.map(capability => [capability, false]),
+                ) as ChainCapabilities,
+            )
+        })
+
+        const secondChainAccount = {
+            ...mockAlgo25Account,
+            chains: {
+                [SECOND_CHAIN_ID]: {
+                    address: MOCK_ADDRESS,
+                    keyPairId: 'key-1',
+                },
+            },
+        } as WalletAccount
+        const secondChainInput = (): SigningMachineInput =>
+            makeInput({ scope: secondScope, allAccounts: [secondChainAccount] })
+
+        const secondDecode = vi.fn()
+        const secondAutoApproveLocal = vi.fn()
+
+        // The real analyzer, so the machine resolves the reviewer itself.
+        const realAnalyzerMachine = mockedMachine.provide({
+            actors: { analyzerActor },
+        })
+
+        beforeEach(() => {
+            secondDecode.mockReset().mockResolvedValue({
+                totalFees: 7n,
+                transactionSummaries: [],
+                signableAddresses: [MOCK_ADDRESS],
+            })
+            secondAutoApproveLocal.mockReset().mockReturnValue(true)
+            // Algorand's reviewer refuses every request, so reaching it fails.
+            registerFakeReviewerAdapter({
+                decoder: {
+                    decode: vi.fn(async () => {
+                        throw new GenesisHashMismatchError(
+                            'mainnet',
+                            0,
+                            'EXPECTED',
+                            'ACTUAL',
+                        )
+                    }),
+                },
+            })
+            reviewerChainAdapters.register(
+                fakeReviewerAdapter({
+                    chainId: SECOND_CHAIN_ID,
+                    decoder: { decode: secondDecode },
+                    policy: { autoApproveLocal: secondAutoApproveLocal },
+                }),
+            )
+            plannerChainAdapters.register(
+                fakePlannerAdapter({ chainId: SECOND_CHAIN_ID }),
+            )
+        })
+
+        it("reviews the request with its own chain's reviewer", async () => {
+            const actor = createActor(realAnalyzerMachine, {
+                input: secondChainInput(),
+            })
+            actor.start()
+
+            const state = await waitFor(actor, s => s.matches('awaiting_user'))
+
+            expect(state.context.analyses?.map(a => a.totalFees)).toEqual([7n])
+        })
+
+        it("refuses a local request its chain's policy won't sign unreviewed", async () => {
+            secondAutoApproveLocal.mockReturnValue(false)
+
+            const actor = createActor(realAnalyzerMachine, {
+                input: secondChainInput(),
+            })
+            actor.start()
+
+            const state = await waitFor(actor, s => s.matches('failed'))
+
+            expect(state.context.error).toBeInstanceOf(ReviewRequiredError)
+            expect(state.can({ type: 'RETRY' })).toBe(false)
+        })
+
+        it('leaves a request a review screen shows to the user, whatever the policy', async () => {
+            secondAutoApproveLocal.mockReturnValue(false)
+
+            const actor = createActor(realAnalyzerMachine, {
+                input: {
+                    ...secondChainInput(),
+                    request: { ...mockRequest, sourceType: 'walletconnect' },
+                },
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+
+            expect(secondAutoApproveLocal).not.toHaveBeenCalled()
         })
     })
 })

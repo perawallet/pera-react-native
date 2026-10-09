@@ -33,13 +33,6 @@ export const fakeReviewerAdapter = (
     },
     warnings: { detect: vi.fn(() => []) },
     policy: { autoApproveLocal: vi.fn(() => true) },
-    analyze: vi.fn(async () => ({
-        totalFees: 0n,
-        transactionSummaries: [],
-        warnings: [],
-        signableAddresses: [],
-        riskLevel: 'low' as const,
-    })),
     createTransactionListItems: vi.fn(() => []),
     classifyRequestStructure: vi.fn(() => 'single' as const),
     aggregateTransactionWarnings: vi.fn(() => []),

@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ReviewerChainAdapter } from '../chain-adapter'
-import { composeAnalysis } from '../pipeline/composeAnalysis'
+import { reviewGroup } from '../pipeline/composeAnalysis'
 import type { AnalysisContext, SignableGroup } from '../pipeline/types'
 
 export interface ReviewerContractFixtures {
@@ -26,6 +26,8 @@ export interface ReviewerContractFixtures {
     foreignGroup: SignableGroup
     /** A contract call a wallet account signs whose effect the chain can't read. */
     opaqueGroup: SignableGroup
+    /** Whether the chain lets `opaqueGroup` sign without review when the app built it. */
+    opaqueAutoApproves: boolean
     /** A transaction a wallet account signs, built for another network. */
     wrongNetworkGroup: SignableGroup
     /** Arbitrary data for a wallet account to sign. */
@@ -45,8 +47,8 @@ export const reviewerContractTests = (
         makeAdapter().decoder.decode(group, context)
     const detect = async (group: SignableGroup) =>
         makeAdapter().warnings.detect(group, await decode(group), context)
-    const analyse = async (group: SignableGroup) =>
-        composeAnalysis(await decode(group), await detect(group))
+    const analyse = (group: SignableGroup) =>
+        reviewGroup(makeAdapter(), group, context)
 
     describe(`ReviewerChainAdapter contract: ${makeAdapter().chainId}`, () => {
         it("reviews its own chain's groups", () => {
@@ -75,7 +77,9 @@ export const reviewerContractTests = (
             expect(await detect(fixtures.foreignGroup)).toEqual([])
         })
 
-        it("decodes a contract call it can't read, never throwing", async () => {
+        // What a chain reads off the call itself (an EVM `to` and `value`) may
+        // show, so the effect it can't read is pinned by each chain's own spec.
+        it("still explains a contract call it can't read", async () => {
             const decoded = await decode(fixtures.opaqueGroup)
 
             expect(decoded.transactionSummaries).toHaveLength(
@@ -111,6 +115,14 @@ export const reviewerContractTests = (
                     await analyse(fixtures.plainGroup),
                 ),
             ).toBe(true)
+        })
+
+        it("decides for the app's own contract call as the chain declares", async () => {
+            expect(
+                makeAdapter().policy.autoApproveLocal(
+                    await analyse(fixtures.opaqueGroup),
+                ),
+            ).toBe(fixtures.opaqueAutoApproves)
         })
     })
 }
