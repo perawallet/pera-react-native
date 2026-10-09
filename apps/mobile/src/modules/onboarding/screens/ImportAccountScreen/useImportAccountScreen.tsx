@@ -145,7 +145,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         async (
             mnemonicIndices: Uint16Array,
         ): Promise<Nullable<ImportAccountType>> => {
-            if (accountType !== 'algo25' || !isQuantumAccountsEnabled) {
+            if (accountType !== 'standalone' || !isQuantumAccountsEnabled) {
                 return accountType
             }
             const quantumAddress = await findQuantumAccount(mnemonicIndices)

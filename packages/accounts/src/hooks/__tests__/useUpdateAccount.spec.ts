@@ -21,14 +21,14 @@ const mockAccounts: WalletAccount[] = [
         address: 'ADDR1',
         id: 'id1',
         name: 'Account 1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         canSign: true,
     },
     {
         address: 'ADDR2',
         id: 'id2',
         name: 'Account 2',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         canSign: true,
     },
 ]
@@ -91,14 +91,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         )
@@ -111,7 +111,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated Account 1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -122,14 +122,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Updated Account 1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         ])
@@ -169,7 +169,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR2',
             id: 'id2',
             name: 'Updated Account 2',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -180,14 +180,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Updated Account 2',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         ])
@@ -200,7 +200,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -216,7 +216,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR_NOT_FOUND',
             id: 'id-not-found',
             name: 'Non-existent',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 

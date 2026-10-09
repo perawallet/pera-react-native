@@ -11,13 +11,16 @@
  */
 
 import {
-    isLegacyNetwork,
     LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
+    type StandaloneSecret,
 } from '@perawallet/wallet-core-chain-contract'
 import { resolveSeedKeyFrom } from '@perawallet/wallet-core-kms'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import type {
     AccountCustody,
     ChainAccount,
@@ -25,7 +28,10 @@ import type {
     HdIndex,
     WalletAccount,
 } from '../models'
-import { authAddressOf, getAccountChainState } from '../store/accountChainState'
+import {
+    authorityAddressOf,
+    getAccountChainState,
+} from '../store/accountChainState'
 import type { KeystoreSnapshot } from './credentialScheme'
 
 export const custodyOf = (account: WalletAccount): AccountCustody =>
@@ -38,13 +44,14 @@ export const hasCustody = <K extends AccountCustody['kind']>(
     custody: Extract<AccountCustody, { kind: K }>
 } => account.custody.kind === kind
 
-// `chains` is optional, so the top-level address and key answer for the legacy chain.
+// The top-level address and key answer for the legacy chain only on a record
+// that predates `chains`; once `chains` exists it is authoritative, so an
+// account on another chain never reads as held on the legacy one.
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
 ): ChainAccount | undefined => {
-    const entry = account.chains?.[chainId]
-    if (entry) return entry
+    if (account.chains) return account.chains[chainId]
     if (chainId !== LEGACY_CHAIN_ID || account.address === undefined) {
         return undefined
     }
@@ -67,10 +74,41 @@ export const signingKeyOn = (
     chainId: ChainId,
 ): string | undefined => chainAccountOf(account, chainId)?.keyPairId
 
+/** Whether any account in `accounts` signs with the KMS key `keyPairId`. */
+export const isKeyReferenced = (
+    accounts: readonly WalletAccount[],
+    keyPairId: string,
+): boolean =>
+    accounts.some(
+        account =>
+            account.keyPairId === keyPairId ||
+            Object.values(account.chains ?? {}).some(
+                entry => entry?.keyPairId === keyPairId,
+            ),
+    )
+
 export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
     const { custody } = account
     return custody.kind === 'local' && custody.seed === 'bip39'
         ? custody.hd
+        : undefined
+}
+
+/**
+ * How a standalone account's secret is shown and backed up, read from the
+ * chain it lives on. Undefined for any other account, or an unregistered chain.
+ */
+export const standaloneSecretOf = (
+    account: WalletAccount,
+): StandaloneSecret | undefined => {
+    const { custody } = account
+    if (custody.kind !== 'local' || custody.seed !== null) return undefined
+    const chainId =
+        (Object.keys(account.chains ?? {})[0] as ChainId | undefined) ??
+        LEGACY_CHAIN_ID
+    const { chains } = getProvider()
+    return chains.has(chainId)
+        ? chains.get(chainId).descriptor.signing.standaloneSecret
         : undefined
 }
 
@@ -107,8 +145,6 @@ export const seedOf = (
 /**
  * The address whose key authorises the account on `scope`, or `null` when it
  * signs for itself. Observed chain state, so it never joins the account record.
- * Reads the chain-state slice, falling back to the legacy record fields for a
- * scope the slice doesn't hold yet.
  */
 export const authorityOf = (
     account: WalletAccount,
@@ -117,13 +153,5 @@ export const authorityOf = (
     const address = addressOn(account, scope)
     const state =
         address === undefined ? undefined : getAccountChainState(scope, address)
-    if (state) return authAddressOf(state)
-    if (scope.chainId !== LEGACY_CHAIN_ID) return null
-    const { rekeyAddressByNetwork, rekeyAddress } = account
-    // An account that predates the per-network map only has the mirror, as
-    // `applyNetworkRekeyState` assumes.
-    if (!rekeyAddressByNetwork) return rekeyAddress ?? null
-    return isLegacyNetwork(scope.networkId)
-        ? (rekeyAddressByNetwork[scope.networkId] ?? null)
-        : null
+    return state ? authorityAddressOf(state) : null
 }

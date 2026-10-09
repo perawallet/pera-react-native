@@ -39,14 +39,14 @@ describe('useFindAccountByAddress', () => {
             {
                 id: '1',
                 address: 'A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
                 name: 'A',
             },
             {
                 id: '2',
                 address: 'B',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
                 name: 'B',
             },

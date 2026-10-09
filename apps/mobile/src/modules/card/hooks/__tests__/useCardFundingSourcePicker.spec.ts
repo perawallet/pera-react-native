@@ -98,7 +98,7 @@ beforeEach(() => {
 
 describe('isEligibleFundingSource', () => {
     it('accepts standard / HD / Ledger and rejects watch, multisig, rekeyed', () => {
-        expect(isEligibleFundingSource(account('A', 'algo25'), SCOPE)).toBe(
+        expect(isEligibleFundingSource(account('A', 'standalone'), SCOPE)).toBe(
             true,
         )
         expect(isEligibleFundingSource(account('B', 'hdWallet'), SCOPE)).toBe(
@@ -114,7 +114,7 @@ describe('isEligibleFundingSource', () => {
             false,
         )
         seedAuthority('F', 'X')
-        expect(isEligibleFundingSource(account('F', 'algo25'), SCOPE)).toBe(
+        expect(isEligibleFundingSource(account('F', 'standalone'), SCOPE)).toBe(
             false,
         )
     })
@@ -124,7 +124,7 @@ describe('isSigningCapableFundingSource', () => {
     it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
-                account('A', 'algo25', { keyPairId: 'k1' }),
+                account('A', 'standalone', { keyPairId: 'k1' }),
                 SCOPE,
             ),
         ).toBe(true)
@@ -140,7 +140,7 @@ describe('isSigningCapableFundingSource', () => {
         ).toBe(true)
         // A local-key type with no keyPairId can't sign at all.
         expect(
-            isSigningCapableFundingSource(account('D', 'algo25'), SCOPE),
+            isSigningCapableFundingSource(account('D', 'standalone'), SCOPE),
         ).toBe(false)
         expect(
             isSigningCapableFundingSource(account('E', 'watch'), SCOPE),
@@ -151,14 +151,14 @@ describe('isSigningCapableFundingSource', () => {
 describe('canAutoFund', () => {
     it('allows local-key accounts and rejects Ledger (cannot sign the delegation)', () => {
         expect(
-            canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }), SCOPE),
+            canAutoFund(account('A', 'standalone', { keyPairId: 'k1' }), SCOPE),
         ).toBe(true)
         expect(
             canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }), SCOPE),
         ).toBe(true)
         // Ledger creates cards but can never sign the delegation.
         expect(canAutoFund(account('C', 'hardware'), SCOPE)).toBe(false)
-        expect(canAutoFund(account('D', 'algo25'), SCOPE)).toBe(false)
+        expect(canAutoFund(account('D', 'standalone'), SCOPE)).toBe(false)
     })
 })
 
@@ -179,7 +179,7 @@ describe('useCardFundingSourcePicker', () => {
         // The card header supplies its own title row, so the shared one (with
         // its Sort button) must stay hidden.
         expect(props.hideDefaultHeader).toBe(true)
-        expect(props.accountFilter(account('A', 'algo25'))).toBe(true)
+        expect(props.accountFilter(account('A', 'standalone'))).toBe(true)
         expect(props.accountFilter(account('D', 'watch'))).toBe(false)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
         expect(props.selectedAddress).toBeNull()
@@ -197,7 +197,7 @@ describe('useCardFundingSourcePicker', () => {
         const props = mockRequest.mock.calls[0][0].contents.props as {
             accountFilter: (account: WalletAccount) => boolean
         }
-        const candidate = account('A', 'algo25')
+        const candidate = account('A', 'standalone')
         expect(props.accountFilter(candidate)).toBe(false)
         expect(accountFilter).toHaveBeenCalledWith(candidate)
     })

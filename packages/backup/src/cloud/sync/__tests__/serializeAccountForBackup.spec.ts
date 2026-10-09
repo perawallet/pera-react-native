@@ -21,7 +21,7 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'kp-1',
     name: 'Main',

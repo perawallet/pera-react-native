@@ -37,7 +37,7 @@ const account = (
 ): WalletAccount =>
     ({
         id: address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: 'k',
         ...extra,
@@ -112,7 +112,7 @@ describe('signer resolution', () => {
         expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
             expect.objectContaining({
                 metadata: expect.objectContaining({
-                    params: { authAddress: 'GONE' },
+                    params: { authorityAddress: 'GONE' },
                 }),
             }),
         )

@@ -60,7 +60,7 @@ describe('useSetAccounts', () => {
             {
                 id: '1',
                 address: 'A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 canSign: true,
                 name: 'A',
             },

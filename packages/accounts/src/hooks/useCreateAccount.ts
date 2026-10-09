@@ -138,8 +138,8 @@ export const useCreateAccount = () => {
         return minted.account
     }
 
-    const buildAlgo25WalletAccount = ({ id }: { id?: string }) =>
-        buildSingleKeyAccount(AccountTypes.algo25, id)
+    const buildStandaloneAccount = ({ id }: { id?: string }) =>
+        buildSingleKeyAccount(AccountTypes.standalone, id)
 
     const buildQuantumWalletAccount = ({ id }: { id?: string } = {}) =>
         buildSingleKeyAccount(AccountTypes.quantum, id)
@@ -168,8 +168,8 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async (params: { id?: string }) => {
-        const newAccount = await buildAlgo25WalletAccount(params)
+    const createStandaloneAccount = async (params: { id?: string }) => {
+        const newAccount = await buildStandaloneAccount(params)
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
@@ -183,11 +183,11 @@ export const useCreateAccount = () => {
     return {
         createHdWalletAccount,
         createHdWalletAccountForSeed,
-        createAlgo25WalletAccount,
+        createStandaloneAccount,
         createQuantumWalletAccount,
         buildHdWalletAccount,
         buildHdWalletAccountForSeed,
-        buildAlgo25WalletAccount,
+        buildStandaloneAccount,
         buildQuantumWalletAccount,
         saveAccount,
     }

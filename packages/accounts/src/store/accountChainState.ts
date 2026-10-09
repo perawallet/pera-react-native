@@ -112,5 +112,5 @@ export const getAccountChainState = (
     useAccountChainStateStore.getState().states[toScopeKey(scope)]?.[address]
 
 // Narrows on the field, never on `family`, so no chain id leaks into shared code.
-export const authAddressOf = (state: AccountChainState): string | null =>
+export const authorityAddressOf = (state: AccountChainState): string | null =>
     'authAddress' in state ? (state.authAddress ?? null) : null

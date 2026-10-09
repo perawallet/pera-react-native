@@ -54,7 +54,7 @@ describe('holdings across the asset cache rebuild', () => {
             totalAppsOptedIn: 0,
             minBalance: 0n,
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await refreshAccountHoldings({
             db,

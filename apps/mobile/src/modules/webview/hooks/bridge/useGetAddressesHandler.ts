@@ -45,7 +45,7 @@ const BASE_WEBVIEW_TYPE: Record<
     AccountType,
     Exclude<WebviewAccountType, 'RekeyedSignable' | 'RekeyedUnsignable'>
 > = {
-    [AccountTypes.algo25]: 'Algo25',
+    [AccountTypes.standalone]: 'Algo25',
     [AccountTypes.hdWallet]: 'HDWallet',
     [AccountTypes.hardware]: 'Hardware',
     [AccountTypes.multisig]: 'Multisig',

@@ -19,7 +19,7 @@ import { backfillAccountRecords } from '../backfillAccountRecords'
 const held = (address: string): WalletAccount =>
     ({
         id: address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: `kp-${address}`,
         chains: { algorand: { address, keyPairId: `kp-${address}` } },

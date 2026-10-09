@@ -16,6 +16,10 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import { accountType } from '../../utils'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Built by hand: buildAccount needs a registered adapter for every chain it
 // derives from, and these specs put accounts on Ethereum.
@@ -67,14 +71,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -85,7 +89,7 @@ describe('services/accounts/store', () => {
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -143,14 +147,14 @@ describe('services/accounts/store', () => {
             const first: WalletAccount = {
                 id: '1',
                 name: 'First',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'FIRST-ADDR',
                 keyPairId: 'kp1',
             }
             const last: WalletAccount = {
                 id: '3',
                 name: 'Last',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'LAST-ADDR',
                 keyPairId: 'kp3',
             }
@@ -172,14 +176,14 @@ describe('services/accounts/store', () => {
             const a1: WalletAccount = {
                 id: '1',
                 name: 'Alice',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp1',
             }
             const a2: WalletAccount = {
                 id: '2',
                 name: 'Alice copy',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp2',
             }
@@ -202,7 +206,7 @@ describe('services/accounts/store', () => {
                 {
                     id: '2',
                     name: 'Bob',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                     address: 'B',
                     keyPairId: 'kp2',
                 },
@@ -265,14 +269,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -301,14 +305,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -330,7 +334,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -346,7 +350,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -365,21 +369,21 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -398,7 +402,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -431,7 +435,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -447,189 +451,6 @@ describe('services/accounts/store', () => {
 
         expect(useAccountsStore.getState().accounts).toEqual([])
         expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
-    })
-
-    describe('updateAccountRekeyAddress', () => {
-        test('sets the mirror and the per-network entry for the active network', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'watch' },
-                    address: 'A',
-                } as unknown as WalletAccount,
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'B',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'mainnet')
-
-            const accounts = useAccountsStore.getState().accounts
-            const a = accounts.find(x => x.address === 'A')!
-            expect(a.rekeyAddress).toBe('B')
-            expect(a.rekeyAddressByNetwork).toEqual({ mainnet: 'B' })
-            expect(
-                accounts.find(x => x.address === 'B')?.rekeyAddress,
-            ).toBeUndefined()
-        })
-
-        test('records an inactive-network sync without touching the mirror', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'testnet')
-
-            const a = useAccountsStore.getState().accounts[0]
-            expect(a.rekeyAddress).toBeUndefined()
-            expect(a.rekeyAddressByNetwork).toEqual({ testnet: 'B' })
-        })
-
-        test('clears the mirror and the network entry when passed null', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                    rekeyAddress: 'B',
-                    rekeyAddressByNetwork: { mainnet: 'B' },
-                } as unknown as WalletAccount,
-            ])
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', null, 'mainnet')
-
-            const a = useAccountsStore.getState().accounts[0]
-            expect(a.rekeyAddress).toBeUndefined()
-            // The (empty) map stays: it records "per-network state is known",
-            // which gates the legacy-scalar fallback on network switches.
-            expect(a.rekeyAddressByNetwork).toEqual({})
-        })
-
-        test('is a no-op when the address is not in the store', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            const before = useAccountsStore.getState().accounts
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('Z', 'Y', 'mainnet')
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-
-        test('does not write when the value is unchanged for that network', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                    rekeyAddress: 'B',
-                    rekeyAddressByNetwork: { mainnet: 'B' },
-                } as unknown as WalletAccount,
-            ])
-            const before = useAccountsStore.getState().accounts
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'mainnet')
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-    })
-
-    describe('per-network rekey state on network switch', () => {
-        test('mirrors flip in both directions when the network changes (mainnet-rekeyed, testnet-clean)', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', null, 'testnet')
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-            expect(
-                useAccountsStore.getState().accounts[0].rekeyAddress,
-            ).toBeUndefined()
-
-            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
-            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
-                'AUTH',
-            )
-        })
-
-        test('an account with per-network state but no entry for the new network reads as not rekeyed', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(
-                useAccountsStore.getState().accounts[0].rekeyAddress,
-            ).toBeUndefined()
-        })
-
-        test('a legacy account with no per-network state keeps its mirror across switches', () => {
-            // Pre-upgrade persisted account: scalar only. Until a sync tick
-            // writes the map, the mirror must not be cleared by a switch —
-            // single-network usage keeps today's behavior exactly.
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                    rekeyAddress: 'AUTH',
-                } as unknown as WalletAccount,
-            ])
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
-                'AUTH',
-            )
-        })
-
-        test('applyNetworkRekeyState leaves state referentially unchanged when nothing differs', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            const before = useAccountsStore.getState().accounts
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
     })
 
     describe('addAccount', () => {
@@ -703,17 +524,21 @@ describe('services/accounts/store', () => {
     })
 
     describe('addRekeyedWatchAccounts', () => {
-        test('stamps new watch accounts with the scanned network entry and mirror', () => {
+        test('adds plain watch accounts and records the source as their authority on the scanned network', async () => {
             useAccountsStore.getState().setAccounts([])
 
             const added = useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
 
             expect(added).toBe(1)
             const r1 = useAccountsStore.getState().accounts[0]
-            expect(r1.rekeyAddress).toBe('SRC')
-            expect(r1.rekeyAddressByNetwork).toEqual({ mainnet: 'SRC' })
+            expect(r1).not.toHaveProperty('rekeyAddress')
+            const { authorityOf } = await import('../../credentials/accessors')
+            expect(authorityOf(r1, scopeForLegacyNetwork('testnet'))).toBe(
+                'SRC',
+            )
+            expect(authorityOf(r1, scopeForLegacyNetwork('mainnet'))).toBeNull()
         })
     })
 
@@ -726,15 +551,13 @@ describe('services/accounts/store', () => {
             transportType: 'ble' as const,
         }
 
-        test('replaces a watch account with a hardware account, preserving id, name and rekey state', () => {
+        test('replaces a watch account with a hardware account, preserving id and name', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: 'w1',
                     name: 'My Ledger (watched)',
                     custody: { kind: 'watch' },
                     address: 'WATCHED',
-                    rekeyAddress: 'AUTH',
-                    rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 } as WalletAccount,
             ])
 
@@ -748,8 +571,6 @@ describe('services/accounts/store', () => {
                 id: 'w1',
                 name: 'My Ledger (watched)',
                 address: 'WATCHED',
-                rekeyAddress: 'AUTH',
-                rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 hardwareDetails,
                 custody: {
                     kind: 'hardware',
@@ -784,7 +605,7 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: 'h1',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                     address: 'SIGNER',
                     keyPairId: 'kp1',
                 } as WalletAccount,
@@ -796,7 +617,7 @@ describe('services/accounts/store', () => {
 
             expect(upgraded).toBe(false)
             expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-                'algo25',
+                'standalone',
             )
         })
 
@@ -900,14 +721,14 @@ describe('services/accounts/store', () => {
         const alice: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const bob: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -1053,6 +874,77 @@ describe('services/accounts/store', () => {
             expect(state.launchAccountAddress).toBeNull()
         })
 
+        test('seeds the chain-state slice from a payload that still carries the authority fields, then drops them', async () => {
+            const watch = (id: string, extra: Record<string, unknown>) => ({
+                id,
+                address: id,
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: id } },
+                ...extra,
+            })
+            getProvider().keyValueStorage.setItem(
+                'accounts-store',
+                JSON.stringify({
+                    state: {
+                        accounts: [
+                            watch('MAP-ONLY', {
+                                rekeyAddressByNetwork: { testnet: 'T' },
+                            }),
+                            watch('SCALAR-ONLY', { rekeyAddress: 'S' }),
+                            watch('BOTH', {
+                                rekeyAddress: 'IGNORED',
+                                rekeyAddressByNetwork: { mainnet: 'M' },
+                            }),
+                        ],
+                        selectedAccountAddress: 'MAP-ONLY',
+                        sortMode: 'manual',
+                        manualAccountOrder: [],
+                    },
+                    version: 3,
+                }),
+            )
+
+            vi.resetModules()
+            const { registerFakeAccountsChain } =
+                await import('../../__tests__/fakeAccountsChain')
+            registerFakeAccountsChain()
+            const { useNetworkStore } =
+                await import('@perawallet/wallet-core-chain-shared')
+            useNetworkStore.getState().setNetwork('mainnet')
+            const { runMigrations, migrations } =
+                await import('@perawallet/wallet-core-database')
+            const { createTestDatabase } =
+                await import('@perawallet/wallet-core-database/test-utils')
+            const { db, teardown } = createTestDatabase()
+            await runMigrations(db, migrations)
+            const module = await import('../store')
+            const { hydrateAccountChainStates } =
+                await import('../hydrateAccountChainStates')
+            const { authorityOf } = await import('../../credentials/accessors')
+
+            await module.useAccountsStore.persist.rehydrate()
+            await hydrateAccountChainStates({ db })
+
+            const [mapOnly, scalarOnly, both] =
+                module.useAccountsStore.getState().accounts
+            for (const account of [mapOnly, scalarOnly, both]) {
+                expect(account).not.toHaveProperty('rekeyAddress')
+                expect(account).not.toHaveProperty('rekeyAddressByNetwork')
+            }
+            const testnet = scopeForLegacyNetwork('testnet')
+            const mainnet = scopeForLegacyNetwork('mainnet')
+            expect(authorityOf(mapOnly, testnet)).toBe('T')
+            expect(authorityOf(mapOnly, mainnet)).toBeNull()
+            expect(authorityOf(scalarOnly, mainnet)).toBe('S')
+            expect(authorityOf(both, mainnet)).toBe('M')
+
+            module.useAccountsStore.getState().setSortMode('alphabeticalAsc')
+            const stored =
+                await getProvider().keyValueStorage.getItem('accounts-store')
+            expect(stored).not.toContain('rekeyAddress')
+            teardown()
+        })
+
         test('applyLaunchAccountPreference ignores a pin that no longer resolves', () => {
             // Reaches past setLaunchAccountPreference's guard to simulate state
             // rehydrated from a build where the account still existed.
@@ -1072,7 +964,7 @@ describe('services/accounts/store', () => {
 
     describe('custody', () => {
         const kinds = [
-            'algo25',
+            'standalone',
             'quantum',
             'hdWallet',
             'hardware',
@@ -1107,7 +999,7 @@ describe('services/accounts/store', () => {
                 id: 'a',
                 address: 'ALGO25-ADDR',
                 keyPairId: 'seed-ed25519',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: 'ALGO25-ADDR',
@@ -1161,6 +1053,37 @@ describe('services/accounts/store', () => {
             expect(migrated).toEqual({
                 ...v0State,
                 accounts: migratedAccounts,
+                authorities: {},
+                unscopedAuthorities: {},
+            })
+        })
+
+        test('migrating moves the record authority fields into the authority maps', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const [first, second] = structuredClone(v0State).accounts
+
+            const migrated = migrateAccountsState(
+                {
+                    ...structuredClone(v0State),
+                    accounts: [
+                        { ...first, rekeyAddressByNetwork: { testnet: 'T' } },
+                        { ...second, rekeyAddress: 'S' },
+                    ],
+                },
+                0,
+            )
+
+            for (const account of migrated.accounts) {
+                expect(account).not.toHaveProperty('rekeyAddress')
+                expect(account).not.toHaveProperty('rekeyAddressByNetwork')
+            }
+            expect(migrated.authorities).toEqual({
+                [toScopeKey(scopeForLegacyNetwork('testnet'))]: {
+                    [first.address]: 'T',
+                },
+            })
+            expect(migrated.unscopedAuthorities).toEqual({
+                [second.address]: 'S',
             })
         })
 
@@ -1216,7 +1139,7 @@ describe('services/accounts/store', () => {
             [
                 ...kinds.map(kind => ({
                     ...buildTestAccount(kind),
-                    type: kind,
+                    type: kind === 'standalone' ? 'algo25' : kind,
                 })),
                 { id: 'bare-multisig', type: 'multisig', address: 'BARE-MSIG' },
                 { id: 'bare-algo25', type: 'algo25', address: 'BARE-ALGO25' },
@@ -1244,7 +1167,7 @@ describe('services/accounts/store', () => {
         const v2Kinds = [
             ...kinds,
             'multisig',
-            'algo25',
+            'standalone',
             'watch',
             'watch',
             'watch',
@@ -1301,11 +1224,39 @@ describe('services/accounts/store', () => {
             expect(state.launchAccountMode).toBe('lastUsed')
         })
 
-        test('persisted v3 state is not migrated again', async () => {
+        test('persisted v4 state is not migrated again', async () => {
             const { migrateAccountsState } = await import('../store')
-            const v3State = { ...makeV2State(), accounts: migratedAccounts }
+            const v4State = { ...makeV2State(), accounts: migratedAccounts }
 
-            expect(migrateAccountsState(v3State, 3)).toBe(v3State)
+            expect(migrateAccountsState(v4State, 4)).toBe(v4State)
+        })
+
+        test('a v3 state with the Algorand-named seed scheme loads as a seedless custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const [stored] = migratedAccounts
+            const v3Account = {
+                ...stored,
+                custody: { kind: 'local', seed: 'algo25' },
+            }
+
+            const { accounts } = migrateAccountsState(
+                { ...v0State, accounts: [v3Account] },
+                3,
+            )
+
+            expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
+            expect(accountType(accounts[0])).toBe('standalone')
+        })
+
+        test('a v1 record persisted as an algo25 account loads as a seedless custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const { accounts } = migrateAccountsState(
+                { ...v0State, accounts: [legacyAccounts[0]] },
+                1,
+            )
+
+            expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
         })
 
         test('hydrating a v0 payload twice yields identical state', async () => {
@@ -1334,7 +1285,7 @@ describe('services/accounts/store', () => {
         test('setAccounts keeps the custody an account was built with', () => {
             const accounts = (
                 [
-                    'algo25',
+                    'standalone',
                     'quantum',
                     'hdWallet',
                     'hardware',
@@ -1358,7 +1309,6 @@ describe('services/accounts/store', () => {
             const [account] = useAccountsStore.getState().accounts
             expect(account.custody).toEqual({ kind: 'watch' })
             expect(account.chains).toEqual({ algorand: { address: 'R1' } })
-            expect(account.rekeyAddressByNetwork).toEqual({ testnet: 'SRC' })
         })
 
         test('upgrading a watch account replaces its watch custody with a hardware one', () => {

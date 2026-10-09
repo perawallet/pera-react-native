@@ -23,7 +23,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 type AuthHop =
     | { kind: 'self'; auth: WalletAccount }
     | { kind: 'rekeyed'; auth: WalletAccount }
-    | { kind: 'authMissing'; authAddress: string }
+    | { kind: 'authMissing'; authorityAddress: string }
 
 /**
  * The one place the auth-addr hop is followed. Kept apart from the
@@ -39,12 +39,12 @@ const followAuthHop = (
     accounts: WalletAccount[],
     scope: ChainScope,
 ): AuthHop => {
-    const authAddress = authorityOf(account, scope)
-    if (!authAddress) return { kind: 'self', auth: account }
-    const auth = accounts.find(a => a.address === authAddress)
+    const authorityAddress = authorityOf(account, scope)
+    if (!authorityAddress) return { kind: 'self', auth: account }
+    const auth = accounts.find(a => a.address === authorityAddress)
     return auth
         ? { kind: 'rekeyed', auth }
-        : { kind: 'authMissing', authAddress }
+        : { kind: 'authMissing', authorityAddress }
 }
 
 export const resolveAlgorandSigner = (
@@ -54,7 +54,11 @@ export const resolveAlgorandSigner = (
 ): SignerResolution => {
     const hop = followAuthHop(account, accounts, scope)
     if (hop.kind === 'authMissing') {
-        return { kind: 'authMissing', account, authAddress: hop.authAddress }
+        return {
+            kind: 'authMissing',
+            account,
+            authorityAddress: hop.authorityAddress,
+        }
     }
     const { auth } = hop
     const isRekeyed = hop.kind === 'rekeyed'

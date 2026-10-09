@@ -25,5 +25,7 @@ export const toAlgorandChainState = (
     totalAssetsOptedIn: observed.totalAssetsOptedIn ?? 0,
     totalCreatedAssets: observed.totalCreatedAssets ?? 0,
     totalAppsOptedIn: observed.totalAppsOptedIn ?? 0,
-    ...(observed.authAddress ? { authAddress: observed.authAddress } : {}),
+    ...(observed.authorityAddress
+        ? { authAddress: observed.authorityAddress }
+        : {}),
 })

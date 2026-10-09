@@ -29,14 +29,13 @@ export const registerAlgorandAccountsAdapter = (): void => {
 }
 
 /**
- * Records `authAddress` as `address`'s authority on `scope` (default: the
+ * Records `authorityAddress` as `address`'s authority on `scope` (default: the
  * selected network, which is what the readers ask) the way the syncer does;
- * `null` is an observed "signs for itself", which shadows the legacy record
- * fields.
+ * `null` is an observed "signs for itself".
  */
 export const seedAuthority = (
     address: string,
-    authAddress: string | null,
+    authorityAddress: string | null,
     scope: ChainScope = getSelectedScope(LEGACY_CHAIN_ID),
 ): void =>
     useAccountChainStateStore
@@ -44,5 +43,5 @@ export const seedAuthority = (
         .setAccountChainState(
             scope,
             address,
-            algorandAccountsAdapter.toChainState({ authAddress }),
+            algorandAccountsAdapter.toChainState({ authorityAddress }),
         )

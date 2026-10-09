@@ -18,7 +18,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockCreateAccount = {
     createHdWalletAccount: vi.fn(),
-    createAlgo25WalletAccount: vi.fn(),
+    createStandaloneAccount: vi.fn(),
 }
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 

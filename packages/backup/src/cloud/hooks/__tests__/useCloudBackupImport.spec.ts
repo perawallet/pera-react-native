@@ -88,7 +88,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
     return {
         AccountTypes: {
-            algo25: 'algo25',
+            standalone: 'standalone',
             hdWallet: 'hdWallet',
             hardware: 'hardware',
             multisig: 'multisig',
@@ -263,7 +263,7 @@ describe('useCloudBackupImport', () => {
         expect(submittedIndices).toEqual([0, 1, 2])
         expect(importAccountMock).toHaveBeenCalledWith({
             mnemonicIndices: expect.any(Uint16Array),
-            type: 'algo25',
+            type: 'standalone',
         })
         expect(updateAccountMock).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'My Algo25' }),

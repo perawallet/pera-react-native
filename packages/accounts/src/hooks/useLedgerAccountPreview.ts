@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -30,6 +32,7 @@ import type {
     LedgerAccountRekeyRelationship,
     UseLedgerAccountPreviewResult,
 } from '../models'
+import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
 import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
 
@@ -40,6 +43,15 @@ export const useLedgerAccountPreview = (
     const onChain = useOnChainAccountInformationQuery(address)
     const rekeyed = useRekeyedAddressesQuery(address)
     const { usdToPreferred } = useCurrency()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const authorityAddress = onChain.data?.authorityAddress
+
+    // The sheet's synthetic watch row reads its rekey state from the slice.
+    useEffect(() => {
+        if (authorityAddress && authorityAddress !== address) {
+            recordAuthority(scope, address, authorityAddress)
+        }
+    }, [scope, address, authorityAddress])
 
     const assetIds = useMemo(
         () => (onChain.data?.assets ?? []).map(a => String(a.assetId)),
@@ -109,10 +121,9 @@ export const useLedgerAccountPreview = (
             })
         }
 
-        const authAddress = onChain.data.authAddress
         let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
-        if (authAddress && authAddress !== address) {
-            rekey = { kind: 'rekeyedTo', authAddress }
+        if (authorityAddress && authorityAddress !== address) {
+            rekey = { kind: 'delegatedTo', authorityAddress }
         } else if (
             !rekeyed.isError &&
             rekeyed.rekeyedAddresses &&
@@ -130,6 +141,7 @@ export const useLedgerAccountPreview = (
         }
     }, [
         address,
+        authorityAddress,
         onChain.data,
         assets,
         prices,

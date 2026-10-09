@@ -94,6 +94,7 @@ export const algorandDescriptor: ChainDescriptor = {
                 `m/44'/283'/${account}'/0/${keyIndex}`,
         },
         rawKeySchemes: ['ed25519'],
+        standaloneSecret: 'mnemonic',
     },
     protocol: {
         feeModel: 'flat',

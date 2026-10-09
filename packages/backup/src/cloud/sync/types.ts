@@ -12,7 +12,7 @@
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    Algo25Account,
+    StandaloneAccount,
     HDWalletAccount,
     QuantumAccount,
     WalletAccount,
@@ -128,10 +128,10 @@ export type SerializedAccount = {
 
 /** Resolves an account's 25-word phrase. Hook-bound: the phrase only exists
  *  inside a `useKMS().executeWithMnemonic` session, which maps the signing
- *  `keyPairId` back to its seed. algo25 and quantum share the format, so one
- *  resolver covers both. Null when unavailable. */
+ *  `keyPairId` back to its seed. Standalone and quantum accounts share the
+ *  format, so one resolver covers both. Null when unavailable. */
 export type SerializeMnemonicResolver = (
-    account: Algo25Account | QuantumAccount,
+    account: StandaloneAccount | QuantumAccount,
 ) => Promise<string | null>
 
 /** Resolves an HD account's derived/seed material for serialization. Hook-bound

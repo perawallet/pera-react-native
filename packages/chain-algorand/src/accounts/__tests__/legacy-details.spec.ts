@@ -68,7 +68,7 @@ describe('algorandLegacyDetails', () => {
 
     test.each([
         { kind: 'watch' as const },
-        { kind: 'local' as const, seed: 'algo25' as const },
+        { kind: 'local' as const, seed: null },
     ])('adds no details for $kind custody', custody => {
         expect(algorandLegacyDetails(custody, { address: 'ADDR' })).toEqual({})
     })

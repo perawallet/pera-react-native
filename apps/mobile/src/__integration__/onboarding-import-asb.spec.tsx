@@ -182,7 +182,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(accountType(account)).toBe(AccountTypes.algo25)
+        expect(accountType(account)).toBe(AccountTypes.standalone)
         expect(account.address).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Algo25 from ASB')
 
@@ -233,7 +233,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             .getState()
             .accounts.find(a => a.address === ASB_WATCH_ADDRESS)
         expect(algo25 ? accountType(algo25) : undefined).toBe(
-            AccountTypes.algo25,
+            AccountTypes.standalone,
         )
         expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
     })
@@ -314,7 +314,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },

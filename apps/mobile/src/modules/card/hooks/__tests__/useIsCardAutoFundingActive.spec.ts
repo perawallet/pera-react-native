@@ -41,7 +41,7 @@ import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localAccount = {
     address: 'LOCAL',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'key-1',
 } as WalletAccount
 

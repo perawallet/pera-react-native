@@ -17,6 +17,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { createTestQueryClient } from '@test-utils/render'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -44,7 +45,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT_A: WalletAccount = {
     id: 'reactivity-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'A'.repeat(58),
     keyPairId: 'reactivity-a-key',
     name: 'Funder',
@@ -77,7 +78,7 @@ const seedUnfunded = async (
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: address,
@@ -190,13 +191,11 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
 
         // What fetchAndPersistAccount does when it sees the new auth-addr.
         act(() => {
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress(
-                    ACCOUNT_A.address,
-                    ACCOUNT_B.address,
-                    NETWORK,
-                )
+            seedAuthority(
+                ACCOUNT_A.address,
+                ACCOUNT_B.address,
+                scopeForLegacyNetwork(NETWORK),
+            )
         })
 
         await waitFor(() => expect(result.current).toBe(true))

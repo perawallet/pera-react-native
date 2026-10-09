@@ -63,11 +63,6 @@ import {
     algorandAddressCodec,
     algorandKeyDerivation,
 } from '../accounts'
-import { startNetworkRekeySync } from '../accounts/network-rekey-sync'
-
-vi.mock('../accounts/network-rekey-sync', () => ({
-    startNetworkRekeySync: vi.fn(),
-}))
 
 describe('registerChain', () => {
     beforeEach(() => {
@@ -111,12 +106,6 @@ describe('registerChain', () => {
         expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandAssetsAdapter,
         )
-    })
-
-    it('starts the network rekey sync', () => {
-        registerChain()
-
-        expect(startNetworkRekeySync).toHaveBeenCalled()
     })
 
     it('registers the Algorand swap adapter', () => {

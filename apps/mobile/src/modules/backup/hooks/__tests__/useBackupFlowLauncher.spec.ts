@@ -27,7 +27,7 @@ describe('useBackupFlowLauncher', () => {
 
         const account: WalletAccount = {
             id: 'algo25-account',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_1',
             keyPairId: 'kp',
         }

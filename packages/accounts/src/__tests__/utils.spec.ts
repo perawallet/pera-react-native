@@ -21,7 +21,7 @@ import {
     findAccountByKey,
     getAccountDisplayName,
     hasSigningKeys,
-    isAlgo25Account,
+    isStandaloneAccount,
     isQuantumAccount,
     isHardwareWalletAccount,
     isHDWalletAccount,
@@ -65,7 +65,7 @@ vi.mock('tweetnacl', () => ({
 describe('services/accounts/utils - canSignViaParticipants', () => {
     const signable = {
         address: 'P1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
     } as WalletAccount
     const watch = { address: 'P2', custody: { kind: 'watch' } } as WalletAccount
@@ -283,7 +283,7 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isHDWalletAccount({
                 ...baseAccount,
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             } as any),
         ).toBe(false)
     })
@@ -330,16 +330,16 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(false)
     })
 
-    test('isAlgo25Account returns true if type is algo25', () => {
-        expect(isAlgo25Account(baseAccount)).toBe(false)
+    test('isStandaloneAccount returns true for a seedless local custody', () => {
+        expect(isStandaloneAccount(baseAccount)).toBe(false)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             } as any),
         ).toBe(true)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
                 custody: {
                     kind: 'local',
@@ -349,7 +349,7 @@ describe('services/accounts/utils - account type checks', () => {
             } as any),
         ).toBe(false)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
                 custody: { kind: 'watch' },
             } as any),
@@ -377,7 +377,7 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     const guards: Record<AccountType, (account: WalletAccount) => boolean> = {
-        algo25: isAlgo25Account,
+        standalone: isStandaloneAccount,
         quantum: isQuantumAccount,
         hdWallet: isHDWalletAccount,
         hardware: isHardwareWalletAccount,
@@ -496,13 +496,13 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 
-    test('25-word mnemonic still auto-resolves to algo25, never quantum', () => {
+    test('25-word mnemonic still auto-resolves to standalone, never quantum', () => {
         // Product decision: a 25-word quantum mnemonic is indistinguishable
-        // from legacy algo25 by word count. Auto-detection deliberately keeps
-        // resolving 25 words to algo25; quantum import only happens through
+        // from a standard one by word count. Auto-detection deliberately keeps
+        // resolving 25 words to standalone; quantum import only happens through
         // its dedicated explicit entrypoint.
         const result = resolveImportAccountType(words(25))
-        expect(result).toEqual({ success: true, accountType: 'algo25' })
+        expect(result).toEqual({ success: true, accountType: 'standalone' })
     })
 
     test('returns failure for 23-word mnemonic', () => {
@@ -522,7 +522,7 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
 
     test('handles leading and trailing whitespace', () => {
         const result = resolveImportAccountType(`  ${words(25)}  `)
-        expect(result).toEqual({ success: true, accountType: 'algo25' })
+        expect(result).toEqual({ success: true, accountType: 'standalone' })
     })
 
     test('handles extra whitespace between words', () => {
@@ -574,7 +574,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount
@@ -657,7 +657,7 @@ describe('services/accounts/utils - quantum accounts', () => {
     })
 
     test('other type guards reject quantum accounts', () => {
-        expect(isAlgo25Account(quantum())).toBe(false)
+        expect(isStandaloneAccount(quantum())).toBe(false)
         expect(isHDWalletAccount(quantum())).toBe(false)
         expect(isWatchAccount(quantum())).toBe(false)
         expect(isMultisigAccount(quantum())).toBe(false)
@@ -768,11 +768,11 @@ describe('services/accounts/utils - accountType', () => {
 
     // Keyed by type so a new AccountTypes member without a fixture fails typecheck.
     const legacyFixtures: Record<AccountType, WalletAccount[]> = {
-        algo25: [
+        standalone: [
             {
                 id: 'a',
                 address: 'ALGO25-ADDR',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'seed-ed25519',
             },
         ],

@@ -134,7 +134,7 @@ describe('algorandSingleKeyAccounts', () => {
         it('mints a new algo25 seed and points the account at its ed25519 child', async () => {
             const minted = await algorandSingleKeyAccounts.create(
                 port,
-                { kind: 'algo25', id: 'SEED1' },
+                { kind: 'standalone', id: 'SEED1' },
                 scope,
             )
 
@@ -150,7 +150,7 @@ describe('algorandSingleKeyAccounts', () => {
             expect(minted.account).toMatchObject({
                 address,
                 keyPairId: algo25SignKeyId('SEED1'),
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address,
@@ -168,7 +168,7 @@ describe('algorandSingleKeyAccounts', () => {
 
             const minted = await algorandSingleKeyAccounts.create(
                 port,
-                { kind: 'algo25', id: 'SEED1' },
+                { kind: 'standalone', id: 'SEED1' },
                 scope,
             )
 
@@ -183,7 +183,7 @@ describe('algorandSingleKeyAccounts', () => {
             await expect(
                 algorandSingleKeyAccounts.create(
                     port,
-                    { kind: 'algo25' },
+                    { kind: 'standalone' },
                     scope,
                 ),
             ).rejects.toThrow('boom')
@@ -236,7 +236,7 @@ describe('algorandSingleKeyAccounts', () => {
             const account = await algorandSingleKeyAccounts.importMnemonic(
                 port,
                 {
-                    kind: 'algo25',
+                    kind: 'standalone',
                     mnemonicIndices: indices,
                     isHeld: () => false,
                 },
@@ -250,7 +250,7 @@ describe('algorandSingleKeyAccounts', () => {
             expect(keystore.getKey).not.toHaveBeenCalled()
             expect(account).toMatchObject({
                 keyPairId: algo25SignKeyId('SEED1'),
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: expect.any(String),
@@ -369,9 +369,9 @@ describe('algorandSingleKeyAccounts', () => {
         })
     })
 
-    describe('findQuantumAccountForAlgo25Mnemonic', () => {
+    describe('findQuantumAccountForMnemonic', () => {
         const find = () =>
-            algorandSingleKeyAccounts.findQuantumAccountForAlgo25Mnemonic(
+            algorandSingleKeyAccounts.findQuantumAccountForMnemonic(
                 MNEMONIC_INDICES,
                 scope,
             )

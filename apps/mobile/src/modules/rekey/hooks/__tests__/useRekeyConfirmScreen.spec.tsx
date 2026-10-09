@@ -50,13 +50,13 @@ const mockQuantumSource = {
 const mockEd25519Source = {
     address: 'SRC',
     name: 'Standard Source',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-src',
 }
 const mockEd25519Target = {
     address: 'TGT',
     name: 'Standard Target',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-tgt',
 }
 const mockQuantumTarget = {

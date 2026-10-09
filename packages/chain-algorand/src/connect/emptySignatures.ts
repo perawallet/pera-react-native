@@ -26,7 +26,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getAuthAccount,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHardwareWalletAccount,
     isHDWalletAccount,
     isMultisigAccount,
@@ -126,7 +126,7 @@ export const emptySignatureFieldsOf = (
         }
     }
     if (
-        isAlgo25Account(auth) ||
+        isStandaloneAccount(auth) ||
         isHDWalletAccount(auth) ||
         isHardwareWalletAccount(auth)
     ) {

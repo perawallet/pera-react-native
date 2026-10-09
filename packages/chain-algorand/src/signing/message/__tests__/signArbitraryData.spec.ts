@@ -37,7 +37,7 @@ const hdAccount = {
 const algo25Account = {
     address: 'ALGO25_ADDR',
     keyPairId: 'key-algo25-ed25519',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 const b64 = (text: string) => encodeToBase64(new TextEncoder().encode(text))

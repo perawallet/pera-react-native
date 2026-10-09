@@ -71,7 +71,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -184,7 +184,7 @@ const mockQueryReturn = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: `kp-${address}`,
 })

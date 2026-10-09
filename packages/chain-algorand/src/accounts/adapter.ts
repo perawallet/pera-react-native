@@ -62,8 +62,11 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     legacyDetails: algorandLegacyDetails,
     quantum: algorandQuantumDerivation,
     singleKeyAccounts: algorandSingleKeyAccounts,
-    fetchRekeyedAddresses: (authAddress, scope) =>
-        fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),
+    fetchRekeyedAddresses: (authorityAddress, scope) =>
+        fetchAlgorandRekeyedAddresses(
+            authorityAddress,
+            algorandNetworkOf(scope),
+        ),
     authority: algorandAuthority,
     resolveSigner: resolveAlgorandSigner,
     getAuthAccount: getAlgorandAuthAccount,

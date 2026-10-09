@@ -72,8 +72,8 @@ describe('buildDeviceAccountRegistrations', () => {
     it('marks muted addresses as not receiving notifications', () => {
         const result = buildDeviceAccountRegistrations(
             [
-                account('ADDR_A', AccountTypes.algo25),
-                account('ADDR_B', AccountTypes.algo25),
+                account('ADDR_A', AccountTypes.standalone),
+                account('ADDR_B', AccountTypes.standalone),
             ],
             ['ADDR_B'],
         )
@@ -110,7 +110,7 @@ describe('buildDeviceAccountRegistrations', () => {
         } as const
         const credentialBearing: WalletAccount[] = [
             buildAccount({
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chainId: 'algorand',
                 chains: {
                     ...withOtherChain('ALGO25ADDR', 'algo25-key'),
@@ -175,7 +175,7 @@ describe('buildDeviceAccountRegistrations', () => {
             }),
         ]
         const addressOnly: WalletAccount[] = [
-            account('ALGO25ADDR', AccountTypes.algo25),
+            account('ALGO25ADDR', AccountTypes.standalone),
             {
                 ...account('HDADDR', AccountTypes.hdWallet),
                 hdWalletDetails: {
@@ -253,6 +253,28 @@ describe('buildDeviceAccountRegistrations', () => {
             {
                 address: 'QUANTUMADDR',
                 accountType: 'quantum',
+                receiveNotifications: true,
+            },
+        ])
+    })
+
+    it('leaves out an account with no Algorand entry', () => {
+        const onEthereum = {
+            id: 'e',
+            address: '0xabc',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc', keyPairId: 'raw-key' } },
+        } as WalletAccount
+
+        const result = buildDeviceAccountRegistrations(
+            [onEthereum, account('SADDR', AccountTypes.standalone)],
+            [],
+        )
+
+        expect(result).toEqual([
+            {
+                address: 'SADDR',
+                accountType: 'algo25',
                 receiveNotifications: true,
             },
         ])

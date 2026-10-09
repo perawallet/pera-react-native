@@ -18,6 +18,7 @@ import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('../../store', () => ({
     useAccountsStore: vi.fn(),
+    useAccountChainStateStore: (selector: any) => selector({ states: {} }),
 }))
 
 describe('useSigningAccounts', () => {
@@ -30,7 +31,7 @@ describe('useSigningAccounts', () => {
         const mockAccounts = [
             {
                 address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
             { address: 'addr2', custody: { kind: 'watch' } },
@@ -54,7 +55,7 @@ describe('useSigningAccounts', () => {
         expect(result.current).toEqual([
             {
                 address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
             {

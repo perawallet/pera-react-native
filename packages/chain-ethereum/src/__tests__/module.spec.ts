@@ -14,11 +14,13 @@ import { describe, expect, it, vi } from 'vitest'
 import {
     addressCodecs,
     createChainRegistry,
+    keyDerivations,
     registerChainSetup,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../addresses'
+import { ethereumKeyDerivation } from '../keys/derivation'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -50,7 +52,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec and defaults through the setup', () => {
+    it('registers its descriptor, address codec, key derivation and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -73,6 +75,7 @@ describe('ethereumModule', () => {
             ethereumModule.capabilityDefaults,
         )
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
+        expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },
@@ -82,6 +85,9 @@ describe('ethereumModule', () => {
     it('declares the error keys its adapters emit as data', () => {
         expect(ethereumModule.i18nKeys()).toContain(
             'errors.evm.insufficient_funds.body',
+        )
+        expect(ethereumModule.i18nKeys()).toContain(
+            'errors.evm.invalid_private_key',
         )
     })
 })

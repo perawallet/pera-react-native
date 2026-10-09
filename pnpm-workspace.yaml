@@ -221,8 +221,9 @@ patchedDependencies:
   # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
   # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
   # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
-  # signing opens only that child, and imported raw keys are sealed the same
-  # way. Nothing is exportable. Drop once upstream takes these branches.
+  # signing opens only that child, and imported raw keys are sealed too, and
+  # released by `export` only when imported extractable; derived children never
+  # are. Drop once upstream takes these branches.
   "@algorandfoundation/keystore-core@1.0.0-canary.5": patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
   # `shims` is typed as an array, though it is handed unchanged to keystore-core's
   # `createKeyStore`, which also takes a lazy function. The provider needs the

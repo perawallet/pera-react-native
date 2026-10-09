@@ -12,7 +12,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
+import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import { authorityOf } from '../../credentials'
+import { useAccountChainStateStore } from '../../store'
+import { buildTestAccount } from '../../__tests__/accountFactory'
 import { useLedgerAccountPreview } from '../useLedgerAccountPreview'
 
 const NATIVE_ASSET_ID = '0'
@@ -47,6 +53,8 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
     mocks.useCurrency.mockReturnValue({
         usdToPreferred: (usd: Decimal) => usd, // 1:1 USD for tests
     })
@@ -262,7 +270,7 @@ describe('useLedgerAccountPreview', () => {
                 status: 'Offline',
                 rewards: 0n,
                 assets: [],
-                authAddress: 'AUTHADDR',
+                authorityAddress: 'AUTHADDR',
             },
             isLoading: false,
             isError: false,
@@ -277,9 +285,33 @@ describe('useLedgerAccountPreview', () => {
         const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
 
         expect(result.current.preview?.rekey).toEqual({
-            kind: 'rekeyedTo',
-            authAddress: 'AUTHADDR',
+            kind: 'delegatedTo',
+            authorityAddress: 'AUTHADDR',
         })
+    })
+
+    it('records the on-chain authority in the chain-state slice', () => {
+        const account = buildTestAccount('watch')
+        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+            data: {
+                address: account.address,
+                amount: 0n,
+                minBalance: 0n,
+                status: 'Offline',
+                rewards: 0n,
+                assets: [],
+                authorityAddress: 'AUTHADDR',
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        renderHook(() => useLedgerAccountPreview(account.address as string))
+
+        expect(authorityOf(account, getSelectedScope(LEGACY_CHAIN_ID))).toBe(
+            'AUTHADDR',
+        )
     })
 
     it('reports canSignFor when accounts are rekeyed to it and it is not rekeyed', () => {

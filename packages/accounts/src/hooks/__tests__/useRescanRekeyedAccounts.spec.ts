@@ -58,7 +58,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
     it('classifies discovered addresses into already-imported vs importable', async () => {
         setAccounts([
             {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -127,7 +127,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     it('fans out one indexer scan per source key and merges classified results', async () => {
         setAccounts([
             {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -196,7 +196,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
             // must see it as already-in-wallet.
             setAccounts([
                 {
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                     address: 'LANDS_MID_SCAN',
                     keyPairId: 'k',
                 } as WalletAccount,

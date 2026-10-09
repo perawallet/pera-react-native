@@ -24,7 +24,7 @@ import { getTestProps } from '@utils/test-id-helper'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
 
-export type ImportOptionsContentResult = 'hdWallet' | 'algo25'
+export type ImportOptionsContentResult = 'hdWallet' | 'standalone'
 
 export type ImportOptionsContentProps = Record<string, never>
 
@@ -99,7 +99,7 @@ export const ImportOptionsContent = () => {
                 </PWTouchableOpacity>
 
                 <PWTouchableOpacity
-                    onPress={() => resolve('algo25')}
+                    onPress={() => resolve('standalone')}
                     style={styles.optionBox}
                     {...getTestProps('import_options_algo25_button')}
                 >

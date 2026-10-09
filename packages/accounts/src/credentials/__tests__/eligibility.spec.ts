@@ -97,7 +97,7 @@ describe('wallet eligibility and holder lookups', () => {
 
     beforeEach(() => {
         hd = buildTestAccount('hdWallet')
-        algo25 = buildTestAccount('algo25')
+        algo25 = buildTestAccount('standalone')
         accounts = [
             hd,
             algo25,

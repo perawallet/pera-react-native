@@ -24,7 +24,9 @@ import { getRekeyLabelI18n, splitAccountTypeLabel } from '@utils/rekeyLabels'
 
 describe('getRekeyLabelI18n', () => {
     it('names the ledger signer for a rekey to a Ledger auth account', () => {
-        expect(getRekeyLabelI18n({ from: 'algo25', to: 'hardware' })).toEqual({
+        expect(
+            getRekeyLabelI18n({ from: 'standalone', to: 'hardware' }),
+        ).toEqual({
             labelKey: 'account_info.type_rekeyed_signer',
             signerKey: 'account_info.rekey_signer_ledger',
             descriptionKey: 'account_type_info.rekeyed_ledger_description',

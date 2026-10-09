@@ -14,10 +14,10 @@ import { buildAccount, type BuildAccountInput } from '../credentials'
 import type { AccountType, WalletAccount } from '../models'
 
 const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
-    algo25: {
-        custody: { kind: 'local', seed: 'algo25' },
+    standalone: {
+        custody: { kind: 'local', seed: null },
         chainId: 'algorand',
-        chains: { algorand: { address, keyPairId: 'algo25-key' } },
+        chains: { algorand: { address, keyPairId: 'standalone-key' } },
     },
     quantum: {
         custody: { kind: 'local', seed: 'quantum' },

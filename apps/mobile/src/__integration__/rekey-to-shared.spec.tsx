@@ -76,7 +76,7 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-shared-source',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
@@ -104,7 +104,7 @@ const seedRekeyAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { source, target }

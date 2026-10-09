@@ -17,7 +17,8 @@ import {
 } from '@perawallet/wallet-core-card'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgo25Account,
+    chainAccountOf,
+    isStandaloneAccount,
     isHardwareWalletAccount,
     isHDWalletAccount,
     type WalletAccount,
@@ -32,8 +33,13 @@ import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
 import { useCardScope } from './useCardScope'
 
-const isFundingSourceKind = (account: WalletAccount): boolean =>
-    isAlgo25Account(account) ||
+// A standalone key holds one chain's account, so it can only fund a card on that chain.
+const isFundingSourceKind = (
+    account: WalletAccount,
+    scope: ChainScope,
+): boolean =>
+    (isStandaloneAccount(account) &&
+        chainAccountOf(account, scope.chainId) !== undefined) ||
     isHDWalletAccount(account) ||
     isHardwareWalletAccount(account)
 
@@ -46,7 +52,7 @@ export const isEligibleFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
 ): boolean =>
-    isFundingSourceKind(account) &&
+    isFundingSourceKind(account, scope) &&
     getCardFundingSourceEligibility(account, scope).canFund
 
 /**
@@ -58,7 +64,7 @@ export const isSigningCapableFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
 ): boolean => {
-    if (!isFundingSourceKind(account)) return false
+    if (!isFundingSourceKind(account, scope)) return false
     const { canFund, canProveOwnership } = getCardFundingSourceEligibility(
         account,
         scope,

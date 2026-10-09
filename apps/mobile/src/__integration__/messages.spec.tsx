@@ -37,7 +37,7 @@ const DEVICE_ID = 'test-device-id'
 // account (its addresses scope the request) and a device id is registered.
 const SIGNER: WalletAccount = {
     id: 'signer-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'signer-key',
     name: 'Trading',

@@ -48,14 +48,14 @@ describe('mapOnChainAccountInformation', () => {
             status: mapped.status,
             rewards: mapped.rewards,
             assets: mapped.assets,
-            authAddress: mapped.authAddress,
+            authorityAddress: mapped.authorityAddress,
         }).toEqual({
             amount: 1000n,
             minBalance: 100n,
             status: 'Online',
             rewards: 0n,
             assets: [],
-            authAddress: undefined,
+            authorityAddress: undefined,
         })
     })
 
@@ -84,19 +84,19 @@ describe('mapOnChainAccountInformation', () => {
         expect(mapped.assets).toEqual([])
     })
 
-    it('omits authAddress when the account is not rekeyed', () => {
+    it('omits the authority when the account is not rekeyed', () => {
         const mapped = mapOnChainAccountInformation(buildResponse())
 
-        expect(mapped.authAddress).toBeUndefined()
+        expect(mapped.authorityAddress).toBeUndefined()
     })
 
-    it('surfaces authAddress as a string when the account is rekeyed', () => {
+    it('surfaces the authority as a string when the account is rekeyed', () => {
         const mapped = mapOnChainAccountInformation(
             buildResponse({
                 authAddr: { toString: () => 'AUTHADDR' },
             }),
         )
 
-        expect(mapped.authAddress).toBe('AUTHADDR')
+        expect(mapped.authorityAddress).toBe('AUTHADDR')
     })
 })

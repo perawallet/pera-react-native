@@ -49,7 +49,7 @@ const QUANTUM_LEGACY =
 const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
     id,
     address,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: `${id}-key`,
     ...extra,
 })

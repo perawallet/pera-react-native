@@ -46,7 +46,7 @@ const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'multi-network-key',
     name: 'Multi-network Account',
@@ -127,7 +127,7 @@ describe('Flow: Settings → Network selection', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await upsertAccountBalance({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
@@ -138,7 +138,7 @@ describe('Flow: Settings → Network selection', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         // ALGO is a regular holding row now; the balance hook reads it from

@@ -126,7 +126,7 @@ describe('useCreateAccount', () => {
             await result.current.saveAccount({
                 id: 'ACC1',
                 address: 'ADDR1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'WALLET1-ed25519',
             })
         })
@@ -309,7 +309,7 @@ describe('useCreateAccount', () => {
             account: {
                 id: 'ACC1',
                 address: 'ADDR1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'SEED1-ed25519',
             },
             seedKeyId: 'SEED1',
@@ -325,7 +325,7 @@ describe('useCreateAccount', () => {
 
             let account: any
             await act(async () => {
-                account = await result.current.buildAlgo25WalletAccount({
+                account = await result.current.buildStandaloneAccount({
                     id: 'SEED1',
                 })
             })
@@ -333,7 +333,7 @@ describe('useCreateAccount', () => {
             expect(account).toEqual(mintedAccount(false).account)
             expect(createOp()).toHaveBeenCalledWith(
                 kmsMock,
-                { kind: 'algo25', id: 'SEED1' },
+                { kind: 'standalone', id: 'SEED1' },
                 MAINNET_SCOPE,
             )
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -369,7 +369,7 @@ describe('useCreateAccount', () => {
             const { result } = renderHook(() => useCreateAccount())
 
             await act(async () => {
-                await result.current.createAlgo25WalletAccount({})
+                await result.current.createStandaloneAccount({})
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([

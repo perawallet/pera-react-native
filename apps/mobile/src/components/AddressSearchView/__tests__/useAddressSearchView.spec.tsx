@@ -46,7 +46,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSortedAccounts: vi.fn(),
     useAccountValueTotalsQuery: vi.fn(),
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -226,7 +226,7 @@ describe('useAddressSearchView', () => {
             {
                 address: 'STD_ADDR',
                 name: 'Standard',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
             {
                 address: 'QUANTUM_ADDR',
@@ -378,7 +378,7 @@ describe('useAddressSearchView', () => {
             {
                 address: 'OWN_ADDRESS',
                 name: 'My Account',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(

@@ -72,7 +72,7 @@ const makeMultisigAccount = (): WalletAccount =>
 
 const makeAlgo25Account = (address: string, keyPairId = 'key'): WalletAccount =>
     ({
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId,
     }) as unknown as WalletAccount

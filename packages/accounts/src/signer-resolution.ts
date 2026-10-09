@@ -36,7 +36,7 @@ export type SignerResolution =
     | {
           kind: 'authMissing'
           account: WalletAccount
-          authAddress: string
+          authorityAddress: string
       }
     | { kind: 'authIsWatch'; account: WalletAccount; auth: WalletAccount }
     | {
@@ -144,7 +144,7 @@ export const isMultisigUnsignable = (
 ): boolean =>
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
-export type RekeyTransition = {
+export type DelegateTransition = {
     /** Type of the rekeyed account itself, not followed through the rekey. */
     from: AccountType
     /** Type of the account it is now rekeyed to. */
@@ -152,11 +152,11 @@ export type RekeyTransition = {
 }
 
 /** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
-export const rekeyTransitionFor = (
+export const delegateTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): RekeyTransition | null => {
+): DelegateTransition | null => {
     if (!isRekeyedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
     return r.kind === 'ok'
@@ -181,7 +181,7 @@ const hasQuantumAuthority = (
  * Compares *effective* authority (one rekey hop), not raw account type,
  * because that is where the protection lives:
  * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
- *   back to Ed25519, even though its own `type` is still `algo25`.
+ *   back to Ed25519, even though it is still a standalone account.
  * - A quantum-typed account already rekeyed away to Ed25519 has no protection
  *   left, so rekeying it further is NOT a downgrade.
  */

@@ -103,14 +103,14 @@ const seedRekeyedSource = async (): Promise<{
     })
     const authAccount: WalletAccount = {
         id: 'undo-auth',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Auth',
     }
     const source: WalletAccount = {
         id: 'undo-source',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: REKEY_TARGET_ADDRESS,
         keyPairId: '',
         name: 'Rekeyed source',
@@ -129,7 +129,7 @@ const seedRekeyedSource = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(0.1),
         status: 'Offline',
-        authAddress: authAccount.address,
+        authorityAddress: authAccount.address,
     })
     return { source, authAccount }
 }

@@ -16,6 +16,7 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM_CHAIN_ID } from './chain-id'
+import { ethereumHdPath } from './keys/path'
 
 // EIP-155 ids are declared here, not read from viem/chains: Metro ships every
 // chain definition for any import of that barrel.
@@ -70,10 +71,10 @@ export const ethereumDescriptor: ChainDescriptor = {
     signing: {
         schemes: ['secp256k1'],
         derivationPaths: {
-            secp256k1: (account, keyIndex) =>
-                `m/44'/60'/${account}'/0/${keyIndex}`,
+            secp256k1: ethereumHdPath,
         },
         rawKeySchemes: ['secp256k1'],
+        standaloneSecret: 'privateKey',
     },
     protocol: {
         feeModel: 'gas',

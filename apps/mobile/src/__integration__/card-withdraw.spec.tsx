@@ -211,7 +211,7 @@ const seedOwnerAccount = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'card-owner',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Main Account',

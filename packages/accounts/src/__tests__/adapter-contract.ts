@@ -115,7 +115,7 @@ const createFakeKeystore = () => {
     }
 }
 
-const SINGLE_KEY_KINDS: SingleKeyAccountKind[] = ['algo25', 'quantum']
+const SINGLE_KEY_KINDS: SingleKeyAccountKind[] = ['standalone', 'quantum']
 
 /** Every chain package runs this against its own accounts adapter. */
 export const accountsContractTests = (
@@ -243,7 +243,7 @@ export const accountsContractTests = (
                 adapter.resolveSigner(account, [account], scope),
             ).toMatchObject({
                 kind: 'authMissing',
-                authAddress: auth.address,
+                authorityAddress: auth.address,
             })
             expect(adapter.getAuthAccount(account, [account], scope)).toBeNull()
         })

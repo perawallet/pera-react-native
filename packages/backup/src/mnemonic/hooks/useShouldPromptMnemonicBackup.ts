@@ -14,7 +14,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountFundedNetworksQuery,
-    useAccountsRekeyedTo,
+    useAccountsDelegatedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
@@ -29,7 +29,7 @@ export const useShouldPromptMnemonicBackup = (
     // passphrase is the same secret whichever chain the balance sits on, and a
     // warning that disappears on a network switch teaches the wrong lesson.
     const { isFunded } = useAccountFundedNetworksQuery(account?.address)
-    const rekeyedToThisAccount = useAccountsRekeyedTo(account?.address)
+    const rekeyedToThisAccount = useAccountsDelegatedTo(account?.address)
     // Accounts belong to the legacy chain until WalletAccount carries a chain id.
     const canBackUpMnemonic = useChainCapability(
         LEGACY_CHAIN_ID,

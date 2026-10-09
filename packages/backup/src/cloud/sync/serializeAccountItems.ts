@@ -11,7 +11,8 @@
  */
 
 import {
-    isAlgo25Account,
+    isStandaloneAccount,
+    standaloneSecretOf,
     isHardwareWalletAccount,
     isHDWalletAccount,
     isMultisigAccount,
@@ -49,7 +50,9 @@ const toAddressPayload = (
     updatedAt: number,
     hd?: { seedFirstDerivedAddress: string; publicKeyHex: string },
 ): AddressBackupPayload | null => {
-    if (isAlgo25Account(a)) {
+    if (isStandaloneAccount(a)) {
+        // A private-key account has no backup item yet.
+        if (standaloneSecretOf(a) !== 'mnemonic') return null
         return {
             type: BackupAccountType.algo25,
             address: a.address,

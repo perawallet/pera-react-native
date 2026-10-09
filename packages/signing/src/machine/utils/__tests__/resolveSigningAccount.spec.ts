@@ -26,13 +26,13 @@ const PARTICIPANT =
 const AUTH = 'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
 const rekeyedSigner: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: PARTICIPANT,
     keyPairId: 'key-participant',
 } as unknown as WalletAccount
 
 const authAccount: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: AUTH,
     keyPairId: 'key-auth',
 } as unknown as WalletAccount
@@ -44,7 +44,7 @@ const keylessRekeyedSigner: WalletAccount = {
 } as unknown as WalletAccount
 
 const plainSigner: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: PARTICIPANT,
     keyPairId: 'key-participant',
 } as unknown as WalletAccount

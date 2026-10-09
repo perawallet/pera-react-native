@@ -868,7 +868,7 @@ describe('account holdings repository', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal('0.1'),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         it('getHeldAssetIdsByAccount returns the account holdings across networks', async () => {

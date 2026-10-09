@@ -217,7 +217,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const ownAddress = encodeAlgorandAddress(ownKey.publicKey)
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-with-own-key',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: ownAddress,
             keyPairId: ownKey.seedKey.id ?? '',
             name: 'Rekeyed SIWA signer with key',

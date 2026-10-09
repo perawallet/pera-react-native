@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useRekeyTransition } from '../useRekeyTransition'
+import { useDelegatedTransition } from '../useDelegatedTransition'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -24,7 +25,7 @@ import {
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: 'k',
         ...extra,
@@ -33,7 +34,7 @@ const held = (address: string, extra: Partial<WalletAccount> = {}) =>
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
-describe('useRekeyTransition', () => {
+describe('useDelegatedTransition', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
@@ -41,20 +42,39 @@ describe('useRekeyTransition', () => {
     })
 
     it('returns null when no address is provided', () => {
-        const { result } = renderHook(() => useRekeyTransition(null))
+        const { result } = renderHook(() => useDelegatedTransition(null))
         expect(result.current).toBeNull()
     })
 
     it('returns null when the address is not in the wallet', () => {
         setAccounts([])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
         expect(result.current).toBeNull()
     })
 
     it('returns null for a non-rekeyed account', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
         expect(result.current).toBeNull()
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const signer = held('S')
+        useNetworkStore.getState().setNetwork('mainnet')
+        setAccounts([
+            held('A', { custody: { kind: 'watch' }, keyPairId: undefined }),
+            signer,
+        ])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockReturnValue({
+            kind: 'ok',
+            signer,
+        })
+        const { result } = renderHook(() => useDelegatedTransition('A'))
+        expect(result.current).toBeNull()
+
+        act(() => seedAuthority('A', 'S'))
+
+        expect(result.current).toEqual({ from: 'watch', to: 'standalone' })
     })
 
     it("returns the from/to types from the chain's signer for a rekeyed account", () => {
@@ -72,8 +92,8 @@ describe('useRekeyTransition', () => {
             signer,
         })
 
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useDelegatedTransition('A'))
 
-        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
+        expect(result.current).toEqual({ from: 'watch', to: 'standalone' })
     })
 })

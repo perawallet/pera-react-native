@@ -184,7 +184,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         {
             address: 'A'.repeat(58),
             id: 'mock',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         },
     ],
     resolveAuthAccount: (account: unknown) => account,

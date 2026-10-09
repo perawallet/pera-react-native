@@ -11,7 +11,8 @@
  */
 
 import {
-    isAlgo25Account,
+    isStandaloneAccount,
+    standaloneSecretOf,
     isHDWalletAccount,
     isQuantumAccount,
     type HDWalletAccount,
@@ -54,7 +55,11 @@ export const serializeAccountForBackup = async (
     }
 
     let secrets: SecretsBackupPayload | null = null
-    if (isAlgo25Account(account) || isQuantumAccount(account)) {
+    if (
+        (isStandaloneAccount(account) &&
+            standaloneSecretOf(account) === 'mnemonic') ||
+        isQuantumAccount(account)
+    ) {
         if (!resolveMnemonic) return null
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null

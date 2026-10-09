@@ -150,7 +150,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
 
     const account: WalletAccount = {
         id: 'holder-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'holder-key',
         name: 'Holder',
@@ -168,7 +168,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: account.address,

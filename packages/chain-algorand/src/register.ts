@@ -58,7 +58,6 @@ import {
     algorandAddressCodec,
     algorandKeyDerivation,
 } from './accounts'
-import { startNetworkRekeySync } from './accounts/network-rekey-sync'
 
 // These registrations must not depend on which barrel loads first.
 import './blockchain/store/store'
@@ -89,5 +88,4 @@ export const registerChain = (): void => {
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)
     messageSignerChainAdapters.register(algorandMessageSignerAdapter)
-    startNetworkRekeySync()
 }

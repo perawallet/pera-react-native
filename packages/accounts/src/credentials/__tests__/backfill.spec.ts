@@ -56,7 +56,7 @@ const legacyFixtures: Array<[string, PersistedAccountRecord, CustodyFields]> = [
             keyPairId: 'seed-ed25519',
         },
         {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: { address: 'ALGO25-ADDR', keyPairId: 'seed-ed25519' },
             },
@@ -176,7 +176,10 @@ describe('custodyFromLegacy', () => {
             expect(
                 custodyFromLegacy({ id: 'k', type, address: 'ADDR' }),
             ).toEqual({
-                custody: { kind: 'local', seed: type },
+                custody: {
+                    kind: 'local',
+                    seed: type === 'algo25' ? null : type,
+                },
                 chains: { algorand: { address: 'ADDR' } },
             })
         },
@@ -236,14 +239,12 @@ describe('toCurrentAccount', () => {
             address: 'ADDR',
             type: 'hdWallet',
             keyPairId: 'kp',
-            rekeyAddress: 'AUTH',
         } as PersistedAccountRecord
 
         expect(toCurrentAccount(record)).toEqual({
             id: 'x',
             name: 'Broken',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR' } },
         })
@@ -269,7 +270,6 @@ describe('withLegacyMultisigDetails', () => {
             name: 'Shared',
             type: 'multisig',
             address: 'MSIG',
-            rekeyAddress: 'AUTH',
         }) as MultiSigAccount
         const details = { threshold: 2, addresses: ['P1', 'P2'], version: 1 }
 
@@ -279,7 +279,6 @@ describe('withLegacyMultisigDetails', () => {
             id: 'm',
             name: 'Shared',
             address: 'MSIG',
-            rekeyAddress: 'AUTH',
             custody: { kind: 'multisig' },
             multisigDetails: details,
         })

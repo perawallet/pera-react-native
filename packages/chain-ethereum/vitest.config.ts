@@ -24,6 +24,11 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'node',
+        typecheck: {
+            enabled: true,
+            include: ['src/**/*.test-d.ts'],
+            tsconfig: './tsconfig.typecheck.json',
+        },
     },
     resolve: {
         conditions: ['default'],
@@ -36,6 +41,10 @@ export default defineConfig({
             '@perawallet/wallet-core-chain-contract/testing': path.resolve(
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',
+            ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
             ),
         },
     },

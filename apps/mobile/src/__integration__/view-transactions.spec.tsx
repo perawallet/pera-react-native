@@ -66,7 +66,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'observer-key',
     name: 'Observer',
@@ -175,7 +175,7 @@ describe('Flow: View transactions → tap into details', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         // Seed two transactions for the observer account. The history

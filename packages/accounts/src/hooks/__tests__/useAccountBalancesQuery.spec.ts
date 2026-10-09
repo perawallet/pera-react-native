@@ -114,7 +114,7 @@ const account: WalletAccount = {
     address: 'ADDR1',
     name: 'Account 1',
     id: '1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     canSign: true,
 } as WalletAccount
 

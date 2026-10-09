@@ -36,7 +36,7 @@ const ALGORAND_TESTNET: ChainScope = {
 }
 
 const algo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'key-1',
 } as WalletAccount

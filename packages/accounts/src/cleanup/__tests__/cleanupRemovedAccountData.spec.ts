@@ -76,7 +76,7 @@ const balanceArgs = (
     totalAppsOptedIn: 0,
     minBalance: new Decimal('0.1'),
     status: 'Offline',
-    authAddress: null,
+    authorityAddress: null,
 })
 
 describe('cleanupRemovedAccountData', () => {

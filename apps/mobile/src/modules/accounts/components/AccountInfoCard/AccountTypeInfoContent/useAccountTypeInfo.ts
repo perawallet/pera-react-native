@@ -11,15 +11,16 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useMemo } from 'react'
 import {
     accountType,
     type AccountType,
     AccountTypes,
     isMultisigAccount,
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyTransition,
+    useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -43,7 +44,7 @@ type UseAccountTypeInfoResult = {
 }
 
 const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
-    [AccountTypes.algo25]: {
+    [AccountTypes.standalone]: {
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },
@@ -70,7 +71,7 @@ const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
 }
 
 const SUPPORT_URL: Record<AccountType, string> = {
-    [AccountTypes.algo25]: config.accountTypeSupportUrl,
+    [AccountTypes.standalone]: config.accountTypeSupportUrl,
     [AccountTypes.hdWallet]: config.accountTypeSupportUrl,
     [AccountTypes.watch]: config.accountTypeSupportUrl,
     [AccountTypes.hardware]: config.ledgerAccountSupportUrl,
@@ -99,12 +100,13 @@ export const useAccountTypeInfo = ({
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const canSign = useCanSignWith(account)
-    const rekeyTransition = useRekeyTransition(account.address)
+    const delegateTransition = useDelegatedTransition(account.address)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const { title, titleQualifier, description } = useMemo(() => {
-        if (rekeyTransition) {
+        if (delegateTransition) {
             const { labelKey, signerKey, descriptionKey } =
-                getRekeyLabelI18n(rekeyTransition)
+                getRekeyLabelI18n(delegateTransition)
             const label = t(labelKey, { to: t(signerKey) })
             const { main, qualifier } = splitAccountTypeLabel(label)
             return {
@@ -114,7 +116,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
+        if (authority !== null) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N
@@ -139,14 +141,14 @@ export const useAccountTypeInfo = ({
             titleQualifier: null,
             description: t(i18n.description),
         }
-    }, [account, canSign, rekeyTransition, t])
+    }, [account, authority, canSign, delegateTransition, t])
 
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own
         // type, so the article has to follow the same type to match.
-        const type = rekeyTransition?.to ?? accountType(account)
+        const type = delegateTransition?.to ?? accountType(account)
         pushWebView({ url: SUPPORT_URL[type] })
-    }, [pushWebView, account, rekeyTransition])
+    }, [pushWebView, account, delegateTransition])
 
     return {
         title,

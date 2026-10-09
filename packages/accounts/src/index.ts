@@ -30,6 +30,7 @@ export {
     useAccountsStore,
     useAccountChainStateStore,
     hydrateAccountChainStates,
+    recordAuthority,
     type AccountChainStateSlice,
 } from './store'
 export {

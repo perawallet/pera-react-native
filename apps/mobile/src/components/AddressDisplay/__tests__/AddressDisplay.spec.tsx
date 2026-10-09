@@ -31,17 +31,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
               : custody.seed,
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
-    useRekeyAccount: () => null,
+    useDelegatedAccount: () => null,
     useSignerFor: () => null,
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
         watch: 'watch',
     },
     isMultisigAccount: () => false,
-    isRekeyedAccount: () => false,
+    useAuthorityOf: () => null,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({

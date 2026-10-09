@@ -47,6 +47,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         chainAdapter,
         credentialScheme,
         accessors,
+        accountChainState,
     ] = await Promise.all([
         vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
@@ -64,6 +65,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/credentials/accessors',
         ),
+        vi.importActual<object>(
+            '@perawallet/wallet-core-accounts/store/accountChainState',
+        ),
     ])
     return {
         ...models,
@@ -74,6 +78,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...chainAdapter,
         ...credentialScheme,
         ...accessors,
+        ...accountChainState,
         useAccountsStore: { getState: () => ({ accounts: [] }) },
     }
 })
