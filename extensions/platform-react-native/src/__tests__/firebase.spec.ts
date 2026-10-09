@@ -97,6 +97,7 @@ import * as analytics from '@react-native-firebase/analytics'
 import * as messaging from '@react-native-firebase/messaging'
 import * as crashlytics from '@react-native-firebase/crashlytics'
 import notifee from '@notifee/react-native'
+import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
 
 const mockNotifee = notifee as any
 
@@ -173,6 +174,20 @@ describe('RNFirebaseService', () => {
                         staking_projects_i18n: expect.any(String),
                     }),
                 )
+            })
+
+            it('seeds defaults another package declared alongside the platform ones', async () => {
+                remoteConfigDefaultsRegistry.declare({ fixture_fee: 1000 })
+
+                await service.initializeRemoteConfig()
+
+                expect(mockSetDefaults).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        staking_projects_i18n: expect.any(String),
+                        fixture_fee: 1000,
+                    }),
+                )
+                remoteConfigDefaultsRegistry.reset()
             })
         })
 
@@ -315,7 +330,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('fee_min_txn_fee')
+                const result = service.getNumberValue('fixture_fee')
                 expect(result).toEqual(42)
             })
 
@@ -325,7 +340,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('fee_min_txn_fee', 100)
+                const result = service.getNumberValue('fixture_fee', 100)
                 expect(result).toEqual(42)
             })
 
@@ -333,7 +348,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('fee_min_txn_fee', 100)
+                const result = service.getNumberValue('fixture_fee', 100)
                 expect(result).toEqual(100)
             })
 
@@ -341,7 +356,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('fee_min_txn_fee')
+                const result = service.getNumberValue('fixture_fee')
                 expect(result).toEqual(0)
             })
         })

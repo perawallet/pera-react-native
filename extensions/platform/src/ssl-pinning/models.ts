@@ -10,21 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
-
-export * from './app-integrity'
-export * from './app-lifecycle'
-export * from './analytics'
-export * from './age-gate'
-export * from './biometrics'
-export * from './cloud-file-storage'
-export * from './database'
-export * from './device'
-export * from './migration'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './ssl-pinning'
-export * from './reporting'
-export * from './storage'
-export * from './wallet-provisioning'
-export * from './models'
+export interface PinnedHostGroup {
+    /**
+     * Remote-config boolean key. The group is pinned only once a fetched value
+     * is `true`, so each group keeps its own kill switch.
+     */
+    flag: string
+    /** Base URLs whose hostnames are pinned. */
+    urls: readonly string[]
+    /** Registrable domains a host must sit under to be pinned. */
+    domains: readonly string[]
+}

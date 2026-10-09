@@ -17,8 +17,7 @@ import {
     type RemoteConfig,
 } from 'firebase/remote-config'
 import {
-    RemoteConfigDefaults,
-    type RemoteConfigKey,
+    remoteConfigDefaultsRegistry,
     type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
@@ -48,7 +47,7 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
             ...this.remoteConfig.settings,
             minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
         }
-        this.remoteConfig.defaultConfig = RemoteConfigDefaults
+        this.remoteConfig.defaultConfig = { ...remoteConfigDefaultsRegistry.all() }
 
         try {
             await fetchAndActivate(this.remoteConfig)
@@ -64,7 +63,7 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     }
 
     getStringValue(key: string, fallback?: string): string {
-        const defaultValue = RemoteConfigDefaults[key as RemoteConfigKey]
+        const defaultValue = remoteConfigDefaultsRegistry.all()[key]
         const effectiveFallback =
             typeof defaultValue === 'string' ? defaultValue : (fallback ?? '')
         if (!this.remoteConfig) {
@@ -78,7 +77,7 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     }
 
     getBooleanValue(key: string, fallback?: boolean): boolean {
-        const defaultValue = RemoteConfigDefaults[key as RemoteConfigKey]
+        const defaultValue = remoteConfigDefaultsRegistry.all()[key]
         const effectiveFallback =
             typeof defaultValue === 'boolean'
                 ? defaultValue
@@ -103,7 +102,7 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     }
 
     getNumberValue(key: string, fallback?: number): number {
-        const defaultValue = RemoteConfigDefaults[key as RemoteConfigKey]
+        const defaultValue = remoteConfigDefaultsRegistry.all()[key]
         const effectiveFallback =
             typeof defaultValue === 'number' ? defaultValue : (fallback ?? 0)
         if (!this.remoteConfig) {

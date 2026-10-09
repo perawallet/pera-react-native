@@ -53,8 +53,8 @@ import {
     type PushTokenRefreshListener,
     type RemoteConfigService,
     type AnalyticsService,
-    RemoteConfigDefaults,
-    type RemoteConfigKey,
+    remoteConfigDefaultsRegistry,
+    type RemoteConfigDefaultsMap,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
@@ -71,7 +71,7 @@ type AwaitableRemoteConfig = RemoteConfig & {
     setConfigSettings(settings: {
         minimumFetchIntervalMillis: number
     }): Promise<void>
-    setDefaults(defaults: typeof RemoteConfigDefaults): Promise<null>
+    setDefaults(defaults: RemoteConfigDefaultsMap): Promise<null>
 }
 
 // FCM/APNs registration is a known indefinite-hang surface offline. Bound the
@@ -218,7 +218,7 @@ export class RNFirebaseService
                 ? 0
                 : config.remoteConfigRefreshTime,
         })
-        await remoteConfig.setDefaults(RemoteConfigDefaults)
+        await remoteConfig.setDefaults(remoteConfigDefaultsRegistry.all())
 
         try {
             await fetchAndActivate(remoteConfig)
@@ -233,7 +233,7 @@ export class RNFirebaseService
         }
     }
 
-    getStringValue(key: RemoteConfigKey, fallback?: string): string {
+    getStringValue(key: string, fallback?: string): string {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? ''
@@ -243,7 +243,7 @@ export class RNFirebaseService
             return fallback ?? ''
         }
     }
-    getBooleanValue(key: RemoteConfigKey, fallback?: boolean): boolean {
+    getBooleanValue(key: string, fallback?: boolean): boolean {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? false
@@ -265,7 +265,7 @@ export class RNFirebaseService
             return fallback ?? false
         }
     }
-    getNumberValue(key: RemoteConfigKey, fallback?: number): number {
+    getNumberValue(key: string, fallback?: number): number {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? 0

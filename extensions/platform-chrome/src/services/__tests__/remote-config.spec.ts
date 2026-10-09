@@ -38,19 +38,22 @@ const configMock = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-config', () => configMock)
 
+import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
 import { ChromeRemoteConfigService } from '../remote-config'
 
 describe('ChromeRemoteConfigService', () => {
     afterEach(() => {
         vi.clearAllMocks()
+        remoteConfigDefaultsRegistry.reset()
     })
 
     it('falls back to bundled defaults when no Firebase app is available', async () => {
         getFirebaseAppMock.mockReturnValue(null)
+        remoteConfigDefaultsRegistry.declare({ fixture_fee: 1000 })
         const service = new ChromeRemoteConfigService()
         await service.initializeRemoteConfig()
 
-        expect(service.getNumberValue('fee_min_txn_fee')).toBe(1000)
+        expect(service.getNumberValue('fixture_fee')).toBe(1000)
         expect(service.getBooleanValue('enable_pera_card')).toBe(false)
         expect(service.getStringValue('terms_version')).toBe('1')
         expect(mockFetchAndActivate).not.toHaveBeenCalled()
@@ -71,6 +74,25 @@ describe('ChromeRemoteConfigService', () => {
 
         expect(mockGetRemoteConfig).toHaveBeenCalledWith({ name: '[DEFAULT]' })
         expect(mockFetchAndActivate).toHaveBeenCalled()
+    })
+
+    it('seeds declared defaults, and serves one declared after initialization', async () => {
+        const remoteConfig = { settings: {}, defaultConfig: {} }
+        mockGetRemoteConfig.mockReturnValueOnce(remoteConfig)
+        getFirebaseAppMock.mockReturnValue({ name: '[DEFAULT]' })
+        mockGetValue.mockImplementation(() => {
+            throw new Error('unavailable')
+        })
+        remoteConfigDefaultsRegistry.declare({ fixture_fee: 1000 })
+        const service = new ChromeRemoteConfigService()
+
+        await service.initializeRemoteConfig()
+        remoteConfigDefaultsRegistry.declare({ fixture_late_fee: 5 })
+
+        expect(remoteConfig.defaultConfig).toEqual(
+            expect.objectContaining({ fixture_fee: 1000, terms_version: '1' }),
+        )
+        expect(service.getNumberValue('fixture_late_fee')).toBe(5)
     })
 
     it('only trusts a genuinely fetched boolean value, not the seeded default', async () => {
