@@ -451,18 +451,19 @@ jobs:
           echo "All test shards passed"
 
   extension-e2e:
-    name: Extension bundle & e2e (${{ matrix.shard }}/2)
+    name: Extension bundle & e2e (${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
     needs: setup
     permissions:
       contents: read
       pull-requests: read
     # Each shard bundles for itself: a separate bundle job would add a job hop
-    # and an artifact round trip that cost about what the bundle does.
+    # and an artifact round trip that cost about what the bundle does. Shards
+    # are split by measured spec cost in apps/browser/playwright.config.ts.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -538,9 +539,31 @@ jobs:
         if: steps.changes.outputs.affected == 'true'
         run: test -d node_modules || pnpm install --frozen-lockfile
 
+      # Metro's transform cache is keyed by file content, so any older cache is
+      # safe and most of it still hits. ci-cache-warm.yml saves one from main
+      # nightly, which is what a PR's first run restores.
+      - name: Restore Metro cache
+        if: steps.changes.outputs.affected == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/metro-cache
+          key: metro-web-${{ runner.os }}-${{ github.sha }}
+          restore-keys: metro-web-${{ runner.os }}-
+
       - name: Bundle extension
         if: steps.changes.outputs.affected == 'true'
+        env:
+          # Expo keeps Metro's cache under os.tmpdir().
+          TMPDIR: ${{ runner.temp }}
         run: pnpm --filter browser bundle
+
+      # Every shard builds the same bundle, so one saves it.
+      - name: Save Metro cache
+        if: steps.changes.outputs.affected == 'true' && matrix.shard == 1
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/metro-cache
+          key: metro-web-${{ runner.os }}-${{ github.sha }}
 
       # The browser registers no v2 handler; WalletKit must never enter its
       # bundle. Checked here rather than tools/qa/check-prod-bundle.sh because
@@ -572,7 +595,9 @@ jobs:
 
       - name: Run extension e2e
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter browser test:e2e --shard=${{ matrix.shard }}/2 --reporter=list
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/4
+        run: pnpm --filter browser test:e2e --reporter=list
 
       - name: Upload fidelity screenshots
         if: always() && steps.changes.outputs.affected == 'true'
