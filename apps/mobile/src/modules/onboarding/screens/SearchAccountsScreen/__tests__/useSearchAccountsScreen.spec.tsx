@@ -548,7 +548,7 @@ describe('useSearchAccountsScreen', () => {
             chains: {
                 algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
             },
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         }
         mockRouteParams.current = {
             account: algo25Account,
@@ -574,13 +574,13 @@ describe('useSearchAccountsScreen', () => {
             chains: {
                 algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
             },
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
                 chains: { algorand: { address: 'REKEYED_1' } },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
         ]
         mockRouteParams.current = {
@@ -637,7 +637,7 @@ describe('useSearchAccountsScreen', () => {
             {
                 id: 'rekeyed-1',
                 chains: { algorand: { address: 'REKEYED_1' } },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
         ]
         mockRouteParams.current = {
@@ -663,7 +663,7 @@ describe('useSearchAccountsScreen', () => {
             chains: {
                 algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
             },
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         }
         mockRouteParams.current = {
             account: algo25Account,

@@ -31,7 +31,6 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
-import { useAccountsStore } from '../store'
 import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore } from '../store/accountChainState'
 
@@ -167,7 +166,7 @@ async function doFetchAndPersistAccount(
         totalCreatedAssets = 0,
         totalAppsOptedIn = 0,
         status = 'Offline',
-        authAddress,
+        authorityAddress,
         nativeBalanceBaseUnits,
         chainState,
         holdings,
@@ -188,7 +187,7 @@ async function doFetchAndPersistAccount(
         prior.totalAppsOptedIn !== totalAppsOptedIn ||
         prior.minBalance.toString() !== minBalance.toString() ||
         prior.status !== status ||
-        (prior.authAddress ?? null) !== authAddress
+        (prior.authorityAddress ?? null) !== authorityAddress
 
     await upsertAccountBalance({
         accountAddress: address,
@@ -199,10 +198,10 @@ async function doFetchAndPersistAccount(
         totalAppsOptedIn,
         minBalance,
         status,
-        authAddress,
+        authorityAddress,
     })
-    // A failed chain-state write must not skip the rekey mirror and holdings
-    // refresh below; the next sync rewrites the row.
+    // A failed chain-state write must not skip the holdings refresh below;
+    // the next sync rewrites the row.
     try {
         await upsertAccountChainState({
             accountAddress: address,
@@ -224,10 +223,6 @@ async function doFetchAndPersistAccount(
     useAccountChainStateStore
         .getState()
         .setAccountChainState(scope, address, chainState)
-
-    useAccountsStore
-        .getState()
-        .updateAccountRekeyAddress(address, authAddress, legacyNetworkOf(scope))
 
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,

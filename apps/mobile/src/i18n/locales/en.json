@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
-            }
+            },
+            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x."
         },
         "submission": {
             "unknown_outcome": {
@@ -4194,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet check"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Help improve Pera",
+            "body": "Allow Pera to collect anonymous app usage data. It helps us improve the product. You can change your choice in Settings anytime.",
+            "allow": "Allow",
+            "decline": "Don’t allow"
+        },
+        "settings_label": "Share usage analytics"
     }
 }

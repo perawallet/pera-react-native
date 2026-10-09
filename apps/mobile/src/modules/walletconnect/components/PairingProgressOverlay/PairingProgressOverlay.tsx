@@ -11,9 +11,8 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import { PWText, PWView } from '@components/core'
+import { PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePairingProgressStore } from '../../stores/usePairingProgressStore'
 import { useStyles } from './styles'
@@ -33,8 +32,8 @@ export const PairingProgressOverlay = () => {
             style={styles.overlay}
             testID='wc_pairing_progress_overlay'
         >
-            <ActivityIndicator
-                size='large'
+            <PWLoadingIndicator
+                size='lg'
                 color={theme.colors.textWhite}
             />
             <PWText

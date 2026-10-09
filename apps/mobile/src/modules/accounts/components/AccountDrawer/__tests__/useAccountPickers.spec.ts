@@ -14,6 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockNavigate = vi.fn()
+const mockSigningAccounts: { current: { id: string }[] } = { current: [] }
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -30,13 +31,18 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
     )
-    return { ...actual, useAllAccounts: () => [] }
+    return {
+        ...actual,
+        useAllAccounts: () => [],
+        useSigningAccounts: () => mockSigningAccounts.current,
+    }
 })
 
 import {
     useAccountPickers,
     useCardPicker,
     usePortfolioPicker,
+    useSigningPicker,
 } from '../useAccountPickers'
 
 describe('useCardPicker', () => {
@@ -89,5 +95,16 @@ describe('useAccountPickers', () => {
         expect(result.current.card.onSelected).toBeDefined()
         expect(result.current.portfolio.onSelected).toBeUndefined()
         expect(result.current.select.onSelected).toBeUndefined()
+    })
+})
+
+describe('useSigningPicker', () => {
+    it('only lists the accounts useSigningAccounts returns', () => {
+        mockSigningAccounts.current = [{ id: 'A' }]
+
+        const { result } = renderHook(() => useSigningPicker())
+
+        expect(result.current.accountFilter?.({ id: 'A' } as never)).toBe(true)
+        expect(result.current.accountFilter?.({ id: 'B' } as never)).toBe(false)
     })
 })

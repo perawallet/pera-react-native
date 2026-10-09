@@ -30,11 +30,11 @@ import { useCardOwnerAccount } from '../useCardOwnerAccount'
 
 const owner = {
     chains: { algorand: { address: 'OWNER' } },
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 const other = {
     chains: { algorand: { address: 'OTHER' } },
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 
 describe('useCardOwnerAccount', () => {

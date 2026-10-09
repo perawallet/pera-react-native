@@ -35,10 +35,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountPresentation: () => null,
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
-    useRekeyAccount: () => null,
+    useDelegatedAccount: () => null,
     useSignerFor: () => null,
     isMultisigAccount: () => false,
-    isRekeyedAccount: () => false,
+    useAuthorityOf: () => null,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({

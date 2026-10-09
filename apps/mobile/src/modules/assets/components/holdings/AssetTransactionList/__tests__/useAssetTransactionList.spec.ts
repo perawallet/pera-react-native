@@ -104,7 +104,7 @@ describe('useAssetTransactionList', () => {
     const mockAccount = {
         id: 'test-account',
         name: 'Test Account',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address: ACCOUNT_ADDRESS } },
     } as WalletAccount
 

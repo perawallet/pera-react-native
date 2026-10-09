@@ -40,7 +40,7 @@ const QUANTUM_ACCOUNT = {
 }
 const ALGO25_ACCOUNT = {
     id: 'algo25-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ALGO25ADDRESS' } },
 }
 
@@ -680,7 +680,7 @@ describe('useImportAccountScreen', () => {
     describe('algo25 account type', () => {
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: null },
             } as never)
         })
 
@@ -701,7 +701,7 @@ describe('useImportAccountScreen', () => {
 
             expect(mockImportAccount).toHaveBeenCalledWith({
                 mnemonicIndices: expect.any(Uint16Array),
-                seed: 'algo25',
+                seed: null,
             })
             expect(result.current.titleKey).toBe(
                 'onboarding.import_account.title',
@@ -749,7 +749,7 @@ describe('useImportAccountScreen', () => {
                 await submit25Words()
 
                 expect(mockFindAlternateImportKinds).toHaveBeenCalledWith(
-                    'algo25',
+                    null,
                     expect.any(Uint16Array),
                 )
                 expect(sheetProps()).toEqual({ address: 'QUANTUMADDRESS' })
@@ -785,7 +785,7 @@ describe('useImportAccountScreen', () => {
                 expect(mockRequestBottomSheet).not.toHaveBeenCalled()
                 expect(mockImportAccount).toHaveBeenCalledWith({
                     mnemonicIndices: expect.any(Uint16Array),
-                    seed: 'algo25',
+                    seed: null,
                 })
             })
         })
@@ -824,7 +824,7 @@ describe('useImportAccountScreen', () => {
 
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: null },
             } as never)
         })
 

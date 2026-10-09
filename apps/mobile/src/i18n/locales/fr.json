@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
-            }
+            },
+            "invalid_private_key": "Saisissez une clé privée valide : 64 caractères hexadécimaux, avec ou sans 0x."
         },
         "submission": {
             "unknown_outcome": {
@@ -4194,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Vérification Pera Wallet"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Aidez-nous à améliorer Pera",
+            "body": "Autorisez Pera à collecter des données d’utilisation anonymes de l’application. Cela nous aide à améliorer le produit. Vous pouvez modifier votre choix à tout moment dans les Paramètres.",
+            "allow": "Autoriser",
+            "decline": "Ne pas autoriser"
+        },
+        "settings_label": "Partager les statistiques d’utilisation"
     }
 }

@@ -227,7 +227,7 @@ describe('useAddressSearchView', () => {
             {
                 chains: { algorand: { address: 'STD_ADDR' } },
                 name: 'Standard',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
             {
                 chains: { algorand: { address: 'QUANTUM_ADDR' } },
@@ -384,7 +384,7 @@ describe('useAddressSearchView', () => {
             {
                 chains: { algorand: { address: 'OWN_ADDRESS' } },
                 name: 'My Account',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(

@@ -153,4 +153,22 @@ describe('buildDeviceAccountRegistrations', () => {
             },
         ])
     })
+
+    it('leaves out an account with no entry on a chain that registers devices', () => {
+        const elsewhere = buildTestAccount(TEST_CUSTODY.local, {
+            [OTHER_CHAIN_ID]: { address: '0xabc', keyPairId: 'raw-key' },
+        })
+        const held = testAccount('local', 'SADDR')
+
+        const result = buildDeviceAccountRegistrations([elsewhere, held], [])
+
+        expect(result).toEqual([
+            {
+                address: 'SADDR',
+                accountType: fakeDeviceAccountType(held),
+                rank: FAKE_DUPLICATE_RANK.local,
+                receiveNotifications: true,
+            },
+        ])
+    })
 })

@@ -206,7 +206,7 @@ describe('Flow: Cloud backup → Restore', () => {
         const restored = useAccountsStore
             .getState()
             .accounts.find(a => addressOf(a) === ALGO25_TEST_ADDRESS)
-        expect(restored?.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(restored?.custody).toEqual({ kind: 'local', seed: null })
         expect(restored?.name).toBe('Restored')
 
         // The restore has to hand the sync engine the versions the server

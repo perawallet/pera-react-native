@@ -81,21 +81,6 @@ export const removeAccountFromStore = (id: string): void => {
     store.setAccounts(store.accounts.filter(a => a.id !== id))
 }
 
-export const applyRekeyAddressToStoreAccount = (
-    address: string,
-    authAddress: string,
-    chainId: ChainId,
-): void => {
-    const store = useAccountsStore.getState()
-    store.setAccounts(
-        store.accounts.map(a =>
-            migratedAddressOf(a, chainId) === address
-                ? { ...a, rekeyAddress: authAddress }
-                : a,
-        ),
-    )
-}
-
 export const applyLegacyAccountOrder = (
     legacyAccounts: LegacyAccount[],
     chainId: ChainId,

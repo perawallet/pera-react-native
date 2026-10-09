@@ -24,7 +24,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /** The account kinds Algorand distinguishes; the backup and devices wire formats spell them this way too. */
 export const AccountTypes = {
-    algo25: 'algo25',
+    standalone: 'standalone',
     hdWallet: 'hdWallet',
     hardware: 'hardware',
     multisig: 'multisig',
@@ -62,18 +62,22 @@ type LocalAccountWithSeed<S extends LocalCustody['seed']> = LocalAccount & {
     custody: Extract<LocalCustody, { seed: S }>
 }
 
-export type Algo25Account = LocalAccountWithSeed<typeof SeedScheme.Algo25>
+/** Its key is the stored secret itself; nothing derives it. Algorand backs it with a 25-word phrase. */
+export type StandaloneAccount = LocalAccountWithSeed<null>
 export type QuantumAccount = LocalAccountWithSeed<typeof SeedScheme.Quantum>
 export type HDWalletAccount = LocalAccountWithSeed<typeof SeedScheme.Bip39>
 
-const LOCAL_ACCOUNT_TYPES = {
-    [SeedScheme.Algo25]: AccountTypes.algo25,
+const SEEDED_ACCOUNT_TYPES = {
     [SeedScheme.Quantum]: AccountTypes.quantum,
     [SeedScheme.Bip39]: AccountTypes.hdWallet,
-} as const satisfies Record<LocalCustody['seed'], AccountType>
+} as const satisfies Record<NonNullable<LocalCustody['seed']>, AccountType>
 
-export const accountTypeOfCustody = (custody: AccountCustody): AccountType =>
-    custody.kind === 'local' ? LOCAL_ACCOUNT_TYPES[custody.seed] : custody.kind
+export const accountTypeOfCustody = (custody: AccountCustody): AccountType => {
+    if (custody.kind !== 'local') return custody.kind
+    return custody.seed === null
+        ? AccountTypes.standalone
+        : SEEDED_ACCOUNT_TYPES[custody.seed]
+}
 
 /** Rekey state is ignored: a watch account with an auth address stays `watch`. */
 export const accountType = (account: WalletAccount): AccountType =>
@@ -84,7 +88,7 @@ const hasSeed =
     (account: WalletAccount): account is LocalAccountWithSeed<S> =>
         hasCustody(account, 'local') && account.custody.seed === seed
 
-export const isAlgo25Account = hasSeed(SeedScheme.Algo25)
+export const isStandaloneAccount = hasSeed(null)
 export const isQuantumAccount = hasSeed(SeedScheme.Quantum)
 export const isHDWalletAccount = hasSeed(SeedScheme.Bip39)
 

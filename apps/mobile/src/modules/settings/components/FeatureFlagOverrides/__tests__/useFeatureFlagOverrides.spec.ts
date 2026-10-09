@@ -30,36 +30,25 @@ import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 const mockSetConfigOverride = vi.fn()
 const mockConfigOverrides: Record<string, Optional<boolean>> = {}
 
-// The chain key comes from the real module, so the spec pins that it is
-// seeded as a string and gets the text-field row.
-vi.mock('@perawallet/wallet-core-remote-config', async () => {
-    const { RemoteConfigKeys, RemoteConfigDefaults } = await vi.importActual<
-        typeof import('@perawallet/wallet-extension-platform')
-    >('@perawallet/wallet-extension-platform')
-    return {
-        useRemoteConfigOverrides: () => ({
-            configOverrides: mockConfigOverrides,
-            setConfigOverride: mockSetConfigOverride,
-        }),
-        RemoteConfigKeys: {
-            enable_pera_card: 'enable_pera_card',
-            enable_motion_lock: 'enable_motion_lock',
-            terms_version: 'terms_version',
-            active_locales: 'active_locales',
-            fee_warning_standard_fee: 'fee_warning_standard_fee',
-            chain_algorand_overrides: RemoteConfigKeys.chain_algorand_overrides,
-        },
-        RemoteConfigDefaults: {
+// A chain's overrides key reaches the registry through the composition root's
+// declaration, next to the platform's own keys.
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    useRemoteConfigOverrides: () => ({
+        configOverrides: mockConfigOverrides,
+        setConfigOverride: mockSetConfigOverride,
+    }),
+    remoteConfigDefaultsRegistry: {
+        all: () => ({
             enable_pera_card: false, // boolean
             enable_motion_lock: true, // boolean
             terms_version: '1', // string
             active_locales: '', // string
             fee_warning_standard_fee: 0.001, // number
-            chain_algorand_overrides:
-                RemoteConfigDefaults.chain_algorand_overrides,
-        },
-    }
-})
+            chain_algorand_overrides: '', // declared string
+            enable_quantum_swap: false, // declared boolean
+        }),
+    },
+}))
 
 describe('useFeatureFlagOverrides', () => {
     beforeEach(() => {
@@ -163,6 +152,7 @@ describe('useFeatureFlagOverrides', () => {
             expect(result.current.booleanFlagKeys).toEqual([
                 'enable_pera_card',
                 'enable_motion_lock',
+                'enable_quantum_swap',
             ])
         })
     })

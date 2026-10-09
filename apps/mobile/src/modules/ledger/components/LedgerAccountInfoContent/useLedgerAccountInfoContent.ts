@@ -84,19 +84,13 @@ const ledgerDisplayAccount = (
         chains: { [chainId]: { address } },
     })
 
-const watchDisplayAccount = (
-    address: string,
-    chainId: ChainId,
-    rekeyAddress?: string,
-): WatchAccount => {
-    const account = buildAccount({
+const watchDisplayAccount = (address: string, chainId: ChainId): WatchAccount =>
+    buildAccount({
         id: address,
         custody: { kind: 'watch' },
         chainId,
         chains: { [chainId]: { address } },
     })
-    return rekeyAddress ? { ...account, rekeyAddress } : account
-}
 
 export const useLedgerAccountInfoContent = (
     address: string,
@@ -116,15 +110,11 @@ export const useLedgerAccountInfoContent = (
 
         // Build the synth account for the sheet's own address.
         // If the account is rekeyed to an auth address, render it as a watch
-        // account with rekeyAddress set. Otherwise render it as a hardware
+        // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
-            preview.rekey.kind === 'rekeyedTo'
-                ? watchDisplayAccount(
-                      preview.address,
-                      scope.chainId,
-                      preview.rekey.authAddress,
-                  )
+            preview.rekey.kind === 'delegatedTo'
+                ? watchDisplayAccount(preview.address, scope.chainId)
                 : ledgerDisplayAccount(
                       preview.address,
                       accountIndex,
@@ -151,7 +141,7 @@ export const useLedgerAccountInfoContent = (
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
                 // already yields the right icon, no override needed.
-                ...(preview.rekey.kind === 'rekeyedTo'
+                ...(preview.rekey.kind === 'delegatedTo'
                     ? { displayStateOverride: 'rekeyedSignable' as const }
                     : {}),
             },
@@ -179,12 +169,12 @@ export const useLedgerAccountInfoContent = (
             })),
         ]
 
-        if (preview.rekey.kind === 'rekeyedTo') {
+        if (preview.rekey.kind === 'delegatedTo') {
             // Build a synth hardware account for the auth address (it's a Ledger
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
             // only reads kind/address/name for display.
             const authSynthAccount = ledgerDisplayAccount(
-                preview.rekey.authAddress,
+                preview.rekey.authorityAddress,
                 0,
                 scope.chainId,
             )
@@ -196,7 +186,7 @@ export const useLedgerAccountInfoContent = (
                 },
                 {
                     kind: 'authorityAccount',
-                    key: `rekey-${preview.rekey.authAddress}`,
+                    key: `rekey-${preview.rekey.authorityAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
                 },

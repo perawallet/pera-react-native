@@ -73,7 +73,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const HOLDER: WalletAccount = {
     id: 'gallery-holder',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: {
             address: ALGO25_TEST_ADDRESS,
@@ -118,7 +118,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         // Account holds 1 NFT + 50 USDC. Both have non-zero balances so

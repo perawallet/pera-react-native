@@ -117,9 +117,9 @@ export const useImportAccountOptionsScreen =
                     },
                 },
             )
-            if (!result) return
+            if (result === undefined) return
             trackEvent(
-                result === 'algo25'
+                result === null
                     ? OnboardingEvent.RecoverAlgo25
                     : OnboardingEvent.RecoverOneKey,
             )

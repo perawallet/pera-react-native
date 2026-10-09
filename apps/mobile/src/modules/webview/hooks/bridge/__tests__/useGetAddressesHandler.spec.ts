@@ -78,6 +78,13 @@ const account = (
 const addressOf = (a: WalletAccount): string | undefined =>
     a.chains[LEGACY_CHAIN_ID]?.address
 
+// Authority is observed chain state, never on the account record.
+const REKEYED_ADDRESSES = new Set([
+    'rekeyed',
+    'rekeyed-signable',
+    'rekeyed-unsignable',
+])
+
 // useSigningAccounts owns the Watch/Unsignable filtering — the bridge just
 // maps. These cases pin the mapping and assume the filter is covered by the
 // package's own tests.
@@ -115,7 +122,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
         dappRequestChainAdapters.reset()
         dappRequestChainAdapters.register(algorandDappRequestAdapter)
         vi.mocked(isRekeyedAccount).mockImplementation(
-            a => !!(a as WalletAccount).rekeyAddress,
+            a => !!a && REKEYED_ADDRESSES.has(addressOf(a) ?? ''),
         )
     })
 
@@ -144,7 +151,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
                 account('first', HD_CUSTODY, { name: 'First' }),
                 account(
                     'second',
-                    { kind: 'local', seed: 'algo25' },
+                    { kind: 'local', seed: null },
                     { name: 'Second' },
                 ),
                 account('third', HARDWARE_CUSTODY, { name: 'Third' }),
@@ -180,12 +187,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
 
     it('reports a rekeyed account by whether its auth key is in the wallet', () => {
         setupAccounts(
-            [
-                account('rekeyed', HD_CUSTODY, {
-                    name: 'Rekeyed',
-                    rekeyAddress: 'auth',
-                }),
-            ],
+            [account('rekeyed', HD_CUSTODY, { name: 'Rekeyed' })],
             new Set(['rekeyed']),
         )
 
@@ -204,24 +206,14 @@ describe('useGetAddressesHandler (Android parity)', () => {
     // as the bridge emitted it before the kind mapping left the app.
     it('emits the golden payload for every account kind', () => {
         const accounts = [
-            account('algo25', { kind: 'local', seed: 'algo25' }, { name: 'A' }),
+            account('algo25', { kind: 'local', seed: null }, { name: 'A' }),
             account('hd', HD_CUSTODY, { name: 'B' }),
             account('quantum', { kind: 'local', seed: 'quantum' }),
             account('hardware', HARDWARE_CUSTODY, { name: 'D' }),
             account('multisig', { kind: 'multisig' }, { name: 'E' }),
             account('watch', { kind: 'watch' }, { name: 'F' }),
-            account(
-                'rekeyed-signable',
-                { kind: 'watch' },
-                {
-                    name: 'G',
-                    rekeyAddress: 'algo25',
-                },
-            ),
-            account('rekeyed-unsignable', HD_CUSTODY, {
-                name: 'H',
-                rekeyAddress: 'elsewhere',
-            }),
+            account('rekeyed-signable', { kind: 'watch' }, { name: 'G' }),
+            account('rekeyed-unsignable', HD_CUSTODY, { name: 'H' }),
         ]
         vi.mocked(useSigningAccounts).mockReturnValue(accounts)
         vi.mocked(useAllAccounts).mockReturnValue(accounts)

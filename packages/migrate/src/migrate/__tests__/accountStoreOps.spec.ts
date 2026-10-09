@@ -11,9 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    authorityOf,
     chainAccountOf,
     useAccountsStore,
     type WalletAccount,
@@ -23,7 +21,6 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
-    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
     removeAccountFromStore,
 } from '../accountStoreOps'
@@ -46,7 +43,7 @@ const buildWalletAccount = ({
 }: AccountInput = {}): WalletAccount => {
     const custody = overrides.custody ?? {
         kind: 'local' as const,
-        seed: 'algo25' as const,
+        seed: null,
     }
     return {
         id: idFor(address),
@@ -373,47 +370,5 @@ describe('removeAccountFromStore', () => {
         expect(useAccountsStore.getState().accounts.map(addressOf)).toEqual([
             'ADDR_B',
         ])
-    })
-})
-
-describe('applyRekeyAddressToStoreAccount', () => {
-    it('records the authority on the matching account', () => {
-        useAccountsStore.getState().setAccounts([
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_A',
-            }),
-        ])
-
-        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH', 'algorand')
-
-        expect(
-            authorityOf(
-                useAccountsStore.getState().accounts[0],
-                scopeForLegacyNetwork('mainnet'),
-            ),
-        ).toBe('AUTH')
-    })
-
-    it('leaves other accounts untouched', () => {
-        useAccountsStore.getState().setAccounts([
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_A',
-            }),
-            buildWalletAccount({
-                custody: { kind: 'watch' },
-                address: 'ADDR_B',
-            }),
-        ])
-
-        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH', 'algorand')
-
-        const untouched = useAccountsStore
-            .getState()
-            .accounts.find(a => addressOf(a) === 'ADDR_B')!
-        expect(
-            authorityOf(untouched, scopeForLegacyNetwork('mainnet')),
-        ).toBeNull()
     })
 })

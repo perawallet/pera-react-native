@@ -128,20 +128,16 @@ describe('useAuthorityOf', () => {
         expect(renders()).toBe(before)
     })
 
-    it("falls back to the account's fields until the slice holds the scope", () => {
-        const legacy = {
-            ...account,
-            rekeyAddressByNetwork: { mainnet: 'MAP' },
-        }
-        const { result } = mount(legacy)
-        expect(result.current).toBe('MAP')
+    it("is null for a scope the slice doesn't hold", () => {
+        const { result } = mount()
+        expect(result.current).toBeNull()
 
         write(mainnet, chainState('NEW'))
 
         expect(result.current).toBe('NEW')
     })
 
-    it('returns to the fallback when the slice is reset', () => {
+    it('returns to null when the slice is reset', () => {
         write(mainnet, chainState('AUTH'))
         const { result } = mount()
         expect(result.current).toBe('AUTH')

@@ -61,7 +61,7 @@ export const useAccountStateQuery = (
                 scope,
                 nativeBalance: balance?.algoBalance ?? new Decimal(0),
                 chainState: adapter.toChainState(
-                    balance ?? { authAddress: null },
+                    balance ?? { authorityAddress: null },
                 ),
             }
         },

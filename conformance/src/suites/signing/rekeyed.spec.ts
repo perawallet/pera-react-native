@@ -14,8 +14,17 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { chainAccountOf } from '@perawallet/wallet-core-accounts/credentials/accessors'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    useAccountChainStateStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { config } from '@perawallet/wallet-core-config'
+import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
+
 import { buildGroupSignerMap } from '@perawallet/wallet-core-signing/machine/actions'
 import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
 import type {
@@ -59,6 +68,16 @@ import {
  * asserted separately below against `resolveSigningAccount` and
  * `buildGroupSignerMap`, the app's own dispatch.
  */
+// What the account syncer records once it reads the chain's `auth-addr`.
+const seedAuthority = (address: string, authorityAddress: string | undefined) =>
+    useAccountChainStateStore.getState().setAccountChainState(
+        scopeForLegacyNetwork(config.defaultNetwork),
+        address,
+        algorandAccountsAdapter.toChainState({
+            authorityAddress: authorityAddress ?? null,
+        }),
+    )
+
 describe('rekeyed signing conformance', () => {
     let keyStore: ConformanceKeyStore
     let source: ConformanceAccount
@@ -221,10 +240,8 @@ describe('rekeyed signer resolution conformance', () => {
         const onChainAuth = await authAddrOf(rekeyed.address)
         expect(onChainAuth).toBe(auth.address)
 
-        const account = {
-            ...rekeyed.walletAccount,
-            rekeyAddress: onChainAuth,
-        }
+        const account = rekeyed.walletAccount
+        seedAuthority(rekeyed.address, onChainAuth)
         const allAccounts = [account, auth.walletAccount]
 
         const resolved = resolveSigningAccount(
@@ -241,10 +258,8 @@ describe('rekeyed signer resolution conformance', () => {
     })
 
     it('does NOT follow the rekey hop for off-chain data, which has no auth-addr lookup', async () => {
-        const account = {
-            ...rekeyed.walletAccount,
-            rekeyAddress: await authAddrOf(rekeyed.address),
-        }
+        const account = rekeyed.walletAccount
+        seedAuthority(rekeyed.address, await authAddrOf(rekeyed.address))
         const allAccounts = [account, auth.walletAccount]
 
         // A dApp verifies an off-chain signature against the requested
@@ -265,10 +280,8 @@ describe('rekeyed signer resolution conformance', () => {
     })
 
     it('routes a rekeyed account to the local-key signer, since its auth account holds local keys', async () => {
-        const account = {
-            ...rekeyed.walletAccount,
-            rekeyAddress: await authAddrOf(rekeyed.address),
-        }
+        const account = rekeyed.walletAccount
+        seedAuthority(rekeyed.address, await authAddrOf(rekeyed.address))
         const allAccounts = [account, auth.walletAccount]
 
         const group: SignableGroup = {

@@ -66,6 +66,18 @@ describe('ChromeAnalyticsService', () => {
         })
     })
 
+    it('does not send once collection is turned off', async () => {
+        configMock.config.firebaseMeasurementId = 'G-TEST123'
+        configMock.config.gaMeasurementApiSecret = 'test-secret'
+
+        const service = new ChromeAnalyticsService()
+        service.setCollectionEnabled(false)
+        service.logEvent('test_event')
+        await Promise.resolve()
+
+        expect(fetchMock).not.toHaveBeenCalled()
+    })
+
     it('never throws when fetch rejects', async () => {
         configMock.config.firebaseMeasurementId = 'G-TEST123'
         configMock.config.gaMeasurementApiSecret = 'test-secret'

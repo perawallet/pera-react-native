@@ -12,14 +12,18 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
-import { accountsChainAdapters, type LocalKeyKind } from './chain-adapter'
+import {
+    accountsChainAdapters,
+    type LocalKeyKind,
+    type LocalKeySeed,
+} from './chain-adapter'
 
 /** The key kinds a mnemonic import on `chainId` can mint, in the chain's detection order. */
 export const importFormatsFor = (chainId: ChainId): readonly LocalKeyKind[] =>
     accountsChainAdapters.get(chainId).localKeyKinds
 
 export type DetectedImportKind =
-    | { success: true; seed: SeedScheme }
+    | { success: true; seed: LocalKeySeed }
     | { success: false; wordCount: number }
 
 /**
@@ -42,9 +46,13 @@ export const detectImportKind = (
         : { success: false, wordCount }
 }
 
-/** The key kind `seed` is stored under on `chainId`, or `undefined` when the chain doesn't mint it. */
+/**
+ * The key kind stored under `seed` on `chainId`, or `undefined` when the chain
+ * doesn't mint it. Also takes a keystore `SeedScheme`, which names a kind only
+ * where the custody spells it the same way.
+ */
 export const localKeyKindOf = (
     chainId: ChainId,
-    seed: SeedScheme,
+    seed: LocalKeySeed | SeedScheme,
 ): LocalKeyKind | undefined =>
     importFormatsFor(chainId).find(kind => kind.seed === seed)

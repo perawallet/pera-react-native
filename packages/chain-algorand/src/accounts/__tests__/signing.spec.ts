@@ -18,13 +18,13 @@ import {
     getSignerFor,
     isMultisigUnsignable,
     isRekeyedUnsignable,
-    rekeyTransitionFor,
+    delegateTransitionFor,
     resolveSignerFor,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -54,7 +54,7 @@ const rekeyedTo = <T extends WalletAccount>(
 }
 
 const algo25 = (address: string, options: AlgorandAccountOptions = {}) =>
-    algo25Account(address, { keyPairId: 'kp', ...options })
+    standaloneAccount(address, { keyPairId: 'kp', ...options })
 
 const hdWallet = (address: string) => hdAccount(address, { keyPairId: 'kp' })
 
@@ -266,27 +266,29 @@ describe('canSignWith', () => {
     })
 })
 
-describe('rekeyTransitionFor', () => {
+describe('delegateTransitionFor', () => {
     it('returns null for a non-rekeyed account', () => {
         const a = algo25('A')
-        expect(rekeyTransitionFor(a, [a], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(delegateTransitionFor(a, [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('returns null when the auth account is missing locally', () => {
         const a: WalletAccount = rekeyedTo(algo25('A'), 'MISSING')
-        expect(rekeyTransitionFor(a, [a], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(delegateTransitionFor(a, [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('returns null when the rekey is unsignable', () => {
         const auth = watch('S')
         const a = watch('A', 'S')
-        expect(rekeyTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(
+            delegateTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID),
+        ).toBeNull()
     })
 
     it('returns the rekeyed account and its signer for a signable algo25 → hardware rekey', () => {
         const auth = hardware('S')
         const a: WalletAccount = rekeyedTo(algo25('A'), 'S')
-        expect(rekeyTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toEqual({
+        expect(delegateTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toEqual({
             from: a,
             to: auth,
         })
@@ -297,7 +299,11 @@ describe('rekeyTransitionFor', () => {
         const authMs = multisig('M', ['P1', 'P2'])
         const a: WalletAccount = rekeyedTo(multisig('A', ['P1', 'P3']), 'M')
         expect(
-            rekeyTransitionFor(a, [a, authMs, participant], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(
+                a,
+                [a, authMs, participant],
+                ALGORAND_CHAIN_ID,
+            ),
         ).toEqual({
             from: a,
             to: authMs,
@@ -309,7 +315,7 @@ describe('rekeyTransitionFor', () => {
         // from algo25 to algo25, regardless of A pointing at B.
         const c = algo25('C')
         const b: WalletAccount = rekeyedTo(algo25('B'), 'C')
-        expect(rekeyTransitionFor(b, [b, c], ALGORAND_CHAIN_ID)).toEqual({
+        expect(delegateTransitionFor(b, [b, c], ALGORAND_CHAIN_ID)).toEqual({
             from: b,
             to: c,
         })
@@ -344,7 +350,7 @@ describe('resolveSignerFor', () => {
         expect(resolveSignerFor('A', [a], ALGORAND_CHAIN_ID)).toEqual({
             kind: 'authMissing',
             account: a,
-            authAddress: 'MISSING',
+            authorityAddress: 'MISSING',
         })
     })
 

@@ -15,14 +15,14 @@ import { accountType, type AccountType } from './vocabulary'
 
 /**
  * Account types as the v3 devices API spells them on the wire. A separate
- * declaration from `AccountTypes` even though the literals match: this is a
+ * declaration from `AccountTypes`, whose literals it mostly shares: this is a
  * backend contract, and `satisfies` makes an internal rename break the build
  * here instead of silently registering an `account_type` the backend doesn't
  * recognise — which, for a quantum account, means the backend prices its swap
  * quotes at the Ed25519 minimum fee and the swap fails on chain.
  */
 const DEVICE_ACCOUNT_TYPES = {
-    algo25: 'algo25',
+    standalone: 'algo25',
     hdWallet: 'hdWallet',
     hardware: 'hardware',
     multisig: 'multisig',

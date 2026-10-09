@@ -26,12 +26,17 @@ export type DerivationPathBuilder = (
     keyIndex: number,
 ) => string
 
+/** How a standalone account's secret is shown and backed up on a chain. */
+export type StandaloneSecret = 'mnemonic' | 'privateKey'
+
 export interface ChainSigning {
     schemes: readonly SigningScheme[]
     /** Partial: a scheme whose keys are not path-derived (e.g. Algorand's Falcon) has none. */
     derivationPaths: Partial<Record<SigningScheme, DerivationPathBuilder>>
     /** Schemes whose keys a user can import from raw private-key bytes; a subset of `schemes`. */
     rawKeySchemes: readonly SigningScheme[]
+    /** Absent on a chain without standalone accounts. */
+    standaloneSecret?: StandaloneSecret
 }
 
 export interface ChainProtocolFacts {
@@ -76,4 +81,6 @@ export interface ChainDescriptor {
     protocol: ChainProtocolFacts
     explorer: ExplorerUrlBuilders
     finality: ChainFinality
+    /** Schemes, without the `:`, that the chain's payment and deep links use. */
+    uriSchemes: readonly string[]
 }

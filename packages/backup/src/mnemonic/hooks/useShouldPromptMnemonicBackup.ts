@@ -15,7 +15,7 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     chainAccountOf,
     useAccountFundedNetworksQuery,
-    useAccountsRekeyedTo,
+    useAccountsDelegatedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
@@ -34,7 +34,7 @@ export const useShouldPromptMnemonicBackup = (
         ? chainAccountOf(account, scope.chainId)?.address
         : undefined
     const { isFunded } = useAccountFundedNetworksQuery(address, scope)
-    const rekeyedToThisAccount = useAccountsRekeyedTo(address, scope.chainId)
+    const rekeyedToThisAccount = useAccountsDelegatedTo(address, scope.chainId)
     const canBackUpMnemonic = useChainCapability(
         scope.chainId,
         'mnemonicBackup',

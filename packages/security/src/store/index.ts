@@ -11,3 +11,4 @@
  */
 
 export { useSecurityStore } from './store'
+export { whenAppUnlocked } from './whenAppUnlocked'

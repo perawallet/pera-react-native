@@ -101,7 +101,7 @@ const {
 // useLedgerAccountPreview is included because the screen hook imports
 // LedgerAccountInfoContent (whose hook chain references it) at module load;
 // it is never invoked in these specs (the sheet content is not rendered).
-// AccountTypes / useRekeyTransition are needed because
+// AccountTypes / useDelegatedTransition are needed because
 // useLedgerAccountInfoContent → AccountDisplay → useAccountTypeLabel pulls
 // these in at module evaluation time.
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
@@ -125,13 +125,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useLedgerAccountPreview: vi.fn(),
     useLedgerRekeyedScan: mockRekeyedScan,
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
         watch: 'watch',
     },
-    useRekeyTransition: vi.fn().mockReturnValue(null),
+    useDelegatedTransition: vi.fn().mockReturnValue(null),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({

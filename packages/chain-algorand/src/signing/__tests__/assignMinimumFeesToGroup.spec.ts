@@ -56,7 +56,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             [ALGORAND_CHAIN_ID]: {
                 address: algoAddress.toString(),

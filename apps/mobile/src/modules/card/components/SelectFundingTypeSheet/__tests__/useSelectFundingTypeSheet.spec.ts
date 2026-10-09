@@ -131,7 +131,7 @@ import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
 
 const connectedAccount = {
     chains: { algorand: { address: 'ADDR1', keyPairId: 'key-1' } },
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 const CARD = 'ESCROWCARD1'

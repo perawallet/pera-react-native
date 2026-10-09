@@ -17,6 +17,7 @@ import {
 import type { LocalAccount, WalletAccount } from './models/accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { buildAccount, hdIndexOf } from './credentials'
+import { recordAuthority } from './store/recordAuthority'
 import {
     accountsChainAdapters,
     fetchRekeyedAddresses,
@@ -218,14 +219,14 @@ export async function discoverRekeyedAccounts({
     const tasks = accountAddresses.map(async address => {
         const rekeyedAddresses = await fetchRekeyedAddresses(address, scope)
 
-        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => ({
-            ...buildAccount({
+        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => {
+            recordAuthority(scope, rekeyedAddress, address)
+            return buildAccount({
                 custody: { kind: 'watch' },
                 chainId,
                 chains: { [chainId]: { address: rekeyedAddress } },
-            }),
-            rekeyAddress: address,
-        }))
+            })
+        })
     })
 
     const results = await Promise.all(tasks)

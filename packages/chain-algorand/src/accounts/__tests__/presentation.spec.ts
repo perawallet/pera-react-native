@@ -19,7 +19,7 @@ import { BackupAccountType } from '@perawallet/wallet-core-backup'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -45,7 +45,7 @@ const describeAccount = (
     accounts: readonly WalletAccount[],
 ) => algorandAccountPresentation.describe(account, accounts, SCOPE)
 
-const participant = algo25Account('P1')
+const participant = standaloneAccount('P1')
 const signableMultisig = multisigAccount('MS', {
     threshold: 2,
     addresses: ['P1', 'P2'],
@@ -54,8 +54,8 @@ const signableMultisig = multisigAccount('MS', {
 describe('algorandAccountPresentation.describe', () => {
     it.each([
         [
-            'algo25',
-            algo25Account('A'),
+            'standalone',
+            standaloneAccount('A'),
             {
                 labelKey: 'account_info.type_algo25',
                 infoTitleKey: 'account_type_info.standard_title',
@@ -153,17 +153,17 @@ describe('algorandAccountPresentation.describe', () => {
     })
 
     it('describes the account by its own kind, ignoring rekey', () => {
-        const rekeyed = algo25Account('A', { rekeyAddress: 'L' })
+        const rekeyed = standaloneAccount('A', { authorityAddress: 'L' })
 
         expect(
             describeAccount(rekeyed, [rekeyed, hardwareAccount('L')]).kindId,
-        ).toBe('algo25')
+        ).toBe('standalone')
     })
 })
 
 describe('algorandAccountPresentation.transitionLabel', () => {
     const ledger = hardwareAccount('L')
-    const standard = algo25Account('A')
+    const standard = standaloneAccount('A')
     const hd = hdAccount('H')
     const quantum = quantumAccount('F')
 
@@ -246,7 +246,7 @@ describe('accountPresentationI18nKeys', () => {
     it('lists every key the presentation emits', () => {
         const keys = new Set(accountPresentationI18nKeys())
         const accounts = [
-            algo25Account('A'),
+            standaloneAccount('A'),
             hdAccount('H'),
             hardwareAccount('L'),
             signableMultisig,
@@ -276,7 +276,7 @@ describe('accountPresentationI18nKeys', () => {
 
 describe('kindGlyph', () => {
     it.each([
-        algo25Account('A'),
+        standaloneAccount('A'),
         hdAccount('A'),
         hardwareAccount('A'),
         multisigAccount('A', null),

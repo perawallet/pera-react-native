@@ -107,7 +107,7 @@ export const fakeSerializeAccount: BackupChainAdapter['serializeAccount'] = (
 export const fakeLocalKindOf: BackupChainAdapter['localKindOf'] = type => {
     switch (type) {
         case BackupAccountType.algo25:
-            return { seed: 'algo25', isHd: false }
+            return { seed: null, isHd: false }
         case BackupAccountType.quantum:
             return { seed: 'quantum', isHd: false }
         case BackupAccountType.hdAccount:

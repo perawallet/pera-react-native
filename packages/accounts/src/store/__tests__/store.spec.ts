@@ -14,7 +14,12 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains, WalletAccount } from '../../models'
-import type { FakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
+    type FakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 import {
     buildTestAccount,
     TEST_CUSTODY,
@@ -289,138 +294,6 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().selectedAccountId).toBeNull()
     })
 
-    describe('updateAccountRekeyAddress', () => {
-        test('sets the mirror and the per-network entry for the active network', () => {
-            useAccountsStore
-                .getState()
-                .setAccounts([account('watch', 'A'), account('local', 'B')])
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'mainnet')
-
-            const [a, b] = useAccountsStore.getState().accounts
-            expect(a.rekeyAddress).toBe('B')
-            expect(a.rekeyAddressByNetwork).toEqual({ mainnet: 'B' })
-            expect(b.rekeyAddress).toBeUndefined()
-        })
-
-        test('records an inactive-network sync without touching the mirror', () => {
-            useAccountsStore.getState().setAccounts([account('local', 'A')])
-            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'testnet')
-
-            const [a] = useAccountsStore.getState().accounts
-            expect(a.rekeyAddress).toBeUndefined()
-            expect(a.rekeyAddressByNetwork).toEqual({ testnet: 'B' })
-        })
-
-        test('clears the mirror and the network entry when passed null', () => {
-            useAccountsStore.getState().setAccounts([
-                account('local', 'A', {
-                    rekeyAddress: 'B',
-                    rekeyAddressByNetwork: { mainnet: 'B' },
-                }),
-            ])
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', null, 'mainnet')
-
-            const [a] = useAccountsStore.getState().accounts
-            expect(a.rekeyAddress).toBeUndefined()
-            // The (empty) map stays: it records "per-network state is known",
-            // which gates the legacy-scalar fallback on network switches.
-            expect(a.rekeyAddressByNetwork).toEqual({})
-        })
-
-        test('is a no-op when the address is not in the store', () => {
-            useAccountsStore.getState().setAccounts([account('local', 'A')])
-            const before = useAccountsStore.getState().accounts
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('Z', 'Y', 'mainnet')
-
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-
-        test('does not write when the value is unchanged for that network', () => {
-            useAccountsStore.getState().setAccounts([
-                account('local', 'A', {
-                    rekeyAddress: 'B',
-                    rekeyAddressByNetwork: { mainnet: 'B' },
-                }),
-            ])
-            const before = useAccountsStore.getState().accounts
-
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'B', 'mainnet')
-
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-    })
-
-    describe('per-network rekey state on network switch', () => {
-        test('mirrors flip in both directions when the network changes', () => {
-            useAccountsStore.getState().setAccounts([account('local', 'A')])
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', null, 'testnet')
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-            expect(
-                useAccountsStore.getState().accounts[0].rekeyAddress,
-            ).toBeUndefined()
-
-            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
-            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
-                'AUTH',
-            )
-        })
-
-        test('an account with per-network state but no entry for the new network reads as not rekeyed', () => {
-            useAccountsStore.getState().setAccounts([account('local', 'A')])
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(
-                useAccountsStore.getState().accounts[0].rekeyAddress,
-            ).toBeUndefined()
-        })
-
-        test('a legacy account with no per-network state keeps its mirror across switches', () => {
-            useAccountsStore
-                .getState()
-                .setAccounts([account('local', 'A', { rekeyAddress: 'AUTH' })])
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
-                'AUTH',
-            )
-        })
-
-        test('applyNetworkRekeyState leaves state referentially unchanged when nothing differs', () => {
-            useAccountsStore.getState().setAccounts([account('local', 'A')])
-            const before = useAccountsStore.getState().accounts
-
-            useAccountsStore.getState().applyNetworkRekeyState('testnet')
-
-            expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-    })
-
     describe('addAccount', () => {
         test('appends an account whose addresses are free', () => {
             const existing = account('watch', 'A')
@@ -477,17 +350,22 @@ describe('services/accounts/store', () => {
     })
 
     describe('addRekeyedWatchAccounts', () => {
-        test('appends watch accounts holding just the address, with the scanned network entry and mirror', () => {
+        test('appends watch accounts holding just the address, and records the source as their authority on the scanned network', async () => {
             const added = useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
 
             expect(added).toBe(1)
             const [r1] = useAccountsStore.getState().accounts
             expect(r1.custody).toEqual({ kind: 'watch' })
             expect(r1.chains).toEqual({ algorand: { address: 'R1' } })
-            expect(r1.rekeyAddress).toBe('SRC')
-            expect(r1.rekeyAddressByNetwork).toEqual({ mainnet: 'SRC' })
+            // Imported after resetModules, so it reads this graph's slice.
+            const { authorityOf } = await import('../../credentials/accessors')
+            expect(authorityOf(r1, TESTNET_SCOPE)).toBe('SRC')
+            expect(authorityOf(r1, MAINNET_SCOPE)).toBeNull()
+            expect(useAccountsStore.getState().authorities).toEqual({
+                [toScopeKey(TESTNET_SCOPE)]: { R1: 'SRC' },
+            })
         })
 
         test('skips addresses already held', () => {
@@ -503,13 +381,11 @@ describe('services/accounts/store', () => {
     })
 
     describe('upgradeWatchAccountToHardware', () => {
-        test('replaces a watch account with a hardware account, preserving id, name, chains and rekey state', () => {
+        test('replaces a watch account with a hardware account, preserving id, name and chains', () => {
             useAccountsStore.getState().setAccounts([
                 account('watch', 'WATCHED', {
                     id: 'w1',
                     name: 'My Ledger (watched)',
-                    rekeyAddress: 'AUTH',
-                    rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 }),
             ])
 
@@ -524,8 +400,6 @@ describe('services/accounts/store', () => {
             expect(useAccountsStore.getState().accounts[0]).toStrictEqual({
                 id: 'w1',
                 name: 'My Ledger (watched)',
-                rekeyAddress: 'AUTH',
-                rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 custody: {
                     kind: 'hardware',
                     device: TEST_CUSTODY.hardware.device,
@@ -724,7 +598,7 @@ describe('services/accounts/store', () => {
         })
     })
 
-    describe('v4 migration', () => {
+    describe('v5 migration', () => {
         // Records in the fake chain's legacy shape: a top-level address, a
         // `keyPairId` marking a local key.
         const legacyRecords = () => [
@@ -759,8 +633,6 @@ describe('services/accounts/store', () => {
             },
             {
                 id: 'h',
-                rekeyAddress: 'AUTH',
-                rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 custody: TEST_CUSTODY.hardware,
                 chains: { algorand: { address: 'H-ADDR' } },
             },
@@ -777,9 +649,13 @@ describe('services/accounts/store', () => {
             manualAccountOrder: ['w', 'a', 'h'],
             launchAccountMode: 'specific',
             launchAccountId: 'a',
+            authorities: {
+                [toScopeKey(MAINNET_SCOPE)]: { 'H-ADDR': 'AUTH' },
+            },
+            unscopedAuthorities: {},
         }
 
-        test.each([2, 3])(
+        test.each([2, 3, 4])(
             'decodes every v%s record through the registered chain, keyed by id',
             async version => {
                 const { migrateAccountsState } = await import('../store')
@@ -792,12 +668,85 @@ describe('services/accounts/store', () => {
 
                 expect(migrated).toStrictEqual(migratedState)
                 for (const record of records.filter(r => 'id' in r)) {
+                    const {
+                        rekeyAddress: _scalar,
+                        rekeyAddressByNetwork: _map,
+                        ...decoded
+                    } = record as Record<string, unknown>
                     expect(
                         fake.adapter.decodeLegacyRecord,
-                    ).toHaveBeenCalledWith(record)
+                    ).toHaveBeenCalledWith(decoded)
                 }
             },
         )
+
+        test('moves the record authority fields into the authority maps', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const migrated = migrateAccountsState(
+                {
+                    ...legacyState(),
+                    accounts: [
+                        {
+                            id: 'm',
+                            address: 'M-ADDR',
+                            rekeyAddressByNetwork: { testnet: 'T' },
+                        },
+                        { id: 's', address: 'S-ADDR', rekeyAddress: 'S' },
+                    ],
+                },
+                3,
+            )
+
+            for (const migratedAccount of migrated.accounts) {
+                expect(migratedAccount).not.toHaveProperty('rekeyAddress')
+                expect(migratedAccount).not.toHaveProperty(
+                    'rekeyAddressByNetwork',
+                )
+            }
+            expect(migrated.authorities).toEqual({
+                [toScopeKey(TESTNET_SCOPE)]: { 'M-ADDR': 'T' },
+            })
+            expect(migrated.unscopedAuthorities).toEqual({ 'S-ADDR': 'S' })
+        })
+
+        test('keeps the authority maps a v4 payload persisted, its entries winning over the record fields', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const held = {
+                [toScopeKey(MAINNET_SCOPE)]: {
+                    'H-ADDR': 'HELD',
+                    'W-ADDR': 'W',
+                },
+            }
+
+            const migrated = migrateAccountsState(
+                {
+                    ...legacyState(),
+                    authorities: held,
+                    unscopedAuthorities: { 'A-ADDR': 'U' },
+                },
+                4,
+            )
+
+            expect(migrated.authorities).toEqual(held)
+            expect(migrated.unscopedAuthorities).toEqual({ 'A-ADDR': 'U' })
+        })
+
+        test('keeps a record no adapter decodes when it already holds only custody and chain entries', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const current = {
+                id: 'e',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xabc', keyPairId: 'raw' } },
+            }
+
+            const { accounts } = migrateAccountsState(
+                { ...legacyState(), accounts: [current] },
+                4,
+            )
+
+            expect(accounts).toStrictEqual([current])
+        })
 
         test('leaves no legacy key on the migrated accounts or state', async () => {
             const { migrateAccountsState } = await import('../store')
@@ -864,10 +813,10 @@ describe('services/accounts/store', () => {
             expect(migrated.launchAccountId).toBeNull()
         })
 
-        test('persisted v4 state is not migrated again', async () => {
+        test('persisted v5 state is not migrated again', async () => {
             const { migrateAccountsState } = await import('../store')
 
-            expect(migrateAccountsState(migratedState, 4)).toBe(migratedState)
+            expect(migrateAccountsState(migratedState, 5)).toBe(migratedState)
         })
 
         test('stays at its defaults, and writes nothing back, until rehydrateAccountsStore runs', async () => {

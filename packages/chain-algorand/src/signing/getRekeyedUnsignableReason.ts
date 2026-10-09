@@ -80,7 +80,7 @@ export const getRekeyedUnsignableReason = (
             return {
                 kind: 'authMissing',
                 senderAddress: address,
-                authAddress: resolution.authAddress,
+                authAddress: resolution.authorityAddress,
             }
         }
         if (resolution.kind === 'authIsWatch') {

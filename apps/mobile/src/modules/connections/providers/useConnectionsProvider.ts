@@ -23,6 +23,7 @@ import {
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
+import { whenAppUnlocked } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     clearActiveWalletConnectV1Delivery,
@@ -62,6 +63,9 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 // failing the boot.
                 projectId: config.reownProjectId,
                 keyValueStorage: getProvider().keyValueStorage,
+                // Loading the v2 SDK holds the JS thread for seconds; at boot
+                // that delayed the PIN pad and the biometric prompt.
+                startWhen: whenAppUnlocked,
             }),
         )
         registryRef.current = registry

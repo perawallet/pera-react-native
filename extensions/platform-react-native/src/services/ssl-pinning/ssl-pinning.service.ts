@@ -15,22 +15,22 @@ import {
     initializeSslPinning,
     isSslPinningAvailable,
 } from 'react-native-ssl-public-key-pinning'
-import { RemoteConfigKeys } from '@perawallet/wallet-extension-platform'
+import {
+    pinnedHostRegistry,
+    RemoteConfigKeys,
+} from '@perawallet/wallet-extension-platform'
 import type {
     AnalyticsService,
     CrashReportingService,
+    PinnedHostGroup,
     RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 import { buildPinningConfig } from './buildPinningConfig'
 import type { PinningConfig } from './buildPinningConfig'
 
-/** Domains eligible for pinning per group — never pin outside these. */
+/** Domains eligible for backend pinning — never pin outside these. */
 const BACKEND_PIN_DOMAINS = ['perawallet.app'] as const
-// Node/indexer hosts: the public default provider domain (dev builds), plus
-// Pera-owned hostnames — CI builds inject those via env config (see
-// tools/check-pinned-chains.mjs for the concrete hosts).
-const NODE_PIN_DOMAINS = ['algonode.cloud', 'perawallet.app'] as const
 
 export type SslPinningDependencies = {
     remoteConfig: Pick<RemoteConfigService, 'getBooleanValue'>
@@ -38,17 +38,17 @@ export type SslPinningDependencies = {
     crashReporting: Pick<CrashReportingService, 'recordNonFatalError'>
     /** Overridable for tests; defaults to the build's configured backend URLs. */
     backendUrls?: readonly string[]
-    /** Overridable for tests; defaults to the build's algod/indexer URLs. */
-    nodeUrls?: readonly string[]
+    /** Overridable for tests; defaults to the groups chain modules declared. */
+    pinnedHostGroups?: readonly PinnedHostGroup[]
 }
 
 /**
- * Enables SSL public-key pinning for two independently flagged host groups:
- * the Pera backend (`enable_ssl_pinning_pera_api`) and the Algorand node/indexer
- * providers (`enable_ssl_pinning_algod`). Separate flags = separate kill
- * switches: a CA surprise on one group can be disabled without dropping
- * protection on the other. Both groups share the same pin set — every host is
- * served through Cloudflare, whose partner-CA roots are what we pin.
+ * Enables SSL public-key pinning for independently flagged host groups: the
+ * Pera backend (`enable_ssl_pinning_pera_api`) and each group a chain module
+ * declared for its node hosts. Separate flags = separate kill switches: a CA
+ * surprise on one group can be disabled without dropping protection on the
+ * others. Every group shares the same pin set — every host is served through
+ * Cloudflare, whose partner-CA roots are what we pin.
  *
  * Call AFTER remote config has initialized: the flag decisions must see the
  * freshest activated values, and because `getBooleanValue` only trusts
@@ -69,12 +69,7 @@ export const initializeSslPinningService = async (
         analytics,
         crashReporting,
         backendUrls = [config.mainnetBackendUrl, config.testnetBackendUrl],
-        nodeUrls = [
-            config.mainnetAlgodUrl,
-            config.testnetAlgodUrl,
-            config.mainnetIndexerUrl,
-            config.testnetIndexerUrl,
-        ],
+        pinnedHostGroups = pinnedHostRegistry.all(),
     } = dependencies
 
     try {
@@ -84,11 +79,7 @@ export const initializeSslPinningService = async (
                 urls: backendUrls,
                 domains: BACKEND_PIN_DOMAINS,
             },
-            {
-                flag: RemoteConfigKeys.enable_ssl_pinning_algod,
-                urls: nodeUrls,
-                domains: NODE_PIN_DOMAINS,
-            },
+            ...pinnedHostGroups,
         ]
 
         const pinningConfig: PinningConfig = {}

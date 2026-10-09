@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAuthorityTargets } from '../useAuthorityTargets'
-import { useAccountsStore } from '../../store'
+import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
     MAINNET_SCOPE,
     TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 import { testAccount } from '../../__tests__/accountFactory'
 
@@ -32,6 +34,7 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
         registerFakeAccountsChain()
     })
 
@@ -79,6 +82,26 @@ describe('useAuthorityTargets', () => {
             TESTNET_SCOPE,
             {},
         )
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const source = held('SRC')
+        const target = held('A')
+        setAccounts([source, target])
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.isEligibleTarget,
+        ).mockImplementation(
+            (_kind, _target, from, _accounts, scope) =>
+                authorityOf(from, scope) !== null,
+        )
+        const { result } = renderHook(() =>
+            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE),
+        )
+        expect(result.current).toEqual([])
+
+        act(() => seedAuthority('SRC', 'AUTH'))
+
+        expect(result.current).toEqual([source, target])
     })
 
     it('returns nothing for a missing source', () => {

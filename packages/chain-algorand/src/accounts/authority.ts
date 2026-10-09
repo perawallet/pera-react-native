@@ -28,7 +28,7 @@ import { hasLocalCoSigner } from './multisig-participants'
 import { getAlgorandAuthAccount } from './signer-resolution'
 import {
     algorandAddressOf,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from './vocabulary'
@@ -75,7 +75,7 @@ const isEligibleStandardTarget = (
     scope: ChainScope,
 ): boolean => {
     if (isCurrentOrSelf(target, source, scope)) return false
-    if (!isAlgo25Account(target) && !isHDWalletAccount(target)) return false
+    if (!isStandaloneAccount(target) && !isHDWalletAccount(target)) return false
     if (!hasSigningKeys(target)) return false
     if (isDelegated(target, scope)) return false
     return true

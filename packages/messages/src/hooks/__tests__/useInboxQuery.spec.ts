@@ -58,7 +58,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 
 const account = (
     address: string,
-    custody: WalletAccount['custody'] = { kind: 'local', seed: 'algo25' },
+    custody: WalletAccount['custody'] = { kind: 'local', seed: null },
 ): WalletAccount => ({
     id: address,
     custody,

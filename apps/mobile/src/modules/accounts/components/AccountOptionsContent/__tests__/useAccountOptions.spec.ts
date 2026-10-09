@@ -185,7 +185,7 @@ describe('useAccountOptions', () => {
     const algo25Account: WalletAccount = {
         id: 'acc-1',
         chains: { algorand: { address: 'ALGO25ADDRESS', keyPairId: 'key-1' } },
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         name: 'My Account',
     }
 
@@ -205,7 +205,7 @@ describe('useAccountOptions', () => {
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         chains: { algorand: { address: 'REKEYEDADDRESS', keyPairId: 'key-3' } },
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
     }
 
     const rekeyedWatchAccount: WalletAccount = {
@@ -1289,7 +1289,7 @@ describe('useAccountOptions', () => {
                         keyPairId: 'key-rekeyed',
                     },
                 },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             }
             seedAuthority('SOMEOTHERADDRESS', 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
@@ -1322,7 +1322,7 @@ describe('useAccountOptions', () => {
                         keyPairId: 'key-rekeyed',
                     },
                 },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             }
             seedAuthority('SOMEOTHERADDRESS', 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])

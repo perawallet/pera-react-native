@@ -179,7 +179,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(account.custody).toEqual({ kind: 'local', seed: null })
         expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Algo25 from ASB')
 
@@ -229,7 +229,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         const watch = useAccountsStore
             .getState()
             .accounts.find(a => addressOf(a) === ASB_WATCH_ADDRESS)
-        expect(algo25?.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(algo25?.custody).toEqual({ kind: 'local', seed: null })
         expect(watch?.custody).toEqual({ kind: 'watch' })
     })
 
@@ -309,7 +309,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: ALGO25_TEST_ADDRESS,

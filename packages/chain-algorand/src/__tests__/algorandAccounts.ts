@@ -17,13 +17,14 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import { seedAuthority } from '../accounts/__tests__/seedAuthority'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 export type AlgorandAccountOptions = {
     id?: string
     name?: string
-    rekeyAddress?: string
-    rekeyAddressByNetwork?: WalletAccount['rekeyAddressByNetwork']
+    /** Recorded on mainnet's chain-state slice, as a sync would, when the account is built. */
+    authorityAddress?: string
     /** Defaults to `kp-<address>` for local accounts; `null` leaves the key off. */
     keyPairId?: string | null
 }
@@ -38,20 +39,18 @@ export const LEDGER_DEVICE: HardwareRef = {
 const withOptions = (
     account: Pick<WalletAccount, 'custody'>,
     entry: ChainAccount,
-    {
-        id,
-        name,
-        rekeyAddress,
-        rekeyAddressByNetwork,
-    }: AlgorandAccountOptions = {},
-): WalletAccount => ({
-    id: id ?? `id-${entry.address}`,
-    ...(name !== undefined ? { name } : {}),
-    ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
-    ...(rekeyAddressByNetwork !== undefined ? { rekeyAddressByNetwork } : {}),
-    custody: account.custody,
-    chains: { [ALGORAND_CHAIN_ID]: entry },
-})
+    { id, name, authorityAddress }: AlgorandAccountOptions = {},
+): WalletAccount => {
+    if (authorityAddress !== undefined) {
+        seedAuthority(entry.address, authorityAddress)
+    }
+    return {
+        id: id ?? `id-${entry.address}`,
+        ...(name !== undefined ? { name } : {}),
+        custody: account.custody,
+        chains: { [ALGORAND_CHAIN_ID]: entry },
+    }
+}
 
 const localEntry = (
     address: string,
@@ -61,12 +60,12 @@ const localEntry = (
         ? { address }
         : { address, keyPairId: keyPairId ?? `kp-${address}` }
 
-export const algo25Account = (
+export const standaloneAccount = (
     address: string,
     options: AlgorandAccountOptions = {},
 ): WalletAccount =>
     withOptions(
-        { custody: { kind: 'local', seed: 'algo25' } },
+        { custody: { kind: 'local', seed: null } },
         localEntry(address, options.keyPairId),
         options,
     )

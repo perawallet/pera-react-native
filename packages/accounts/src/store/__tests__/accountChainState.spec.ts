@@ -12,12 +12,18 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
 import {
-    authAddressOf,
+    toScopeKey,
+    type AccountChainState,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    authorityAddressOf,
     getAccountChainState,
     useAccountChainStateStore,
 } from '../accountChainState'
+import { recordAuthority } from '../recordAuthority'
+import { useAccountsStore } from '../store'
+import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
@@ -110,11 +116,47 @@ describe('account chain-state slice', () => {
         expect(store().states).toEqual({})
     })
 
-    it('authAddressOf is null without an authAddress, including for evm', () => {
-        expect(authAddressOf(algorandState())).toBeNull()
+    it('authorityAddressOf is null without an authAddress, including for evm', () => {
+        expect(authorityAddressOf(algorandState())).toBeNull()
         expect(
-            authAddressOf({ family: 'evm', nonce: { latest: 0, pending: 0 } }),
+            authorityAddressOf({
+                family: 'evm',
+                nonce: { latest: 0, pending: 0 },
+            }),
         ).toBeNull()
-        expect(authAddressOf(algorandState({ authAddress: 'X' }))).toBe('X')
+        expect(authorityAddressOf(algorandState({ authAddress: 'X' }))).toBe(
+            'X',
+        )
+    })
+
+    describe('recordAuthority', () => {
+        beforeEach(() => {
+            registerFakeAccountsChain()
+            useAccountsStore.getState().resetState()
+        })
+
+        it('fills an empty slot through the chain adapter', () => {
+            recordAuthority(MAINNET, 'A', 'AUTH')
+
+            const held = getAccountChainState(MAINNET, 'A')
+            expect(held && authorityAddressOf(held)).toBe('AUTH')
+        })
+
+        it('leaves a held entry alone', () => {
+            const held = algorandState({ authAddress: 'SYNCED' })
+            store().setAccountChainState(MAINNET, 'A', held)
+
+            recordAuthority(MAINNET, 'A', 'OTHER')
+
+            expect(getAccountChainState(MAINNET, 'A')).toBe(held)
+        })
+
+        it('persists the authority, since the slice does not survive a restart', () => {
+            recordAuthority(MAINNET, 'A', 'AUTH')
+
+            expect(
+                useAccountsStore.getState().authorities[toScopeKey(MAINNET)],
+            ).toEqual({ A: 'AUTH' })
+        })
     })
 })

@@ -189,7 +189,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         })
         sender = {
             id: 'sender-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address: ALGO25_TEST_ADDRESS,
@@ -210,7 +210,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: addressOf(sender),

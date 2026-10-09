@@ -24,12 +24,18 @@ import type {
     MultiSigDetails,
 } from './vocabulary'
 
-/** An account as store v0-v3 persisted it: the legacy fields are Algorand's, beside a `custody` and `chains` that may be absent or stale. */
+/** `algo25` is what store v0-v3 called a standalone account. */
+type LegacyAccountType = AccountType | 'algo25'
+
+/** A custody as store v0-v3 could persist it: a standalone account's seed was `algo25`. */
+type LegacyCustody = AccountCustody | { kind: 'local'; seed: 'algo25' }
+
+/** An account as store v0-v4 persisted it: the legacy fields are Algorand's, beside a `custody` and `chains` that may be absent or stale. */
 type LegacyRecord = {
     address?: unknown
     keyPairId?: unknown
-    type?: AccountType
-    custody?: AccountCustody
+    type?: LegacyAccountType
+    custody?: LegacyCustody
     chains?: AccountChains
     hdWalletDetails?: HDWalletDetails
     hardwareDetails?: HardwareWalletDetails
@@ -70,8 +76,11 @@ const entryOf = (record: LegacyRecord): ChainAccount | undefined => {
 const custodyFromType = (record: LegacyRecord): AccountCustody | undefined => {
     switch (record.type) {
         case 'algo25':
+        case 'standalone': {
+            return { kind: 'local', seed: null }
+        }
         case 'quantum': {
-            return { kind: 'local', seed: record.type }
+            return { kind: 'local', seed: 'quantum' }
         }
         case 'hdWallet': {
             if (!record.hdWalletDetails) return undefined
@@ -93,6 +102,11 @@ const custodyFromType = (record: LegacyRecord): AccountCustody | undefined => {
     }
 }
 
+const currentCustody = (custody: LegacyCustody): AccountCustody =>
+    custody.kind === 'local' && custody.seed === 'algo25'
+        ? { kind: 'local', seed: null }
+        : (custody as AccountCustody)
+
 /**
  * An existing `custody` wins over a contradicting `type`, and existing chain
  * entries over the top-level fields. A record whose kind doesn't decode
@@ -106,7 +120,9 @@ export const decodeAlgorandLegacyRecord = (
     if (!record) return undefined
     const entry = record.chains?.[ALGORAND_CHAIN_ID] ?? entryOf(record)
     if (!entry) return undefined
-    const custody = record.custody ?? custodyFromType(record)
+    const custody = record.custody
+        ? currentCustody(record.custody)
+        : custodyFromType(record)
     if (custody) {
         // Only a local account signs with a key of its own.
         const { keyPairId, ...keyless } = entry

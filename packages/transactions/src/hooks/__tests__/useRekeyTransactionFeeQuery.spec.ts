@@ -65,7 +65,7 @@ const algo25 = (
     overrides: Partial<WalletAccount> = {},
 ): WalletAccount => ({
     id: 'a1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address, keyPairId: 'kp-algo25' } },
     ...overrides,
 })
@@ -321,10 +321,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         // undoing a rekey-to-quantum must still pay the PQ fee. The resolver
         // itself performs the auth-chain walk (getSignerFor); here we assert
         // the hook forwards the full accounts array and applies the guard.
-        const accounts = [
-            algo25('SRC', { rekeyAddress: 'QADDR' }),
-            quantum('QADDR'),
-        ]
+        const accounts = [algo25('SRC'), quantum('QADDR')]
         mockUseAllAccounts.mockReturnValue(accounts)
         mockResolveMinFeeForSender.mockReturnValue(3000n)
         mockBuildRekeyTx.mockResolvedValueOnce({ fee: 3000n })

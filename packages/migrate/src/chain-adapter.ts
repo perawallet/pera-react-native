@@ -26,6 +26,8 @@ export interface MigrationChainAdapter {
     isKeylessAccount(account: LegacyAccount): boolean
     /** Short label for the failure reason and log. */
     classifyAccountRoute(account: LegacyAccount): string
+    /** Records the legacy auth address on the account's selected scope. */
+    recordLegacyAuthority(account: LegacyAccount): void
 }
 
 export const migrationChainAdapters =

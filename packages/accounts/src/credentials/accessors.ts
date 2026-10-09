@@ -11,13 +11,15 @@
  */
 
 import {
-    isLegacyNetwork,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
+    type StandaloneSecret,
 } from '@perawallet/wallet-core-chain-contract'
 import { resolveSeedKeyFrom } from '@perawallet/wallet-core-kms'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import type {
     AccountCustody,
     AccountWithCustody,
@@ -27,7 +29,10 @@ import type {
     HdIndex,
     WalletAccount,
 } from '../models'
-import { authAddressOf, getAccountChainState } from '../store/accountChainState'
+import {
+    authorityAddressOf,
+    getAccountChainState,
+} from '../store/accountChainState'
 import type { KeystoreSnapshot } from './credentialScheme'
 
 export const custodyOf = (account: WalletAccount): AccountCustody =>
@@ -54,10 +59,37 @@ export const signingKeyOn = (
     chainId: ChainId,
 ): string | undefined => chainAccountOf(account, chainId)?.keyPairId
 
+/** Whether any account in `accounts` signs with the KMS key `keyPairId`. */
+export const isKeyReferenced = (
+    accounts: readonly WalletAccount[],
+    keyPairId: string,
+): boolean =>
+    accounts.some(account =>
+        Object.values(account.chains).some(
+            entry => entry?.keyPairId === keyPairId,
+        ),
+    )
+
 export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
     const { custody } = account
     return custody.kind === 'local' && custody.seed === 'bip39'
         ? custody.hd
+        : undefined
+}
+
+/**
+ * How a standalone account's secret is shown and backed up, read from the
+ * chain it lives on. Undefined for any other account, or an unregistered chain.
+ */
+export const standaloneSecretOf = (
+    account: WalletAccount,
+): StandaloneSecret | undefined => {
+    const { custody } = account
+    if (custody.kind !== 'local' || custody.seed !== null) return undefined
+    const chainId = Object.keys(account.chains)[0] as ChainId | undefined
+    const { chains } = getProvider()
+    return chainId !== undefined && chains.has(chainId)
+        ? chains.get(chainId).descriptor.signing.standaloneSecret
         : undefined
 }
 
@@ -80,9 +112,12 @@ export const hardwareDetailsOf = (
         : undefined
 }
 
-/** Every local seed scheme is mnemonic-backed, so a local account has a phrase to back up or reveal. */
-export const hasRecoverySeed = (account: WalletAccount): boolean =>
-    account.custody.kind === 'local'
+/** Whether the account has a phrase to back up or reveal: every seed is mnemonic-backed, a standalone key only where its chain says so. */
+export const hasRecoverySeed = (account: WalletAccount): boolean => {
+    const { custody } = account
+    if (custody.kind !== 'local') return false
+    return custody.seed !== null || standaloneSecretOf(account) === 'mnemonic'
+}
 
 /**
  * The KMS id of the seed behind the account's local keys, or `undefined` for
@@ -108,8 +143,6 @@ export const seedOf = (
 /**
  * The address whose key authorises the account on `scope`, or `null` when it
  * signs for itself. Observed chain state, so it never joins the account record.
- * Reads the chain-state slice, falling back to the legacy record fields for a
- * scope the slice doesn't hold yet.
  */
 export const authorityOf = (
     account: WalletAccount,
@@ -118,13 +151,5 @@ export const authorityOf = (
     const address = addressOn(account, scope)
     const state =
         address === undefined ? undefined : getAccountChainState(scope, address)
-    if (state) return authAddressOf(state)
-    if (scope.chainId !== LEGACY_CHAIN_ID) return null
-    const { rekeyAddressByNetwork, rekeyAddress } = account
-    // An account that predates the per-network map only has the mirror, as
-    // `applyNetworkRekeyState` assumes.
-    if (!rekeyAddressByNetwork) return rekeyAddress ?? null
-    return isLegacyNetwork(scope.networkId)
-        ? (rekeyAddressByNetwork[scope.networkId] ?? null)
-        : null
+    return state ? authorityAddressOf(state) : null
 }

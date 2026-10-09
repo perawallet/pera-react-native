@@ -225,7 +225,7 @@ const makeAssetWithMedia = (
 describe('useCollectibleDetail', () => {
     const mockAccount = {
         id: 'account',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: { address: 'ACCOUNT_ADDRESS', keyPairId: 'account-key' },
         },

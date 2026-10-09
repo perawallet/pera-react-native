@@ -50,9 +50,9 @@ const fakeHdKeyPairId: AccountsChainAdapter['hdKeyPairId'] = (
 
 const BASE32_ADDRESS = /^[A-Z2-7]{58}$/
 
-/** The fake's key kinds: an HD kind on 12 or 24 words, and two single-key kinds sharing 25 words, only the first auto-detected. */
+/** The fake's key kinds: an HD kind on 12 or 24 words, and the standalone and a seeded single-key kind sharing 25 words, only the first auto-detected. */
 export const FAKE_HD_SEED = SeedScheme.Bip39
-export const FAKE_SINGLE_SEED = SeedScheme.Algo25
+export const FAKE_SINGLE_SEED = null
 export const FAKE_EXPLICIT_SEED = SeedScheme.Quantum
 
 export const FAKE_LOCAL_KEY_KINDS: readonly LocalKeyKind[] = [
@@ -153,7 +153,7 @@ export const fakeAccountStateSnapshot = (
     nativeBalance: new Decimal(nativeBaseUnits).div(100),
     nativeBalanceBaseUnits: new Decimal(nativeBaseUnits),
     minBalance: new Decimal(0),
-    authAddress: null,
+    authorityAddress: null,
     chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
     holdings: [
         {
@@ -210,7 +210,9 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
         totalAppsOptedIn: 0,
-        ...(observed.authAddress ? { authAddress: observed.authAddress } : {}),
+        ...(observed.authorityAddress
+            ? { authAddress: observed.authorityAddress }
+            : {}),
     })),
     fetchAssetOptInRounds: vi.fn(async () => new Map<string, number>()),
     accountExists: vi.fn(async () => false),
@@ -289,13 +291,10 @@ export const fakeAccountsChain = (): FakeAccountsChain => {
     return current
 }
 
-/**
- * Records `authAddress` as `address`'s authority on `scope`; `null` is an
- * observed "signs for itself", which shadows the legacy record fields.
- */
+/** Records `authorityAddress` as `address`'s authority on `scope`; `null` is an observed "signs for itself". */
 export const seedAuthority = (
     address: string,
-    authAddress: string | null,
+    authorityAddress: string | null,
     scope: ChainScope = MAINNET_SCOPE,
 ): void =>
     useAccountChainStateStore
@@ -303,5 +302,5 @@ export const seedAuthority = (
         .setAccountChainState(
             scope,
             address,
-            fakeAccountsChain().adapter.toChainState({ authAddress }),
+            fakeAccountsChain().adapter.toChainState({ authorityAddress }),
         )

@@ -22,9 +22,16 @@ import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-chain-algorand/b
 import { calculateMinTxnFee } from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
 import { assignFeeToGroup } from '@perawallet/wallet-core-chain-algorand/signing/assignMinimumFeesToGroup'
 import { findFundedIndices } from '@perawallet/wallet-core-chain-algorand/signing/feeCoverage'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { config, Networks } from '@perawallet/wallet-core-config'
 
 import {
     createAlgo25Account,
@@ -226,10 +233,15 @@ describe('quantum fee coverage conformance', () => {
         })
 
         it('leaves a PQ-priced fee alone for an account rekeyed to a PQ key', async () => {
-            const account: WalletAccount = {
-                ...rekeyed.walletAccount,
-                rekeyAddress: pq.address,
-            }
+            const account = rekeyed.walletAccount
+            // What the account syncer records once it reads the chain's `auth-addr`.
+            useAccountChainStateStore.getState().setAccountChainState(
+                scopeForLegacyNetwork(config.defaultNetwork),
+                rekeyed.address,
+                algorandAccountsAdapter.toChainState({
+                    authorityAddress: pq.address,
+                }),
+            )
             const txns = await payment(rekeyed, pqMinFee)
 
             const { transactions, adjustments } = await assignAsDapp(txns, [

@@ -150,7 +150,7 @@ export const createAlgo25Account = async (
         kind: 'algo25',
         walletAccount: buildAccount({
             id,
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chainId: LEGACY_CHAIN_ID,
             chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
         }),

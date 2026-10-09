@@ -75,12 +75,12 @@ const {
     mockWalletAccounts: [
         {
             id: 'mock-a',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'A'.repeat(58) } },
         },
         {
             id: 'mock-csv',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address:
@@ -189,7 +189,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     detectImportKind: (_chainId: string, mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/[,\s]+/).length
         if (wordCount === 24) return { success: true, seed: 'bip39' }
-        if (wordCount === 25) return { success: true, seed: 'algo25' }
+        if (wordCount === 25) return { success: true, seed: null }
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
@@ -977,7 +977,7 @@ describe('deeplink format coverage', () => {
         // Resolve the recover-address import so RECOVER_ADDRESS handler
         // reaches the navigate call.
         mockImportAccount.mockResolvedValue({
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             id: 'mock-id',
             chains: { algorand: { address: ADDRESS } },
         })

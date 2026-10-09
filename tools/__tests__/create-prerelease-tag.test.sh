@@ -74,10 +74,32 @@ new_repo 7.1.1 v7.1.1 v7.1.2-alpha.8 v7.1.2-rc.4 v7.1.3
 check "gap in the stable chain, rc channel" \
     v7.1.4-rc.1 "$(next_tag rc)"
 
-# A prerelease of a HIGHER version must not be mistaken for a shipped stable.
+# A prerelease of a HIGHER version must not be mistaken for a shipped stable:
+# the base follows it, it does not roll past it to the next patch.
 new_repo 7.1.1 v7.1.1 v7.1.5-rc.1
-check "prereleases above the newest stable do not raise the base" \
-    v7.1.2-alpha.1 "$(next_tag alpha)"
+check "a prerelease above the newest stable is followed, not rolled past" \
+    v7.1.5-alpha.1 "$(next_tag alpha)"
+
+# A hand-cut tag on a new minor or major moves every channel onto it, with
+# package.json still stale.
+new_repo 7.1.1 v7.1.7 v7.1.8-alpha.10 v7.1.8-rc.6 v7.2.0-rc.1
+check "minor jump by tag: alpha follows" \
+    v7.2.0-alpha.1 "$(next_tag alpha)"
+check "minor jump by tag: rc continues the counter" \
+    v7.2.0-rc.2 "$(next_tag rc)"
+
+new_repo 7.1.1 v7.1.7 v7.1.8-rc.6 v8.0.0-rc.1
+check "major jump by tag" \
+    v8.0.0-alpha.1 "$(next_tag alpha)"
+
+# Once the jumped version ships, the line moves on to the next patch.
+new_repo 7.1.1 v7.1.7 v7.2.0-rc.1 v7.2.0
+check "after the jumped version ships: next patch" \
+    v7.2.1-alpha.1 "$(next_tag alpha)"
+
+new_repo 7.1.1 v7.1.7 v7.2.0-rc.9 v7.2.0-rc.10
+check "jump counter compares numerically" \
+    v7.2.0-rc.11 "$(next_tag rc)"
 
 new_repo 7.2.0 v7.1.1 v7.1.3
 check "package.json ahead of every stable: keeps its own version" \

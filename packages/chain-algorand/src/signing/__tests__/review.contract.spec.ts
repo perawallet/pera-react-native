@@ -16,7 +16,7 @@ import {
     TransactionType,
     type Address,
 } from 'algosdk'
-import { algo25Account } from '../../__tests__/algorandAccounts'
+import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
@@ -74,12 +74,13 @@ const groupOf = (signer: Address, transactions: Transaction[]): SignableGroup =>
 reviewerContractTests(() => algorandReviewerAdapter, {
     context: {
         scope: scopeForLegacyNetwork('mainnet'),
-        accounts: [algo25Account(WALLET.toString())],
+        accounts: [standaloneAccount(WALLET.toString())],
     },
     plainGroup: groupOf(WALLET, [payment(WALLET)]),
     riskyGroup: groupOf(WALLET, [payment(WALLET, { rekeyTo: REKEY_TARGET })]),
     foreignGroup: groupOf(OTHER, [payment(OTHER, { rekeyTo: REKEY_TARGET })]),
     opaqueGroup: groupOf(WALLET, [appCall]),
+    opaqueAutoApproves: true,
     wrongNetworkGroup: groupOf(WALLET, [
         payment(WALLET, { genesisHash: TEST_SUGGESTED_PARAMS.genesisHash }),
     ]),

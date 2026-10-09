@@ -244,8 +244,12 @@ describe('SyncService', () => {
         })
     })
 
-    afterEach(() => {
+    afterEach(async () => {
         service.stop()
+        // stop() leaves an in-flight tick running. Drained under fake timers,
+        // its continuation can't outlive the test and call the shared mocks
+        // inside a later one.
+        await vi.runAllTimersAsync()
         vi.useRealTimers()
     })
 
@@ -363,9 +367,7 @@ describe('SyncService', () => {
 
         // Let the first (force-sync) tick run to completion; its account
         // invalidation is now sitting behind the debounce timer.
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
 
@@ -388,16 +390,14 @@ describe('SyncService', () => {
             round: null,
         })
 
-        vi.useRealTimers()
         service.pause()
 
         service.start()
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await vi.advanceTimersByTimeAsync(100)
 
         expect(fetchAndPersistAccount).not.toHaveBeenCalled()
 
         service.stop()
-        vi.useFakeTimers()
     })
 
     it('syncs again once resumed', async () => {
@@ -408,20 +408,18 @@ describe('SyncService', () => {
             round: null,
         })
 
-        vi.useRealTimers()
         service.pause()
         service.start()
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await vi.advanceTimersByTimeAsync(50)
         expect(fetchAndPersistAccount).not.toHaveBeenCalled()
 
         service.resume()
-        // Past PAUSE_RECHECK_MS so the deferred re-check runs for real.
-        await new Promise(resolve => setTimeout(resolve, 600))
+        // Past PAUSE_RECHECK_MS so the deferred re-check runs.
+        await vi.advanceTimersByTimeAsync(600)
 
         expect(fetchAndPersistAccount).toHaveBeenCalled()
 
         service.stop()
-        vi.useFakeTimers()
     })
 
     // Several long lists can be mounted at once (the account tabs all stay
@@ -486,9 +484,7 @@ describe('SyncService', () => {
         service.start()
 
         // First tick runs immediately — should NOT call shouldRefresh
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
 
@@ -528,18 +524,15 @@ describe('SyncService', () => {
             round: null,
         })
 
-        vi.useRealTimers()
-
         service.start()
 
         // First tick: force-sync (skip shouldRefresh)
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await vi.advanceTimersByTimeAsync(50)
 
         // Second tick: uses shouldRefresh (after POLL_INTERVAL = 3000ms)
-        await new Promise(resolve => setTimeout(resolve, 3100))
+        await vi.advanceTimersByTimeAsync(3100)
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
             'mainnet',
@@ -558,14 +551,10 @@ describe('SyncService', () => {
         service.start()
 
         // First tick: force-sync (skip shouldRefresh)
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         // Second tick: uses shouldRefresh
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 3050))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(3050)
 
         service.stop()
 
@@ -601,16 +590,14 @@ describe('SyncService', () => {
 
         // First tick: force-sync (partial failure backs the loop off to 6 s);
         // second tick: shouldRefresh-gated sync.
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        await new Promise(resolve => setTimeout(resolve, 6200))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
+        await vi.advanceTimersByTimeAsync(6200)
 
         service.stop()
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
         expect(mockSetRefreshRound).not.toHaveBeenCalled()
-    }, 10_000)
+    })
 
     it('does not advance the round when every account fetch fails', async () => {
         const { fetchAndPersistAccount } =
@@ -626,10 +613,8 @@ describe('SyncService', () => {
 
         service.start()
 
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        await new Promise(resolve => setTimeout(resolve, 3100))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
+        await vi.advanceTimersByTimeAsync(3100)
 
         service.stop()
 
@@ -657,11 +642,9 @@ describe('SyncService', () => {
 
         service.start()
 
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await vi.advanceTimersByTimeAsync(50)
         mockSetRefreshRound.mockClear()
-        await new Promise(resolve => setTimeout(resolve, 3100))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(3100)
 
         service.stop()
 
@@ -681,9 +664,7 @@ describe('SyncService', () => {
         expect(service.isRunning()).toBe(true)
 
         // First tick: force-sync (no shouldRefresh)
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
         expect(fetchAndPersistAccount).toHaveBeenCalled()
@@ -695,9 +676,7 @@ describe('SyncService', () => {
         service.restart()
         expect(service.isRunning()).toBe(true)
 
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         // Should have force-synced without calling shouldRefresh
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
@@ -727,9 +706,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
 
         expect(logger.warn).toHaveBeenCalledWith(
             'Sync step failed',
@@ -795,18 +772,15 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        await new Promise(resolve => setTimeout(resolve, 3100))
+        await vi.advanceTimersByTimeAsync(50)
+        await vi.advanceTimersByTimeAsync(3100)
         service.stop()
-        vi.useFakeTimers()
 
         // neverSynced + shouldRefresh throw => force-sync the active network
         expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
         expect(fetchAndPersistAccount).toHaveBeenCalled()
     })
 
-    // 3 real-timer waits (50 + 3100 + 3100ms) exceed vitest's 5000ms default.
     it('backs off should-refresh after a 401 and skips subsequent requests', async () => {
         const authError = Object.assign(new Error('Unauthorized'), {
             name: 'HTTPError',
@@ -816,9 +790,8 @@ describe('SyncService', () => {
         const { logger } = await import('@perawallet/wallet-core-shared')
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401
+        await vi.advanceTimersByTimeAsync(50) // 1st tick: force-sync
+        await vi.advanceTimersByTimeAsync(3100) // 2nd tick: should-refresh -> 401
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
         expect(logger.warn).toHaveBeenCalledWith(
@@ -827,13 +800,12 @@ describe('SyncService', () => {
         )
 
         mockSendShouldRefreshRequest.mockClear()
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: guarded, no request
+        await vi.advanceTimersByTimeAsync(3100) // 3rd tick: guarded, no request
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-    }, 8000)
+    })
 
     it('treats 403 the same as 401 for the auth backoff', async () => {
         const authError = Object.assign(new Error('Forbidden'), {
@@ -843,18 +815,16 @@ describe('SyncService', () => {
         mockSendShouldRefreshRequest.mockRejectedValue(authError)
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        await new Promise(resolve => setTimeout(resolve, 3100))
+        await vi.advanceTimersByTimeAsync(50)
+        await vi.advanceTimersByTimeAsync(3100)
 
         mockSendShouldRefreshRequest.mockClear()
-        await new Promise(resolve => setTimeout(resolve, 3100))
+        await vi.advanceTimersByTimeAsync(3100)
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-    }, 8000)
+    })
 
     it('resets the auth-failure flag on restart so a reconfigured session recovers', async () => {
         const authError = Object.assign(new Error('Unauthorized'), {
@@ -864,9 +834,8 @@ describe('SyncService', () => {
         mockSendShouldRefreshRequest.mockRejectedValue(authError)
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        await new Promise(resolve => setTimeout(resolve, 3100))
+        await vi.advanceTimersByTimeAsync(50)
+        await vi.advanceTimersByTimeAsync(3100)
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
 
@@ -877,14 +846,13 @@ describe('SyncService', () => {
         })
         service.restart()
 
-        await new Promise(resolve => setTimeout(resolve, 50)) // restart force-syncs first
-        await new Promise(resolve => setTimeout(resolve, 3100)) // then should-refresh resumes
+        await vi.advanceTimersByTimeAsync(50) // restart force-syncs first
+        await vi.advanceTimersByTimeAsync(3100) // then should-refresh resumes
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
-    }, 8000)
+    })
 
     it('still force-syncs a never-synced network through the auth backoff, on that tick and subsequent ticks', async () => {
         // lastRefreshedRound stays null throughout (default mock) so the
@@ -900,25 +868,23 @@ describe('SyncService', () => {
             await import('@perawallet/wallet-core-accounts')
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync (initial)
+        await vi.advanceTimersByTimeAsync(50) // 1st tick: force-sync (initial)
 
         vi.mocked(fetchAndPersistAccount).mockClear()
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401, but never-synced still force-syncs
+        await vi.advanceTimersByTimeAsync(3100) // 2nd tick: should-refresh -> 401, but never-synced still force-syncs
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
         expect(fetchAndPersistAccount).toHaveBeenCalled()
 
         mockSendShouldRefreshRequest.mockClear()
         vi.mocked(fetchAndPersistAccount).mockClear()
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: guarded (no request), never-synced force-sync still fires
+        await vi.advanceTimersByTimeAsync(3100) // 3rd tick: guarded (no request), never-synced force-sync still fires
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
         expect(fetchAndPersistAccount).toHaveBeenCalled()
-    }, 8000)
+    })
 
     it('once synced, does not re-issue the should-refresh request or re-log the warning', async () => {
         const authError = Object.assign(new Error('Unauthorized'), {
@@ -932,9 +898,8 @@ describe('SyncService', () => {
             await import('@perawallet/wallet-core-accounts')
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401, flag set
+        await vi.advanceTimersByTimeAsync(50) // 1st tick: force-sync
+        await vi.advanceTimersByTimeAsync(3100) // 2nd tick: should-refresh -> 401, flag set
 
         expect(logger.warn).toHaveBeenCalledTimes(1)
 
@@ -949,15 +914,14 @@ describe('SyncService', () => {
         mockSendShouldRefreshRequest.mockClear()
         vi.mocked(fetchAndPersistAccount).mockClear()
 
-        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: now synced — guarded, no fallback
+        await vi.advanceTimersByTimeAsync(3100) // 3rd tick: now synced — guarded, no fallback
 
         service.stop()
-        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
         expect(logger.warn).not.toHaveBeenCalled()
         expect(fetchAndPersistAccount).not.toHaveBeenCalled()
-    }, 8000)
+    })
 
     it('force-syncs a network absent from the persisted round map, sending null (not undefined) for its last-refreshed round', async () => {
         const { useNetworkStore } =
@@ -989,15 +953,13 @@ describe('SyncService', () => {
 
         try {
             service.start()
-            vi.useRealTimers()
-            await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: unconditional force-sync
+            await vi.advanceTimersByTimeAsync(50) // 1st tick: unconditional force-sync
             vi.mocked(fetchAndPersistAccount).mockClear()
             mockSendShouldRefreshRequest.mockClear()
 
-            await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: checkShouldRefresh path
+            await vi.advanceTimersByTimeAsync(3100) // 2nd tick: checkShouldRefresh path
 
             service.stop()
-            vi.useFakeTimers()
 
             // Site 1 (neverSynced): the absent key must still force-sync, even
             // though the backend reported refresh: false.
@@ -1022,7 +984,7 @@ describe('SyncService', () => {
                     'algorand/testnet': null,
                 })
         }
-    }, 8000)
+    })
 
     it('rate-limited failures trigger backoff on the next tick', async () => {
         const { fetchAndPersistAccount } =
@@ -1034,9 +996,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
         service.stop()
 
         // 429 is filtered from logFailures, so no per-account warn
@@ -1278,9 +1238,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
         service.stop()
 
         expect(logger.warn).toHaveBeenCalledWith(
@@ -1312,9 +1270,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
         service.stop()
 
         // No account fetch succeeded, so no per-account invalidation: nothing
@@ -1340,9 +1296,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
         service.stop()
 
         // When every batch in the assets phase rejects, invalidation would
@@ -1358,7 +1312,6 @@ describe('SyncService', () => {
     })
 
     it('invalidates only the changed accounts after the debounce window', async () => {
-        vi.useRealTimers()
         const { fetchAndPersistAccount, invalidateAccountQueriesForAddresses } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -1374,9 +1327,8 @@ describe('SyncService', () => {
 
         service.start()
         // Let the async first tick complete, then wait out the 250ms debounce.
-        await new Promise(resolve => setTimeout(resolve, 400))
+        await vi.advanceTimersByTimeAsync(400)
         service.stop()
-        vi.useFakeTimers()
 
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
@@ -1414,9 +1366,7 @@ describe('SyncService', () => {
         )
 
         service.start()
-        vi.useRealTimers()
-        await new Promise(resolve => setTimeout(resolve, 50))
-        vi.useFakeTimers()
+        await vi.advanceTimersByTimeAsync(50)
         service.stop()
 
         // When every account's transaction fetch rejects, invalidation
@@ -1507,19 +1457,17 @@ describe('SyncService', () => {
             )
 
             try {
-                vi.useRealTimers()
                 service.start()
 
                 // First tick: unconditional force-sync (skips checkShouldRefresh).
-                await new Promise(resolve => setTimeout(resolve, 50))
+                await vi.advanceTimersByTimeAsync(50)
                 vi.mocked(fetchAndPersistAccount).mockClear()
 
                 // Second tick: goes through checkShouldRefresh. The guard must
                 // return early so the chain sync still runs on this tick.
-                await new Promise(resolve => setTimeout(resolve, 3100))
+                await vi.advanceTimersByTimeAsync(3100)
 
                 service.stop()
-                vi.useFakeTimers()
 
                 expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
                 expect(fetchAndPersistAccount).toHaveBeenCalled()
@@ -1530,7 +1478,7 @@ describe('SyncService', () => {
                         'algorand/testnet': null,
                     })
             }
-        }, 8000)
+        })
 
         it('control: still calls should-refresh for a Pera-backed network (mainnet)', async () => {
             const { useSyncCursorStore } = await import('../polling')
@@ -1547,14 +1495,12 @@ describe('SyncService', () => {
             })
 
             try {
-                vi.useRealTimers()
                 service.start()
 
-                await new Promise(resolve => setTimeout(resolve, 50))
-                await new Promise(resolve => setTimeout(resolve, 3100))
+                await vi.advanceTimersByTimeAsync(50)
+                await vi.advanceTimersByTimeAsync(3100)
 
                 service.stop()
-                vi.useFakeTimers()
 
                 expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
                     'mainnet',
@@ -1568,7 +1514,7 @@ describe('SyncService', () => {
                         'algorand/testnet': null,
                     })
             }
-        }, 8000)
+        })
     })
 
     describe('failure-aware backoff', () => {

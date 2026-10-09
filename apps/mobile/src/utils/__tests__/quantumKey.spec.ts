@@ -18,7 +18,7 @@ describe('holdsQuantumKey', () => {
     it('is true only for a local account on the quantum seed', () => {
         expect(holdsQuantumKey(accountForType('quantum'))).toBe(true)
         for (const kind of [
-            'algo25',
+            'standalone',
             'hdWallet',
             'hardware',
             'multisig',

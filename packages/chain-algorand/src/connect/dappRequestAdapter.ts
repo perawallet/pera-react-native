@@ -54,7 +54,7 @@ const BAKED_NETWORKS: Network[] = [
 
 // The webview bridge's account-type names, shared with the Pera webapp.
 const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
-    [AccountTypes.algo25]: 'Algo25',
+    [AccountTypes.standalone]: 'Algo25',
     [AccountTypes.hdWallet]: 'HDWallet',
     [AccountTypes.hardware]: 'Hardware',
     [AccountTypes.multisig]: 'Multisig',

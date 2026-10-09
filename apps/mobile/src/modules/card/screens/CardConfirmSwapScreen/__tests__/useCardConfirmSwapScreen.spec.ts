@@ -70,7 +70,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('../../../hooks', () => ({
     useCardFundingAccount: () => ({
         id: 'funding',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address: 'ADDR' } },
     }),
     useCardManualDeposit: () => ({ deposit: mockDeposit, isDepositing: false }),

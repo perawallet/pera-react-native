@@ -22,7 +22,7 @@ vi.mock('../useRequiresMnemonicBackup', () => ({
 }))
 
 const mockFundedNetworks = vi.fn()
-const mockAccountsRekeyedTo = vi.fn()
+const mockAccountsDelegatedTo = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -32,8 +32,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...original,
         useAccountFundedNetworksQuery: (...args: unknown[]) =>
             mockFundedNetworks(...args),
-        useAccountsRekeyedTo: (...args: unknown[]) =>
-            mockAccountsRekeyedTo(...args),
+        useAccountsDelegatedTo: (...args: unknown[]) =>
+            mockAccountsDelegatedTo(...args),
     }
 })
 
@@ -73,8 +73,8 @@ describe('useShouldPromptMnemonicBackup', () => {
         registerFakeBackupAdapter()
         mockRequiresBackup.mockReset()
         mockFundedNetworks.mockReset()
-        mockAccountsRekeyedTo.mockReset()
-        mockAccountsRekeyedTo.mockReturnValue([])
+        mockAccountsDelegatedTo.mockReset()
+        mockAccountsDelegatedTo.mockReturnValue([])
         mockCanBackUpMnemonic.mockReset()
         mockCanBackUpMnemonic.mockReturnValue(true)
     })
@@ -137,10 +137,10 @@ describe('useShouldPromptMnemonicBackup', () => {
     test("true when an unfunded account is another account's rekey target", () => {
         mockRequiresBackup.mockReturnValue(true)
         mockFundedNetworks.mockReturnValue(fundedOn())
-        mockAccountsRekeyedTo.mockReturnValue([
+        mockAccountsDelegatedTo.mockReturnValue([
             {
                 id: 'a',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: { algorand: { address: 'A' } },
             },
         ])
@@ -149,16 +149,16 @@ describe('useShouldPromptMnemonicBackup', () => {
             useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(true)
-        expect(mockAccountsRekeyedTo).toHaveBeenCalledWith('HD1', 'algorand')
+        expect(mockAccountsDelegatedTo).toHaveBeenCalledWith('HD1', 'algorand')
     })
 
     test('false for a rekey target that no longer needs backup', () => {
         mockRequiresBackup.mockReturnValue(false)
         mockFundedNetworks.mockReturnValue(fundedOn())
-        mockAccountsRekeyedTo.mockReturnValue([
+        mockAccountsDelegatedTo.mockReturnValue([
             {
                 id: 'a',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: { algorand: { address: 'A' } },
             },
         ])
@@ -178,7 +178,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         )
         expect(result.current).toBe(false)
         expect(mockFundedNetworks).toHaveBeenCalledWith(undefined, SCOPE)
-        expect(mockAccountsRekeyedTo).toHaveBeenCalledWith(
+        expect(mockAccountsDelegatedTo).toHaveBeenCalledWith(
             undefined,
             'algorand',
         )

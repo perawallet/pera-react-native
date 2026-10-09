@@ -331,6 +331,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         accounts.find(a =>
             entriesOf(a).some(entry => entry.address === address),
         )
+    // The one source every rekey answer below derives from; a spec seeds a
+    // rekeyed account with `vi.mocked(authorityOf).mockImplementation(...)`.
+    const authorityOf = vi.fn(
+        (_account: any, _scope?: any): string | null => null,
+    )
     return {
         custodyOf: vi.fn((account: any) => account.custody),
         hasCustody: vi.fn(
@@ -371,7 +376,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) => account?.custody?.kind === 'local',
         ),
         seedOf: vi.fn(() => undefined),
-        authorityOf: vi.fn((account: any) => account?.rekeyAddress ?? null),
+        authorityOf,
+        useAuthorityOf: vi.fn((account: any, scope?: any) =>
+            account ? authorityOf(account, scope) : null,
+        ),
+        standaloneSecretOf: vi.fn((account: any) =>
+            account?.custody?.kind === 'local' && account.custody.seed === null
+                ? 'mnemonic'
+                : undefined,
+        ),
         findAccountByAddressOn: vi.fn(findAccountByAddressOn),
         findAddressHolder: vi.fn(
             (accounts: any[], scope: { chainId: string }, address: string) =>
@@ -427,7 +440,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 kindOf(account) === 'hardware' &&
                 account?.custody?.device?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
+        isRekeyedAccount: vi.fn(
+            (account: any) => !!account && !!authorityOf(account),
+        ),
         isWatchAccount: vi.fn((account: any) => kindOf(account) === 'watch'),
         isMultisigAccount: vi.fn(
             (account: any) => kindOf(account) === 'multisig',
@@ -441,7 +456,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         canSignProgram: vi.fn(
             (account: any) =>
                 kindOf(account) !== 'hardware' &&
-                !account?.rekeyAddress &&
+                !authorityOf(account) &&
                 hasSigningKeys(account),
         ),
         isRekeyedUnsignable: vi.fn(() => false),
@@ -463,7 +478,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         multisigParametersOf: vi.fn(() => undefined),
         useCanSignWith: vi.fn((account: any) => hasSigningKeys(account)),
-        useRekeyAccount: vi.fn(() => null),
+        useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
@@ -530,7 +545,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useRemoveAccount: vi.fn(() => vi.fn(async () => {})),
         useUpdateAccount: vi.fn(() => vi.fn()),
         useSigningAccounts: vi.fn(() => []),
-        useRekeyTransition: vi.fn(() => null),
+        useDelegatedTransition: vi.fn(() => null),
         useMultisigDetailsBackfill: vi.fn(() => ({ isBackfilling: false })),
         useHasAccounts: vi.fn(() => false),
         useHasNoAccounts: vi.fn(() => true),

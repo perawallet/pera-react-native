@@ -61,7 +61,7 @@ import { useEscrowCardCreation } from '../useEscrowCardCreation'
 
 const localKeyAccount: WalletAccount = {
     id: 'a1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'FUNDINGADDR', keyPairId: 'kp1' } },
 } as WalletAccount
 

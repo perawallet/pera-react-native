@@ -54,7 +54,7 @@ export const algo25Account = (
     address: string,
     options: AccountOptions = {},
 ): WalletAccount =>
-    testAccount({ kind: 'local', seed: SeedScheme.Algo25 }, address, {
+    testAccount({ kind: 'local', seed: null }, address, {
         keyPairId: `key-${address}`,
         ...options,
     })

@@ -25,14 +25,14 @@ import { addressOf } from './__fixtures__/accounts'
 
 const TRADING: WalletAccount = {
     id: 'a-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' } },
     name: 'Trading',
 }
 
 const SAVINGS: WalletAccount = {
     id: 'a-2',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: HD_TEST_ADDRESS, keyPairId: 'b-key' } },
     name: 'Savings',
 }

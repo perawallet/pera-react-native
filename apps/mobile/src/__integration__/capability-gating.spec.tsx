@@ -38,7 +38,7 @@ import { RekeyOptionsContent } from '@modules/accounts/components/AccountOptions
 
 const ACCOUNT = {
     id: 'a1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'A'.repeat(58) } },
 } as WalletAccount
 

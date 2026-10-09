@@ -70,7 +70,7 @@ import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.we
 
 const SIGNER = {
     id: 'signer',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
 }
 const AUTH_SIGNER = {

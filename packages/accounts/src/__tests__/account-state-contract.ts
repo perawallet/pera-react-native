@@ -94,8 +94,8 @@ export const accountStateCases = (
         if (fixtures.funded.heldAssetId !== undefined) {
             expect(heldIds).toContain(fixtures.funded.heldAssetId)
         }
-        if (state.authAddress !== null) {
-            expect(codec.isValid(state.authAddress)).toBe(true)
+        if (state.authorityAddress !== null) {
+            expect(codec.isValid(state.authorityAddress)).toBe(true)
         }
     })
 

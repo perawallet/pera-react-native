@@ -16,6 +16,7 @@ import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
+import { isKeyReferenced } from '../credentials'
 import { cleanupRemovedAccountData } from '../cleanup'
 import {
     invalidateAccountQueries,
@@ -34,13 +35,26 @@ export const useRemoveAccount = () => {
         const keyIdsOf = (a: WalletAccount) =>
             Object.values(a.chains).flatMap(entry => entry?.keyPairId ?? [])
 
+        const keyIds = account ? keyIdsOf(account) : []
         // Resolve every seed first: deleting a child drops its parent link.
-        const childKeys = (account ? keyIdsOf(account) : []).flatMap(
-            childKeyId => {
-                const seedId = seedIdOf(childKeyId)
-                return seedId ? [{ childKeyId, seedId }] : []
-            },
-        )
+        const childKeys = keyIds.flatMap(childKeyId => {
+            const seedId = seedIdOf(childKeyId)
+            return seedId ? [{ childKeyId, seedId }] : []
+        })
+        // A standalone account's raw key has no seed above it, so nothing
+        // else would sweep it.
+        const rawKeys =
+            account?.custody.kind === 'local' && account.custody.seed === null
+                ? keyIds.filter(
+                      keyId =>
+                          !childKeys.some(
+                              ({ childKeyId }) => childKeyId === keyId,
+                          ) && !isKeyReferenced(remaining, keyId),
+                  )
+                : []
+        for (const keyId of rawKeys) {
+            await deleteKey(keyId)
+        }
         // This account's own derived children: no other account references them.
         for (const { childKeyId } of childKeys) {
             await deleteKey(childKeyId)

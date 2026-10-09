@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -25,7 +25,7 @@ describe('algorandDeviceAccountType', () => {
     // The v3 devices API's `account_type` values; the backend prices a
     // quantum account's swaps from this, so a drift fails swaps on chain.
     it.each([
-        ['algo25', algo25Account('A')],
+        ['algo25', standaloneAccount('A')],
         ['hdWallet', hdAccount('A')],
         ['hardware', hardwareAccount('A')],
         ['multisig', multisigAccount('A', null)],
@@ -38,7 +38,7 @@ describe('algorandDeviceAccountType', () => {
     it("reports the account's own kind when rekeyed", () => {
         expect(
             algorandDeviceAccountType(
-                algo25Account('A', { rekeyAddress: 'B' }),
+                standaloneAccount('A', { authorityAddress: 'B' }),
             ),
         ).toBe('algo25')
     })

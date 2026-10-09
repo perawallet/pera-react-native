@@ -27,6 +27,8 @@ const legacyRecords = [
         type: 'algo25',
         address: ADDRESS('A'),
         keyPairId: 'algo25-key',
+        rekeyAddress: ADDRESS('B'),
+        rekeyAddressByNetwork: { mainnet: ADDRESS('B') },
     },
     {
         id: 'hd',
@@ -82,7 +84,7 @@ const persistedState = {
 const expectedAccounts = [
     {
         id: 'algo25',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: { address: ADDRESS('A'), keyPairId: 'algo25-key' },
         },
@@ -142,9 +144,9 @@ const expectedAccounts = [
     },
 ]
 
-// Store v3 kept `custody` and `chains` beside the top-level fields it derived
-// from them, and no longer wrote `type`.
-const V3_TOP_LEVEL: Record<string, Record<string, unknown>> = {
+// Stores v3 and v4 kept `custody` and `chains` beside the top-level fields they
+// derived from them, and no longer wrote `type`.
+const TOP_LEVEL: Record<string, Record<string, unknown>> = {
     algo25: { address: ADDRESS('A'), keyPairId: 'algo25-key' },
     hd: {
         address: ADDRESS('B'),
@@ -178,10 +180,27 @@ const V3_TOP_LEVEL: Record<string, Record<string, unknown>> = {
     quantum: { address: ADDRESS('F'), keyPairId: 'quantum-key' },
 }
 
-const v3Records = expectedAccounts.map(account => ({
-    ...V3_TOP_LEVEL[account.id],
+const v4Records = expectedAccounts.map(account => ({
+    ...TOP_LEVEL[account.id],
     ...account,
 }))
+
+// v3 named the seedless custody after Algorand and still held the authority
+// on the record.
+const v3Records = v4Records.map(record =>
+    record.id === 'algo25'
+        ? {
+              ...record,
+              custody: { kind: 'local', seed: 'algo25' },
+              rekeyAddress: ADDRESS('B'),
+              rekeyAddressByNetwork: { mainnet: ADDRESS('B') },
+          }
+        : record,
+)
+
+const expectedAuthorities = {
+    'algorand/mainnet': { [ADDRESS('A')]: ADDRESS('B') },
+}
 
 const LEGACY_KEYS = [
     'type',
@@ -190,6 +209,8 @@ const LEGACY_KEYS = [
     'hdWalletDetails',
     'hardwareDetails',
     'multisigDetails',
+    'rekeyAddress',
+    'rekeyAddressByNetwork',
 ]
 
 describe('Accounts cold start', () => {
@@ -198,15 +219,20 @@ describe('Accounts cold start', () => {
     })
 
     it.each([
-        [1, legacyRecords],
-        [2, legacyRecords],
-        [3, v3Records],
+        [1, legacyRecords, {}],
+        [2, legacyRecords, {}],
+        [3, v3Records, {}],
+        [
+            4,
+            v4Records,
+            { authorities: expectedAuthorities, unscopedAuthorities: {} },
+        ],
     ])(
-        'Given accounts persisted at store version %i, when the chains register and the store rehydrates, then every kind keeps its custody and addresses and the selection moves to ids',
-        async (version, accounts) => {
+        'Given accounts persisted at store version %i, when the chains register and the store rehydrates, then every kind keeps its custody, addresses and authority and the selection moves to ids',
+        async (version, accounts, authorityState) => {
             const storage = getProvider().keyValueStorage
             const persisted = JSON.stringify({
-                state: { ...persistedState, accounts },
+                state: { ...persistedState, ...authorityState, accounts },
                 version,
             })
             await storage.setItem(STORAGE_KEY, persisted)
@@ -224,6 +250,8 @@ describe('Accounts cold start', () => {
                     expect(account).not.toHaveProperty(key)
                 }
             }
+            expect(state.authorities).toEqual(expectedAuthorities)
+            expect(state.unscopedAuthorities).toEqual({})
             expect(state.selectedAccountId).toBe('hd')
             expect(state.launchAccountMode).toBe('specific')
             expect(state.launchAccountId).toBe('ledger')

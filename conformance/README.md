@@ -48,6 +48,27 @@ pnpm test:conformance   # from the repo root, or `pnpm exec vitest run` from her
 `src/harness/localnet.ts` fails fast with a clear message if LocalNet isn't
 reachable at `http://localhost:4001`.
 
+Two vitest projects share the run: `chain` stubs the accounts barrel's persisted
+store, and `store-migration` loads it for real. `vitest --project <name>` runs
+one.
+
+## Store migrations
+
+A migration must leave equivalent state durably present, in the same write
+that removes the old field, so no account loses a capability even until the
+next sync. `src/suites/store-migration/` holds the `accounts-store` payload
+each past version wrote and replays each one through the real rehydrate and
+`hydrateAccountChainStates` path, then through two cold starts with no synced
+rows. After every step each local key must sign for itself, the rekeyed
+account must sign through its authority, and LocalNet must accept both.
+
+Any change to `migrateAccountsState`, and any `STORE_VERSION` bump, adds the
+outgoing version's payload to `fixtures.ts`, written as plain JSON the way that
+version persisted it. A lanekeep rule could enforce this by failing a diff that
+touches `STORE_VERSION` or `migrateAccountsState` in
+`packages/accounts/src/store/store.ts` without touching `fixtures.ts`; nothing
+enforces it yet.
+
 ## `dist/` dependency (CI-relevant)
 
 Every workspace package this suite imports is aliased in `vitest.config.ts`'s

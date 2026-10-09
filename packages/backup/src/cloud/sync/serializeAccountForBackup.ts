@@ -13,6 +13,7 @@
 import {
     hasCustody,
     hdIndexOf,
+    standaloneSecretOf,
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -55,7 +56,10 @@ export const serializeAccountForBackup = async (
 
     let secrets: SecretsBackupPayload | null = null
     if (hasCustody(account, 'local')) {
-        if (!resolveMnemonic) return null
+        // A standalone key stored as a raw private key has no backup item.
+        if (standaloneSecretOf(account) === 'privateKey' || !resolveMnemonic) {
+            return null
+        }
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
         secrets = backupAdapterFor().serializeMnemonicSecret(account, mnemonic)

@@ -193,7 +193,7 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
 
     const account: WalletAccount = {
         id: 'claimer-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,

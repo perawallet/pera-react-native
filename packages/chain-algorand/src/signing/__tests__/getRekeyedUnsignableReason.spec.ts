@@ -30,7 +30,7 @@ const WATCH_AUTH = 'WATCH_AUTH'
 const accounts = [
     {
         id: 'ok',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             [ALGORAND_CHAIN_ID]: {
                 address: OK_SENDER,
@@ -40,7 +40,7 @@ const accounts = [
     },
     {
         id: 'ext',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             [ALGORAND_CHAIN_ID]: {
                 address: REKEYED_EXTERNAL,
@@ -51,7 +51,7 @@ const accounts = [
     },
     {
         id: 'rw',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             [ALGORAND_CHAIN_ID]: {
                 address: REKEYED_TO_WATCH,

@@ -50,7 +50,9 @@ export {
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
+    classifyLedgerAppError,
     classifyLedgerError,
+    type LedgerAppProfile,
 } from '@perawallet/wallet-extension-ledger-shared'
 export {
     LEDGER_BLE_SERVICE_UUIDS,
@@ -58,7 +60,6 @@ export {
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_SCAN_TIMEOUT_MS,
     LEDGER_STATUS_CODES,
-    MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
     resolveDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'

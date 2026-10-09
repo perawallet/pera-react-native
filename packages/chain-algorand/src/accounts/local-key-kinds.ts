@@ -17,8 +17,9 @@ import type {
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { accountType, AccountTypes, type AccountType } from './vocabulary'
 
-// Detection scans in this order, so algo25 must stay above quantum: both are
-// 25 words, and a 25-word phrase must never be silently imported as quantum.
+// Detection scans in this order, so the standalone kind must stay above
+// quantum: both are 25 words, and a 25-word phrase must never be silently
+// imported as quantum.
 export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
     {
         seed: SeedScheme.Bip39,
@@ -28,7 +29,7 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isAutoDetected: true,
     },
     {
-        seed: SeedScheme.Algo25,
+        seed: null,
         signingScheme: 'ed25519',
         isHd: false,
         mnemonicWordCounts: [25],
@@ -59,7 +60,7 @@ const ACCOUNT_TYPE_RANK = {
     [AccountTypes.quantum]: 6,
     [AccountTypes.hardware]: 5,
     [AccountTypes.hdWallet]: 4,
-    [AccountTypes.algo25]: 3,
+    [AccountTypes.standalone]: 3,
     [AccountTypes.multisig]: 2,
     [AccountTypes.watch]: 1,
 } as const satisfies Record<AccountType, number>

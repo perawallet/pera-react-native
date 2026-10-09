@@ -24,7 +24,7 @@ import { accountType, AccountTypes, type AccountType } from './vocabulary'
 type KindCopy = Omit<AccountKindPresentation, 'kindId' | 'analyticsKind'>
 
 const KIND_COPY: Record<AccountType, KindCopy> = {
-    [AccountTypes.algo25]: {
+    [AccountTypes.standalone]: {
         labelKey: 'account_info.type_algo25',
         infoTitleKey: 'account_type_info.standard_title',
         infoBodyKey: 'account_type_info.standard_description',
@@ -82,7 +82,7 @@ const UNSIGNABLE_MULTISIG_COPY: Pick<
 }
 
 const SIGNER_KEY: Record<AccountType, string> = {
-    [AccountTypes.algo25]: 'account_info.rekey_signer_standard',
+    [AccountTypes.standalone]: 'account_info.rekey_signer_standard',
     [AccountTypes.hdWallet]: 'account_info.rekey_signer_standard',
     [AccountTypes.hardware]: 'account_info.rekey_signer_ledger',
     [AccountTypes.multisig]: 'account_info.rekey_signer_shared',
@@ -124,10 +124,19 @@ const describe = (
     }
 }
 
-const kindGlyph = (kindId: string): string | undefined =>
-    Object.hasOwn(KIND_COPY, kindId)
-        ? KIND_COPY[kindId as AccountType].glyph
+// The backup wire format still spells the standalone kind `algo25`.
+const WIRE_KIND_IDS: Readonly<Record<string, AccountType>> = {
+    algo25: AccountTypes.standalone,
+}
+
+const kindGlyph = (kindId: string): string | undefined => {
+    if (Object.hasOwn(KIND_COPY, kindId)) {
+        return KIND_COPY[kindId as AccountType].glyph
+    }
+    return Object.hasOwn(WIRE_KIND_IDS, kindId)
+        ? KIND_COPY[WIRE_KIND_IDS[kindId]].glyph
         : undefined
+}
 
 const transitionLabel = (
     from: WalletAccount,

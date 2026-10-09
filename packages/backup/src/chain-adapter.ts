@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { HdIndex, WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    HdIndex,
+    LocalKeySeed,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
     createChainAdapterRegistry,
@@ -19,7 +23,6 @@ import {
     type DerivedAccount,
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import type { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import type {
     AsbBackupAccount,
     AsbBackupEnvelope,
@@ -46,7 +49,7 @@ export type BackupHdContext = {
 
 /** The local key an account's backup item restores into. */
 export type BackupLocalKind = {
-    seed: SeedScheme
+    seed: LocalKeySeed
     /** Derives from a backed-up HD seed rather than holding its own recovery phrase. */
     isHd: boolean
 }

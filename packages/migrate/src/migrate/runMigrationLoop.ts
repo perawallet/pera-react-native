@@ -26,7 +26,6 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
-    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
     migratedAddressOf,
     removeAccountFromStore,
@@ -100,11 +99,7 @@ export const runMigrationLoop = async (
                     !isRekeyedAccount(existing, chainId) &&
                     account.authAddress !== null
                 ) {
-                    applyRekeyAddressToStoreAccount(
-                        account.address,
-                        account.authAddress,
-                        chainId,
-                    )
+                    adapter.recordLegacyAuthority(account)
                 }
                 summary.skipped += 1
                 continue
@@ -125,17 +120,11 @@ export const runMigrationLoop = async (
                 account.authAddress !== null &&
                 !isRekeyedAccount(created, chainId)
             ) {
-                // Only buildWatchAccount carries the legacy authAddress;
-                // key-bearing imports (incl. the watch-reconcile reimport
-                // above) come back without it. Apply it here so a rekeyed
-                // account is never presented as directly-signable in the
-                // window before the first sync writes the authoritative
-                // per-network value.
-                applyRekeyAddressToStoreAccount(
-                    addressOf(created) ?? account.address,
-                    account.authAddress,
-                    chainId,
-                )
+                // Key-bearing imports (incl. the watch-reconcile reimport
+                // above) don't record the legacy authAddress themselves. Do it
+                // here so a rekeyed account is never presented as
+                // directly-signable before the first sync observes it.
+                adapter.recordLegacyAuthority(account)
             }
             existingAddresses.add(addressOf(created))
             pendingMetadata.push({ created, legacy: account })

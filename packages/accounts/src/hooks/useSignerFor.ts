@@ -15,6 +15,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSignerFor } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
+import { useSelectedChainStates } from './useSelectedChainStates'
 
 /** The account that signs for `address` on `chainId`, or null. */
 export const useSignerFor = (
@@ -22,8 +23,9 @@ export const useSignerFor = (
     chainId: ChainId,
 ): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useSelectedChainStates(chainId)
     return useMemo(
         () => (address ? getSignerFor(address, accounts, chainId) : null),
-        [address, accounts, chainId],
+        [address, accounts, chainId, chainStates],
     )
 }

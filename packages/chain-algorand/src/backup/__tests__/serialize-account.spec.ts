@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     LEDGER_DEVICE,
@@ -44,7 +44,7 @@ const serialize = (
 describe('serializeAlgorandAccount', () => {
     it('writes an algo25 account', () => {
         expect(
-            asWire(serialize(algo25Account(ADDRESS, { name: 'Main' }))),
+            asWire(serialize(standaloneAccount(ADDRESS, { name: 'Main' }))),
         ).toBe(
             asWire({
                 type: 'algo25',
@@ -152,13 +152,15 @@ describe('serializeAlgorandAccount', () => {
     })
 
     it('skips an account with no Algorand entry', () => {
-        expect(serialize({ ...algo25Account(ADDRESS), chains: {} })).toBeNull()
+        expect(
+            serialize({ ...standaloneAccount(ADDRESS), chains: {} }),
+        ).toBeNull()
     })
 })
 
 describe('serializeAlgorandMnemonicSecret', () => {
     it.each([
-        ['algo25', algo25Account(ADDRESS)],
+        ['algo25', standaloneAccount(ADDRESS)],
         ['quantum', quantumAccount(ADDRESS)],
     ])('writes a %s mnemonic secret', (type, account) => {
         expect(asWire(serializeAlgorandMnemonicSecret(account, MNEMONIC))).toBe(
@@ -178,7 +180,7 @@ describe('serializeAlgorandMnemonicSecret', () => {
 
 describe('algorandMnemonicBackupKeyId', () => {
     it.each([
-        ['algo25', algo25Account(ADDRESS, { keyPairId: 'kp' })],
+        ['algo25', standaloneAccount(ADDRESS, { keyPairId: 'kp' })],
         ['hd', hdAccount(ADDRESS, { keyPairId: 'kp' })],
         ['quantum', quantumAccount(ADDRESS, { keyPairId: 'kp' })],
     ])('keys a %s account by its signing key', (_, account) => {
@@ -196,7 +198,7 @@ describe('algorandMnemonicBackupKeyId', () => {
     it('has no backup key for a local account that lost its key', () => {
         expect(
             algorandMnemonicBackupKeyId(
-                algo25Account(ADDRESS, { keyPairId: null }),
+                standaloneAccount(ADDRESS, { keyPairId: null }),
             ),
         ).toBeNull()
     })
@@ -204,7 +206,7 @@ describe('algorandMnemonicBackupKeyId', () => {
 
 describe('algorandBackupLocalKindOf', () => {
     it.each([
-        ['algo25', { seed: 'algo25', isHd: false }],
+        ['algo25', { seed: null, isHd: false }],
         ['quantum', { seed: 'quantum', isHd: false }],
         ['hdWallet', { seed: 'bip39', isHd: true }],
     ] as const)('decodes a %s item', (type, expected) => {

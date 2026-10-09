@@ -16,10 +16,10 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
     authorityTransitionLabel,
-    isRekeyedAccount,
     useAccountPresentation,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyTransition,
+    useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -57,24 +57,25 @@ export const useAccountTypeLabel = (
     const { t } = useLanguage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const canSign = useCanSignWith(account, scope.chainId)
-    const rekeyTransition = useRekeyTransition(
+    const delegateTransition = useDelegatedTransition(
         account ? addressOn(account, scope) : undefined,
         scope.chainId,
     )
+    const authority = useAuthorityOf(account, scope)
     const presentation = useAccountPresentation(account, scope)
 
     return useMemo(() => {
         if (!account) return plain('')
 
-        if (isRekeyedAccount(account, scope.chainId)) {
+        if (authority !== null) {
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }
-            if (!rekeyTransition) {
+            if (!delegateTransition) {
                 return plain(t('account_info.type_rekeyed'))
             }
             const { labelKey, signerKey } = authorityTransitionLabel(
-                rekeyTransition,
+                delegateTransition,
                 scope.chainId,
             )
             const label = t(labelKey, { to: t(signerKey) })
@@ -82,5 +83,13 @@ export const useAccountTypeLabel = (
         }
 
         return plain(t(presentation?.labelKey ?? 'account_info.type_unknown'))
-    }, [account, canSign, rekeyTransition, presentation, t, scope.chainId])
+    }, [
+        account,
+        authority,
+        canSign,
+        delegateTransition,
+        presentation,
+        t,
+        scope.chainId,
+    ])
 }

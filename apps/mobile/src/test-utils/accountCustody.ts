@@ -17,7 +17,7 @@ import type {
 
 /** The Algorand account kinds specs parameterise over; the app itself never names them. */
 export type AlgorandAccountKind =
-    | 'algo25'
+    | 'standalone'
     | 'quantum'
     | 'hdWallet'
     | 'hardware'
@@ -25,7 +25,7 @@ export type AlgorandAccountKind =
     | 'watch'
 
 const CUSTODY_BY_TYPE: Record<AlgorandAccountKind, AccountCustody> = {
-    algo25: { kind: 'local', seed: 'algo25' },
+    standalone: { kind: 'local', seed: null },
     quantum: { kind: 'local', seed: 'quantum' },
     hdWallet: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hardware: {

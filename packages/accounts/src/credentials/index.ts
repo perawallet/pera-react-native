@@ -20,8 +20,10 @@ export {
     hasCustody,
     hasRecoverySeed,
     hdIndexOf,
+    isKeyReferenced,
     seedOf,
     signingKeyOn,
+    standaloneSecretOf,
 } from './accessors'
 export { buildAccount, type BuildAccountInput } from './buildAccount'
 export {
@@ -34,4 +36,6 @@ export {
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
+    nextChainPosition,
+    seedMintableScheme,
 } from './eligibility'

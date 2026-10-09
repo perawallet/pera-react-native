@@ -14,7 +14,6 @@ import type {
     HardwareWalletManufacturer,
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { AccountChains, AccountCustody } from './credentials'
 
 export type HardwareWalletDetails = {
@@ -36,19 +35,6 @@ export type WalletAccount = {
      */
     id: string
     name?: string
-    /**
-     * Mirror of the on-chain auth-addr for the ACTIVE network — the value
-     * badges, pickers, and signer resolution read. Re-derived from
-     * `rekeyAddressByNetwork` on every network switch and sync tick.
-     */
-    rekeyAddress?: string
-    /**
-     * Per-network auth-addr state (rekeys are per-network on-chain: a
-     * mainnet rekey does not affect testnet). Absent on accounts persisted
-     * before this field existed — for those the mirror is left as-is until
-     * a sync tick writes the map (self-healing, seconds).
-     */
-    rekeyAddressByNetwork?: Partial<Record<Network, string>>
     /** How the account is held; the same on every chain. */
     custody: AccountCustody
     /** Everything that varies by chain, keyed by chain id. */

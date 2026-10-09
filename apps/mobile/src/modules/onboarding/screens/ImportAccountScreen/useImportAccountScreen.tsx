@@ -19,6 +19,7 @@ import {
     consumePendingImportMnemonic,
     DuplicateAccountError,
     localKeyKindOf,
+    type LocalKeySeed,
     useFindAlternateImportKinds,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -36,7 +37,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     deferToNextCycle,
     logger,
-    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useCapability } from '@hooks/useCapability'
@@ -142,11 +143,13 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [])
 
     // A quantum passphrase is also 25 words, so importing one as a standard
-    // account would mint a different, empty account. Null means import nothing.
+    // account would mint a different, empty account. Undefined means import nothing.
     // Without platform quantum support there is no Falcon to derive with.
     const resolveImportType = useCallback(
-        async (mnemonicIndices: Uint16Array): Promise<Nullable<SeedScheme>> => {
-            if (accountType !== SeedScheme.Algo25 || !isQuantumEnabled) {
+        async (
+            mnemonicIndices: Uint16Array,
+        ): Promise<Optional<LocalKeySeed>> => {
+            if (accountType !== null || !isQuantumEnabled) {
                 return accountType
             }
             const [alternate] = await findAlternateImportKinds(
@@ -170,7 +173,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         },
                     },
                 )
-            return choice === 'import-quantum' ? alternate.seed : null
+            return choice === 'import-quantum' ? alternate.seed : undefined
         },
         [
             accountType,
@@ -199,7 +202,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
             try {
                 const seed = await resolveImportType(mnemonicIndices)
-                if (!seed) return
+                if (seed === undefined) return
 
                 const result = await importAccount({ mnemonicIndices, seed })
 

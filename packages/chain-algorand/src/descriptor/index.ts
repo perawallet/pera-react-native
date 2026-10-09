@@ -94,6 +94,7 @@ export const algorandDescriptor: ChainDescriptor = {
                 `m/44'/283'/${account}'/0/${keyIndex}`,
         },
         rawKeySchemes: ['ed25519'],
+        standaloneSecret: 'mnemonic',
     },
     protocol: {
         feeModel: 'flat',
@@ -113,6 +114,7 @@ export const algorandDescriptor: ChainDescriptor = {
         assetUrl: explorerLink('asset'),
     },
     finality: { kind: 'instant' },
+    uriSchemes: ['algorand'],
 }
 
 // Indexer, AlgoKit and Pera API ids arrive as strings, numbers or bigints; a

@@ -20,7 +20,7 @@ import {
     type AccountChainState,
     type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
-import { kmsCore, type SeedScheme } from '@perawallet/wallet-core-kms'
+import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
@@ -31,6 +31,7 @@ import type {
     AccountChains,
     AccountCustody,
     HdIndex,
+    LocalCustody,
     WalletAccount,
 } from './models'
 import type { SignerResolution } from './signer-resolution'
@@ -73,10 +74,12 @@ export type AccountAuthorityOps = {
     ): boolean
 }
 
-/** A software key kind a chain mints from a mnemonic. */
+/** The `custody.seed` a local key kind is stored under; `null` is the chain's standalone kind. */
+export type LocalKeySeed = LocalCustody['seed']
+
+/** A software key kind a chain mints. */
 export type LocalKeyKind = {
-    /** The `custody.seed` value this kind is stored under. */
-    seed: SeedScheme
+    seed: LocalKeySeed
     signingScheme: SigningScheme
     isHd: boolean
     mnemonicWordCounts: readonly number[]
@@ -158,7 +161,7 @@ export type AccountStateSnapshot = {
     totalAppsOptedIn?: number
     status?: string
     /** The account's signer when it isn't the account's own key. */
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
     /** Includes the native asset, so reads sort and page it like any holding. */
     holdings: AccountHoldingSnapshot[]
     /**
@@ -169,7 +172,10 @@ export type AccountStateSnapshot = {
 }
 
 /** An `account_balances` row, or a legacy authority with no row. */
-export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
+export type ObservedChainState = Pick<
+    AccountStateSnapshot,
+    'authorityAddress'
+> &
     Partial<
         Pick<
             AccountStateSnapshot,
@@ -195,6 +201,12 @@ export type AccountStateReadHint = {
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
 
+/** The `useKMS()` call a private-key reveal makes; the hook passes its own. */
+export type PrivateKeyKeystore = Pick<
+    ReturnType<typeof useKMS>,
+    'exportSecp256k1Key'
+>
+
 export type MintedAccount = {
     /** Not yet persisted. */
     account: WalletAccount
@@ -204,12 +216,12 @@ export type MintedAccount = {
 }
 
 /** An address the same words control under another key kind. */
-export type AlternateImportKind = { seed: SeedScheme; address: string }
+export type AlternateImportKind = { seed: LocalKeySeed; address: string }
 
 /** Creation and import for the chain's non-HD `localKeyKinds`. */
 export type SingleKeyAccountOps = {
     create(
-        request: { seed: SeedScheme; id?: string },
+        request: { seed: LocalKeySeed; id?: string },
         scope: ChainScope,
     ): Promise<MintedAccount>
     /**
@@ -220,7 +232,7 @@ export type SingleKeyAccountOps = {
      */
     importMnemonic(
         request: {
-            seed: SeedScheme
+            seed: LocalKeySeed
             /** Wordlist indices; the caller zeroes them. */
             mnemonicIndices: Uint16Array
             isHeld: (address: string) => boolean
@@ -235,7 +247,7 @@ export type SingleKeyAccountOps = {
      * a failed probe reads as none.
      */
     findAlternateImportKinds(
-        seed: SeedScheme,
+        seed: LocalKeySeed,
         /** Wordlist indices; the caller zeroes them. */
         mnemonicIndices: Uint16Array,
         scope: ChainScope,
@@ -307,9 +319,19 @@ export interface AccountsChainAdapter {
     decodeLegacyRecord(raw: unknown): DecodedAccountRecord | undefined
     /** Absent on a chain whose only software accounts are HD. */
     readonly singleKeyAccounts?: SingleKeyAccountOps
-    /** Accounts whose signer is `authAddress`. Absent on a chain without rekey. */
+    /**
+     * Reads a standalone account's private key back from the keystore. The
+     * caller zeroes the bytes. Absent on a chain whose standalone secret is a
+     * mnemonic, which the passphrase flow shows instead.
+     */
+    revealPrivateKey?(
+        keystore: PrivateKeyKeystore,
+        keyPairId: string,
+        domain: string,
+    ): Promise<Uint8Array>
+    /** Accounts whose signer is `authorityAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
-        authAddress: string,
+        authorityAddress: string,
         scope: ChainScope,
     ): Promise<string[]>
     /** Absent on a chain whose signing authority can't move to another account. */
@@ -389,10 +411,13 @@ export const requireSingleKeyAccounts = (
 
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
 export const fetchRekeyedAddresses = async (
-    authAddress: string,
+    authorityAddress: string,
     scope: ChainScope,
 ): Promise<string[]> =>
-    requireRekey(accountsChainAdapters.get(scope.chainId))(authAddress, scope)
+    requireRekey(accountsChainAdapters.get(scope.chainId))(
+        authorityAddress,
+        scope,
+    )
 
 /** Empty on a chain without asset opt-in. */
 export const fetchAssetOptInRounds = async (

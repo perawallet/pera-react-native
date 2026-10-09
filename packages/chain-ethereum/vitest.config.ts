@@ -24,6 +24,11 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'node',
+        typecheck: {
+            enabled: true,
+            include: ['src/**/*.test-d.ts'],
+            tsconfig: './tsconfig.typecheck.json',
+        },
     },
     resolve: {
         conditions: ['default'],

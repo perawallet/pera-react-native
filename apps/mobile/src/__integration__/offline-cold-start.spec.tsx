@@ -84,7 +84,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: {
             address: ALGO25_TEST_ADDRESS,
@@ -137,7 +137,7 @@ const seedPreviouslySyncedAccount = async () => {
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: addressOf(ACCOUNT),
@@ -267,7 +267,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT),
@@ -361,7 +361,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         onlineManager.setOnline(false)

@@ -11,9 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { useLanguage } from '@hooks/useLanguage'
@@ -50,7 +48,6 @@ export const OnrampHistoryContent = ({
 }: OnrampHistoryContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { theme } = useTheme()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const {
@@ -173,9 +170,7 @@ export const OnrampHistoryContent = ({
                 ListFooterComponent={
                     isFetchingNextPage ? (
                         <PWView style={styles.footer}>
-                            <ActivityIndicator
-                                color={theme.colors.linkPrimary}
-                            />
+                            <PWLoadingIndicator />
                         </PWView>
                     ) : null
                 }

@@ -21,7 +21,7 @@ import {
     getAuthAccount,
     getRekeyAccount,
     getSignerFor,
-    rekeyTransitionFor,
+    delegateTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
     DelegationTargetNotFoundError,
@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     multisigAccount,
     quantumAccount,
@@ -75,7 +75,7 @@ const seedAuthorities = (accounts: WalletAccount[]): void => {
 }
 
 const algo25 = (address: string, authority?: string): WalletAccount =>
-    withAuthority(algo25Account(address), authority)
+    withAuthority(standaloneAccount(address), authority)
 
 const watch = (address: string, authority?: string): WalletAccount =>
     withAuthority(watchAccount(address), authority)
@@ -127,7 +127,7 @@ describe('resolveSignerForAccount — tagged resolution', () => {
         ).toEqual({
             kind: 'authMissing',
             account,
-            authAddress: 'GONE',
+            authorityAddress: 'GONE',
         })
     })
 
@@ -279,7 +279,7 @@ describe('the adapter resolves on the scope it is given', () => {
 
         expect(
             algorandAccountsAdapter.resolveSigner(account, [account], testnet),
-        ).toEqual({ kind: 'authMissing', account, authAddress: 'GONE' })
+        ).toEqual({ kind: 'authMissing', account, authorityAddress: 'GONE' })
     })
 })
 
@@ -666,7 +666,7 @@ describe.each(signerCases)('signer resolution: $name', c => {
                 ? { from: account, to: signer }
                 : null
         expect(
-            rekeyTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
+            delegateTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
         ).toEqual(expected)
     })
 })

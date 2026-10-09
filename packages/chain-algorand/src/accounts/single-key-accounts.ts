@@ -15,6 +15,7 @@ import {
     buildAccount,
     DuplicateAccountError,
     type AlternateImportKind,
+    type LocalKeySeed,
     type MintedAccount,
     type SingleKeyAccountOps,
     type WalletAccount,
@@ -69,7 +70,7 @@ const createAlgo25 = async (
     try {
         return {
             account: buildAccount({
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chainId: ALGORAND_CHAIN_ID,
                 chains: {
                     [ALGORAND_CHAIN_ID]: {
@@ -225,7 +226,7 @@ const importAlgo25 = async (
     })
     const minted: MintedAccount = {
         account: buildAccount({
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chainId: ALGORAND_CHAIN_ID,
             chains: {
                 [ALGORAND_CHAIN_ID]: {
@@ -258,17 +259,17 @@ const withAlgo25Entropy = <T>(
 }
 
 /**
- * A quantum passphrase has as many words as an algo25 one, so a standard
- * import can't tell them apart. Returns the on-chain quantum account algo25
- * words also control when the algo25 address itself has no on-chain
- * footprint.
+ * A quantum passphrase has as many words as a standalone one, so a standard
+ * import can't tell them apart. Returns the on-chain quantum account the
+ * standalone words also control when the standalone address itself has no
+ * on-chain footprint.
  */
 const findAlternateImportKinds = async (
-    seed: SeedScheme,
+    seed: LocalKeySeed,
     mnemonicIndices: Uint16Array,
     scope: ChainScope,
 ): Promise<readonly AlternateImportKind[]> => {
-    if (seed !== SeedScheme.Algo25) return []
+    if (seed !== null) return []
     const network = algorandNetworkOf(scope)
     try {
         const algo25Address = withAlgo25Entropy(mnemonicIndices, entropy =>
@@ -294,7 +295,7 @@ const findAlternateImportKinds = async (
 }
 
 // HD accounts mint from a wallet's seed (`deriveHdAccount`), never here.
-const assertSingleKey = (seed: SeedScheme): void => {
+const assertSingleKey = (seed: LocalKeySeed): void => {
     if (seed === SeedScheme.Bip39) {
         throw new AccountError('A bip39 seed mints HD accounts')
     }

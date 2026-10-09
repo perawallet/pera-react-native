@@ -19,6 +19,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
         analytics: {
             logEvent: vi.fn(),
+            setCollectionEnabled: vi.fn(),
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
         },
@@ -162,6 +163,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
     const providerValue = {
         analytics: {
             logEvent: vi.fn(),
+            setCollectionEnabled: vi.fn(),
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
         },

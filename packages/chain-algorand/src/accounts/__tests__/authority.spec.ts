@@ -20,7 +20,7 @@ import {
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -53,7 +53,7 @@ type Options = AlgorandAccountOptions & { address?: string }
 const noQuantum = { [QUANTUM_TARGET_OPTION]: false }
 
 const algo25 = ({ address = 'A', ...options }: Options = {}) =>
-    algo25Account(address, { id: 'a', keyPairId: 'kp', ...options })
+    standaloneAccount(address, { id: 'a', keyPairId: 'kp', ...options })
 const hd = ({ address = 'H', ...options }: Options = {}) =>
     hdAccount(address, { id: 'h', keyPairId: 'kp-hd', ...options })
 const ledger = ({ address = 'L', ...options }: Options = {}) =>
@@ -210,15 +210,6 @@ describe('algorandAuthority.isDelegated', () => {
 
         expect(algorandAuthority.isDelegated(baseAccount, testnet)).toBe(true)
         expect(algorandAuthority.isDelegated(baseAccount, mainnet)).toBe(false)
-    })
-
-    test('falls back to the legacy record field on a scope with no state', () => {
-        expect(
-            algorandAuthority.isDelegated(
-                { ...baseAccount, rekeyAddress: 'ADDR2' },
-                mainnet,
-            ),
-        ).toBe(true)
     })
 })
 

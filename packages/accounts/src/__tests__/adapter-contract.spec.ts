@@ -18,9 +18,10 @@ import {
     FIXTURE_CHAIN_ID,
     fixtureCodec,
 } from '@perawallet/wallet-core-chain-contract/testing'
-import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
+import { kmsCore } from '@perawallet/wallet-core-kms'
 import type {
     AccountsChainAdapter,
+    LocalKeySeed,
     MintedAccount,
     SingleKeyAccountOps,
 } from '../chain-adapter'
@@ -63,7 +64,7 @@ const fixtureAdapter: AccountsChainAdapter = {
             nativeBalance: new Decimal(account.balance),
             nativeBalanceBaseUnits: new Decimal(account.balance),
             minBalance: new Decimal(0),
-            authAddress: null,
+            authorityAddress: null,
             chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
             holdings: [
                 {
@@ -248,7 +249,7 @@ accountsContractTests(() => fixtureAdapter, fixtures)
 const SINGLE_KEY_CHAIN_ID = 'fixturesk' as ChainId
 
 const mintSingleKey = async (
-    request: { seed: SeedScheme; id?: string; mnemonicIndices?: Uint16Array },
+    request: { seed: LocalKeySeed; id?: string; mnemonicIndices?: Uint16Array },
     networkId: string,
 ): Promise<MintedAccount> => {
     const minted = await kmsCore.createAlgo25Key({
@@ -261,7 +262,7 @@ const mintSingleKey = async (
     })
     return {
         account: buildAccount({
-            custody: { kind: 'local', seed: SeedScheme.Algo25 },
+            custody: { kind: 'local', seed: null },
             chainId: SINGLE_KEY_CHAIN_ID,
             chains: {
                 [SINGLE_KEY_CHAIN_ID]: {
@@ -294,7 +295,7 @@ const singleKeyFixtureAdapter: AccountsChainAdapter = {
     localKeyKinds: [
         ...fixtureAdapter.localKeyKinds,
         {
-            seed: SeedScheme.Algo25,
+            seed: null,
             signingScheme: 'ed25519',
             isHd: false,
             mnemonicWordCounts: [25],

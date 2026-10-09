@@ -167,7 +167,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
         expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
         expect(
             addressOf(useAccountsStore.getState().getSelectedAccount()!),
@@ -248,12 +248,12 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         )
 
         // The algo25 import already persisted the master before rekey
-        // discovery ran (createAlgo25WalletAccount writes to the store
+        // discovery ran (createStandaloneAccount writes to the store
         // synchronously); confirm it survived.
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
         expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
-        expect(accounts[0].custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
     })
 
     it('Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored', async () => {
@@ -264,7 +264,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-algo25-1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: ALGO25_TEST_ADDRESS,

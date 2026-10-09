@@ -11,8 +11,13 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWLoadingIndicator,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
@@ -76,7 +81,7 @@ export const WatchAccountScreen = () => {
             />
             {isNfdResolving && (
                 <PWView style={styles.nfdStatus}>
-                    <ActivityIndicator size='small' />
+                    <PWLoadingIndicator size='sm' />
                     <PWText
                         variant='caption'
                         style={styles.nfdStatusText}

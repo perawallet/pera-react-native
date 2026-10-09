@@ -51,7 +51,7 @@ const SHARED_QUERY = 'orbit'
 
 const SEARCH_ACCOUNT: WalletAccount = {
     id: 'search-account-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: {
             address: ALGO25_TEST_ADDRESS,

@@ -49,13 +49,38 @@ export default defineConfig({
     test: {
         environment: 'node',
         globals: true,
-        include: ['src/**/*.spec.ts'],
-        // `@perawallet/wallet-extension-provider` mock for the network/accounts
-        // stores the submission chokepoint reaches through — see vitest.setup.ts.
-        setupFiles: ['./vitest.setup.ts'],
         // Chain state is shared across files; parallel runs race on account balances.
         fileParallelism: false,
         testTimeout: 120_000,
         hookTimeout: 120_000,
+        // Two projects because they need opposite accounts barrels: the chain
+        // suites stub the persisted store, the store-migration suite drives
+        // the real one. Both share the in-memory provider, whose imports reach
+        // the barrel, so each barrel mock is registered before it loads.
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'chain',
+                    include: ['src/**/*.spec.ts'],
+                    exclude: ['src/suites/store-migration/**'],
+                    setupFiles: [
+                        './vitest.setup.ts',
+                        './vitest.provider-setup.ts',
+                    ],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'store-migration',
+                    include: ['src/suites/store-migration/**/*.spec.ts'],
+                    setupFiles: [
+                        './vitest.store-migration-setup.ts',
+                        './vitest.provider-setup.ts',
+                    ],
+                },
+            },
+        ],
     },
 })

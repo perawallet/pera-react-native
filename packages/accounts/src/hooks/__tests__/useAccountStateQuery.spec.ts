@@ -95,7 +95,7 @@ describe('useAccountStateQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data?.nativeBalance).toEqual(new Decimal(0))
         expect(fakeAccountsChain().adapter.toChainState).toHaveBeenCalledWith({
-            authAddress: null,
+            authorityAddress: null,
         })
     })
 

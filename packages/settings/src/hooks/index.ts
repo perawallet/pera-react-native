@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './useAnalyticsConsent'
 export * from './usePreferences'
 export * from './useSettings'
 export * from './useTooltipSeen'

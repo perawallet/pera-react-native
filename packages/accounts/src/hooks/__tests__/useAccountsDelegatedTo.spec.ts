@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useAccountsRekeyedTo } from '../useAccountsRekeyedTo'
+import { useAccountsDelegatedTo } from '../useAccountsDelegatedTo'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    MAINNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
     seedAuthority,
@@ -28,7 +30,7 @@ const held = (address: string, extra: Partial<WalletAccount> = {}) =>
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
-describe('useAccountsRekeyedTo', () => {
+describe('useAccountsDelegatedTo', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
@@ -39,20 +41,21 @@ describe('useAccountsRekeyedTo', () => {
         seedAuthority('A', 'PQ')
         setAccounts([held('A')])
         const { result } = renderHook(() =>
-            useAccountsRekeyedTo(null, 'algorand'),
+            useAccountsDelegatedTo(null, 'algorand'),
         )
         expect(result.current).toEqual([])
     })
 
     it('asks the chain which accounts are delegated to the address', () => {
-        const rekeyed = held('A', { rekeyAddress: 'PQ' })
+        const rekeyed = held('A')
+        seedAuthority('A', 'PQ')
         const target = testAccount('explicit', 'PQ', { id: 'PQ' })
         setAccounts([rekeyed, target])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.accountsDelegatedTo).mockReturnValue([rekeyed])
 
         const { result } = renderHook(() =>
-            useAccountsRekeyedTo('PQ', 'algorand'),
+            useAccountsDelegatedTo('PQ', 'algorand'),
         )
 
         expect(result.current).toEqual([rekeyed])
@@ -62,12 +65,30 @@ describe('useAccountsRekeyedTo', () => {
         ])
     })
 
+    it('picks up an authority recorded after mount', () => {
+        const rekeyed = held('A')
+        setAccounts([rekeyed, held('PQ')])
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.accountsDelegatedTo,
+        ).mockImplementation((address, accounts) =>
+            accounts.filter(a => authorityOf(a, MAINNET_SCOPE) === address),
+        )
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo('PQ', 'algorand'),
+        )
+        expect(result.current).toEqual([])
+
+        act(() => seedAuthority('A', 'PQ'))
+
+        expect(result.current).toEqual([rekeyed])
+    })
+
     it('returns an empty list on a chain without an authority', () => {
         registerFakeAccountsChain({ authority: undefined })
         seedAuthority('A', 'PQ')
         setAccounts([held('A'), held('PQ')])
         const { result } = renderHook(() =>
-            useAccountsRekeyedTo('PQ', 'algorand'),
+            useAccountsDelegatedTo('PQ', 'algorand'),
         )
         expect(result.current).toEqual([])
     })

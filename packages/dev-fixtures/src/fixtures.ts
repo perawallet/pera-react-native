@@ -29,7 +29,7 @@ export const MOCK_TX_ID =
 
 export const mockAlgo25Account: LocalAccount = {
     id: 'mock-algo25',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: MOCK_ADDRESS, keyPairId: 'mock-keypair-algo25' },
     },

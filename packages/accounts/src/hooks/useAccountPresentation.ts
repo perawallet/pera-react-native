@@ -22,7 +22,7 @@ import {
     type AuthorityTransitionLabel,
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
-import type { RekeyTransition } from '../signer-resolution'
+import type { DelegateTransition } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 
 /** How the scope's chain shows the account's kind on that network; null for no account. */
@@ -51,7 +51,7 @@ export const accountKindGlyph = (
 
 /** The copy for an account whose signing authority moved, as `chainId` words it. */
 export const authorityTransitionLabel = (
-    transition: RekeyTransition,
+    transition: DelegateTransition,
     chainId: ChainId,
 ): AuthorityTransitionLabel =>
     accountsChainAdapters

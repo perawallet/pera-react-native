@@ -287,7 +287,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
         expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
     })
 

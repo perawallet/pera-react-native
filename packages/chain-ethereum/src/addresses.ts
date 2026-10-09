@@ -30,7 +30,7 @@ const TARGET_PATTERN = /^(?:pay-)?(0x[0-9a-fA-F]{40})(?:@(\d+))?(?:\/(\w+))?$/
 
 const AMOUNT_PATTERN = /^\d+(\.\d+)?([eE]\d+)?$/
 
-const eip155ChainIdOf = (networkId: NetworkId | undefined) => {
+export const eip155ChainIdOf = (networkId: NetworkId | undefined) => {
     const nativeRef = ethereumDescriptor.networks.find(
         n => n.id === networkId,
     )?.nativeRef

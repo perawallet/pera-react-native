@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -20,32 +20,35 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useRekeyAccount: vi.fn(() => undefined),
+        useDelegatedAccount: vi.fn(() => undefined),
         useCanSignWith: vi.fn(() => true),
-        isRekeyedAccount: vi.fn(() => false),
+        useAuthorityOf: vi.fn(() => null),
     }
 })
 
 import {
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyAccount,
+    useDelegatedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { accountGlyphFor, useAccountIcon } from '../useAccountIcon'
 import {
     accountForType,
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 
 const account = (type: AlgorandAccountKind) => accountForType(type, 'ADDR')
 
 describe('useAccountIcon', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
-        vi.mocked(isRekeyedAccount).mockReturnValue(false)
+        vi.mocked(useAuthorityOf).mockReturnValue(null)
         vi.mocked(useCanSignWith).mockReturnValue(true)
-        vi.mocked(useRekeyAccount).mockReturnValue(null)
+        vi.mocked(useDelegatedAccount).mockReturnValue(null)
     })
 
     it('returns null without an account', () => {
@@ -54,7 +57,9 @@ describe('useAccountIcon', () => {
     })
 
     it('maps a base algo25 account to the turquoise glyph', () => {
-        const { result } = renderHook(() => useAccountIcon(account('algo25')))
+        const { result } = renderHook(() =>
+            useAccountIcon(account('standalone')),
+        )
         expect(result.current).toEqual({
             name: 'accounts/glyph/algo25-account',
             variant: 'accountTurquoise',
@@ -70,9 +75,11 @@ describe('useAccountIcon', () => {
     })
 
     it('returns the rekeyed-standard glyph for a signable rekeyed account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(true)
-        const { result } = renderHook(() => useAccountIcon(account('algo25')))
+        const { result } = renderHook(() =>
+            useAccountIcon(account('standalone')),
+        )
         expect(result.current).toEqual({
             name: 'accounts/glyph/rekeyed-standard',
             variant: 'accountTurquoise',
@@ -80,10 +87,12 @@ describe('useAccountIcon', () => {
     })
 
     it('returns the purple rekeyed-ledger glyph when a standard account is rekeyed to a Ledger auth account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(true)
-        vi.mocked(useRekeyAccount).mockReturnValue(account('hardware'))
-        const { result } = renderHook(() => useAccountIcon(account('algo25')))
+        vi.mocked(useDelegatedAccount).mockReturnValue(account('hardware'))
+        const { result } = renderHook(() =>
+            useAccountIcon(account('standalone')),
+        )
         expect(result.current).toEqual({
             name: 'accounts/glyph/rekeyed-ledger',
             variant: 'accountPurple',
@@ -91,12 +100,12 @@ describe('useAccountIcon', () => {
     })
 
     // The Ledger info sheet forces `rekeyedSignable` on a synthetic account whose
-    // auth Ledger is not in the store, so `useRekeyAccount` resolves nothing and
+    // auth Ledger is not in the store, so `useDelegatedAccount` resolves nothing and
     // the glyph fell back to the turquoise standard one.
     it('uses the supplied auth account when it is not in the store', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(false)
+        vi.mocked(useAuthorityOf).mockReturnValue(null)
         vi.mocked(useCanSignWith).mockReturnValue(false)
-        vi.mocked(useRekeyAccount).mockReturnValue(null)
+        vi.mocked(useDelegatedAccount).mockReturnValue(null)
 
         const { result } = renderHook(() =>
             useAccountIcon(account('watch'), {
@@ -112,9 +121,9 @@ describe('useAccountIcon', () => {
     })
 
     it('still falls back to the standard glyph with no auth account to go on', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(false)
+        vi.mocked(useAuthorityOf).mockReturnValue(null)
         vi.mocked(useCanSignWith).mockReturnValue(false)
-        vi.mocked(useRekeyAccount).mockReturnValue(null)
+        vi.mocked(useDelegatedAccount).mockReturnValue(null)
 
         const { result } = renderHook(() =>
             useAccountIcon(account('watch'), {
@@ -129,9 +138,11 @@ describe('useAccountIcon', () => {
     })
 
     it('returns the noauth glyph for an unsignable rekeyed account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(false)
-        const { result } = renderHook(() => useAccountIcon(account('algo25')))
+        const { result } = renderHook(() =>
+            useAccountIcon(account('standalone')),
+        )
         expect(result.current).toEqual({
             name: 'accounts/glyph/noauth-account',
             variant: 'accountPeach',
@@ -139,7 +150,7 @@ describe('useAccountIcon', () => {
     })
 
     it('ignoreRekey forces the base glyph', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         const { result } = renderHook(() =>
             useAccountIcon(account('watch'), { ignoreRekey: true }),
         )
@@ -150,9 +161,9 @@ describe('useAccountIcon', () => {
     })
 
     it('returns the rekeyed-multisig glyph for a signable rekeyed multisig account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(true)
-        vi.mocked(useRekeyAccount).mockReturnValue(account('multisig'))
+        vi.mocked(useDelegatedAccount).mockReturnValue(account('multisig'))
         const { result } = renderHook(() => useAccountIcon(account('multisig')))
         expect(result.current).toEqual({
             name: 'accounts/glyph/rekeyed-multisig',
@@ -162,7 +173,7 @@ describe('useAccountIcon', () => {
 
     it('lets an explicit displayState override the derived state', () => {
         const { result } = renderHook(() =>
-            useAccountIcon(account('algo25'), {
+            useAccountIcon(account('standalone'), {
                 displayState: 'rekeyedUnsignable',
             }),
         )
@@ -181,7 +192,7 @@ describe('useAccountIcon', () => {
     })
 
     it('falls through to the standard rekeyed glyph for a rekeyed-signable quantum account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(true)
         const { result } = renderHook(() => useAccountIcon(account('quantum')))
         expect(result.current).toEqual({
@@ -191,13 +202,28 @@ describe('useAccountIcon', () => {
     })
 
     it('shows the noauth glyph for a rekeyed-unsignable quantum account', () => {
-        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(false)
         const { result } = renderHook(() => useAccountIcon(account('quantum')))
         expect(result.current).toEqual({
             name: 'accounts/glyph/noauth-account',
             variant: 'accountPeach',
         })
+    })
+
+    it('flips to the rekeyed glyph when an authority is recorded after mount', async () => {
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+        vi.mocked(useAuthorityOf).mockImplementation(actual.useAuthorityOf)
+        const { result } = renderHook(() =>
+            useAccountIcon(account('standalone')),
+        )
+        expect(result.current?.name).toBe('accounts/glyph/algo25-account')
+
+        act(() => seedAuthority('ADDR', 'AUTH'))
+
+        expect(result.current?.name).toBe('accounts/glyph/rekeyed-standard')
     })
 })
 

@@ -11,9 +11,11 @@
  */
 
 import React, { useMemo } from 'react'
-import { importFormatsFor } from '@perawallet/wallet-core-accounts'
+import {
+    importFormatsFor,
+    type LocalKeySeed,
+} from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     PWChip,
     type PWChipProps,
@@ -28,7 +30,7 @@ import { getTestProps } from '@utils/test-id-helper'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
 
-export type ImportOptionsContentResult = SeedScheme
+export type ImportOptionsContentResult = LocalKeySeed
 
 export type ImportOptionsContentProps = Record<string, never>
 
@@ -41,25 +43,32 @@ type ImportOptionCopy = {
     mnemonicInfoKey: string
 }
 
-// A kind without copy here gets no entry: it is offered only from the
-// passphrase of a kind it shares a word count with.
-const IMPORT_OPTION_COPY: Partial<Record<SeedScheme, ImportOptionCopy>> = {
-    bip39: {
-        testID: 'import_options_hd_wallet_button',
-        titleKey: 'onboarding.import_options.hd_wallet.title',
-        chipKey: 'onboarding.import_options.hd_wallet.chip',
-        chipVariant: 'helper',
-        descriptionKey: 'onboarding.import_options.hd_wallet.description',
-        mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
-    },
-    algo25: {
-        testID: 'import_options_algo25_button',
-        titleKey: 'onboarding.import_options.algo25.title',
-        chipKey: 'onboarding.import_options.algo25.chip',
-        descriptionKey: 'onboarding.import_options.algo25.description',
-        mnemonicInfoKey: 'onboarding.import_options.algo25.mnemonic_info',
-    },
-}
+// Keyed by seed, where the standalone kind's is `null`. A kind without copy
+// here gets no entry: it is offered only from the passphrase of a kind it
+// shares a word count with.
+const IMPORT_OPTION_COPY = new Map<LocalKeySeed, ImportOptionCopy>([
+    [
+        'bip39',
+        {
+            testID: 'import_options_hd_wallet_button',
+            titleKey: 'onboarding.import_options.hd_wallet.title',
+            chipKey: 'onboarding.import_options.hd_wallet.chip',
+            chipVariant: 'helper',
+            descriptionKey: 'onboarding.import_options.hd_wallet.description',
+            mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
+        },
+    ],
+    [
+        null,
+        {
+            testID: 'import_options_algo25_button',
+            titleKey: 'onboarding.import_options.algo25.title',
+            chipKey: 'onboarding.import_options.algo25.chip',
+            descriptionKey: 'onboarding.import_options.algo25.description',
+            mnemonicInfoKey: 'onboarding.import_options.algo25.mnemonic_info',
+        },
+    ],
+])
 
 export const ImportOptionsContent = () => {
     const styles = useStyles()
@@ -69,7 +78,7 @@ export const ImportOptionsContent = () => {
     const options = useMemo(
         () =>
             importFormatsFor(LEGACY_CHAIN_ID).flatMap(kind => {
-                const copy = IMPORT_OPTION_COPY[kind.seed]
+                const copy = IMPORT_OPTION_COPY.get(kind.seed)
                 return copy ? [{ seed: kind.seed, ...copy }] : []
             }),
         [],
@@ -84,7 +93,7 @@ export const ImportOptionsContent = () => {
             <PWView style={styles.optionsContainer}>
                 {options.map(option => (
                     <PWTouchableOpacity
-                        key={option.seed}
+                        key={option.testID}
                         onPress={() => resolve(option.seed)}
                         style={styles.optionBox}
                         {...getTestProps(option.testID)}

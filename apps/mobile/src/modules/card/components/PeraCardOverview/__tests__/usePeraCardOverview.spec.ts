@@ -172,7 +172,7 @@ const tx = (id: string, dateTime: string): CardTransaction =>
 const LOCAL_ACCOUNT = {
     id: 'linked-account',
     chains: { algorand: { address: 'LINKED_ADDR', keyPairId: 'key-1' } },
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 
 const LEDGER_ACCOUNT = {

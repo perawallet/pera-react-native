@@ -374,7 +374,7 @@ const buildMeldHistoryPage = (): RampHistoryPageApiResponse => ({
 const seedSelectedAccount = (): WalletAccount => {
     const account: WalletAccount = {
         id: 'buyer-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,
@@ -402,7 +402,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'buyer-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,

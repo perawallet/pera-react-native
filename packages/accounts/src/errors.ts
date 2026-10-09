@@ -55,15 +55,33 @@ export class NoHDWalletError extends AccountError {
 }
 
 /**
+ * The wallet has no seed that can mint an account on the chain.
+ */
+export class WalletCannotDeriveError extends AccountError {
+    readonly walletId: string
+    readonly chainId: ChainId
+
+    constructor(walletId: string, chainId: ChainId) {
+        super(
+            `Wallet ${walletId} cannot derive an account on ${chainId}`,
+            undefined,
+            { params: { walletId, chainId } },
+        )
+        this.walletId = walletId
+        this.chainId = chainId
+    }
+}
+
+/**
  * Rekey target account not found in local accounts
  */
 export class DelegationTargetNotFoundError extends AccountError {
-    constructor(authAddress: string) {
+    constructor(authorityAddress: string) {
         super(
-            `Rekey target account ${authAddress} not found in local accounts`,
+            `Rekey target account ${authorityAddress} not found in local accounts`,
             undefined,
             {
-                params: { authAddress },
+                params: { authorityAddress },
             },
         )
     }
@@ -158,6 +176,12 @@ export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
     }
 }
 
+export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Private-key import', chainId)
+    }
+}
+
 export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Single-key accounts', chainId)
@@ -167,5 +191,16 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
 export class HdAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('HD accounts', chainId)
+    }
+}
+
+export class PrivateKeyRevealUnsupportedError extends AccountError {
+    readonly accountId: string
+
+    constructor(accountId: string) {
+        super('This account has no private key to reveal', undefined, {
+            params: { accountId },
+        })
+        this.accountId = accountId
     }
 }

@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
-            }
+            },
+            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x."
         },
         "submission": {
             "unknown_outcome": {
@@ -4223,5 +4224,14 @@
     },
     "integrityCheck": {
         "frame_title": "Verificação da Pera Wallet"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Ajude a melhorar a Pera",
+            "body": "Permita que a Pera colete dados anônimos de uso do app. Isso nos ajuda a melhorar o produto. Você pode mudar sua escolha nas Configurações a qualquer momento.",
+            "allow": "Permitir",
+            "decline": "Não permitir"
+        },
+        "settings_label": "Compartilhar dados de uso"
     }
 }

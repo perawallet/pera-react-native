@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
@@ -30,6 +30,7 @@ import type {
     LedgerAccountRekeyRelationship,
     UseLedgerAccountPreviewResult,
 } from '../models'
+import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
 import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
 
@@ -41,6 +42,14 @@ export const useLedgerAccountPreview = (
     const onChain = useOnChainAccountStateQuery(address, scope)
     const rekeyed = useRekeyedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
+    const authorityAddress = onChain.data?.authorityAddress
+
+    // The sheet's synthetic watch row reads its rekey state from the slice.
+    useEffect(() => {
+        if (authorityAddress && authorityAddress !== address) {
+            recordAuthority(scope, address, authorityAddress)
+        }
+    }, [scope, address, authorityAddress])
 
     const heldAssets = useMemo(
         () =>
@@ -117,10 +126,9 @@ export const useLedgerAccountPreview = (
             })
         }
 
-        const authAddress = onChain.data.authAddress
         let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
-        if (authAddress && authAddress !== address) {
-            rekey = { kind: 'rekeyedTo', authAddress }
+        if (authorityAddress && authorityAddress !== address) {
+            rekey = { kind: 'delegatedTo', authorityAddress }
         } else if (
             !rekeyed.isError &&
             rekeyed.rekeyedAddresses &&
@@ -138,6 +146,7 @@ export const useLedgerAccountPreview = (
         }
     }, [
         address,
+        authorityAddress,
         onChain.data,
         heldAssets,
         assets,

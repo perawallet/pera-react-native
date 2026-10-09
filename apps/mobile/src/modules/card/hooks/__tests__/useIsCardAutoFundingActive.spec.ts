@@ -40,7 +40,7 @@ import { useIsCardAutoFundingActive } from '../useIsCardAutoFundingActive'
 
 const localAccount = {
     chains: { algorand: { address: 'LOCAL', keyPairId: 'key-1' } },
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 
 const ledgerAccount = {

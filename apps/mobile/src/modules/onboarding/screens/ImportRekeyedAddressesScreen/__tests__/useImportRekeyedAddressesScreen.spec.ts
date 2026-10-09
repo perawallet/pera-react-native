@@ -21,21 +21,18 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
-// Real rekeyed candidates are watch accounts WITHOUT keyPairId, pointing at
-// the discovered auth address (account-discovery.ts) — LRK-022 fixture
-// realism, so shape drift in the discovery output fails loudly here.
+// Real rekeyed candidates are watch accounts WITHOUT keyPairId; the discovered
+// auth address lives in the chain-state slice, not on the account.
 const MOCK_ACCOUNTS = [
     {
         id: '1',
         custody: { kind: 'watch' } as const,
         chains: { algorand: { address: 'ACC1' } },
-        rekeyAddress: 'REKEY',
     },
     {
         id: '2',
         custody: { kind: 'watch' } as const,
         chains: { algorand: { address: 'ACC2' } },
-        rekeyAddress: 'REKEY',
     },
 ]
 
@@ -165,15 +162,13 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
-        // Pin the persisted shape: watch + rekeyAddress, never a signer type.
+        // Pin the persisted shape: watch with no key, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
             custody: { kind: string }
-            rekeyAddress?: string
             chains: Record<string, { keyPairId?: string }>
         }>
         for (const account of persisted) {
             expect(account.custody.kind).toBe('watch')
-            expect(account.rekeyAddress).toBe('REKEY')
             expect(account.chains.algorand.keyPairId).toBeUndefined()
         }
         expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
@@ -183,7 +178,7 @@ describe('useImportRekeyedAddressesScreen', () => {
     it('reads the store fresh inside the deferred write so a concurrent add is not dropped', () => {
         const concurrent = {
             id: 'c',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'CONCURRENT', keyPairId: 'pkc' } },
         }
         // Lands after render (useAllAccounts snapshot) but before the

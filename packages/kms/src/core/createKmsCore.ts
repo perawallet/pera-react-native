@@ -322,21 +322,32 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
                       id,
                       type: SECP256K1_IMPORTED_KEY_TYPE,
                       algorithm: SECP256K1_KEY_ALGORITHM,
-                      extractable: false,
+                      extractable: true,
                       metadata: {},
                   }
             checkAccess(governingKey, domain)
-            if (deps.keys().some(k => k.id === id)) {
-                throw new KeyManagementError(
-                    `Key id ${id} already holds another entry`,
-                )
+            const existing = deps.keys().find(k => k.id === id)
+            if (existing) {
+                // The id derives from the key bytes, so the same id under the
+                // same parent is the same key: resolve to it so a re-import
+                // reaches the caller's holder check instead of throwing.
+                const sameKey =
+                    existing.type === SECP256K1_IMPORTED_KEY_TYPE &&
+                    parentIdOf(existing) === parentKeyId
+                if (!sameKey) {
+                    throw new KeyManagementError(
+                        `Key id ${id} already holds another entry`,
+                    )
+                }
+                return { keyPairId: id, publicKey: publicKeyOf(id) }
             }
             const keyPairId = await deps.keyStore().import(
                 {
                     id,
                     type: SECP256K1_IMPORTED_KEY_TYPE,
                     algorithm: SECP256K1_KEY_ALGORITHM,
-                    extractable: false,
+                    // Released only through `exportSecp256k1Key`.
+                    extractable: true,
                     keyUsages: ['sign', 'verify'],
                     privateKey,
                     metadata: parentKeyId ? { parentKeyId } : {},
@@ -346,6 +357,32 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
             return { keyPairId, publicKey: publicKeyOf(keyPairId) }
         } finally {
             zeroBytes(privateKey)
+        }
+    }
+
+    /**
+     * The raw private key of an imported secp256k1 entry; a derived child is
+     * never exported. The caller zeroes the returned copy.
+     */
+    const exportSecp256k1Key = async (
+        keyPairId: KeyId,
+        domain: string,
+    ): Promise<Uint8Array> => {
+        const key = findSecp256k1Key(keyPairId)
+        if (key.type !== SECP256K1_IMPORTED_KEY_TYPE) {
+            throw new InvalidKeyError(keyPairId)
+        }
+        checkAccess(governingKeyOf(key), domain)
+        const keyData = await deps.keyStore().export(keyPairId)
+        try {
+            if (!keyData.privateKey) {
+                throw new KeyManagementError(
+                    'Keystore entry has no private key',
+                )
+            }
+            return new Uint8Array(keyData.privateKey)
+        } finally {
+            zeroBytes(keyData.privateKey)
         }
     }
 
@@ -374,6 +411,7 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         sign,
         deriveSecp256k1Child,
         importSecp256k1Key,
+        exportSecp256k1Key,
         signSecp256k1Digest,
     }
 }

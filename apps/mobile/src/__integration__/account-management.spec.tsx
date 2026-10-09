@@ -98,7 +98,7 @@ import { addressOf } from './__fixtures__/accounts'
 
 const ACCOUNT_A: WalletAccount = {
     id: 'a-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' } },
     name: 'Trading',
 }
@@ -346,7 +346,7 @@ describe('Flow: Account management', () => {
         // the seed is reachable via the child's metadata.parentKeyId.
         const algo25Account: WalletAccount = {
             id: 'signer-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address: ALGO25_TEST_ADDRESS,

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    standaloneSecretOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { backupAdapterFor, type BackupHdContext } from '../../chain-adapter'
 import {
     accountItemKey,
@@ -36,6 +39,8 @@ export const serializeAccountItems = (
     account: WalletAccount,
     { updatedAt, secrets, hd, hashAddress }: SerializeParams,
 ): SerializedAccount | null => {
+    // A standalone key stored as a raw private key has no backup item.
+    if (standaloneSecretOf(account) === 'privateKey') return null
     const addressPayload = backupAdapterFor().serializeAccount(account, {
         updatedAt,
         hd,

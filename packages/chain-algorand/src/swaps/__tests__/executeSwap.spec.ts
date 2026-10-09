@@ -243,7 +243,7 @@ const quantumAccount: WalletAccount = {
 // `isQuantumAccount(account)` alone would miss.
 const standardAccountRekeyedToQuantum: WalletAccount = {
     id: 'standard-account-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         [ALGORAND_CHAIN_ID]: {
             address: 'STANDARD_ADDR',
@@ -956,7 +956,7 @@ describe('executeAlgorandSwap', () => {
     it('swaps successfully for a standard account that is NOT rekeyed', async () => {
         const standardAccount: WalletAccount = {
             id: 'standard-account-2',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 [ALGORAND_CHAIN_ID]: {
                     address: 'STANDARD_ADDR_2',

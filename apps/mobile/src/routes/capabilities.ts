@@ -41,6 +41,7 @@ export const routeCapabilities: RouteCapabilities = {
     accountDrawer: true,
     storeRating: true,
     confirmationModeSetting: true,
+    analyticsConsent: true,
     developerSettings: true,
     developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: false,

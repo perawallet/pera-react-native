@@ -21,7 +21,6 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO25_SEED_LENGTH,
     algo25SeedToIndices,
-    SeedScheme,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
@@ -94,7 +93,7 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
                     mnemonicIndices,
-                    seed: SeedScheme.Algo25,
+                    seed: null,
                 })
 
                 // Algo25 imports always return one WalletAccount; only a

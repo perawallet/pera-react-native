@@ -31,7 +31,7 @@ import {
     accountType,
     algorandAddressOf,
     algorandKeyOf,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from '../../accounts/vocabulary'
@@ -73,7 +73,7 @@ const signSingleAccountTransactions = async (
 ): Promise<PeraSignedTransaction[]> => {
     const address = algorandAddressOf(account)
     if (
-        !isAlgo25Account(account) &&
+        !isStandaloneAccount(account) &&
         !isHDWalletAccount(account) &&
         !isQuantumAccount(account)
     ) {

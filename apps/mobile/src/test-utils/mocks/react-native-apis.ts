@@ -43,6 +43,11 @@ export const createReactNativeApiMocks = () => {
             getConstants: vi.fn(() => ({ isRTL: false })),
         },
         useColorScheme: vi.fn(() => 'light'),
+        // 0xAARRGGBB, as on device; hex is the only form the tests pass.
+        processColor: vi.fn((color: string) => {
+            const hex = /^#([0-9a-f]{6})$/i.exec(color)
+            return hex ? (0xff000000 | parseInt(hex[1], 16)) >>> 0 : null
+        }),
         useWindowDimensions: vi.fn(() => ({ width: 375, height: 812 })),
         Dimensions: {
             get: vi.fn(() => ({ width: 375, height: 812 })),

@@ -117,7 +117,7 @@ describe('classifyBleLedgerError with HwTransportError', () => {
 
 describe('classifyBleLedgerError fallback', () => {
     it('defers non-transport errors to the shared classifier', () => {
-        expect(classifyBleLedgerError({ statusCode: 0x6986 })).toBeInstanceOf(
+        expect(classifyBleLedgerError({ statusCode: 0x6985 })).toBeInstanceOf(
             LedgerUserRejectedError,
         )
     })

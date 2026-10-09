@@ -52,7 +52,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'origin-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'origin-a-key' },
     },
@@ -60,7 +60,7 @@ const SIGNING_ACCOUNT: WalletAccount = {
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'origin-b',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: HD_TEST_ADDRESS, keyPairId: 'origin-b-key' },
     },

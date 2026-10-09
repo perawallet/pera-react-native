@@ -10,15 +10,18 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { addressOn, authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useSignerFor } from '../useSignerFor'
 import { useCanSignWith } from '../useCanSignWith'
-import { useRekeyAccount } from '../useRekeyAccount'
+import { useDelegatedAccount } from '../useDelegatedAccount'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
     FAKE_CHAIN_ID,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
     seedAuthority,
@@ -35,6 +38,7 @@ beforeEach(() => {
     useAccountsStore.getState().resetState()
     useAccountChainStateStore.getState().resetState()
     registerFakeAccountsChain()
+    useNetworkStore.getState().setNetwork('mainnet')
 })
 
 describe('useSignerFor', () => {
@@ -70,6 +74,30 @@ describe('useSignerFor', () => {
         const { result } = renderHook(() => useSignerFor('Z', FAKE_CHAIN_ID))
         expect(result.current).toBeNull()
     })
+    it('follows a rekey held on one network across a network switch', () => {
+        const auth = held('S')
+        const account = held('A')
+        setAccounts([account, auth])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockImplementation(
+            (target, accounts, scope) => ({
+                kind: 'ok',
+                signer:
+                    accounts.find(
+                        a => addressOn(a, scope) === authorityOf(target, scope),
+                    ) ?? target,
+            }),
+        )
+        seedAuthority('A', 'S', TESTNET_SCOPE)
+
+        const { result } = renderHook(() => useSignerFor('A', FAKE_CHAIN_ID))
+        expect(result.current).toBe(account)
+
+        act(() => useNetworkStore.getState().setNetwork('testnet'))
+        expect(result.current).toBe(auth)
+
+        act(() => seedAuthority('A', null, TESTNET_SCOPE))
+        expect(result.current).toBe(account)
+    })
 })
 
 describe('useCanSignWith', () => {
@@ -92,7 +120,7 @@ describe('useCanSignWith', () => {
     })
 })
 
-describe('useRekeyAccount', () => {
+describe('useDelegatedAccount', () => {
     it("returns the chain's auth account for a rekeyed account", () => {
         const auth = held('S')
         seedAuthority('A', 'S')
@@ -100,14 +128,18 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
-        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
+        const { result } = renderHook(() =>
+            useDelegatedAccount('A', 'algorand'),
+        )
 
         expect(result.current).toBe(auth)
     })
 
     it('returns null when the account is not rekeyed', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
+        const { result } = renderHook(() =>
+            useDelegatedAccount('A', 'algorand'),
+        )
         expect(result.current).toBeNull()
     })
 
@@ -117,7 +149,9 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(null)
 
-        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
+        const { result } = renderHook(() =>
+            useDelegatedAccount('A', 'algorand'),
+        )
 
         expect(result.current).toBeNull()
     })

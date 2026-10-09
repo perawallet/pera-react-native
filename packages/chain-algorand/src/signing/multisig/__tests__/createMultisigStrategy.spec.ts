@@ -43,7 +43,7 @@ const makeMultisigAccount = (address: string): WalletAccount =>
 
 const makeAlgo25Account = (address: string): WalletAccount =>
     ({
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             [ALGORAND_CHAIN_ID]: {
                 address,

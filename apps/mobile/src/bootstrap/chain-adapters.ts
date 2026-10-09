@@ -14,6 +14,7 @@ import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
 import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
+    CHAIN_IDS,
     ChainHttpClientUnavailableError,
     registerChainSetup,
     type ChainCapabilityOverrides,
@@ -21,6 +22,7 @@ import {
     type ChainEndpoints,
     type ChainId,
     type ChainMode,
+    type ChainSetup,
     type ChainSetupEntry,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -36,7 +38,12 @@ import {
     UnconfiguredScopeError,
 } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
+import {
+    chainOverridesKey,
+    readCapabilityOverrides,
+    remoteConfigDefaultsRegistry,
+} from '@perawallet/wallet-core-remote-config'
+import { pinnedHostRegistry } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ethereumChainModule } from './ethereum-chain-module'
 
@@ -96,19 +103,37 @@ const readCapabilityLayers = (): ChainCapabilityOverrides => {
     return { ...readCapabilityOverrides(), chainMode }
 }
 
+/**
+ * Must run before the platform initializes remote config, which seeds these
+ * defaults. The overrides key is declared for every chain, enabled or not, so
+ * a kill switch can reach a chain this build doesn't register.
+ */
+export const declareChainPlatformInputs = (setup: ChainSetup): void => {
+    remoteConfigDefaultsRegistry.declare(
+        Object.fromEntries(CHAIN_IDS.map(id => [chainOverridesKey(id), ''])),
+    )
+    for (const { enabled, module } of setup) {
+        if (!enabled) continue
+        if (module.remoteConfigDefaults) {
+            remoteConfigDefaultsRegistry.declare(module.remoteConfigDefaults)
+        }
+        if (module.pinnedHosts) {
+            pinnedHostRegistry.declare(module.pinnedHosts())
+        }
+    }
+}
+
 // The app picks which chains ship: generic packages only define the adapter
 // registries and never import a chain package.
 export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
     chains.setCapabilityOverrides(readCapabilityLayers)
-    registerChainSetup(
-        buildChainSetup(config.chains, {
-            algorand: algorandChainModule,
-            ethereum: ethereumChainModule,
-        }),
-        chains,
-        chainContextFor,
-    )
+    const setup = buildChainSetup(config.chains, {
+        algorand: algorandChainModule,
+        ethereum: ethereumChainModule,
+    })
+    registerChainSetup(setup, chains, chainContextFor)
+    declareChainPlatformInputs(setup)
     // Its migration decodes persisted accounts through the adapters just registered.
     void rehydrateAccountsStore()
 }

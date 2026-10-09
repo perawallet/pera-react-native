@@ -17,7 +17,7 @@ import {
     getRekeyAccount,
     getSignerFor,
     isAuthorityDowngrade,
-    rekeyTransitionFor,
+    delegateTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
     DelegationTargetNotFoundError,
@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -60,7 +60,7 @@ const withAuthority = (
 }
 
 const algo25 = ({ address = 'A', authority, ...options }: Options = {}) =>
-    withAuthority(algo25Account(address, options), authority)
+    withAuthority(standaloneAccount(address, options), authority)
 const hd = ({ address = 'H', authority, ...options }: Options = {}) =>
     withAuthority(hdAccount(address, options), authority)
 const ledger = ({ address = 'L', authority, ...options }: Options = {}) =>
@@ -253,18 +253,18 @@ describe('services/accounts/utils - getSignerFor', () => {
     })
 })
 
-describe('services/accounts/utils - rekeyTransitionFor', () => {
+describe('services/accounts/utils - delegateTransitionFor', () => {
     test('returns null for a non-rekeyed account', () => {
         const account = algo25({ address: 'A' })
         expect(
-            rekeyTransitionFor(account, [account], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(account, [account], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
     test('returns null for a rekeyed account whose auth is not in the wallet', () => {
         const rekeyed = algo25({ address: 'A', authority: 'MISSING' })
         expect(
-            rekeyTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
@@ -272,7 +272,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
         const auth = ledger({ address: 'AUTH' })
         const rekeyed = algo25({ address: 'A', authority: 'AUTH' })
         expect(
-            rekeyTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
         ).toEqual({ from: rekeyed, to: auth })
     })
 })

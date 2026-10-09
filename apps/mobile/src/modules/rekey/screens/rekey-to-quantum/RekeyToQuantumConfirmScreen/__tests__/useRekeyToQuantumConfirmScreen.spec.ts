@@ -72,7 +72,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                 return {
                     chains: { algorand: { address: 'SRC' } },
                     name: 'Source',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                 }
             if (address === 'TGT')
                 return {

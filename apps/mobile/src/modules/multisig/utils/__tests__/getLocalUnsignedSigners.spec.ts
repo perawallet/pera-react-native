@@ -44,7 +44,7 @@ beforeEach(() => {
 
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 

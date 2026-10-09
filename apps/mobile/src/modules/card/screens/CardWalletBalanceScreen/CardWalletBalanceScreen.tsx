@@ -11,13 +11,14 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import { ActivityIndicator, SectionList } from 'react-native'
+import { SectionList } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { CardWalletHistoryEntry } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWIcon,
     PWImage,
+    PWLoadingIndicator,
     PWScreen,
     PWSkeleton,
     PWText,
@@ -83,7 +84,7 @@ export const CardWalletBalanceScreen = () => {
         if (!isFetchingHistory) return null
         return (
             <PWView style={styles.loadingFooter}>
-                <ActivityIndicator size='small' />
+                <PWLoadingIndicator size='sm' />
             </PWView>
         )
     }, [isFetchingHistory, styles.loadingFooter])

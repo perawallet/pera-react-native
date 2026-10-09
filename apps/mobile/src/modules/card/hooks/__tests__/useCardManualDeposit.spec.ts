@@ -71,7 +71,7 @@ import {
 
 const account: WalletAccount = {
     id: 'funding',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'FUNDINGADDR' } },
 }
 const ESCROW = 'ESCROWCARDADDR'

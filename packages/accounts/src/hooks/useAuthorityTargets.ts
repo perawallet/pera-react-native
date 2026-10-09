@@ -11,13 +11,17 @@
  */
 
 import { useMemo } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     type AuthorityTargetKind,
     type AuthorityTargetOptions,
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
+import { useAccountChainStateStore } from '../store'
 import { useAllAccounts } from './useAllAccounts'
 
 /**
@@ -34,6 +38,9 @@ export const useAuthorityTargets = (
     const accounts = useAllAccounts()
     // Keyed by value: callers pass a fresh options object on every render.
     const optionsKey = JSON.stringify(options)
+    const chainStates = useAccountChainStateStore(
+        state => state.states[toScopeKey(scope)],
+    )
 
     return useMemo(() => {
         const authority = accountsChainAdapters.get(scope.chainId).authority
@@ -49,5 +56,5 @@ export const useAuthorityTargets = (
                 targetOptions,
             ),
         )
-    }, [accounts, scope, source, kind, optionsKey])
+    }, [accounts, scope, chainStates, source, kind, optionsKey])
 }

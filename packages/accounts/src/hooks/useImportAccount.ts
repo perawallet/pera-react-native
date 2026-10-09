@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useKMS, type SeedScheme } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
@@ -20,6 +20,7 @@ import { DuplicateAccountError } from '../errors'
 import {
     accountsChainAdapters,
     requireSingleKeyAccounts,
+    type LocalKeySeed,
 } from '../chain-adapter'
 import { findAddressHolder, seedOf } from '../credentials'
 import { localKeyKindOf } from '../import-formats'
@@ -79,7 +80,7 @@ export const useImportAccount = (scope: ChainScope) => {
         /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
          * itself. Caller owns zeroing after the import resolves. */
         mnemonicIndices: Uint16Array
-        seed: SeedScheme
+        seed: LocalKeySeed
     }): Promise<ImportAccountResult> => {
         if (localKeyKindOf(scope.chainId, seed)?.isHd) {
             const { walletKeyId } = await prepareImport({

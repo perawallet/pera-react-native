@@ -65,13 +65,13 @@ vi.mock('@modules/webview', () => ({
 const mockSourceAccount = {
     chains: { algorand: { address: 'SRC' } },
     name: 'Source',
-    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
 let mockHasSource = true
 const mockAuthAccount = {
     chains: { algorand: { address: 'AUTH' } },
     name: 'Auth',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 }
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -139,7 +139,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         mockHasSource = true
         useAccountChainStateStore.getState().resetState()
         seedAuthority('SRC', 'AUTH')
-        mockSourceAccount.custody = { kind: 'local', seed: 'algo25' }
+        mockSourceAccount.custody = { kind: 'local', seed: null }
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         capturedSigningHandler = null

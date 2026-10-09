@@ -26,6 +26,8 @@ type Row = {
     args: string[]
     message: string
     metadata: ErrorMetadata
+    /** For a class that takes an options object rather than positional args. */
+    build?: (cause?: Error) => AppError
 }
 
 const { HIGH, MEDIUM, LOW } = ErrorSeverity
@@ -57,7 +59,12 @@ const ROWS: Record<string, Row> = {
     LedgerAppNotOpenError: {
         ErrorClass: ledgerErrors.LedgerAppNotOpenError,
         args: [],
-        message: 'Algorand app is not open on the Ledger device',
+        build: cause =>
+            new ledgerErrors.LedgerAppNotOpenError({
+                appName: 'Fixture',
+                originalError: cause,
+            }),
+        message: 'Fixture app is not open on the Ledger device',
         metadata: meta(MEDIUM, true, expected),
     },
     LedgerDeviceLockedError: {
@@ -200,12 +207,21 @@ const ROWS: Record<string, Row> = {
     LedgerAppOutdatedError: {
         ErrorClass: ledgerErrors.LedgerAppOutdatedError,
         args: [],
-        message: 'The Ledger Algorand app must be updated to sign this request',
+        build: cause =>
+            new ledgerErrors.LedgerAppOutdatedError({
+                appName: 'Fixture',
+                originalError: cause,
+            }),
+        message: 'The Ledger Fixture app must be updated to sign this request',
         metadata: meta(MEDIUM, false, expected),
     },
 }
 
-const construct = ({ ErrorClass, args }: Row, cause?: Error): AppError => {
+const construct = (
+    { ErrorClass, args, build }: Row,
+    cause?: Error,
+): AppError => {
+    if (build) return build(cause)
     const Ctor = ErrorClass as unknown as new (...a: unknown[]) => AppError
     return new Ctor(...args, cause)
 }
@@ -253,5 +269,28 @@ describe('Ledger error classes', () => {
                 expect(error).not.toBeInstanceOf(other.ErrorClass)
             }
         }
+    })
+})
+
+describe('Ledger app errors without an app name', () => {
+    it('describe the app generically', () => {
+        expect(new ledgerErrors.LedgerAppNotOpenError().message).toBe(
+            'The app is not open on the Ledger device',
+        )
+        expect(new ledgerErrors.LedgerAppOutdatedError().message).toBe(
+            'The Ledger app must be updated to sign this request',
+        )
+    })
+
+    it('carry the version the app must reach', () => {
+        const requiredVersion = { major: 2, minor: 0, patch: 0 }
+
+        const error = new ledgerErrors.LedgerAppOutdatedError({
+            appName: 'Fixture',
+            requiredVersion,
+        })
+
+        expect(error.appName).toBe('Fixture')
+        expect(error.requiredVersion).toEqual(requiredVersion)
     })
 })

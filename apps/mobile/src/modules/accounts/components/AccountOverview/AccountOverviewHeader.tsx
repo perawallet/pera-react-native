@@ -11,8 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { Decimal } from 'decimal.js'
@@ -93,8 +97,8 @@ export const AccountOverviewHeader = ({
                             {!isPending &&
                                 !selectedPoint &&
                                 !isBalanceComplete && (
-                                    <ActivityIndicator
-                                        size='small'
+                                    <PWLoadingIndicator
+                                        size='sm'
                                         style={styles.balanceSpinner}
                                     />
                                 )}

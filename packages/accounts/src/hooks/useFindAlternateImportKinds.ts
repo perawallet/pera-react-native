@@ -11,10 +11,10 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     accountsChainAdapters,
     type AlternateImportKind,
+    type LocalKeySeed,
 } from '../chain-adapter'
 
 /**
@@ -26,7 +26,7 @@ import {
  */
 export const useFindAlternateImportKinds = (scope: ChainScope) => {
     return async (
-        seed: SeedScheme,
+        seed: LocalKeySeed,
         /** Wordlist indices; the caller zeroes them. */
         mnemonicIndices: Uint16Array,
     ): Promise<readonly AlternateImportKind[]> => {

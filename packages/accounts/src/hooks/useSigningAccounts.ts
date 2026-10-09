@@ -14,13 +14,15 @@ import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '../store'
 import { canSignWith } from '../signer-resolution'
+import { useSelectedChainStates } from './useSelectedChainStates'
 
 /** Held accounts something held can sign for on `chainId`. */
 export const useSigningAccounts = (chainId: ChainId) => {
     const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useSelectedChainStates(chainId)
     return useMemo(
         () =>
             accounts.filter(account => canSignWith(account, accounts, chainId)),
-        [accounts, chainId],
+        [accounts, chainId, chainStates],
     )
 }

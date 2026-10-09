@@ -41,7 +41,6 @@ vi.mock('../accountStoreOps', () => ({
     addKeylessAccountToStore: vi.fn(),
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
-    applyRekeyAddressToStoreAccount: vi.fn(),
     markLegacyBackedUpAccounts: vi.fn(),
     removeAccountFromStore: vi.fn(),
     migratedAddressOf: (account: WalletAccount) =>
@@ -59,7 +58,6 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
-    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
     removeAccountFromStore,
 } from '../accountStoreOps'
@@ -67,6 +65,7 @@ import type { MigrationDeps, MigrationRunOptions } from '../types'
 
 const migrateLegacyAccount = vi.fn()
 const classifyLegacyAccountRoute = vi.fn()
+const recordLegacyAuthority = vi.fn()
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -87,7 +86,7 @@ const idFor = (address: string) => `id-${address}`
 
 const algo25Account = (address: string): WalletAccount => ({
     id: idFor(address),
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address, keyPairId: `kp-${address}` } },
 })
 
@@ -114,6 +113,7 @@ beforeEach(() => {
         chainId: 'algorand',
         migrateAccount: migrateLegacyAccount,
         classifyAccountRoute: classifyLegacyAccountRoute,
+        recordLegacyAuthority,
         isKeylessAccount: a =>
             a.type === 'watch' || a.joint !== null || a.ledger !== null,
     })
@@ -124,7 +124,7 @@ beforeEach(() => {
     vi.mocked(markLegacyBackedUpAccounts).mockReset()
     vi.mocked(addKeylessAccountToStore).mockReset()
     vi.mocked(removeAccountFromStore).mockReset()
-    vi.mocked(applyRekeyAddressToStoreAccount).mockReset()
+    recordLegacyAuthority.mockReset()
     loggerMock.error.mockReset()
     classifyLegacyAccountRoute.mockReturnValue('algo25')
 })
@@ -413,7 +413,7 @@ describe('runMigrationLoop', () => {
         expect(migrateLegacyAccount).toHaveBeenCalledOnce()
         expect(result.imported).toBe(1)
         expect(removeAccountFromStore).toHaveBeenCalledWith(idFor('UPGRADEME'))
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
         expect(
             accountsStoreMock.accounts.filter(
                 a => a.chains.algorand?.address === 'UPGRADEME',
@@ -421,7 +421,7 @@ describe('runMigrationLoop', () => {
         ).toHaveLength(1)
     })
 
-    it('mirrors the legacy authAddress onto a key-bearing import that lacks it', async () => {
+    it('records the legacy authAddress for a key-bearing import that lacks it', async () => {
         accountsStoreMock.accounts = [watchAccount('UPGRADEME')]
         const legacy = buildAccount({
             address: 'UPGRADEME',
@@ -440,11 +440,7 @@ describe('runMigrationLoop', () => {
         })
 
         expect(result.imported).toBe(1)
-        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
-            'UPGRADEME',
-            'AUTH',
-            'algorand',
-        )
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(legacy)
     })
 
     it('leaves the authority alone when the import already carries it', async () => {
@@ -465,7 +461,7 @@ describe('runMigrationLoop', () => {
             hdSeeds: [],
         })
 
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 
     it('restores the removed watch account when the reconciling reimport throws', async () => {
@@ -544,11 +540,7 @@ describe('runMigrationLoop', () => {
         expect(migrateLegacyAccount).not.toHaveBeenCalled()
         expect(result.skipped).toBe(1)
         expect(removeAccountFromStore).not.toHaveBeenCalled()
-        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
-            'REKEYED',
-            'AUTH',
-            'algorand',
-        )
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(legacy)
     })
 
     it('still plain-skips existing non-watch accounts', async () => {
@@ -564,6 +556,6 @@ describe('runMigrationLoop', () => {
         expect(result.skipped).toBe(1)
         expect(migrateLegacyAccount).not.toHaveBeenCalled()
         expect(removeAccountFromStore).not.toHaveBeenCalled()
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 })

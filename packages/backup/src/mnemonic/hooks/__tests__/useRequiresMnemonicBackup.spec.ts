@@ -30,6 +30,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: async () => {},
             removeItem: async () => {},
         },
+        chains: {
+            has: () => true,
+            get: () => ({
+                descriptor: { signing: { standaloneSecret: 'mnemonic' } },
+            }),
+        },
     }),
 }))
 
@@ -48,7 +54,7 @@ describe('useRequiresMnemonicBackup', () => {
 
         const account: WalletAccount = {
             id: 'account-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp-backed' } },
         }
 
@@ -66,7 +72,7 @@ describe('useRequiresMnemonicBackup', () => {
 
         const account: WalletAccount = {
             id: 'account-2',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp-unbacked' } },
         }
 

@@ -16,10 +16,14 @@ import type { Address, SignedTransaction } from 'algosdk'
 import { generateKey } from 'falcon-1024'
 import {
     accountsChainAdapters,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
-import { algo25Account, quantumAccount } from '../../__tests__/algorandAccounts'
+import {
+    standaloneAccount,
+    quantumAccount,
+} from '../../__tests__/algorandAccounts'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { groupTransactions } from '../../blockchain'
 import { findFundedIndices, type SimulateSignedGroup } from '../feeCoverage'
@@ -55,10 +59,10 @@ const externalAddress = makeTestAddress(3)
 const quantum = (): WalletAccount =>
     quantumAccount(quantumAddress.toString(), { keyPairId: 'kp-quantum' })
 
-const algo25 = (rekeyAddress?: string): WalletAccount =>
-    algo25Account(algoAddress.toString(), {
+const algo25 = (authorityAddress?: string): WalletAccount =>
+    standaloneAccount(algoAddress.toString(), {
         keyPairId: 'kp-algo25',
-        rekeyAddress,
+        authorityAddress,
     })
 
 const payment = (sender: Address): PeraTransaction =>
@@ -77,6 +81,7 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
     pq.resolve = () => ({ schemeId: 'falcon1024', publicKey: PQ_PUBLIC_KEY })
 })
 

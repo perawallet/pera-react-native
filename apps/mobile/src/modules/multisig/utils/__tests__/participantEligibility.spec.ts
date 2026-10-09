@@ -31,7 +31,7 @@ describe('participantEligibility', () => {
     })
 
     it.each([
-        ['algo25', true],
+        ['standalone', true],
         ['hdWallet', true],
         ['hardware', true],
         ['quantum', false],
@@ -51,7 +51,10 @@ describe('participantEligibility', () => {
             signsWithParticipantScheme(accountForType('quantum'), 'algorand'),
         ).toBe(false)
         expect(
-            signsWithParticipantScheme(accountForType('algo25'), 'algorand'),
+            signsWithParticipantScheme(
+                accountForType('standalone'),
+                'algorand',
+            ),
         ).toBe(true)
         expect(
             signsWithParticipantScheme(accountForType('watch'), 'algorand'),

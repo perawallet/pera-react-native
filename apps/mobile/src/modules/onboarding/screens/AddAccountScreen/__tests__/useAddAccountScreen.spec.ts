@@ -567,7 +567,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'algo25-id',
             chains: { algorand: { address: 'ALGO25_ADDRESS' } },
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
         mockBuildSingleKeyAccount.mockResolvedValue(newAccount)
@@ -583,7 +583,7 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockBuildSingleKeyAccount).toHaveBeenCalledWith({
-            seed: 'algo25',
+            seed: null,
         })
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,

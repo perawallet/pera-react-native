@@ -157,7 +157,7 @@ describe('useInputScreen', () => {
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             id: 'test-account',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'test-addr' } },
         })
         ;(useAssetsQuery as Mock).mockReturnValue({

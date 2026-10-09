@@ -189,7 +189,7 @@ describe('Flow: Opt into an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address: ALGO25_TEST_ADDRESS,
@@ -389,7 +389,7 @@ describe('Flow: Opt out of an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address: ALGO25_TEST_ADDRESS,
@@ -418,7 +418,7 @@ describe('Flow: Opt out of an asset', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         server.use(

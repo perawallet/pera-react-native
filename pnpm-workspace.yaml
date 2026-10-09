@@ -221,13 +221,19 @@ patchedDependencies:
   # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
   # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
   # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
-  # signing opens only that child, and imported raw keys are sealed the same
-  # way. Nothing is exportable. Drop once upstream takes these branches.
+  # signing opens only that child, and imported raw keys are sealed too, and
+  # released by `export` only when imported extractable; derived children never
+  # are. Drop once upstream takes these branches.
   "@algorandfoundation/keystore-core@1.0.0-canary.5": patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
   # `shims` is typed as an array, though it is handed unchanged to keystore-core's
   # `createKeyStore`, which also takes a lazy function. The provider needs the
   # lazy form to fold the asynchronously loaded native Falcon binding in next to
   # the secp256k1 shim. Type-only; drop once upstream widens it.
+  # Some StrongBox chips take about a second per AES operation, and every
+  # master-key read costs two, so a slow read gets a TEE-held copy of the same
+  # master key that later reads prefer; the StrongBox copy is never removed.
+  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
+  # keep a key out of StrongBox.
   "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
   # Four unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
@@ -255,6 +261,11 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
+  # Android: adds the `KeystoreAESGCM_NoAuth_TEE` storage, whose key is never
+  # generated in StrongBox; upstream always prefers StrongBox when the device
+  # has it (oblador/react-native-keychain#817). Only chosen by name, never by
+  # default.
+  "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is

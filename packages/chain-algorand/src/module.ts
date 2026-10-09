@@ -16,6 +16,8 @@ import {
     algorandCapabilityRestrictions,
 } from './capability-defaults'
 import { accountPresentationI18nKeys } from './accounts/presentation'
+import { algorandPinnedHosts } from './blockchain/pinned-hosts'
+import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
 import { registerChain } from './register'
 
@@ -26,4 +28,6 @@ export const chainModule: ChainModule = {
     // The adapters are module-level instances that don't read the context yet.
     register: _ctx => registerChain(),
     i18nKeys: accountPresentationI18nKeys,
+    remoteConfigDefaults: algorandRemoteConfigDefaults,
+    pinnedHosts: algorandPinnedHosts,
 }

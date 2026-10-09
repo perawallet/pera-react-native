@@ -38,8 +38,8 @@ const hdAccount = {
     },
 } as unknown as WalletAccount
 
-const algo25Account = {
-    custody: { kind: 'local', seed: 'algo25' },
+const standaloneAccount = {
+    custody: { kind: 'local', seed: null },
     chains: {
         [ALGORAND_CHAIN_ID]: {
             address: 'ALGO25_ADDR',
@@ -94,7 +94,7 @@ describe('signArbitraryData', () => {
     })
 
     test('signs an Algo25 account with its own child id', async () => {
-        await signArbitraryData(deps, algo25Account, [b64('hello')])
+        await signArbitraryData(deps, standaloneAccount, [b64('hello')])
 
         expect(signPayloads.mock.calls[0][0]).toBe('key-algo25-ed25519')
     })
@@ -104,10 +104,10 @@ describe('signArbitraryData', () => {
         // own pubkey, so the account's own keypair is used, never the auth
         // chain.
         const original = {
-            ...algo25Account,
+            ...standaloneAccount,
             chains: {
                 [ALGORAND_CHAIN_ID]: {
-                    ...algo25Account.chains[ALGORAND_CHAIN_ID],
+                    ...standaloneAccount.chains[ALGORAND_CHAIN_ID],
                     address: 'ORIGINAL_ADDR',
                 },
             },

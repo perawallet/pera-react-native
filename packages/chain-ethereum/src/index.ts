@@ -21,6 +21,11 @@ export {
     toEvmError,
     type EvmErrorParams,
 } from './errors/translate'
+export {
+    InvalidPrivateKeyError,
+    parseEthereumPrivateKey,
+} from './keys/private-key'
+export { revealEthereumPrivateKey } from './keys/reveal'
 export { ethereumModule } from './module'
 export { BlockFollowingRequestError } from './pera/block-following'
 export { createEvmClient, UnconfiguredEvmRpcError } from './rpc/client'

@@ -14,7 +14,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type { AccountStateSnapshot } from '../../chain-adapter'
-import { MAINNET_SCOPE } from '../../__tests__/fakeAccountsChain'
+import { buildTestAccount, TEST_CUSTODY } from '../../__tests__/accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    registerFakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
+import { authorityOf } from '../../credentials'
+import { useAccountChainStateStore } from '../../store'
 import { useLedgerAccountPreview } from '../useLedgerAccountPreview'
 
 const NATIVE_ASSET_ID = '0'
@@ -23,12 +30,12 @@ const NATIVE_ASSET_ID = '0'
 const onChainState = (
     nativeBaseUnits: number,
     holdings: { assetId: string; amount: number; isFrozen: boolean }[] = [],
-    authAddress: string | null = null,
+    authorityAddress: string | null = null,
 ): AccountStateSnapshot => ({
     nativeBalance: new Decimal(nativeBaseUnits).div(1_000_000),
     nativeBalanceBaseUnits: new Decimal(nativeBaseUnits),
     minBalance: new Decimal(0),
-    authAddress,
+    authorityAddress,
     chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
     holdings: [
         {
@@ -73,6 +80,8 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 beforeEach(() => {
+    registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
     vi.clearAllMocks()
     mocks.useCurrency.mockReturnValue({
         usdToPreferred: (usd: Decimal) => usd, // 1:1 USD for tests
@@ -259,7 +268,7 @@ describe('useLedgerAccountPreview', () => {
         ).toEqual([true, true])
     })
 
-    it('reports rekeyedTo when the account is rekeyed', () => {
+    it('reports delegatedTo when the account is rekeyed', () => {
         mocks.useOnChainAccountStateQuery.mockReturnValue({
             data: onChainState(0, [], 'AUTHADDR'),
             isLoading: false,
@@ -277,9 +286,25 @@ describe('useLedgerAccountPreview', () => {
         )
 
         expect(result.current.preview?.rekey).toEqual({
-            kind: 'rekeyedTo',
-            authAddress: 'AUTHADDR',
+            kind: 'delegatedTo',
+            authorityAddress: 'AUTHADDR',
         })
+    })
+
+    it('records the on-chain authority in the chain-state slice', () => {
+        const account = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: 'ADDR' },
+        })
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0, [], 'AUTHADDR'),
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        renderHook(() => useLedgerAccountPreview('ADDR', MAINNET_SCOPE))
+
+        expect(authorityOf(account, MAINNET_SCOPE)).toBe('AUTHADDR')
     })
 
     it('reports canSignFor when accounts are rekeyed to it and it is not rekeyed', () => {

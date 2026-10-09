@@ -13,12 +13,14 @@ describe('pera/no-algorand-account-vocabulary', () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(locations(found).sort()).toEqual([
+            'bad.ts:10',
             'bad.ts:2',
             'bad.ts:3',
             'bad.ts:5',
             'bad.ts:6',
             'bad.ts:7',
             'bad.ts:8',
+            'bad.ts:9',
             'kinds.ts:1',
             'legacy.ts:1',
             'useDemo.ts:1',

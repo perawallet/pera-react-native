@@ -88,7 +88,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'sender-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,
@@ -311,7 +311,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         })
         const authAccount: WalletAccount = {
             id: 'auth-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: {
                     address: ALGO25_TEST_ADDRESS,
@@ -325,7 +325,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // recorded authority to find the actual signer at sign time.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'Rekeyed sender',
         }
@@ -773,7 +773,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // surfaced as a toast, no algod traffic.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-orphan',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'Rekeyed sender (orphan)',
         }

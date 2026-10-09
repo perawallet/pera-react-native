@@ -49,12 +49,12 @@ const mockQuantumSource = {
 const mockEd25519Source = {
     chains: { algorand: { address: 'SRC', keyPairId: 'kp-src' } },
     name: 'Standard Source',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 }
 const mockEd25519Target = {
     chains: { algorand: { address: 'TGT', keyPairId: 'kp-tgt' } },
     name: 'Standard Target',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 }
 const mockQuantumTarget = {
     chains: { algorand: { address: 'TGT', keyPairId: 'kp-tgt' } },

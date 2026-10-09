@@ -245,7 +245,7 @@ describe('useImportAccountOptionsScreen', () => {
     })
 
     it('navigates to ImportInfo when the import options sheet resolves with a result', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('algo25')
+        mockRequestBottomSheet.mockResolvedValueOnce(null)
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const recoverOption = result.current.options.find(
@@ -257,8 +257,23 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'algo25',
+            accountType: null,
         })
+    })
+
+    it('stays put when the import options sheet is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const recoverOption = result.current.options.find(
+            o => o.testID === 'import_account_options_recover_wallet_button',
+        )!
+
+        await act(async () => {
+            await recoverOption.onPress()
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
     })
 
     it('hands the QR scan off to the expanded tab from the extension popup', () => {
@@ -475,7 +490,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
         vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            seed: 'algo25',
+            seed: null,
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -486,7 +501,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'algo25',
+            accountType: null,
         })
     })
 

@@ -395,4 +395,43 @@ describe('useRemoveAccount', () => {
         expect(ids()).toEqual(['LEDGER1'])
         expect(deleteKeySpy).not.toHaveBeenCalled()
     })
+
+    describe('a standalone key with no seed above it', () => {
+        const rawKeyAccount = (id: string, address: string): WalletAccount =>
+            buildTestAccount(
+                TEST_CUSTODY.local,
+                { algorand: { address, keyPairId: 'raw-key' } },
+                { id },
+            )
+
+        test('deletes the key when no other account references it', async () => {
+            useAccountsStore.setState({
+                accounts: [rawKeyAccount('1', 'RAW1')],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('1')
+            })
+
+            expect(deleteKeySpy).toHaveBeenCalledWith('raw-key')
+            expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
+        })
+
+        test('keeps the key while another account still references it', async () => {
+            useAccountsStore.setState({
+                accounts: [
+                    rawKeyAccount('1', 'RAW1'),
+                    rawKeyAccount('2', 'RAW2'),
+                ],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('1')
+            })
+
+            expect(deleteKeySpy).not.toHaveBeenCalled()
+        })
+    })
 })

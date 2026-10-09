@@ -23,7 +23,10 @@ import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handl
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
-import { algo25Account, watchAccount } from '../../__tests__/algorandAccounts'
+import {
+    standaloneAccount,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
 import { seedAuthority } from './seedAuthority'
@@ -43,7 +46,7 @@ const QUANTUM_LEGACY =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
 
 const keyed = (id: string, address: string, rekeyAddress?: string) =>
-    algo25Account(address, {
+    standaloneAccount(address, {
         id,
         keyPairId: `${id}-key`,
         ...(rekeyAddress ? { rekeyAddress } : {}),

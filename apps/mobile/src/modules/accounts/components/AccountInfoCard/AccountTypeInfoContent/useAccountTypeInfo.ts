@@ -16,10 +16,10 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
     authorityTransitionLabel,
-    isRekeyedAccount,
     useAccountPresentation,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyTransition,
+    useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -58,17 +58,18 @@ export const useAccountTypeInfo = ({
     const { pushWebView } = useWebView()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const canSign = useCanSignWith(account, scope.chainId)
-    const rekeyTransition = useRekeyTransition(
+    const delegateTransition = useDelegatedTransition(
         addressOn(account, scope),
         scope.chainId,
     )
+    const authority = useAuthorityOf(account, scope)
     const presentation = useAccountPresentation(account, scope)
     const transitionLabel = useMemo(
         () =>
-            rekeyTransition
-                ? authorityTransitionLabel(rekeyTransition, scope.chainId)
+            delegateTransition
+                ? authorityTransitionLabel(delegateTransition, scope.chainId)
                 : null,
-        [rekeyTransition, scope.chainId],
+        [delegateTransition, scope.chainId],
     )
 
     const { title, titleQualifier, description } = useMemo(() => {
@@ -83,7 +84,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isRekeyedAccount(account, scope.chainId)) {
+        if (authority !== null) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N
@@ -104,7 +105,7 @@ export const useAccountTypeInfo = ({
                     REKEYED_UNSIGNABLE_I18N.description,
             ),
         }
-    }, [account, canSign, transitionLabel, presentation, t, scope.chainId])
+    }, [authority, canSign, transitionLabel, presentation, t])
 
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own

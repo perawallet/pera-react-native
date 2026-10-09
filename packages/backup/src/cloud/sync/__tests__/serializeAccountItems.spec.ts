@@ -14,6 +14,8 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainDescriptor } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     parseAddressPayload,
     parseSecretsPayload,
@@ -29,7 +31,7 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ADDR', keyPairId: 'seed-1-ed25519' } },
     name: 'Main',
 }
@@ -148,5 +150,31 @@ describe('serializeAccountItems', () => {
             customName: 'Child 1',
             updatedAt: 1719300000000,
         })
+    })
+
+    it('has no item for a standalone account whose secret is a private key', () => {
+        getProvider().chains.reset()
+        getProvider().chains.register({
+            id: 'ethereum',
+            signing: {
+                schemes: ['secp256k1'],
+                derivationPaths: {},
+                rawKeySchemes: ['secp256k1'],
+                standaloneSecret: 'privateKey',
+            },
+        } as unknown as ChainDescriptor)
+        const imported = {
+            id: '3',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc', keyPairId: 'raw-key' } },
+        } as unknown as WalletAccount
+
+        expect(
+            serializeAccountItems(imported, {
+                updatedAt: 1,
+                secrets: null,
+                hashAddress,
+            }),
+        ).toBeNull()
     })
 })

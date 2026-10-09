@@ -70,7 +70,7 @@ const VALID_ADDRESS =
 
 const importedAccount: WalletAccount = {
     id: 'acc-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         [ALGORAND_CHAIN_ID]: {
             address: VALID_ADDRESS,
@@ -107,7 +107,7 @@ describe('useImportAlgo25FromSeed', () => {
         )
         expect(mocks.importAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            seed: 'algo25',
+            seed: null,
         })
         expect(mocks.markBackupComplete).toHaveBeenCalledWith(importedAccount)
         expect(mocks.updateAccount).not.toHaveBeenCalled()

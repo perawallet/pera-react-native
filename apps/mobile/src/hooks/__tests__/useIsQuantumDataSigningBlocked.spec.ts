@@ -62,11 +62,11 @@ describe('useIsQuantumDataSigningBlocked', () => {
             },
             {
                 chains: { algorand: { address: STANDARD_ADDRESS } },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
             {
                 chains: { algorand: { address: REKEYED_TO_QUANTUM_ADDRESS } },
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
         ])
     })

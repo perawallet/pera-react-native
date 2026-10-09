@@ -149,7 +149,7 @@ const LEDGER_ACCOUNT: HardwareWalletAccount = {
 
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: FUNDING_ADDRESS } },
     name: 'Main Account',
 }

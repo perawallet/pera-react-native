@@ -36,7 +36,7 @@ import { algorandMultisigOf } from '../accounts/multisig-participants'
 import {
     algorandAddressOf,
     algorandKeyOf,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from '../accounts/vocabulary'
@@ -133,7 +133,7 @@ export const emptySignatureFieldsOf = (
         }
     }
     if (
-        isAlgo25Account(auth) ||
+        isStandaloneAccount(auth) ||
         isHDWalletAccount(auth) ||
         isHardwareWalletAccount(auth)
     ) {

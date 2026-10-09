@@ -34,11 +34,8 @@ import type {
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
-    LedgerAppOutdatedError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
-    MIN_ARBITRARY_SIGN_APP_VERSION,
-    isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
 import type {
     ChainId,
@@ -240,15 +237,12 @@ const signAuthDataOnHardwareWallet = (
         options,
         async ({ transport, guard }) => {
             // Early version gate — the device-side error is the fallback.
-            const version = await withTimeout(
-                transport.getAppVersion(),
+            await withTimeout(
+                transport.assertCanSignData(),
                 LEDGER_CONNECTION_TIMEOUT_MS,
                 'Read Ledger app version',
                 ledgerTimeoutReason('Read Ledger app version'),
             )
-            if (!isAppVersionAtLeast(version, MIN_ARBITRARY_SIGN_APP_VERSION)) {
-                throw new LedgerAppOutdatedError()
-            }
 
             messageSigner.validateAuthData(authData, metadata, getAllAccounts())
 

@@ -49,8 +49,8 @@ const hdAccount = {
     },
 } as unknown as WalletAccount
 
-const algo25Account = {
-    custody: { kind: 'local', seed: 'algo25' },
+const standaloneAccount = {
+    custody: { kind: 'local', seed: null },
     chains: {
         [ALGORAND_CHAIN_ID]: {
             address: 'ALGO25_ADDR',
@@ -190,7 +190,7 @@ describe('signArc60AuthRequest', () => {
 
     test('rejects hdPath on Algo25 accounts', async () => {
         await expect(
-            sign(algo25Account, {
+            sign(standaloneAccount, {
                 ...validAuthData,
                 data: dataFor('ALGO25_ADDR'),
                 signer: 'ALGO25_ADDR',
@@ -204,7 +204,7 @@ describe('signArc60AuthRequest', () => {
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
 
-        await sign(algo25Account, {
+        await sign(standaloneAccount, {
             ...validAuthData,
             data: encodeToBase64(algo25Siwa),
             signer: 'ALGO25_ADDR',
@@ -250,8 +250,8 @@ describe('signArc60AuthRequest', () => {
         // Once ORIG_ADDR is rekeyed, control belongs to AUTH_ADDR on chain;
         // a proof made with ORIG_ADDR's old key must not authenticate it.
         const original = {
-            ...algo25Account,
-            chains: atAddress(algo25Account, 'ORIG_ADDR'),
+            ...standaloneAccount,
+            chains: atAddress(standaloneAccount, 'ORIG_ADDR'),
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
@@ -331,8 +331,8 @@ describe('signArc60AuthRequest', () => {
 
     test('rejects a rekey revoked since the list was last read', async () => {
         const rekeyed = {
-            ...algo25Account,
-            chains: atAddress(algo25Account, 'ORIG_ADDR'),
+            ...standaloneAccount,
+            chains: atAddress(standaloneAccount, 'ORIG_ADDR'),
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')

@@ -48,7 +48,7 @@ describe('resolveSignerCredential', () => {
     it.each([
         [
             'algo25',
-            withKey({ kind: 'local', seed: 'algo25' }),
+            withKey({ kind: 'local', seed: null }),
             { custody: 'local', scheme: 'ed25519' },
         ],
         [
@@ -88,7 +88,7 @@ describe('resolveSignerCredential', () => {
     it('refuses a local account that holds no key on the chain', () => {
         expect(() =>
             resolveSignerCredential(
-                withoutKey({ kind: 'local', seed: 'algo25' }),
+                withoutKey({ kind: 'local', seed: null }),
                 'algorand',
             ),
         ).toThrow(CannotSignError)
@@ -97,7 +97,7 @@ describe('resolveSignerCredential', () => {
     it('never resolves a signer on a chain that is not registered', () => {
         expect(() =>
             resolveSignerCredential(
-                withKey({ kind: 'local', seed: 'algo25' }),
+                withKey({ kind: 'local', seed: null }),
                 'ethereum',
             ),
         ).toThrow(ChainAdapterNotRegisteredError)

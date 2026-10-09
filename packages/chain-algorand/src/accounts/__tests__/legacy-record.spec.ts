@@ -27,7 +27,8 @@ const onAlgorand = (entry: object) => ({ [ALGORAND_CHAIN_ID]: entry })
 
 describe('decodeAlgorandLegacyRecord', () => {
     it.each([
-        ['algo25', 'algo25'],
+        ['algo25', null],
+        ['standalone', null],
         ['quantum', 'quantum'],
     ] as const)(
         'decodes a %s record as local custody with its key',
@@ -162,7 +163,7 @@ describe('decodeAlgorandLegacyRecord', () => {
                     address: ADDRESS,
                 }),
             ).toEqual({
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: onAlgorand({ address: ADDRESS }),
             })
         })
@@ -214,11 +215,24 @@ describe('decodeAlgorandLegacyRecord', () => {
                     type: 'algo25',
                     address: 'STALE',
                     keyPairId: 'stale-kp',
+                    custody: { kind: 'local', seed: null },
+                    chains: onAlgorand({ address: ADDRESS, keyPairId: 'kp' }),
+                }),
+            ).toEqual({
+                custody: { kind: 'local', seed: null },
+                chains: onAlgorand({ address: ADDRESS, keyPairId: 'kp' }),
+            })
+        })
+
+        it('reads a stored Algorand-named seed scheme as a seedless custody', () => {
+            expect(
+                decodeAlgorandLegacyRecord({
+                    address: ADDRESS,
                     custody: { kind: 'local', seed: 'algo25' },
                     chains: onAlgorand({ address: ADDRESS, keyPairId: 'kp' }),
                 }),
             ).toEqual({
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: onAlgorand({ address: ADDRESS, keyPairId: 'kp' }),
             })
         })

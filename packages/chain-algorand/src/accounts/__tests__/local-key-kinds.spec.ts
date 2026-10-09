@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -26,10 +26,10 @@ import {
 } from '../local-key-kinds'
 
 describe('algorandLocalKeyKinds', () => {
-    it('lists bip39, then algo25 above quantum, so 25 words detect as algo25', () => {
+    it('lists bip39, then standalone above quantum, so 25 words detect as standalone', () => {
         expect(algorandLocalKeyKinds.map(kind => kind.seed)).toEqual([
             SeedScheme.Bip39,
-            SeedScheme.Algo25,
+            null,
             SeedScheme.Quantum,
         ])
     })
@@ -44,7 +44,7 @@ describe('algorandLocalKeyKinds', () => {
                 isAutoDetected: true,
             },
             {
-                seed: SeedScheme.Algo25,
+                seed: null,
                 signingScheme: 'ed25519',
                 isHd: false,
                 mnemonicWordCounts: [25],
@@ -62,13 +62,13 @@ describe('algorandLocalKeyKinds', () => {
 })
 
 describe('algorandDuplicateRank', () => {
-    it('ranks quantum > hardware > hdWallet > algo25 > multisig > watch', () => {
+    it('ranks quantum > hardware > hdWallet > standalone > multisig > watch', () => {
         expect(
             [
                 quantumAccount('A'),
                 hardwareAccount('A'),
                 hdAccount('A'),
-                algo25Account('A'),
+                standaloneAccount('A'),
                 multisigAccount('A', null),
                 watchAccount('A'),
             ].map(algorandDuplicateRank),
@@ -77,7 +77,7 @@ describe('algorandDuplicateRank', () => {
 
     it('ignores rekey state', () => {
         expect(
-            algorandDuplicateRank(watchAccount('A', { rekeyAddress: 'B' })),
+            algorandDuplicateRank(watchAccount('A', { authorityAddress: 'B' })),
         ).toBe(1)
     })
 })

@@ -12,10 +12,10 @@
 
 import type {
     LocalAccount,
+    LocalKeySeed,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     SerializedLedgerAccount,
@@ -87,11 +87,12 @@ export type ImportFlowParamList = {
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
     }
+    // `null` is the chain's standalone kind.
     ImportInfo: {
-        accountType: SeedScheme
+        accountType: LocalKeySeed
     }
     ImportAccount: {
-        accountType: SeedScheme
+        accountType: LocalKeySeed
     }
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined

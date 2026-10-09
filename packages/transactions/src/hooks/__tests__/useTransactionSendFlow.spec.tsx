@@ -111,7 +111,7 @@ const TXN = { sender: 'SENDER' } as unknown
 
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'A',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'A', keyPairId: 'key-A' } },
 }
 

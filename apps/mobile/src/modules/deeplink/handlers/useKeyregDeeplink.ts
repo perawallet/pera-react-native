@@ -105,7 +105,7 @@ const checkSigningEligibility = (
     if (resolution.kind === 'authMissing') {
         return {
             variant: 'keyreg-unknown-account',
-            reason: `Rekey target ${resolution.authAddress} is not in this wallet`,
+            reason: `Rekey target ${resolution.authorityAddress} is not in this wallet`,
         }
     }
     return {

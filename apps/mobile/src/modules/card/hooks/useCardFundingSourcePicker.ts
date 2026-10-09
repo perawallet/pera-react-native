@@ -19,6 +19,7 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import {
     canSignDirectly,
     canSignProgram,
+    chainAccountOf,
     findAccountByAddressOn,
     hasCustody,
     isRekeyedAccount,
@@ -43,10 +44,12 @@ const holdsCardSigningKey = (
     account: WalletAccount,
     chainId: ChainId,
 ): boolean =>
-    hasCustody(account, 'hardware') ||
-    (hasCustody(account, 'local') &&
-        localKeyKindOf(chainId, account.custody.seed)?.signingScheme ===
-            CARD_SIGNING_SCHEME)
+    // A key held only on another chain can't fund the card.
+    chainAccountOf(account, chainId) !== undefined &&
+    (hasCustody(account, 'hardware') ||
+        (hasCustody(account, 'local') &&
+            localKeyKindOf(chainId, account.custody.seed)?.signingScheme ===
+                CARD_SIGNING_SCHEME))
 
 /**
  * Accounts eligible as the card's funding source: local and hardware accounts

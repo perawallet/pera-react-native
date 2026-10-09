@@ -262,7 +262,7 @@ beforeEach(() => {
             captureIndices(args)
             const account = held('ALGO25_ADDR', {
                 kind: 'local',
-                seed: 'algo25',
+                seed: null,
             })
             storeState.accounts = [...storeState.accounts, account]
             return account
@@ -294,7 +294,7 @@ describe('useCloudBackupImport', () => {
         expect(submittedIndices).toEqual([0, 1, 2])
         expect(importAccountMock).toHaveBeenCalledWith({
             mnemonicIndices: expect.any(Uint16Array),
-            seed: 'algo25',
+            seed: null,
         })
         expect(updateAccountMock).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'My Algo25' }),

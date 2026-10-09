@@ -77,7 +77,7 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-ledger-source',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,
@@ -113,7 +113,7 @@ const seedRekeyAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { source, target }

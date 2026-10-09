@@ -59,7 +59,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 const mockFindAccountByAddress = vi.fn()
 const SIGNER_ACCOUNT = {
     id: 'signer',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
 }
 vi.mock('@perawallet/wallet-core-accounts', () => ({

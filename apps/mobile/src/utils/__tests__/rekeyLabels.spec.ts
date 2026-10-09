@@ -53,11 +53,13 @@ describe('authorityTransitionLabel on Algorand', () => {
     })
 
     it('names the ledger signer for a rekey to a Ledger auth account', () => {
-        expect(transitionLabel({ from: 'algo25', to: 'hardware' })).toEqual({
-            labelKey: 'account_info.type_rekeyed_signer',
-            signerKey: 'account_info.rekey_signer_ledger',
-            descriptionKey: 'account_type_info.rekeyed_ledger_description',
-        })
+        expect(transitionLabel({ from: 'standalone', to: 'hardware' })).toEqual(
+            {
+                labelKey: 'account_info.type_rekeyed_signer',
+                signerKey: 'account_info.rekey_signer_ledger',
+                descriptionKey: 'account_type_info.rekeyed_ledger_description',
+            },
+        )
     })
 
     it('keeps the ledger signer but swaps the description for ledger-to-ledger', () => {

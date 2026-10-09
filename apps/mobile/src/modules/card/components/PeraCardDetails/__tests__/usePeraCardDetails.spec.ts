@@ -206,7 +206,7 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 const walletAccount = (address: string): WalletAccount =>
     ({
         chains: { algorand: { address: address, keyPairId: `key-${address}` } },
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
     }) as WalletAccount
 
 // Shared secure-view response the reveal tests resolve the token request with.

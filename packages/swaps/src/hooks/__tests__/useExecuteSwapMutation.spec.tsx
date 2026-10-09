@@ -117,7 +117,7 @@ describe('useExecuteSwapMutation', () => {
     beforeEach(() => {
         mockSelectedAccount.current = account('SELECTED', {
             kind: 'local',
-            seed: 'algo25',
+            seed: null,
         })
         executeSwap = vi.fn()
         registerFakeSwapAdapter({ executeSwap })

@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { PinningError } from 'react-native-ssl-public-key-pinning'
+import { pinnedHostRegistry } from '@perawallet/wallet-extension-platform'
 import { initializeSslPinningService } from '../ssl-pinning.service'
 import { PINNED_ROOT_SPKI_HASHES, SSL_PINNING_EXPIRATION_DATE } from '../pins'
 
@@ -37,38 +38,47 @@ const pinEntry = () => ({
     expirationDate: SSL_PINNING_EXPIRATION_DATE,
 })
 
+const FIXTURE_FLAG = 'enable_ssl_pinning_fixture'
+
+const fixtureGroup = (urls: readonly string[]) => ({
+    flag: FIXTURE_FLAG,
+    urls,
+    domains: ['fixture.example'],
+})
+
 const makeDeps = (
     overrides: {
         isBackendPinningEnabled?: boolean
-        isNodePinningEnabled?: boolean
+        isFixturePinningEnabled?: boolean
         backendUrls?: readonly string[]
-        nodeUrls?: readonly string[]
+        fixtureUrls?: readonly string[]
     } = {},
 ) => {
     const {
         isBackendPinningEnabled = true,
-        isNodePinningEnabled = false,
+        isFixturePinningEnabled = false,
         backendUrls = ['https://mainnet.api.perawallet.app'],
-        nodeUrls = [],
+        fixtureUrls = [],
     } = overrides
     return {
         remoteConfig: {
             getBooleanValue: vi.fn((key: string) =>
-                key === 'enable_ssl_pinning_algod'
-                    ? isNodePinningEnabled
+                key === FIXTURE_FLAG
+                    ? isFixturePinningEnabled
                     : isBackendPinningEnabled,
             ),
         },
         analytics: { logEvent: vi.fn() },
         crashReporting: { recordNonFatalError: vi.fn() },
         backendUrls,
-        nodeUrls,
+        pinnedHostGroups: [fixtureGroup(fixtureUrls)],
     }
 }
 
 describe('initializeSslPinningService', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        pinnedHostRegistry.reset()
         mockIsSslPinningAvailable.mockReturnValue(true)
         mockInitializeSslPinning.mockResolvedValue(undefined)
     })
@@ -76,7 +86,7 @@ describe('initializeSslPinningService', () => {
     test('does not enable pinning while both remote flags are off', async () => {
         const deps = makeDeps({
             isBackendPinningEnabled: false,
-            isNodePinningEnabled: false,
+            isFixturePinningEnabled: false,
         })
 
         await initializeSslPinningService(deps)
@@ -86,7 +96,7 @@ describe('initializeSslPinningService', () => {
             false,
         )
         expect(deps.remoteConfig.getBooleanValue).toHaveBeenCalledWith(
-            'enable_ssl_pinning_algod',
+            FIXTURE_FLAG,
             false,
         )
         expect(mockInitializeSslPinning).not.toHaveBeenCalled()
@@ -99,7 +109,7 @@ describe('initializeSslPinningService', () => {
                 'https://mainnet.api.perawallet.app',
                 'https://testnet.api.perawallet.app',
             ],
-            nodeUrls: ['https://mainnet-api.algonode.cloud'],
+            fixtureUrls: ['https://node.fixture.example'],
         })
 
         await initializeSslPinningService(deps)
@@ -110,47 +120,47 @@ describe('initializeSslPinningService', () => {
         })
     })
 
-    test('pins only the node hosts when only the nodes flag is on', async () => {
+    test("pins only a chain group's hosts when only its flag is on", async () => {
         const deps = makeDeps({
             isBackendPinningEnabled: false,
-            isNodePinningEnabled: true,
-            backendUrls: ['https://mainnet.api.perawallet.app'],
-            nodeUrls: [
-                'https://mainnet-api.algonode.cloud',
-                'https://mainnet-idx.algonode.cloud',
+            isFixturePinningEnabled: true,
+            fixtureUrls: [
+                'https://node.fixture.example',
+                'https://indexer.fixture.example',
             ],
         })
 
         await initializeSslPinningService(deps)
 
         expect(mockInitializeSslPinning).toHaveBeenCalledWith({
-            'mainnet-api.algonode.cloud': pinEntry(),
-            'mainnet-idx.algonode.cloud': pinEntry(),
+            'node.fixture.example': pinEntry(),
+            'indexer.fixture.example': pinEntry(),
         })
     })
 
-    test('pins node hosts served from perawallet.app subdomains (production Nodely fronts)', async () => {
+    test("never pins a chain group's hosts outside its domains", async () => {
         const deps = makeDeps({
             isBackendPinningEnabled: false,
-            isNodePinningEnabled: true,
-            // CI builds inject Pera-owned hostnames for algod/indexer via env
-            // config; the node group must pin any perawallet.app host it is
-            // given.
-            nodeUrls: ['https://some-node.perawallet.app'],
+            isFixturePinningEnabled: true,
+            fixtureUrls: [
+                'https://node.fixture.example',
+                'https://evil-fixture.example',
+                'http://localhost:4001',
+            ],
         })
 
         await initializeSslPinningService(deps)
 
         expect(mockInitializeSslPinning).toHaveBeenCalledWith({
-            'some-node.perawallet.app': pinEntry(),
+            'node.fixture.example': pinEntry(),
         })
     })
 
-    test('pins both groups in a single initialization when both flags are on', async () => {
+    test('pins the backend and every chain group in a single initialization', async () => {
         const deps = makeDeps({
-            isNodePinningEnabled: true,
+            isFixturePinningEnabled: true,
             backendUrls: ['https://mainnet.api.perawallet.app'],
-            nodeUrls: ['https://mainnet-api.algonode.cloud'],
+            fixtureUrls: ['https://node.fixture.example'],
         })
 
         await initializeSslPinningService(deps)
@@ -158,16 +168,31 @@ describe('initializeSslPinningService', () => {
         expect(mockInitializeSslPinning).toHaveBeenCalledTimes(1)
         expect(mockInitializeSslPinning).toHaveBeenCalledWith({
             'mainnet.api.perawallet.app': pinEntry(),
-            'mainnet-api.algonode.cloud': pinEntry(),
+            'node.fixture.example': pinEntry(),
         })
     })
 
-    test('the backend group never pins third-party node domains', async () => {
+    test('reads the chain groups from the pinned-host registry by default', async () => {
+        pinnedHostRegistry.declare(
+            fixtureGroup(['https://node.fixture.example']),
+        )
+        const { pinnedHostGroups: _, ...deps } = makeDeps({
+            isBackendPinningEnabled: false,
+            isFixturePinningEnabled: true,
+        })
+
+        await initializeSslPinningService(deps)
+
+        expect(mockInitializeSslPinning).toHaveBeenCalledWith({
+            'node.fixture.example': pinEntry(),
+        })
+    })
+
+    test('the backend group never pins third-party chain domains', async () => {
         const deps = makeDeps({
-            isNodePinningEnabled: false,
-            // A node host leaking into the backend URL list must not be
+            // A chain host leaking into the backend URL list must not be
             // pinned by the backend group.
-            backendUrls: ['https://mainnet-api.algonode.cloud'],
+            backendUrls: ['https://node.fixture.example'],
         })
 
         await initializeSslPinningService(deps)

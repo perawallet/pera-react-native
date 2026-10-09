@@ -65,7 +65,7 @@ const standardAccount = (authority?: string): WalletAccount => {
     if (authority) seedAuthority(STANDARD_ADDRESS, authority)
     return {
         id: 'standard-id',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: { address: STANDARD_ADDRESS, keyPairId: 'standard-key' },
         },

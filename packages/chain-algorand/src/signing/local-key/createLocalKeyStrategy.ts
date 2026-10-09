@@ -36,7 +36,7 @@ import {
 import {
     accountType,
     algorandAddressOf,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from '../../accounts/vocabulary'
@@ -75,7 +75,7 @@ export const createLocalKeyStrategy = (
             }
 
             if (
-                !isAlgo25Account(account) &&
+                !isStandaloneAccount(account) &&
                 !isHDWalletAccount(account) &&
                 !isQuantumAccount(account)
             ) {

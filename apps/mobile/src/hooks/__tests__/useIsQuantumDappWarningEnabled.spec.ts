@@ -18,7 +18,10 @@ import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnable
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfig: vi.fn(),
-    RemoteConfigKeys: {
+}))
+
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    AlgorandRemoteConfigKeys: {
         enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
     },
 }))

@@ -73,7 +73,7 @@ import { addressOf } from './__fixtures__/accounts'
 
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         algorand: {
             address: ALGO25_TEST_ADDRESS,

@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { SeedScheme, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import { algo25SecretKeyToIndices } from './legacyKeyConversion'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
@@ -28,7 +28,7 @@ export const migrateAlgo25Account = async ({
         mnemonicIndices = algo25SecretKeyToIndices(account.secretKey)
         const created = await importAccount({
             mnemonicIndices,
-            seed: SeedScheme.Algo25,
+            seed: null,
         })
 
         if (Array.isArray(created) || !('custody' in created)) {

@@ -118,7 +118,7 @@ describe('conformance keystore harness', () => {
         expect(info.address.toString()).toBe(account.address)
         // Never rekeyed, so the app model must report no auth address rather
         // than echoing the account's own.
-        expect(info.authAddress).toBeUndefined()
+        expect(info.authorityAddress).toBeUndefined()
     })
 
     // Member order is part of the multisig preimage, so a harness that

@@ -131,7 +131,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 id: '1',
                 address: 'ADDR1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
         ])
@@ -478,7 +478,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
             {
@@ -516,7 +516,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
         ])
@@ -546,7 +546,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
         ])
@@ -581,13 +581,13 @@ describe('useAccountNotificationToggle', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
             {
                 id: '2',
                 address: 'ADDR_B',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp2',
             },
         ])

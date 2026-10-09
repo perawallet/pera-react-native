@@ -297,7 +297,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         const concurrent = {
             id: 'c',
             chains: { algorand: { address: 'CONCURRENT', keyPairId: 'kp-c' } },
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         } as WalletAccount
         // Lands after render (useAllAccounts snapshot) but before the
         // deferred commit — e.g. background sync or another import flow.

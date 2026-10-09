@@ -44,7 +44,7 @@ import { useResolveMnemonicForBackup } from '../useResolveMnemonicForBackup'
 
 const ACCOUNT: LocalAccount = {
     id: 'a-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ADDR', keyPairId: 'key-1' } },
     name: 'Algo25',
 }

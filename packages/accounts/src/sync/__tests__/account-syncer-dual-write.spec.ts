@@ -58,7 +58,7 @@ const snapshot = (
     totalCreatedAssets: 1,
     totalAppsOptedIn: 1,
     status: 'Online',
-    authAddress: 'REKEY_ADDR',
+    authorityAddress: 'REKEY_ADDR',
     chainState: {
         family: 'algorand',
         authAddress: 'REKEY_ADDR',
@@ -121,7 +121,7 @@ describe('fetchAndPersistAccount dual-write', () => {
             balance.minBalance,
         )
         expect(chainData).toMatchObject({
-            authAddress: balance.authAddress,
+            authAddress: balance.authorityAddress,
             status: balance.status,
             totalAssetsOptedIn: balance.totalAssetsOptedIn,
             totalCreatedAssets: balance.totalCreatedAssets,
@@ -145,7 +145,7 @@ describe('fetchAndPersistAccount dual-write', () => {
             snapshot({
                 nativeBalance: new Decimal('3'),
                 nativeBalanceBaseUnits: algosToMicroAlgos(new Decimal('3')),
-                authAddress: null,
+                authorityAddress: null,
                 status: 'Offline',
                 chainState: {
                     family: 'algorand',
@@ -163,7 +163,7 @@ describe('fetchAndPersistAccount dual-write', () => {
         const { balance, chainState, chainData } = await readBothTables()
         expect(balance.algoBalance).toEqual(new Decimal('3'))
         expect(chainState.nativeBalance).toEqual(new Decimal(3_000_000))
-        expect(balance.authAddress).toBeNull()
+        expect(balance.authorityAddress).toBeNull()
         expect(chainData.authAddress).toBeUndefined()
         expect(chainData.status).toBe(balance.status)
     })

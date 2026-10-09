@@ -111,9 +111,9 @@ const watchAccount = (
     ...overrides,
 })
 
-const algo25Account = (address: string): WalletAccount => ({
+const standaloneAccount = (address: string): WalletAccount => ({
     id: address,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: {
         [ALGORAND_CHAIN_ID]: {
             address,
@@ -170,7 +170,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('imports a single account, marks it backed up, and zeroes the seed buffer', async () => {
-        const imported = algo25Account(VALID_ADDRESS_A)
+        const imported = standaloneAccount(VALID_ADDRESS_A)
         mockImportAlgo25.mockResolvedValue(imported)
 
         const useAsbAccountImport = await importHook()
@@ -189,7 +189,7 @@ describe('useAsbAccountImport', () => {
 
         expect(mockImportAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            seed: 'algo25',
+            seed: null,
         })
         // No `name` on the asb row, so updateAccount must not be called.
         expect(mockUpdateAccount).not.toHaveBeenCalled()
@@ -202,7 +202,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('renames the imported account when the asb row carries a name', async () => {
-        const imported = algo25Account(VALID_ADDRESS_A)
+        const imported = standaloneAccount(VALID_ADDRESS_A)
         mockImportAlgo25.mockResolvedValue(imported)
 
         const useAsbAccountImport = await importHook()
@@ -256,7 +256,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('persists a watch account when no duplicate exists', async () => {
-        const existing = algo25Account(VALID_ADDRESS_A)
+        const existing = standaloneAccount(VALID_ADDRESS_A)
         storeAccounts = [existing]
 
         const useAsbAccountImport = await importHook()
@@ -298,7 +298,10 @@ describe('useAsbAccountImport', () => {
 
     test('throws DuplicateAccountError when the watch address already exists', async () => {
         storeAccounts = [
-            { ...algo25Account(VALID_ADDRESS_B), custody: { kind: 'watch' } },
+            {
+                ...standaloneAccount(VALID_ADDRESS_B),
+                custody: { kind: 'watch' },
+            },
         ]
 
         const useAsbAccountImport = await importHook()

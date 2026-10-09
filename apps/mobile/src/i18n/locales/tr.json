@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
-            }
+            },
+            "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan."
         },
         "submission": {
             "unknown_outcome": {
@@ -4194,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet doğrulaması"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Pera’yı geliştirmemize yardım et",
+            "body": "Pera’nın anonim uygulama kullanım verilerini toplamasına izin ver. Bu, ürünü geliştirmemize yardımcı olur. Seçimini istediğin zaman Ayarlar’dan değiştirebilirsin.",
+            "allow": "İzin ver",
+            "decline": "İzin verme"
+        },
+        "settings_label": "Kullanım analizlerini paylaş"
     }
 }

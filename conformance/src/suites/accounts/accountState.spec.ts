@@ -90,7 +90,7 @@ describe('account state conformance', () => {
         // constant the app falls back to when remote config is unavailable.
         expect(info.minBalance).toBe(FALLBACK_BASE_ACCOUNT_MBR)
         expect(info.assets).toEqual([])
-        expect(info.authAddress).toBeUndefined()
+        expect(info.authorityAddress).toBeUndefined()
     })
 
     it('raises the reported MBR by exactly one asset MBR after an opt-in', async () => {

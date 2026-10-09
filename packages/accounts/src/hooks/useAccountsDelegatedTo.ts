@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { accountsChainAdapters } from '../chain-adapter'
-import { useAccountsStore } from '../store'
+import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 
 /**
@@ -22,15 +22,17 @@ import type { WalletAccount } from '../models'
  * cheap enough to call from render paths, unlike `useRekeyedAddressesQuery`,
  * which asks the indexer.
  */
-export const useAccountsRekeyedTo = (
+export const useAccountsDelegatedTo = (
     address: string | null | undefined,
     chainId: ChainId,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
+    // Reads every legacy scope, so any slice write can change the result.
+    const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(() => {
         const authority = accountsChainAdapters.get(chainId).authority
         return address && authority
             ? authority.accountsDelegatedTo(address, accounts)
             : []
-    }, [address, accounts, chainId])
+    }, [address, accounts, chainId, chainStates])
 }

@@ -11,8 +11,7 @@
  */
 
 import {
-    RemoteConfigDefaults,
-    RemoteConfigKeys,
+    remoteConfigDefaultsRegistry,
     useRemoteConfigOverrides,
 } from '@perawallet/wallet-core-remote-config'
 import { useMemo } from 'react'
@@ -22,16 +21,17 @@ export const useFeatureFlagOverrides = () => {
 
     // Booleans get a toggle, strings a text field. Number-valued keys
     // (e.g. thresholds) still have no editor and stay hidden.
+    // The registry holds the platform's keys and every one a chain declared.
     const booleanFlagKeys = useMemo(() => {
-        const defaults = RemoteConfigDefaults as Record<string, unknown>
-        return Object.keys(RemoteConfigKeys).filter(
+        const defaults = remoteConfigDefaultsRegistry.all()
+        return Object.keys(defaults).filter(
             key => typeof defaults[key] === 'boolean',
         )
     }, [])
 
     const stringFlagKeys = useMemo(() => {
-        const defaults = RemoteConfigDefaults as Record<string, unknown>
-        return Object.keys(RemoteConfigKeys).filter(
+        const defaults = remoteConfigDefaultsRegistry.all()
+        return Object.keys(defaults).filter(
             key => typeof defaults[key] === 'string',
         )
     }, [])

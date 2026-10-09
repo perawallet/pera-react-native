@@ -15,10 +15,10 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
-    isRekeyedAccount,
     useAccountPresentation,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyAccount,
+    useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { IconName } from '@components/core'
@@ -75,7 +75,7 @@ export type UseAccountIconOptions = {
     displayState?: AccountDisplayState
     /**
      * The auth account, for callers that force `rekeyedSignable` on a
-     * synthetic account. `useRekeyAccount` can only resolve an auth address
+     * synthetic account. `useDelegatedAccount` can only resolve an auth address
      * that is already in the store, so without this a rekeyed-to-Ledger
      * preview falls back to the turquoise standard glyph.
      */
@@ -88,11 +88,12 @@ export const useAccountIcon = (
 ): AccountGlyph | null => {
     const { ignoreRekey, displayState, authAccount } = options
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const rekeyAccount = useRekeyAccount(
+    const rekeyAccount = useDelegatedAccount(
         account ? addressOn(account, scope) : undefined,
         scope.chainId,
     )
     const canSign = useCanSignWith(account, scope.chainId)
+    const authority = useAuthorityOf(account, scope)
     const presentation = useAccountPresentation(account, scope)
     // Keyed off the auth account (what it's rekeyed *to*), not the account
     // itself: a standard account rekeyed to a Ledger shows the ledger glyph.
@@ -104,8 +105,7 @@ export const useAccountIcon = (
     return useMemo(() => {
         if (!account) return null
 
-        const isRekeyed =
-            !ignoreRekey && isRekeyedAccount(account, scope.chainId)
+        const isRekeyed = !ignoreRekey && authority !== null
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed
@@ -132,8 +132,8 @@ export const useAccountIcon = (
         ignoreRekey,
         displayState,
         canSign,
+        authority,
         presentation,
         authPresentation,
-        scope.chainId,
     ])
 }

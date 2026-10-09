@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useKMS, type SeedScheme } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -21,6 +21,7 @@ import {
     accountsChainAdapters,
     deriveHdAccount,
     requireSingleKeyAccounts,
+    type LocalKeySeed,
 } from '../chain-adapter'
 import {
     setPendingAccountRollback,
@@ -124,7 +125,7 @@ export const useCreateAccount = (scope: ChainScope) => {
         seed,
         id,
     }: {
-        seed: SeedScheme
+        seed: LocalKeySeed
         id?: string
     }): Promise<WalletAccount> => {
         const minted = await requireSingleKeyAccounts(
@@ -163,7 +164,7 @@ export const useCreateAccount = (scope: ChainScope) => {
     }
 
     const createSingleKeyAccount = async (params: {
-        seed: SeedScheme
+        seed: LocalKeySeed
         id?: string
     }) => {
         const newAccount = await buildSingleKeyAccount(params)

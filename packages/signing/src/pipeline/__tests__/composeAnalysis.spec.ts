@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { composeAnalysis } from '../composeAnalysis'
-import type { AnalysisWarning, DecodedGroup } from '../types'
+import { describe, it, expect, vi } from 'vitest'
+import { composeAnalysis, reviewGroup } from '../composeAnalysis'
+import type {
+    AnalysisContext,
+    AnalysisWarning,
+    DecodedGroup,
+    SignableGroup,
+} from '../types'
 
 const decoded: DecodedGroup = {
     totalFees: 2000n,
@@ -50,4 +55,25 @@ describe('composeAnalysis', () => {
             )
         },
     )
+})
+
+describe('reviewGroup', () => {
+    it('hands the decoded group to the detector and composes both', async () => {
+        const group = { signerAddress: 'A' } as SignableGroup
+        const context = { accounts: [] } as unknown as AnalysisContext
+        const detect = vi.fn(() => [warning('danger')])
+
+        const analysis = await reviewGroup(
+            { decoder: { decode: async () => decoded }, warnings: { detect } },
+            group,
+            context,
+        )
+
+        expect(detect).toHaveBeenCalledWith(group, decoded, context)
+        expect(analysis).toEqual({
+            ...decoded,
+            warnings: [warning('danger')],
+            riskLevel: 'high',
+        })
+    })
 })

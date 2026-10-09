@@ -69,11 +69,18 @@ export const credentialScheme = (
         case 'local': {
             const keyPairId = signingKeyOn(account, chain.id)
             if (!keyPairId) return null
-            const seed = loadedSeedScheme(keys, keyPairId) ?? custody.seed
-            // A chain with no accounts adapter declares no key kinds, so its
-            // keys sign with its primary scheme.
+            const loaded = loadedSeedScheme(keys, keyPairId)
+            // A loaded seed no kind is stored under is a standalone key's: the
+            // keystore files it under a scheme of its own, the custody under
+            // none. A chain with no accounts adapter declares no key kinds, so
+            // its keys sign with its primary scheme.
+            const kindOf = () =>
+                loaded === null
+                    ? localKeyKindOf(chain.id, custody.seed)
+                    : (localKeyKindOf(chain.id, loaded) ??
+                      localKeyKindOf(chain.id, null))
             const scheme = accountsChainAdapters.has(chain.id)
-                ? (localKeyKindOf(chain.id, seed)?.signingScheme ?? null)
+                ? (kindOf()?.signingScheme ?? null)
                 : primary
             return scheme && chain.signing.schemes.includes(scheme)
                 ? scheme

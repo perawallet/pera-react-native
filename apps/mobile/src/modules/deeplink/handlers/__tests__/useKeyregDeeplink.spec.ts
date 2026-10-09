@@ -43,7 +43,7 @@ const {
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
     mockResolveSignerForAccount: vi.fn(
         (_account?: unknown, _accounts?: unknown) =>
-            ({ kind: 'ok' }) as { kind: string; authAddress?: string },
+            ({ kind: 'ok' }) as { kind: string; authorityAddress?: string },
     ),
     mockNetwork: { current: 'mainnet' },
     mockAssignFeeToGroup: vi.fn(),
@@ -320,7 +320,7 @@ describe('useKeyregDeeplink', () => {
             seedSenderInWallet()
             mockResolveSignerForAccount.mockReturnValue({
                 kind: 'authMissing',
-                authAddress: 'AUTH',
+                authorityAddress: 'AUTH',
             })
 
             const { result } = renderHook(() => useKeyregDeeplink())

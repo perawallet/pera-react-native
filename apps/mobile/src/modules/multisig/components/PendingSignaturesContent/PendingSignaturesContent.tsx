@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWIcon,
+    PWLoadingIndicator,
     PWSheetLayout,
     PWText,
     PWView,
@@ -33,7 +32,6 @@ export type PendingSignaturesContentProps = Record<string, never>
 
 export const PendingSignaturesContent = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const {
         signRequest,
@@ -121,10 +119,7 @@ export const PendingSignaturesContent = () => {
                             style={styles.submittingBanner}
                             testID='pending_signatures_submitting_banner'
                         >
-                            <ActivityIndicator
-                                size='small'
-                                color={theme.colors.textGray}
-                            />
+                            <PWLoadingIndicator size='sm' />
                             <PWText
                                 variant='caption'
                                 style={styles.submittingBannerText}
@@ -224,10 +219,7 @@ export const PendingSignaturesContent = () => {
                         style={styles.loadingContainer}
                         testID='pending_signatures_loading_indicator'
                     >
-                        <ActivityIndicator
-                            size='large'
-                            color={theme.colors.textGray}
-                        />
+                        <PWLoadingIndicator size='lg' />
                     </PWView>
                 )}
 

@@ -642,10 +642,10 @@ describe('submitAndAutoRefresh (public)', () => {
         .fn()
         .mockReturnValue([new Uint8Array([1])])
 
-    const algo25Account = (address: string): WalletAccount =>
+    const standaloneAccount = (address: string): WalletAccount =>
         ({
             id: address,
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 [ALGORAND_CHAIN_ID]: {
                     address,
@@ -665,7 +665,9 @@ describe('submitAndAutoRefresh (public)', () => {
     })
 
     test('submits the group through the real path and confirms in the background', async () => {
-        useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
+        useAccountsStore
+            .getState()
+            .setAccounts([standaloneAccount(PUBLIC_WALLET)])
         const onConfirmed = vi.fn()
         setOnConfirmedHandler(onConfirmed)
 

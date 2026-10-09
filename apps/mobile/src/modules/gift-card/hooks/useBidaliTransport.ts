@@ -54,8 +54,12 @@ import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
 import { sendBidaliEvent } from './bidali-events'
 
-const SUPPORTED_CURRENCIES = ['algorand', 'usdcalgorand']
-const SUPPORTED_CURRENCIES_JSON = JSON.stringify(SUPPORTED_CURRENCIES)
+// The one copy: web stamps it onto the iframe URL for the browser's content script.
+export const BIDALI_PAYMENT_CURRENCIES: readonly string[] = [
+    'algorand',
+    'usdcalgorand',
+]
+const BIDALI_PAYMENT_CURRENCIES_JSON = JSON.stringify(BIDALI_PAYMENT_CURRENCIES)
 
 type CurrencyInfo = {
     assetId: string
@@ -139,7 +143,7 @@ const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
             window.bidaliProvider = {
                 key: '${apiKey}',
                 name: 'perawallet',
-                paymentCurrencies: ${SUPPORTED_CURRENCIES_JSON},
+                paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES_JSON},
                 balances: ${balances},
 
                 onPaymentRequest: function(req) {

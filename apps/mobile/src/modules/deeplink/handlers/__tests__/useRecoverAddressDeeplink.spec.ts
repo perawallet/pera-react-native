@@ -109,7 +109,7 @@ describe('useRecoverAddressDeeplink', () => {
     it('normalizes a comma-separated mnemonic before forwarding it', async () => {
         vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            seed: 'algo25',
+            seed: null,
         } as never)
 
         const { result } = renderHook(() => useRecoverAddressDeeplink())
@@ -126,7 +126,7 @@ describe('useRecoverAddressDeeplink', () => {
         expect(mockNavigate).toHaveBeenCalledWith(false, 'AddAccount', {
             screen: 'ImportAccount',
             params: {
-                accountType: 'algo25',
+                accountType: null,
             },
         })
     })

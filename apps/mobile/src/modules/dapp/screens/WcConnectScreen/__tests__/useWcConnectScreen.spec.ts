@@ -45,13 +45,13 @@ import { useWcConnectScreen } from '../useWcConnectScreen'
 const ACCOUNT_A = {
     id: 'account-a',
     name: 'Account A',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'AAAA', keyPairId: 'key-a' } },
 }
 const ACCOUNT_B = {
     id: 'account-b',
     name: 'Account B',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'BBBB', keyPairId: 'key-b' } },
 }
 

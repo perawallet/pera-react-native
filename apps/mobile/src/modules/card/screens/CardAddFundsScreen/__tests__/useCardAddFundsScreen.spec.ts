@@ -112,7 +112,7 @@ vi.mock('../../../hooks', () => ({
     useCardFundingAccount: () => ({
         id: 'main',
         name: 'Main Account',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address: 'ADDR' } },
     }),
     useCardManualDeposit: () => ({

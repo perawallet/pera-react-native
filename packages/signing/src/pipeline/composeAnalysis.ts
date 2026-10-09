@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import type { AnalysisWarning, DecodedGroup, SignableAnalysis } from './types'
+import type { TransactionDecoder, WarningDetector } from '../chain-adapter'
+import type {
+    AnalysisContext,
+    AnalysisWarning,
+    DecodedGroup,
+    SignableAnalysis,
+    SignableGroup,
+} from './types'
 
 const riskLevelOf = (
     warnings: AnalysisWarning[],
@@ -29,3 +36,15 @@ export const composeAnalysis = (
     warnings,
     riskLevel: riskLevelOf(warnings),
 })
+
+export const reviewGroup = async (
+    reviewer: { decoder: TransactionDecoder; warnings: WarningDetector },
+    group: SignableGroup,
+    context: AnalysisContext,
+): Promise<SignableAnalysis> => {
+    const decoded = await reviewer.decoder.decode(group, context)
+    return composeAnalysis(
+        decoded,
+        reviewer.warnings.detect(group, decoded, context),
+    )
+}

@@ -32,7 +32,6 @@ import {
     classifyRequestStructure,
     createTransactionListItems,
 } from './classification'
-import { createStandardAnalyzer } from './createStandardAnalyzer'
 import { enqueueArc0001SignRequest } from './enqueueArc0001SignRequest'
 import {
     useAlgorandFeeConfig,
@@ -88,7 +87,6 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     decoder: algorandTransactionDecoder,
     warnings: algorandWarningDetector,
     policy: algorandReviewPolicy,
-    analyze: createStandardAnalyzer().analyze,
     createTransactionListItems,
     classifyRequestStructure,
     aggregateTransactionWarnings,

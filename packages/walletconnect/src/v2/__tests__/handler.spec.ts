@@ -125,6 +125,7 @@ const makeHandler = (
         projectId?: string
         walletKit?: FakeWalletKit
         createWalletKit?: Mock<WalletKitFactory>
+        startWhen?: () => Promise<void>
     } = {},
 ) => {
     const walletKit = overrides.walletKit ?? createFakeWalletKit()
@@ -137,6 +138,7 @@ const makeHandler = (
         projectId: overrides.projectId ?? PROJECT_ID,
         keyValueStorage,
         createWalletKit,
+        startWhen: overrides.startWhen,
     })
     return { handler, walletKit, createWalletKit, keyValueStorage }
 }
@@ -220,6 +222,123 @@ describe('initialize', () => {
         const { handler } = makeHandler({ projectId: '' })
         await handler.initialize(makeContext(memoryStore([storedV2Record()])))
 
+        expect(await handler.restore()).toEqual([])
+    })
+})
+
+describe('deferred start', () => {
+    const gate = () => {
+        let open: () => void = () => undefined
+        const promise = new Promise<void>(resolve => {
+            open = resolve
+        })
+        return { startWhen: () => promise, open }
+    }
+
+    it('starts no client until startWhen resolves, keeping the stored sessions meanwhile', async () => {
+        const { startWhen, open } = gate()
+        const { handler, createWalletKit } = makeHandler({
+            walletKit: createFakeWalletKit({ [TOPIC]: makeSession() }),
+            startWhen,
+        })
+        const store = memoryStore([storedV2Record()])
+        const registry = createConnectionRegistry({ store })
+        registry.register(handler)
+
+        await registry.initialize()
+
+        expect(createWalletKit).not.toHaveBeenCalled()
+        expect((await store.list()).map(({ id }) => id)).toEqual([TOPIC])
+
+        open()
+        await flush()
+
+        expect(createWalletKit).toHaveBeenCalledTimes(1)
+        expect((await store.list()).map(({ id }) => id)).toEqual([TOPIC])
+    })
+
+    it('prunes a stored session WalletKit no longer holds once it starts', async () => {
+        const { startWhen, open } = gate()
+        const { handler } = makeHandler({
+            walletKit: createFakeWalletKit({
+                [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+            }),
+            startWhen,
+        })
+        const store = memoryStore([storedV2Record()])
+        const registry = createConnectionRegistry({ store })
+        registry.register(handler)
+        await registry.initialize()
+
+        open()
+        await flush()
+
+        expect((await store.list()).map(({ id }) => id)).toEqual([OTHER_TOPIC])
+    })
+
+    it('loads nothing at boot without v2 sessions, and starts on the first pairing', async () => {
+        const { handler, createWalletKit, walletKit } = makeHandler({
+            startWhen: async () => undefined,
+        })
+        await handler.initialize(makeContext())
+        await flush()
+
+        expect(createWalletKit).not.toHaveBeenCalled()
+
+        await expect(uriPairing(handler).pair(V2_URI)).resolves.toBe(
+            PAIRING_TOPIC,
+        )
+        expect(createWalletKit).toHaveBeenCalledTimes(1)
+        expect(walletKit.pair).toHaveBeenCalledWith({ uri: V2_URI })
+    })
+
+    it('does not hold a pairing behind startWhen', async () => {
+        const { startWhen } = gate()
+        const { handler, createWalletKit } = makeHandler({ startWhen })
+        await handler.initialize(makeContext())
+
+        await expect(uriPairing(handler).pair(V2_URI)).resolves.toBe(
+            PAIRING_TOPIC,
+        )
+        expect(createWalletKit).toHaveBeenCalledTimes(1)
+    })
+
+    it('ends a session with the peer when it is disconnected before the start', async () => {
+        const { startWhen } = gate()
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        const { handler } = makeHandler({ walletKit, startWhen })
+        const store = memoryStore([storedV2Record()])
+        await handler.initialize(makeContext(store))
+
+        await handler.disconnect(TOPIC)
+
+        expect(walletKit.disconnectSession).toHaveBeenCalledWith(
+            expect.objectContaining({ topic: TOPIC }),
+        )
+        expect(await store.list()).toEqual([])
+    })
+
+    it('closes a client that lands after teardown', async () => {
+        let land: (walletKit: FakeWalletKit) => void = () => undefined
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        const { handler } = makeHandler({
+            walletKit,
+            startWhen: async () => undefined,
+            createWalletKit: vi.fn<WalletKitFactory>(
+                () =>
+                    new Promise(resolve => {
+                        land = resolve
+                    }),
+            ),
+        })
+        await handler.initialize(makeContext(memoryStore([storedV2Record()])))
+        await flush()
+
+        await handler.teardown()
+        land(walletKit)
+        await flush()
+
+        expect(walletKit.transportClose).toHaveBeenCalledTimes(1)
         expect(await handler.restore()).toEqual([])
     })
 })

@@ -45,6 +45,7 @@ export const fixtureEthereumDescriptor: ChainDescriptor = {
     ...algorandDescriptor,
     id: ETHEREUM_CHAIN_ID,
     displayName: 'Ethereum',
+    uriSchemes: ['ethereum'],
     networks: [
         ethereumNetwork({
             id: 'mainnet',

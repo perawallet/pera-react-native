@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { authorityOf } from '../../credentials/accessors'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -60,7 +59,7 @@ describe('fetchAndPersistAccount', () => {
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
                 status: 'Offline',
-                authAddress: 'S',
+                authorityAddress: 'S',
                 chainState: {
                     family: 'algorand',
                     authAddress: 'S',
@@ -90,17 +89,15 @@ describe('fetchAndPersistAccount', () => {
         ])
     })
 
-    it('mirrors the chain authAddr into the Zustand account', async () => {
+    it('records the chain authAddr as the account authority', async () => {
         await fetchAndPersistAccount('A', MAINNET_SCOPE)
 
+        // Imported after resetModules, so it reads this graph's slice.
+        const { authorityOf } = await import('../../credentials/accessors')
         const account = useAccountsStore
             .getState()
             .accounts.find(a => a.id === 'A')
         expect(authorityOf(account!, MAINNET_SCOPE)).toBe('S')
-        expect(account?.rekeyAddress).toBe('S')
-        // The sync's network is threaded into the per-network state, not
-        // just the active-network mirror.
-        expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
     })
 
     it('writes the chain-state slice and keeps its reference on an unchanged sync', async () => {

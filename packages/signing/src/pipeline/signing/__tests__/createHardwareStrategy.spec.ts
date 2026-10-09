@@ -118,6 +118,7 @@ const makeMockTransport = (): HardwareWalletTransport => ({
     signTransaction: vi.fn().mockResolvedValue(MOCK_SIGNATURE),
     signData: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
     getAppVersion: vi.fn().mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+    assertCanSignData: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
 })
 
@@ -903,9 +904,6 @@ describe('createHardwareStrategy', () => {
     describe('auth-data hardware signing', () => {
         it("validates through the strategy chain's message signer, never Algorand's", async () => {
             const transport = makeAuthDataTransport({
-                getAppVersion: vi
-                    .fn()
-                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
                 signData: vi.fn().mockResolvedValue(Uint8Array.from([1])),
             })
             const signerPublicKey = vi.fn(() => new Uint8Array(32).fill(0xaa))
@@ -932,9 +930,6 @@ describe('createHardwareStrategy', () => {
         it('signs with a supported app version', async () => {
             const authDataSignature = Uint8Array.from([1, 2, 3])
             const transport = makeAuthDataTransport({
-                getAppVersion: vi
-                    .fn()
-                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
                 signData: vi.fn().mockResolvedValue(authDataSignature),
             })
             const KEY = new Uint8Array(32).fill(0xaa)
@@ -971,13 +966,14 @@ describe('createHardwareStrategy', () => {
             })
         })
 
-        it('throws LedgerAppOutdatedError on too-old app version', async () => {
+        it('throws the outdated-app error before validating or prompting', async () => {
             const transport = makeAuthDataTransport({
-                getAppVersion: vi
+                assertCanSignData: vi
                     .fn()
-                    .mockResolvedValue({ major: 1, minor: 9, patch: 0 }),
+                    .mockRejectedValue(new LedgerAppOutdatedError()),
                 signData: vi.fn(),
             })
+            const onSigningStart = vi.fn()
             const validateAuthData = vi.fn()
             registerFakeMessageSignerAdapter({ validateAuthData })
             const strategy = createHardwareStrategy({
@@ -993,9 +989,11 @@ describe('createHardwareStrategy', () => {
                 strategy.sign(
                     makeAuthDataGroup(),
                     makeLedgerAccount(SIGNER_ADDRESS, 0),
+                    { onSigningStart },
                 ),
             ).rejects.toBeInstanceOf(LedgerAppOutdatedError)
             expect(validateAuthData).not.toHaveBeenCalled()
+            expect(onSigningStart).not.toHaveBeenCalled()
             expect(transport.signData).not.toHaveBeenCalled()
         })
 
@@ -1072,7 +1070,7 @@ describe('createHardwareStrategy', () => {
                 ),
             ).rejects.toBeInstanceOf(CannotSignError)
             expect(provider.connect).not.toHaveBeenCalled()
-            expect(transport.getAppVersion).not.toHaveBeenCalled()
+            expect(transport.assertCanSignData).not.toHaveBeenCalled()
             expect(transport.signData).not.toHaveBeenCalled()
         })
 

@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-123',
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -90,7 +90,7 @@ const SIGNER = 'SIGNER_ADDRESS'
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 

@@ -19,13 +19,13 @@ import { useSettingsLaunchScreen } from '../useSettingsLaunchScreen'
 const alice: WalletAccount = {
     id: '1',
     name: 'Alice',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ALICE-ADDR', keyPairId: 'kp-1' } },
 }
 const bob: WalletAccount = {
     id: '2',
     name: 'Bob',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'BOB-ADDR', keyPairId: 'kp-2' } },
 }
 

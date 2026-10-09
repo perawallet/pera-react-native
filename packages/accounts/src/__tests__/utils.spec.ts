@@ -39,6 +39,7 @@ import {
     TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from './fakeAccountsChain'
 
 const OTHER_CHAIN_ID = 'ethereum' as ChainId
@@ -191,9 +192,8 @@ describe('services/accounts/utils - signing capability', () => {
     })
 
     test('a rekeyed watch account still cannot sign arbitrary data', () => {
-        const account = testAccount('watch', 'W', {
-            rekeyAddress: 'LOCAL-ADDR',
-        })
+        const account = testAccount('watch', 'W')
+        seedAuthority('W', 'LOCAL-ADDR')
 
         expect(canSignArbitraryData(account)).toBe(false)
     })

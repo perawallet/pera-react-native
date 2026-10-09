@@ -56,6 +56,8 @@ import { algorandRampAdapter } from '../onramp'
 import { algorandMessageSignerAdapter } from '../signing'
 import { algorandMultisigAdapter } from '../multisig'
 import { algorandBackupAdapter } from '../backup'
+import { algorandPinnedHosts } from '../blockchain/pinned-hosts'
+import { algorandRemoteConfigDefaults } from '../blockchain/remote-config'
 
 // register ignores its context: the adapters are module-level instances.
 const stubCtx = {} as ChainContext
@@ -107,6 +109,13 @@ describe('chainModule', () => {
 
     it('is typed as a ChainModule', () => {
         expectTypeOf(chainModule).toEqualTypeOf<ChainModule>()
+    })
+
+    it('declares its remote-config defaults and pinned node hosts', () => {
+        expect(chainModule.remoteConfigDefaults).toBe(
+            algorandRemoteConfigDefaults,
+        )
+        expect(chainModule.pinnedHosts).toBe(algorandPinnedHosts)
     })
 
     it('registers the descriptor and every adapter through the chain setup', () => {

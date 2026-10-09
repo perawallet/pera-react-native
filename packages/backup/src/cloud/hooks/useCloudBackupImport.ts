@@ -20,6 +20,7 @@ import {
     useUpdateAccount,
     type HardwareWalletAccount,
     type LocalAccount,
+    type LocalKeySeed,
     type MultiSigAccount,
     type WalletAccount,
     type WatchAccount,
@@ -37,7 +38,6 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
-import type { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { backupAdapterFor, type BackupChainAdapter } from '../../chain-adapter'
 import {
     BackupAccountType,
@@ -156,9 +156,12 @@ const buildMultisigAccount = (
     })
 }
 
+// Only a bip39 seed derives HD children.
+type HdSeed = Extract<LocalKeySeed, 'bip39'>
+
 const buildHdWalletAccount = async (
     { adapter }: ImportContext,
-    seed: SeedScheme,
+    seed: HdSeed,
     seedKeyId: string,
     payload: HdAccountAddressPayload,
 ): Promise<LocalAccount> => {
@@ -199,7 +202,7 @@ const buildHdWalletAccount = async (
  */
 const importFromMnemonic = async (
     { importAccount, updateAccount, scope }: ImportContext,
-    seed: SeedScheme,
+    seed: LocalKeySeed,
     addressPayload: AddressBackupPayload,
     secretsPayload: SecretsBackupPayload | null,
 ): Promise<WalletAccount[]> => {
@@ -350,7 +353,7 @@ const importSeeds = async (
 
 const importHdWalletAccount = async (
     context: ImportContext,
-    seed: SeedScheme,
+    seed: HdSeed,
     payload: HdAccountAddressPayload,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<void> => {
@@ -392,6 +395,9 @@ const importOneAccount = async (
             throw new Error(
                 `${addressPayload.type} item records no parent seed`,
             )
+        }
+        if (local.seed !== 'bip39') {
+            throw new Error(`${addressPayload.type} item names no HD seed`)
         }
         await importHdWalletAccount(
             context,

@@ -11,10 +11,15 @@
  */
 
 import { beforeEach, describe, test, expect } from 'vitest'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { Decimal } from 'decimal.js'
-import type {
-    AccountChainState,
-    ChainScope,
+import {
+    CHAIN_CAPABILITIES,
+    type AccountChainState,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainScope,
+    type StandaloneSecret,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAccountChainStateStore } from '../../store/accountChainState'
 import type { WalletAccount } from '../../models'
@@ -39,13 +44,31 @@ import {
     hasCustody,
     hasRecoverySeed,
     hdIndexOf,
+    isKeyReferenced,
     seedOf,
     signingKeyOn,
+    standaloneSecretOf,
 } from '../accessors'
 
 type Keys = NonNullable<Parameters<typeof seedOf>[1]>
 
 const CUSTODIES = Object.keys(TEST_CUSTODY) as TestCustody[]
+
+const registerChain = (id: string, standaloneSecret?: StandaloneSecret) =>
+    getProvider().chains.register(
+        {
+            id,
+            signing: {
+                schemes: ['ed25519'],
+                derivationPaths: {},
+                rawKeySchemes: [],
+                ...(standaloneSecret ? { standaloneSecret } : {}),
+            },
+        } as unknown as ChainDescriptor,
+        Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, false]),
+        ) as ChainCapabilities,
+    )
 
 describe('accessors', () => {
     test.each(CUSTODIES)('a %s account reads its chain entry', custody => {
@@ -68,9 +91,18 @@ describe('accessors', () => {
     })
 
     test('only local custody has a recovery seed', () => {
+        registerChain(FAKE_CHAIN_ID, 'mnemonic')
+
         expect(
             CUSTODIES.filter(custody => hasRecoverySeed(testAccount(custody))),
         ).toEqual(['local', 'explicit', 'hd'])
+    })
+
+    test('a standalone key has no recovery seed where its chain stores the private key', () => {
+        registerChain(FAKE_CHAIN_ID, 'privateKey')
+
+        expect(hasRecoverySeed(testAccount('local'))).toBe(false)
+        expect(hasRecoverySeed(testAccount('hd'))).toBe(true)
     })
 
     test('hdIndexOf gives the seed position from custody', () => {
@@ -141,43 +173,8 @@ describe('authorityOf', () => {
 
     const slice = useAccountChainStateStore.getState
 
-    const rekeyed = (patch: Partial<WalletAccount>): WalletAccount =>
-        testAccount('watch', 'WATCH', patch)
-
-    test('reads the requested network of the per-network map', () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { testnet: 'AUTH' } })
-
-        expect(authorityOf(account, testnet)).toBe('AUTH')
-        expect(authorityOf(account, mainnet)).toBeNull()
-    })
-
-    test('falls back to the mirror when the account predates the map', () => {
-        expect(authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), mainnet)).toBe(
-            'AUTH',
-        )
-    })
-
-    test('ignores the mirror once the map exists', () => {
-        const account = rekeyed({
-            rekeyAddress: 'STALE',
-            rekeyAddressByNetwork: {},
-        })
-
-        expect(authorityOf(account, mainnet)).toBeNull()
-    })
-
-    test('is null for an account that signs for itself, and on any other chain', () => {
-        expect(authorityOf(testAccount('watch'), mainnet)).toBeNull()
-        expect(
-            authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), {
-                chainId: 'ethereum',
-                networkId: 'mainnet',
-            }),
-        ).toBeNull()
-    })
-
-    test('reads the slice per scope, not the stale mirror', () => {
-        const account = rekeyed({ rekeyAddress: 'STALE' })
+    test('reads the slice entry of the requested scope', () => {
+        const account = testAccount('watch')
         const address = addressOn(account, testnet) as string
         slice().setAccountChainState(testnet, address, chainState('AUTH'))
         slice().setAccountChainState(mainnet, address, chainState())
@@ -186,19 +183,29 @@ describe('authorityOf', () => {
         expect(authorityOf(account, mainnet)).toBeNull()
     })
 
-    test('a slice entry beats the per-network map for the same scope', () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'OLD' } })
+    test("is null for a scope the slice doesn't hold", () => {
+        const account = testAccount('watch')
         const address = addressOn(account, mainnet) as string
-        slice().setAccountChainState(mainnet, address, chainState('NEW'))
+        slice().setAccountChainState(mainnet, address, chainState('AUTH'))
 
-        expect(authorityOf(account, mainnet)).toBe('NEW')
+        expect(authorityOf(account, testnet)).toBeNull()
+    })
+
+    test('is null for an account that signs for itself, and on any other chain', () => {
+        const account = testAccount('watch')
+        const address = addressOn(account, mainnet) as string
+        slice().setAccountChainState(mainnet, address, chainState('AUTH'))
+
+        expect(authorityOf(testAccount('local'), mainnet)).toBeNull()
+        expect(
+            authorityOf(account, { chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBeNull()
     })
 
     test("another address's entry does not answer for this account", () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'MAP' } })
         slice().setAccountChainState(mainnet, 'OTHER', chainState('AUTH'))
 
-        expect(authorityOf(account, mainnet)).toBe('MAP')
+        expect(authorityOf(testAccount('watch'), mainnet)).toBeNull()
     })
 })
 
@@ -239,4 +246,53 @@ describe('seedOf', () => {
             expect(seedOf(testAccount(custody), keys)).toBeUndefined()
         },
     )
+})
+
+describe('standaloneSecretOf', () => {
+    const standaloneOn = (chainId: string): WalletAccount =>
+        buildTestAccount(TEST_CUSTODY.local, {
+            [chainId]: { address: 'ADDR', keyPairId: 'k' },
+        })
+
+    beforeEach(() => {
+        registerChain('algorand', 'mnemonic')
+        registerChain('ethereum', 'privateKey')
+    })
+
+    test('reads the secret format from the chain the account lives on', () => {
+        expect(standaloneSecretOf(standaloneOn('algorand'))).toBe('mnemonic')
+        expect(standaloneSecretOf(standaloneOn('ethereum'))).toBe('privateKey')
+    })
+
+    test('is undefined for any other custody', () => {
+        for (const custody of [
+            'explicit',
+            'hd',
+            'hardware',
+            'watch',
+        ] as const) {
+            expect(standaloneSecretOf(testAccount(custody))).toBeUndefined()
+        }
+    })
+
+    test('is undefined on a chain that is not registered', () => {
+        getProvider().chains.reset()
+
+        expect(standaloneSecretOf(standaloneOn('algorand'))).toBeUndefined()
+    })
+})
+
+describe('isKeyReferenced', () => {
+    test('finds a key on any chain entry', () => {
+        const accounts = [
+            testAccount('local', 'ADDR'),
+            buildTestAccount(TEST_CUSTODY.local, {
+                ethereum: { address: '0xabc', keyPairId: 'raw' },
+            }),
+        ]
+
+        expect(isKeyReferenced(accounts, 'local-key')).toBe(true)
+        expect(isKeyReferenced(accounts, 'raw')).toBe(true)
+        expect(isKeyReferenced(accounts, 'other')).toBe(false)
+    })
 })

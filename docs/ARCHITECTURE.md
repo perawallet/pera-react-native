@@ -229,6 +229,15 @@ Worth knowing because the absence is invisible: if you go looking for a quantum 
 routing or submission, there isn't one, and adding one is a regression. The Falcon libraries are
 confined to `packages/kms/src/crypto/pq` and a test fails CI if they appear anywhere else.
 
+## Each chain reviews its own requests
+
+The signing machine reviews every group with the reviewer registered for the request's chain: its
+decoder explains the group, its warning detector reads what was decoded, and `reviewGroup` derives
+the risk level the same way on every chain. A chain with no reviewer refuses the request, so nothing
+signs unreviewed. A request the app built itself has no review screen, so the chain's
+`policy.autoApproveLocal` decides it, and one the policy turns down fails with `ReviewRequiredError`
+rather than waiting for a screen that never opens.
+
 ## State management
 
 Zustand holds client state (user settings, wallet accounts). TanStack Query holds server state

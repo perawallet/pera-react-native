@@ -20,7 +20,7 @@ import {
     type HardwareWalletAccount,
     type LocalAccount,
     type MultiSigAccount,
-    type RekeyTransition,
+    type DelegateTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { accountForType } from '@test-utils/accountCustody'
@@ -49,7 +49,7 @@ const mockUseAccountStateQuery = vi.fn()
 const mockUseHdSeedGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
-const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
+const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -63,7 +63,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useHdSeedGroups: () => mockUseHdSeedGroups(),
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
-        useRekeyTransition: () => mockUseRekeyTransition(),
+        useDelegatedTransition: () => mockUseDelegatedTransition(),
     }
 })
 
@@ -175,7 +175,7 @@ describe('useAccountInfoCard', () => {
             hasMultipleLedgerDevices: false,
         })
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
     })
 
     test('HD wallet account: showStructure true with wallet label and wallet icon', () => {
@@ -258,7 +258,7 @@ describe('useAccountInfoCard', () => {
 
     test('Multisig account: resolves the shared account type label', () => {
         useAccountsStore.setState({
-            accounts: [multisigAccount, accountForType('algo25', 'ADDR_1')],
+            accounts: [multisigAccount, accountForType('standalone', 'ADDR_1')],
         })
         const { result } = renderHook(() =>
             useAccountInfoCard({
@@ -287,8 +287,8 @@ describe('useAccountInfoCard', () => {
 
     test('RekeyedSignable account with a transition shows the "Rekeyed (Signed by …)" label', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
-            from: accountForType('algo25'),
+        mockUseDelegatedTransition.mockReturnValue({
+            from: accountForType('standalone'),
             to: accountForType('hardware'),
         })
         const rekeyed = ledgerAccount
@@ -303,7 +303,7 @@ describe('useAccountInfoCard', () => {
 
     test('RekeyedSignable account without a known auth account falls back to generic label', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
         const rekeyed = ledgerAccount
         seedAuthority('LEDGER_ADDR', 'AUTH')
         const { result } = renderHook(() =>

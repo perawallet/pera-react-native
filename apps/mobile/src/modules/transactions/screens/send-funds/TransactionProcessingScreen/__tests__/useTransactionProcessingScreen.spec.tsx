@@ -46,7 +46,7 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    useAccountPresentation: vi.fn(() => ({ analyticsKind: 'algo25' })),
+    useAccountPresentation: vi.fn(() => ({ analyticsKind: 'standalone' })),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -90,7 +90,7 @@ describe('useTransactionProcessingScreen', () => {
     const mockAccount = {
         id: 'test-account',
         name: 'Test Account',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address: 'TEST_ADDRESS' } },
     }
 

@@ -30,6 +30,20 @@ describe('buildBidaliUrl (web)', () => {
         )
     })
 
+    it('stamps the payment currencies when given', () => {
+        const paymentCurrencies = ['fixturecoin', 'usdcfixture']
+
+        const url = buildBidaliUrl({
+            baseUrl: 'https://commerce.bidali.com/dapp',
+            apiKey: 'test-key',
+            paymentCurrencies,
+        })
+
+        expect(new URL(url).searchParams.get('peraBidaliCurrencies')).toBe(
+            JSON.stringify(paymentCurrencies),
+        )
+    })
+
     it('stamps an empty object when balances is omitted', () => {
         const url = buildBidaliUrl({
             baseUrl: 'https://commerce.bidali.com/dapp',

@@ -391,7 +391,7 @@ export const accountsContractTests = (
                 adapter.resolveSigner(account, [account], scope),
             ).toMatchObject({
                 kind: 'authMissing',
-                authAddress: addressOn(auth, scope),
+                authorityAddress: addressOn(auth, scope),
             })
             expect(adapter.getAuthAccount(account, [account], scope)).toBeNull()
         })

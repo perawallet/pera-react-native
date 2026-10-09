@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
-import { addressOn, hdIndexOf, signingKeyOn } from '../credentials'
+import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
 import type { WalletAccount } from '../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -233,7 +233,7 @@ describe('discoverRekeyedAccounts', () => {
 
         expect(accounts).toHaveLength(1)
         expect(addressOf(accounts[0])).toBe('REKEYED_FROM_EXPLICIT')
-        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
+        expect(authorityOf(accounts[0], TESTNET_SCOPE)).toBe('EXPLICIT_ADDRESS')
         expect(accounts[0].custody).toEqual({ kind: 'watch' })
         expect(accounts[0].chains).toEqual({
             algorand: { address: 'REKEYED_FROM_EXPLICIT' },

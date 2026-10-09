@@ -21,7 +21,7 @@ const mockAccount: WalletAccount = {
         algorand: { address: 'TESTADDRESS123', keyPairId: 'test-key-pair-id' },
     },
     name: 'Test Account',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 }
 
 describe('useBidali', () => {

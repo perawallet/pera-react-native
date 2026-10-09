@@ -36,13 +36,12 @@ getProvider().chains.register(
 )
 
 /**
- * Records `authAddress` as `address`'s authority on `scope` the way the syncer
- * does; `null` is an observed "signs for itself", which shadows the legacy
- * record fields.
+ * Records `authorityAddress` as `address`'s authority on `scope` the way the
+ * syncer does; `null` is an observed "signs for itself".
  */
 export const seedAuthority = (
     address: string,
-    authAddress: string | null,
+    authorityAddress: string | null,
     scope: ChainScope = scopeForLegacyNetwork('mainnet'),
 ): void =>
     useAccountChainStateStore
@@ -50,5 +49,5 @@ export const seedAuthority = (
         .setAccountChainState(
             scope,
             address,
-            algorandAccountsAdapter.toChainState({ authAddress }),
+            algorandAccountsAdapter.toChainState({ authorityAddress }),
         )

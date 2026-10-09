@@ -139,7 +139,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(account.custody).toEqual({ kind: 'local', seed: null })
         expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('My Web Account')
 
@@ -167,7 +167,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         expect(got).toEqual([...addresses].sort())
 
         for (const a of useAccountsStore.getState().accounts) {
-            expect(a.custody).toEqual({ kind: 'local', seed: 'algo25' })
+            expect(a.custody).toEqual({ kind: 'local', seed: null })
         }
     })
 
@@ -199,7 +199,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: ALGO25_TEST_ADDRESS,
@@ -375,7 +375,7 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(account.custody).toEqual({ kind: 'local', seed: null })
         expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Scanned Account')
 

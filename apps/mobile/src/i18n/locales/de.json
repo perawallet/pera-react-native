@@ -1074,7 +1074,8 @@
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
-            }
+            },
+            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x."
         },
         "submission": {
             "unknown_outcome": {
@@ -4194,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet-Prüfung"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Hilf mit, Pera zu verbessern",
+            "body": "Erlaube Pera, anonyme Nutzungsdaten der App zu erfassen. So können wir das Produkt verbessern. Du kannst deine Wahl jederzeit in den Einstellungen ändern.",
+            "allow": "Erlauben",
+            "decline": "Nicht erlauben"
+        },
+        "settings_label": "Nutzungsanalysen teilen"
     }
 }

@@ -16,6 +16,7 @@ import {
     ErrorSeverity,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
 import { LEDGER_STATUS_CODES } from './constants'
 
 const { LOW, MEDIUM, HIGH } = ErrorSeverity
@@ -80,15 +81,23 @@ export class LedgerConnectionError extends LedgerError {
 
 /** APDU status 0x6e00. */
 export class LedgerAppNotOpenError extends LedgerError {
-    constructor(originalError?: Error) {
+    readonly appName?: string
+
+    constructor({
+        appName,
+        originalError,
+    }: { appName?: string; originalError?: Error } = {}) {
         super({
             name: 'LedgerAppNotOpenError',
-            message: 'Algorand app is not open on the Ledger device',
+            message: appName
+                ? `${appName} app is not open on the Ledger device`
+                : 'The app is not open on the Ledger device',
             severity: MEDIUM,
             retryable: true,
             expected: true,
             originalError,
         })
+        this.appName = appName
     }
 }
 
@@ -192,7 +201,7 @@ export class LedgerUsbMultipleDevicesError extends LedgerError {
     }
 }
 
-/** APDU status 0x6985/0x6986. */
+/** APDU status 0x6985, or an app's own reject code via `LedgerAppProfile`. */
 export class LedgerUserRejectedError extends LedgerError {
     constructor(originalError?: Error) {
         super({
@@ -419,29 +428,42 @@ export class LedgerUnsupportedDeviceError extends LedgerError {
 }
 
 /**
- * The device's Algorand app is too old to support arbitrary-data (ARC-60)
- * signing — it lacks the SIGN_ARBITRARY instruction. The user must update
- * the Algorand app via Ledger Live.
+ * The device app is too old for the instruction being invoked, e.g. it lacks
+ * arbitrary-data signing. The user must update the app via Ledger Live.
  */
 export class LedgerAppOutdatedError extends LedgerError {
-    constructor(originalError?: Error) {
+    readonly appName?: string
+    readonly requiredVersion?: HardwareWalletAppVersion
+
+    constructor({
+        appName,
+        requiredVersion,
+        originalError,
+    }: {
+        appName?: string
+        requiredVersion?: HardwareWalletAppVersion
+        originalError?: Error
+    } = {}) {
         super({
             name: 'LedgerAppOutdatedError',
-            message:
-                'The Ledger Algorand app must be updated to sign this request',
+            message: appName
+                ? `The Ledger ${appName} app must be updated to sign this request`
+                : 'The Ledger app must be updated to sign this request',
             severity: MEDIUM,
             retryable: false,
             expected: true,
             originalError,
         })
+        this.appName = appName
+        this.requiredVersion = requiredVersion
     }
 }
 
 /**
- * Extract the APDU status code from a Ledger SDK error.
- * `@algorandfoundation/ledger-algorand-js` errors expose `returnCode` via
- * `@zondax/ledger-js` `ResponseError`; legacy `statusCode` is also handled for
- * compatibility. Prefer `statusCode` when both are present.
+ * Extract the APDU status code from a Ledger SDK error. App libraries built on
+ * `@zondax/ledger-js` expose `returnCode` via its `ResponseError`; legacy
+ * `statusCode` is also handled for compatibility. Prefer `statusCode` when
+ * both are present.
  */
 const getStatusCode = (error: unknown): Nullable<number> => {
     if (error === null || typeof error !== 'object') return null
@@ -493,19 +515,16 @@ export const classifyLedgerError: LedgerErrorClassifier = error => {
     const statusCode = getStatusCode(error)
 
     if (statusCode !== null) {
-        if (
-            statusCode === LEDGER_STATUS_CODES.USER_REJECTED ||
-            statusCode === LEDGER_STATUS_CODES.USER_REJECTED_LEGACY
-        ) {
+        if (statusCode === LEDGER_STATUS_CODES.USER_REJECTED) {
             return new LedgerUserRejectedError(
                 error instanceof Error ? error : undefined,
             )
         }
 
         if (statusCode === LEDGER_STATUS_CODES.APP_NOT_OPEN) {
-            return new LedgerAppNotOpenError(
-                error instanceof Error ? error : undefined,
-            )
+            return new LedgerAppNotOpenError({
+                originalError: error instanceof Error ? error : undefined,
+            })
         }
 
         if (statusCode === LEDGER_STATUS_CODES.LOCKED_DEVICE) {
@@ -515,9 +534,9 @@ export const classifyLedgerError: LedgerErrorClassifier = error => {
         }
 
         if (statusCode === LEDGER_STATUS_CODES.INSTRUCTION_NOT_SUPPORTED) {
-            return new LedgerAppOutdatedError(
-                error instanceof Error ? error : undefined,
-            )
+            return new LedgerAppOutdatedError({
+                originalError: error instanceof Error ? error : undefined,
+            })
         }
     }
 
@@ -542,4 +561,49 @@ export const classifyLedgerError: LedgerErrorClassifier = error => {
     }
 
     return new LedgerConnectionError(String(error))
+}
+
+/** What a chain's Ledger driver tells the shared classifier about its device app. */
+export interface LedgerAppProfile {
+    appName: string
+    /** The app's own reject status words, on top of the standard one. */
+    userRejectedStatusCodes: readonly number[]
+}
+
+/**
+ * Classifies an error from an exchange with a known device app, so app-level
+ * failures name the app. Everything else goes to `fallback`, usually the
+ * transport's own classifier.
+ */
+export const classifyLedgerAppError = (
+    error: unknown,
+    app: LedgerAppProfile,
+    fallback: LedgerErrorClassifier = classifyLedgerError,
+): AppError => {
+    if (error instanceof AppError) return error
+
+    const statusCode = getStatusCode(error)
+    const originalError = error instanceof Error ? error : undefined
+
+    if (
+        statusCode === LEDGER_STATUS_CODES.USER_REJECTED ||
+        (statusCode !== null &&
+            app.userRejectedStatusCodes.includes(statusCode))
+    ) {
+        return new LedgerUserRejectedError(originalError)
+    }
+    if (statusCode === LEDGER_STATUS_CODES.APP_NOT_OPEN) {
+        return new LedgerAppNotOpenError({
+            appName: app.appName,
+            originalError,
+        })
+    }
+    if (statusCode === LEDGER_STATUS_CODES.INSTRUCTION_NOT_SUPPORTED) {
+        return new LedgerAppOutdatedError({
+            appName: app.appName,
+            originalError,
+        })
+    }
+
+    return fallback(error)
 }

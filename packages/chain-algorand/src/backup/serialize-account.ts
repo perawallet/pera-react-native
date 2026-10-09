@@ -32,7 +32,7 @@ import {
     algorandAddressOf,
     algorandKeyOf,
     type AccountType,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from '../accounts/vocabulary'
@@ -48,7 +48,7 @@ export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
         const address = algorandAddressOf(account)
         if (!address) return null
         const customName = nameValue(account)
-        if (isAlgo25Account(account)) {
+        if (isStandaloneAccount(account)) {
             return {
                 type: BackupAccountType.algo25,
                 address,
@@ -129,7 +129,7 @@ export const serializeAlgorandMnemonicSecret = (
     if (isQuantumAccount(account)) {
         return { type: BackupAccountType.quantum, mnemonic, address }
     }
-    if (isAlgo25Account(account)) {
+    if (isStandaloneAccount(account)) {
         return { type: BackupAccountType.algo25, mnemonic, address }
     }
     return null
@@ -140,7 +140,7 @@ export const serializeAlgorandMnemonicSecret = (
 export const algorandMnemonicBackupKeyId = (
     account: WalletAccount,
 ): string | null =>
-    isAlgo25Account(account) ||
+    isStandaloneAccount(account) ||
     isHDWalletAccount(account) ||
     isQuantumAccount(account)
         ? (algorandKeyOf(account) ?? null)
@@ -149,7 +149,7 @@ export const algorandMnemonicBackupKeyId = (
 const LOCAL_KIND_BY_WIRE_TYPE: Partial<
     Record<BackupAccountType, BackupLocalKind>
 > = {
-    [BackupAccountType.algo25]: { seed: SeedScheme.Algo25, isHd: false },
+    [BackupAccountType.algo25]: { seed: null, isHd: false },
     [BackupAccountType.quantum]: { seed: SeedScheme.Quantum, isHd: false },
     [BackupAccountType.hdAccount]: { seed: SeedScheme.Bip39, isHd: true },
 }
@@ -158,7 +158,7 @@ export const algorandBackupLocalKindOf: BackupChainAdapter['localKindOf'] =
     type => LOCAL_KIND_BY_WIRE_TYPE[type]
 
 const KIND_ID_BY_WIRE_TYPE: Partial<Record<BackupAccountType, AccountType>> = {
-    [BackupAccountType.algo25]: AccountTypes.algo25,
+    [BackupAccountType.algo25]: AccountTypes.standalone,
     [BackupAccountType.hdAccount]: AccountTypes.hdWallet,
     [BackupAccountType.hardware]: AccountTypes.hardware,
     [BackupAccountType.watch]: AccountTypes.watch,

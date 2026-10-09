@@ -27,7 +27,7 @@ import {
     UserCancelledError,
 } from '@perawallet/wallet-core-signing'
 import {
-    algo25Account,
+    standaloneAccount,
     hardwareAccount,
     hdAccount,
     multisigAccount,
@@ -46,7 +46,7 @@ describe('algorandDappRequestAdapter', () => {
     })
 
     it.each([
-        ['algo25', 'Algo25', algo25Account('A')],
+        ['algo25', 'Algo25', standaloneAccount('A')],
         ['hd', 'HDWallet', hdAccount('A')],
         ['hardware', 'Hardware', hardwareAccount('A')],
         ['multisig', 'Multisig', multisigAccount('A', null)],
@@ -58,7 +58,9 @@ describe('algorandDappRequestAdapter', () => {
 
     it('ignores rekey when naming the account type', () => {
         expect(
-            adapter.accountTypeOf(algo25Account('A', { rekeyAddress: 'B' })),
+            adapter.accountTypeOf(
+                standaloneAccount('A', { authorityAddress: 'B' }),
+            ),
         ).toBe('Algo25')
     })
 

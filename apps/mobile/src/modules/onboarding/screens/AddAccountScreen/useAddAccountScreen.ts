@@ -191,9 +191,7 @@ export const useAddAccountScreen = () => {
     }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() =>
-            buildSingleKeyAccount({ seed: SeedScheme.Algo25 }),
-        )
+        runCreateAccount(() => buildSingleKeyAccount({ seed: null }))
     }, [buildSingleKeyAccount, runCreateAccount])
 
     const handleCreateQuantum = useCallback(() => {
