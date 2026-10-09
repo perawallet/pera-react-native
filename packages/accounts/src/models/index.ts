@@ -21,12 +21,18 @@ import type {
     Network,
     Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
 export * from './accounts'
 export * from './credentials'
 export * from './balances'
 export * from './ledger-account-preview'
 export * from './ledger-selectable-account'
+
+/** Authority address by scope key, then the account's address on that scope. */
+export type RecordedAuthorities = Partial<
+    Record<ChainScopeKey, Record<string, string>>
+>
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
@@ -37,6 +43,23 @@ export type AccountsState = BaseStoreState & {
     launchAccountMode: LaunchAccountMode
     /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
     launchAccountAddress: Nullable<string>
+    /**
+     * Authorities observed outside a sync: a pre-upgrade payload's record
+     * fields, discovery, a Ledger read. The chain-state slice is memory-only, so
+     * this is their durable copy until a sync writes the scope's row.
+     */
+    authorities: RecordedAuthorities
+    /**
+     * Authorities from a payload that predates the per-network map, whose scope
+     * is the selected Algorand scope. Hydration resolves them into `authorities`.
+     */
+    unscopedAuthorities: Record<string, string>
+    /** Records authorities, replacing any held for the same scope and address. */
+    recordAuthorities: (incoming: RecordedAuthorities) => void
+    /** Replaces both authority maps; hydration's reconciliation. */
+    settleAuthorities: (authorities: RecordedAuthorities) => void
+    /** Drops every authority held for `address`, on any scope. */
+    forgetAuthorities: (address: string) => void
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
     /**

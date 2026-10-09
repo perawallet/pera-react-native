@@ -16,7 +16,10 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import { accountType } from '../../utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Built by hand: buildAccount needs a registered adapter for every chain it
 // derives from, and these specs put accounts on Ethereum.
@@ -1050,6 +1053,37 @@ describe('services/accounts/store', () => {
             expect(migrated).toEqual({
                 ...v0State,
                 accounts: migratedAccounts,
+                authorities: {},
+                unscopedAuthorities: {},
+            })
+        })
+
+        test('migrating moves the record authority fields into the authority maps', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const [first, second] = structuredClone(v0State).accounts
+
+            const migrated = migrateAccountsState(
+                {
+                    ...structuredClone(v0State),
+                    accounts: [
+                        { ...first, rekeyAddressByNetwork: { testnet: 'T' } },
+                        { ...second, rekeyAddress: 'S' },
+                    ],
+                },
+                0,
+            )
+
+            for (const account of migrated.accounts) {
+                expect(account).not.toHaveProperty('rekeyAddress')
+                expect(account).not.toHaveProperty('rekeyAddressByNetwork')
+            }
+            expect(migrated.authorities).toEqual({
+                [toScopeKey(scopeForLegacyNetwork('testnet'))]: {
+                    [first.address]: 'T',
+                },
+            })
+            expect(migrated.unscopedAuthorities).toEqual({
+                [second.address]: 'S',
             })
         })
 

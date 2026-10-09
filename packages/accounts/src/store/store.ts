@@ -19,6 +19,7 @@ import {
     type AccountSortMode,
     type HardwareWalletDetails,
     type LaunchAccountMode,
+    type RecordedAuthorities,
     type WalletAccount,
 } from '../models'
 import {
@@ -31,6 +32,7 @@ import {
 import {
     CHAIN_IDS,
     scopeForLegacyNetwork,
+    toScopeKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -41,8 +43,8 @@ import {
     type PersistedAccountRecord,
 } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
-import { recordAuthority } from './accountChainState'
-import { stripLegacyAuthority } from './legacyAuthority'
+import { useAccountChainStateStore } from './accountChainState'
+import { liftLegacyAuthority } from './legacyAuthority'
 import {
     accountType,
     isHardwareWalletAccount,
@@ -61,6 +63,8 @@ type PersistedAccountsState = Pick<
     | 'manualAccountOrder'
     | 'launchAccountMode'
     | 'launchAccountAddress'
+    | 'authorities'
+    | 'unscopedAuthorities'
 >
 
 type PersistedAccountsRecordState = Omit<PersistedAccountsState, 'accounts'> & {
@@ -92,14 +96,45 @@ export const migrateAccountsState = (
 ): PersistedAccountsState => {
     if (version >= 3) return persistedState as PersistedAccountsState
     const state = persistedState as PersistedAccountsRecordState
+    const lifted = liftLegacyAuthority(state.accounts ?? [])
     return {
         ...state,
-        accounts: stripLegacyAuthority(state.accounts ?? []).map(account =>
+        accounts: lifted.records.map(account =>
             toCurrentAccount(
                 version < 2 ? stripPreV2Custody(account) : account,
             ),
         ),
+        authorities: mergeAuthorities(lifted.authorities, state.authorities),
+        unscopedAuthorities: {
+            ...lifted.unscopedAuthorities,
+            ...state.unscopedAuthorities,
+        },
     }
+}
+
+// Entries in `held` win: they were persisted alongside the records the legacy
+// fields came from, so they are at least as recent.
+const mergeAuthorities = (
+    lifted: RecordedAuthorities,
+    held: RecordedAuthorities | undefined,
+): RecordedAuthorities => {
+    const merged: RecordedAuthorities = { ...lifted }
+    for (const [key, entries] of Object.entries(held ?? {}) as [
+        keyof RecordedAuthorities,
+        Record<string, string>,
+    ][]) {
+        merged[key] = { ...merged[key], ...entries }
+    }
+    return merged
+}
+
+const withoutAddress = <V>(
+    entries: Record<string, V>,
+    address: string,
+): Record<string, V> => {
+    if (!(address in entries)) return entries
+    const { [address]: _removed, ...rest } = entries
+    return rest
 }
 
 type ChainAddresses = Partial<Record<ChainId, string>>
@@ -207,6 +242,8 @@ const initialState = {
     manualAccountOrder: [] as string[],
     launchAccountMode: LaunchAccountModes.lastUsed as LaunchAccountMode,
     launchAccountAddress: null as Nullable<string>,
+    authorities: {} as RecordedAuthorities,
+    unscopedAuthorities: {} as Record<string, string>,
 }
 
 export const useAccountsStore: UseBoundStore<
@@ -339,7 +376,8 @@ export const useAccountsStore: UseBoundStore<
 
                 const current = get().accounts
                 const currentAddresses = new Set(current.map(a => a.address))
-                const { chainId } = accountsAdapterFor(network)
+                const adapter = accountsAdapterFor(network)
+                const { chainId } = adapter
                 const watchAccounts = addresses
                     .filter(addr => !currentAddresses.has(addr))
                     .map(address =>
@@ -353,12 +391,52 @@ export const useAccountsStore: UseBoundStore<
                 if (watchAccounts.length === 0) return 0
 
                 const scope = scopeForLegacyNetwork(network)
-                for (const { address } of watchAccounts) {
-                    recordAuthority(scope, address, sourceAddress)
-                }
+                const recorded = Object.fromEntries(
+                    watchAccounts.map(({ address }) => [
+                        address,
+                        sourceAddress,
+                    ]),
+                )
+                useAccountChainStateStore.getState().fillAccountChainStates({
+                    [toScopeKey(scope)]: Object.fromEntries(
+                        watchAccounts.map(({ address }) => [
+                            address,
+                            adapter.toChainState({
+                                authorityAddress: sourceAddress,
+                            }),
+                        ]),
+                    ),
+                })
 
                 get().setAccounts([...current, ...watchAccounts])
+                get().recordAuthorities({ [toScopeKey(scope)]: recorded })
                 return watchAccounts.length
+            },
+            recordAuthorities: (incoming: RecordedAuthorities) => {
+                set({
+                    authorities: mergeAuthorities(get().authorities, incoming),
+                })
+            },
+            settleAuthorities: (authorities: RecordedAuthorities) => {
+                set({ authorities, unscopedAuthorities: {} })
+            },
+            forgetAuthorities: (address: string) => {
+                const { authorities, unscopedAuthorities } = get()
+                const next: RecordedAuthorities = {}
+                for (const [key, entries] of Object.entries(authorities) as [
+                    keyof RecordedAuthorities,
+                    Record<string, string>,
+                ][]) {
+                    const kept = withoutAddress(entries, address)
+                    if (Object.keys(kept).length > 0) next[key] = kept
+                }
+                set({
+                    authorities: next,
+                    unscopedAuthorities: withoutAddress(
+                        unscopedAuthorities,
+                        address,
+                    ),
+                })
             },
             upgradeWatchAccountToHardware: (
                 address: string,
@@ -428,17 +506,26 @@ export const useAccountsStore: UseBoundStore<
             migrate: migrateAccountsState,
             // The persisted accounts of a v3 payload may still carry the
             // authority fields, which migrate never sees.
-            merge: (persisted, current) =>
-                persisted
-                    ? {
-                          ...current,
-                          ...(persisted as PersistedAccountsState),
-                          accounts: stripLegacyAuthority(
-                              (persisted as PersistedAccountsState).accounts ??
-                                  current.accounts,
-                          ),
-                      }
-                    : current,
+            merge: (persisted, current) => {
+                if (!persisted) return current
+                const state = persisted as Partial<PersistedAccountsState>
+                const lifted = liftLegacyAuthority(
+                    state.accounts ?? current.accounts,
+                )
+                return {
+                    ...current,
+                    ...state,
+                    accounts: lifted.records,
+                    authorities: mergeAuthorities(
+                        lifted.authorities,
+                        state.authorities,
+                    ),
+                    unscopedAuthorities: {
+                        ...lifted.unscopedAuthorities,
+                        ...state.unscopedAuthorities,
+                    },
+                }
+            },
             partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
@@ -446,6 +533,8 @@ export const useAccountsStore: UseBoundStore<
                 manualAccountOrder: state.manualAccountOrder,
                 launchAccountMode: state.launchAccountMode,
                 launchAccountAddress: state.launchAccountAddress,
+                authorities: state.authorities,
+                unscopedAuthorities: state.unscopedAuthorities,
             }),
         },
     ),

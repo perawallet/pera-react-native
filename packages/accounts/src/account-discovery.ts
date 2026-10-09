@@ -15,7 +15,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { HDWalletAccount, WalletAccount } from './models/accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { buildAccount } from './credentials'
-import { recordAuthority } from './store/accountChainState'
+import { recordAuthority } from './store/recordAuthority'
 import {
     accountsAdapterFor,
     addressCodecFor,

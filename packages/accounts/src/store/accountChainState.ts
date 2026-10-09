@@ -19,7 +19,6 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
-import { accountsChainAdapters } from '../chain-adapter'
 
 /** Keyed like the `account_balances` row: scope key, then the account's address on that scope. */
 export type AccountChainStateSlice = Partial<
@@ -115,21 +114,3 @@ export const getAccountChainState = (
 // Narrows on the field, never on `family`, so no chain id leaks into shared code.
 export const authorityAddressOf = (state: AccountChainState): string | null =>
     'authAddress' in state ? (state.authAddress ?? null) : null
-
-/**
- * Records an authority observed outside a sync (discovery, Ledger verify, the
- * legacy migration). Fill-only, so a sync's fuller observation wins.
- */
-export const recordAuthority = (
-    scope: ChainScope,
-    address: string,
-    authorityAddress: string,
-): void => {
-    useAccountChainStateStore.getState().fillAccountChainStates({
-        [toScopeKey(scope)]: {
-            [address]: accountsChainAdapters
-                .get(scope.chainId)
-                .toChainState({ authorityAddress }),
-        },
-    })
-}

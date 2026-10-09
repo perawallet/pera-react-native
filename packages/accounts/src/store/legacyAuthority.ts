@@ -11,75 +11,57 @@
  */
 
 import {
-    parseScopeKey,
     rekeyLegacyNetworkRecord,
-    type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-
-export type LegacyAuthoritySeed = {
-    scope: ChainScope
-    address: string
-    authorityAddress: string
-}
+import type { RecordedAuthorities } from '../models'
 
 type LegacyAuthorityFields = {
     rekeyAddress?: string
     rekeyAddressByNetwork?: Record<string, string>
 }
 
-// Module state because a persisted payload is stripped on rehydrate, before
-// the chain-state slice exists to receive it.
-const held = new Map<string, LegacyAuthorityFields>()
+export type LiftedAuthorities<T> = {
+    records: T[]
+    authorities: RecordedAuthorities
+    unscopedAuthorities: Record<string, string>
+}
 
 /**
- * Drops the account-record authority fields that stores before this one
- * persisted, and holds them for {@link takeLegacyAuthoritySeeds}. A record
- * with neither keeps its reference.
+ * Moves the account-record authority fields that stores before this one
+ * persisted into the store's own authority maps, so the persisted payload never
+ * holds the records without them. A record with neither field keeps its
+ * reference. A lone scalar predates the per-network map and has no scope yet;
+ * once a map exists the scalar only mirrored one of its entries.
  */
-export const stripLegacyAuthority = <T extends { address?: string }>(
+export const liftLegacyAuthority = <T extends { address?: string }>(
     records: readonly T[],
-): T[] =>
-    records.map(record => {
+): LiftedAuthorities<T> => {
+    const authorities: RecordedAuthorities = {}
+    const unscopedAuthorities: Record<string, string> = {}
+    const lifted = records.map(record => {
         const { rekeyAddress, rekeyAddressByNetwork, ...rest } = record as T &
             LegacyAuthorityFields
         if (rekeyAddress === undefined && rekeyAddressByNetwork === undefined) {
             return record
         }
-        if (record.address !== undefined) {
-            held.set(record.address, { rekeyAddress, rekeyAddressByNetwork })
+        const address = record.address
+        if (address !== undefined) {
+            if (rekeyAddressByNetwork) {
+                for (const [key, authorityAddress] of Object.entries(
+                    rekeyLegacyNetworkRecord(rekeyAddressByNetwork),
+                ) as [ChainScopeKey, string | undefined][]) {
+                    if (!authorityAddress) continue
+                    authorities[key] = {
+                        ...authorities[key],
+                        [address]: authorityAddress,
+                    }
+                }
+            } else if (rekeyAddress) {
+                unscopedAuthorities[address] = rekeyAddress
+            }
         }
         return rest as unknown as T
     })
-
-/**
- * Turns the held values into slice seeds and clears them. A lone scalar (an
- * account that predates the per-network map) is assumed to be on
- * `scalarScope`; once a map exists the scalar only mirrored one of its entries.
- */
-export const takeLegacyAuthoritySeeds = (
-    scalarScope: ChainScope,
-): LegacyAuthoritySeed[] => {
-    const seeds: LegacyAuthoritySeed[] = []
-    for (const [address, fields] of held) {
-        if (fields.rekeyAddressByNetwork) {
-            for (const [key, authorityAddress] of Object.entries(
-                rekeyLegacyNetworkRecord(fields.rekeyAddressByNetwork),
-            )) {
-                if (!authorityAddress) continue
-                seeds.push({
-                    scope: parseScopeKey(key),
-                    address,
-                    authorityAddress,
-                })
-            }
-        } else if (fields.rekeyAddress) {
-            seeds.push({
-                scope: scalarScope,
-                address,
-                authorityAddress: fields.rekeyAddress,
-            })
-        }
-    }
-    held.clear()
-    return seeds
+    return { records: lifted, authorities, unscopedAuthorities }
 }

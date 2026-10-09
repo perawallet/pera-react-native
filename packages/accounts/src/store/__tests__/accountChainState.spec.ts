@@ -12,13 +12,17 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type AccountChainState,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     authorityAddressOf,
-    recordAuthority,
     getAccountChainState,
     useAccountChainStateStore,
 } from '../accountChainState'
+import { recordAuthority } from '../recordAuthority'
+import { useAccountsStore } from '../store'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -128,6 +132,7 @@ describe('account chain-state slice', () => {
     describe('recordAuthority', () => {
         beforeEach(() => {
             registerFakeAccountsChain()
+            useAccountsStore.getState().resetState()
         })
 
         it('fills an empty slot through the chain adapter', () => {
@@ -144,6 +149,14 @@ describe('account chain-state slice', () => {
             recordAuthority(MAINNET, 'A', 'OTHER')
 
             expect(getAccountChainState(MAINNET, 'A')).toBe(held)
+        })
+
+        it('persists the authority, since the slice does not survive a restart', () => {
+            recordAuthority(MAINNET, 'A', 'AUTH')
+
+            expect(
+                useAccountsStore.getState().authorities[toScopeKey(MAINNET)],
+            ).toEqual({ A: 'AUTH' })
         })
     })
 })

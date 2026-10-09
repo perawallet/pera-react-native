@@ -32,7 +32,7 @@ import type {
     LedgerAccountRekeyRelationship,
     UseLedgerAccountPreviewResult,
 } from '../models'
-import { recordAuthority } from '../store/accountChainState'
+import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
 import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
 
