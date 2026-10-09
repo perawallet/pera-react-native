@@ -21,6 +21,8 @@ export interface ChainAdapterRegistry<T extends { chainId: ChainId }> {
     /** @throws ChainAdapterNotRegisteredError */
     get(chainId: ChainId): T
     has(chainId: ChainId): boolean
+    /** Every registered adapter, in registration order. */
+    list(): readonly T[]
     /** Test-only: drops every registration. */
     reset(): void
 }
@@ -54,6 +56,7 @@ export const createChainAdapterRegistry = <T extends { chainId: ChainId }>(
             return adapter
         },
         has: chainId => adapters.has(chainId),
+        list: () => [...adapters.values()],
         reset: () => {
             adapters.clear()
         },
