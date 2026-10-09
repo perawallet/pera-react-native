@@ -30,6 +30,7 @@ import {
     type MintedAccount,
 } from '../chain-adapter'
 import { addressOn } from '../credentials/accessors'
+import type { AccountPresentationChainAdapter } from '../presentation-adapter'
 import { detectImportKind, localKeyKindOf } from '../import-formats'
 import type { HdIndex, WalletAccount } from '../models'
 import {
@@ -70,7 +71,7 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
             auth: WalletAccount
             next: WalletAccount
         }
-        /** A target kind `signers.signing` is eligible under; defaults to the first of `authority.targetKinds`. */
+        /** The id of a target kind `signers.signing` is eligible under; defaults to the first of `authority.targetKinds`. */
         targetKind?: string
     }
 }
@@ -267,50 +268,47 @@ export const accountsContractTests = (
             expect(rank).toBeGreaterThan(adapter.duplicateRank(watch))
         })
 
-        it('describes each account kind with non-empty copy keys and glyph', () => {
-            const { presentation } = makeAdapter()
+        it('names each account kind with a stable, distinct id', () => {
+            const adapter = makeAdapter()
             const { signing, watch } = fixtures.signers
-            const accounts = [signing, watch]
 
-            const described = accounts.map(account =>
-                presentation.describe(account, accounts, fixtures.scope),
-            )
+            const signingKind = adapter.kindIdOf(signing)
 
-            for (const kind of described) {
-                for (const key of [
-                    kind.kindId,
-                    kind.labelKey,
-                    kind.infoTitleKey,
-                    kind.infoBodyKey,
-                    kind.glyph,
-                    kind.analyticsKind,
-                ]) {
-                    expect(isNonEmptyString(key)).toBe(true)
-                }
-            }
-            expect(described[0].kindId).not.toBe(described[1].kindId)
-            for (const kind of described) {
-                expect(presentation.kindGlyph(kind.kindId)).toBe(kind.glyph)
-            }
-            expect(presentation.kindGlyph('not-a-kind')).toBeUndefined()
-            const label = presentation.transitionLabel(watch, signing)
-            expect(isNonEmptyString(label.labelKey)).toBe(true)
-            expect(isNonEmptyString(label.signerKey)).toBe(true)
-            expect(isNonEmptyString(label.descriptionKey)).toBe(true)
+            expect(isNonEmptyString(signingKind)).toBe(true)
+            expect(isNonEmptyString(adapter.kindIdOf(watch))).toBe(true)
+            expect(adapter.kindIdOf(signing)).toBe(signingKind)
+            expect(adapter.kindIdOf(watch)).not.toBe(signingKind)
         })
 
-        it('names a device account type for each account, or registers none', () => {
-            const adapter = makeAdapter()
-            if (!adapter.deviceAccountType) return
-
-            for (const account of Object.values(fixtures.signers)) {
-                const type = adapter.deviceAccountType(account)
-                expect(type === null || isNonEmptyString(type)).toBe(true)
+        it('stores multisig parameters in native data beside its other members, or has no multisig', () => {
+            const { multisigNative } = makeAdapter()
+            if (!multisigNative) return
+            const parameters = {
+                version: 1,
+                threshold: 2,
+                addresses: [
+                    addressOn(fixtures.signers.signing, scope)!,
+                    addressOn(fixtures.signers.watch, scope)!,
+                ],
             }
+            const changed = { ...parameters, threshold: 1 }
+
+            const stored = multisigNative.withParameters(undefined, parameters)
+            const restored = multisigNative.withParameters(stored, changed)
+
+            expect(multisigNative.parametersOf(undefined)).toBeUndefined()
+            expect(multisigNative.parametersOf(stored)).toEqual(parameters)
+            expect(multisigNative.parametersOf(restored)).toEqual(changed)
+            expect({ ...restored, multisig: undefined }).toEqual({
+                ...stored,
+                multisig: undefined,
+            })
         })
 
         it('decodes nothing from a value that is not its legacy record, without throwing', () => {
             const adapter = makeAdapter()
+            const decodeLegacyRecord = adapter.decodeLegacyRecord?.bind(adapter)
+            if (!decodeLegacyRecord) return
             const malformed: unknown[] = [
                 null,
                 undefined,
@@ -324,10 +322,21 @@ export const accountsContractTests = (
             ]
 
             for (const raw of malformed.slice(0, 5)) {
-                expect(adapter.decodeLegacyRecord(raw)).toBeUndefined()
+                expect(decodeLegacyRecord(raw)).toBeUndefined()
             }
             for (const raw of malformed) {
-                expect(() => adapter.decodeLegacyRecord(raw)).not.toThrow()
+                expect(() => decodeLegacyRecord(raw)).not.toThrow()
+            }
+        })
+
+        it('decodes no legacy authority from a malformed record, without throwing', () => {
+            const adapter = makeAdapter()
+            const decodeLegacyAuthority =
+                adapter.decodeLegacyAuthority?.bind(adapter)
+            if (!decodeLegacyAuthority) return
+
+            for (const raw of [null, undefined, 42, 'record', [], {}]) {
+                expect(decodeLegacyAuthority(raw)).toBeUndefined()
             }
         })
 
@@ -406,48 +415,32 @@ export const accountsContractTests = (
             const { signing } = fixtures.signers
             const held = [account, auth, next, signing]
             const kind =
-                fixtures.rekeyed!.targetKind ?? authority.targetKinds[0]
+                fixtures.rekeyed!.targetKind ?? authority.targetKinds[0]?.id
             const { seedAuthority } = fixtures.rekeyed!
             seedAuthority(addressOn(account, scope)!, addressOn(auth, scope)!)
             seedAuthority(addressOn(auth, scope)!, addressOn(next, scope)!)
 
             expect(authority.targetKinds.length).toBeGreaterThan(0)
-            expect(authority.targetKinds).toContain(kind)
+            expect(authority.targetKinds.map(target => target.id)).toContain(
+                kind,
+            )
+            expect(
+                new Set(authority.targetKinds.map(target => target.id)).size,
+            ).toBe(authority.targetKinds.length)
             expect(authority.isDelegated(account, scope)).toBe(true)
             expect(authority.isDelegated(signing, scope)).toBe(false)
             expect(
                 authority.accountsDelegatedTo(addressOn(auth, scope)!, held),
             ).toEqual([account])
             expect(
-                authority.isEligibleTarget(
-                    kind,
-                    signing,
-                    account,
-                    held,
-                    scope,
-                    {},
-                ),
+                authority.isEligibleTarget(kind, signing, account, held, scope),
             ).toBe(true)
             // Its current authority, and itself, are no-op rekeys.
             expect(
-                authority.isEligibleTarget(
-                    kind,
-                    auth,
-                    account,
-                    held,
-                    scope,
-                    {},
-                ),
+                authority.isEligibleTarget(kind, auth, account, held, scope),
             ).toBe(false)
             expect(
-                authority.isEligibleTarget(
-                    kind,
-                    account,
-                    account,
-                    held,
-                    scope,
-                    {},
-                ),
+                authority.isEligibleTarget(kind, account, account, held, scope),
             ).toBe(false)
             expect(
                 authority.isEligibleTarget(
@@ -456,7 +449,6 @@ export const accountsContractTests = (
                     account,
                     held,
                     scope,
-                    {},
                 ),
             ).toBe(false)
             expect(
@@ -586,5 +578,65 @@ export const accountsContractTests = (
                 expect(kms.mintCount()).toBe(1)
             })
         }
+    })
+}
+
+/** Every chain that registers account presentation runs this beside its accounts contract. */
+export const accountPresentationContractTests = (
+    makePresentation: () => AccountPresentationChainAdapter,
+    makeAdapter: () => AccountsChainAdapter,
+    fixtures: Pick<AccountsContractFixtures, 'signers'>,
+): void => {
+    describe(`AccountPresentationChainAdapter contract: ${makePresentation().chainId}`, () => {
+        it('serves the chain its accounts adapter is registered under', () => {
+            expect(makePresentation().chainId).toBe(makeAdapter().chainId)
+        })
+
+        it('describes every kind the accounts adapter names, with the same glyph whatever its signability', () => {
+            const presentation = makePresentation()
+            const adapter = makeAdapter()
+
+            for (const account of Object.values(fixtures.signers)) {
+                const kindId = adapter.kindIdOf(account)
+                const described = presentation.describe(kindId, {
+                    canSign: true,
+                })
+                const unsignable = presentation.describe(kindId, {
+                    canSign: false,
+                })
+
+                expect(described).toBeDefined()
+                expect(unsignable).toBeDefined()
+                for (const key of [
+                    described!.labelKey,
+                    described!.infoTitleKey,
+                    described!.infoBodyKey,
+                    described!.glyph,
+                ]) {
+                    expect(isNonEmptyString(key)).toBe(true)
+                }
+                expect(unsignable!.glyph).toBe(described!.glyph)
+            }
+            expect(
+                presentation.describe('not-a-kind', { canSign: true }),
+            ).toBeUndefined()
+        })
+
+        it('words an authority transition exactly when the chain can move authority', () => {
+            const presentation = makePresentation()
+            const adapter = makeAdapter()
+            expect(!!presentation.transitionLabel).toBe(!!adapter.authority)
+            if (!presentation.transitionLabel) return
+            const { signing, watch } = fixtures.signers
+
+            const label = presentation.transitionLabel(
+                adapter.kindIdOf(watch),
+                adapter.kindIdOf(signing),
+            )
+
+            expect(isNonEmptyString(label?.labelKey)).toBe(true)
+            expect(isNonEmptyString(label?.signerKey)).toBe(true)
+            expect(isNonEmptyString(label?.descriptionKey)).toBe(true)
+        })
     })
 }

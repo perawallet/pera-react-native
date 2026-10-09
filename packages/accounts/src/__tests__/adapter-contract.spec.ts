@@ -29,7 +29,9 @@ import { buildAccount } from '../credentials'
 import { InvalidBip44PathError } from '../errors'
 import type { WalletAccount } from '../models'
 import { canSignDirectly } from '../utils'
+import type { AccountPresentationChainAdapter } from '../presentation-adapter'
 import {
+    accountPresentationContractTests,
     accountsContractTests,
     type AccountsContractFixtures,
 } from './adapter-contract'
@@ -114,35 +116,7 @@ const fixtureAdapter: AccountsChainAdapter = {
         },
     ],
     duplicateRank: account => (account.custody.kind === 'watch' ? 0 : 1),
-    presentation: {
-        describe: account => ({
-            kindId: `fx-${account.custody.kind}`,
-            labelKey: `fixturehex.${account.custody.kind}`,
-            infoTitleKey: `fixturehex.${account.custody.kind}.title`,
-            infoBodyKey: `fixturehex.${account.custody.kind}.body`,
-            glyph: `fx/${account.custody.kind}`,
-            analyticsKind: `fx_${account.custody.kind}`,
-        }),
-        kindGlyph: kindId =>
-            kindId.startsWith('fx-') ? `fx/${kindId.slice(3)}` : undefined,
-        transitionLabel: () => ({
-            labelKey: 'fixturehex.transition',
-            signerKey: 'fixturehex.transition.signer',
-            descriptionKey: 'fixturehex.transition.body',
-        }),
-    },
-    deviceAccountType: account =>
-        account.custody.kind === 'watch' ? null : 'fx-account',
-    decodeLegacyRecord: raw => {
-        if (typeof raw !== 'object' || raw === null) return undefined
-        const { fxAddress } = raw as { fxAddress?: unknown }
-        return typeof fxAddress === 'string'
-            ? {
-                  custody: { kind: 'watch' },
-                  chains: { [FIXTURE_CHAIN_ID]: { address: fxAddress } },
-              }
-            : undefined
-    },
+    kindIdOf: account => `fx-${account.custody.kind}`,
     resolveSigner: (account, _accounts) =>
         canSignDirectly(account)
             ? { kind: 'ok', signer: account }
@@ -242,7 +216,27 @@ const fixtures: AccountsContractFixtures = {
     },
 }
 
+// Copy and glyphs are keyed by the accounts adapter's kind ids. No
+// transition label: the chain has no authority to move.
+const fixturePresentation: AccountPresentationChainAdapter = {
+    chainId: FIXTURE_CHAIN_ID,
+    describe: kindId =>
+        kindId.startsWith('fx-')
+            ? {
+                  labelKey: `fixturehex.${kindId.slice(3)}`,
+                  infoTitleKey: `fixturehex.${kindId.slice(3)}.title`,
+                  infoBodyKey: `fixturehex.${kindId.slice(3)}.body`,
+                  glyph: `fx/${kindId.slice(3)}`,
+              }
+            : undefined,
+}
+
 accountsContractTests(() => fixtureAdapter, fixtures)
+accountPresentationContractTests(
+    () => fixturePresentation,
+    () => fixtureAdapter,
+    fixtures,
+)
 
 // The same chain with a single-key kind, so the contract's creation and import
 // cases run here too. Keys come from `kmsCore`, which the suite stubs.

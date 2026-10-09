@@ -22,13 +22,17 @@ import {
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     accountsChainAdapters,
-    type AccountKindPresentation,
     type AccountStateSnapshot,
     type AccountsChainAdapter,
     type DecodedAccountRecord,
     type LocalKeyKind,
 } from '../chain-adapter'
 import { authorityOf } from '../credentials/accessors'
+import {
+    accountPresentationChainAdapters,
+    type AccountKindPresentation,
+    type AccountPresentationChainAdapter,
+} from '../presentation-adapter'
 import type { AccountCustody, WalletAccount } from '../models'
 import { useAccountChainStateStore } from '../store/accountChainState'
 import { canSignDirectly } from '../utils'
@@ -93,23 +97,20 @@ export const fakeKindOf = (account: WalletAccount): string =>
         ? `local-${account.custody.seed}`
         : account.custody.kind
 
+/** The fake's kind id: `fake.<fakeKindOf>`. */
+export const fakeKindIdOf = (account: WalletAccount): string =>
+    `fake.${fakeKindOf(account)}`
+
+const fakePresentationOfKind = (kindId: string): AccountKindPresentation => ({
+    labelKey: `${kindId}.label`,
+    infoTitleKey: `${kindId}.info_title`,
+    infoBodyKey: `${kindId}.info_body`,
+    glyph: `fake-glyph-${kindId.slice('fake.'.length)}`,
+})
+
 export const fakePresentationOf = (
     account: WalletAccount,
-): AccountKindPresentation => {
-    const kind = fakeKindOf(account)
-    return {
-        kindId: `fake.${kind}`,
-        labelKey: `fake.${kind}.label`,
-        infoTitleKey: `fake.${kind}.info_title`,
-        infoBodyKey: `fake.${kind}.info_body`,
-        glyph: `fake-glyph-${kind}`,
-        analyticsKind: `fake_${kind}`,
-    }
-}
-
-/** The devices API value the fake registers an account under. */
-export const fakeDeviceAccountType = (account: WalletAccount): string =>
-    `fake-device-${fakeKindOf(account)}`
+): AccountKindPresentation => fakePresentationOfKind(fakeKindIdOf(account))
 
 const isCustody = (value: unknown): value is AccountCustody =>
     typeof value === 'object' &&
@@ -168,6 +169,7 @@ export const fakeAccountStateSnapshot = (
 
 export type FakeAccountsChain = {
     adapter: AccountsChainAdapter
+    presentation: AccountPresentationChainAdapter
     codec: AddressCodec
     derivation: KeyDerivation
 }
@@ -227,23 +229,23 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     duplicateRank: vi.fn(
         (account: WalletAccount) => FAKE_DUPLICATE_RANK[account.custody.kind],
     ),
-    presentation: {
-        describe: vi.fn((account: WalletAccount) =>
-            fakePresentationOf(account),
-        ),
-        kindGlyph: vi.fn((kindId: string) =>
-            kindId.startsWith('fake.')
-                ? `fake-glyph-${kindId.slice('fake.'.length)}`
+    kindIdOf: vi.fn(fakeKindIdOf),
+    decodeLegacyRecord: vi.fn(decodeFakeLegacyRecord),
+    multisigNative: {
+        parametersOf: vi.fn(native =>
+            native?.multisig
+                ? {
+                      ...native.multisig,
+                      addresses: [...native.multisig.addresses],
+                  }
                 : undefined,
         ),
-        transitionLabel: vi.fn((from: WalletAccount, to: WalletAccount) => ({
-            labelKey: 'fake.transition.label',
-            signerKey: `fake.${fakeKindOf(to)}.signer`,
-            descriptionKey: `fake.transition.${fakeKindOf(from)}_to_${fakeKindOf(to)}`,
+        withParameters: vi.fn((native, { version, threshold, addresses }) => ({
+            ...native,
+            family: 'algorand' as const,
+            multisig: { version, threshold, addresses: [...addresses] },
         })),
     },
-    deviceAccountType: vi.fn(fakeDeviceAccountType),
-    decodeLegacyRecord: vi.fn(decodeFakeLegacyRecord),
     singleKeyAccounts: {
         create: vi.fn(),
         importMnemonic: vi.fn(),
@@ -257,13 +259,28 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     ),
     getAuthAccount: vi.fn(account => account),
     authority: {
-        targetKinds: ['fake-target-local', 'fake-target-hardware'],
+        targetKinds: [
+            { id: 'fake-target-local', category: 'standard' },
+            { id: 'fake-target-hardware', category: 'hardware' },
+        ],
         isDelegated: vi.fn((account, scope) => !!authorityOf(account, scope)),
         accountsDelegatedTo: vi.fn(() => []),
         isEligibleTarget: vi.fn(() => false),
         canSignProgram: vi.fn(() => false),
         isAuthorityDowngrade: vi.fn(() => false),
     },
+})
+
+const createFakePresentation = (): AccountPresentationChainAdapter => ({
+    chainId: FAKE_CHAIN_ID,
+    describe: vi.fn((kindId: string) =>
+        kindId.startsWith('fake.') ? fakePresentationOfKind(kindId) : undefined,
+    ),
+    transitionLabel: vi.fn((from: string, to: string) => ({
+        labelKey: 'fake.transition.label',
+        signerKey: `${to}.signer`,
+        descriptionKey: `fake.transition.${from.slice('fake.'.length)}_to_${to.slice('fake.'.length)}`,
+    })),
 })
 
 let current: FakeAccountsChain | undefined
@@ -274,13 +291,16 @@ export const registerFakeAccountsChain = (
 ): FakeAccountsChain => {
     current = {
         adapter: { ...createFakeAccountsAdapter(), ...overrides },
+        presentation: createFakePresentation(),
         codec: createFakeAddressCodec(),
         derivation: createFakeKeyDerivation(),
     }
     accountsChainAdapters.reset()
+    accountPresentationChainAdapters.reset()
     addressCodecs.reset()
     keyDerivations.reset()
     accountsChainAdapters.register(current.adapter)
+    accountPresentationChainAdapters.register(current.presentation)
     addressCodecs.register(current.codec)
     keyDerivations.register(current.derivation)
     return current

@@ -22,6 +22,7 @@ export * from './errors'
 export * from './utils'
 export * from './signer-resolution'
 export * from './chain-adapter'
+export * from './presentation-adapter'
 export * from './account-discovery'
 export * from './db'
 export * from './cleanup'
@@ -57,4 +58,3 @@ export {
     usePendingImportMnemonicStore,
 } from './store'
 
-export { buildDeviceAccountRegistrations } from './device-accounts'

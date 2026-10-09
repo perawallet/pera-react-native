@@ -27,7 +27,7 @@ export * from './useFindAlternateImportKinds'
 export * from './useImportAccount'
 export * from './useRemoveAccount'
 export * from './useRevealPrivateKey'
-export * from './useRescanRekeyedAccounts'
+export * from './useRescanDelegatedAccounts'
 export * from './useResolveAssetHolderAddress'
 export * from './useSelectedAccount'
 export * from './useSelectedAccountId'
@@ -45,13 +45,13 @@ export * from './useDelegatedAccount'
 export * from './useSignerFor'
 export * from './useCanSignWith'
 export * from './useDelegatedTransition'
-export * from './useRekeyedAddressesQuery'
+export * from './useDelegatedAddressesQuery'
 export * from './useAccountsDelegatedTo'
 export * from './useAuthorityOf'
 export * from './useAuthorityTargets'
 export * from './useLedgerAccountPreview'
 export * from './prefetchLedgerAccountPreview'
-export * from './useLedgerRekeyedScan'
+export * from './useLedgerDelegatedScan'
 export * from './useIsRekeyAvailable'
 export * from './useOwnedAssets'
 export * from './useHDImportSession'
@@ -61,7 +61,7 @@ export {
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,
-    getRekeyedAddressesQueryKey,
+    getDelegatedAddressesQueryKey,
     getOnChainAccountStateQueryKey,
 } from './querykeys'
 export * from './useAccountFundedNetworksQuery'

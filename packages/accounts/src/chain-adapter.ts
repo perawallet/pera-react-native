@@ -14,16 +14,20 @@ import type { Decimal } from 'decimal.js'
 import {
     createChainAdapterRegistry,
     keyDerivations,
+    type ChainAccountNative,
     type ChainId,
     type ChainScope,
+    type ChainScopeKey,
     type DeriveOpts,
     type AccountChainState,
     type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
+    MultisigUnsupportedError,
     RekeyUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
@@ -36,11 +40,31 @@ import type {
 } from './models'
 import type { SignerResolution } from './signer-resolution'
 
-/** A kind of authority target the chain lists, such as the account kinds a rekey may move to. */
-export type AuthorityTargetKind = string
+/**
+ * The id a chain gives one of its account kinds (`kindIdOf`). The account
+ * presentation registry and backup's `kindIdOf` speak the same ids.
+ */
+export type AccountKindId = string
 
-/** Switches the chain reads when deciding a target, e.g. a feature only some networks support. */
-export type AuthorityTargetOptions = Readonly<Record<string, boolean>>
+/** The kinds of account a signing authority can move to; the app runs one flow per category. */
+export const AuthorityTargetCategories = {
+    /** A software key of the chain's primary scheme. */
+    standard: 'standard',
+    /** A software key of a post-quantum scheme. */
+    quantum: 'quantum',
+    hardware: 'hardware',
+    /** A multisig the wallet holds a participant of. */
+    shared: 'shared',
+} as const
+
+export type AuthorityTargetCategory =
+    (typeof AuthorityTargetCategories)[keyof typeof AuthorityTargetCategories]
+
+/** A target kind the chain lists, filed under the category whose flow shows it. */
+export type AuthorityTargetKind = {
+    readonly id: string
+    readonly category: AuthorityTargetCategory
+}
 
 /** Moving an account's signing authority to another account. */
 export type AccountAuthorityOps = {
@@ -52,13 +76,13 @@ export type AccountAuthorityOps = {
         address: string,
         accounts: WalletAccount[],
     ): WalletAccount[]
+    /** Reads any switch the kind depends on (a capability, a network) itself. */
     isEligibleTarget(
-        kind: AuthorityTargetKind,
+        kindId: AuthorityTargetKind['id'],
         target: WalletAccount,
         source: WalletAccount,
         accounts: WalletAccount[],
         scope: ChainScope,
-        options: AuthorityTargetOptions,
     ): boolean
     /** Whether the account can produce a usable delegated program signature. */
     canSignProgram(account: WalletAccount, scope: ChainScope): boolean
@@ -87,54 +111,30 @@ export type LocalKeyKind = {
     isAutoDetected: boolean
 }
 
-/** How an account of the chain is shown. Keys are i18n keys; glyphs are ids the app maps to icons. */
-export type AccountKindPresentation = {
-    /** Stable for the account's kind, whatever its authority. */
-    kindId: string
-    labelKey: string
-    infoTitleKey: string
-    infoBodyKey: string
-    glyph: string
-    /** The glyph an account delegated to this kind shows; absent uses the generic one. */
-    rekeyedGlyph?: string
-    supportUrl?: string
-    analyticsKind: string
-}
-
-/** The copy for an account whose authority moved from `from`'s kind to `to`'s. */
-export type AuthorityTransitionLabel = {
-    /** Interpolates the signer copy as `to`. */
-    labelKey: string
-    signerKey: string
-    descriptionKey: string
-    supportUrl?: string
-}
-
-export type AccountPresentationOps = {
-    /**
-     * `accounts` and `scope` let a kind's copy depend on whether it can sign
-     * there, as a multisig's does.
-     */
-    describe(
-        account: WalletAccount,
-        accounts: readonly WalletAccount[],
-        scope: ChainScope,
-    ): AccountKindPresentation
-    /**
-     * The glyph `describe` gives a kind, for a kind shown without an account
-     * (an address held only in a backup); undefined for an id the chain
-     * doesn't describe.
-     */
-    kindGlyph(kindId: string): string | undefined
-    transitionLabel(
-        from: WalletAccount,
-        to: WalletAccount,
-    ): AuthorityTransitionLabel
-}
-
 export type DecodedAccountRecord = {
     custody: AccountCustody
     chains: AccountChains
+}
+
+/** The authority a legacy account record persisted. */
+export type DecodedLegacyAuthority = {
+    /** The authority address on each scope the record names. */
+    byScope: Partial<Record<ChainScopeKey, string>>
+    /** A lone authority that predates per-scope records; absent once `byScope` holds any. */
+    unscoped?: string
+}
+
+/** How a multisig's parameters sit in its chain entry's `native` data. */
+export type AccountMultisigNativeOps = {
+    /** `undefined` when a legacy record lacks them. */
+    parametersOf(
+        native: ChainAccountNative | undefined,
+    ): MultisigParameters | undefined
+    /** `native` with `parameters` stored; every other member of it is kept. */
+    withParameters(
+        native: ChainAccountNative | undefined,
+        parameters: MultisigParameters,
+    ): ChainAccountNative
 }
 
 export type AccountHoldingSnapshot = {
@@ -308,15 +308,23 @@ export interface AccountsChainAdapter {
     readonly localKeyKinds: readonly LocalKeyKind[]
     /** Which of two accounts sharing an address on this chain survives: higher wins. */
     duplicateRank(account: WalletAccount): number
-    readonly presentation: AccountPresentationOps
-    /** The devices API `account_type`; `null` for an account the chain doesn't register. Absent on a chain without notifications. */
-    deviceAccountType?(account: WalletAccount): string | null
+    /** The account's kind, whatever its authority. Analytics reports it, so an id never changes. */
+    kindIdOf(account: WalletAccount): AccountKindId
     /**
      * The custody and chain entries of an account record the store persisted
      * before it held only those, or `undefined` when the record isn't this
-     * chain's. Runs during hydration, so it never throws.
+     * chain's. Runs during hydration, so it never throws. Absent on a chain
+     * the store never persisted in an older shape.
      */
-    decodeLegacyRecord(raw: unknown): DecodedAccountRecord | undefined
+    decodeLegacyRecord?(raw: unknown): DecodedAccountRecord | undefined
+    /**
+     * The authority a legacy record persisted beside its account fields, or
+     * `undefined` when it holds none. Runs during hydration, so it never
+     * throws. Absent on a chain whose records never held one.
+     */
+    decodeLegacyAuthority?(raw: unknown): DecodedLegacyAuthority | undefined
+    /** Absent on a chain without multisig accounts. */
+    readonly multisigNative?: AccountMultisigNativeOps
     /** Absent on a chain whose only software accounts are HD. */
     readonly singleKeyAccounts?: SingleKeyAccountOps
     /**
@@ -407,6 +415,16 @@ export const requireSingleKeyAccounts = (
         throw new SingleKeyAccountsUnsupportedError(adapter.chainId)
     }
     return adapter.singleKeyAccounts
+}
+
+/** Throws {@link MultisigUnsupportedError} on a chain without multisig accounts. */
+export const requireMultisigNative = (
+    adapter: AccountsChainAdapter,
+): AccountMultisigNativeOps => {
+    if (!adapter.multisigNative) {
+        throw new MultisigUnsupportedError(adapter.chainId)
+    }
+    return adapter.multisigNative
 }
 
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */

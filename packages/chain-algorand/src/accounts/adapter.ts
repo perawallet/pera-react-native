@@ -26,16 +26,17 @@ import {
 import { fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAuthority } from './authority'
-import { algorandDeviceAccountType } from './device'
+import { decodeAlgorandLegacyAuthority } from './legacy-authority'
 import { decodeAlgorandLegacyRecord } from './legacy-record'
 import { algorandDuplicateRank, algorandLocalKeyKinds } from './local-key-kinds'
-import { algorandAccountPresentation } from './presentation'
+import { algorandMultisigNative } from './multisig-native'
 import { withStoredQuantumPublicKey } from './quantumPublicKeyBackfill'
 import { algorandSingleKeyAccounts } from './single-key-accounts'
 import {
     getAlgorandAuthAccount,
     resolveAlgorandSigner,
 } from './signer-resolution'
+import { accountType } from './vocabulary'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -59,9 +60,10 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     localKeyKinds: algorandLocalKeyKinds,
     duplicateRank: algorandDuplicateRank,
-    presentation: algorandAccountPresentation,
-    deviceAccountType: algorandDeviceAccountType,
+    kindIdOf: accountType,
     decodeLegacyRecord: decodeAlgorandLegacyRecord,
+    decodeLegacyAuthority: decodeAlgorandLegacyAuthority,
+    multisigNative: algorandMultisigNative,
     singleKeyAccounts: algorandSingleKeyAccounts,
     fetchRekeyedAddresses: (authorityAddress, scope) =>
         fetchAlgorandRekeyedAddresses(
