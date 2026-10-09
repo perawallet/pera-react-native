@@ -16,7 +16,7 @@ export interface Legacy {
 export const viaNamespace = (accounts: never, a: never) =>
     accounts.isQuantumAccount(a)
 export const seed = SeedScheme.Quantum
-export const isQuantum = (custody: { seed: string }) => custody.seed === 'quantum'
+export const isQuantum = (c: { seed: string }) => c.seed === 'quantum'
 export type Kind = 'hdWallet' | 'standalone'
 export const pick = (resolve: (k: string) => void) => resolve('algo25')
 export const fee = (microAlgos: bigint) => microAlgos

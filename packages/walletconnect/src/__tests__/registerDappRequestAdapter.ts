@@ -48,6 +48,12 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
 // it, for a hook this package's specs never call (see the signing mock
 // above). Stubbed rather than real, same wall as the other two.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    AuthorityTargetCategories: {
+        standard: 'standard',
+        postQuantum: 'postQuantum',
+        hardware: 'hardware',
+        shared: 'shared',
+    },
     useAllAccounts: () => [],
     chainAccountOf: () => undefined,
     findAccountByAddressOn: () => undefined,

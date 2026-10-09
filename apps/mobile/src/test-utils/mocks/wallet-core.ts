@@ -529,6 +529,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         rehydrateAccountsStore: vi.fn(async () => {}),
         // Subclassed at module load by chain packages' own account errors.
         AccountError: class AccountError extends Error {},
+        AuthorityTargetCategories: {
+            standard: 'standard',
+            postQuantum: 'postQuantum',
+            hardware: 'hardware',
+            shared: 'shared',
+        },
         LaunchAccountModes: {
             lastUsed: 'lastUsed',
             specific: 'specific',

@@ -57,4 +57,3 @@ export {
     consumePendingImportMnemonic,
     usePendingImportMnemonicStore,
 } from './store'
-
