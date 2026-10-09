@@ -4198,7 +4198,7 @@
     "analytics_consent": {
         "prompt": {
             "title": "Aidez-nous à améliorer Pera",
-            "body": "Autorisez-vous Pera à collecter des données d’utilisation de l’application, comme les écrans que vous ouvrez, via Google Analytics for Firebase ? Cela nous aide à voir ce qui fonctionne et à corriger ce qui ne fonctionne pas. Rien n’est collecté sans votre accord, et vous pouvez modifier votre choix à tout moment dans les Paramètres.",
+            "body": "Autorisez Pera à collecter des données d’utilisation anonymes de l’application. Cela nous aide à améliorer le produit. Vous pouvez modifier votre choix à tout moment dans les Paramètres.",
             "allow": "Autoriser",
             "decline": "Ne pas autoriser"
         },
