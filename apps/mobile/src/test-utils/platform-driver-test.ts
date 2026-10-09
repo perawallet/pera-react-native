@@ -97,6 +97,7 @@ const buildServices = (): PlatformServices => {
     const analytics: AnalyticsService = {
         initializeAnalytics() {},
         logEvent() {},
+        setCollectionEnabled() {},
     }
 
     const crashReporting: CrashReportingService = {

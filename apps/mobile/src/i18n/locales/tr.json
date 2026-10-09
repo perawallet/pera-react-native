@@ -4195,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet doğrulaması"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Pera’yı geliştirmemize yardım et",
+            "body": "Pera’nın anonim uygulama kullanım verilerini toplamasına izin ver. Bu, ürünü geliştirmemize yardımcı olur. Seçimini istediğin zaman Ayarlar’dan değiştirebilirsin.",
+            "allow": "İzin ver",
+            "decline": "İzin verme"
+        },
+        "settings_label": "Kullanım analizlerini paylaş"
     }
 }

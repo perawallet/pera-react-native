@@ -10,13 +10,20 @@
  limitations under the License
  */
 
-export interface AnalyticsService {
-    initializeAnalytics(): void
-    /** A no-op while collection is disabled, which it is until the user opts in. */
-    logEvent(key: string, payload?: unknown): void
-    /**
-     * Applies the user's analytics consent. Turning it off after it was on also
-     * clears the analytics data already held on the device.
-     */
-    setCollectionEnabled(isEnabled: boolean): void
-}
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xxl,
+        paddingBottom: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    body: {
+        color: theme.colors.textGray,
+    },
+    actions: {
+        gap: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+    },
+}))

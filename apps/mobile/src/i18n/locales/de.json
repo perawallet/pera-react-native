@@ -4195,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet-Prüfung"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Hilf mit, Pera zu verbessern",
+            "body": "Erlaube Pera, anonyme Nutzungsdaten der App zu erfassen. So können wir das Produkt verbessern. Du kannst deine Wahl jederzeit in den Einstellungen ändern.",
+            "allow": "Erlauben",
+            "decline": "Nicht erlauben"
+        },
+        "settings_label": "Nutzungsanalysen teilen"
     }
 }

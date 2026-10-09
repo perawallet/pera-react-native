@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-export interface AnalyticsService {
-    initializeAnalytics(): void
-    /** A no-op while collection is disabled, which it is until the user opts in. */
-    logEvent(key: string, payload?: unknown): void
-    /**
-     * Applies the user's analytics consent. Turning it off after it was on also
-     * clears the analytics data already held on the device.
-     */
-    setCollectionEnabled(isEnabled: boolean): void
-}
+export {
+    AnalyticsConsentPrompt,
+    ANALYTICS_CONSENT_PROMPT_ID,
+} from './AnalyticsConsentPrompt'

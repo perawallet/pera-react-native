@@ -47,6 +47,7 @@ export const routeCapabilities: RouteCapabilities = {
     // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
+    analyticsConsent: false,
     developerSettings: true, // internal builds need network/debug toggles
     developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: true,

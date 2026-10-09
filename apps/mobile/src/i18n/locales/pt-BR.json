@@ -4224,5 +4224,14 @@
     },
     "integrityCheck": {
         "frame_title": "Verificação da Pera Wallet"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Ajude a melhorar a Pera",
+            "body": "Permita que a Pera colete dados anônimos de uso do app. Isso nos ajuda a melhorar o produto. Você pode mudar sua escolha nas Configurações a qualquer momento.",
+            "allow": "Permitir",
+            "decline": "Não permitir"
+        },
+        "settings_label": "Compartilhar dados de uso"
     }
 }
