@@ -50,20 +50,22 @@ export const SettingsAdvancedScreen = () => {
                         testID='settings_advanced_confirmation_item'
                     />
                 )}
-                <PWView style={styles.toggleRow}>
-                    <PWIcon name='chart' />
-                    <PWText
-                        style={styles.toggleLabel}
-                        truncate
-                    >
-                        {t('analytics_consent.settings_label')}
-                    </PWText>
-                    <PWSwitch
-                        value={isAnalyticsEnabled}
-                        onValueChange={handleAnalyticsToggle}
-                        testID='settings_advanced_analytics_toggle'
-                    />
-                </PWView>
+                {routeCapabilities.analyticsConsent && (
+                    <PWView style={styles.toggleRow}>
+                        <PWIcon name='chart' />
+                        <PWText
+                            style={styles.toggleLabel}
+                            truncate
+                        >
+                            {t('analytics_consent.settings_label')}
+                        </PWText>
+                        <PWSwitch
+                            value={isAnalyticsEnabled}
+                            onValueChange={handleAnalyticsToggle}
+                            testID='settings_advanced_analytics_toggle'
+                        />
+                    </PWView>
+                )}
             </PWView>
         </PWScreen>
     )

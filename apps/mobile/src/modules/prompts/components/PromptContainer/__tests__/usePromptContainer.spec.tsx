@@ -58,7 +58,7 @@ vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
 }))
 
 const { mockRouteCapabilities } = vi.hoisted(() => ({
-    mockRouteCapabilities: { pin: true },
+    mockRouteCapabilities: { pin: true, analyticsConsent: true },
 }))
 
 vi.mock('@routes/capabilities', () => ({
@@ -143,6 +143,7 @@ describe('usePromptContainer', () => {
         })
         mockIsLockOverlayVisible.mockReturnValue(false)
         mockRouteCapabilities.pin = true
+        mockRouteCapabilities.analyticsConsent = true
     })
 
     afterEach(() => {
@@ -503,6 +504,20 @@ describe('usePromptContainer', () => {
             id: 'analytics-consent-prompt',
             isGate: true,
         })
+    })
+
+    it('does not ask for analytics consent where the platform cannot honour it', () => {
+        mockGetPreference.mockReturnValue(true)
+        mockUseAnalyticsConsent.mockReturnValue({ consent: null })
+        mockRouteCapabilities.analyticsConsent = false
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
     })
 
     it('does not ask for analytics consent once it is answered', () => {

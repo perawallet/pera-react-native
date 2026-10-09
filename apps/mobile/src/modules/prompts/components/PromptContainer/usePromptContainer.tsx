@@ -132,7 +132,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 priority: PromptPriority.analyticsConsent,
                 isGate: true,
                 component: AnalyticsConsentPrompt,
-                isDue: analyticsConsent === null,
+                isDue:
+                    routeCapabilities.analyticsConsent &&
+                    analyticsConsent === null,
             },
             {
                 // One entry, not one per auto-open mode: `force` and `select`

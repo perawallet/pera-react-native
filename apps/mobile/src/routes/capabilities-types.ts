@@ -44,6 +44,12 @@ export type RouteCapabilities = {
      * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx
      * always uses tap-to-confirm and the setting would be a no-op. */
     confirmationModeSetting: boolean
+    /**
+     * The analytics consent prompt and Settings toggle. Off on web: the
+     * extension reports through its own analytics service, which does not read
+     * the stored consent yet, so asking there would record a choice it ignores.
+     */
+    analyticsConsent: boolean
     developerSettings: boolean
     /** Developer screen gallery. Off in production bundles, where Metro drops
      * its code entirely (see metro-build-gates.js), not just its entry points. */
