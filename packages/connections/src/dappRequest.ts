@@ -114,10 +114,15 @@ export interface DappRequestChainAdapter {
     ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
     useEnqueueTransactionSigning: () => EnqueueTransactionSigning
     /**
-     * The account kind the dApp bridge reports for `account`, ignoring rekey:
-     * the bridge derives the rekeyed kinds from the signer resolution itself.
+     * The account kind the dApp bridge reports for `account` on `scope`, rekey
+     * included; `accounts` is the wallet a delegated account's signer is
+     * resolved against.
      */
-    accountTypeOf(account: WalletAccount): string
+    accountTypeOf(
+        account: WalletAccount,
+        accounts: WalletAccount[],
+        scope: ChainScope,
+    ): string
 }
 
 export const dappRequestChainAdapters =

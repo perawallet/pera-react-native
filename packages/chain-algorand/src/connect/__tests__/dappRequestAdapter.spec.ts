@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
     ARC0001_MAX_TXN_B64_LENGTH,
     Arc0001Error,
     Arc0001ErrorCode,
 } from '../../blockchain'
+import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
@@ -45,23 +46,67 @@ describe('algorandDappRequestAdapter', () => {
         expect(adapter.chainId).toBe(ALGORAND_CHAIN_ID)
     })
 
-    it.each([
-        ['algo25', 'Algo25', standaloneAccount('A')],
-        ['hd', 'HDWallet', hdAccount('A')],
-        ['hardware', 'Hardware', hardwareAccount('A')],
-        ['multisig', 'Multisig', multisigAccount('A', null)],
-        ['watch', 'Unsignable', watchAccount('A')],
-        ['quantum', 'Quantum', quantumAccount('A')],
-    ])('reports a %s account to the bridge as %s', (_, expected, account) => {
-        expect(adapter.accountTypeOf(account)).toBe(expected)
-    })
+    describe('accountTypeOf', () => {
+        const mainnet = scopeForLegacyNetwork(Networks.mainnet)
 
-    it('ignores rekey when naming the account type', () => {
-        expect(
-            adapter.accountTypeOf(
-                standaloneAccount('A', { authorityAddress: 'B' }),
-            ),
-        ).toBe('Algo25')
+        beforeEach(() => {
+            useAccountChainStateStore.getState().resetState()
+        })
+
+        it.each([
+            ['algo25', 'Algo25', standaloneAccount('A')],
+            ['hd', 'HDWallet', hdAccount('A')],
+            ['hardware', 'Hardware', hardwareAccount('A')],
+            ['multisig', 'Multisig', multisigAccount('A', null)],
+            ['watch', 'Unsignable', watchAccount('A')],
+            ['quantum', 'Quantum', quantumAccount('A')],
+        ])(
+            'reports a %s account to the bridge as %s',
+            (_, expected, account) => {
+                expect(adapter.accountTypeOf(account, [account], mainnet)).toBe(
+                    expected,
+                )
+            },
+        )
+
+        it('reports a rekeyed account whose auth account signs as RekeyedSignable', () => {
+            const rekeyed = watchAccount('A', { authorityAddress: 'B' })
+            const accounts = [rekeyed, hdAccount('B')]
+
+            expect(adapter.accountTypeOf(rekeyed, accounts, mainnet)).toBe(
+                'RekeyedSignable',
+            )
+        })
+
+        it.each([
+            ['is a watch account', [watchAccount('B')]],
+            ['is not held', []],
+        ])(
+            'reports a rekeyed account whose auth account %s as RekeyedUnsignable',
+            (_, others) => {
+                const rekeyed = hdAccount('A', { authorityAddress: 'B' })
+
+                expect(
+                    adapter.accountTypeOf(
+                        rekeyed,
+                        [rekeyed, ...others],
+                        mainnet,
+                    ),
+                ).toBe('RekeyedUnsignable')
+            },
+        )
+
+        it('answers rekey on the scope it is given', () => {
+            const rekeyed = hdAccount('A', { authorityAddress: 'B' })
+
+            expect(
+                adapter.accountTypeOf(
+                    rekeyed,
+                    [rekeyed],
+                    scopeForLegacyNetwork(Networks.testnet),
+                ),
+            ).toBe('HDWallet')
+        })
     })
 
     describe('parseSigningParams', () => {

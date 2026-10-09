@@ -13,45 +13,23 @@
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
 import {
-    canSignWith,
     chainAccountOf,
-    isRekeyedAccount,
     useAllAccounts,
     useSigningAccounts,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { sendMessageToWebview } from '../handlers'
 import type { BridgeHandler } from './types'
-
-/**
- * Only invoked on already-filtered `signingAccounts`, so the unsignable kinds
- * never emit in practice — mapped anyway so the bridge stays self-contained if
- * that filter loosens.
- */
-const toWebviewAccountType = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-    chainId: ChainId,
-): string => {
-    if (isRekeyedAccount(account, chainId)) {
-        return canSignWith(account, accounts, chainId)
-            ? 'RekeyedSignable'
-            : 'RekeyedUnsignable'
-    }
-    return dappRequestChainAdapters.get(chainId).accountTypeOf(account)
-}
 
 export const useGetAddressesHandler = (
     webview: Nullable<WebView>,
 ): BridgeHandler => {
     const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
     const allAccounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     return useCallback(
         message => {
@@ -60,6 +38,7 @@ export const useGetAddressesHandler = (
             // truncated-address fallback, and sending that as both name and
             // address made its rows render the same string twice. Ordering is
             // the consumer's responsibility.
+            const adapter = dappRequestChainAdapters.get(LEGACY_CHAIN_ID)
             const payload = signingAccounts.flatMap(account => {
                 const address = chainAccountOf(
                     account,
@@ -71,16 +50,16 @@ export const useGetAddressesHandler = (
                           {
                               name: account.name ?? '',
                               address,
-                              type: toWebviewAccountType(
+                              type: adapter.accountTypeOf(
                                   account,
                                   allAccounts,
-                                  LEGACY_CHAIN_ID,
+                                  scope,
                               ),
                           },
                       ]
             })
             sendMessageToWebview(message.id, payload, webview)
         },
-        [signingAccounts, allAccounts, webview],
+        [signingAccounts, allAccounts, scope, webview],
     )
 }

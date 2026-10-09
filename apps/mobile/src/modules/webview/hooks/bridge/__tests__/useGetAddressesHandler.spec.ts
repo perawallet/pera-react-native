@@ -13,8 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    canSignWith,
-    isRekeyedAccount,
+    useAccountChainStateStore,
     useAllAccounts,
     useSigningAccounts,
     type AccountCustody,
@@ -23,6 +22,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { algorandDappRequestAdapter } from '@packages/chain-algorand/src/connect/dappRequestAdapter'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { useGetAddressesHandler } from '../useGetAddressesHandler'
 import {
     TRUSTED,
@@ -42,8 +42,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    isRekeyedAccount: vi.fn(),
-    canSignWith: vi.fn(),
     useSigningAccounts: vi.fn(),
     useAllAccounts: vi.fn(),
 }))
@@ -64,6 +62,8 @@ const HARDWARE_CUSTODY: AccountCustody = {
     accountIndex: 0,
 }
 
+// Local and hardware custody hold a key, so signer resolution treats them as
+// signable; watch and multisig don't.
 const account = (
     address: string,
     custody: AccountCustody,
@@ -71,31 +71,30 @@ const account = (
 ): WalletAccount => ({
     id: `id-${address}`,
     custody,
-    chains: { [LEGACY_CHAIN_ID]: { address } },
+    chains: {
+        [LEGACY_CHAIN_ID]:
+            custody.kind === 'local'
+                ? { address, keyPairId: `kp-${address}` }
+                : { address },
+    },
     ...extra,
 })
 
 const addressOf = (a: WalletAccount): string | undefined =>
     a.chains[LEGACY_CHAIN_ID]?.address
 
-// Authority is observed chain state, never on the account record.
-const REKEYED_ADDRESSES = new Set([
-    'rekeyed',
-    'rekeyed-signable',
-    'rekeyed-unsignable',
-])
-
 // useSigningAccounts owns the Watch/Unsignable filtering — the bridge just
 // maps. These cases pin the mapping and assume the filter is covered by the
-// package's own tests.
-const setupAccounts = (accounts: WalletAccount[], signers: Set<string>) => {
+// package's own tests. `others` are held but not listed, e.g. an auth account.
+const setupAccounts = (
+    accounts: WalletAccount[],
+    signers: Set<string>,
+    others: WalletAccount[] = [],
+) => {
     vi.mocked(useSigningAccounts).mockReturnValue(
         accounts.filter(a => signers.has(addressOf(a) ?? '')),
     )
-    vi.mocked(useAllAccounts).mockReturnValue(accounts)
-    vi.mocked(canSignWith).mockImplementation(a =>
-        signers.has(addressOf(a) ?? ''),
-    )
+    vi.mocked(useAllAccounts).mockReturnValue([...accounts, ...others])
 }
 
 const sentPayload = (
@@ -121,9 +120,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
         vi.clearAllMocks()
         dappRequestChainAdapters.reset()
         dappRequestChainAdapters.register(algorandDappRequestAdapter)
-        vi.mocked(isRekeyedAccount).mockImplementation(
-            a => !!a && REKEYED_ADDRESSES.has(addressOf(a) ?? ''),
-        )
+        useAccountChainStateStore.getState().resetState()
     })
 
     it('answers with the signing accounts only', () => {
@@ -186,12 +183,26 @@ describe('useGetAddressesHandler (Android parity)', () => {
     })
 
     it('reports a rekeyed account by whether its auth key is in the wallet', () => {
+        seedAuthority('rekeyed', 'auth')
+        setupAccounts(
+            [account('rekeyed', HD_CUSTODY, { name: 'Rekeyed' })],
+            new Set(['rekeyed']),
+            [account('auth', HD_CUSTODY)],
+        )
+
+        expect(sentPayload(requestAddresses())[0].type).toBe('RekeyedSignable')
+    })
+
+    it('reports a rekeyed account whose auth account is not held as RekeyedUnsignable', () => {
+        seedAuthority('rekeyed', 'elsewhere')
         setupAccounts(
             [account('rekeyed', HD_CUSTODY, { name: 'Rekeyed' })],
             new Set(['rekeyed']),
         )
 
-        expect(sentPayload(requestAddresses())[0].type).toBe('RekeyedSignable')
+        expect(sentPayload(requestAddresses())[0].type).toBe(
+            'RekeyedUnsignable',
+        )
     })
 
     it('sends an empty name string when the account has no name', () => {
@@ -215,11 +226,10 @@ describe('useGetAddressesHandler (Android parity)', () => {
             account('rekeyed-signable', { kind: 'watch' }, { name: 'G' }),
             account('rekeyed-unsignable', HD_CUSTODY, { name: 'H' }),
         ]
+        seedAuthority('rekeyed-signable', 'hd')
+        seedAuthority('rekeyed-unsignable', 'watch')
         vi.mocked(useSigningAccounts).mockReturnValue(accounts)
         vi.mocked(useAllAccounts).mockReturnValue(accounts)
-        vi.mocked(canSignWith).mockImplementation(
-            a => addressOf(a) !== 'rekeyed-unsignable',
-        )
 
         const webview = requestAddresses()
 
