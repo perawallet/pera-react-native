@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     runMigrations,
@@ -251,6 +251,38 @@ describe('hydrateAccountChainStates', () => {
         await hydrateAccountChainStates({ db })
 
         expect(useAccountsStore.getState().authorities).toEqual({})
+    })
+
+    it('drops a lone scalar no held account owns', async () => {
+        holdAccount()
+        useAccountsStore.setState({ unscopedAuthorities: { GONE: 'AUTH' } })
+
+        await hydrateAccountChainStates({ db })
+
+        expect(useAccountsStore.getState().authorities).toEqual({})
+        expect(useAccountsStore.getState().unscopedAuthorities).toEqual({})
+    })
+
+    it('keeps a lone scalar unscoped until the accounts store rehydrates', async () => {
+        const account = holdAccount()
+        const hasHydrated = vi
+            .spyOn(useAccountsStore.persist, 'hasHydrated')
+            .mockReturnValue(false)
+        useAccountsStore.setState({
+            accounts: [],
+            unscopedAuthorities: { [addressOf(account)]: 'S' },
+        })
+
+        await hydrateAccountChainStates({ db })
+        hasHydrated.mockRestore()
+
+        expect(useAccountsStore.getState().unscopedAuthorities).toEqual({
+            [addressOf(account)]: 'S',
+        })
+        useAccountsStore.setState({ accounts: [account] })
+        await hydrateAccountChainStates({ db })
+        expect(authorityOf(account, MAINNET)).toBe('S')
+        expect(useAccountsStore.getState().unscopedAuthorities).toEqual({})
     })
 
     it('keeps an entry held before hydration', async () => {

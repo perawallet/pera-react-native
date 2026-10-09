@@ -353,7 +353,7 @@ describe('services/accounts/store', () => {
         test('appends watch accounts holding just the address, and records the source as their authority on the scanned network', async () => {
             const added = useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
+                .addRekeyedWatchAccounts('SRC', ['R1'], TESTNET_SCOPE)
 
             expect(added).toBe(1)
             const [r1] = useAccountsStore.getState().accounts
@@ -374,7 +374,11 @@ describe('services/accounts/store', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .addRekeyedWatchAccounts('SRC', ['R1', 'R2'], 'testnet'),
+                    .addRekeyedWatchAccounts(
+                        'SRC',
+                        ['R1', 'R2'],
+                        TESTNET_SCOPE,
+                    ),
             ).toBe(1)
             expect(useAccountsStore.getState().accounts).toHaveLength(2)
         })

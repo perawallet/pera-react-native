@@ -14,7 +14,6 @@ import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
-    legacyNetworkOf,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { fetchRekeyedAddresses } from '../chain-adapter'
@@ -220,11 +219,7 @@ export const useRescanRekeyedAccounts = (
             const valid = addresses.filter(address => codec.isValid(address))
             if (valid.length === 0) return 0
 
-            return addRekeyedWatchAccounts(
-                sourceAddress,
-                valid,
-                legacyNetworkOf(scope),
-            )
+            return addRekeyedWatchAccounts(sourceAddress, valid, scope)
         },
         [addRekeyedWatchAccounts, scope],
     )

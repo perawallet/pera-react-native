@@ -27,16 +27,15 @@ import {
     generateOrderedUniqueId,
     logger,
     registerStore,
-    type Network,
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     CHAIN_IDS,
     keyDerivations,
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
@@ -360,18 +359,15 @@ const sameDevice = (
         key => a[key] === b[key],
     )
 
-/** The account holding `address` on the chain `network` belongs to. */
-const indexOfAddressOnNetwork = (
+const holdsAddressOn = (
     accounts: readonly WalletAccount[],
     address: string,
-    network: Network,
-): number => {
-    const { chainId } = scopeForLegacyNetwork(network)
-    return accounts.findIndex(account => {
+    chainId: ChainId,
+): boolean =>
+    accounts.some(account => {
         const held = chainAccountOf(account, chainId)?.address
         return held !== undefined && isSameAddress(chainId, held, address)
     })
-}
 
 const initialState = {
     accounts: [] as WalletAccount[],
@@ -614,17 +610,14 @@ export const useAccountsStore: UseBoundStore<
             addRekeyedWatchAccounts: (
                 sourceAddress: string,
                 addresses: string[],
-                network: Network,
+                scope: ChainScope,
             ) => {
                 if (addresses.length === 0) return 0
 
                 const current = get().accounts
-                const scope = scopeForLegacyNetwork(network)
                 const { chainId } = scope
                 const newAddresses = addresses.filter(
-                    address =>
-                        indexOfAddressOnNetwork(current, address, network) ===
-                        -1,
+                    address => !holdsAddressOn(current, address, chainId),
                 )
                 if (newAddresses.length === 0) return 0
 
@@ -661,8 +654,11 @@ export const useAccountsStore: UseBoundStore<
                     authorities: mergeAuthorities(get().authorities, incoming),
                 })
             },
-            settleAuthorities: (authorities: RecordedAuthorities) => {
-                set({ authorities, unscopedAuthorities: {} })
+            settleAuthorities: (
+                authorities: RecordedAuthorities,
+                unscopedAuthorities: Record<string, string> = {},
+            ) => {
+                set({ authorities, unscopedAuthorities })
             },
             forgetAuthorities: (address: string) => {
                 const { authorities, unscopedAuthorities } = get()

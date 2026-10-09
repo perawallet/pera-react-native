@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletAccount,
     AccountSortMode,
@@ -18,11 +21,7 @@ import type {
     LaunchAccountMode,
 } from './accounts'
 import type { HdIndex } from './credentials'
-import type {
-    BaseStoreState,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
 export * from './accounts'
@@ -54,13 +53,17 @@ export type AccountsState = BaseStoreState & {
     authorities: RecordedAuthorities
     /**
      * Authorities from a payload that predates the per-network map, whose scope
-     * is the selected Algorand scope. Hydration resolves them into `authorities`.
+     * is the selected network of the chain their address is held on. Hydration
+     * resolves them into `authorities`.
      */
     unscopedAuthorities: Record<string, string>
     /** Records authorities, replacing any held for the same scope and address. */
     recordAuthorities: (incoming: RecordedAuthorities) => void
     /** Replaces both authority maps; hydration's reconciliation. */
-    settleAuthorities: (authorities: RecordedAuthorities) => void
+    settleAuthorities: (
+        authorities: RecordedAuthorities,
+        unscopedAuthorities?: Record<string, string>,
+    ) => void
     /** Drops every authority held for `address`, on any scope. */
     forgetAuthorities: (address: string) => void
     getSelectedAccount: () => Nullable<WalletAccount>
@@ -116,13 +119,13 @@ export type AccountsState = BaseStoreState & {
     applyLaunchAccountPreference: () => void
     setManualAccountOrder: (order: string[]) => void
     /** Append watch-only accounts and record `sourceAddress` as each one's
-     * authority on `network`, skipping addresses that are already present in
+     * authority on `scope`, skipping addresses that are already present in
      * the store. Returns the number of accounts actually appended. Validation
-     * (Algorand-address shape) is the caller's responsibility. */
+     * (address shape) is the caller's responsibility. */
     addRekeyedWatchAccounts: (
         sourceAddress: string,
         addresses: string[],
-        network: Network,
+        scope: ChainScope,
     ) => number
     /**
      * Replace the watch account `id` with a hardware account bound to
