@@ -65,6 +65,8 @@ import {
 } from '../utils'
 
 const STORE_NAME = 'accounts-store'
+// Bumping this, or changing `migrateAccountsState` or `merge`, adds the payload
+// the outgoing version wrote to conformance/src/suites/store-migration/fixtures.ts.
 const STORE_VERSION = 4
 
 type PersistedAccountsState = Pick<

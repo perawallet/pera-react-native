@@ -12,12 +12,15 @@
 
 import { vi } from 'vitest'
 
-// The accounts barrel minus its hooks (see src/harness/accountsBarrel.ts), with
-// the persisted store stubbed: these suites never read it, and the real one
-// would need a database.
+// The store-migration suite drives the real persisted accounts store, so the
+// barrel carries it instead of the stub vitest.setup.ts installs: app code
+// that reaches the store through the barrel must see the same instance the
+// suite rehydrates.
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await (
         await import('./src/harness/accountsBarrel')
     ).hookFreeAccountsModules()),
-    useAccountsStore: { getState: () => ({ accounts: [] }) },
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-accounts/store',
+    )),
 }))
