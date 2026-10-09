@@ -11,10 +11,12 @@
  */
 
 import {
+    accountKindId,
     canSignDirectly,
     chainAccountOf,
     hasCustody,
     type AccountCustody,
+    type AccountKindId,
     type LocalAccount,
     type LocalCustody,
     type WalletAccount,
@@ -82,6 +84,10 @@ export const accountTypeOfCustody = (custody: AccountCustody): AccountType => {
 /** Rekey state is ignored: a watch account with an auth address stays `watch`. */
 export const accountType = (account: WalletAccount): AccountType =>
     accountTypeOfCustody(account.custody)
+
+/** An Algorand account kind id is its account type. */
+export const algorandKindIdOf = (type: AccountType): AccountKindId =>
+    accountKindId(type)
 
 const hasSeed =
     <S extends LocalCustody['seed']>(seed: S) =>

@@ -12,6 +12,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
+    accountKindId,
     accountsChainAdapters,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -182,7 +183,9 @@ describe('algorandAccountPresentation.describe', () => {
     it('describes no kind id it does not name', () => {
         for (const kindId of ['algo25', 'hdSeed', 'toString']) {
             expect(
-                algorandAccountPresentation.describe(kindId, { canSign: true }),
+                algorandAccountPresentation.describe(accountKindId(kindId), {
+                    canSign: true,
+                }),
             ).toBeUndefined()
         }
     })

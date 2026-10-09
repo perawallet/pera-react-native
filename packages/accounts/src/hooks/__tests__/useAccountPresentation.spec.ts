@@ -21,6 +21,7 @@ import {
     fakeAccountsChain,
     fakePresentationOf,
 } from '../../__tests__/fakeAccountsChain'
+import { accountKindId } from '../../chain-adapter'
 import { accountPresentationChainAdapters } from '../../presentation-adapter'
 import {
     accountKindGlyph,
@@ -111,7 +112,7 @@ describe('useAccountPresentation', () => {
 
     it('is null for a kind the chain does not describe', () => {
         vi.mocked(fakeAccountsChain().adapter.kindIdOf).mockReturnValue(
-            'unknown',
+            accountKindId('unknown'),
         )
 
         const { result } = renderHook(() =>
@@ -135,19 +136,23 @@ describe('accountKindIdOf', () => {
 
 describe('accountKindGlyph', () => {
     it('is the glyph the chain gives the kind', () => {
-        expect(accountKindGlyph('fake.watch', FAKE_CHAIN_ID)).toBe(
-            'fake-glyph-watch',
-        )
+        expect(
+            accountKindGlyph(accountKindId('fake.watch'), FAKE_CHAIN_ID),
+        ).toBe('fake-glyph-watch')
     })
 
     it('is undefined for a kind the chain does not describe', () => {
-        expect(accountKindGlyph('unknown', FAKE_CHAIN_ID)).toBeUndefined()
+        expect(
+            accountKindGlyph(accountKindId('unknown'), FAKE_CHAIN_ID),
+        ).toBeUndefined()
     })
 
     it('is undefined on a chain that registers no presentation', () => {
         accountPresentationChainAdapters.reset()
 
-        expect(accountKindGlyph('fake.watch', FAKE_CHAIN_ID)).toBeUndefined()
+        expect(
+            accountKindGlyph(accountKindId('fake.watch'), FAKE_CHAIN_ID),
+        ).toBeUndefined()
     })
 })
 
