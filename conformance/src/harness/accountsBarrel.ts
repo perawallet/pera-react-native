@@ -35,6 +35,7 @@ export const hookFreeAccountsModules = async (): Promise<object> => {
         signerResolution,
         constants,
         errors,
+        bip44,
         chainAdapter,
         credentialScheme,
         accessors,
@@ -47,6 +48,7 @@ export const hookFreeAccountsModules = async (): Promise<object> => {
         ),
         vi.importActual<object>('@perawallet/wallet-core-accounts/constants'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/bip44'),
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/chain-adapter',
         ),
@@ -66,6 +68,7 @@ export const hookFreeAccountsModules = async (): Promise<object> => {
         ...signerResolution,
         ...constants,
         ...errors,
+        ...bip44,
         ...chainAdapter,
         ...credentialScheme,
         ...accessors,
