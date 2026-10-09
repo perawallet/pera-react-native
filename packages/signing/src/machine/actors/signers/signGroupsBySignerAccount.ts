@@ -11,11 +11,13 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '../../../pipeline/types'
 import { CannotSignError } from '../../../pipeline/errors'
+import { findSignerAccount } from '../../utils/findSignerAccount'
 
 /**
  * Shared scaffold for the per-signer actors (local-key, multisig):
@@ -27,6 +29,7 @@ import { CannotSignError } from '../../../pipeline/errors'
 export const signGroupsBySignerAccount = (
     groups: AnalyzedSignableGroup[],
     allAccounts: WalletAccount[],
+    chainId: ChainId,
     signGroup: (
         group: AnalyzedSignableGroup,
         signerAccount: WalletAccount,
@@ -34,8 +37,10 @@ export const signGroupsBySignerAccount = (
 ): Promise<SigningResult[]> =>
     Promise.all(
         groups.map(group => {
-            const signerAccount = allAccounts.find(
-                a => a.address === group.signerAddress,
+            const signerAccount = findSignerAccount(
+                allAccounts,
+                group.signerAddress,
+                chainId,
             )
             if (!signerAccount) {
                 throw new CannotSignError(

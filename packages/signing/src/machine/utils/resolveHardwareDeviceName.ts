@@ -13,6 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
+import { findSignerAccount } from './findSignerAccount'
 import { resolveSigningAccount } from './resolveSigningAccount'
 
 /**
@@ -33,8 +34,10 @@ export const resolveHardwareDeviceName = (
 ): string | null => {
     const firstGroup = groups[0]
     if (!firstGroup) return null
-    const signerAccount = allAccounts.find(
-        a => a.address === firstGroup.signerAddress,
+    const signerAccount = findSignerAccount(
+        allAccounts,
+        firstGroup.signerAddress,
+        chainId,
     )
     if (!signerAccount) return null
 

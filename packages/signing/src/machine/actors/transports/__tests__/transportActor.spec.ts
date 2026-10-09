@@ -163,6 +163,12 @@ describe('transportActor', () => {
                 signingResults: [dataResult],
                 createTransport: () => ({ send }),
                 scope: { chainId: 'ethereum', networkId: 'sepolia' },
+                allAccounts: [
+                    {
+                        ...mockAlgo25Account,
+                        chains: { ethereum: { address: MOCK_ADDRESS } },
+                    } as WalletAccount,
+                ],
             },
         )
 

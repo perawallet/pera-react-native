@@ -11,11 +11,31 @@
  */
 
 import type {
+    PeraTransaction,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import type {
     AuthDataSignRequest,
     ArbitraryDataSignRequest,
     SignRequest,
     TransactionSignRequest,
+    UnsignedTransactionSignRequest,
 } from './index'
+
+// An Algorand transaction has neither field, so either shape is told apart by
+// its members alone. A request rehydrated from storage may hold anything.
+export const isUnsignedTransaction = (
+    transaction: PeraTransaction | UnsignedTransaction,
+): transaction is UnsignedTransaction =>
+    typeof transaction === 'object' &&
+    transaction !== null &&
+    'scope' in transaction &&
+    'payload' in transaction
+
+export const isUnsignedTransactionRequest = (
+    request: TransactionSignRequest,
+): request is UnsignedTransactionSignRequest =>
+    request.txs.length > 0 && isUnsignedTransaction(request.txs[0])
 
 export const isTransactionRequest = (
     request: SignRequest,

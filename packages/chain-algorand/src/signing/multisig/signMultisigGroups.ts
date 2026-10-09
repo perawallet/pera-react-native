@@ -79,6 +79,7 @@ export const signMultisigGroups = async (
     return signGroupsBySignerAccount(
         groups,
         allAccounts,
+        scope.chainId,
         (group, signerAccount) => {
             if (shouldDeferPropose(signerAccount, allAccounts)) {
                 return buildDeferredProposeSigningResult(group)

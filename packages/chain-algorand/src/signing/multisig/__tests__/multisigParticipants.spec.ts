@@ -12,6 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
+import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
+import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
@@ -36,6 +38,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 import {
+    buildDeferredProposeSigningResult,
     getLocalParticipants,
     getProposeParticipants,
 } from '../multisigParticipants'
@@ -240,5 +243,23 @@ describe('getProposeParticipants', () => {
         ])
 
         expect(participants).toEqual([accountB, accountA])
+    })
+})
+
+describe('buildDeferredProposeSigningResult', () => {
+    test('refuses chain-neutral transactions', () => {
+        const group = {
+            data: {
+                type: 'transactions',
+                transactions: [makeUnsignedAlgorandTransaction()],
+                chainData: {},
+            },
+            source: { type: 'local' },
+            signerAddress: 'ADDR',
+        } as unknown as AnalyzedSignableGroup
+
+        expect(() => buildDeferredProposeSigningResult(group)).toThrow(
+            'only supported for Algorand transaction',
+        )
     })
 })

@@ -11,6 +11,11 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
+import type {
+    ChainScope,
+    SigningRequest,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
 // hand-built literals with SDK-shaped fields are exactly what let
@@ -70,3 +75,42 @@ export const makeTestAssetTransferTx = (
         assetTransferParams: { amount: 0n, ...assetTransferParams },
         suggestedParams: TEST_SUGGESTED_PARAMS,
     })
+
+export const SECOND_CHAIN_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
+
+/** A chain-neutral transaction; {@link planFromPayload} reads its signer back. */
+export const makeUnsignedTransaction = (
+    from: string,
+    scope: ChainScope = SECOND_CHAIN_SCOPE,
+): UnsignedTransaction => ({
+    scope,
+    payload: { from },
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transfer' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'evm' },
+})
+
+/** Names the payload's `from` as the one signer, as a single-signature chain plans. */
+export const planFromPayload = (
+    transaction: UnsignedTransaction,
+): SigningRequest[] => {
+    // As every planner must, it refuses another chain's transaction.
+    if (transaction.scope.chainId !== SECOND_CHAIN_SCOPE.chainId) {
+        throw new Error(`Not a ${SECOND_CHAIN_SCOPE.chainId} transaction`)
+    }
+    return [
+        {
+            requestIndex: 0,
+            signer: (transaction.payload as { from: string }).from,
+            scheme: 'secp256k1',
+            payload: new Uint8Array(32),
+        },
+    ]
+}
