@@ -140,7 +140,7 @@ describe('algorandAuthority.targetKinds', () => {
     test('files each rekey target kind under the flow that offers it', () => {
         expect(algorandAuthority.targetKinds).toEqual([
             { id: 'standard', category: 'standard' },
-            { id: 'quantum', category: 'quantum' },
+            { id: 'quantum', category: 'postQuantum' },
             { id: 'hardware', category: 'hardware' },
             { id: 'shared', category: 'shared' },
         ])

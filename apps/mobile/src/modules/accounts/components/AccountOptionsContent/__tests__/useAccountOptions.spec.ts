@@ -1131,8 +1131,8 @@ describe('useAccountOptions', () => {
             return rendered
         }
 
-        it('navigates to RekeyToLedger intro when the sheet resolves to ledger', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('ledger')
+        it('navigates to RekeyToLedger intro when the sheet resolves to hardware', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('hardware')
 
             await pressRekey(algo25Account)
 
@@ -1154,8 +1154,8 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('navigates to RekeyToQuantum intro when the sheet resolves to quantum', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+        it('navigates to RekeyToQuantum intro when the sheet resolves to post-quantum', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('postQuantum')
 
             await pressRekey(algo25Account)
 

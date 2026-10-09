@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import {
+    AuthorityTargetCategories,
+    type AuthorityTargetCategory,
+} from '@perawallet/wallet-core-accounts'
 import { PWSheetLayout, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -21,7 +25,10 @@ import { useStyles } from './styles'
  * Shared accounts never reach this sheet — they have a single destination
  * type, so their menu row goes straight to the intro screen.
  */
-export type RekeyTargetType = 'ledger' | 'standard' | 'quantum'
+export type RekeyTargetType = Exclude<
+    AuthorityTargetCategory,
+    typeof AuthorityTargetCategories.shared
+>
 
 export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
@@ -48,7 +55,9 @@ export const RekeyOptionsContent = () => {
                         )}
                         titleWeight='h3'
                         leftIcon='ledger'
-                        onPress={() => resolve('ledger')}
+                        onPress={() =>
+                            resolve(AuthorityTargetCategories.hardware)
+                        }
                     />
                 )}
                 <PanelButton
@@ -59,7 +68,7 @@ export const RekeyOptionsContent = () => {
                     )}
                     titleWeight='h3'
                     leftIcon='wallet'
-                    onPress={() => resolve('standard')}
+                    onPress={() => resolve(AuthorityTargetCategories.standard)}
                 />
                 {isQuantumEnabled && (
                     <PanelButton
@@ -70,7 +79,9 @@ export const RekeyOptionsContent = () => {
                         )}
                         titleWeight='h3'
                         leftIcon='quantum'
-                        onPress={() => resolve('quantum')}
+                        onPress={() =>
+                            resolve(AuthorityTargetCategories.postQuantum)
+                        }
                     />
                 )}
             </PWView>

@@ -48,7 +48,7 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
     it('lists the targets the chain accepts under its quantum kinds', () => {
         const adapter = registerTargetFixtureChain(
             [
-                { id: 'fixture-quantum', category: 'quantum' },
+                { id: 'fixture-quantum', category: 'postQuantum' },
                 { id: 'fixture-standard', category: 'standard' },
             ],
             { 'fixture-quantum': ['A'], 'fixture-standard': ['B'] },
@@ -83,7 +83,7 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
 
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
         registerTargetFixtureChain(
-            [{ id: 'fixture-quantum', category: 'quantum' }],
+            [{ id: 'fixture-quantum', category: 'postQuantum' }],
             { 'fixture-quantum': ['A'] },
         )
         const { result } = renderHook(() =>

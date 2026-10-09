@@ -14,13 +14,16 @@ import React, { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     detectImportKind,
+    importFormatsFor,
     localKeyKindOf,
-    postQuantumKeyKindOf,
     setPendingImportMnemonic,
+    type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { trackEvent, OnboardingEvent, type NoPayloadEvent } from '@analytics'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -39,19 +42,7 @@ import {
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
 import type { ImportFlowParamList } from '../../routes/types'
-
-// A chain names its recover event as a string; only one the onboarding
-// catalog sends without a payload is tracked.
-const PAYLOAD_FREE_ONBOARDING_EVENTS = new Set<string>(
-    Object.values(OnboardingEvent).filter(
-        event => event !== OnboardingEvent.RegisterAccount,
-    ),
-)
-
-const isPayloadFreeOnboardingEvent = (
-    name: string,
-): name is Extract<OnboardingEvent, NoPayloadEvent> =>
-    PAYLOAD_FREE_ONBOARDING_EVENTS.has(name)
+import { trackChainOnboardingEvent } from '../../utils'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
@@ -133,11 +124,10 @@ export const useImportAccountOptionsScreen =
                 },
             )
             if (result === undefined) return
-            const event = localKeyKindOf(LEGACY_CHAIN_ID, result)?.recoverOption
-                ?.analyticsEvent
-            if (event !== undefined && isPayloadFreeOnboardingEvent(event)) {
-                trackEvent(event)
-            }
+            trackChainOnboardingEvent(
+                localKeyKindOf(LEGACY_CHAIN_ID, result)?.recoverOption
+                    ?.analyticsEvent,
+            )
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])
 
@@ -232,14 +222,33 @@ export const useImportAccountOptionsScreen =
             navigation,
         ])
 
-        const postQuantumKind = postQuantumKeyKindOf(LEGACY_CHAIN_ID)
+        const handleImportKind = useCallback(
+            (seed: LocalKeySeed) =>
+                navigation.push('ImportAccount', { accountType: seed }),
+            [navigation],
+        )
 
-        const handleImportQuantum = useCallback(() => {
-            if (!postQuantumKind) return
-            navigation.push('ImportAccount', {
-                accountType: postQuantumKind.seed,
-            })
-        }, [navigation, postQuantumKind])
+        const kindImportOptions: AccountOption[] = useMemo(
+            () =>
+                importFormatsFor(LEGACY_CHAIN_ID).flatMap(
+                    ({ seed, signingScheme, importOption }) =>
+                        importOption &&
+                        (!isPostQuantumScheme(signingScheme) ||
+                            isQuantumEnabled)
+                            ? [
+                                  {
+                                      testID: `import_account_${importOption.id}_button`,
+                                      titleKey: importOption.titleKey,
+                                      descriptionKey:
+                                          importOption.descriptionKey,
+                                      leftIcon: importOption.icon as IconName,
+                                      onPress: () => handleImportKind(seed),
+                                  },
+                              ]
+                            : [],
+                ),
+            [isQuantumEnabled, handleImportKind],
+        )
 
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
@@ -252,19 +261,7 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
-                ...(isQuantumEnabled && postQuantumKind
-                    ? [
-                          {
-                              testID: 'import_account_quantum_button',
-                              titleKey:
-                                  'onboarding.import_account_options.quantum_title',
-                              descriptionKey:
-                                  'onboarding.import_account_options.quantum_description',
-                              leftIcon: 'quantum' as IconName,
-                              onPress: handleImportQuantum,
-                          },
-                      ]
-                    : []),
+                ...kindImportOptions,
                 {
                     testID: 'import_account_options_recover_qr_button',
                     titleKey:
@@ -356,11 +353,9 @@ export const useImportAccountOptionsScreen =
             handleImportAsb,
             handleImportPeraWeb,
             handleImportCloudBackup,
-            handleImportQuantum,
+            kindImportOptions,
             isCloudBackupAvailable,
             canImportSecureBackup,
-            isQuantumEnabled,
-            postQuantumKind,
             canUseLedger,
             canUseLedgerUsb,
             canImportPeraWeb,

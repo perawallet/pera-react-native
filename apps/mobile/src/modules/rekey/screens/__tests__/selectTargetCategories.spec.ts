@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 // rename its kinds or file several under one flow.
 describe.each<[AuthorityTargetCategory, () => { targets: unknown[] }]>([
     ['standard', useRekeyToStandardSelectTargetScreen],
-    ['quantum', useRekeyToQuantumSelectTargetScreen],
+    ['postQuantum', useRekeyToQuantumSelectTargetScreen],
     ['hardware', useRekeyToLedgerSelectTargetScreen],
     ['shared', useRekeyToSharedSelectTargetScreen],
 ])('the %s target screen', (category, useScreen) => {

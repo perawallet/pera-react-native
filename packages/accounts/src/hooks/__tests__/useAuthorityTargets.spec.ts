@@ -145,7 +145,7 @@ describe('useAuthorityTargets', () => {
         const { result } = renderHook(() =>
             useAuthorityTargets(
                 source,
-                AuthorityTargetCategories.quantum,
+                AuthorityTargetCategories.postQuantum,
                 MAINNET_SCOPE,
             ),
         )

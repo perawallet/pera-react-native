@@ -12,3 +12,4 @@
 
 export { normalizeMnemonicWord } from './normalizeMnemonicWord'
 export { splitMnemonic } from './splitMnemonic'
+export { trackChainOnboardingEvent } from './trackChainOnboardingEvent'

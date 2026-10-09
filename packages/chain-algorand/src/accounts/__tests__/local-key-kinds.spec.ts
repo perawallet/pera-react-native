@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { config } from '@perawallet/wallet-core-config'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     standaloneAccount,
@@ -35,7 +36,7 @@ describe('algorandLocalKeyKinds', () => {
         ])
     })
 
-    it("declares each kind's scheme, word counts, detection and recover option", () => {
+    it("declares each kind's scheme, word counts, detection and the options that offer it", () => {
         expect(algorandLocalKeyKinds).toEqual([
             {
                 seed: SeedScheme.Bip39,
@@ -71,6 +72,15 @@ describe('algorandLocalKeyKinds', () => {
                     isSuggested: false,
                     analyticsEvent: 'onb_createacc_recover_25',
                 },
+                createOption: {
+                    id: 'algo25',
+                    titleKey:
+                        'onboarding.add_account.create_algo25_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.create_algo25_option_description',
+                    icon: 'wallet',
+                    isFeatured: false,
+                },
             },
             {
                 seed: SeedScheme.Quantum,
@@ -78,13 +88,39 @@ describe('algorandLocalKeyKinds', () => {
                 isHd: false,
                 mnemonicWordCounts: [25],
                 isAutoDetected: false,
+                createOption: {
+                    id: 'quantum',
+                    titleKey:
+                        'onboarding.add_account.quantum_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.quantum_account_option_description',
+                    icon: 'quantum',
+                    isFeatured: true,
+                    progressTitleKey:
+                        'onboarding.add_account.quantum_creating_title',
+                    badgeKey:
+                        'onboarding.add_account.quantum_account_option_badge',
+                    learnMore: {
+                        labelKey:
+                            'onboarding.add_account.quantum_account_option_learn_more',
+                        url: config.quantumAccountSupportUrl,
+                    },
+                    analyticsEvent: 'createacc_quantumAccount_press',
+                },
+                importOption: {
+                    id: 'quantum',
+                    titleKey: 'onboarding.import_account_options.quantum_title',
+                    descriptionKey:
+                        'onboarding.import_account_options.quantum_description',
+                    icon: 'quantum',
+                },
             },
         ])
     })
 })
 
 describe('localKeyKindI18nKeys', () => {
-    it('lists every recover option key, and none for quantum, which the chooser omits', () => {
+    it("lists every key the kinds' recover, create and import options name", () => {
         expect(localKeyKindI18nKeys()).toEqual([
             'onboarding.import_options.hd_wallet.title',
             'onboarding.import_options.hd_wallet.chip',
@@ -94,6 +130,15 @@ describe('localKeyKindI18nKeys', () => {
             'onboarding.import_options.algo25.chip',
             'onboarding.import_options.algo25.description',
             'onboarding.import_options.algo25.mnemonic_info',
+            'onboarding.add_account.create_algo25_option_title',
+            'onboarding.add_account.create_algo25_option_description',
+            'onboarding.add_account.quantum_account_option_title',
+            'onboarding.add_account.quantum_account_option_description',
+            'onboarding.add_account.quantum_creating_title',
+            'onboarding.add_account.quantum_account_option_badge',
+            'onboarding.add_account.quantum_account_option_learn_more',
+            'onboarding.import_account_options.quantum_title',
+            'onboarding.import_account_options.quantum_description',
         ])
     })
 })

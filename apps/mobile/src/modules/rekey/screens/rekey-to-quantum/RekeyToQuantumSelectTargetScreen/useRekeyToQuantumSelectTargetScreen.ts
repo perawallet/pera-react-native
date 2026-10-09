@@ -46,7 +46,7 @@ export const useRekeyToQuantumSelectTargetScreen =
         const source = useFindAccountByAddress(sourceAddress, scope)
         const targets = useAuthorityTargets(
             source,
-            AuthorityTargetCategories.quantum,
+            AuthorityTargetCategories.postQuantum,
             scope,
         )
 

@@ -12,7 +12,9 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    type AuthorityTargetCategory,
     type WalletAccount,
+    AuthorityTargetCategories,
     addressOn,
     authorityOf,
     hasRecoverySeed,
@@ -181,9 +183,9 @@ export const useAccountOptions = ({
     }, [onClose, navigation, address])
 
     const navigateToRekeyFlow = useCallback(
-        (target: RekeyTargetType | 'shared') => {
+        (target: AuthorityTargetCategory) => {
             switch (target) {
-                case 'ledger': {
+                case AuthorityTargetCategories.hardware: {
                     trackEvent(AccountOptionsEvent.RekeyToLedger)
                     navigation.navigate('RekeyToLedger', {
                         screen: 'RekeyToLedgerIntro',
@@ -191,7 +193,7 @@ export const useAccountOptions = ({
                     })
                     return
                 }
-                case 'standard': {
+                case AuthorityTargetCategories.standard: {
                     trackEvent(AccountOptionsEvent.RekeyToStandard)
                     navigation.navigate('RekeyToStandard', {
                         screen: 'RekeyToStandardIntro',
@@ -199,7 +201,7 @@ export const useAccountOptions = ({
                     })
                     return
                 }
-                case 'quantum': {
+                case AuthorityTargetCategories.postQuantum: {
                     trackEvent(AccountOptionsEvent.RekeyToQuantum)
                     navigation.navigate('RekeyToQuantum', {
                         screen: 'RekeyToQuantumIntro',
@@ -207,7 +209,7 @@ export const useAccountOptions = ({
                     })
                     return
                 }
-                case 'shared': {
+                case AuthorityTargetCategories.shared: {
                     trackEvent(AccountDetailsEvent.JointAccountRekey)
                     navigation.navigate('RekeyToShared', {
                         screen: 'RekeyToSharedIntro',
@@ -224,7 +226,7 @@ export const useAccountOptions = ({
         // A shared account can only be rekeyed to another shared account, so
         // the type sheet would hold a single row — go straight to its intro.
         if (isSharedAccount) {
-            navigateToRekeyFlow('shared')
+            navigateToRekeyFlow(AuthorityTargetCategories.shared)
             return
         }
         const target = await requestBottomSheet<RekeyTargetType>({

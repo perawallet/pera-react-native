@@ -12,10 +12,11 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    postQuantumKeyKindOf,
+    importFormatsFor,
     useCreateAccount,
     useCreateNextHDAccount,
     useHdSeedGroups,
+    type LocalKeyKind,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -29,15 +30,17 @@ import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig'
 import type { AccountOption } from '@modules/onboarding/types'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import { trackChainOnboardingEvent } from '../../utils'
 
-// Default loading-overlay title shown while an account is being created.
-// Individual create flows (e.g. Quantum keygen) can override it per call.
+// A key kind's create option can override it for its own keygen.
 const DEFAULT_CREATING_TITLE_KEY = 'onboarding.create_account.processing'
 
 export const useAddAccountScreen = () => {
@@ -88,10 +91,6 @@ export const useAddAccountScreen = () => {
     )
     const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
 
-    // Shared create-account flow: open the creating-account state, create on the
-    // next cycle, navigate to naming on success, toast on failure, always close.
-    // `titleKey` overrides the loading-overlay title for flows that need their
-    // own copy (e.g. the heavier Quantum keygen).
     const runCreateAccount = useCallback(
         (
             create: () => Promise<Nullable<WalletAccount>>,
@@ -190,33 +189,59 @@ export const useAddAccountScreen = () => {
         )
     }, [buildHdWalletAccount, runCreateAccount])
 
-    const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() => buildSingleKeyAccount({ seed: null }))
-    }, [buildSingleKeyAccount, runCreateAccount])
-
-    const postQuantumKind = postQuantumKeyKindOf(scope.chainId)
-
-    const handleCreateQuantum = useCallback(() => {
-        if (!postQuantumKind) return
-        const { seed } = postQuantumKind
-        trackEvent(OnboardingEvent.CreateAccountQuantum)
-        // Quantum keygen is heavier than Ed25519, so surface a Quantum-specific
-        // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
-        // build in memory, then NameAccount persists after the user names it.
-        runCreateAccount(
-            () => buildSingleKeyAccount({ seed }),
-            'onboarding.add_account.quantum_creating_title',
-        )
-    }, [buildSingleKeyAccount, postQuantumKind, runCreateAccount])
-
-    const handleLearnMoreQuantum = useCallback(
-        () =>
-            pushWebView({
-                url: config.quantumAccountSupportUrl,
-                id: 'quantum-account-support',
-            }),
-        [pushWebView],
+    // The account is built in memory; NameAccount persists it once named.
+    const handleCreateKind = useCallback(
+        ({ seed, createOption }: LocalKeyKind) => {
+            trackChainOnboardingEvent(createOption?.analyticsEvent)
+            runCreateAccount(
+                () => buildSingleKeyAccount({ seed }),
+                createOption?.progressTitleKey,
+            )
+        },
+        [buildSingleKeyAccount, runCreateAccount],
     )
+
+    const createOptions = useMemo(() => {
+        const featured: AccountOption[] = []
+        const other: AccountOption[] = []
+        for (const kind of importFormatsFor(scope.chainId)) {
+            const option = kind.createOption
+            if (!option) continue
+            if (isPostQuantumScheme(kind.signingScheme) && !isQuantumEnabled) {
+                continue
+            }
+            const { learnMore } = option
+            const row: AccountOption = {
+                testID: `add_account_create_${option.id}_button`,
+                titleKey: option.titleKey,
+                descriptionKey: option.descriptionKey,
+                leftIcon: option.icon as IconName,
+                onPress: () => handleCreateKind(kind),
+                isDisabled: isCreatingAccount,
+                badge: option.badgeKey
+                    ? { labelKey: option.badgeKey, variant: 'new' }
+                    : undefined,
+                learnMore: learnMore
+                    ? {
+                          labelKey: learnMore.labelKey,
+                          onPress: () =>
+                              pushWebView({
+                                  url: learnMore.url,
+                                  id: `${option.id}-account-support`,
+                              }),
+                      }
+                    : undefined,
+            }
+            ;(option.isFeatured ? featured : other).push(row)
+        }
+        return { featured, other }
+    }, [
+        scope.chainId,
+        isQuantumEnabled,
+        isCreatingAccount,
+        handleCreateKind,
+        pushWebView,
+    ])
 
     const mainOptions: AccountOption[] = useMemo(
         () =>
@@ -240,27 +265,7 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
                 },
-                isQuantumEnabled &&
-                    postQuantumKind && {
-                        testID: 'add_account_create_quantum_button',
-                        titleKey:
-                            'onboarding.add_account.quantum_account_option_title',
-                        descriptionKey:
-                            'onboarding.add_account.quantum_account_option_description',
-                        leftIcon: 'quantum' as IconName,
-                        onPress: handleCreateQuantum,
-                        isDisabled: isCreatingAccount,
-                        badge: {
-                            labelKey:
-                                'onboarding.add_account.quantum_account_option_badge',
-                            variant: 'new',
-                        },
-                        learnMore: {
-                            labelKey:
-                                'onboarding.add_account.quantum_account_option_learn_more',
-                            onPress: handleLearnMoreQuantum,
-                        },
-                    },
+                ...createOptions.featured,
                 canUseMultisig && {
                     testID: 'add_account_create_multisig_button',
                     titleKey:
@@ -294,11 +299,8 @@ export const useAddAccountScreen = () => {
             hasHDWallet,
             handleAddAccount,
             handleCreateUniversalWallet,
-            isQuantumEnabled,
-            postQuantumKind,
+            createOptions,
             canUseMultisig,
-            handleCreateQuantum,
-            handleLearnMoreQuantum,
             isCreatingAccount,
             openMultisigIntroduction,
             hasCardSession,
@@ -330,23 +332,14 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
                 },
-                {
-                    testID: 'add_account_create_algo25_button',
-                    titleKey:
-                        'onboarding.add_account.create_algo25_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.create_algo25_option_description',
-                    leftIcon: 'wallet' as IconName,
-                    onPress: handleCreateAlgo25,
-                    isDisabled: isCreatingAccount,
-                },
+                ...createOptions.other,
             ].filter(Boolean) as AccountOption[],
         [
             hasHDWallet,
             canAddWatchAccount,
             handleWatchAddress,
             handleCreateUniversalWallet,
-            handleCreateAlgo25,
+            createOptions,
             isCreatingAccount,
         ],
     )

@@ -240,7 +240,7 @@ const TARGET_KINDS: readonly AuthorityTargetKind[] = [
     },
     {
         id: AlgorandAuthorityTargetKinds.quantum,
-        category: AuthorityTargetCategories.quantum,
+        category: AuthorityTargetCategories.postQuantum,
     },
     {
         id: AlgorandAuthorityTargetKinds.hardware,
