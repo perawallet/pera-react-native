@@ -24,7 +24,7 @@ import type {
     ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
-import { canSignArc60 } from '../accounts/vocabulary'
+import { canSignArc60, isQuantumAccount } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { decodeArbitraryDataForDisplay } from './arbitraryDataDisplay'
 import { computeBalanceImpact } from './balanceImpact'
@@ -147,6 +147,9 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
         kind === 'authData'
             ? canSignArc60(account)
             : canSignArbitraryData(account),
+    // ARC-60 and arbitrary-data signatures are Ed25519-only, so no dApp can
+    // verify a quantum account's Falcon signature yet.
+    signsVerifiably: account => !isQuantumAccount(account),
     signArbitraryData,
     signAuthData: signArc60AuthRequest,
     validateAuthData: validateArc60AuthRequest,

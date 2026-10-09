@@ -26,6 +26,7 @@ export const fakeMessageSignerAdapter = (
 ): MessageSignerChainAdapter => ({
     chainId: LEGACY_CHAIN_ID,
     canSign: vi.fn(() => true),
+    signsVerifiably: vi.fn(() => true),
     signArbitraryData: vi.fn(notStubbed('signArbitraryData')),
     signAuthData: vi.fn(notStubbed('signAuthData')),
     validateAuthData: vi.fn(() => ({ decodedData: new Uint8Array() })),

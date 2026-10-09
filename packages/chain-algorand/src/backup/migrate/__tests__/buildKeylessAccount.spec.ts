@@ -76,6 +76,7 @@ beforeEach(() => {
         deriveAddress,
         assembleSignedTransactions: vi.fn(),
         validateSignRequest: vi.fn(),
+        acceptsParticipantScheme: vi.fn(),
     })
 })
 
