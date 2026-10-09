@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { argon2id } from '@noble/hashes/argon2.js'
 import { base64 } from '@scure/base'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {
@@ -30,6 +29,7 @@ import {
     PBKDF2_ITERATIONS,
 } from '../vault'
 import { getSessionMasterKey } from '../session'
+import { deriveArgon2id } from '../argon2'
 import {
     InvalidPasswordError,
     VaultCorruptedError,
@@ -37,6 +37,12 @@ import {
     VaultLockedOutError,
     VaultNotInitializedError,
 } from '../../errors'
+
+vi.mock('../argon2', async importOriginal =>
+    (await import('../../test-utils/argon2')).fastArgon2(
+        await importOriginal(),
+    ),
+)
 
 describe('vault', () => {
     let fake: ChromeFake
@@ -293,12 +299,13 @@ describe('vault', () => {
             const iv = new Uint8Array(12).fill(6)
             const kek = await crypto.subtle.importKey(
                 'raw',
-                argon2id(new TextEncoder().encode(password), salt, {
+                (await deriveArgon2id({
+                    password: new TextEncoder().encode(password),
+                    salt,
                     m: 19_456,
                     t: 2,
                     p: 1,
-                    dkLen: 32,
-                }) as BufferSource,
+                })) as BufferSource,
                 'AES-GCM',
                 false,
                 ['encrypt'],
