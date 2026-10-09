@@ -25,6 +25,7 @@ import {
     type AccountStateSnapshot,
     type AccountsChainAdapter,
     type DecodedAccountRecord,
+    type DecodedLegacyAuthority,
     type LocalKeyKind,
 } from '../chain-adapter'
 import { authorityOf } from '../credentials/accessors'
@@ -146,6 +147,22 @@ export const decodeFakeLegacyRecord = (
     }
 }
 
+/** The fake's legacy records carry authority as `authorityByScope` (scope key to address) or, older, a lone `authority`. */
+export const decodeFakeLegacyAuthority = (
+    raw: unknown,
+): DecodedLegacyAuthority | undefined => {
+    if (typeof raw !== 'object' || raw === null) return undefined
+    const { authority, authorityByScope } = raw as Record<string, unknown>
+    if (typeof authorityByScope === 'object' && authorityByScope !== null) {
+        return {
+            byScope: authorityByScope as DecodedLegacyAuthority['byScope'],
+        }
+    }
+    return typeof authority === 'string'
+        ? { byScope: {}, unscoped: authority }
+        : undefined
+}
+
 /** A state read with a native balance of `nativeBaseUnits` and nothing else. */
 export const fakeAccountStateSnapshot = (
     nativeBaseUnits = 0,
@@ -216,6 +233,14 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             ? { authAddress: observed.authorityAddress }
             : {}),
     })),
+    summarizeChainState: vi.fn(chainState =>
+        chainState.family === 'algorand'
+            ? {
+                  reserveBalance: chainState.minBalance,
+                  heldTokenCount: chainState.totalAssetsOptedIn,
+              }
+            : { reserveBalance: new Decimal(0), heldTokenCount: 0 },
+    ),
     fetchAssetOptInRounds: vi.fn(async () => new Map<string, number>()),
     accountExists: vi.fn(async () => false),
     checkActivity: vi.fn(
@@ -231,6 +256,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     ),
     kindIdOf: vi.fn(fakeKindIdOf),
     decodeLegacyRecord: vi.fn(decodeFakeLegacyRecord),
+    decodeLegacyAuthority: vi.fn(decodeFakeLegacyAuthority),
     multisigNative: {
         parametersOf: vi.fn(native =>
             native?.multisig

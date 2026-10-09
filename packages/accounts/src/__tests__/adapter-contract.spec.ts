@@ -84,6 +84,10 @@ const fixtureAdapter: AccountsChainAdapter = {
         }
     },
     toChainState: () => ({ family: 'evm', nonce: { latest: 0, pending: 0 } }),
+    summarizeChainState: () => ({
+        reserveBalance: new Decimal(0),
+        heldTokenCount: 0,
+    }),
     accountExists: async address => (await getAccount(address)) !== null,
     checkActivity: async addresses =>
         new Map(

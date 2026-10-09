@@ -13,7 +13,10 @@
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
-import { toAlgorandChainState } from './chain-state'
+import {
+    summarizeAlgorandChainState,
+    toAlgorandChainState,
+} from './chain-state'
 import { assertAlgorandBip44PathMatches } from './bip44'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
 import { hdDerivedKeyId } from './hd-derivation'
@@ -43,6 +46,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     fetchAccountState: (address, scope, hint) =>
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
     toChainState: toAlgorandChainState,
+    summarizeChainState: summarizeAlgorandChainState,
     fetchAssetOptInRounds: (address, scope) =>
         fetchAssetOptInRounds(address, algorandNetworkOf(scope)),
     accountExists: (address, scope) =>

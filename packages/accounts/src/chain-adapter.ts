@@ -20,6 +20,7 @@ import {
     type ChainScopeKey,
     type DeriveOpts,
     type AccountChainState,
+    type AccountState,
     type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
@@ -109,6 +110,22 @@ export type LocalKeyKind = {
     mnemonicWordCounts: readonly number[]
     /** False: reachable only from its own import entry, never from a word count. */
     isAutoDetected: boolean
+    /** Absent: the recover-a-wallet chooser doesn't offer the kind. */
+    recoverOption?: LocalKeyRecoverOption
+}
+
+/** How the recover-a-wallet chooser offers a key kind; every `*Key` is an i18n key. */
+export type LocalKeyRecoverOption = {
+    /** Stable slug the option's test id is built from. */
+    id: string
+    titleKey: string
+    chipKey: string
+    descriptionKey: string
+    mnemonicInfoKey: string
+    /** Gives the chip the emphasis of the chain's suggested kind. */
+    isSuggested: boolean
+    /** Analytics event logged when the user picks the option. */
+    analyticsEvent: string
 }
 
 export type DecodedAccountRecord = {
@@ -269,6 +286,10 @@ export interface AccountsChainAdapter {
      * display units.
      */
     toChainState(observed: ObservedChainState): AccountChainState
+    /** The chain-neutral facts `AccountState` carries beside `chainState`. */
+    summarizeChainState(
+        chainState: AccountChainState,
+    ): Pick<AccountState, 'reserveBalance' | 'heldTokenCount'>
     /** Opt-in round per held asset, keyed by asset id. Absent on a chain without opt-in. */
     fetchAssetOptInRounds?(
         address: string,
