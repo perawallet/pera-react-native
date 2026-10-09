@@ -24,7 +24,18 @@ const account = { address: 'FUNDING' } as WalletAccount
 const rekeyed = { address: 'REKEYED' } as WalletAccount
 const insufficient = new Error('insufficient')
 
+let isAutoDrawOn = false
+let submissions = 0
+
 const adapter = fakeCardAdapter({
+    autoDraw: {
+        enableAutoDraw: async () => {
+            if (!isAutoDrawOn) submissions += 1
+        },
+        disableAutoDraw: async () => {
+            if (isAutoDrawOn) submissions += 1
+        },
+    },
     settlementAsset: scope => (isConfigured(scope) ? '1' : null),
     buildManualDeposit: async (_params, scope) => {
         if (!isConfigured(scope)) throw new CardEscrowNotConfiguredError()
@@ -61,4 +72,12 @@ cardContractTests(() => adapter, {
     insufficientBalanceError: insufficient,
     ownLegNetwork: 'chain',
     foreignLegNetwork: 'other',
+    autoDraw: {
+        account,
+        cardAddress: 'CARD',
+        arrangeState: enabled => {
+            isAutoDrawOn = enabled
+        },
+        submissions: () => submissions,
+    },
 })

@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -46,6 +47,14 @@ export interface CardContractFixtures {
     ownLegNetwork: string
     /** Baanx's `network` label for a leg on another chain. */
     foreignLegNetwork: string
+    autoDraw: {
+        account: WalletAccount
+        cardAddress: string
+        /** Makes the chain report auto-draw as already on (or off) for the account. */
+        arrangeState(enabled: boolean): void
+        /** Transactions the adapter has submitted to the chain so far. */
+        submissions(): number
+    }
 }
 
 /** Every chain package runs this against its own card adapter. */
@@ -159,8 +168,32 @@ export const cardContractTests = (
             ).toEqual(expect.stringContaining('HASH'))
         })
 
-        it('exposes auto-draw as a hook', () => {
-            expect(makeAdapter().useAutoDraw).toBeTypeOf('function')
+        it('does not submit again when auto-draw is already on', async () => {
+            const { account, cardAddress } = fixtures.autoDraw
+            fixtures.autoDraw.arrangeState(true)
+            const { result } = renderHook(makeAdapter().useAutoDraw)
+            const before = fixtures.autoDraw.submissions()
+
+            await result.current.enableAutoDraw(
+                account,
+                cardAddress,
+                fixtures.scope,
+            )
+
+            expect(fixtures.autoDraw.submissions()).toBe(before)
+        })
+
+        it('does not submit when auto-draw is already off', async () => {
+            fixtures.autoDraw.arrangeState(false)
+            const { result } = renderHook(makeAdapter().useAutoDraw)
+            const before = fixtures.autoDraw.submissions()
+
+            await result.current.disableAutoDraw(
+                fixtures.autoDraw.account,
+                fixtures.scope,
+            )
+
+            expect(fixtures.autoDraw.submissions()).toBe(before)
         })
     })
 }

@@ -14,10 +14,43 @@ import { vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardContractTests } from '@perawallet/wallet-core-card/testing'
 
-const { getAlgorandClient } = vi.hoisted(() => ({ getAlgorandClient: vi.fn() }))
+const { getAlgorandClient, submit, submitWithFeeDelegation } = vi.hoisted(
+    () => ({
+        getAlgorandClient: vi.fn(),
+        submit: vi.fn(async () => ({ txIds: [] })),
+        submitWithFeeDelegation: vi.fn(async () => undefined),
+    }),
+)
 vi.mock('../../blockchain', async () => ({
     ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
+}))
+// A deployed switch contract; the delegation leg before the on-chain check is
+// covered in useAlgorandCardAutoDraw.spec.
+vi.mock('../config', async () => ({
+    algorandCardConfig: () => ({
+        mainAppId: '111',
+        killswitchAppId: '222',
+        autoDrawProgramHash: '',
+        usdcAssetId: '10458941',
+    }),
+}))
+vi.mock('../escrow/lsig', async () => ({
+    ...(await vi.importActual<object>('../escrow/lsig')),
+    compileAutoDrawProgram: async () => new Uint8Array([6, 129, 1]),
+}))
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    postCardDelegation: async () => undefined,
+}))
+vi.mock('@perawallet/wallet-core-signing', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
+    useProgramSigner: () => ({ signProgram: async () => new Uint8Array(64) }),
+    encodeProgramAccount: () => new Uint8Array([9]),
+    useSignAndSubmitGroup: () => ({ submit }),
+}))
+vi.mock('../../fee-delegation', () => ({
+    useFeeDelegation: () => ({ submitWithFeeDelegation }),
 }))
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
@@ -83,4 +116,29 @@ cardContractTests(() => algorandCardAdapter, {
     insufficientBalanceError: new AlgodError('overspend', {} as never),
     ownLegNetwork: 'algorand',
     foreignLegNetwork: 'linea',
+    autoDraw: {
+        account: { address: ADDRESS } as WalletAccount,
+        cardAddress: ADDRESS,
+        // The switch's per-(account, asset) box exists exactly while it is on.
+        arrangeState: enabled =>
+            arrangeClient({
+                client: {
+                    algod: {
+                        getApplicationBoxByName: () => ({
+                            do: async () => {
+                                if (!enabled) {
+                                    throw Object.assign(new Error('box'), {
+                                        response: { status: 404 },
+                                    })
+                                }
+                                return { value: new Uint8Array() }
+                            },
+                        }),
+                    },
+                },
+            }),
+        submissions: () =>
+            submit.mock.calls.length +
+            submitWithFeeDelegation.mock.calls.length,
+    },
 })
