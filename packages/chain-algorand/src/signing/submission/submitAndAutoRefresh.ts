@@ -11,7 +11,6 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -35,16 +34,12 @@ import type {
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
 import { toRound } from '../submission-ledger'
+import {
+    CONFIRMATION_ROUNDS_TO_WAIT,
+    LANDING_CHECK_ROUNDS_TO_WAIT,
+    waitForAlgodConfirmation,
+} from './waitForAlgodConfirmation'
 
-const DEFAULT_ROUNDS_TO_WAIT = 10
-
-/**
- * Post-error verification window. Kept deliberately smaller than the main
- * confirmation wait: a transaction that reached the pool confirms within a
- * couple of rounds, and the whole submit + verify chain must finish inside
- * the signing machine's SUBMIT_TIMEOUT backstop.
- */
-const VERIFY_ROUNDS_TO_WAIT = 4
 const VERIFY_ATTEMPTS = 2
 const VERIFY_RETRY_DELAY_MS = 2000
 
@@ -329,18 +324,17 @@ export const submitAndAutoRefresh = async (
             // The runtime instance is always an AlgorandClient whose
             // .client.algod is the SDK AlgodClient; the cast bridges the
             // intentionally-narrow AlgokitClientInterface used for testing.
-            // algosdk's signature is (client, txid, waitRounds).
-            algosdkWaitForConfirmation(
-                (algokit as unknown as AlgorandClient).client.algod,
+            waitForAlgodConfirmation(
+                algokit as unknown as AlgorandClient,
                 txId,
-                DEFAULT_ROUNDS_TO_WAIT,
-            ).then(() => undefined),
+                CONFIRMATION_ROUNDS_TO_WAIT,
+            ),
         verifyTxnLanded: txId =>
-            algosdkWaitForConfirmation(
-                (algokit as unknown as AlgorandClient).client.algod,
+            waitForAlgodConfirmation(
+                algokit as unknown as AlgorandClient,
                 txId,
-                VERIFY_ROUNDS_TO_WAIT,
-            ).then(() => undefined),
+                LANDING_CHECK_ROUNDS_TO_WAIT,
+            ),
         walletAddresses,
         network,
         onConfirmed: (addresses, networkAtSubmission) => {

@@ -25,6 +25,11 @@ export type {
 } from './types'
 export { setOnConfirmedHandler } from './onConfirmedRegistry'
 export {
+    CONFIRMATION_ROUNDS_TO_WAIT,
+    LANDING_CHECK_ROUNDS_TO_WAIT,
+    waitForAlgodConfirmation,
+} from './waitForAlgodConfirmation'
+export {
     classifySubmitFailure,
     type SubmitFailureOutcome,
 } from './classifySubmitFailure'

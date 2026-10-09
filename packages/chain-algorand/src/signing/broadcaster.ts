@@ -14,6 +14,7 @@ import {
     AlgodError,
     encodeSignedTransactions,
     createWalletAlgorandClient,
+    getAlgorandClient,
 } from '../blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
@@ -21,7 +22,13 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { createAlgodTransport } from './transports/createAlgodTransport'
 import { findStaleGroupReason } from './staleRequestGuard'
-import { setOnConfirmedHandler, submitAndAutoRefresh } from './submission'
+import {
+    CONFIRMATION_ROUNDS_TO_WAIT,
+    setOnConfirmedHandler,
+    submitAndAutoRefresh,
+    submitRawSignedTransactionGroup,
+    waitForAlgodConfirmation,
+} from './submission'
 import {
     deriveSubmissionAttemptFromBytes,
     isRequestGroupAlreadySubmitted,
@@ -31,6 +38,20 @@ import {
 
 export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    submit: (scope, signedTransactions) =>
+        submitRawSignedTransactionGroup(getAlgorandClient(scope), [
+            ...signedTransactions,
+        ]),
+    waitForConfirmation: async (scope, txIds) => {
+        const [firstTxId] = txIds
+        if (firstTxId === undefined) return
+        // A group is atomic, so its first transaction confirming means the group did.
+        await waitForAlgodConfirmation(
+            getAlgorandClient(scope),
+            firstTxId,
+            CONFIRMATION_ROUNDS_TO_WAIT,
+        )
+    },
     createSubmitTransport: scope =>
         createAlgodTransport(
             createWalletAlgorandClient(algorandNetworkOf(scope)),

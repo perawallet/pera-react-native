@@ -10,15 +10,34 @@
  limitations under the License
  */
 
-import { describe, expect, test, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    test,
+    vi,
+} from 'vitest'
+import { generateAccount } from 'algosdk'
+import { http, HttpResponse } from 'msw'
+import { setupServer } from 'msw/node'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { concatBytes } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '../../blockchain'
+import {
+    mockAlgodPendingTransaction,
+    mockAlgodStatus,
+    mockAlgodStatusAfterBlock,
+} from '../../test-handlers'
+import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetworkStore: {
-        getState: () => ({ network: 'testnet' }),
+        getState: () => ({ network: 'testnet', customNetworksByChain: {} }),
         subscribe: () => () => {},
     },
 }))
@@ -33,5 +52,69 @@ describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
         expect((error as AlgodError).code).toBe('network_unavailable')
         expect(error.metadata.retryable).toBe(true)
         expect(error.originalError?.message).toContain('5000ms')
+    })
+})
+
+describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
+    const scope = scopeForLegacyNetwork('testnet')
+    const sender = generateAccount()
+    const group = [1n, 2n].map(amount =>
+        makeTestPaymentTx(sender.addr, {
+            receiver: makeTestAddress(2),
+            amount,
+        }),
+    )
+    const signed = group.map(txn => txn.signTxn(sender.sk))
+    const txIds = group.map(txn => txn.txID())
+
+    const server = setupServer()
+    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+    afterEach(() => server.resetHandlers())
+    afterAll(() => server.close())
+
+    test('posts the signed bytes unchanged, concatenated in order', async () => {
+        let posted: Uint8Array | undefined
+        server.use(
+            http.post('*/v2/transactions', async ({ request }) => {
+                posted = new Uint8Array(await request.arrayBuffer())
+                return HttpResponse.json({ txId: txIds[0] })
+            }),
+        )
+
+        await algorandBroadcasterAdapter.submit(scope, signed)
+
+        expect(posted).toEqual(concatBytes(...signed))
+    })
+
+    test('rejects the wait when the node drops the transaction from its pool', async () => {
+        server.use(
+            mockAlgodStatus(),
+            mockAlgodStatusAfterBlock(),
+            mockAlgodPendingTransaction({
+                txId: txIds[0],
+                status: 200,
+                response: { 'pool-error': 'transaction evicted' },
+            }),
+        )
+
+        await expect(
+            algorandBroadcasterAdapter.waitForConfirmation(scope, txIds),
+        ).rejects.toThrow('transaction evicted')
+    })
+
+    test('tracks a group by its first transaction', async () => {
+        server.use(
+            mockAlgodStatus(),
+            mockAlgodStatusAfterBlock(),
+            mockAlgodPendingTransaction({
+                txId: txIds[0],
+                status: 200,
+                response: { 'confirmed-round': 5 },
+            }),
+        )
+
+        await expect(
+            algorandBroadcasterAdapter.waitForConfirmation(scope, txIds),
+        ).resolves.toBeUndefined()
     })
 })
