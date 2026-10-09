@@ -16,18 +16,17 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    isAuthDataRequest,
+    messageSignerChainAdapters,
     resolveAllSignerAddresses,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { holdsQuantumKey } from '@utils/quantumKey'
 
 /**
- * ARC-60 and arbitrary-data signatures are ed25519-only in the current
- * protocol, so a Falcon signature from a quantum account would fail
- * verification on the dApp side. Block the request up front instead of
- * letting the user sign into a guaranteed failure. Remove once the
- * protocol gains PQ support.
+ * Blocks a data-signing request up front when a requester couldn't verify the
+ * signature (a post-quantum key under an Ed25519-only message format), instead
+ * of letting the user sign into a guaranteed failure.
  */
 export const useIsQuantumDataSigningBlocked = (
     request: Nullable<SignRequest>,
@@ -42,12 +41,14 @@ export const useIsQuantumDataSigningBlocked = (
     // rekeyed to a quantum auth cannot do SIWA at all: naming itself is refused
     // by validateArc60AuthRequest (control moved to the auth), and naming the
     // quantum auth lands here.
+    const signer = messageSignerChainAdapters.get(LEGACY_CHAIN_ID)
+    const kind = isAuthDataRequest(request) ? 'authData' : 'arbitraryData'
     return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
         const account = findAccountByAddressOn(
             accounts,
             LEGACY_CHAIN_ID,
             address,
         )
-        return !!account && holdsQuantumKey(account)
+        return !!account && !signer.signsVerifiably(account, kind)
     })
 }

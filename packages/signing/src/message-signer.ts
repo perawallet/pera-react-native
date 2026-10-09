@@ -71,6 +71,12 @@ export interface MessageSignerChainAdapter {
     chainId: ChainId
     /** Whether `account` can sign `kind` on this chain, judged from the account alone. */
     canSign(account: WalletAccount, kind: MessageSignKind): boolean
+    /**
+     * Whether a requester can verify the signature `account` makes for
+     * `kind`. A key of a scheme the message format doesn't carry still passes
+     * {@link canSign}, so the review blocks it instead of refusing the request.
+     */
+    signsVerifiably(account: WalletAccount, kind: MessageSignKind): boolean
     /** One signature per base64 item, with the account's own key; never follows rekey. */
     signArbitraryData(
         deps: MessageSigningDeps,

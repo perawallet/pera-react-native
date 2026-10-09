@@ -40,6 +40,16 @@ const QUANTUM_ACCOUNT: WalletAccount = {
     },
 }
 
+const STANDALONE_ACCOUNT: WalletAccount = {
+    id: 'standalone-account-1',
+    custody: { kind: 'local', seed: null },
+    chains: {
+        algorand: { address: 'STANDALONEADDRESS', keyPairId: 'seed-2-ed25519' },
+    },
+}
+
+const falconChild = (metadata: object) => ({ type: 'falcon-1024', metadata })
+
 const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-account-1',
     custody: { kind: 'watch' },
@@ -48,7 +58,7 @@ const WATCH_ACCOUNT: WalletAccount = {
 
 describe('isLegacyQuantumChild', () => {
     test('is true when the child is stamped legacy', () => {
-        const getKey = vi.fn(() => ({ metadata: { pqDerivation: 'legacy' } }))
+        const getKey = vi.fn(() => falconChild({ pqDerivation: 'legacy' }))
 
         expect(
             isLegacyQuantumChild(getKey as never, QUANTUM_ACCOUNT, 'algorand'),
@@ -56,7 +66,7 @@ describe('isLegacyQuantumChild', () => {
     })
 
     test('is false when the child is stamped canonical', () => {
-        const getKey = vi.fn(() => ({ metadata: { pqDerivation: 'pqk1' } }))
+        const getKey = vi.fn(() => falconChild({ pqDerivation: 'pqk1' }))
 
         expect(
             isLegacyQuantumChild(getKey as never, QUANTUM_ACCOUNT, 'algorand'),
@@ -66,7 +76,7 @@ describe('isLegacyQuantumChild', () => {
     // The failure direction that hurts: a child that a migration failed to
     // stamp must still read as legacy, not silently as canonical.
     test('fails closed to legacy when the derivation marker is undefined', () => {
-        const getKey = vi.fn(() => ({ metadata: {} }))
+        const getKey = vi.fn(() => falconChild({}))
 
         expect(
             isLegacyQuantumChild(getKey as never, QUANTUM_ACCOUNT, 'algorand'),
@@ -74,7 +84,7 @@ describe('isLegacyQuantumChild', () => {
     })
 
     test('fails closed to legacy when the key has no metadata at all', () => {
-        const getKey = vi.fn(() => ({}))
+        const getKey = vi.fn(() => ({ type: 'falcon-1024' }))
 
         expect(
             isLegacyQuantumChild(getKey as never, QUANTUM_ACCOUNT, 'algorand'),
@@ -100,5 +110,19 @@ describe('isLegacyQuantumChild', () => {
             isLegacyQuantumChild(getKey as never, WATCH_ACCOUNT, 'algorand'),
         ).toBe(false)
         expect(getKey).not.toHaveBeenCalled()
+    })
+
+    // Only a quantum child carries a derivation stamp, so an unstamped key of
+    // another type must not fail closed into "legacy".
+    test('is false for an unstamped key that is not a quantum child', () => {
+        const getKey = vi.fn(() => ({ type: 'ed25519', metadata: {} }))
+
+        expect(
+            isLegacyQuantumChild(
+                getKey as never,
+                STANDALONE_ACCOUNT,
+                'algorand',
+            ),
+        ).toBe(false)
     })
 })

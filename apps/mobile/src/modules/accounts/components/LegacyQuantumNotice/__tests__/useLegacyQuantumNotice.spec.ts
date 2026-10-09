@@ -18,6 +18,7 @@ const mockGetKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({ getKey: mockGetKey }),
+    FALCON_CHILD_KEY_TYPE: 'falcon-1024',
     PQ_DERIVATION_CANONICAL: 'pqk1',
     SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
@@ -71,7 +72,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('shows the marker for a legacy account', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
 
         const { result } = renderHook(() =>
             useLegacyQuantumNotice(LEGACY_ACCOUNT),
@@ -81,7 +85,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('never shows for a canonical account', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'pqk1' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'pqk1' },
+        })
 
         const { result } = renderHook(() =>
             useLegacyQuantumNotice(CANONICAL_ACCOUNT),
@@ -93,7 +100,10 @@ describe('useLegacyQuantumNotice', () => {
     // Fail closed: a child a migration failed to stamp must still read as
     // legacy, not silently as canonical.
     test('shows the marker when the derivation marker is undefined', () => {
-        mockGetKey.mockReturnValue({ metadata: {} })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: {},
+        })
 
         const { result } = renderHook(() =>
             useLegacyQuantumNotice(LEGACY_ACCOUNT),
@@ -103,7 +113,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('uses the dependent-aware copy when an account is rekeyed to this address', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: ['SOME_DEPENDENT_ADDRESS'],
             isLoading: false,
@@ -119,7 +132,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('falls back to the dependent-aware copy when the auth-addr lookup fails', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: undefined,
             isLoading: false,
@@ -135,7 +151,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('uses the dependent-aware copy while the lookup is still loading', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: undefined,
             isLoading: true,
@@ -151,7 +170,10 @@ describe('useLegacyQuantumNotice', () => {
     })
 
     test('uses the plain copy once the lookup proves no dependents', () => {
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
 
         const { result } = renderHook(() =>
             useLegacyQuantumNotice(LEGACY_ACCOUNT),

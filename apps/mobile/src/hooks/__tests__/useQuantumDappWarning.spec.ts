@@ -12,7 +12,10 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    usesNonPrimaryScheme,
+} from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { QuantumDappWarningSheet } from '@components/QuantumDappWarningSheet'
@@ -20,15 +23,18 @@ import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnable
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
 type TestAccount = {
-    custody: { kind: string }
+    custody: { kind: string; seed?: string | null }
     chains: { algorand: { address: string } }
     authority?: string
 }
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    hasCustody: (account: TestAccount, kind: string) =>
-        account.custody.kind === kind,
+    // Stands in for the fee path's scheme predicate, which reads the chain
+    // descriptor and keystore this spec doesn't set up.
+    usesNonPrimaryScheme: vi.fn(
+        (account: TestAccount) => account.custody.seed === 'quantum',
+    ),
     getSignerFor: (address: string, accounts: TestAccount[]) => {
         const holder = (held: string) =>
             accounts.find(a => a.chains.algorand.address === held)
@@ -125,6 +131,12 @@ describe('useQuantumDappWarning', () => {
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
         expect(decision).toBe('continue')
+        expect(usesNonPrimaryScheme).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chains: { algorand: { address: QUANTUM_ADDRESS } },
+            }),
+            'algorand',
+        )
     })
 
     it('continues without a sheet when no address is a quantum account', async () => {

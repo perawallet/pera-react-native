@@ -13,7 +13,11 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import type { SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    messageSignerChainAdapters,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
+import { algorandMessageSignerAdapter } from '@perawallet/wallet-core-chain-algorand/signing'
 import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useIsQuantumDataSigningBlocked } from '../useIsQuantumDataSigningBlocked'
 
@@ -55,6 +59,8 @@ describe('useIsQuantumDataSigningBlocked', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandReviewerAdapter()
+        messageSignerChainAdapters.reset()
+        messageSignerChainAdapters.register(algorandMessageSignerAdapter)
         ;(useAllAccounts as Mock).mockReturnValue([
             {
                 chains: { algorand: { address: QUANTUM_ADDRESS } },
@@ -115,6 +121,29 @@ describe('useIsQuantumDataSigningBlocked', () => {
         )
 
         expect(result.current).toBe(false)
+    })
+
+    it("asks the chain's message signer, passing the request's kind", () => {
+        const signsVerifiably = vi.fn(() => false)
+        messageSignerChainAdapters.reset()
+        messageSignerChainAdapters.register({
+            ...algorandMessageSignerAdapter,
+            signsVerifiably,
+        })
+
+        const { result } = renderHook(() =>
+            useIsQuantumDataSigningBlocked(
+                buildArbitraryDataRequest([STANDARD_ADDRESS]),
+            ),
+        )
+
+        expect(result.current).toBe(true)
+        expect(signsVerifiably).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chains: { algorand: { address: STANDARD_ADDRESS } },
+            }),
+            'arbitraryData',
+        )
     })
 
     it('does not block when there is no request', () => {
