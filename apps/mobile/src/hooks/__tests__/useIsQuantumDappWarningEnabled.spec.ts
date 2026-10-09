@@ -21,7 +21,9 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    AlgorandRemoteConfigKeys: { enable_quantum_dapp_warning: 'enable_quantum_dapp_warning' },
+    AlgorandRemoteConfigKeys: {
+        enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
+    },
 }))
 
 vi.mock('../useCapability', () => ({ useCapability: vi.fn() }))

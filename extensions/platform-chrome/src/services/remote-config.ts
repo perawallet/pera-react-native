@@ -47,7 +47,9 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
             ...this.remoteConfig.settings,
             minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
         }
-        this.remoteConfig.defaultConfig = { ...remoteConfigDefaultsRegistry.all() }
+        this.remoteConfig.defaultConfig = {
+            ...remoteConfigDefaultsRegistry.all(),
+        }
 
         try {
             await fetchAndActivate(this.remoteConfig)

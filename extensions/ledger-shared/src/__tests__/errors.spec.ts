@@ -172,7 +172,9 @@ describe('classifyLedgerAppError', () => {
         const result = classifyLedgerAppError(original, app)
 
         expect(result).toBeInstanceOf(LedgerAppNotOpenError)
-        expect(result.message).toBe('Fixture app is not open on the Ledger device')
+        expect(result.message).toBe(
+            'Fixture app is not open on the Ledger device',
+        )
         expect(result.originalError).toBe(original)
     })
 

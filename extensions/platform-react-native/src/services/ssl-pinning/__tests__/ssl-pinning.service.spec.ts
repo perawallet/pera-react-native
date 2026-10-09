@@ -173,7 +173,9 @@ describe('initializeSslPinningService', () => {
     })
 
     test('reads the chain groups from the pinned-host registry by default', async () => {
-        pinnedHostRegistry.declare(fixtureGroup(['https://node.fixture.example']))
+        pinnedHostRegistry.declare(
+            fixtureGroup(['https://node.fixture.example']),
+        )
         const { pinnedHostGroups: _, ...deps } = makeDeps({
             isBackendPinningEnabled: false,
             isFixturePinningEnabled: true,

@@ -12,13 +12,17 @@
 
 import { RemoteConfigDefaults, type RemoteConfigValue } from './models'
 
-export type RemoteConfigDefaultsMap = Readonly<Record<string, RemoteConfigValue>>
+export type RemoteConfigDefaultsMap = Readonly<
+    Record<string, RemoteConfigValue>
+>
 
 export class DuplicateRemoteConfigKeyError extends Error {
     readonly key: string
 
     constructor(key: string) {
-        super(`Remote config key "${key}" is already declared with another default`)
+        super(
+            `Remote config key "${key}" is already declared with another default`,
+        )
         this.name = 'DuplicateRemoteConfigKeyError'
         this.key = key
     }
