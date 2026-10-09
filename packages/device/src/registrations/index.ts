@@ -10,11 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-device'
-
-export * from './models'
-export * from './store'
-export * from './hooks'
-export * from './analytics'
-export * from './age-gate'
-export * from './registrations'
+export * from './chain-adapter'
+export * from './buildDeviceAccountRegistrations'
