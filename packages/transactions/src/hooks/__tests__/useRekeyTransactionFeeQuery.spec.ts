@@ -19,7 +19,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockUseSelectedScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
+const mockCallerScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockUseSuggestedMinFeeQuery = vi.fn()
@@ -32,10 +32,6 @@ const mockResolveMinFeeForSender = vi.fn()
 // packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => mockUseSelectedScope(),
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
@@ -50,23 +46,25 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
 
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'q1',
-        address: 'QADDR',
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
+const quantum = (
+    address = 'QADDR',
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => ({
+    id: 'q1',
+    custody: { kind: 'local', seed: 'quantum' },
+    chains: { algorand: { address, keyPairId: 'kp-quantum' } },
+    ...overrides,
+})
 
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'a1',
-        address: 'SRC',
-        custody: { kind: 'local', seed: null },
-        keyPairId: 'kp-algo25',
-        ...overrides,
-    }) as WalletAccount
+const algo25 = (
+    address = 'SRC',
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => ({
+    id: 'a1',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address, keyPairId: 'kp-algo25' } },
+    ...overrides,
+})
 
 const buildWrapper = () => {
     const queryClient = new QueryClient({
@@ -85,7 +83,7 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+    mockCallerScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
@@ -114,7 +112,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -135,12 +133,13 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
     })
@@ -154,7 +153,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -175,13 +174,14 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.feeAlgos?.toString()).toBe('0.002')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
     })
@@ -192,7 +192,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -214,7 +214,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -225,7 +225,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('does not run the query when sourceAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('', 'TGT'),
+            () => useRekeyTransactionFeeQuery('', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -237,7 +237,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('does not run the query when rekeyToAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', ''),
+            () => useRekeyTransactionFeeQuery('SRC', '', mockCallerScope()),
             { wrapper },
         )
 
@@ -254,15 +254,15 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result: mainnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
+        mockCallerScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         const { result: testnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
         await waitFor(() => expect(testnet.current.isPending).toBe(false))
@@ -271,7 +271,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     })
 
     it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
-        const accounts = [quantum({ address: 'SRC' })]
+        const accounts = [quantum('SRC')]
         mockUseAllAccounts.mockReturnValue(accounts)
         // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
@@ -279,7 +279,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -288,7 +288,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         expect(mockBuildRekeyTx).toHaveBeenCalledWith(
             expect.objectContaining({ minFee: 3000n }),
         )
-        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
             senderAddress: 'SRC',
             accounts,
             suggestedMinFee: 1000n,
@@ -304,7 +304,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -317,23 +317,21 @@ describe('useRekeyTransactionFeeQuery', () => {
         // undoing a rekey-to-quantum must still pay the PQ fee. The resolver
         // itself performs the auth-chain walk (getSignerFor); here we assert
         // the hook forwards the full accounts array and applies the guard.
-        const accounts = [
-            algo25({ address: 'SRC' }),
-            quantum({ address: 'QADDR' }),
-        ]
+        const accounts = [algo25('SRC'), quantum('QADDR')]
         mockUseAllAccounts.mockReturnValue(accounts)
         mockResolveMinFeeForSender.mockReturnValue(3000n)
         mockBuildRekeyTx.mockResolvedValueOnce({ fee: 3000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.feeAlgos?.toString()).toBe('0.003')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ senderAddress: 'SRC', accounts }),
         )
     })

@@ -11,6 +11,11 @@
  */
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { fetchAccountsBalanceHistory } from './endpoints'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type {
@@ -21,14 +26,6 @@ import type {
 } from '../models'
 import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
@@ -60,11 +57,10 @@ export type UseAccountBalancesHistoryQueryResult = {
 export const useAccountBalancesHistoryQuery = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
+    scope: ChainScope,
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
     const { usdToPreferred } = useCurrency()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'balanceHistory',
@@ -75,7 +71,12 @@ export const useAccountBalancesHistoryQuery = (
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
         enabled: enabled && addresses.length > 0 && !isUnavailableOnNetwork,
-        queryFn: () => fetchAccountsBalanceHistory(addresses, period, network),
+        queryFn: () =>
+            fetchAccountsBalanceHistory(
+                addresses,
+                period,
+                legacyNetworkOf(scope),
+            ),
         select: useCallback(
             (data: AccountBalanceHistoryResponse) =>
                 data?.results?.map(item =>

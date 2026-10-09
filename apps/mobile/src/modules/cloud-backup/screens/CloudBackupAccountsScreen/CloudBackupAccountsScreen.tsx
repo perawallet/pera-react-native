@@ -76,13 +76,14 @@ export const CloudBackupAccountsScreen = () => {
                         subtitle={t('cloud_backup.accounts.device_subtitle')}
                     />
                     <PWView>
-                        {accounts.map((account, index) => (
-                            <Fragment key={account.address}>
+                        {accounts.map(({ account, address }, index) => (
+                            <Fragment key={account.id}>
                                 {index > 0 && <ListItemDivider />}
                                 <DeviceAccountRow
                                     account={account}
-                                    isBackedUp={isBackedUp(account.address)}
-                                    isBusy={isBusy(account.address)}
+                                    address={address}
+                                    isBackedUp={isBackedUp(address)}
+                                    isBusy={isBusy(address)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

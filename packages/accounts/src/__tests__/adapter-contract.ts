@@ -9,11 +9,11 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 import {
     afterAll,
     afterEach,
     beforeAll,
+    beforeEach,
     describe,
     expect,
     it,
@@ -21,17 +21,19 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
+import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
-    requireQuantum,
+    accountKindId,
+    accountsChainAdapters,
     requireRekey,
     requireSingleKeyAccounts,
-    type AccountKeystore,
     type AccountsChainAdapter,
     type MintedAccount,
-    type SingleKeyAccountKind,
 } from '../chain-adapter'
-import type { HDWalletDetails, HdIndex, WalletAccount } from '../models'
-import { accountType } from '../utils'
+import { addressOn } from '../credentials/accessors'
+import type { AccountPresentationChainAdapter } from '../presentation-adapter'
+import { detectImportKind, localKeyKindOf } from '../import-formats'
+import type { HdIndex, WalletAccount } from '../models'
 import {
     accountStateCases,
     type AccountStateContractFixtures,
@@ -40,7 +42,7 @@ import {
 export interface AccountsContractFixtures extends AccountStateContractFixtures {
     rootKey: Uint8Array
     hdPath: {
-        details: HDWalletDetails
+        details: HdIndex
         matching: string
         mismatched: string
         malformed: string
@@ -70,52 +72,60 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
             auth: WalletAccount
             next: WalletAccount
         }
+        /** The id of a target kind `signers.signing` is eligible under; defaults to the first of `authority.targetKinds`. */
+        targetKind?: string
     }
 }
 
-// Mints distinct 32-byte keys; the address comes from the adapter's own quantum
-// derivation so it stays valid for the chain under test.
-const createFakeKeystore = () => {
+const isNonEmptyString = (value: unknown): boolean =>
+    typeof value === 'string' && value.length > 0
+
+const mnemonicOf = (wordCount: number): string =>
+    Array.from({ length: wordCount }, () => 'word').join(' ')
+
+// Mints distinct keys through the kms the adapter calls, so no keystore is
+// reached; a quantum address comes from the adapter's own derivation.
+const stubKmsCore = () => {
     let minted = 0
-    const keystore = {
-        getKey: vi.fn(() => undefined),
-        createAlgo25Key: vi.fn(async (params?: { id?: string }) => {
-            const n = ++minted
-            return {
-                seedKey: { id: params?.id ?? `seed-${n}` },
-                publicKey: new Uint8Array(32).fill(n),
-            }
-        }),
-        createQuantumKey: vi.fn(
-            async (params: {
-                id?: string
-                reuseSeedId?: string
-                chain: { addressFromPublicKey(publicKey: Uint8Array): string }
-            }) => {
+    type SeedKey = Awaited<
+        ReturnType<typeof kmsCore.createAlgo25Key>
+    >['seedKey']
+    const seedKey = (id: string) => ({ id }) as SeedKey
+    const spies = [
+        vi.spyOn(kmsCore, 'getKey').mockReturnValue(null),
+        vi
+            .spyOn(kmsCore, 'createAlgo25Key')
+            .mockImplementation(async params => {
                 const n = ++minted
-                const publicKey = new Uint8Array(32).fill(n)
+                const id = params?.id ?? `seed-${n}`
                 return {
-                    seedKey: {
-                        id: params.reuseSeedId ?? params.id ?? `seed-${n}`,
-                    },
-                    address: params.chain.addressFromPublicKey(publicKey),
-                    signKeyId: `seed-${n}-sign`,
-                    publicKey,
+                    seedKey: seedKey(id),
+                    publicKey: new Uint8Array(32).fill(n),
+                    signKeyId: `${id}-sign`,
                 }
-            },
-        ),
-        removeKeyAndChildren: vi.fn(async () => {}),
-    }
+            }),
+        vi
+            .spyOn(kmsCore, 'createQuantumKey')
+            .mockImplementation(async params => {
+                const n = ++minted
+                const id = params.reuseSeedId ?? params.id ?? `seed-${n}`
+                return {
+                    seedKey: seedKey(id),
+                    address: params.chain.addressFromPublicKey(
+                        new Uint8Array(32).fill(n),
+                    ),
+                    signKeyId: `${id}-sign-${n}`,
+                    publicKey: new Uint8Array(32).fill(n),
+                }
+            }),
+        vi.spyOn(kmsCore, 'discardMintedSeed').mockResolvedValue(),
+    ] as const
     return {
-        keystore,
-        port: keystore as unknown as AccountKeystore,
-        mintCount: () =>
-            keystore.createAlgo25Key.mock.calls.length +
-            keystore.createQuantumKey.mock.calls.length,
+        getKey: spies[0],
+        mintCount: () => minted,
+        restore: () => spies.forEach(spy => spy.mockRestore()),
     }
 }
-
-const SINGLE_KEY_KINDS: SingleKeyAccountKind[] = ['standalone', 'quantum']
 
 /** Every chain package runs this against its own accounts adapter. */
 export const accountsContractTests = (
@@ -124,10 +134,27 @@ export const accountsContractTests = (
 ): void => {
     const { scope, codec } = fixtures
     const server = setupServer()
+    const singleKeyKinds = makeAdapter().localKeyKinds.filter(
+        kind => !kind.isHd,
+    )
 
     describe(`AccountsChainAdapter contract: ${makeAdapter().chainId}`, () => {
+        let kms: ReturnType<typeof stubKmsCore>
+
         beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-        afterEach(() => server.resetHandlers())
+        beforeEach(() => {
+            kms = stubKmsCore()
+            // The import-format helpers read the registry; a chain package
+            // registers its adapter in its own, so the suite registers it here.
+            const adapter = makeAdapter()
+            if (!accountsChainAdapters.has(adapter.chainId)) {
+                accountsChainAdapters.register(adapter)
+            }
+        })
+        afterEach(() => {
+            kms.restore()
+            server.resetHandlers()
+        })
         afterAll(() => server.close())
 
         accountStateCases(makeAdapter, fixtures, server)
@@ -183,6 +210,138 @@ export const accountsContractTests = (
             ).toThrow(expect.objectContaining({ reason: 'malformed' }))
         })
 
+        it('declares its local key kinds: at least one, at most one HD, each with a word count', () => {
+            const { localKeyKinds } = makeAdapter()
+
+            expect(localKeyKinds.length).toBeGreaterThan(0)
+            expect(
+                localKeyKinds.filter(kind => kind.isHd).length,
+            ).toBeLessThanOrEqual(1)
+            for (const kind of localKeyKinds) {
+                expect(kind.mnemonicWordCounts.length).toBeGreaterThan(0)
+            }
+            const seeds = localKeyKinds.map(kind => kind.seed)
+            expect(new Set(seeds).size).toBe(seeds.length)
+        })
+
+        it('detects only auto-detected kinds from a word count, and fails on a count none takes', () => {
+            const adapter = makeAdapter()
+            const counts = adapter.localKeyKinds.flatMap(
+                kind => kind.mnemonicWordCounts,
+            )
+
+            for (const wordCount of counts) {
+                const detected = detectImportKind(
+                    adapter.chainId,
+                    mnemonicOf(wordCount),
+                )
+                const expected = adapter.localKeyKinds.find(
+                    kind =>
+                        kind.isAutoDetected &&
+                        kind.mnemonicWordCounts.includes(wordCount),
+                )
+                expect(detected).toEqual(
+                    expected
+                        ? { success: true, seed: expected.seed }
+                        : { success: false, wordCount },
+                )
+                if (detected.success) {
+                    expect(
+                        localKeyKindOf(adapter.chainId, detected.seed)
+                            ?.isAutoDetected,
+                    ).toBe(true)
+                }
+            }
+            const unknown = Math.max(...counts) + 1
+            expect(
+                detectImportKind(adapter.chainId, mnemonicOf(unknown)),
+            ).toEqual({ success: false, wordCount: unknown })
+        })
+
+        it('ranks duplicates deterministically, a key holder above a watch account', () => {
+            const adapter = makeAdapter()
+            if (!adapter.duplicateRank) return
+            const { signing, watch } = fixtures.signers
+
+            const rank = adapter.duplicateRank(signing)
+
+            expect(Number.isFinite(rank)).toBe(true)
+            expect(adapter.duplicateRank(signing)).toBe(rank)
+            expect(rank).toBeGreaterThan(adapter.duplicateRank(watch))
+        })
+
+        it('names each account kind with a stable, distinct id', () => {
+            const adapter = makeAdapter()
+            const { signing, watch } = fixtures.signers
+
+            const signingKind = adapter.kindIdOf(signing)
+
+            expect(isNonEmptyString(signingKind)).toBe(true)
+            expect(isNonEmptyString(adapter.kindIdOf(watch))).toBe(true)
+            expect(adapter.kindIdOf(signing)).toBe(signingKind)
+            expect(adapter.kindIdOf(watch)).not.toBe(signingKind)
+        })
+
+        it('stores multisig parameters in native data beside its other members, or has no multisig', () => {
+            const { multisigNative } = makeAdapter()
+            if (!multisigNative) return
+            const parameters = {
+                version: 1,
+                threshold: 2,
+                addresses: [
+                    addressOn(fixtures.signers.signing, scope)!,
+                    addressOn(fixtures.signers.watch, scope)!,
+                ],
+            }
+            const changed = { ...parameters, threshold: 1 }
+
+            const stored = multisigNative.withParameters(undefined, parameters)
+            const restored = multisigNative.withParameters(stored, changed)
+
+            expect(multisigNative.parametersOf(undefined)).toBeUndefined()
+            expect(multisigNative.parametersOf(stored)).toEqual(parameters)
+            expect(multisigNative.parametersOf(restored)).toEqual(changed)
+            expect({ ...restored, multisig: undefined }).toEqual({
+                ...stored,
+                multisig: undefined,
+            })
+        })
+
+        it('decodes nothing from a value that is not its legacy record, without throwing', () => {
+            const adapter = makeAdapter()
+            const decodeLegacyRecord = adapter.decodeLegacyRecord?.bind(adapter)
+            if (!decodeLegacyRecord) return
+            const malformed: unknown[] = [
+                null,
+                undefined,
+                42,
+                'record',
+                true,
+                [],
+                {},
+                { address: 42, chains: 'x', custody: 7 },
+                { chains: null, custody: null },
+            ]
+
+            for (const raw of malformed.slice(0, 5)) {
+                expect(decodeLegacyRecord(raw)).toBeUndefined()
+            }
+            for (const raw of malformed) {
+                expect(() => decodeLegacyRecord(raw)).not.toThrow()
+            }
+        })
+
+        it('decodes no legacy authority from a malformed record, without throwing', () => {
+            const adapter = makeAdapter()
+            const decodeLegacyAuthority =
+                adapter.decodeLegacyAuthority?.bind(adapter)
+            if (!decodeLegacyAuthority) return
+
+            for (const raw of [null, undefined, 42, 'record', [], {}]) {
+                expect(decodeLegacyAuthority(raw)).toBeUndefined()
+            }
+        })
+
         it('finds the accounts rekeyed to an address, or refuses on a chain without rekey', async () => {
             const adapter = makeAdapter()
             if (!adapter.fetchRekeyedAddresses) {
@@ -227,8 +386,8 @@ export const accountsContractTests = (
             expect(fixtures.rekeyed).toBeDefined()
             const { account, auth, next } = fixtures.rekeyed!.accounts
             const { seedAuthority } = fixtures.rekeyed!
-            seedAuthority(account.address, auth.address)
-            seedAuthority(auth.address, next.address)
+            seedAuthority(addressOn(account, scope)!, addressOn(auth, scope)!)
+            seedAuthority(addressOn(auth, scope)!, addressOn(next, scope)!)
 
             expect(
                 adapter.resolveSigner(account, [account, auth, next], scope),
@@ -243,7 +402,7 @@ export const accountsContractTests = (
                 adapter.resolveSigner(account, [account], scope),
             ).toMatchObject({
                 kind: 'authMissing',
-                authorityAddress: auth.address,
+                authorityAddress: addressOn(auth, scope),
             })
             expect(adapter.getAuthAccount(account, [account], scope)).toBeNull()
         })
@@ -257,113 +416,124 @@ export const accountsContractTests = (
             const { account, auth, next } = fixtures.rekeyed!.accounts
             const { signing } = fixtures.signers
             const held = [account, auth, next, signing]
-            const options = { isQuantumTargetEnabled: false }
+            const kind =
+                fixtures.rekeyed!.targetKind ?? authority.targetKinds[0]?.id
             const { seedAuthority } = fixtures.rekeyed!
-            seedAuthority(account.address, auth.address)
-            seedAuthority(auth.address, next.address)
+            seedAuthority(addressOn(account, scope)!, addressOn(auth, scope)!)
+            seedAuthority(addressOn(auth, scope)!, addressOn(next, scope)!)
 
+            expect(authority.targetKinds.length).toBeGreaterThan(0)
+            expect(authority.targetKinds.map(target => target.id)).toContain(
+                kind,
+            )
+            expect(
+                new Set(authority.targetKinds.map(target => target.id)).size,
+            ).toBe(authority.targetKinds.length)
             expect(authority.isDelegated(account, scope)).toBe(true)
             expect(authority.isDelegated(signing, scope)).toBe(false)
-            expect(authority.accountsDelegatedTo(auth.address, held)).toEqual([
-                account,
-            ])
+            expect(
+                authority.accountsDelegatedTo(addressOn(auth, scope)!, held),
+            ).toEqual([account])
+            expect(
+                authority.isEligibleTarget(kind, signing, account, held, scope),
+            ).toBe(true)
+            // Its current authority, and itself, are no-op rekeys.
+            expect(
+                authority.isEligibleTarget(kind, auth, account, held, scope),
+            ).toBe(false)
+            expect(
+                authority.isEligibleTarget(kind, account, account, held, scope),
+            ).toBe(false)
             expect(
                 authority.isEligibleTarget(
-                    'standard',
+                    'not-a-target-kind',
                     signing,
                     account,
                     held,
                     scope,
-                    options,
-                ),
-            ).toBe(true)
-            // Its current authority, and itself, are no-op rekeys.
-            expect(
-                authority.isEligibleTarget(
-                    'standard',
-                    auth,
-                    account,
-                    held,
-                    scope,
-                    options,
                 ),
             ).toBe(false)
             expect(
-                authority.isEligibleTarget(
-                    'standard',
+                typeof authority.isAuthorityDowngrade(
                     account,
-                    account,
+                    signing,
                     held,
                     scope,
-                    options,
                 ),
-            ).toBe(false)
+            ).toBe('boolean')
             expect(authority.canSignProgram(signing, scope)).toBe(true)
             expect(authority.canSignProgram(account, scope)).toBe(false)
         })
 
-        it('derives a quantum keygen seed without touching the entropy, or refuses', () => {
+        it('refuses single-key accounts when it declares no single-key kind', () => {
             const adapter = makeAdapter()
-            if (!adapter.quantum) {
-                expect(() => requireQuantum(adapter)).toThrow(
-                    expect.objectContaining({ chainId: adapter.chainId }),
-                )
+            if (adapter.singleKeyAccounts) {
+                expect(singleKeyKinds.length).toBeGreaterThan(0)
                 return
             }
-
-            const entropy = new Uint8Array(32).fill(5)
-            const seed = requireQuantum(adapter).deriveKeygenSeed(entropy)
-
-            expect(entropy).toEqual(new Uint8Array(32).fill(5))
-            expect(seed.length).toBeGreaterThan(0)
-            expect(seed).not.toBe(entropy)
+            expect(() => requireSingleKeyAccounts(adapter)).toThrow(
+                expect.objectContaining({ chainId: adapter.chainId }),
+            )
         })
 
-        for (const kind of SINGLE_KEY_KINDS) {
-            it(`creates an unsaved ${kind} account on a new seed, or refuses`, async () => {
-                const adapter = makeAdapter()
-                if (!adapter.singleKeyAccounts) {
-                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
-                        expect.objectContaining({ chainId: adapter.chainId }),
+        it('finds the accounts the same words control as another kind, or none', async () => {
+            const adapter = makeAdapter()
+            if (!adapter.singleKeyAccounts || !fixtures.singleKey) return
+            const { mnemonicIndices, handlers } = fixtures.singleKey
+            server.use(...handlers)
+
+            for (const kind of singleKeyKinds) {
+                const found =
+                    await adapter.singleKeyAccounts.findAlternateImportKinds(
+                        kind.seed,
+                        mnemonicIndices,
+                        scope,
                     )
-                    return
+
+                expect(Array.isArray(found)).toBe(true)
+                for (const alternate of found) {
+                    expect(alternate.seed).not.toBe(kind.seed)
+                    expect(
+                        codec.isValid(alternate.address, scope.networkId),
+                    ).toBe(true)
                 }
-                const { port } = createFakeKeystore()
+            }
+        })
 
-                const minted = await adapter.singleKeyAccounts.create(
-                    port,
-                    { kind },
-                    scope,
-                )
+        for (const kind of singleKeyKinds) {
+            it(`creates an unsaved ${kind.seed} account on a new seed`, async () => {
+                const adapter = makeAdapter()
+                const ops = requireSingleKeyAccounts(adapter)
 
-                expect(accountType(minted.account)).toBe(kind)
+                const minted = await ops.create({ seed: kind.seed }, scope)
+
+                expect(minted.account.custody).toMatchObject({
+                    kind: 'local',
+                    seed: kind.seed,
+                })
                 expect(
-                    codec.isValid(minted.account.address, scope.networkId),
+                    codec.isValid(
+                        addressOn(minted.account, scope) ?? '',
+                        scope.networkId,
+                    ),
                 ).toBe(true)
                 expect(minted.isNewSeed).toBe(true)
             })
 
-            it(`imports a ${kind} mnemonic, awaiting save on each account before resolving, or refuses`, async () => {
+            it(`imports a ${kind.seed} mnemonic, awaiting save on each account before resolving`, async () => {
                 const adapter = makeAdapter()
-                if (!adapter.singleKeyAccounts) {
-                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
-                        expect.objectContaining({ chainId: adapter.chainId }),
-                    )
-                    return
-                }
+                const ops = requireSingleKeyAccounts(adapter)
                 expect(fixtures.singleKey).toBeDefined()
                 const { mnemonicIndices, handlers } = fixtures.singleKey!
                 server.use(...handlers)
-                const { keystore, port } = createFakeKeystore()
                 const saved: MintedAccount[] = []
                 const save = async (minted: MintedAccount) => {
                     await Promise.resolve()
                     saved.push(minted)
                 }
 
-                const result = await adapter.singleKeyAccounts.importMnemonic(
-                    port,
-                    { kind, mnemonicIndices, isHeld: () => false },
+                const result = await ops.importMnemonic(
+                    { seed: kind.seed, mnemonicIndices, isHeld: () => false },
                     scope,
                     save,
                 )
@@ -372,31 +542,34 @@ export const accountsContractTests = (
                 expect(accounts.length).toBeGreaterThan(0)
                 expect(accounts).toEqual(saved.map(minted => minted.account))
                 for (const account of accounts) {
-                    expect(accountType(account)).toBe(kind)
+                    expect(account.custody).toMatchObject({
+                        kind: 'local',
+                        seed: kind.seed,
+                    })
                     expect(
-                        codec.isValid(account.address, scope.networkId),
+                        codec.isValid(
+                            addressOn(account, scope) ?? '',
+                            scope.networkId,
+                        ),
                     ).toBe(true)
                 }
                 // The stale-keystore-snapshot regression: import must not look keys up.
-                expect(keystore.getKey).not.toHaveBeenCalled()
+                expect(kms.getKey).not.toHaveBeenCalled()
             })
 
-            it(`stops minting ${kind} accounts once save rejects, or refuses`, async () => {
+            it(`stops minting ${kind.seed} accounts once save rejects`, async () => {
                 const adapter = makeAdapter()
-                if (!adapter.singleKeyAccounts) {
-                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
-                        expect.objectContaining({ chainId: adapter.chainId }),
-                    )
-                    return
-                }
+                const ops = requireSingleKeyAccounts(adapter)
                 const { mnemonicIndices, handlers } = fixtures.singleKey!
                 server.use(...handlers)
-                const { port, mintCount } = createFakeKeystore()
 
                 await expect(
-                    adapter.singleKeyAccounts.importMnemonic(
-                        port,
-                        { kind, mnemonicIndices, isHeld: () => false },
+                    ops.importMnemonic(
+                        {
+                            seed: kind.seed,
+                            mnemonicIndices,
+                            isHeld: () => false,
+                        },
                         scope,
                         async () => {
                             throw new Error('save failed')
@@ -404,8 +577,89 @@ export const accountsContractTests = (
                     ),
                 ).rejects.toThrow('save failed')
 
-                expect(mintCount()).toBe(1)
+                expect(kms.mintCount()).toBe(1)
             })
         }
+    })
+}
+
+/** Every chain that registers account presentation runs this beside its accounts contract. */
+export const accountPresentationContractTests = (
+    makePresentation: () => AccountPresentationChainAdapter,
+    makeAdapter: () => AccountsChainAdapter,
+    fixtures: Pick<AccountsContractFixtures, 'signers'>,
+): void => {
+    describe(`AccountPresentationChainAdapter contract: ${makePresentation().chainId}`, () => {
+        it('serves the chain its accounts adapter is registered under', () => {
+            expect(makePresentation().chainId).toBe(makeAdapter().chainId)
+        })
+
+        it('describes every kind the accounts adapter names, with the same glyph whatever its signability', () => {
+            const presentation = makePresentation()
+            const adapter = makeAdapter()
+
+            for (const account of Object.values(fixtures.signers)) {
+                const kindId = adapter.kindIdOf(account)
+                const described = presentation.describe(kindId, {
+                    canSign: true,
+                })
+                const unsignable = presentation.describe(kindId, {
+                    canSign: false,
+                })
+
+                expect(described).toBeDefined()
+                expect(unsignable).toBeDefined()
+                for (const key of [
+                    described!.labelKey,
+                    described!.infoTitleKey,
+                    described!.infoBodyKey,
+                    described!.glyph,
+                ]) {
+                    expect(isNonEmptyString(key)).toBe(true)
+                }
+                expect(unsignable!.glyph).toBe(described!.glyph)
+            }
+            expect(
+                presentation.describe(accountKindId('not-a-kind'), {
+                    canSign: true,
+                }),
+            ).toBeUndefined()
+        })
+
+        it('words an authority transition exactly when the chain can move authority', () => {
+            const presentation = makePresentation()
+            const adapter = makeAdapter()
+            expect(!!presentation.transitionLabel).toBe(!!adapter.authority)
+            if (!presentation.transitionLabel) return
+            const { signing, watch } = fixtures.signers
+
+            const label = presentation.transitionLabel(
+                adapter.kindIdOf(watch),
+                adapter.kindIdOf(signing),
+            )
+
+            expect(isNonEmptyString(label?.labelKey)).toBe(true)
+            expect(isNonEmptyString(label?.signerKey)).toBe(true)
+            expect(isNonEmptyString(label?.descriptionKey)).toBe(true)
+        })
+
+        it('names a test-id slug and copy for every key-kind row it offers', () => {
+            const presentation = makePresentation()
+            if (!presentation.keyKindOptions) return
+
+            for (const kind of makeAdapter().localKeyKinds) {
+                const options = presentation.keyKindOptions(kind.seed)
+                for (const row of [
+                    options?.recover,
+                    options?.create,
+                    options?.import,
+                ]) {
+                    if (!row) continue
+                    expect(isNonEmptyString(row.id)).toBe(true)
+                    expect(isNonEmptyString(row.titleKey)).toBe(true)
+                    expect(isNonEmptyString(row.descriptionKey)).toBe(true)
+                }
+            }
+        })
     })
 }

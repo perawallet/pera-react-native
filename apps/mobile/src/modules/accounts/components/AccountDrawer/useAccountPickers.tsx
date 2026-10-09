@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useSigningAccounts,
     type WalletAccount,
@@ -36,7 +37,7 @@ export const usePortfolioPicker = (): AccountDrawerPickerProps =>
  * a prompt in place of the portfolio.
  */
 export const useSigningPicker = (): AccountDrawerPickerProps => {
-    const signingAccounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
 
     const accountFilter = useCallback(
         (account: WalletAccount) =>

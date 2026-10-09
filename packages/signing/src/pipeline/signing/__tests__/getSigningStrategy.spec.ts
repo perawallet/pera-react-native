@@ -12,7 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type AccountCustody,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     isHardwareWalletAccount: vi.fn(),
@@ -36,36 +40,28 @@ import { CannotSignError } from '../../errors'
 import type { SigningResult, SigningStrategy } from '../../types'
 import { registerFakeLocalKeySignerAdapter } from '../../../__tests__/fakeLocalKeySignerAdapter'
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+    testAccount,
+    watchAccount,
+} from '../../../__tests__/accounts'
 
-const algo25Account = {
-    custody: { kind: 'local', seed: null },
-    address: 'A',
-    keyPairId: 'key-a',
-} as unknown as WalletAccount
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, TEST_CHAIN_ID)?.address
 
-const hardwareAccount = {
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    address: 'H',
-} as unknown as WalletAccount
+const algo25 = algo25Account('A', { keyPairId: 'key-a' })
 
-const multisigAccount = {
-    custody: { kind: 'multisig' },
-    address: 'M',
-} as unknown as WalletAccount
+const hardwareAccount = ledgerAccount('H')
 
-const weirdAccount = {
-    custody: { kind: 'weird' },
-    address: 'W',
-} as unknown as WalletAccount
+const multisig = multisigAccount('M')
+
+const weirdAccount = testAccount(
+    { kind: 'weird' } as unknown as AccountCustody,
+    'W',
+)
 
 let localStrategy: SigningStrategy
 let multisigStrategy: SigningStrategy
@@ -96,7 +92,7 @@ beforeEach(() => {
                 canSign: () => true,
                 sign: async (_group, account) => {
                     await options.signTransactions([], [], account)
-                    return emptyResult(account.address)
+                    return emptyResult(addressOf(account) ?? '')
                 },
             }
             return localStrategy
@@ -132,14 +128,14 @@ describe('createSigningStrategySelector', () => {
     test('returns multisig strategy for multisig accounts', () => {
         mocks.resolveAuthAccount.mockImplementation(a => a)
         const select = makeSelector()
-        const strategy = select(multisigAccount, [multisigAccount])
+        const strategy = select(multisig, [multisig])
         expect(strategy).toBe(multisigStrategy)
     })
 
     test('returns multisig strategy when the auth account is multisig (rekeyed-to-msig sender)', () => {
-        mocks.resolveAuthAccount.mockReturnValue(multisigAccount)
+        mocks.resolveAuthAccount.mockReturnValue(multisig)
         const select = makeSelector()
-        const strategy = select(algo25Account, [algo25Account, multisigAccount])
+        const strategy = select(algo25, [algo25, multisig])
         expect(strategy).toBe(multisigStrategy)
     })
 
@@ -156,9 +152,9 @@ describe('createSigningStrategySelector', () => {
     })
 
     test('returns local strategy when auth account has signing keys', () => {
-        mocks.resolveAuthAccount.mockReturnValue(algo25Account)
+        mocks.resolveAuthAccount.mockReturnValue(algo25)
         const select = makeSelector()
-        const strategy = select(algo25Account, [algo25Account])
+        const strategy = select(algo25, [algo25])
         expect(strategy).toBe(localStrategy)
     })
 
@@ -191,25 +187,10 @@ describe('createSigningStrategySelector', () => {
             mocks.resolveAuthAccount.mockImplementation(
                 (account: WalletAccount) => {
                     if (account.custody.kind === 'local') {
-                        return {
-                            custody: {
-                                kind: 'hardware',
-                                device: {
-                                    manufacturer: 'ledger',
-                                    deviceId: 'device-1',
-                                    deviceName: 'Nano X',
-                                    transportType: 'ble',
-                                },
-                                accountIndex: 0,
-                            },
-                            address: `${account.address}_AUTH`,
-                        } as unknown as WalletAccount
+                        return ledgerAccount(`${addressOf(account)}_AUTH`)
                     }
                     if (account.custody.kind === 'hardware') {
-                        return {
-                            custody: { kind: 'local', seed: null },
-                            address: `${account.address}_AUTH`,
-                        } as unknown as WalletAccount
+                        return algo25Account(`${addressOf(account)}_AUTH`)
                     }
                     return account
                 },
@@ -241,11 +222,11 @@ describe('createSigningStrategySelector', () => {
         } as never
 
         test('picks the local strategy for a local-key participant even when its rekey target is hardware', async () => {
-            const participant = algo25Account
+            const participant = algo25
             const { select, signTransactions } = buildSign([participant])
 
-            const strategy = select(multisigAccount, [participant])
-            await strategy.sign(fakeGroup, multisigAccount)
+            const strategy = select(multisig, [participant])
+            await strategy.sign(fakeGroup, multisig)
 
             // The participant's local-key signing function must be invoked,
             // proving the local strategy was picked (NOT the hardware
@@ -254,26 +235,23 @@ describe('createSigningStrategySelector', () => {
             // resolveAuthAccount must NOT have been consulted for the
             // participant address — multisig slots ignore rekey.
             for (const call of mocks.resolveAuthAccount.mock.calls) {
-                expect((call[0] as WalletAccount).address).not.toBe(
-                    participant.address,
+                expect(addressOf(call[0] as WalletAccount)).not.toBe(
+                    addressOf(participant),
                 )
             }
         })
 
         test('throws CannotSignError when participant has no own signing capability (rekey is not consulted as a fallback)', async () => {
-            const orphan = {
-                custody: { kind: 'watch' },
-                address: 'WATCH',
-            } as unknown as WalletAccount
+            const orphan = watchAccount('WATCH')
             const { select } = buildSign([orphan])
 
-            const strategy = select(multisigAccount, [orphan])
+            const strategy = select(multisig, [orphan])
 
-            await expect(
-                strategy.sign(fakeGroup, multisigAccount),
-            ).rejects.toThrow(CannotSignError)
+            await expect(strategy.sign(fakeGroup, multisig)).rejects.toThrow(
+                CannotSignError,
+            )
             for (const call of mocks.resolveAuthAccount.mock.calls) {
-                expect((call[0] as WalletAccount).address).not.toBe('WATCH')
+                expect(addressOf(call[0] as WalletAccount)).not.toBe('WATCH')
             }
         })
     })

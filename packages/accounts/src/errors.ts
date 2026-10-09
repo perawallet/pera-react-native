@@ -43,9 +43,9 @@ export class AccountError extends AppError {
 }
 
 /**
- * Account has no HD wallet details
+ * The wallet holds no HD seed under the id given.
  */
-export class NoHDWalletError extends AccountError {
+export class NoHdSeedError extends AccountError {
     constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
             messageKey: 'errors.account.no_hd_wallet',
@@ -105,7 +105,7 @@ export class HDImportSessionNotFoundError extends AccountError {
 /**
  * The address derived from the import flow already exists in the wallet.
  *
- * Surfaced from the standard-mnemonic import path so the UI can show a specific
+ * Surfaced from the single-key import path so the UI can show a specific
  * "already imported" toast instead of the generic failure message. HD
  * imports get the same protection at the selection screen (already-
  * imported addresses render a chip rather than a checkbox).
@@ -133,7 +133,7 @@ export class DuplicateAccountError extends AccountError {
  *
  * - `'malformed'`: the path string isn't a well-formed BIP44 path for the chain.
  * - `'mismatch'`: the path parses cleanly but points to a different
- *   account/change/keyIndex than the HDWalletDetails being compared against.
+ *   account/change/keyIndex than the HD index being compared against.
  */
 export type Bip44PathFailureReason = 'malformed' | 'mismatch'
 
@@ -182,21 +182,21 @@ export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
     }
 }
 
-export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Post-quantum accounts', chainId)
-    }
-}
-
 export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Single-key accounts', chainId)
     }
 }
 
-export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(derivationType: number, chainId: ChainId) {
-        super(`HD derivation type ${derivationType}`, chainId)
+export class HdAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('HD accounts', chainId)
+    }
+}
+
+export class MultisigUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Multisig accounts', chainId)
     }
 }
 

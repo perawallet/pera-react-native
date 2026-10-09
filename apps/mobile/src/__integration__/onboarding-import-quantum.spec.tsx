@@ -24,11 +24,7 @@ import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountSc
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import {
@@ -46,6 +42,7 @@ import {
     QUANTUM_TEST_LEGACY_ADDRESS,
 } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { addressOf } from './__fixtures__/accounts'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -212,10 +209,10 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accountType(accounts[0])).toBe(AccountTypes.quantum)
-        expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            accounts[0].address,
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: 'quantum' })
+        expect(addressOf(accounts[0])).toBe(QUANTUM_TEST_ADDRESS)
+        expect(useAccountsStore.getState().selectedAccountId).toBe(
+            accounts[0].id,
         )
     })
 
@@ -228,8 +225,12 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             {
                 id: 'existing-quantum-1',
                 custody: { kind: 'local', seed: 'quantum' },
-                address: QUANTUM_TEST_ADDRESS,
-                keyPairId: 'pre-seeded',
+                chains: {
+                    algorand: {
+                        address: QUANTUM_TEST_ADDRESS,
+                        keyPairId: 'pre-seeded',
+                    },
+                },
             },
         ])
 
@@ -256,7 +257,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         // store still contains a single entry for that address.
         const matching = useAccountsStore
             .getState()
-            .accounts.filter(a => a.address === QUANTUM_TEST_ADDRESS)
+            .accounts.filter(a => addressOf(a) === QUANTUM_TEST_ADDRESS)
         expect(matching).toHaveLength(1)
         // And only the original pre-seeded entry remains overall.
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
@@ -286,8 +287,8 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accountType(accounts[0])).toBe(AccountTypes.standalone)
-        expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
+        expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
     })
 
     describe('Given quantum words entered through the Recover-a-wallet (algo25) flow, and the quantum account they control exists on chain', () => {
@@ -333,8 +334,11 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             )
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accountType(accounts[0])).toBe(AccountTypes.quantum)
-            expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
+            expect(accounts[0].custody).toEqual({
+                kind: 'local',
+                seed: 'quantum',
+            })
+            expect(addressOf(accounts[0])).toBe(QUANTUM_TEST_ADDRESS)
         })
     })
 })

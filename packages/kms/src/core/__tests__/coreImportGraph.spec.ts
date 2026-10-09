@@ -65,10 +65,20 @@ describe('kms core import graph', () => {
     test('covers the operations it exports', async () => {
         const { kmsCore } = await import('../index')
         expect(Object.keys(kmsCore).sort()).toEqual([
+            'createAlgo25Key',
+            'createQuantumKey',
             'deriveFromSeed',
+            'discardMintedSeed',
+            'getKey',
             'importRawKey',
             'sign',
         ])
-        expect(graph.files).toContain('core/createKmsCore.ts')
+        expect(graph.files).toEqual(
+            expect.arrayContaining([
+                'core/createKmsCore.ts',
+                'core/algo25Key.ts',
+                'core/quantumKey.ts',
+            ]),
+        )
     })
 })

@@ -12,6 +12,8 @@
 
 import { useCallback } from 'react'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     MULTISIG_DECLINED_NOTIFICATION_TYPE,
     MULTISIG_EXPIRED_NOTIFICATION_TYPE,
@@ -94,7 +96,9 @@ export const findInboxItemForNotification = (
  */
 export const useHandleMultisigNotification =
     (): UseHandleMultisigNotificationResult => {
-        const { refetch: refetchInbox } = useInboxQuery()
+        const { refetch: refetchInbox } = useInboxQuery(
+            useSelectedScope(LEGACY_CHAIN_ID),
+        )
         const handleInboxItemPress = useHandleInboxItemPress()
         const canUseMultisig = useCapability({ anyChain: 'multisig' })
 

@@ -14,14 +14,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
-    useTransactionSendFlow,
-    InvalidSendParamsError,
-} from '../useTransactionSendFlow'
-import {
     ChainAdapterNotRegisteredError,
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    microAlgosToAlgos,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
+import {
+    useTransactionSendFlow,
+    InvalidSendParamsError,
+} from '../useTransactionSendFlow'
 import { AssetFrozenError } from '../../errors'
 import {
     sendFlowChainAdapters,
@@ -32,7 +36,7 @@ const mockSubmit = vi.fn()
 const mockBuildSendViaInbox = vi.fn()
 const mockBuildClaimAsset = vi.fn()
 const mockBuildRejectAsset = vi.fn()
-const mockAccountInformation = vi.fn()
+const mockAccountState = vi.fn()
 const mockGetSuggestedParams = vi.fn()
 const mockBuildTransfer = vi.fn()
 const mockBuildExpress = vi.fn()
@@ -60,9 +64,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts) —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
+// The real accounts module pulls in react-native-mmkv, which cannot load here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    fetchAccountInformation: (...args: unknown[]) =>
-        mockAccountInformation(...args),
+    addressOn: (
+        account: { chains: Record<string, { address: string } | undefined> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
+    fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
     isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
     useAccountBalancesInvalidator: () => ({
@@ -101,6 +109,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 const TXN = { sender: 'SENDER' } as unknown
 
+const SENDER_ACCOUNT: WalletAccount = {
+    id: 'A',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'A', keyPairId: 'key-A' } },
+}
+
+/** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
+const accountState = (balance: bigint, minBalance: bigint) => ({
+    nativeBalanceBaseUnits: new Decimal(balance.toString()),
+    minBalance: microAlgosToAlgos(minBalance),
+    holdings: [],
+})
+
 // Answers per asset, like the real `isAssetFrozen`, so a test asserting a
 // frozen asset fails if the guard asked about a different one.
 const freezeHoldings = (...frozenIds: string[]) =>
@@ -119,10 +140,7 @@ describe('useTransactionSendFlow', () => {
         mockBuildTransfer.mockResolvedValue([TXN])
         mockBuildExpress.mockResolvedValue([TXN])
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
-        mockAccountInformation.mockResolvedValue({
-            amount: 0n,
-            minBalance: 100000n,
-        })
+        mockAccountState.mockResolvedValue(accountState(0n, 100000n))
         mockBuildSendViaInbox.mockResolvedValue([TXN])
         mockBuildClaimAsset.mockResolvedValue([TXN])
         mockBuildRejectAsset.mockResolvedValue([TXN])
@@ -140,12 +158,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('normal ALGO send: builds through the chain adapter + submits via pipeline', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             const id = await result.current.execute({
                 params: {
                     sendMode: 'normal',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '0', decimals: 6 } as any,
                     amount: new Decimal(1),
@@ -175,12 +195,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('normal ASA send: passes the asset id on + submits via pipeline', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'normal',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
@@ -202,23 +224,25 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('express send: sizes the receiver funding from its account state', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 0n,
-            minBalance: 100000n,
-        })
-        const { result } = renderHook(() => useTransactionSendFlow())
+        mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'express',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
                 },
             })
         })
-        expect(mockAccountInformation).toHaveBeenCalledWith('B', 'mainnet')
+        expect(mockAccountState).toHaveBeenCalledWith(
+            'B',
+            scopeForLegacyNetwork('mainnet'),
+        )
         // mbrAfterOptIn (200000) + receiverFee (1000) - balance (0).
         expect(mockBuildExpress).toHaveBeenCalledWith({
             scope: scopeForLegacyNetwork('mainnet'),
@@ -244,12 +268,14 @@ describe('useTransactionSendFlow', () => {
     describe('PQ-aware min fee overrides', () => {
         it('normal ALGO send: quantum sender gets a fee override', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'normal',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '0', decimals: 6 } as any,
                         amount: new Decimal(1),
@@ -259,23 +285,28 @@ describe('useTransactionSendFlow', () => {
             expect(mockBuildTransfer.mock.calls[0][0]).toMatchObject({
                 fee: 3000n,
             })
-            expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
-                senderAddress: 'A',
-                accounts: [],
-                suggestedMinFee: 1000n,
-                configMinTxnFee: 1000n,
-                pqMultiplier: 3n,
-            })
+            expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+                'algorand',
+                {
+                    senderAddress: 'A',
+                    accounts: [],
+                    suggestedMinFee: 1000n,
+                    configMinTxnFee: 1000n,
+                    pqMultiplier: 3n,
+                },
+            )
         })
 
         it('normal ALGO send: algo25 sender passes no fee (regression)', async () => {
             // Default beforeEach resolves 1000n === suggestedMinFee.
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'normal',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '0', decimals: 6 } as any,
                         amount: new Decimal(1),
@@ -287,12 +318,14 @@ describe('useTransactionSendFlow', () => {
 
         it('close-account send: quantum sender gets a fee override and the close flag is preserved', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'normal',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '0', decimals: 6 } as any,
                         amount: new Decimal(1),
@@ -307,20 +340,21 @@ describe('useTransactionSendFlow', () => {
         })
 
         it('express send: quantum sender + external receiver — only the sender fee is overridden', async () => {
-            mockAccountInformation.mockResolvedValueOnce({
-                amount: 0n,
-                minBalance: 100000n,
-            })
+            mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             mockResolveMinFeeForSender.mockImplementation(
-                ({ senderAddress }: { senderAddress: string }) =>
-                    senderAddress === 'A' ? 3000n : 1000n,
+                (
+                    _chainId: string,
+                    { senderAddress }: { senderAddress: string },
+                ) => (senderAddress === 'A' ? 3000n : 1000n),
             )
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'express',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
@@ -334,30 +368,34 @@ describe('useTransactionSendFlow', () => {
                 senderFee: 3000n,
                 receiverFee: undefined,
             })
-            expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
-                senderAddress: 'B',
-                accounts: [],
-                suggestedMinFee: 1000n,
-                configMinTxnFee: 1000n,
-                pqMultiplier: 3n,
-            })
+            expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+                'algorand',
+                {
+                    senderAddress: 'B',
+                    accounts: [],
+                    suggestedMinFee: 1000n,
+                    configMinTxnFee: 1000n,
+                    pqMultiplier: 3n,
+                },
+            )
         })
 
         it('express send: algo25 sender + quantum receiver — only the receiver fee is overridden', async () => {
-            mockAccountInformation.mockResolvedValueOnce({
-                amount: 0n,
-                minBalance: 100000n,
-            })
+            mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             mockResolveMinFeeForSender.mockImplementation(
-                ({ senderAddress }: { senderAddress: string }) =>
-                    senderAddress === 'B' ? 3000n : 1000n,
+                (
+                    _chainId: string,
+                    { senderAddress }: { senderAddress: string },
+                ) => (senderAddress === 'B' ? 3000n : 1000n),
             )
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'express',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
@@ -374,17 +412,16 @@ describe('useTransactionSendFlow', () => {
         })
 
         it('express send: algo25 sender — everything unchanged (regression)', async () => {
-            mockAccountInformation.mockResolvedValueOnce({
-                amount: 0n,
-                minBalance: 100000n,
-            })
+            mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             // Default beforeEach resolves 1000n for every sender/receiver.
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'express',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
@@ -402,21 +439,20 @@ describe('useTransactionSendFlow', () => {
             // Non-default asset MBR (200000). Receiver underfunded (balance 0),
             // base receiver fee 1000. Funding must reserve
             // mbrAfterOptIn (100000 + 200000) + receiverFee (1000) = 301000.
-            mockAccountInformation.mockResolvedValueOnce({
-                amount: 0n,
-                minBalance: 100000n,
-            })
+            mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             mockUseFeeConfig.mockReturnValue({
                 minTxnFee: 1000n,
                 pqMultiplier: 3n,
                 assetOptInMinBalance: 200000n,
             })
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({
                     params: {
                         sendMode: 'express',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
@@ -430,12 +466,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('sendArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'sendArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
@@ -465,12 +503,14 @@ describe('useTransactionSendFlow', () => {
 
     it('sendArc59: passes the PQ-aware sender fee to the builder', async () => {
         mockResolveMinFeeForSender.mockReturnValue(3000n)
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'sendArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
@@ -483,7 +523,7 @@ describe('useTransactionSendFlow', () => {
                 },
             })
         })
-        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
             senderAddress: 'A',
             accounts: [],
             suggestedMinFee: 1000n,
@@ -496,12 +536,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('claimArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'claimArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
                     inboxAddress: 'INBOX',
@@ -527,12 +569,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('claimArc59 with amount: optimistically credits the holding after submit', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             const id = await result.current.execute({
                 params: {
                     sendMode: 'claimArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
                     amount: new Decimal(250),
@@ -554,12 +598,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('claimArc59 without amount: skips the optimistic credit', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'claimArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
                 },
@@ -572,12 +618,14 @@ describe('useTransactionSendFlow', () => {
 
     it('claimArc59: a failed optimistic credit does not fail the claim', async () => {
         mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             const id = await result.current.execute({
                 params: {
                     sendMode: 'claimArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
                     amount: new Decimal(250),
@@ -589,12 +637,14 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('rejectArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await result.current.execute({
                 params: {
                     sendMode: 'rejectArc59',
-                    sender: { address: 'A' } as any,
+                    sender: SENDER_ACCOUNT,
                     asset: {
                         assetId: 99n,
                         decimals: 0,
@@ -630,7 +680,7 @@ describe('useTransactionSendFlow', () => {
     describe('send-flow chain adapter', () => {
         const arc59Params = {
             sendMode: 'sendArc59' as const,
-            sender: { address: 'A' } as any,
+            sender: SENDER_ACCOUNT,
             receiver: 'B',
             asset: { assetId: '99', decimals: 0 } as any,
             amount: new Decimal(1),
@@ -638,13 +688,15 @@ describe('useTransactionSendFlow', () => {
         }
         const claimParams = {
             sendMode: 'claimArc59' as const,
-            sender: { address: 'A' } as any,
+            sender: SENDER_ACCOUNT,
             asset: { assetId: '99', decimals: 0 } as any,
             shouldClaimAlgo: false,
         }
 
         it("hands the inbox send to the network's adapter with the summary untouched", async () => {
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({ params: arc59Params })
             })
@@ -661,7 +713,9 @@ describe('useTransactionSendFlow', () => {
 
         it('refuses a normal send when no adapter is registered for the chain', async () => {
             sendFlowChainAdapters.reset()
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await expect(
                     result.current.execute({
@@ -674,7 +728,9 @@ describe('useTransactionSendFlow', () => {
 
         it('refuses an inbox send when no adapter is registered for the chain', async () => {
             sendFlowChainAdapters.reset()
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await expect(
                     result.current.execute({ params: arc59Params }),
@@ -689,7 +745,9 @@ describe('useTransactionSendFlow', () => {
                 chainId: 'algorand',
                 buildTransferTxs: mockBuildTransfer,
             })
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await expect(
                     result.current.execute({ params: claimParams }),
@@ -702,7 +760,7 @@ describe('useTransactionSendFlow', () => {
     describe('frozen holding guard', () => {
         const baseParams = {
             sendMode: 'normal' as const,
-            sender: { address: 'A' } as any,
+            sender: SENDER_ACCOUNT,
             receiver: 'B',
             asset: { assetId: '99', decimals: 0 } as any,
             amount: new Decimal(1),
@@ -711,7 +769,9 @@ describe('useTransactionSendFlow', () => {
         it('refuses to build a send for a frozen holding', async () => {
             freezeHoldings('99')
 
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await expect(
                     result.current.execute({ params: baseParams }),
@@ -723,7 +783,9 @@ describe('useTransactionSendFlow', () => {
         it('builds normally when the holding is not frozen', async () => {
             freezeHoldings()
 
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({ params: baseParams })
             })
@@ -733,7 +795,9 @@ describe('useTransactionSendFlow', () => {
         it('reads the sender and network itself rather than trusting the caller', async () => {
             freezeHoldings('99')
 
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await expect(
                     result.current.execute({ params: baseParams }),
@@ -750,7 +814,9 @@ describe('useTransactionSendFlow', () => {
         it('builds when the holding has not synced yet — algod is the backstop', async () => {
             freezeHoldings()
 
-            const { result } = renderHook(() => useTransactionSendFlow())
+            const { result } = renderHook(() =>
+                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            )
             await act(async () => {
                 await result.current.execute({ params: baseParams })
             })
@@ -759,13 +825,15 @@ describe('useTransactionSendFlow', () => {
     })
 
     it('throws InvalidSendParamsError for an empty assetId string', async () => {
-        const { result } = renderHook(() => useTransactionSendFlow())
+        const { result } = renderHook(() =>
+            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+        )
         await act(async () => {
             await expect(
                 result.current.execute({
                     params: {
                         sendMode: 'normal',
-                        sender: { address: 'A' } as any,
+                        sender: SENDER_ACCOUNT,
                         receiver: 'B',
                         asset: { assetId: '', decimals: 6 } as any,
                         amount: new Decimal(1),

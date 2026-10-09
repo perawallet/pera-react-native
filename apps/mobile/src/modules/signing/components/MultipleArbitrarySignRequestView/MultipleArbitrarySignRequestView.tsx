@@ -12,7 +12,11 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    findAccountByAddressOn,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -38,8 +42,10 @@ export const MultipleArbitrarySignRequestView = ({
                     style={styles.requestContainer}
                 >
                     <AccountDisplay
-                        account={accounts.find(
-                            account => account.address === request.signer,
+                        account={findAccountByAddressOn(
+                            accounts,
+                            LEGACY_CHAIN_ID,
+                            request.signer,
                         )}
                         showChevron={false}
                     />

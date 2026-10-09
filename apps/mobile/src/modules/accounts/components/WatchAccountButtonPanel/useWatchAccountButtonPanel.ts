@@ -11,6 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { addressOn } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -29,15 +32,18 @@ export const useWatchAccountButtonPanel =
         const { copyToClipboard } = useClipboard()
         const { showToast } = useToast()
         const { t } = useLanguage()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const address = addressOn(account, scope)
 
         const handleCopyAddress = useCallback(() => {
-            void copyToClipboard(account.address)
+            if (address === undefined) return
+            void copyToClipboard(address)
             showToast({
                 title: t('account_options.copy_address'),
                 body: '',
                 type: 'success',
             })
-        }, [copyToClipboard, account.address, showToast, t])
+        }, [copyToClipboard, address, showToast, t])
 
         return {
             handleCopyAddress,

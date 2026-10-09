@@ -21,24 +21,22 @@ import {
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
+const scopeState = vi.hoisted(() => ({
+    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
-                'mainnet',
-        ),
+        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
-    useSelectedScope: vi
-        .fn()
-        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -68,9 +66,7 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
-        vi.mocked(useSelectedScope).mockReturnValue(
-            scopeForLegacyNetwork('mainnet'),
-        )
+        scopeState.current = scopeForLegacyNetwork('mainnet')
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -81,9 +77,12 @@ describe('useInboxStatus', () => {
             unreadInboxCount: 3,
         })
 
-        const { result } = renderHook(() => useInboxStatus(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useInboxStatus(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => {
             expect(result.current.unreadInboxCount).toBe(3)
@@ -109,9 +108,12 @@ describe('useInboxStatus', () => {
         })
         mockInbox(2)
 
-        const { result } = renderHook(() => useInboxStatus(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useInboxStatus(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => {
             expect(fetchNotificationStatus).toHaveBeenCalledWith(
@@ -146,7 +148,9 @@ describe('useInboxStatus', () => {
                 unreadInboxCount: 0,
             })
 
-            renderHook(() => useInboxStatus(), { wrapper: createWrapper() })
+            renderHook(() => useInboxStatus(scopeState.current), {
+                wrapper: createWrapper(),
+            })
 
             await waitFor(() => {
                 expect(fetchMessageStatus).toHaveBeenCalledTimes(1)
@@ -164,7 +168,9 @@ describe('useInboxStatus', () => {
                 has_new_notification: false,
             })
 
-            renderHook(() => useInboxStatus(), { wrapper: createWrapper() })
+            renderHook(() => useInboxStatus(scopeState.current), {
+                wrapper: createWrapper(),
+            })
 
             await waitFor(() => {
                 expect(fetchMessageStatus).toHaveBeenCalledTimes(1)
@@ -189,9 +195,12 @@ describe('useInboxStatus', () => {
     it('returns strict false/0 defaults when deviceID is missing', () => {
         vi.mocked(useDeviceID).mockReturnValueOnce(null)
 
-        const { result } = renderHook(() => useInboxStatus(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useInboxStatus(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         expect(fetchMessageStatus).not.toHaveBeenCalled()
         expect(fetchNotificationStatus).not.toHaveBeenCalled()
@@ -209,13 +218,14 @@ describe('useInboxStatus', () => {
         it.each([Networks.betanet, Networks.custom])(
             'returns zeroed-out defaults and flags isUnavailableOnNetwork on %s without polling',
             network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
-                const { result } = renderHook(() => useInboxStatus(), {
-                    wrapper: createWrapper(),
-                })
+                const { result } = renderHook(
+                    () => useInboxStatus(scopeState.current),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
 
                 expect(fetchMessageStatus).not.toHaveBeenCalled()
                 expect(fetchNotificationStatus).not.toHaveBeenCalled()

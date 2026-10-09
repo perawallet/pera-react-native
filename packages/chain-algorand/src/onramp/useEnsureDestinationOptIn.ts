@@ -22,8 +22,10 @@ import {
     type EnsureCanReceive,
     type EnsureCanReceiveParams,
 } from '@perawallet/wallet-core-onramp'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 export type UseEnsureDestinationOptInResult = {
     ensureOptIn: EnsureCanReceive
@@ -54,7 +56,9 @@ const SOURCE = {
 export const useEnsureDestinationOptIn =
     (): UseEnsureDestinationOptInResult => {
         const algokit = useAlgorandClient()
-        const { optIn } = useAssetOptInMutation()
+        const { optIn } = useAssetOptInMutation(
+            useSelectedScope(ALGORAND_CHAIN_ID),
+        )
         const { submitWithFeeDelegation } = useFeeDelegation()
         const { assetMbr } = useMinimumFeeConfig()
 

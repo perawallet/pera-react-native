@@ -25,7 +25,7 @@ import {
     FAKE_CHAIN_ID,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import { testAccount } from '../../__tests__/accountFactory'
 import { useAccountsStore } from '../../store'
 import { useRevealPrivateKey } from '../useRevealPrivateKey'
 
@@ -158,10 +158,10 @@ describe('useRevealPrivateKey', () => {
         expect(fakeKms.exportSecp256k1Key).not.toHaveBeenCalled()
     })
 
-    test.each(['hdWallet', 'watch', 'quantum'] as const)(
+    test.each(['hd', 'watch', 'explicit'] as const)(
         'refuses a %s account before asking to authenticate',
-        async type => {
-            const account = buildTestAccount(type)
+        async custody => {
+            const account = testAccount(custody)
             useAccountsStore.getState().setAccounts([account])
             const { result } = renderHook(() => useRevealPrivateKey())
 

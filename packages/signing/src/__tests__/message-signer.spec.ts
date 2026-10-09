@@ -15,10 +15,12 @@ import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-co
 import { CannotSignError } from '../pipeline/errors'
 import {
     buildSiwxAuthData,
+    canSignMessage,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     messageSignerFor,
     parseAuthDataWireRequest,
+    signsMessageVerifiably,
     type MessageSignerChainAdapter,
 } from '../message-signer'
 import { registerFakeMessageSignerAdapter } from './fakeMessageSignerAdapter'
@@ -90,5 +92,34 @@ describe('messageSignerFor', () => {
 
         expect(thrown).toBeInstanceOf(CannotSignError)
         expect((thrown as CannotSignError).metadata.retryable).toBe(false)
+    })
+})
+
+describe('canSignMessage and signsMessageVerifiably', () => {
+    const account = { id: 'a' } as never
+
+    it("answer from the chain's message signer", () => {
+        const overrides: Partial<MessageSignerChainAdapter> = {
+            canSign: vi.fn(() => true),
+            signsVerifiably: vi.fn(() => false),
+        }
+        registerFakeMessageSignerAdapter(overrides)
+
+        expect(canSignMessage(CHAIN, account, 'authData')).toBe(true)
+        expect(signsMessageVerifiably(CHAIN, account, 'arbitraryData')).toBe(
+            false,
+        )
+        expect(overrides.canSign).toHaveBeenCalledWith(account, 'authData')
+        expect(overrides.signsVerifiably).toHaveBeenCalledWith(
+            account,
+            'arbitraryData',
+        )
+    })
+
+    it('fail closed on a chain with no message signer', () => {
+        messageSignerChainAdapters.reset()
+
+        expect(canSignMessage(CHAIN, account, 'authData')).toBe(false)
+        expect(signsMessageVerifiably(CHAIN, account, 'authData')).toBe(false)
     })
 })

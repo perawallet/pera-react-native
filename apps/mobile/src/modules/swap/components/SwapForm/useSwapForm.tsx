@@ -15,9 +15,12 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
+    addressOn,
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
@@ -92,6 +95,7 @@ export type SwapFormInitialPayAmount = {
 export const useSwapForm = (
     initialPayAmount?: SwapFormInitialPayAmount,
 ): UseSwapFormResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         fromAsset,
         toAsset,
@@ -102,15 +106,18 @@ export const useSwapForm = (
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
-    } = useSwaps()
+    } = useSwaps(scope)
     const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
     const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
     const [selectedProviderName, setSelectedProviderName] =
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const selectedAccount = useSelectedAccount()
+    const selectedAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const nativeAsset = useNativeAsset()
-    const prefetchProviders = usePrefetchProviders()
+    const prefetchProviders = usePrefetchProviders(scope)
 
     useEffect(() => {
         prefetchProviders()
@@ -133,10 +140,15 @@ export const useSwapForm = (
         data: payAssetBalance,
         isFetched: isPayBalanceFetched,
         isError: isPayBalanceError,
-    } = useAccountAssetBalanceQuery(selectedAccount ?? undefined, fromAsset)
+    } = useAccountAssetBalanceQuery(
+        selectedAccount ?? undefined,
+        fromAsset,
+        scope,
+    )
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         toAsset,
+        scope,
     )
 
     const {
@@ -147,7 +159,7 @@ export const useSwapForm = (
         reset: resetQuotes,
         refresh: refreshQuotes,
     } = useSwapQuotes({
-        swapperAddress: selectedAccount?.address ?? null,
+        swapperAddress: selectedAddress ?? null,
         fromAssetId: fromAsset,
         toAssetId: toAsset,
         payAmount,
@@ -206,14 +218,14 @@ export const useSwapForm = (
     // carrying it across an account switch leaves the amounts describing the old
     // account and MAX quoting an asset the new one may not hold. Reset to the
     // default pair — the state a relaunch produced, which is what worked.
-    const previousAddressRef = useRef(selectedAccount?.address)
+    const previousAddressRef = useRef(selectedAddress)
     useEffect(() => {
-        const address = selectedAccount?.address
+        const address = selectedAddress
         if (previousAddressRef.current === address) return
         previousAddressRef.current = address
         resetAmounts()
         resetAssetPair()
-    }, [selectedAccount?.address, resetAmounts, resetAssetPair])
+    }, [selectedAddress, resetAmounts, resetAssetPair])
 
     // The typed amount is denominated in the pay asset, so it cannot survive
     // the pay asset changing: quoting the old number against the new asset's
@@ -316,7 +328,7 @@ export const useSwapForm = (
 
     const applyPercentageAmount = useCallback(
         async (percentage: number) => {
-            if (!selectedAccount) return
+            if (!selectedAddress) return
             // Every silent return here reads as a dead button, so say why.
             if (!payAssetBalance?.amount || payAssetBalance.amount.isZero()) {
                 infoToast(
@@ -329,7 +341,7 @@ export const useSwapForm = (
             }
             try {
                 const result = await calculateSwapAmountRef.current!({
-                    address: selectedAccount.address,
+                    address: selectedAddress,
                     asset_in_id: uint64IdToNumber(fromAsset),
                     asset_out_id: uint64IdToNumber(toAsset),
                     percentage: String(percentage / 100),
@@ -361,7 +373,7 @@ export const useSwapForm = (
             }
         },
         [
-            selectedAccount,
+            selectedAddress,
             fromAsset,
             toAsset,
             payAsset,
@@ -462,10 +474,10 @@ export const useSwapForm = (
         trackEvent(SwapEvent.ConfirmSwapButton)
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
-        if (selectedAccount && payAmount) {
+        if (selectedAddress && payAmount) {
             registerTabResumeIntent({
                 flow: 'swap',
-                accountAddress: selectedAccount.address,
+                accountAddress: selectedAddress,
                 assetInId: fromAsset ?? nativeAsset.assetId,
                 assetOutId: toAsset,
                 payAmount: payAmount.toString(),
@@ -540,7 +552,7 @@ export const useSwapForm = (
         refreshQuotes,
         t,
         resetAmounts,
-        selectedAccount,
+        selectedAddress,
         payAmount,
         fromAsset,
         nativeAsset.assetId,

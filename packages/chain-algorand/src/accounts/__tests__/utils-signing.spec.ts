@@ -14,17 +14,28 @@ import { beforeAll, beforeEach, describe, test, expect } from 'vitest'
 import {
     accountsChainAdapters,
     canSignWith,
-    getRekeyAccount,
+    getDelegatedAccount,
     getSignerFor,
-    isQuantumDowngrade,
+    isAuthorityDowngrade,
     delegateTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
     DelegationTargetNotFoundError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import {
+    standaloneAccount,
+    hardwareAccount,
+    hdAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+    type AlgorandAccountOptions,
+} from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { algorandAddressOf } from '../vocabulary'
 import { seedAuthority } from './seedAuthority'
 
 beforeAll(() => {
@@ -36,139 +47,44 @@ beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
 })
 
-type BuilderOverrides = Partial<WalletAccount> & { authority?: string }
+type Options = AlgorandAccountOptions & { address?: string; authority?: string }
 
 const withAuthority = (
     account: WalletAccount,
     authority?: string,
 ): WalletAccount => {
-    if (authority) seedAuthority(account.address as string, authority)
+    if (authority) {
+        seedAuthority(algorandAddressOf(account) as string, authority)
+    }
     return account
 }
 
-const algo25 = ({
-    authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'a',
-            address: overrides.address ?? 'A',
-            custody: { kind: 'local', seed: null },
-            keyPairId: 'kp',
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
-
-const hd = ({
-    authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'h',
-            address: overrides.address ?? 'H',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            keyPairId: 'kp-hd',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
-
-const ledger = ({
-    authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'l',
-            address: overrides.address ?? 'L',
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
-
-const watch = ({
-    authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'w',
-            address: overrides.address ?? 'W',
-            custody: { kind: 'watch' },
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
-
+const algo25 = ({ address = 'A', authority, ...options }: Options = {}) =>
+    withAuthority(standaloneAccount(address, options), authority)
+const hd = ({ address = 'H', authority, ...options }: Options = {}) =>
+    withAuthority(hdAccount(address, options), authority)
+const ledger = ({ address = 'L', authority, ...options }: Options = {}) =>
+    withAuthority(hardwareAccount(address, options), authority)
+const watch = ({ address = 'W', authority, ...options }: Options = {}) =>
+    withAuthority(watchAccount(address, options), authority)
 const multisig = ({
+    address = 'M',
+    parameters = { threshold: 2, addresses: ['P1', 'P2'], version: 1 },
     authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'm',
-            address: overrides.address ?? 'M',
-            custody: { kind: 'multisig' },
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
-            },
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
+    ...options
+}: Options & { parameters?: MultisigParameters } = {}) =>
+    withAuthority(multisigAccount(address, parameters, options), authority)
+const quantum = ({ address = 'F', authority, ...options }: Options = {}) =>
+    withAuthority(quantumAccount(address, options), authority)
 
-const quantum = ({
-    authority,
-    ...overrides
-}: BuilderOverrides = {}): WalletAccount =>
-    withAuthority(
-        {
-            id: overrides.id ?? 'f',
-            address: overrides.address ?? 'F',
-            custody: { kind: 'local', seed: 'quantum' },
-            keyPairId: 'kp-quantum',
-            ...overrides,
-        } as WalletAccount,
-        authority,
-    )
+const isQuantumDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+) => isAuthorityDowngrade(source, target, accounts, ALGORAND_CHAIN_ID)
 
 describe('services/accounts/utils - account type checks', () => {
-    const baseAccount = {
-        id: '1',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        address: 'ADDR1',
-        keyPairId: 'pk1',
-    } as any
+    const baseAccount = hd({ address: 'ADDR1' })
 
     test('canSignWith returns true for account with keyPairId', () => {
         expect(canSignWith(baseAccount, [], ALGORAND_CHAIN_ID)).toBe(true)
@@ -177,7 +93,7 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith returns false for account without keyPairId', () => {
         expect(
             canSignWith(
-                { ...baseAccount, keyPairId: undefined } as any,
+                hd({ address: 'ADDR1', keyPairId: null }),
                 [],
                 ALGORAND_CHAIN_ID,
             ),
@@ -185,19 +101,11 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     test('canSignWith returns true for rekeyed account when auth account has keys', () => {
-        const authAccount = {
-            id: '2',
-            custody: { kind: 'local', seed: null },
-            address: 'AUTH_ADDR',
-            keyPairId: 'pk2',
-        } as any
-
-        const rekeyedAccount = {
-            id: '3',
-            custody: { kind: 'watch' },
+        const authAccount = algo25({ address: 'AUTH_ADDR' })
+        const rekeyedAccount = watch({
             address: 'REKEYED_ADDR',
-        } as any
-        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
+            authority: 'AUTH_ADDR',
+        })
 
         expect(
             canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
@@ -205,18 +113,11 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     test('canSignWith returns false for rekeyed account when auth account has no keys', () => {
-        const authAccount = {
-            id: '2',
-            custody: { kind: 'watch' },
-            address: 'AUTH_ADDR',
-        } as any
-
-        const rekeyedAccount = {
-            id: '3',
-            custody: { kind: 'watch' },
+        const authAccount = watch({ address: 'AUTH_ADDR' })
+        const rekeyedAccount = watch({
             address: 'REKEYED_ADDR',
-        } as any
-        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
+            authority: 'AUTH_ADDR',
+        })
 
         expect(
             canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
@@ -224,37 +125,24 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     test('canSignWith returns false for rekeyed account when auth account is not in list', () => {
-        const rekeyedAccount = {
-            id: '3',
-            custody: { kind: 'watch' },
+        const rekeyedAccount = watch({
             address: 'REKEYED_ADDR',
-        } as any
-        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
+            authority: 'AUTH_ADDR',
+        })
 
         expect(canSignWith(rekeyedAccount, [], ALGORAND_CHAIN_ID)).toBe(false)
     })
 
     test('canSignWith resolves a single rekey hop only, not a chain', () => {
-        const rootAccount = {
-            id: '1',
-            custody: { kind: 'local', seed: null },
-            address: 'ROOT_ADDR',
-            keyPairId: 'pk1',
-        } as any
-
-        const middleAccount = {
-            id: '2',
-            custody: { kind: 'watch' },
+        const rootAccount = algo25({ address: 'ROOT_ADDR' })
+        const middleAccount = watch({
             address: 'MIDDLE_ADDR',
-        } as any
-        seedAuthority('MIDDLE_ADDR', 'ROOT_ADDR')
-
-        const leafAccount = {
-            id: '3',
-            custody: { kind: 'watch' },
+            authority: 'ROOT_ADDR',
+        })
+        const leafAccount = watch({
             address: 'LEAF_ADDR',
-        } as any
-        seedAuthority('LEAF_ADDR', 'MIDDLE_ADDR')
+            authority: 'MIDDLE_ADDR',
+        })
 
         const accounts = [rootAccount, middleAccount, leafAccount]
         // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
@@ -269,18 +157,8 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     test('canSignWith does not recurse on a cyclic auth chain', () => {
-        const a = {
-            id: '1',
-            custody: { kind: 'watch' },
-            address: 'A',
-        } as any
-        seedAuthority('A', 'B')
-        const b = {
-            id: '2',
-            custody: { kind: 'watch' },
-            address: 'B',
-        } as any
-        seedAuthority('B', 'A')
+        const a = watch({ address: 'A', authority: 'B' })
+        const b = watch({ address: 'B', authority: 'A' })
 
         // Single-hop: A's immediate auth B holds no key — false, no infinite
         // recursion.
@@ -290,192 +168,88 @@ describe('services/accounts/utils - account type checks', () => {
 
 describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
     test('returns true for a non-rekeyed hardware account (no keyPairId)', () => {
-        const account = {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'test-device',
-                    deviceName: 'Ledger Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address: 'HW',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
+        const account = ledger({ address: 'HW' })
         expect(canSignWith(account, [account], ALGORAND_CHAIN_ID)).toBe(true)
     })
 
     test('returns true for rekeyed account whose auth is a hardware account', () => {
-        const authAccount = {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'test-device',
-                    deviceName: 'Ledger Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address: 'AUTH',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
-        const account = {
-            custody: { kind: 'watch' },
-            address: 'ADDR',
-        } as any
-        seedAuthority('ADDR', 'AUTH')
+        const authAccount = ledger({ address: 'AUTH' })
+        const account = watch({ address: 'ADDR', authority: 'AUTH' })
         expect(
             canSignWith(account, [account, authAccount], ALGORAND_CHAIN_ID),
         ).toBe(true)
     })
 
     test('returns true for a multisig with a local signable participant', () => {
-        const participant = {
-            custody: { kind: 'local', seed: null },
-            address: 'P1',
-            keyPairId: 'pk1',
-        } as any
-        const multisig = {
-            custody: { kind: 'multisig' },
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
+        const participant = algo25({ address: 'P1' })
+        const account = multisig({ address: 'MS' })
         expect(
-            canSignWith(multisig, [multisig, participant], ALGORAND_CHAIN_ID),
+            canSignWith(account, [account, participant], ALGORAND_CHAIN_ID),
         ).toBe(true)
     })
 
     test('returns false for a multisig with no local signable participants', () => {
-        const multisig = {
-            custody: { kind: 'multisig' },
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
-        expect(canSignWith(multisig, [multisig], ALGORAND_CHAIN_ID)).toBe(false)
+        const account = multisig({ address: 'MS' })
+        expect(canSignWith(account, [account], ALGORAND_CHAIN_ID)).toBe(false)
     })
 })
 
-describe('services/accounts/utils - getRekeyAccount', () => {
+describe('services/accounts/utils - getDelegatedAccount', () => {
     test('returns the auth account when rekeyed and target is in the wallet', () => {
-        const auth = {
-            custody: { kind: 'local', seed: null },
-            address: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        const rekeyed = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk2',
-        } as any
-        seedAuthority('A', 'AUTH')
-        expect(getRekeyAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
-            auth,
-        )
+        const auth = algo25({ address: 'AUTH' })
+        const rekeyed = algo25({ address: 'A', authority: 'AUTH' })
+        expect(
+            getDelegatedAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID),
+        ).toBe(auth)
     })
 
     test('returns null when the address is not rekeyed', () => {
-        const account = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        expect(getRekeyAccount('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
+        const account = algo25({ address: 'A' })
+        expect(
+            getDelegatedAccount('A', [account], ALGORAND_CHAIN_ID),
+        ).toBeNull()
     })
 
     test('returns null when the rekey target is not in the wallet', () => {
-        const rekeyed = {
-            custody: { kind: 'watch' },
-            address: 'A',
-        } as any
-        seedAuthority('A', 'MISSING')
-        expect(getRekeyAccount('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
+        const rekeyed = watch({ address: 'A', authority: 'MISSING' })
+        expect(
+            getDelegatedAccount('A', [rekeyed], ALGORAND_CHAIN_ID),
+        ).toBeNull()
     })
 
     test('returns null when the address is unknown', () => {
-        expect(getRekeyAccount('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
     })
 })
 
 describe('services/accounts/utils - getSignerFor', () => {
     test('returns the account itself when it holds its own key', () => {
-        const account = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
+        const account = algo25({ address: 'A' })
         expect(getSignerFor('A', [account], ALGORAND_CHAIN_ID)).toBe(account)
     })
 
     test('returns the immediate auth account when rekeyed and we can sign', () => {
-        const auth = {
-            custody: { kind: 'local', seed: null },
-            address: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        const rekeyed = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk2',
-        } as any
-        seedAuthority('A', 'AUTH')
+        const auth = algo25({ address: 'AUTH' })
+        const rekeyed = algo25({ address: 'A', authority: 'AUTH' })
         expect(getSignerFor('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(auth)
     })
 
     test('returns null for an unsignable rekeyed account', () => {
-        const rekeyed = {
-            custody: { kind: 'watch' },
-            address: 'A',
-        } as any
-        seedAuthority('A', 'MISSING')
+        const rekeyed = watch({ address: 'A', authority: 'MISSING' })
         expect(getSignerFor('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     test('returns null for a non-rekeyed watch account', () => {
-        const account = { custody: { kind: 'watch' }, address: 'A' } as any
+        const account = watch({ address: 'A' })
         expect(getSignerFor('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     test('returns the multisig itself when at least one participant is local and signable', () => {
-        const participant = {
-            custody: { kind: 'local', seed: null },
-            address: 'P1',
-            keyPairId: 'pk1',
-        } as any
-        const multisig = {
-            custody: { kind: 'multisig' },
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
+        const participant = algo25({ address: 'P1' })
+        const account = multisig({ address: 'MS' })
         expect(
-            getSignerFor('MS', [multisig, participant], ALGORAND_CHAIN_ID),
-        ).toBe(multisig)
+            getSignerFor('MS', [account, participant], ALGORAND_CHAIN_ID),
+        ).toBe(account)
     })
 
     test('returns null when address is not in the wallet', () => {
@@ -485,61 +259,25 @@ describe('services/accounts/utils - getSignerFor', () => {
 
 describe('services/accounts/utils - delegateTransitionFor', () => {
     test('returns null for a non-rekeyed account', () => {
-        const account = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
+        const account = algo25({ address: 'A' })
         expect(
             delegateTransitionFor(account, [account], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
     test('returns null for a rekeyed account whose auth is not in the wallet', () => {
-        const rekeyed = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        seedAuthority('A', 'MISSING')
+        const rekeyed = algo25({ address: 'A', authority: 'MISSING' })
         expect(
             delegateTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
-    test('returns from/to raw types for a signable rekey', () => {
-        const auth = {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'Ledger',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address: 'AUTH',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'd',
-                deviceName: 'Ledger',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
-        const rekeyed = {
-            custody: { kind: 'local', seed: null },
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        seedAuthority('A', 'AUTH')
+    test('returns the rekeyed account and its signer for a signable rekey', () => {
+        const auth = ledger({ address: 'AUTH' })
+        const rekeyed = algo25({ address: 'A', authority: 'AUTH' })
         expect(
             delegateTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
-        ).toEqual({
-            from: 'standalone',
-            to: 'hardware',
-        })
+        ).toEqual({ from: rekeyed, to: auth })
     })
 })
 
@@ -558,65 +296,33 @@ describe('services/accounts/utils - quantum accounts', () => {
     })
 })
 
-describe('services/accounts/utils - isQuantumDowngrade', () => {
+describe('services/accounts/utils - isAuthorityDowngrade', () => {
     test('quantum source to a plain Ed25519 target is a downgrade', () => {
         const source = quantum({ address: 'F' })
         const target = algo25({ address: 'A' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(true)
-        expect(
-            isQuantumDowngrade(
-                source,
-                hd({ address: 'H' }),
-                [source, hd({ address: 'H' })],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(true)
+        const hdTarget = hd({ address: 'H' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+        expect(isQuantumDowngrade(source, hdTarget, [source, hdTarget])).toBe(
+            true,
+        )
     })
 
     test('quantum source to a quantum target is not a downgrade', () => {
         const source = quantum({ address: 'F1' })
         const target = quantum({ address: 'F2' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(false)
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 
     test('Ed25519 source to a quantum target is not a downgrade', () => {
         const source = algo25({ address: 'A' })
         const target = quantum({ address: 'F' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(false)
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 
     test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
         const source = algo25({ address: 'A' })
         const target = hd({ address: 'H' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(false)
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 
     test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
@@ -626,26 +332,14 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         const quantumAuth = quantum({ address: 'FAUTH' })
         const target = watch({ address: 'T', authority: 'FAUTH' })
         expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target, quantumAuth],
-                ALGORAND_CHAIN_ID,
-            ),
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
         ).toBe(false)
     })
 
     test('quantum source to a hardware/ledger target is a downgrade', () => {
         const source = quantum({ address: 'F' })
         const target = ledger({ address: 'L' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(true)
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
     })
 
     test('Ed25519 source rekeyed to a quantum auth (rekey-in), rekeying to an Ed25519 target, is a downgrade', () => {
@@ -655,12 +349,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         const source = algo25({ address: 'A', authority: 'FAUTH' })
         const target = algo25({ address: 'B' })
         expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target, quantumAuth],
-                ALGORAND_CHAIN_ID,
-            ),
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
         ).toBe(true)
     })
 
@@ -671,12 +360,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         const source = quantum({ address: 'F', authority: 'EAUTH' })
         const target = algo25({ address: 'B' })
         expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target, ed25519Auth],
-                ALGORAND_CHAIN_ID,
-            ),
+            isQuantumDowngrade(source, target, [source, target, ed25519Auth]),
         ).toBe(false)
     })
 
@@ -685,14 +369,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         // quantum protection we cannot resolve.
         const source = quantum({ address: 'F', authority: 'MISSING' })
         const target = algo25({ address: 'B' })
-        expect(
-            isQuantumDowngrade(
-                source,
-                target,
-                [source, target],
-                ALGORAND_CHAIN_ID,
-            ),
-        ).toBe(false)
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 })
 

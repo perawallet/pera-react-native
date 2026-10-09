@@ -155,7 +155,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: () => mocks.accounts,
     useFindAccountByAddress: (address: string) =>
         (mocks.accounts as WalletAccount[]).find(
-            account => account.address === address,
+            account => account.chains.algorand?.address === address,
         ) ?? null,
 }))
 
@@ -206,9 +206,8 @@ import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const walletAccount = (address: string): WalletAccount =>
     ({
-        address,
+        chains: { algorand: { address: address, keyPairId: `key-${address}` } },
         custody: { kind: 'local', seed: null },
-        keyPairId: `key-${address}`,
     }) as WalletAccount
 
 // Shared secure-view response the reveal tests resolve the token request with.

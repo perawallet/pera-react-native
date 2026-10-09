@@ -10,19 +10,13 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { accountsChainAdapters } from '../chain-adapter'
 import type { WalletAccount } from '../models'
 import { useAccountsStore } from './store'
 
-// `chains` is optional; a record without it lives on the legacy chain alone.
 const chainIdsOf = (account: WalletAccount): ChainId[] =>
-    account.chains
-        ? (Object.keys(account.chains) as ChainId[])
-        : [LEGACY_CHAIN_ID]
+    Object.keys(account.chains) as ChainId[]
 
 const backfillRecord = (account: WalletAccount): WalletAccount =>
     chainIdsOf(account).reduce(

@@ -37,7 +37,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    DerivationTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -60,6 +59,7 @@ import {
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
+import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
 
 // Tiny host that drives the imperative `useViewPassphraseFlow` hook
 // when the trigger is tapped. Models how `AccountOptionsContent` opens
@@ -107,12 +107,16 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'algo25-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Algo25 Test',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -149,15 +153,10 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 0 },
         },
-        address: HD_TEST_ADDRESS,
-        keyPairId: rootKeyId,
-        name: 'HD Root',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
+        chains: {
+            algorand: { address: HD_TEST_ADDRESS, keyPairId: rootKeyId },
         },
+        name: 'HD Root',
     }
     const derivedAccount: WalletAccount = {
         id: 'hd-derived-1',
@@ -166,19 +165,12 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 1 },
         },
-        address: derivedAddress,
-        keyPairId: rootKeyId,
+        chains: { algorand: { address: derivedAddress, keyPairId: rootKeyId } },
         name: 'HD Derived #1',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 1,
-            derivationType: DerivationTypes.Peikert,
-        },
     }
 
     useAccountsStore.getState().setAccounts([rootAccount, derivedAccount])
-    useAccountsStore.getState().setSelectedAccountAddress(rootAccount.address)
+    useAccountsStore.getState().setSelectedAccountId(rootAccount.id)
     return { rootAccount, derivedAccount, rootKeyId }
 }
 
@@ -249,7 +241,7 @@ describe('Flow: View account passphrase', () => {
 
         render(
             <ViewPassphraseHost
-                address={account.address}
+                address={addressOf(account)}
                 onClose={onClose}
             />,
         )
@@ -337,7 +329,7 @@ describe('Flow: View account passphrase', () => {
 
         render(
             <ViewPassphraseHost
-                address={account.address}
+                address={addressOf(account)}
                 onClose={onClose}
             />,
         )
@@ -369,7 +361,7 @@ describe('Flow: View account passphrase', () => {
     it('Given an HD wallet root account, when the user reveals the passphrase, then the 24-word HD mnemonic is displayed', async () => {
         const { rootAccount } = await seedHDWalletAccounts()
 
-        render(<ViewPassphraseHost address={rootAccount.address} />)
+        render(<ViewPassphraseHost address={addressOf(rootAccount)} />)
         await advanceToDisplayedWords()
 
         expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_24_WORDS)
@@ -380,10 +372,10 @@ describe('Flow: View account passphrase', () => {
         // Sanity: addresses differ — the derived account is a
         // distinct Algorand address — but they share the keyPairId
         // pointing at the same root key in the keystore.
-        expect(derivedAccount.address).not.toBe(rootAccount.address)
-        expect(derivedAccount.keyPairId).toBe(rootAccount.keyPairId)
+        expect(addressOf(derivedAccount)).not.toBe(addressOf(rootAccount))
+        expect(keyPairIdOf(derivedAccount)).toBe(keyPairIdOf(rootAccount))
 
-        render(<ViewPassphraseHost address={derivedAccount.address} />)
+        render(<ViewPassphraseHost address={addressOf(derivedAccount)} />)
         await advanceToDisplayedWords()
 
         // Same expected vector as the root test: an HD wallet has
@@ -406,7 +398,7 @@ describe('Flow: View account passphrase', () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })
 
-        render(<ViewPassphraseHost address={account.address} />)
+        render(<ViewPassphraseHost address={addressOf(account)} />)
 
         // Open. The PinEditView mounts its numpad — that's the
         // user-facing handle to the gate. The acknowledge sheet
@@ -434,7 +426,7 @@ describe('Flow: View account passphrase', () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })
 
-        render(<ViewPassphraseHost address={account.address} />)
+        render(<ViewPassphraseHost address={addressOf(account)} />)
 
         fireEvent.click(screen.getByTestId('open_view_passphrase'))
         await waitFor(() => {
@@ -481,7 +473,7 @@ describe('Flow: View account passphrase', () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(false)
         })
 
-        render(<ViewPassphraseHost address={account.address} />)
+        render(<ViewPassphraseHost address={addressOf(account)} />)
 
         fireEvent.click(screen.getByTestId('open_view_passphrase'))
         await waitFor(() => {

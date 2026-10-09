@@ -16,7 +16,7 @@ import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
 export const scrubLegacyPayloadSecrets = (data: LegacyMigrationData): void => {
     zeroBytes(data.auth.pin)
     for (const account of data.accounts) zeroBytes(account.secretKey)
-    for (const wallet of data.hdWallets) {
+    for (const wallet of data.hdSeeds) {
         zeroBytes(wallet.entropy)
         for (const key of wallet.keys) zeroBytes(key.privateKey)
     }

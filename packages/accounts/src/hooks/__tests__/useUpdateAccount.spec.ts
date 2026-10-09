@@ -14,24 +14,14 @@ import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useUpdateAccount } from '../useUpdateAccount'
 import type { WalletAccount } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
 
-// Mock store
-const mockAccounts: WalletAccount[] = [
-    {
-        address: 'ADDR1',
-        id: 'id1',
-        name: 'Account 1',
-        custody: { kind: 'local', seed: null },
-        canSign: true,
-    },
-    {
-        address: 'ADDR2',
-        id: 'id2',
-        name: 'Account 2',
-        custody: { kind: 'local', seed: null },
-        canSign: true,
-    },
-]
+const account1 = () =>
+    testAccount('local', 'ADDR1', { id: 'id1', name: 'Account 1' })
+const account2 = () =>
+    testAccount('local', 'ADDR2', { id: 'id2', name: 'Account 2' })
+
+const mockAccounts: WalletAccount[] = []
 const mockSetAccounts = vi.fn()
 
 // useUpdateAccount reads `accounts` via `useAccountsStore.getState()`
@@ -53,16 +43,7 @@ vi.mock('../../store', () => ({
 
 // Mock platform integration
 const mockNetwork = { network: 'mainnet' }
-const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
-const mockRegisterDeviceMutation = vi.fn().mockResolvedValue({})
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn(() => mockDeviceID),
-    useRegisterDeviceMutation: () => ({
-        mutateAsync: mockRegisterDeviceMutation,
-    }),
-}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -84,74 +65,35 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 describe('useUpdateAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset mock accounts
         mockAccounts.length = 0
-        mockAccounts.push(
-            {
-                address: 'ADDR1',
-                id: 'id1',
-                name: 'Account 1',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
-            {
-                address: 'ADDR2',
-                id: 'id2',
-                name: 'Account 2',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
-        )
+        mockAccounts.push(account1(), account2())
     })
 
-    it('updates account in store', () => {
+    it('replaces the account with the same id', () => {
         const { result } = renderHook(() => useUpdateAccount())
 
-        const updatedAccount: WalletAccount = {
-            address: 'ADDR1',
-            id: 'id1',
-            name: 'Updated Account 1',
-            custody: { kind: 'local', seed: null },
-            canSign: true,
-        }
-
-        result.current(updatedAccount)
+        result.current({ ...account1(), name: 'Updated Account 1' })
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
-            {
-                address: 'ADDR1',
-                id: 'id1',
-                name: 'Updated Account 1',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
-            {
-                address: 'ADDR2',
-                id: 'id2',
-                name: 'Account 2',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
+            { ...account1(), name: 'Updated Account 1' },
+            account2(),
         ])
     })
 
+    it('matches by id, not by address', () => {
+        const { result } = renderHook(() => useUpdateAccount())
+        const moved = testAccount('local', 'ADDR1', {
+            id: 'id2',
+            name: 'Same address, other id',
+        })
+
+        result.current(moved)
+
+        expect(mockSetAccounts).toHaveBeenCalledWith([account1(), moved])
+    })
+
     it('writes the account as passed, keeping its custody and chains', () => {
-        const device = {
-            manufacturer: 'ledger' as const,
-            deviceName: 'Nano X',
-            transportType: 'ble' as const,
-        }
-        const hardware = {
-            address: 'LEDGER',
-            id: 'hw',
-            hardwareDetails: { ...device, deviceId: 'old', accountIndex: 0 },
-            custody: {
-                kind: 'hardware',
-                device: { ...device, deviceId: 'old' },
-                accountIndex: 0,
-            },
-            chains: { algorand: { address: 'LEDGER' } },
-        } as WalletAccount
+        const hardware = testAccount('hardware', 'LEDGER', { id: 'hw' })
         mockAccounts.push(hardware)
         const { result } = renderHook(() => useUpdateAccount())
 
@@ -159,71 +101,15 @@ describe('useUpdateAccount', () => {
 
         const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
         expect(written[2]).toEqual({ ...hardware, name: 'Renamed' })
-        expect(written[2]).not.toHaveProperty('type')
     })
 
-    it('updates account at correct index', () => {
+    it('leaves the list unchanged for an unknown id', () => {
         const { result } = renderHook(() => useUpdateAccount())
 
-        const updatedAccount: WalletAccount = {
-            address: 'ADDR2',
-            id: 'id2',
-            name: 'Updated Account 2',
-            custody: { kind: 'local', seed: null },
-            canSign: true,
-        }
+        result.current(
+            testAccount('local', 'ADDR_NOT_FOUND', { id: 'missing' }),
+        )
 
-        result.current(updatedAccount)
-
-        expect(mockSetAccounts).toHaveBeenCalledWith([
-            {
-                address: 'ADDR1',
-                id: 'id1',
-                name: 'Account 1',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
-            {
-                address: 'ADDR2',
-                id: 'id2',
-                name: 'Updated Account 2',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-            },
-        ])
-    })
-
-    it('does not touch the device API — registration is the single writer', () => {
-        const { result } = renderHook(() => useUpdateAccount())
-
-        const updatedAccount: WalletAccount = {
-            address: 'ADDR1',
-            id: 'id1',
-            name: 'Updated',
-            custody: { kind: 'local', seed: null },
-            canSign: true,
-        }
-
-        result.current(updatedAccount)
-
-        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
-    })
-
-    it('handles account not found gracefully', () => {
-        const { result } = renderHook(() => useUpdateAccount())
-
-        const nonExistentAccount: WalletAccount = {
-            address: 'ADDR_NOT_FOUND',
-            id: 'id-not-found',
-            name: 'Non-existent',
-            custody: { kind: 'local', seed: null },
-            canSign: true,
-        }
-
-        // This will set accounts[-1] = account, which in JS just doesn't update the array
-        result.current(nonExistentAccount)
-
-        // Should still call setAccounts with the original accounts
-        expect(mockSetAccounts).toHaveBeenCalled()
+        expect(mockSetAccounts).toHaveBeenCalledWith([account1(), account2()])
     })
 })

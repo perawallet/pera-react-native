@@ -11,6 +11,8 @@
  */
 
 import React from 'react'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWFlatList, PWLoadingOverlay, PWScreen } from '@components/core'
 
 import { useStyles } from './styles'
@@ -59,17 +61,21 @@ export const ImportRekeyedAddressesScreen = () => {
                     )}
                     data={accounts}
                     extraData={selectedAddresses}
-                    keyExtractor={item => item.address}
-                    renderItem={({ item }) => (
-                        <ImportRekeyedAddressesItem
-                            account={item}
-                            isImported={alreadyImportedAddresses.has(
-                                item.address,
-                            )}
-                            isSelected={selectedAddresses.has(item.address)}
-                            onToggle={toggleSelection}
-                        />
-                    )}
+                    keyExtractor={item => item.id}
+                    renderItem={({ item }) => {
+                        const address =
+                            chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+                        return (
+                            <ImportRekeyedAddressesItem
+                                account={item}
+                                isImported={alreadyImportedAddresses.has(
+                                    address,
+                                )}
+                                isSelected={selectedAddresses.has(address)}
+                                onToggle={toggleSelection}
+                            />
+                        )
+                    }}
                 />
             </PWScreen>
             <PWLoadingOverlay

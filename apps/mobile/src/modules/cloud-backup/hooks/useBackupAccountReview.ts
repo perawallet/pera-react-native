@@ -28,10 +28,11 @@ import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { backupAccountsOf, type BackupAccount } from '../utils/backupAddress'
 
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
-    notBackedUpAccounts: WalletAccount[]
+    notBackedUpAccounts: BackupAccount[]
     /** Accounts the backup holds that this device deleted. */
     availableFromBackup: BackupAccountReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
@@ -69,9 +70,10 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     const accounts = useAccountsStore(state => state.accounts)
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
+    const backupAccounts = useMemo(() => backupAccountsOf(accounts), [accounts])
     const addresses = useMemo(
-        () => accounts.map(account => account.address),
-        [accounts],
+        () => backupAccounts.map(({ address }) => address),
+        [backupAccounts],
     )
 
     const review = useMemo(
@@ -127,21 +129,31 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const byAddress = useMemo(
-        () => new Map(accounts.map(account => [account.address, account])),
-        [accounts],
+        () =>
+            new Map(
+                backupAccounts.map(
+                    backupAccount =>
+                        [backupAccount.address, backupAccount] as const,
+                ),
+            ),
+        [backupAccounts],
     )
 
     const notBackedUpAccounts = useMemo(
         () =>
-            review.notBackedUp
-                .map(address => byAddress.get(address))
-                .filter((account): account is WalletAccount => account != null),
+            review.notBackedUp.flatMap(address => {
+                const backupAccount = byAddress.get(address)
+                return backupAccount ? [backupAccount] : []
+            }),
         [review.notBackedUp, byAddress],
     )
 
     const backedUpAccounts = useMemo(
-        () => accounts.filter(account => review.backedUp.has(account.address)),
-        [accounts, review.backedUp],
+        () =>
+            backupAccounts
+                .filter(({ address }) => review.backedUp.has(address))
+                .map(({ account }) => account),
+        [backupAccounts, review.backedUp],
     )
 
     return {

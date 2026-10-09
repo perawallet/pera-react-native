@@ -18,6 +18,7 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
 import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
@@ -40,7 +41,7 @@ import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import {
     MESSAGES_REQUIREMENTS,
-    REKEY_REQUIREMENT,
+    rekeyRequirementFor,
 } from '@hooks/capabilityRequirements'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/transactions/routes'
@@ -89,6 +90,7 @@ export const WebMainRoutes = ({
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
+    const rekeyRequirement = rekeyRequirementFor(LEGACY_CHAIN_ID)
     // Native mounts these in RootComponent, which the web shell replaces; without
     // them devices register with no push token and notification-tap deeplinks drop.
     useTokenListener(fcmToken)
@@ -231,14 +233,14 @@ export const WebMainRoutes = ({
                             component={MultisigStackNavigator}
                         />
                     )}
-                    {isAllowed(REKEY_REQUIREMENT) && (
+                    {isAllowed(rekeyRequirement) && (
                         <RootStack.Screen
                             name='UndoRekey'
                             component={UndoRekeyStackNavigator}
                         />
                     )}
                     {isAllowed({
-                        ...REKEY_REQUIREMENT,
+                        ...rekeyRequirement,
                         anyChain: 'ledger',
                     }) && (
                         <RootStack.Screen
@@ -246,14 +248,14 @@ export const WebMainRoutes = ({
                             component={RekeyToLedgerStackNavigator}
                         />
                     )}
-                    {isAllowed(REKEY_REQUIREMENT) && (
+                    {isAllowed(rekeyRequirement) && (
                         <RootStack.Screen
                             name='RekeyToStandard'
                             component={RekeyToStandardStackNavigator}
                         />
                     )}
                     {isAllowed({
-                        ...REKEY_REQUIREMENT,
+                        ...rekeyRequirement,
                         anyChain: 'quantumAccounts',
                     }) && (
                         <RootStack.Screen
@@ -262,7 +264,7 @@ export const WebMainRoutes = ({
                         />
                     )}
                     {isAllowed({
-                        ...REKEY_REQUIREMENT,
+                        ...rekeyRequirement,
                         anyChain: 'multisig',
                     }) && (
                         <RootStack.Screen
@@ -270,7 +272,7 @@ export const WebMainRoutes = ({
                             component={RekeyToSharedStackNavigator}
                         />
                     )}
-                    {isAllowed(REKEY_REQUIREMENT) && (
+                    {isAllowed(rekeyRequirement) && (
                         <RootStack.Screen
                             name='RescanRekeyed'
                             component={RescanRekeyedStackNavigator}

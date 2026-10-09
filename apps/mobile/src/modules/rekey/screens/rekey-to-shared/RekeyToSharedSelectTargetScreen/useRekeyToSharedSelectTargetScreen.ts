@@ -13,10 +13,14 @@
 import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
+    AuthorityTargetCategories,
     useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-shared/types'
@@ -38,21 +42,28 @@ export const useRekeyToSharedSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const source = useFindAccountByAddress(sourceAddress)
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
 
-        const targets = useAuthorityTargets(source, 'shared')
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.shared,
+            scope,
+        )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToShared', {
                     screen: 'RekeyToSharedConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

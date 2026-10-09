@@ -22,7 +22,7 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 const mockPush = vi.fn()
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockErrorToast = vi.fn()
@@ -88,9 +88,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        useSelectedAccountAddress: () => ({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        useSelectedAccountId: () => ({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         }),
         useAccountsStore: (selector: (state: unknown) => unknown) =>
             selector({ setAccounts: mockSetAccounts }),
@@ -138,14 +138,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
-    DeviceAccountTypes: {
-        standalone: 'standalone',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -248,17 +240,24 @@ describe('multisig creation flow', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([
             expect.objectContaining({
                 custody: { kind: 'multisig' },
-                address: 'NEW_MULTISIG_ADDR',
-                name: 'Shared Account #1',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['ADDR_A', 'ADDR_B'],
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: 'NEW_MULTISIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR_A', 'ADDR_B'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'Shared Account #1',
             }),
         ])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'NEW_MULTISIG_ADDR',
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+            mockSetAccounts.mock.calls[0][0].at(-1).id,
         )
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
@@ -270,7 +269,7 @@ describe('multisig creation flow', () => {
     it('allows finishing with a name already used by another account', async () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'EXISTING',
+                chains: { algorand: { address: 'EXISTING' } },
                 name: 'My Wallet',
                 custody: { kind: 'watch' },
             } as WalletAccount,

@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useLedgerAccountPreview,
     buildAccount,
@@ -62,6 +66,7 @@ type UseLedgerAccountInfoContentResult = {
 const ledgerDisplayAccount = (
     address: string,
     accountIndex: number,
+    chainId: ChainId,
 ): HardwareWalletAccount =>
     buildAccount({
         id: address,
@@ -75,16 +80,16 @@ const ledgerDisplayAccount = (
             },
             accountIndex,
         },
-        chainId: LEGACY_CHAIN_ID,
-        chains: { [LEGACY_CHAIN_ID]: { address } },
+        chainId,
+        chains: { [chainId]: { address } },
     })
 
-const watchDisplayAccount = (address: string): WatchAccount =>
+const watchDisplayAccount = (address: string, chainId: ChainId): WatchAccount =>
     buildAccount({
         id: address,
         custody: { kind: 'watch' },
-        chainId: LEGACY_CHAIN_ID,
-        chains: { [LEGACY_CHAIN_ID]: { address } },
+        chainId,
+        chains: { [chainId]: { address } },
     })
 
 export const useLedgerAccountInfoContent = (
@@ -94,8 +99,11 @@ export const useLedgerAccountInfoContent = (
     titleOverride?: string,
 ): UseLedgerAccountInfoContentResult => {
     const { t } = useLanguage()
-    const { preview, isLoading, isError, refetch } =
-        useLedgerAccountPreview(address)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { preview, isLoading, isError, refetch } = useLedgerAccountPreview(
+        address,
+        scope,
+    )
 
     const items = useMemo<LedgerInfoListItem[]>(() => {
         if (!preview) return []
@@ -106,8 +114,12 @@ export const useLedgerAccountInfoContent = (
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
             preview.rekey.kind === 'delegatedTo'
-                ? watchDisplayAccount(preview.address)
-                : ledgerDisplayAccount(preview.address, accountIndex)
+                ? watchDisplayAccount(preview.address, scope.chainId)
+                : ledgerDisplayAccount(
+                      preview.address,
+                      accountIndex,
+                      scope.chainId,
+                  )
 
         // Extract usdPrice from the ALGO preview asset for the account row.
         const algoPreviewAsset = preview.assets.find(a => a.isAlgo)
@@ -164,6 +176,7 @@ export const useLedgerAccountInfoContent = (
             const authSynthAccount = ledgerDisplayAccount(
                 preview.rekey.authorityAddress,
                 0,
+                scope.chainId,
             )
             list.push(
                 {
@@ -186,7 +199,7 @@ export const useLedgerAccountInfoContent = (
             })
             preview.rekey.addresses.forEach(addr => {
                 // These rekeyed addresses are watch accounts (no key on this device).
-                const watchSynth = watchDisplayAccount(addr)
+                const watchSynth = watchDisplayAccount(addr, scope.chainId)
                 list.push({
                     kind: 'authorityAccount',
                     key: `rekey-${addr}`,
@@ -199,7 +212,7 @@ export const useLedgerAccountInfoContent = (
         }
 
         return list
-    }, [preview, t, accountIndex])
+    }, [preview, t, accountIndex, scope.chainId])
 
     return {
         title:

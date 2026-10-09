@@ -21,6 +21,8 @@ import {
     AsbAccountKind,
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import { algorandAddressOf } from '../../../accounts/vocabulary'
 
 const mockImportAlgo25 = vi.fn()
 const mockUpdateAccount = vi.fn()
@@ -43,9 +45,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
     ALGO25_SEED_LENGTH: 32,
     algo25SeedToIndices: (...args: unknown[]) =>
         mockAlgo25SeedToIndices(...args),
@@ -107,11 +111,15 @@ const watchAccount = (
     ...overrides,
 })
 
-const algo25Account = (address: string): WalletAccount => ({
+const standaloneAccount = (address: string): WalletAccount => ({
     id: address,
-    address,
     custody: { kind: 'local', seed: null },
-    keyPairId: 'kp-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address,
+            keyPairId: 'kp-1',
+        },
+    },
 })
 
 describe('useAsbAccountImport', () => {
@@ -162,7 +170,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('imports a single account, marks it backed up, and zeroes the seed buffer', async () => {
-        const imported = algo25Account(VALID_ADDRESS_A)
+        const imported = standaloneAccount(VALID_ADDRESS_A)
         mockImportAlgo25.mockResolvedValue(imported)
 
         const useAsbAccountImport = await importHook()
@@ -181,7 +189,7 @@ describe('useAsbAccountImport', () => {
 
         expect(mockImportAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'standalone',
+            seed: null,
         })
         // No `name` on the asb row, so updateAccount must not be called.
         expect(mockUpdateAccount).not.toHaveBeenCalled()
@@ -194,7 +202,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('renames the imported account when the asb row carries a name', async () => {
-        const imported = algo25Account(VALID_ADDRESS_A)
+        const imported = standaloneAccount(VALID_ADDRESS_A)
         mockImportAlgo25.mockResolvedValue(imported)
 
         const useAsbAccountImport = await importHook()
@@ -207,7 +215,7 @@ describe('useAsbAccountImport', () => {
         expect(mockUpdateAccount).toHaveBeenCalledTimes(1)
         const updated = mockUpdateAccount.mock.calls[0][0] as WalletAccount
         expect(updated.name).toBe('Savings')
-        expect(updated.address).toBe(VALID_ADDRESS_A)
+        expect(algorandAddressOf(updated)).toBe(VALID_ADDRESS_A)
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(updated)
         expect(returned).toEqual({ ...imported, name: 'Savings' })
     })
@@ -248,7 +256,7 @@ describe('useAsbAccountImport', () => {
     })
 
     test('persists a watch account when no duplicate exists', async () => {
-        const existing = algo25Account(VALID_ADDRESS_A)
+        const existing = standaloneAccount(VALID_ADDRESS_A)
         storeAccounts = [existing]
 
         const useAsbAccountImport = await importHook()
@@ -262,11 +270,14 @@ describe('useAsbAccountImport', () => {
         // Preserves prior accounts and appends the new watch row.
         expect(written[0]).toBe(existing)
         expect(written[1]).toMatchObject({
-            address: VALID_ADDRESS_B,
             custody: { kind: 'watch' },
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: VALID_ADDRESS_B,
+                },
+            },
         })
         expect(returned).toMatchObject({
-            address: VALID_ADDRESS_B,
             custody: { kind: 'watch' },
             chains: { algorand: { address: VALID_ADDRESS_B } },
         })
@@ -287,7 +298,10 @@ describe('useAsbAccountImport', () => {
 
     test('throws DuplicateAccountError when the watch address already exists', async () => {
         storeAccounts = [
-            { ...algo25Account(VALID_ADDRESS_B), custody: { kind: 'watch' } },
+            {
+                ...standaloneAccount(VALID_ADDRESS_B),
+                custody: { kind: 'watch' },
+            },
         ]
 
         const useAsbAccountImport = await importHook()
@@ -318,6 +332,6 @@ describe('useAsbAccountImport', () => {
         const secondWrite = mockSetAccounts.mock.calls[1][0] as WalletAccount[]
         expect(secondWrite).toHaveLength(2)
         expect(secondWrite[0]).toBe(first)
-        expect(secondWrite[1].address).toBe(VALID_ADDRESS_A)
+        expect(algorandAddressOf(secondWrite[1])).toBe(VALID_ADDRESS_A)
     })
 })

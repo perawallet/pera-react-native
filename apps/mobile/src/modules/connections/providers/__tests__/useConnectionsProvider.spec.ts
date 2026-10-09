@@ -207,6 +207,8 @@ const keyValueStorage = {}
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        // Before bootstrap registers a chain, the scope reads the tier name.
+        chains: { has: () => false },
         // Just enough store for the real mirror hydration to subscribe to.
         connections: {
             store: { list: async () => [], subscribe: () => () => {} },

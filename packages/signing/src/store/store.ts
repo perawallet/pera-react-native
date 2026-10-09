@@ -13,9 +13,12 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
+import { isChainId, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SigningStore, SignRequest } from '../models'
+import { isUnsignedTransaction } from '../models/guards'
 import { isInteractiveSource, type SourceType } from '../pipeline/types'
 import {
+    gateWritesOnHydration,
     logger,
     generateOrderedUniqueId,
     registerStore,
@@ -73,6 +76,9 @@ export const isResumableRehydratedRequest = (
     if (typeof r.type !== 'string' || typeof r.transport !== 'string') {
         return false
     }
+    if (!isChainId(r.chainId) && !isChainNeutralTransactionRequest(r)) {
+        return false
+    }
     // `callback` transports carry in-memory callbacks that cannot survive
     // serialization; `partialize` already blocks them from being persisted, so
     // a rehydrated entry claiming `transport: 'callback'` is crafted/corrupted
@@ -83,6 +89,46 @@ export const isResumableRehydratedRequest = (
         r.sourceType !== 'deeplink' &&
         isInteractiveSource(r.sourceType as SourceType | undefined)
     )
+}
+
+const isChainNeutralTransactionRequest = (
+    request: Record<string, unknown>,
+): boolean =>
+    Array.isArray(request.txs) &&
+    request.txs.length > 0 &&
+    isUnsignedTransaction(request.txs[0])
+
+const STORE_VERSION = 2
+
+/**
+ * Requests persisted before v2 carry no chain stamp. The caller names the
+ * chain they belong to; without one they are dropped, since a request can't be
+ * routed to adapters without its chain.
+ */
+export const migrateSigningState = (
+    persistedState: unknown,
+    unstampedRequestChainId?: ChainId,
+): PartializedState => {
+    const state = (persistedState ?? {}) as { pendingSignRequests?: unknown }
+    const requests = Array.isArray(state.pendingSignRequests)
+        ? (state.pendingSignRequests as Record<string, unknown>[])
+        : []
+    const pendingSignRequests = requests.flatMap(request => {
+        if (
+            typeof request !== 'object' ||
+            request === null ||
+            'chainId' in request ||
+            isChainNeutralTransactionRequest(request)
+        ) {
+            return [request]
+        }
+        return unstampedRequestChainId === undefined
+            ? []
+            : [{ ...request, chainId: unstampedRequestChainId }]
+    })
+    return {
+        pendingSignRequests: pendingSignRequests as unknown as SignRequest[],
+    }
 }
 
 const STORE_NAME = 'signing-store'
@@ -133,8 +179,14 @@ export const useSigningStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: signingStoreStorage(),
-            version: 1,
+            ...gateWritesOnHydration<SigningStore, PartializedState>(
+                signingStoreStorage(),
+            ),
+            version: STORE_VERSION,
+            // Hydrated by rehydrateSigningStore, which supplies the chain of
+            // requests persisted before they were stamped.
+            skipHydration: true,
+            migrate: persistedState => migrateSigningState(persistedState),
             partialize: state => ({
                 // Persist only non-callback, non-deeplink requests:
                 //   - callback transports (WalletConnect, webview) carry
@@ -151,7 +203,14 @@ export const useSigningStore: UseBoundStore<
             }),
             // Re-validate every rehydrated request before it can enter the
             // signing actor lifecycle. Subsumes the old deeplink strip.
-            onRehydrateStorage: () => state => {
+            onRehydrateStorage: () => (state, error) => {
+                if (error) {
+                    logger.error(
+                        'Signing store hydration failed; the persisted state is left untouched',
+                        { error },
+                    )
+                    return
+                }
                 if (state) {
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []
@@ -164,6 +223,19 @@ export const useSigningStore: UseBoundStore<
         },
     ),
 )
+
+/** Call once at startup, before any sign request is added. */
+export const rehydrateSigningStore = async ({
+    unstampedRequestChainId,
+}: {
+    unstampedRequestChainId: ChainId
+}): Promise<void> => {
+    useSigningStore.persist.setOptions({
+        migrate: persistedState =>
+            migrateSigningState(persistedState, unstampedRequestChainId),
+    })
+    await useSigningStore.persist.rehydrate()
+}
 
 registerStore({
     name: STORE_NAME,

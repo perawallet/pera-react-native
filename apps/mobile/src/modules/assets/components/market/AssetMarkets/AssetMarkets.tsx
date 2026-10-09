@@ -11,6 +11,14 @@
  */
 
 import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type AssetPriceHistoryItem,
+    type PeraAsset,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AssetFavoriteButton,
@@ -40,13 +48,6 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import {
-    type AssetPriceHistoryItem,
-    type PeraAsset,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
@@ -94,7 +95,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         // Pushed over asset details (not the Discover tab, which swaps in
         // place and strands the user with no back affordance)
         navigation.navigate('DiscoverDetail', {
-            path: toDiscoverTokenDetailPath(asset.assetId),
+            path: toDiscoverTokenDetailPath(asset.assetId, LEGACY_CHAIN_ID),
         })
     }
 

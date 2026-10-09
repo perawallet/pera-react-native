@@ -15,13 +15,14 @@ import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-co
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getAuthAccount,
-    getRekeyAccount,
+    getDelegatedAccount,
     resolveAuthAccount,
     resolveSignerForAccount,
 } from '../signer-resolution'
 import { DelegationTargetNotFoundError } from '../errors'
-import { type WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 import { useAccountChainStateStore } from '../store'
+import { testAccount } from './accountFactory'
 import {
     FAKE_CHAIN_ID,
     MAINNET_SCOPE,
@@ -34,14 +35,7 @@ import {
 const account = (
     address: string,
     extra: Partial<WalletAccount> = {},
-): WalletAccount =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+): WalletAccount => testAccount('local', address, { id: address, ...extra })
 
 beforeEach(() => {
     registerFakeAccountsChain()
@@ -99,7 +93,7 @@ describe('signer resolution', () => {
 
         expect(getAuthAccount(a, [a, auth], FAKE_CHAIN_ID)).toBe(auth)
         expect(resolveAuthAccount(a, [a, auth], FAKE_CHAIN_ID)).toBe(auth)
-        expect(getRekeyAccount('A', [a, auth], FAKE_CHAIN_ID)).toBe(auth)
+        expect(getDelegatedAccount('A', [a, auth], FAKE_CHAIN_ID)).toBe(auth)
     })
 
     it('throws DelegationTargetNotFoundError when the chain finds no auth account', () => {

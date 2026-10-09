@@ -41,15 +41,14 @@ export const RekeyedAccountInfoContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
-    const { displayName: accountDisplayName } = useResolvedAddress(
-        account.address,
-    )
     const {
+        address,
         rekeyedAccountBalances,
         rekeyedAccountAlgoValue,
         authAddress,
         authAccountAlgoValue,
     } = useRekeyedAccountInfoContent({ account })
+    const { displayName: accountDisplayName } = useResolvedAddress(address)
 
     return (
         <PWSheetLayout header={<SheetHeader title={accountDisplayName} />}>
@@ -70,13 +69,13 @@ export const RekeyedAccountInfoContent = ({
                     size='md'
                 />
                 <PWView style={styles.accountTextContainer}>
-                    <CopyableText copyValue={account.address}>
+                    <CopyableText copyValue={address}>
                         <PWText
                             variant='body'
                             truncate
                             ellipsizeMode='middle'
                         >
-                            {account.address}
+                            {address}
                         </PWText>
                     </CopyableText>
                     <PWText

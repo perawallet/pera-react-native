@@ -89,7 +89,9 @@ describe('useListPasskeysForBackup', () => {
             .mockResolvedValueOnce(derivedInputs())
             .mockResolvedValueOnce(null)
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const passkeys = await result.current()
 
         expect(passkeys).toHaveLength(1)
@@ -100,7 +102,9 @@ describe('useListPasskeysForBackup', () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }])
         inputsFor.mockResolvedValue(derivedInputs())
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const [passkey] = await result.current()
 
         expect(backupSeedReferenceMock).toHaveBeenCalledWith('seed-1')
@@ -112,7 +116,9 @@ describe('useListPasskeysForBackup', () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }])
         inputsFor.mockResolvedValue(derivedInputs())
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const passkeys = await result.current()
 
         expect(useProvenPasskeysStore.getState().provenPasskeys).toEqual(
@@ -124,7 +130,9 @@ describe('useListPasskeysForBackup', () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }])
         inputsFor.mockResolvedValue(derivedInputs())
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         await result.current()
 
         const [cached] = useProvenPasskeysStore.getState().provenPasskeys
@@ -141,7 +149,9 @@ describe('useListPasskeysForBackup', () => {
             privateKey: stored,
         })
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const [passkey] = await result.current()
 
         expect(storedInputsFor).toHaveBeenCalledWith({ id: 'a' }, stored)
@@ -157,7 +167,9 @@ describe('useListPasskeysForBackup', () => {
         storedInputsFor.mockReturnValue(null)
         inputsFor.mockResolvedValue(derivedInputs())
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const [passkey] = await result.current()
 
         expect(inputsFor).toHaveBeenCalledTimes(1)
@@ -167,7 +179,9 @@ describe('useListPasskeysForBackup', () => {
     it('never reads a key for a keystore entry that is not a credential', async () => {
         keystoreKeys.mockReturnValue([{ id: 'seed-1' }])
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         await result.current()
 
         expect(readPrivateKeyMock).not.toHaveBeenCalled()
@@ -196,7 +210,9 @@ describe('useListPasskeysForBackup', () => {
             },
         )
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         await result.current()
 
         expect(withSecretMock).toHaveBeenCalledTimes(1)
@@ -226,7 +242,9 @@ describe('useListPasskeysForBackup', () => {
             },
         )
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const passkeys = await result.current()
 
         expect(canAccessMock).toHaveBeenCalledWith(
@@ -253,7 +271,9 @@ describe('useListPasskeysForBackup', () => {
         })
         inputsFor.mockRejectedValue(new Error('KMS session denied'))
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const passkeys = await result.current()
 
         expect(passkeys.map(passkey => passkey.credentialId)).toEqual(['a'])
@@ -266,7 +286,9 @@ describe('useListPasskeysForBackup', () => {
         inputsFor.mockResolvedValue(derived)
         backupSeedReferenceMock.mockRejectedValue(new Error('seed locked'))
 
-        const { result } = renderHook(() => useListPasskeysForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeysForBackup('algorand'),
+        )
         const passkeys = await result.current()
 
         expect(passkeys).toEqual([])
@@ -278,7 +300,9 @@ describe('useListPasskeysForBackup', () => {
         const derived = derivedInputs()
         inputsFor.mockResolvedValue(derived)
 
-        const { result } = renderHook(() => useListPasskeyMetadataForBackup())
+        const { result } = renderHook(() =>
+            useListPasskeyMetadataForBackup('algorand'),
+        )
         const [passkey] = await result.current()
 
         expect(passkey).not.toHaveProperty('privateKey')

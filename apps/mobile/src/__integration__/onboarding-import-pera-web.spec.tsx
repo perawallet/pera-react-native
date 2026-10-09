@@ -26,11 +26,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { parsePeraWebQrPayload } from '@perawallet/wallet-core-backup'
@@ -50,6 +46,7 @@ import {
     buildPeraWebQrString,
     buildSingleAccountPeraWebBackup,
 } from './__fixtures__/peraWeb'
+import { addressOf } from './__fixtures__/accounts'
 
 /**
  * Mount the Loading screen as the initial route with the result screen
@@ -142,8 +139,8 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(accountType(account)).toBe(AccountTypes.standalone)
-        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(account.custody).toEqual({ kind: 'local', seed: null })
+        expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('My Web Account')
 
         await waitFor(() => screen.getByTestId('pera_web_import_result'))
@@ -165,12 +162,12 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
 
         const got = useAccountsStore
             .getState()
-            .accounts.map(a => a.address)
+            .accounts.map(a => addressOf(a))
             .sort()
         expect(got).toEqual([...addresses].sort())
 
         for (const a of useAccountsStore.getState().accounts) {
-            expect(accountType(a)).toBe(AccountTypes.standalone)
+            expect(a.custody).toEqual({ kind: 'local', seed: null })
         }
     })
 
@@ -203,8 +200,12 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
             {
                 id: 'pre-seeded',
                 custody: { kind: 'local', seed: null },
-                address: ALGO25_TEST_ADDRESS,
-                keyPairId: 'pre-seeded-keypair-id',
+                chains: {
+                    algorand: {
+                        address: ALGO25_TEST_ADDRESS,
+                        keyPairId: 'pre-seeded-keypair-id',
+                    },
+                },
             },
         ])
 
@@ -374,8 +375,8 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(accountType(account)).toBe(AccountTypes.standalone)
-        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(account.custody).toEqual({ kind: 'local', seed: null })
+        expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Scanned Account')
 
         await waitFor(() => screen.getByTestId('pera_web_import_result'))

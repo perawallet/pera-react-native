@@ -11,6 +11,7 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import {
@@ -20,7 +21,10 @@ import {
 } from './backupSettingsStores'
 import type { BackupSyncSources } from './types'
 
-export const createBackupSyncStoreSources = (): BackupSyncSources => ({
+/** `chainId` names the chain whose account the settings item's launch account is. */
+export const createBackupSyncStoreSources = (
+    chainId: ChainId,
+): BackupSyncSources => ({
     getNetwork: () => useNetworkStore.getState().network,
     listAccounts: () => useAccountsStore.getState().accounts,
     subscribeAccounts: listener =>
@@ -28,7 +32,7 @@ export const createBackupSyncStoreSources = (): BackupSyncSources => ({
     listContacts: () => useContactsStore.getState().contacts ?? [],
     subscribeContacts: listener =>
         useContactsStore.subscribe(state => listener(state.contacts ?? [])),
-    getSettings: readBackupSettings,
+    getSettings: () => readBackupSettings(chainId),
     subscribeSettings: subscribeBackupSettings,
-    importSettings: applyBackupSettings,
+    importSettings: settings => applyBackupSettings(settings, chainId),
 })

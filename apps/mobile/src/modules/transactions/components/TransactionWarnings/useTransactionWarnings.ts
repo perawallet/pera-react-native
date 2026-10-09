@@ -13,10 +13,13 @@
 import { useMemo } from 'react'
 
 import {
+    chainAccountOf,
     useAllAccounts,
     useSigningAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    type ChainId,
     LEGACY_CHAIN_ID,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -39,19 +42,28 @@ type UseTransactionWarningsResult = {
     warningsByType: WarningsByType
 }
 
+const addressesOn = (account: WalletAccount, chainId: ChainId): string[] => {
+    const address = chainAccountOf(account, chainId)?.address
+    return address ? [address] : []
+}
+
 export const useTransactionWarnings = (
     transaction: PeraDisplayableTransaction,
 ): UseTransactionWarningsResult => {
     const allAccounts = useAllAccounts()
-    const signingAccounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
 
     const userAccountAddresses = useMemo(
-        () => new Set(allAccounts.map(a => a.address)),
+        () =>
+            new Set(allAccounts.flatMap(a => addressesOn(a, LEGACY_CHAIN_ID))),
         [allAccounts],
     )
 
     const signableAddresses = useMemo(
-        () => new Set(signingAccounts.map(a => a.address)),
+        () =>
+            new Set(
+                signingAccounts.flatMap(a => addressesOn(a, LEGACY_CHAIN_ID)),
+            ),
         [signingAccounts],
     )
 

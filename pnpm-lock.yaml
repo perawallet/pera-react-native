@@ -1131,6 +1131,9 @@ importers:
       '@perawallet/wallet-core-transactions':
         specifier: workspace:*
         version: link:../packages/transactions
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../extensions/provider
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
@@ -1773,9 +1776,6 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
-      '@perawallet/wallet-core-device':
-        specifier: workspace:*
-        version: link:../device
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet
@@ -1816,9 +1816,6 @@ importers:
       '@types/react':
         specifier: ~19.2.14
         version: 19.2.18
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)

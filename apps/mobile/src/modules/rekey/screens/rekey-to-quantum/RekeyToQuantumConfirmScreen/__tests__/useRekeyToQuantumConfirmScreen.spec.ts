@@ -70,13 +70,13 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useFindAccountByAddress: (address: string) => {
             if (address === 'SRC')
                 return {
-                    address: 'SRC',
+                    chains: { algorand: { address: 'SRC' } },
                     name: 'Source',
                     custody: { kind: 'local', seed: null },
                 }
             if (address === 'TGT')
                 return {
-                    address: 'TGT',
+                    chains: { algorand: { address: 'TGT' } },
                     name: 'Target',
                     custody: { kind: 'local', seed: 'quantum' },
                 }

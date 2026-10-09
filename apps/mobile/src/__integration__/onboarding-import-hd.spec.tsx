@@ -25,12 +25,7 @@ import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccounts
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    DerivationTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -43,6 +38,7 @@ import {
     INVALID_HD_MNEMONIC_24_WORDS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // Helper: type each word of the supplied mnemonic into the import inputs.
 // `useImportAccountScreen` recognises a single-input multi-word paste, so
@@ -213,8 +209,11 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accountType(accounts[0])).toBe(AccountTypes.hdWallet)
-        expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
+        expect(accounts[0].custody).toMatchObject({
+            kind: 'local',
+            seed: 'bip39',
+        })
+        expect(addressOf(accounts[0])).toBe(HD_TEST_ADDRESS)
     })
 
     it('Given an invalid mnemonic, when the user taps Import, then an error toast is raised and no account is persisted', async () => {
@@ -265,13 +264,11 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
                 },
-                address: HD_TEST_ADDRESS,
-                keyPairId: 'pre-seeded',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: DerivationTypes.Peikert,
+                chains: {
+                    algorand: {
+                        address: HD_TEST_ADDRESS,
+                        keyPairId: 'pre-seeded',
+                    },
                 },
             },
         ])
@@ -397,7 +394,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         // two discovered candidates are dropped.
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe(addr0)
+        expect(addressOf(accounts[0])).toBe(addr0)
     })
 
     it('Given discovery finds three derived addresses, when the user toggles the selection so only the third is selected, then only that address is persisted', async () => {
@@ -473,7 +470,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe(addr2)
+        expect(addressOf(accounts[0])).toBe(addr2)
     })
 
     it('Given discovery finds rekeyed addresses, when the user commits the selection, then the rekeyed addresses screen is shown', async () => {
@@ -525,7 +522,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
+        expect(addressOf(accounts[0])).toBe(HD_TEST_ADDRESS)
     })
 
     it('Given discovery finds three derived addresses each with a rekey, when the user commits the selection, then both screens flow into ImportRekeyedAddresses', async () => {
@@ -589,6 +586,6 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         // The selected derived address (addr0 by default) is persisted.
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe(addr0)
+        expect(addressOf(accounts[0])).toBe(addr0)
     })
 })

@@ -14,7 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     isLegacyNetwork,
-    scopeForLegacyNetwork,
+    scopeFromNetworkColumn,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -47,7 +47,7 @@ export const migrateSwapHandoffState = (
         for (const [id, value] of Object.entries(state.handoffs ?? {})) {
             const { network, ...record } = value as PersistedV1Record
             if (!isLegacyNetwork(network)) continue
-            handoffs[id] = { ...record, scope: scopeForLegacyNetwork(network) }
+            handoffs[id] = { ...record, scope: scopeFromNetworkColumn(network) }
         }
         state = { ...state, handoffs }
     }

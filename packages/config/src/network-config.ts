@@ -245,6 +245,8 @@ type ScopeConfigOf<C extends ChainId> = {
     chain: ChainConfigByChain[C] | undefined
     peraServices: PeraServices
     services: ReadonlySet<PeraService>
+    /** Whether a saved custom node overlays `chain`; its endpoints are Algorand's shape. */
+    acceptsCustomNode: boolean
 }
 
 type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
@@ -255,6 +257,7 @@ const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] =
         chain: chainConfigByNetwork[network],
         peraServices: peraServicesByNetwork[network],
         services: new Set(peraServiceNamesByNetwork[network]),
+        acceptsCustomNode: true,
     }))
 
 const ethereumScopeConfig = (
@@ -272,6 +275,7 @@ const ethereumScopeConfig = (
         backendUrl: services.length > 0 ? peraBackendUrl : '',
     },
     services: new Set(services),
+    acceptsCustomNode: false,
 })
 
 // The Pera backend serves Ethereum from the same host as the Algorand network
@@ -299,12 +303,18 @@ const SCOPE_CONFIGS: readonly ScopeConfig[] = [
 // Compared field by field, not through toScopeKey: that validates the chain id
 // against the compiled-in union and throws for a test's fixture chain, and
 // nothing here is persisted.
-const findScopeConfig = (scope: ChainScope): ScopeConfig | undefined =>
-    SCOPE_CONFIGS.find(
+const findRow = <R extends { scope: ChainScope }>(
+    rows: readonly R[],
+    scope: ChainScope,
+): R | undefined =>
+    rows.find(
         row =>
             row.scope.chainId === scope.chainId &&
             row.scope.networkId === scope.networkId,
     )
+
+const findScopeConfig = (scope: ChainScope): ScopeConfig | undefined =>
+    findRow(SCOPE_CONFIGS, scope)
 
 let customNetworkSource: CustomNetworkSource | undefined
 
@@ -340,10 +350,9 @@ export const getChainConfig = <C extends ChainId>(
     if (row?.chain === undefined) {
         throw new UnconfiguredScopeError(scope)
     }
-    const chain =
-        row.scope.chainId === 'algorand'
-            ? { ...row.chain, ...customNetworkSource?.(scope) }
-            : { ...row.chain }
+    const chain = row.acceptsCustomNode
+        ? { ...row.chain, ...customNetworkSource?.(scope) }
+        : { ...row.chain }
     // The row matched scope.chainId, so its config is C's.
     return chain as ChainConfigByChain[C]
 }
@@ -352,13 +361,11 @@ export const getChainConfig = <C extends ChainId>(
 export const getAlgorandChainConfig = (
     scope: ChainScope,
 ): AlgorandChainConfig => {
-    if (scope.chainId !== 'algorand') {
+    const row = findRow(ALGORAND_SCOPE_CONFIGS, scope)
+    if (row === undefined) {
         throw new UnconfiguredScopeError(scope)
     }
-    return getChainConfig({
-        chainId: scope.chainId,
-        networkId: scope.networkId,
-    })
+    return getChainConfig(row.scope)
 }
 
 export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({

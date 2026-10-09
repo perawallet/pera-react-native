@@ -18,24 +18,22 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
+const scopeState = vi.hoisted(() => ({
+    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
-                'mainnet',
-        ),
+        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
-    useSelectedScope: vi
-        .fn()
-        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -52,9 +50,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 beforeEach(() => {
-    vi.mocked(useSelectedScope).mockReturnValue(
-        scopeForLegacyNetwork('mainnet'),
-    )
+    scopeState.current = scopeForLegacyNetwork('mainnet')
 })
 
 describe('useNotificationsListQuery', () => {
@@ -80,9 +76,12 @@ describe('useNotificationsListQuery', () => {
         }
         vi.mocked(fetchNotificationList).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => {
             expect(result.current.isPending).toBe(false)
@@ -128,9 +127,12 @@ describe('useNotificationsListQuery', () => {
         }
         vi.mocked(fetchNotificationList).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -165,9 +167,12 @@ describe('useNotificationsListQuery', () => {
         }
         vi.mocked(fetchNotificationList).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -178,9 +183,12 @@ describe('useNotificationsListQuery', () => {
         vi.mocked(useDeviceID).mockReturnValueOnce(null)
         vi.mocked(fetchNotificationList).mockClear()
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         // A disabled query keeps `status: 'pending'` in React Query v5, so
         // surfacing `query.isPending` here would spin the empty view forever.
@@ -195,9 +203,12 @@ describe('useNotificationsListQuery', () => {
         vi.mocked(useDeviceID).mockReturnValue(null)
         vi.mocked(fetchNotificationList).mockClear()
         try {
-            const { result } = renderHook(() => useNotificationsListQuery(), {
-                wrapper: createWrapper(),
-            })
+            const { result } = renderHook(
+                () => useNotificationsListQuery(scopeState.current),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
 
             await result.current.refetch()
             await result.current.fetchNextPage()
@@ -217,9 +228,12 @@ describe('useNotificationsListQuery', () => {
             results: [],
         })
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -248,7 +262,7 @@ describe('useNotificationsListQuery', () => {
         })
 
         const { result, rerender } = renderHook(
-            () => useNotificationsListQuery(),
+            () => useNotificationsListQuery(scopeState.current),
             { wrapper: createWrapper() },
         )
 
@@ -277,9 +291,12 @@ describe('useNotificationsListQuery', () => {
             results: [],
         })
 
-        const { result } = renderHook(() => useNotificationsListQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useNotificationsListQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(fetchNotificationList).toHaveBeenCalledTimes(1)
@@ -301,9 +318,12 @@ describe('useNotificationsListQuery', () => {
         it('reports isPaused — not isPending — when offline pauses an uncached query', async () => {
             onlineManager.setOnline(false)
 
-            const { result } = renderHook(() => useNotificationsListQuery(), {
-                wrapper: createWrapper(),
-            })
+            const { result } = renderHook(
+                () => useNotificationsListQuery(scopeState.current),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPaused).toBe(true))
             // A paused query keeps `status: 'pending'`; surfacing that as
@@ -318,9 +338,12 @@ describe('useNotificationsListQuery', () => {
                 new Error('boom'),
             )
 
-            const { result } = renderHook(() => useNotificationsListQuery(), {
-                wrapper: createWrapper(),
-            })
+            const { result } = renderHook(
+                () => useNotificationsListQuery(scopeState.current),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
 
             await waitFor(() => expect(result.current.isError).toBe(true))
             expect(result.current.isPending).toBe(false)
@@ -336,12 +359,10 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'disables the query, flags isUnavailableOnNetwork and returns [] on %s',
             network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
                 const { result } = renderHook(
-                    () => useNotificationsListQuery(),
+                    () => useNotificationsListQuery(scopeState.current),
                     {
                         wrapper: createWrapper(),
                     },
@@ -364,12 +385,10 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'no-ops fetchNextPage on %s',
             async network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
                 const { result } = renderHook(
-                    () => useNotificationsListQuery(),
+                    () => useNotificationsListQuery(scopeState.current),
                     {
                         wrapper: createWrapper(),
                     },

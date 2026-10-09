@@ -14,6 +14,9 @@ import algosdk from 'algosdk'
 import nacl from 'tweetnacl'
 import { describe, expect, it } from 'vitest'
 
+import { algorandMultisigNative } from '@perawallet/wallet-core-chain-algorand/accounts/multisig-native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+
 import {
     createAlgo25Account,
     createHdAccount,
@@ -132,8 +135,10 @@ describe('conformance keystore harness', () => {
         const reversed = createMultisigAccount([...members].reverse(), 2)
 
         expect(reversed.address).not.toBe(multisig.address)
-        expect(multisig.walletAccount.multisigDetails.addresses).toEqual(
-            members.map(member => member.address),
-        )
+        expect(
+            algorandMultisigNative.parametersOf(
+                multisig.walletAccount.chains[LEGACY_CHAIN_ID]?.native,
+            )?.addresses,
+        ).toEqual(members.map(member => member.address))
     })
 })

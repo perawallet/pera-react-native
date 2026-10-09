@@ -35,12 +35,17 @@ vi.mock('@modules/transactions/hooks', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignWith: () => false,
-    useAllAccounts: () => [{ address: RECEIVER }],
+    useAllAccounts: () => [{ chains: { algorand: { address: RECEIVER } } }],
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     useAccountBalancesQuery: () => ({
         accountBalances: new Map(),
         isPending: false,
     }),
-    useOnChainAccountInformationQuery: () => ({
+    useOnChainAccountStateQuery: () => ({
         data: undefined,
         isFetching: false,
         isSuccess: false,

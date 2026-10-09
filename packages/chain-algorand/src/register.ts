@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    accountPresentationChainAdapters,
+    accountsChainAdapters,
+} from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import {
@@ -53,7 +56,10 @@ import { algorandBackupAdapter, algorandMigrationAdapter } from './backup'
 import { algorandCardAdapter } from './card'
 import { algorandMultisigAdapter } from './multisig'
 import { algorandRampAdapter } from './onramp'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
+import { algorandDeviceAdapter } from './device'
 import {
+    algorandAccountPresentation,
     algorandAccountsAdapter,
     algorandAddressCodec,
     algorandKeyDerivation,
@@ -71,6 +77,7 @@ export const registerChain = (): void => {
     addressCodecs.register(algorandAddressCodec)
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
+    accountPresentationChainAdapters.register(algorandAccountPresentation)
     assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
@@ -88,4 +95,5 @@ export const registerChain = (): void => {
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)
     messageSignerChainAdapters.register(algorandMessageSignerAdapter)
+    deviceChainAdapters.register(algorandDeviceAdapter)
 }

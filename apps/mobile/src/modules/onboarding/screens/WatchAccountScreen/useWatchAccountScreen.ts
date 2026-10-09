@@ -17,6 +17,7 @@ import {
     buildAccount,
     useAccountsStore,
     useAllAccounts,
+    findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { trackEvent, OnboardingEvent } from '@analytics'
@@ -50,7 +51,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
 
     const isValidAddress = isValidAlgorandAddress(resolvedAddress)
     const isDuplicateAddress =
-        isValidAddress && accounts.some(a => a.address === resolvedAddress)
+        isValidAddress &&
+        !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, resolvedAddress)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)

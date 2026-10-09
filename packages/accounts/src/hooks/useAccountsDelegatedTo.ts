@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -19,19 +19,20 @@ import type { WalletAccount } from '../models'
 /**
  * Locally held accounts that `address` is the auth-addr of. Store-only, so it
  * misses rekeys performed outside the wallet until a rescan imports them —
- * cheap enough to call from render paths, unlike `useRekeyedAddressesQuery`,
+ * cheap enough to call from render paths, unlike `useDelegatedAddressesQuery`,
  * which asks the indexer.
  */
 export const useAccountsDelegatedTo = (
     address: string | null | undefined,
+    chainId: ChainId,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
     // Reads every legacy scope, so any slice write can change the result.
     const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(() => {
-        const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
+        const authority = accountsChainAdapters.get(chainId).authority
         return address && authority
             ? authority.accountsDelegatedTo(address, accounts)
             : []
-    }, [address, accounts, chainStates])
+    }, [address, accounts, chainId, chainStates])
 }

@@ -15,10 +15,13 @@ import {
     type AssetWithAccountBalance,
     useAccountBalancesQuery,
     useSelectedAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
@@ -39,18 +42,23 @@ export const useAccountAssetSelectionList = ({
     excludeAssetId,
     filterAsset,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAccount = useSelectedAccount()
+    const selectedAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const isNativeAssetId = useIsNativeAssetId()
     const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
 
     const balanceData = useMemo(
         () =>
-            selectedAccount?.address
-                ? accountBalances.get(selectedAccount.address)?.assetBalances
+            selectedAddress
+                ? accountBalances.get(selectedAddress)?.assetBalances
                 : [],
-        [accountBalances, selectedAccount?.address],
+        [accountBalances, selectedAddress],
     )
 
     const [searchFilter, setSearchFilter] = useState('')

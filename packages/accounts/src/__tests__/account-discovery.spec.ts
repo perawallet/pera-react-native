@@ -13,19 +13,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
-import { authorityOf } from '../credentials'
-import {
-    fakeAccountsChain,
-    MAINNET_SCOPE,
-    TESTNET_SCOPE,
-} from './fakeAccountsChain'
-import { accountType } from '../utils'
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: {
-        getState: vi.fn(() => ({ network: 'testnet' })),
-    },
-}))
+import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
+import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
+import type { WalletAccount } from '../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
@@ -51,6 +41,8 @@ const installFakeChain = () => {
         return new Map(results.map(r => [r.address, r.accountExists]))
     })
 }
+
+const addressOf = (account: WalletAccount) => addressOn(account, TESTNET_SCOPE)
 
 const createMockGetPublicKey = (): GetPublicKey =>
     vi.fn(
@@ -83,6 +75,7 @@ describe('discoverAccounts', () => {
         )
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 2,
@@ -90,12 +83,12 @@ describe('discoverAccounts', () => {
         })
 
         expect(accounts).toHaveLength(2)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[0].hdWalletDetails.account).toBe(0)
-        expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
-        expect(accounts[1].address).toBe('ADDRESS_0_2')
-        expect(accounts[1].hdWalletDetails.account).toBe(0)
-        expect(accounts[1].hdWalletDetails.keyIndex).toBe(2)
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(hdIndexOf(accounts[0])?.account).toBe(0)
+        expect(hdIndexOf(accounts[0])?.keyIndex).toBe(0)
+        expect(addressOf(accounts[1])).toBe('ADDRESS_0_2')
+        expect(hdIndexOf(accounts[1])?.account).toBe(0)
+        expect(hdIndexOf(accounts[1])?.keyIndex).toBe(2)
     })
 
     it('should sort accounts by account index first, then by key index', async () => {
@@ -108,6 +101,7 @@ describe('discoverAccounts', () => {
         ])
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 5,
@@ -115,11 +109,11 @@ describe('discoverAccounts', () => {
         })
 
         expect(accounts).toHaveLength(5)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[1].address).toBe('ADDRESS_0_1')
-        expect(accounts[2].address).toBe('ADDRESS_0_2')
-        expect(accounts[3].address).toBe('ADDRESS_1_0')
-        expect(accounts[4].address).toBe('ADDRESS_1_1')
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(addressOf(accounts[1])).toBe('ADDRESS_0_1')
+        expect(addressOf(accounts[2])).toBe('ADDRESS_0_2')
+        expect(addressOf(accounts[3])).toBe('ADDRESS_1_0')
+        expect(addressOf(accounts[4])).toBe('ADDRESS_1_1')
     })
 
     it('should stop after account gap limit', async () => {
@@ -135,6 +129,7 @@ describe('discoverAccounts', () => {
         })
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             accountGapLimit: 5,
@@ -150,6 +145,7 @@ describe('discoverAccounts', () => {
         ])
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
@@ -157,17 +153,18 @@ describe('discoverAccounts', () => {
         })
 
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[0].hdWalletDetails.account).toBe(0)
-        expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(hdIndexOf(accounts[0])?.account).toBe(0)
+        expect(hdIndexOf(accounts[0])?.keyIndex).toBe(0)
     })
 
-    it('stamps discovered accounts with a bip39 custody and their Algorand entry', async () => {
+    it('stamps discovered accounts with an HD custody and their chain entry', async () => {
         mockFetchAccountFastLookup.mockResolvedValue([
             { address: 'ADDRESS_0_0', accountExists: false },
         ])
 
         const [account] = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
@@ -181,10 +178,16 @@ describe('discoverAccounts', () => {
         })
         expect(account.chains).toEqual({
             algorand: {
-                address: account.address,
-                keyPairId: account.keyPairId,
+                address: 'ADDRESS_0_0',
+                keyPairId: 'test-wallet-acc0-idx0-dt9',
             },
         })
+        expect(signingKeyOn(account, 'algorand')).toBe(
+            fakeAccountsChain().adapter.hdKeyPairId('test-wallet', {
+                account: 0,
+                keyIndex: 0,
+            }),
+        )
     })
 
     it('should use batch API for account activity checks', async () => {
@@ -198,6 +201,7 @@ describe('discoverAccounts', () => {
         })
 
         await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
@@ -224,11 +228,11 @@ describe('discoverRekeyedAccounts', () => {
 
         const accounts = await discoverRekeyedAccounts({
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
+            scope: TESTNET_SCOPE,
         })
 
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
-        expect(accountType(accounts[0])).toBe('watch')
+        expect(addressOf(accounts[0])).toBe('REKEYED_FROM_EXPLICIT')
         expect(authorityOf(accounts[0], TESTNET_SCOPE)).toBe('EXPLICIT_ADDRESS')
         expect(accounts[0].custody).toEqual({ kind: 'watch' })
         expect(accounts[0].chains).toEqual({

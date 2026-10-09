@@ -12,8 +12,10 @@
 
 // @vitest-environment node
 import { passkeyItemKey, passkeySecretsItemKey } from '../../models/itemKeys'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -143,6 +145,10 @@ const hdSeedSecrets = (address: string) => ({
     seed: 'aa',
     entropy: 'bb',
     address,
+})
+
+beforeEach(() => {
+    registerFakeBackupAdapter()
 })
 
 describe('markAccountForBackup', () => {
@@ -389,6 +395,35 @@ describe('deleteFromBackup', () => {
             'dev',
             accountKey('FIRST'),
         )
+        expect(next.items[secretsKey('FIRST')].status).toBe(
+            BackupItemStatus.ACTIVE,
+        )
+    })
+
+    // Whether an item derives from a seed is read off its shape, so a sibling
+    // of a kind no registered chain decodes still holds the seed in place.
+    it('keeps the shared seed for a sibling whose kind no registered adapter decodes', async () => {
+        backupChainAdapters.reset()
+        const state = backupHolding(['FIRST', 'CHILD'], ['FIRST'])
+        const deps = {
+            ...baseDeps(),
+            readItems: readsFor([accountKey('FIRST'), accountKey('CHILD')]),
+            decrypt: servingPlaintext({
+                [accountKey('FIRST')]: hdWalletAddress('FIRST', 'FIRST'),
+                [accountKey('CHILD')]: {
+                    ...hdWalletAddress('CHILD', 'FIRST'),
+                    type: 'fixtureHdAccount',
+                },
+            }),
+        }
+
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'FIRST',
+            deps,
+        })
+
+        expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(next.items[secretsKey('FIRST')].status).toBe(
             BackupItemStatus.ACTIVE,
         )

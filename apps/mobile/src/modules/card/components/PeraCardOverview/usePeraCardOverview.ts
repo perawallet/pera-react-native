@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import {
     useAccountAssetBalanceQuery,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, CardEvent } from '@analytics'
@@ -113,6 +113,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         useAccountAssetBalanceQuery(
             isAutoFunding ? (fundingAccount ?? undefined) : undefined,
             usdcAssetId ?? undefined,
+            scope,
         )
     const canReadLinkedBalance =
         isAutoFunding && fundingAccount != null && usdcAssetId !== null
@@ -121,6 +122,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const { data: linkedAlgo } = useAccountAssetBalanceQuery(
         isAutoFunding ? (fundingAccount ?? undefined) : undefined,
         nativeAsset.assetId,
+        scope,
     )
     const hasLinkedAlgo =
         canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
@@ -150,7 +152,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const balance = cardBalance.plus(linkedBalance)
 
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
         useCardWithdraw()
     const withdrawState: CardWithdrawState =
@@ -178,7 +180,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         trackEvent(CardEvent.HomeGetUsdc)
         // Both tabs work on the selected account, so make it the linked one
         // first or the USDC lands wherever the user last was.
-        setSelectedAccountAddress(fundingAccount.address)
+        setSelectedAccountId(fundingAccount.id)
         if (canSwapToUsdc) {
             navigation.navigate('TabBar', {
                 screen: 'Swap',
@@ -199,7 +201,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         canSwapToUsdc,
         nativeAsset.assetId,
         usdcAssetId,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         navigation,
     ])
 

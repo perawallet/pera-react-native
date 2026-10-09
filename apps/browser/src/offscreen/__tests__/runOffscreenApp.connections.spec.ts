@@ -11,9 +11,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import { initializeDatabase } from '@perawallet/wallet-core-database'
 import type { ConnectionsHostDeps } from '../connections/connectionsHost'
+
+type TestAccount = WalletAccount
+
+const watchAccount = (address: string): TestAccount => ({
+    id: address,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+})
 
 // Every dependency below is captured through `vi.hoisted` so the mock
 // factories (which vitest hoists above these imports) and the assertions
@@ -77,7 +86,7 @@ const {
             imported: 0,
             skipped: 0,
         })),
-        canSignWith: vi.fn((_account: { address: string }) => true),
+        canSignWith: vi.fn((_account: TestAccount) => true),
         getCustomNetworkConfig: vi.fn(),
         dappTransport,
         createChromeDappTransport: vi.fn(() => dappTransport),
@@ -141,6 +150,10 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 // with the accessor shape these deps rely on.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignWith,
+    chainAccountOf: (
+        account: TestAccount,
+        chainId: keyof TestAccount['chains'],
+    ) => account.chains[chainId],
     useAccountsStore: {
         getState: accountsGetState,
         persist: { rehydrate: vi.fn() },
@@ -182,7 +195,16 @@ describe('runOffscreenApp connections wiring', () => {
         // The dapp legacy importer reads the SW-proxied storage shim.
         vi.stubGlobal('chrome', { storage: { local: chromeStorageLocal } })
         accountsGetState.mockReturnValue({
-            accounts: [{ address: 'ADDR1' }, { address: 'ADDR2' }],
+            accounts: [
+                watchAccount('ADDR1'),
+                watchAccount('ADDR2'),
+                // Held only on another chain, so never offered or known here.
+                {
+                    id: 'eth-only',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xETH' } },
+                },
+            ],
         })
         networkGetState.mockReturnValue({ network: 'mainnet' })
         getCustomNetworkConfig.mockReturnValue({
@@ -266,7 +288,7 @@ describe('runOffscreenApp connections wiring', () => {
 
     it('offers the dapp handler only the accounts the wallet can sign with', async () => {
         canSignWith.mockImplementation(
-            (account: { address: string }) => account.address === 'ADDR1',
+            (account: TestAccount) => account.id === 'ADDR1',
         )
         await boot()
 

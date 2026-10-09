@@ -30,16 +30,29 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: navigateMock }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: (
-        selector: (state: { accounts: { address: string }[] }) => unknown,
-    ) => selector({ accounts: [{ address: 'A' }, { address: 'B' }] }),
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const account = (address: string) => ({
+        id: address,
+        custody: { kind: 'watch' },
+        chains: { algorand: { address } },
+    })
+    // An account with nothing on the backup's chain has no backup item.
+    const elsewhere = { id: 'ETH', custody: { kind: 'watch' }, chains: {} }
+    return {
+        chainAccountOf: (
+            account: { chains: Record<string, unknown> },
+            chainId: string,
+        ) => account.chains[chainId],
+        useAccountsStore: (
+            selector: (state: { accounts: unknown[] }) => unknown,
+        ) => selector({ accounts: [account('A'), elsewhere, account('B')] }),
+    }
+})
 
 vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
         isBackedUp: isBackedUpMock,
-        notBackedUpAccounts: [{ address: 'B' }],
+        notBackedUpAccounts: [{ account: { id: 'B' }, address: 'B' }],
         availableFromBackup: ['GONE', 'ALSO_GONE'],
         isBusy: (address: string) => address === 'B',
         backUpAccount: backUpAccountMock,
@@ -51,10 +64,18 @@ beforeEach(() => {
 })
 
 describe('useCloudBackupAccounts', () => {
-    it('lists the device accounts alongside the counts awaiting review', () => {
+    it('lists the device accounts that have a backup item alongside the counts awaiting review', () => {
         const { result } = renderHook(() => useCloudBackupAccounts())
 
-        expect(result.current.accounts.map(a => a.address)).toEqual(['A', 'B'])
+        expect(
+            result.current.accounts.map(({ account, address }) => [
+                account.id,
+                address,
+            ]),
+        ).toEqual([
+            ['A', 'A'],
+            ['B', 'B'],
+        ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
         expect(result.current.notBackedUpCount).toBe(1)

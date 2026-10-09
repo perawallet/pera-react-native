@@ -20,11 +20,19 @@ import {
     useAccountsStore,
     useAllAccounts,
     useSetAccounts,
-    useSelectedAccountAddress,
-    type HDWalletAccount,
+    useSelectedAccountId,
     useHDImportSession,
-    isHDWalletAccount,
+    chainAccountOf,
+    hdIndexOf,
+    signingKeyOn,
+    type LocalAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
@@ -45,7 +53,7 @@ type ImportSelectAddressesRouteProp = RouteProp<
 >
 
 export type UseImportSelectAddressesScreenResult = {
-    accounts: HDWalletAccount[]
+    accounts: LocalAccount[]
     selectedAddresses: Set<string>
     isAllSelected: boolean
     areAllImported: boolean
@@ -58,6 +66,9 @@ export type UseImportSelectAddressesScreenResult = {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
+const addressOn = (account: WalletAccount, chainId: ChainId): string =>
+    chainAccountOf(account, chainId)?.address ?? ''
+
 export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreenResult {
     const { params } = useRoute<ImportSelectAddressesRouteProp>()
     const { accounts } = params
@@ -67,30 +78,35 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { t } = useLanguage()
     const { showToast } = useToast()
     const allAccounts = useAllAccounts()
-    const { commitImport, cancelImport } = useHDImportSession()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const addressOf = useCallback(
+        (account: WalletAccount) => addressOn(account, scope.chainId),
+        [scope.chainId],
+    )
+    const { commitImport, cancelImport } = useHDImportSession(scope)
+    const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
 
     const { exitAccountFlow, exitFailedAccountFlow } = useExitAccountFlow()
     const { scanRekeyed } = useRekeyScanNotice()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { setAccounts } = useSetAccounts()
     const { seedIdOf } = useKMS()
 
     const alreadyImportedAddresses = useMemo(() => {
-        return new Set(allAccounts.map(acc => acc.address))
-    }, [allAccounts])
+        return new Set(allAccounts.map(addressOf))
+    }, [allAccounts, addressOf])
 
     const newAccounts = useMemo(() => {
         return accounts.filter(
-            acc => !alreadyImportedAddresses.has(acc.address),
+            acc => !alreadyImportedAddresses.has(addressOf(acc)),
         )
-    }, [accounts, alreadyImportedAddresses])
+    }, [accounts, alreadyImportedAddresses, addressOf])
 
     const selectableAddresses = useMemo(
-        () => newAccounts.map(acc => acc.address),
-        [newAccounts],
+        () => newAccounts.map(addressOf),
+        [newAccounts, addressOf],
     )
 
     const {
@@ -99,7 +115,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         toggle: toggleSelection,
         toggleSelectAll,
     } = useAddressSelection(selectableAddresses, {
-        initial: newAccounts.length > 0 ? [newAccounts[0].address] : [],
+        initial: newAccounts.length > 0 ? [addressOf(newAccounts[0])] : [],
         disabledAddresses: alreadyImportedAddresses,
     })
     const [isProcessing, setIsProcessing] = useState(false)
@@ -110,7 +126,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
         void deferToNextCycle(async () => {
             const accountsToAdd = accounts.filter(acc =>
-                selectedAddresses.has(acc.address),
+                selectedAddresses.has(addressOf(acc)),
             )
 
             try {
@@ -124,7 +140,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                             selectedAccounts: accountsToAdd,
                         })
                         hasCommittedRef.current = true
-                        setSelectedAccountAddress(accountsToAdd[0].address)
+                        setSelectedAccountId(accountsToAdd[0].id)
                     } else {
                         // Re-import path: every selected address was already in
                         // the store, so there's nothing to commit but the
@@ -143,7 +159,9 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     const accountToMark =
                         accountsToAdd[0] ??
                         allAccounts.find(
-                            a => seedIdOf(a.keyPairId) === importWalletKeyId,
+                            a =>
+                                seedIdOf(signingKeyOn(a, scope.chainId)) ===
+                                importWalletKeyId,
                         )
                     if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
@@ -153,7 +171,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     const currentAccounts = useAccountsStore.getState().accounts
                     setAccounts([...currentAccounts, ...accountsToAdd])
                     hasCommittedRef.current = true
-                    setSelectedAccountAddress(accountsToAdd[0].address)
+                    setSelectedAccountId(accountsToAdd[0].id)
                 }
 
                 // The bip39 seed id scopes the same-seed sibling scan set
@@ -161,7 +179,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // carry derived child ids on `keyPairId`; resolve the parent
                 // to match.
                 const walletKeyId =
-                    importWalletKeyId ?? seedIdOf(accounts[0].keyPairId)
+                    importWalletKeyId ??
+                    seedIdOf(signingKeyOn(accounts[0], scope.chainId))
                 if (!walletKeyId) {
                     exitAccountFlow()
                     return
@@ -173,11 +192,15 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // rekeyed to an auth address we don't hold.
                 const scanAddresses = [
                     ...new Set([
-                        ...accountsToAdd.map(a => a.address),
+                        ...accountsToAdd.map(addressOf),
                         ...allAccounts
-                            .filter(isHDWalletAccount)
-                            .filter(a => seedIdOf(a.keyPairId) === walletKeyId)
-                            .map(a => a.address),
+                            .filter(a => hdIndexOf(a) !== undefined)
+                            .filter(
+                                a =>
+                                    seedIdOf(signingKeyOn(a, scope.chainId)) ===
+                                    walletKeyId,
+                            )
+                            .map(addressOf),
                     ]),
                 ]
                 const discoveredRekeyedAccounts =
@@ -240,11 +263,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         exitAccountFlow,
         exitFailedAccountFlow,
         navigation,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         setAccounts,
         seedIdOf,
         showToast,
         t,
+        scope.chainId,
+        addressOf,
     ])
 
     useEffect(() => {

@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
-    isQuantumAccount,
+    usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
 import { calculateMinTxnFee } from '../blockchain'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signing'
 
 /**
@@ -23,7 +23,7 @@ import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signi
  * must carry, accounting for post-quantum signers.
  *
  * The effective signer is resolved via `getSignerFor`, so a rekeyed sender
- * pays according to its auth account's type. Senders not in the wallet or
+ * pays according to the scheme its auth account signs with. Senders not in the wallet or
  * without a resolvable signer (watch accounts, missing auth) fall back to
  * the non-quantum base fee.
  *
@@ -41,7 +41,8 @@ export const resolveMinFeeForSender = ({
 }: ResolveMinFeeForSenderParams): bigint => {
     const baseMinFee =
         suggestedMinFee > configMinTxnFee ? suggestedMinFee : configMinTxnFee
-    const signer = getSignerFor(senderAddress, accounts, LEGACY_CHAIN_ID)
-    const isPQSigner = signer !== null && isQuantumAccount(signer)
+    const signer = getSignerFor(senderAddress, accounts, ALGORAND_CHAIN_ID)
+    const isPQSigner =
+        signer !== null && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
     return calculateMinTxnFee({ baseMinFee, isPQSigner, pqMultiplier })
 }

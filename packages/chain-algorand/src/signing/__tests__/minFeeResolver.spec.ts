@@ -18,30 +18,43 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { resolveMinFeeForSender } from '../minFeeResolver'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
-        address: 'QADDR',
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'QADDR',
+                keyPairId: 'kp-quantum',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
-        address: 'AADDR',
         custody: { kind: 'local', seed: null },
-        keyPairId: 'kp-algo25',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'AADDR',
+                keyPairId: 'kp-algo25',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'w1',
-        address: 'WADDR',
         custody: { kind: 'watch' },
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'WADDR',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
@@ -90,6 +103,23 @@ describe('resolveMinFeeForSender', () => {
             ...baseParams,
             senderAddress: 'QADDR',
             accounts: [quantum(), algo25()],
+        })
+        expect(fee).toBe(1000n)
+    })
+
+    // It still resolves as a signer: its key on another chain counts.
+    it('charges the base fee for quantum custody with no key on Algorand', () => {
+        const fee = resolveMinFeeForSender({
+            ...baseParams,
+            senderAddress: 'QADDR',
+            accounts: [
+                quantum({
+                    chains: {
+                        [ALGORAND_CHAIN_ID]: { address: 'QADDR' },
+                        other: { address: 'OTHER', keyPairId: 'kp-other' },
+                    },
+                }),
+            ],
         })
         expect(fee).toBe(1000n)
     })

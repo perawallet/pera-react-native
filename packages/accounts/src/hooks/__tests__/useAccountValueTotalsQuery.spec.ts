@@ -15,8 +15,12 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '../../models/accounts'
 import { useAccountValueTotalsQuery } from '../useAccountValueTotalsQuery'
+import { testAccount } from '../../__tests__/accountFactory'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockGetAccountPortfolioTotals = vi.fn()
 const mockEnsureAccountFetched = vi.fn()
@@ -30,10 +34,6 @@ vi.mock('../../db', () => ({
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: (...args: unknown[]) =>
         mockEnsureAccountFetched(...args),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -55,13 +55,7 @@ const createWrapper = () => {
 }
 
 const makeAccount = (address: string): WalletAccount =>
-    ({
-        address,
-        name: address,
-        id: address,
-        custody: { kind: 'local', seed: null },
-        canSign: true,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, name: address })
 
 const totals = (algoAmount: number, nonAlgoUsd: number) => ({
     algoAmount: new Decimal(algoAmount),
@@ -94,10 +88,10 @@ describe('useAccountValueTotalsQuery', () => {
 
         const { result } = renderHook(
             () =>
-                useAccountValueTotalsQuery([
-                    makeAccount('A1'),
-                    makeAccount('A2'),
-                ]),
+                useAccountValueTotalsQuery(
+                    [makeAccount('A1'), makeAccount('A2')],
+                    SCOPE,
+                ),
             { wrapper: createWrapper() },
         )
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -120,7 +114,7 @@ describe('useAccountValueTotalsQuery', () => {
         mockGetAccountPortfolioTotals.mockResolvedValue(totals(7, 30))
 
         const { result } = renderHook(
-            () => useAccountValueTotalsQuery([makeAccount('A1')]),
+            () => useAccountValueTotalsQuery([makeAccount('A1')], SCOPE),
             { wrapper: createWrapper() },
         )
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -131,9 +125,12 @@ describe('useAccountValueTotalsQuery', () => {
     })
 
     it('returns empty data when no accounts provided', () => {
-        const { result } = renderHook(() => useAccountValueTotalsQuery([]), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountValueTotalsQuery([], SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         expect(result.current.accountValueTotals.size).toBe(0)
         expect(result.current.isPending).toBe(false)
@@ -144,7 +141,7 @@ describe('useAccountValueTotalsQuery', () => {
 
         const { result, rerender } = renderHook(
             ({ accounts }: { accounts: WalletAccount[] }) =>
-                useAccountValueTotalsQuery(accounts),
+                useAccountValueTotalsQuery(accounts, SCOPE),
             {
                 wrapper: createWrapper(),
                 initialProps: { accounts: [makeAccount('A1')] },

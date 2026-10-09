@@ -20,7 +20,6 @@ export {
     isSignRequestMultisigUnsignable,
     localKeySignerAdapterFor,
     localKeySignerChainAdapters,
-    plannerAdapterFor,
     plannerChainAdapters,
     resolveMinFeeForSender,
     type AddSignaturesFn,
@@ -152,11 +151,14 @@ export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
 export {
     buildSiwxAuthData,
+    canSignMessage,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     parseAuthDataWireRequest,
+    signsMessageVerifiably,
     type BuildSiwxAuthDataArgs,
     type MessageSignerChainAdapter,
+    type MessageSignKind,
     type MessageSigningDeps,
     type ParsedAuthData,
     type SiwxMessage,
@@ -164,7 +166,7 @@ export {
 export {
     aggregateTransactionWarnings,
     decodeArbitraryDataForDisplay,
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     resolveAllSignerAddresses,
     reviewerChainAdapters,
     type ArbitraryDataDisplay,
@@ -280,6 +282,7 @@ export {
 } from './db'
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
+export { rehydrateSigningStore } from './store'
 
 export {
     BLE_CLASS_ERROR_KINDS,

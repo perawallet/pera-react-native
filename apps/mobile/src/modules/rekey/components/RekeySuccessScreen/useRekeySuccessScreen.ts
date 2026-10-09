@@ -16,6 +16,8 @@ import {
     getAccountDisplayName,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export type UseRekeySuccessScreenResult = {
@@ -36,14 +38,15 @@ export const useRekeySuccessScreen = (): UseRekeySuccessScreenResult => {
     const { sourceAddress } = useRoute<RekeySuccessRoute>().params ?? {
         sourceAddress: '',
     }
-    const source = useFindAccountByAddress(sourceAddress)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const source = useFindAccountByAddress(sourceAddress, scope)
 
     const handleDone = useCallback(() => {
         navigation.navigate('TabBar', { screen: 'Home' })
     }, [navigation])
 
     return {
-        sourceName: source ? getAccountDisplayName(source) : '',
+        sourceName: source ? getAccountDisplayName(source, scope.chainId) : '',
         handleDone,
     }
 }

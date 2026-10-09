@@ -17,18 +17,36 @@ import {
     type CardAutoDrawOperations,
 } from '@perawallet/wallet-core-card'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     encodeProgramAccount,
     useProgramSigner,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
 import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { useFeeDelegation } from '../fee-delegation'
 import { algorandNetworkOf } from '../legacy-network'
 import { autoDrawDelegationRequest } from './delegation'
 import { algorandAutoDraw } from './escrow/killswitch'
 import { compileAutoDrawProgram, resolveEscrowChainConfig } from './escrow/lsig'
+
+const fundingAddressOf = (
+    account: WalletAccount,
+    scope: ChainScope,
+): string => {
+    const address = chainAccountOf(account, scope.chainId)?.address
+    if (address === undefined) {
+        throw new Error(
+            `The funding account has no address on ${scope.chainId}`,
+        )
+    }
+    return address
+}
 
 /**
  * The AutoDraw LSig (compile → sign → register with AB, shared with
@@ -36,7 +54,9 @@ import { compileAutoDrawProgram, resolveEscrowChainConfig } from './escrow/lsig'
  * activates/deactivates auto-draw.
  */
 export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
-    const { signProgram } = useProgramSigner()
+    const { signProgram } = useProgramSigner(
+        useSelectedScope(ALGORAND_CHAIN_ID),
+    )
     const { submit } = useSignAndSubmitGroup()
     const { submitWithFeeDelegation } = useFeeDelegation()
 
@@ -47,20 +67,22 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             scope: ChainScope,
         ): Promise<void> => {
             const network = algorandNetworkOf(scope)
+            const address = fundingAddressOf(account, scope)
 
             // 1. Register the signed LSig with AB (its own ownership proof):
             // compile the pinned AutoDraw program, sign it with the funding
             // account's key, then POST the delegated LogicSig.
             const program = await compileAutoDrawProgram({ network })
             const lsigBytes = encodeProgramAccount(
+                scope.chainId,
                 program,
                 await signProgram(account, program),
-                account.address,
+                address,
             )
             await postCardDelegation(
                 autoDrawDelegationRequest({
                     currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
-                    delegatorAddress: account.address,
+                    delegatorAddress: address,
                     lsigBytes: encodeToBase64(lsigBytes),
                     cardAddress,
                 }),
@@ -85,7 +107,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             if (
                 await algorandAutoDraw.isEnabled({
                     network,
-                    sender: account.address,
+                    sender: address,
                     asset: assetId,
                 })
             ) {
@@ -93,7 +115,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             }
             const txns = await algorandAutoDraw.buildEnable({
                 network,
-                sender: account.address,
+                sender: address,
                 cardAddress,
                 asset: assetId,
             })
@@ -103,7 +125,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             // funding account needs no ALGO. The accounts-box MBR is funded by
             // the Killswitch app account, not the sponsor.
             await submitWithFeeDelegation({
-                account: account.address,
+                account: address,
                 transactions: txns,
                 includeAssetOptInMbr: true,
                 sourceMetadata: {
@@ -124,6 +146,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
                 )
                 return
             }
+            const address = fundingAddressOf(account, scope)
             // Pre-check instead of tolerating ALREADY_DISABLED (same
             // simulate-revert opacity as enable). No box == nothing to kill:
             // covers the retry case AND a persisted-Auto state whose on-chain
@@ -134,7 +157,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             if (
                 !(await algorandAutoDraw.isEnabled({
                     network,
-                    sender: account.address,
+                    sender: address,
                     asset: assetId,
                 }))
             ) {
@@ -142,10 +165,11 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             }
             const txns = await algorandAutoDraw.buildKill({
                 network,
-                sender: account.address,
+                sender: address,
                 asset: assetId,
             })
             await submit({
+                chainId: scope.chainId,
                 unsignedTxs: txns,
                 source: {
                     name: 'card-autodraw-disable',

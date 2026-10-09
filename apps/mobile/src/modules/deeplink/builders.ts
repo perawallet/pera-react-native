@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_SCHEME, PERAWALLET_SCHEME } from './constants'
 import { DeeplinkType } from './types'
 
@@ -19,8 +23,11 @@ export type BuildDeeplinkInput = {
     address: string
 }
 
-export const buildAccountDeeplink = (account: WalletAccount): string =>
-    `${ALGORAND_SCHEME}://${account.address}`
+export const buildAccountDeeplink = (
+    account: WalletAccount,
+    chainId: ChainId,
+): string =>
+    `${ALGORAND_SCHEME}://${chainAccountOf(account, chainId)?.address ?? ''}`
 
 export const buildDeeplink = (input: BuildDeeplinkInput): string => {
     switch (input.type) {

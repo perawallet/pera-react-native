@@ -18,12 +18,15 @@ import {
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
+    baseUnitsToDisplayUnits,
     formatNumber,
     isPeraNetworkError,
     type Nullable,
-    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
@@ -116,6 +119,7 @@ const STATUS_BY_RESULT: Record<ExecuteSwapResult['kind'], SwapExecutionStatus> =
     }
 
 export const useSwapExecution = (): UseSwapExecutionResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const [status, setStatus] = useState<SwapExecutionStatus>('idle')
     const [error, setError] = useState<Nullable<SwapExecutionError>>(null)
     const [txIds, setTxIds] = useState<string[]>([])
@@ -123,8 +127,9 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const { t } = useLanguage()
     const { getMessage } = useAlgodErrorMessage()
     const isQuantumSwapEnabled = useIsQuantumSwapEnabled()
+    const { decimals: nativeDecimals } = useNativeAsset()
     const { mutateAsync: executeSwap, reset: resetMutation } =
-        useExecuteSwapMutation()
+        useExecuteSwapMutation(scope)
     const cancelRequestedRef = useRef(false)
 
     const describeFailure = useCallback(
@@ -147,8 +152,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
                 case 'insufficient-native-balance': {
                     const { sign, integer, fraction } = formatNumber(
-                        microAlgosToAlgos(failure.shortfall),
-                        6,
+                        baseUnitsToDisplayUnits(
+                            failure.shortfall,
+                            nativeDecimals,
+                        ),
+                        nativeDecimals,
                         undefined,
                         0,
                     )
@@ -196,7 +204,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
             }
         },
-        [t, getMessage],
+        [t, getMessage, nativeDecimals],
     )
 
     const execute = useCallback(

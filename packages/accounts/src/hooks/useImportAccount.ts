@@ -10,18 +10,24 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
-import { type ImportAccountType, type WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 import { DuplicateAccountError } from '../errors'
-import { accountsAdapterFor, requireSingleKeyAccounts } from '../chain-adapter'
+import {
+    accountsChainAdapters,
+    requireSingleKeyAccounts,
+    type LocalKeySeed,
+} from '../chain-adapter'
+import { findAddressHolder, seedOf } from '../credentials'
+import { localKeyKindOf } from '../import-formats'
 
+/** An HD import waits for the user to pick which discovered accounts to keep. */
 export type ImportHDPendingResult = {
-    type: 'hdWallet'
+    kind: 'hd'
     walletKeyId: string
 }
 
@@ -30,12 +36,10 @@ export type ImportAccountResult =
     | WalletAccount[]
     | ImportHDPendingResult
 
-export const useImportAccount = () => {
-    const kms = useKMS()
-    const { removeKeyAndChildren, seedIdOf } = kms
-    const { saveAccount } = useCreateAccount()
-    const { prepareImport } = useHDImportSession()
-    const { network } = useNetwork()
+export const useImportAccount = (scope: ChainScope) => {
+    const { removeKeyAndChildren } = useKMS()
+    const { saveAccount } = useCreateAccount(scope)
+    const { prepareImport } = useHDImportSession(scope)
 
     // Shared by every single-key import: if the wallet already holds
     // this address, sweep the keystore entries the import attempt just
@@ -52,11 +56,11 @@ export const useImportAccount = () => {
     // delete the first one's just-persisted signing key.
     const throwIfDuplicate = async (address: string, seedKeyId: string) => {
         const accounts = useAccountsStore.getState().accounts
-        const isDuplicate = accounts.some(a => a.address === address)
-        if (!isDuplicate) return
+        const holder = findAddressHolder(accounts, scope, address)
+        if (!holder) return
 
         const seedStillNeeded = accounts.some(
-            a => a.address !== address && seedIdOf(a.keyPairId) === seedKeyId,
+            a => a !== holder && seedOf(a) === seedKeyId,
         )
         if (!seedStillNeeded) {
             try {
@@ -71,35 +75,39 @@ export const useImportAccount = () => {
 
     return async ({
         mnemonicIndices,
-        type,
+        seed,
     }: {
         /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
          * itself. Caller owns zeroing after the import resolves. */
         mnemonicIndices: Uint16Array
-        type: ImportAccountType
+        seed: LocalKeySeed
     }): Promise<ImportAccountResult> => {
-        if (type === 'hdWallet') {
+        if (localKeyKindOf(scope.chainId, seed)?.isHd) {
             const { walletKeyId } = await prepareImport({
                 mnemonicIndices,
             })
-            return { type: 'hdWallet', walletKeyId }
+            return { kind: 'hd', walletKeyId }
         }
 
         return requireSingleKeyAccounts(
-            accountsAdapterFor(network),
+            accountsChainAdapters.get(scope.chainId),
         ).importMnemonic(
-            kms,
             {
-                kind: type,
+                seed,
                 mnemonicIndices,
                 isHeld: address =>
-                    useAccountsStore
-                        .getState()
-                        .accounts.some(a => a.address === address),
+                    !!findAddressHolder(
+                        useAccountsStore.getState().accounts,
+                        scope,
+                        address,
+                    ),
             },
-            scopeForLegacyNetwork(network),
+            scope,
             async ({ account, seedKeyId }) => {
-                await throwIfDuplicate(account.address, seedKeyId)
+                const address = account.chains[scope.chainId]?.address
+                if (address !== undefined) {
+                    await throwIfDuplicate(address, seedKeyId)
+                }
                 await saveAccount(account)
             },
         )

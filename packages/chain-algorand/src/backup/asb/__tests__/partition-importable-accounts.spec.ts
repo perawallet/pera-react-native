@@ -17,6 +17,7 @@ import {
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
 import { partitionImportableAccounts } from '../partition-importable-accounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const validAddressA =
     'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM'
@@ -39,9 +40,13 @@ const watch = (address: string): AsbBackupAccount => ({
 
 const algo25 = (address: string): WalletAccount => ({
     id: address,
-    address,
     custody: { kind: 'local', seed: null },
-    keyPairId: 'k',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address,
+            keyPairId: 'k',
+        },
+    },
 })
 
 describe('partitionImportableAccounts', () => {

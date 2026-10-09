@@ -58,6 +58,10 @@ vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
@@ -69,7 +73,11 @@ describe('useOnrampPairSelectionContent', () => {
         registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockUseRampPairsQuery.mockReturnValue({ data: PAIRS, isLoading: false })
-        mockUseSelectedAccount.mockReturnValue({ address: 'ADDR' })
+        mockUseSelectedAccount.mockReturnValue({
+            id: 'selected',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'ADDR' } },
+        })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map(),
         })

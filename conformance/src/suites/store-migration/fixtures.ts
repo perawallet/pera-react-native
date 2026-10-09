@@ -17,8 +17,8 @@
  * Only the addresses and key ids are filled in, because the keys are minted
  * fresh on LocalNet each run.
  *
- * Any change to `migrateAccountsState` or the store's `merge`, and any
- * STORE_VERSION bump, adds the payload the outgoing version wrote here.
+ * Any change to `migrateAccountsState`, and any STORE_VERSION bump, adds the
+ * payload the outgoing version wrote here.
  */
 
 type HeldKey = { id: string; address: string; keyPairId: string }
@@ -40,6 +40,8 @@ export type PersistedPayload = {
 export type StoreFixture = {
     name: string
     payload: (accounts: FixtureAccounts) => PersistedPayload
+    /** The watch account's id after the migration; absent keeps the persisted one. */
+    migratedWatchId?: (accounts: FixtureAccounts) => string
 }
 
 // The network the app named LocalNet under: rekeys were recorded per legacy
@@ -215,7 +217,7 @@ const v2Records = (a: FixtureAccounts) => [
 
 /**
  * v3 drops `type`. The authority fields stay on the record, in whichever form
- * the writer used, until `merge` lifts them.
+ * the writer used, until the migration lifts them.
  */
 const v3Records = (
     a: FixtureAccounts,
@@ -266,6 +268,71 @@ const v3Records = (
         keyPairId: a.rekeyed.keyPairId,
         ...authorityFields,
         custody: { kind: 'local', seed: 'algo25' },
+        chains: {
+            algorand: {
+                address: a.rekeyed.address,
+                keyPairId: a.rekeyed.keyPairId,
+            },
+        },
+    },
+    {
+        id: a.watch.id,
+        address: a.watch.address,
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: a.watch.address } },
+    },
+]
+
+/**
+ * v4 renames the Algorand-named seed scheme to a seedless custody and holds
+ * authorities only in the store's own maps. The legacy address, key and
+ * details are still written beside `custody`/`chains`.
+ */
+const v4Records = (a: FixtureAccounts) => [
+    {
+        id: a.algo25.id,
+        address: a.algo25.address,
+        keyPairId: a.algo25.keyPairId,
+        name: 'Main',
+        custody: { kind: 'local', seed: null },
+        chains: {
+            algorand: {
+                address: a.algo25.address,
+                keyPairId: a.algo25.keyPairId,
+            },
+        },
+    },
+    {
+        id: a.hd.id,
+        address: a.hd.address,
+        keyPairId: a.hd.keyPairId,
+        hdWalletDetails: HD_DETAILS,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
+        chains: {
+            algorand: { address: a.hd.address, keyPairId: a.hd.keyPairId },
+        },
+    },
+    {
+        id: a.quantum.id,
+        address: a.quantum.address,
+        keyPairId: a.quantum.keyPairId,
+        custody: { kind: 'local', seed: 'quantum' },
+        chains: {
+            algorand: {
+                address: a.quantum.address,
+                keyPairId: a.quantum.keyPairId,
+            },
+        },
+    },
+    {
+        id: a.rekeyed.id,
+        address: a.rekeyed.address,
+        keyPairId: a.rekeyed.keyPairId,
+        custody: { kind: 'local', seed: null },
         chains: {
             algorand: {
                 address: a.rekeyed.address,
@@ -345,6 +412,46 @@ export const STORE_FIXTURES: StoreFixture[] = [
                 unscopedAuthorities: {},
             },
             version: 3,
+        }),
+    },
+    {
+        name: 'v4',
+        payload: a => ({
+            state: {
+                accounts: v4Records(a),
+                ...topLevel(a),
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 4,
+        }),
+    },
+    {
+        // A record held without an id gets one derived from its address, the
+        // same in every context that migrates it, and the order entry that
+        // named it by address follows it.
+        name: 'v4 with a record held without an id',
+        migratedWatchId: a => `legacy:algorand:${a.watch.address}`,
+        payload: a => ({
+            state: {
+                accounts: v4Records(a).map(record => {
+                    if (record.id !== a.watch.id) return record
+                    const { id: _id, ...rest } = record
+                    return rest
+                }),
+                ...topLevel(a),
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 4,
         }),
     },
 ]

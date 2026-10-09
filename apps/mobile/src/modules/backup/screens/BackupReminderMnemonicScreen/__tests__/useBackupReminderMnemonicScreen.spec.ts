@@ -60,7 +60,20 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: (selector: (state: unknown) => unknown) =>
-        selector({ accounts: [{ address: 'ADDR' }] }),
+        selector({
+            accounts: [
+                {
+                    id: 'account-1',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'ADDR' } },
+                },
+            ],
+        }),
+    findAddressHolder: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        scope: { chainId: string },
+        address: string,
+    ) => accounts.find(a => a.chains[scope.chainId]?.address === address),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -69,7 +82,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 

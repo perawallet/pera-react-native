@@ -13,8 +13,8 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { authorityOf } from '../../credentials/accessors'
-import type { WalletAccount } from '../../models'
+import { addressOn, authorityOf } from '../../credentials/accessors'
+import { testAccount } from '../../__tests__/accountFactory'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import {
     fakeAccountsChain,
@@ -23,17 +23,8 @@ import {
 } from '../../__tests__/fakeAccountsChain'
 import { useSigningAccounts } from '../useSigningAccounts'
 
-const watch = {
-    id: 'W',
-    address: 'W',
-    custody: { kind: 'watch' },
-} as WalletAccount
-const signer = {
-    id: 'S',
-    address: 'S',
-    custody: { kind: 'local', seed: null },
-    keyPairId: 'k',
-} as WalletAccount
+const watch = testAccount('watch', 'W', { id: 'W' })
+const signer = testAccount('local', 'S', { id: 'S' })
 
 describe('useSigningAccounts', () => {
     beforeEach(() => {
@@ -48,7 +39,7 @@ describe('useSigningAccounts', () => {
         vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockImplementation(
             (account, accounts, scope) => {
                 const auth = accounts.find(
-                    a => a.address === authorityOf(account, scope),
+                    a => addressOn(a, scope) === authorityOf(account, scope),
                 )
                 if (auth) return { kind: 'ok', signer: auth }
                 return account.custody.kind === 'watch'
@@ -56,7 +47,7 @@ describe('useSigningAccounts', () => {
                     : { kind: 'ok', signer: account }
             },
         )
-        const { result } = renderHook(() => useSigningAccounts())
+        const { result } = renderHook(() => useSigningAccounts('algorand'))
         expect(result.current).toEqual([signer])
 
         act(() => seedAuthority('W', 'S'))

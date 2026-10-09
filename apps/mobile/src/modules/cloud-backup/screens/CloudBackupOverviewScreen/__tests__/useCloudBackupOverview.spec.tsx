@@ -50,6 +50,10 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
     )),
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -206,7 +210,11 @@ const mockStores = (opts: {
     )
     ;(useAccountsStore as unknown as Mock).mockImplementation(
         (s: (st: { accounts: unknown[] }) => unknown) =>
-            s({ accounts: opts.accounts.map(address => ({ address })) }),
+            s({
+                accounts: opts.accounts.map(address => ({
+                    chains: { algorand: { address } },
+                })),
+            }),
     )
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>

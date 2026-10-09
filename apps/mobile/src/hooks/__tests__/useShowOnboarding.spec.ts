@@ -15,12 +15,12 @@ import { renderHook } from '@testing-library/react'
 import { useShowOnboarding } from '../useShowOnboarding'
 import {
     useHasNoAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useHasNoAccounts: vi.fn(),
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccountId: vi.fn(),
 }))
 
 describe('useShowOnboarding', () => {
@@ -30,8 +30,8 @@ describe('useShowOnboarding', () => {
 
     it('should return true if no accounts exist', () => {
         ;(useHasNoAccounts as Mock).mockReturnValue(true)
-        ;(useSelectedAccountAddress as Mock).mockReturnValue({
-            selectedAccountAddress: null,
+        ;(useSelectedAccountId as Mock).mockReturnValue({
+            selectedAccountId: null,
         })
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -40,8 +40,8 @@ describe('useShowOnboarding', () => {
 
     it('should return true if accounts exist but none is selected', () => {
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
-        ;(useSelectedAccountAddress as Mock).mockReturnValue({
-            selectedAccountAddress: null,
+        ;(useSelectedAccountId as Mock).mockReturnValue({
+            selectedAccountId: null,
         })
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -50,8 +50,8 @@ describe('useShowOnboarding', () => {
 
     it('should return false if accounts exist and one is selected', () => {
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
-        ;(useSelectedAccountAddress as Mock).mockReturnValue({
-            selectedAccountAddress: 'some-address',
+        ;(useSelectedAccountId as Mock).mockReturnValue({
+            selectedAccountId: 'some-id',
         })
 
         const { result } = renderHook(() => useShowOnboarding())

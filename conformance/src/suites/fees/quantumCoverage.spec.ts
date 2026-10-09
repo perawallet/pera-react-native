@@ -237,7 +237,7 @@ describe('quantum fee coverage conformance', () => {
             // What the account syncer records once it reads the chain's `auth-addr`.
             useAccountChainStateStore.getState().setAccountChainState(
                 scopeForLegacyNetwork(config.defaultNetwork),
-                account.address,
+                rekeyed.address,
                 algorandAccountsAdapter.toChainState({
                     authorityAddress: pq.address,
                 }),

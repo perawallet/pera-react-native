@@ -21,18 +21,23 @@ const { mockScanAll, mockImportFromSweep, routeState, signingAccountsState } =
             params: { sourceAddress: 'SRC' } as { sourceAddress?: string },
         },
         signingAccountsState: {
-            current: [{ address: 'KEY_1' }, { address: 'KEY_2' }] as Array<{
-                address: string
-            }>,
+            current: [
+                { chains: { algorand: { address: 'KEY_1' } } },
+                { chains: { algorand: { address: 'KEY_2' } } },
+            ] as Array<{ chains: { algorand: { address: string } } }>,
         },
     }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useRescanRekeyedAccounts: () => ({
+    useRescanDelegatedAccounts: () => ({
         scanAll: mockScanAll,
         importFromSweep: mockImportFromSweep,
     }),
     useSigningAccounts: () => signingAccountsState.current,
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 const mockNavigate = vi.fn()
@@ -85,8 +90,8 @@ describe('useRescanRekeyedSelectScreen', () => {
         mockImportFromSweep.mockReset()
         routeState.params = { sourceAddress: 'SRC' }
         signingAccountsState.current = [
-            { address: 'KEY_1' },
-            { address: 'KEY_2' },
+            { chains: { algorand: { address: 'KEY_1' } } },
+            { chains: { algorand: { address: 'KEY_2' } } },
         ]
     })
 

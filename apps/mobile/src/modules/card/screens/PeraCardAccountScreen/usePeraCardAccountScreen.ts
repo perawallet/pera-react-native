@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { AccountDisplayCard } from '@components/AccountDisplay'
 import {
     useAccountDrawerPickerKind,
@@ -24,6 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useCardScope } from '../../hooks/useCardScope'
 import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
@@ -53,9 +55,11 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
 
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const cardDisplay = useMemo<AccountDisplayCard>(() => {
-        const account = connectedAddress
-            ? accounts.find(item => item.address === connectedAddress)
-            : undefined
+        const account = findCardAccount(
+            accounts,
+            connectedAddress,
+            LEGACY_CHAIN_ID,
+        )
         // "Linked" is the on-chain binding (escrow card), not the locally
         // selected funding account: without the card nothing is linked yet.
         if (escrowCardAddress === null) {

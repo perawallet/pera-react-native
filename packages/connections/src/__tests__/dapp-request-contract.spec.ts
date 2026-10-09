@@ -19,6 +19,7 @@ const MAX_TXNS = 2
 const fixtureAdapter: DappRequestChainAdapter = {
     chainId: 'algorand',
     relayableErrorNames: ['FixtureError'],
+    accountTypeOf: () => 'Fixture',
     parseSigningParams: (type, params) => {
         const payload = type === 'sign-transactions' ? params.txns : params.data
         if (payload === undefined) {

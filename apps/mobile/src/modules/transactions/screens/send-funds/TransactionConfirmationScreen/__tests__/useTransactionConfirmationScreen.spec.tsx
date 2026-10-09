@@ -17,8 +17,9 @@ import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
-    useOnChainAccountInformationQuery,
+    useOnChainAccountStateQuery,
     useSignerFor,
+    usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -73,11 +74,18 @@ vi.mock('../../../components/send-funds/AddNoteContent', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
-    useOnChainAccountInformationQuery: vi.fn(),
+    useOnChainAccountStateQuery: vi.fn(),
     useSignerFor: vi.fn(),
-    isQuantumAccount: (
-        account: { custody?: { seed?: string } } | null | undefined,
-    ) => account?.custody?.seed === 'quantum',
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
+    // The predicate itself is pinned in the accounts package; here a quantum
+    // seed stands for a key signing with a non-primary scheme.
+    usesNonPrimaryScheme: vi.fn(
+        (account: { custody: { seed?: string } }) =>
+            account.custody.seed === 'quantum',
+    ),
 }))
 
 vi.mock('@hooks/useCapability', async () =>
@@ -117,16 +125,20 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const { displayUnitsToBaseUnits } = await vi.importActual<
-        typeof import('@packages/shared/src/utils/unit-conversion')
-    >('@packages/shared/src/utils/unit-conversion')
+    const { displayUnitsToBaseUnits, displayUnitsToBaseUnitsBigInt, toBigInt } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/unit-conversion')
+        >('@packages/shared/src/utils/unit-conversion')
     return {
         DEFAULT_PRECISION: 2,
         formatCurrency: vi.fn(() => '10.00'),
         displayUnitsToBaseUnits,
+        displayUnitsToBaseUnitsBigInt,
+        toBigInt,
     }
 })
 
@@ -140,13 +152,21 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
+// Both in base units; the snapshot carries the minimum balance in display units.
+const recipientState = (amount: number, minBalanceBaseUnits: number) => ({
+    nativeBalanceBaseUnits: new Decimal(amount),
+    minBalance: new Decimal(minBalanceBaseUnits).div(1_000_000),
+})
+
 describe('useTransactionConfirmationScreen', () => {
     const mockOnNext = vi.fn()
     const mockShowToast = vi.fn()
 
     const mockAccount = {
-        address: 'TEST_ADDRESS',
+        id: 'test-account',
         name: 'Test Account',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: 'TEST_ADDRESS' } },
     }
 
     const mockSelectedAssetId = '123'
@@ -176,7 +196,7 @@ describe('useTransactionConfirmationScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -374,8 +394,8 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('flags recipient below MBR when sending insufficient ALGO to a new account', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 0n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(0, 100_000),
                 isPending: false,
             })
 
@@ -389,8 +409,8 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('does not flag when ALGO send meets recipient MBR', () => {
             setupAlgoSend(new Decimal('0.1'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 0n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(0, 100_000),
                 isPending: false,
             })
 
@@ -405,8 +425,8 @@ describe('useTransactionConfirmationScreen', () => {
         // note payment to an empty account is valid.
         it('does not flag a zero-amount send that leaves an empty recipient at zero', () => {
             setupAlgoSend(new Decimal('0'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 0n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(0, 100_000),
                 isPending: false,
             })
 
@@ -419,8 +439,8 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('confirms a zero-amount ALGO send to a funded recipient', () => {
             setupAlgoSend(new Decimal('0'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 200_000n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(200_000, 100_000),
                 isPending: false,
             })
 
@@ -438,8 +458,8 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('does not flag when recipient already has balance above MBR', () => {
             setupAlgoSend(new Decimal('0.01'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 200_000n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(200_000, 100_000),
             })
 
             const { result } = renderHook(() =>
@@ -460,7 +480,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['123', mockAsset]]),
             })
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
                 data: undefined,
                 isPending: false,
             })
@@ -474,7 +494,7 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('reports isRecipientInfoPending while ALGO recipient query is in flight', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
@@ -498,7 +518,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['123', mockAsset]]),
             })
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
@@ -512,7 +532,7 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('handleConfirm is a no-op while recipient info is pending', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
@@ -531,8 +551,8 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('blocks confirm and shows toast when recipient is below MBR', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { amount: 0n, minBalance: 100_000n },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: recipientState(0, 100_000),
                 isPending: false,
             })
 
@@ -751,7 +771,10 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(useMinFeeForSender).toHaveBeenCalledWith(mockAccount.address)
+            expect(useMinFeeForSender).toHaveBeenCalledWith(
+                'TEST_ADDRESS',
+                'algorand',
+            )
             expect(result.current.params).toEqual({ minFee: 3000n })
             expect(result.current.paramsPending).toBe(false)
         })
@@ -786,7 +809,7 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('flags a quantum fee when the signer is a quantum account', () => {
             ;(useSignerFor as Mock).mockReturnValue({
-                address: 'QUANTUM_ADDRESS',
+                chains: { algorand: { address: 'QUANTUM_ADDRESS' } },
                 custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
@@ -804,7 +827,7 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('does not flag a quantum fee for a standard signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
-                address: 'STANDARD_ADDRESS',
+                chains: { algorand: { address: 'STANDARD_ADDRESS' } },
                 custody: { kind: 'local', seed: null },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
@@ -822,7 +845,7 @@ describe('useTransactionConfirmationScreen', () => {
 
         it('flags a quantum fee when a standard sender is rekeyed to a quantum signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
-                address: 'QUANTUM_AUTH_ADDRESS',
+                chains: { algorand: { address: 'QUANTUM_AUTH_ADDRESS' } },
                 custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
@@ -834,14 +857,23 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(useSignerFor).toHaveBeenCalledWith(mockAccount.address)
+            expect(useSignerFor).toHaveBeenCalledWith(
+                'TEST_ADDRESS',
+                'algorand',
+            )
+            expect(usesNonPrimaryScheme).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chains: { algorand: { address: 'QUANTUM_AUTH_ADDRESS' } },
+                }),
+                'algorand',
+            )
             expect(result.current.isQuantumFee).toBe(true)
         })
 
         it('still flags the quantum fee an existing account pays after quantumAccounts is switched off', () => {
             capabilityState.turnOff('quantumAccounts')
             ;(useSignerFor as Mock).mockReturnValue({
-                address: 'QUANTUM_ADDRESS',
+                chains: { algorand: { address: 'QUANTUM_ADDRESS' } },
                 custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({

@@ -87,14 +87,7 @@ const ledgerAccount: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: LEDGER_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'test-device-id',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 describe('Flow: hardware (Ledger) signing review', () => {

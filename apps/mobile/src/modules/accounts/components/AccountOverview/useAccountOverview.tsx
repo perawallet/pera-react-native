@@ -12,11 +12,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    addressOn,
     useAccountSummaryQuery,
     useEnsureAccountEnriched,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions'
 import {
@@ -47,6 +50,8 @@ export const useAccountOverview = ({
     account,
 }: UseAccountOverviewParams): UseAccountOverviewResult => {
     const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const address = addressOn(account, scope)
     const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -110,10 +115,10 @@ export const useAccountOverview = ({
     // gated on chart visibility — it must not hold the header in a skeleton
     // (and previously did, blocking ~10s on the wealth endpoint timeout).
     const { isPending: isBalancesPending, isPaused: isBalancesPaused } =
-        useAccountSummaryQuery(account?.address)
+        useAccountSummaryQuery(address, scope)
     // Guarantee the viewed account's holdings + metadata + prices are fetched
     // and enriched, regardless of the background poll's gating.
-    useEnsureAccountEnriched(account?.address)
+    useEnsureAccountEnriched(address, scope)
     const [hasCompletedInitialLoad, setHasCompletedInitialLoad] =
         useState(false)
     // A paused read counts as loaded: it will not resolve while offline, and
@@ -129,8 +134,8 @@ export const useAccountOverview = ({
     const isLoading = !hasCompletedInitialLoad
 
     const refreshAddresses = useMemo(
-        () => (account?.address ? [account.address] : []),
-        [account?.address],
+        () => (address ? [address] : []),
+        [address],
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,

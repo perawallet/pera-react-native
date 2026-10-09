@@ -13,6 +13,7 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
 import {
+    chainAccountOf,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -25,6 +26,14 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
 } from '../../__tests__/transactions'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+} from '../../__tests__/accounts'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
@@ -42,68 +51,39 @@ const withAuthority = (
     account: WalletAccount,
     authority?: string,
 ): WalletAccount => {
-    if (authority) seedAuthority(account.address as string, authority)
+    if (authority) {
+        seedAuthority(
+            chainAccountOf(account, TEST_CHAIN_ID)?.address as string,
+            authority,
+        )
+    }
     return account
 }
 
 const algo25 = (address: string, authority?: string): WalletAccount =>
     withAuthority(
-        {
-            custody: { kind: 'local', seed: null },
-            address,
-            keyPairId: `kp-${address}`,
-        } as unknown as WalletAccount,
+        algo25Account(address, { keyPairId: `kp-${address}` }),
         authority,
     )
 
 const hardware = (address: string, authority?: string): WalletAccount =>
     withAuthority(
-        {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev-1',
-                    deviceName: 'Ledger Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as unknown as WalletAccount,
+        ledgerAccount(address, 0, {
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+        }),
         authority,
     )
 
 const watch = (address: string, authority?: string): WalletAccount =>
-    withAuthority(
-        {
-            custody: { kind: 'watch' },
-            address,
-        } as unknown as WalletAccount,
-        authority,
-    )
+    withAuthority(watchAccount(address), authority)
 
 const multisig = (address: string, addresses: string[] = []): WalletAccount =>
-    ({
-        custody: { kind: 'multisig' },
-        address,
-        multisigDetails: { threshold: 1, addresses, version: 1 },
-    }) as unknown as WalletAccount
+    multisigAccount(address, { threshold: 1, addresses, version: 1 })
 
 const quantum = (address: string, authority?: string): WalletAccount =>
     withAuthority(
-        {
-            custody: { kind: 'local', seed: 'quantum' },
-            address,
-            keyPairId: `kp-${address}`,
-        } as unknown as WalletAccount,
+        quantumAccount(address, { keyPairId: `kp-${address}` }),
         authority,
     )
 
@@ -405,11 +385,9 @@ describe('quantum-signed transactions over the callback transport', () => {
 
     const userAddr = makeTestAddress(11)
     const dappAddr = makeTestAddress(12)
-    const userAccount = {
-        custody: { kind: 'local', seed: null },
-        address: userAddr.toString(),
+    const userAccount = algo25Account(userAddr.toString(), {
         keyPairId: 'key-quantum-cb',
-    } as unknown as WalletAccount
+    })
 
     const baseInput = (request: TransactionSignRequest): SigningMachineInput =>
         ({
@@ -446,7 +424,12 @@ describe('quantum-signed transactions over the callback transport', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'transactions', signed },
-            signers: [{ address: userAccount.address }],
+            signers: [
+                {
+                    address: chainAccountOf(userAccount, TEST_CHAIN_ID)!
+                        .address,
+                },
+            ],
         } as never)
 
         expect(txApprove).toHaveBeenCalledWith(signed)

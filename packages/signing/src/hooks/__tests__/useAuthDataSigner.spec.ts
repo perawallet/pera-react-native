@@ -12,7 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    signingKeyOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { algo25Account, TEST_CHAIN_ID } from '../../__tests__/accounts'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import { messageSignerChainAdapters } from '../../message-signer'
 import { CannotSignError } from '../../pipeline/errors'
@@ -36,11 +40,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: () => mockAccounts,
 }))
 
-const account = {
-    address: 'ADDR',
-    keyPairId: 'key-1',
-    custody: { kind: 'local', seed: null },
-} as unknown as WalletAccount
+const account = algo25Account('ADDR', { keyPairId: 'key-1' })
 
 const authData: AuthData = {
     data: 'ZGF0YQ==',
@@ -65,7 +65,12 @@ describe('useAuthDataSigner', () => {
         const { result } = renderHook(() => useAuthDataSigner())
 
         await expect(
-            result.current.signAuthData(account, authData, metadata),
+            result.current.signAuthData(
+                'algorand',
+                account,
+                authData,
+                metadata,
+            ),
         ).resolves.toBe(signature)
 
         expect(signAuthData).toHaveBeenCalledWith(
@@ -80,15 +85,21 @@ describe('useAuthDataSigner', () => {
     test('binds signPayloads to the KMS under the signing key domain', async () => {
         registerFakeMessageSignerAdapter({
             signAuthData: vi.fn(async (deps, acct) => {
-                const [sig] = await deps.signPayloads(acct.keyPairId!, [
-                    new Uint8Array([4]),
-                ])
+                const [sig] = await deps.signPayloads(
+                    signingKeyOn(acct, TEST_CHAIN_ID)!,
+                    [new Uint8Array([4])],
+                )
                 return sig
             }),
         })
         const { result } = renderHook(() => useAuthDataSigner())
 
-        await result.current.signAuthData(account, authData, metadata)
+        await result.current.signAuthData(
+            'algorand',
+            account,
+            authData,
+            metadata,
+        )
 
         expect(mockSignDataWithKey).toHaveBeenCalledWith(
             'key-1',
@@ -106,7 +117,12 @@ describe('useAuthDataSigner', () => {
         const revoked = { ...account, name: 'Renamed' }
         mockAccounts = [revoked]
         rerender()
-        await result.current.signAuthData(account, authData, metadata)
+        await result.current.signAuthData(
+            'algorand',
+            account,
+            authData,
+            metadata,
+        )
 
         expect(signAuthData.mock.calls[0][4]).toEqual([revoked])
     })
@@ -116,8 +132,30 @@ describe('useAuthDataSigner', () => {
         const { result } = renderHook(() => useAuthDataSigner())
 
         await expect(
-            result.current.signAuthData(account, authData, metadata),
+            result.current.signAuthData(
+                'algorand',
+                account,
+                authData,
+                metadata,
+            ),
         ).rejects.toBeInstanceOf(CannotSignError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
+
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const signAuthData = vi.fn()
+        registerFakeMessageSignerAdapter({ signAuthData })
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await expect(
+            result.current.signAuthData(
+                'algorand',
+                { ...account, chains: {} },
+                authData,
+                metadata,
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signAuthData).not.toHaveBeenCalled()
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 })

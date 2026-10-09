@@ -12,15 +12,16 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const useProvidersQuery = (enabled: boolean = true) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useProvidersQuery = (
+    scope: ChainScope,
+    enabled: boolean = true,
+) => {
     const network = legacyNetworkOf(scope)
 
     return useQuery({

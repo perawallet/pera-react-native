@@ -30,7 +30,9 @@ import {
     useSelectedAccount,
     useCanSignWith,
     type AssetWithAccountBalance,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
@@ -52,7 +54,7 @@ export const AssetActionButtons = ({
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
-    const isReadOnly = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account, LEGACY_CHAIN_ID)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
@@ -115,8 +117,11 @@ export const AssetActionButtons = ({
     ])
 
     const handleCopyAddress = useCallback(() => {
-        if (account) {
-            void copyToClipboard(account.address)
+        const address = account
+            ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+            : undefined
+        if (address) {
+            void copyToClipboard(address)
             showToast({
                 title: t('account_options.copy_address'),
                 body: '',

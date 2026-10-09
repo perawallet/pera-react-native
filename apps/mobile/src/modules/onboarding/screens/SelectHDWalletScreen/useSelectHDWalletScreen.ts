@@ -12,28 +12,31 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import {
+    useHdSeedGroups,
+    useCreateAccount,
+    useAccountBalancesQuery,
+    type HdSeedGroup,
+    type AccountBalances,
+    hdIndexOf,
+} from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import {
-    useHDWalletGroups,
-    useCreateAccount,
-    useAccountBalancesQuery,
-    type HDWalletGroup,
-    type AccountBalances,
-} from '@perawallet/wallet-core-accounts'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSelectHDWalletScreenResult = {
-    hdWalletGroups: HDWalletGroup[]
+    hdSeedGroups: HdSeedGroup[]
     accountBalances: AccountBalances
     isCreatingWallet: boolean
     /** A wallet is being selected and its next account built. */
     isSelectingWallet: boolean
     /** Exactly one wallet → skip the picker and auto-select it. */
     isAutoSelecting: boolean
-    handleSelectWallet: (group: HDWalletGroup) => void
+    handleSelectWallet: (group: HdSeedGroup) => void
     handleCreateNewWallet: () => void
     handleGoBack: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -47,8 +50,9 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const returnTo = route.params?.returnTo
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const { hdWalletGroups } = useHDWalletGroups()
-    const { buildHdWalletAccount } = useCreateAccount()
+    const { hdSeedGroups } = useHdSeedGroups()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { buildHdWalletAccount } = useCreateAccount(scope)
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
     const [isSelectingWallet, setIsSelectingWallet] = useState(false)
     // Set when auto-select fails, so the picker is revealed for a manual retry.
@@ -56,28 +60,29 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const autoSelectedRef = useRef(false)
 
     const allGroupAccounts = useMemo(
-        () => hdWalletGroups.flatMap(g => g.accounts),
-        [hdWalletGroups],
+        () => hdSeedGroups.flatMap(g => g.accounts),
+        [hdSeedGroups],
     )
 
-    const { accountBalances } = useAccountBalancesQuery(allGroupAccounts, true)
+    const { accountBalances } = useAccountBalancesQuery(
+        allGroupAccounts,
+        scope,
+        true,
+    )
 
     const handleSelectWallet = useCallback(
-        async (group: HDWalletGroup) => {
+        async (group: HdSeedGroup) => {
             setIsSelectingWallet(true)
             try {
                 // Group is keyed by the bip39 seed id; siblings are the
                 // accounts already grouped under it. Compute the next free
                 // keyIndex on account 0 from the group itself rather than
                 // re-filtering allAccounts (no need — the group already did).
+                const keyIndexes = group.accounts.flatMap(
+                    a => hdIndexOf(a)?.keyIndex ?? [],
+                )
                 const nextKeyIndex =
-                    group.accounts.length > 0
-                        ? Math.max(
-                              ...group.accounts.map(
-                                  a => a.hdWalletDetails.keyIndex,
-                              ),
-                          ) + 1
-                        : 0
+                    keyIndexes.length > 0 ? Math.max(...keyIndexes) + 1 : 0
                 const newAccount = await buildHdWalletAccount({
                     walletId: group.seedKeyId,
                     account: 0,
@@ -98,13 +103,13 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     )
 
     // A lone wallet makes the picker pointless — auto-select it.
-    const isAutoSelecting = hdWalletGroups.length === 1 && !autoSelectFailed
+    const isAutoSelecting = hdSeedGroups.length === 1 && !autoSelectFailed
     useEffect(() => {
         if (isAutoSelecting && !autoSelectedRef.current) {
             autoSelectedRef.current = true
-            void handleSelectWallet(hdWalletGroups[0])
+            void handleSelectWallet(hdSeedGroups[0])
         }
-    }, [isAutoSelecting, hdWalletGroups, handleSelectWallet])
+    }, [isAutoSelecting, hdSeedGroups, handleSelectWallet])
 
     const handleCreateNewWallet = useCallback(() => {
         setIsCreatingWallet(true)
@@ -131,12 +136,12 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     }, [navigation])
 
     return {
-        hdWalletGroups,
+        hdSeedGroups,
         accountBalances,
         isCreatingWallet,
         isSelectingWallet,
         isAutoSelecting,
-        handleSelectWallet: (group: HDWalletGroup) =>
+        handleSelectWallet: (group: HdSeedGroup) =>
             void handleSelectWallet(group),
         handleCreateNewWallet,
         handleGoBack,

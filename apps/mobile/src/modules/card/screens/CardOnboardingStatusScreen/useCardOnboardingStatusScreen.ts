@@ -30,7 +30,7 @@ import {
 import {
     isLedgerAccount,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -50,6 +50,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import {
+    cardAccountAddressOf,
+    findCardAccount,
+} from '../../utils/cardAccountAddress'
 
 /**
  * The "Submit Your Documents" checklist row's visual state.
@@ -199,9 +203,8 @@ export const useCardOnboardingStatusScreen =
 
         const accounts = useAllAccounts()
         const connectedAccount = useMemo<Optional<WalletAccount>>(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // Funding type is chosen locally and committed by the creation of an lsig.
@@ -238,7 +241,10 @@ export const useCardOnboardingStatusScreen =
                 >
             >()
         const { setParams } = stackNavigation
-        const { selectedAccountAddress } = useSelectedAccountAddress()
+        const selectedAccount = useSelectedAccount()
+        const selectedAccountAddress = selectedAccount
+            ? cardAccountAddressOf(selectedAccount, scope.chainId)
+            : undefined
 
         useEffect(() => {
             if (
@@ -317,16 +323,19 @@ export const useCardOnboardingStatusScreen =
                 )
                 void (async () => {
                     const account = await pickFundingSource()
-                    if (!account) return
+                    const address = account
+                        ? cardAccountAddressOf(account, scope.chainId)
+                        : undefined
+                    if (address === undefined) return
                     // Ask before the ownership signature whether the backend
                     // would even accept this address: creation links it to the
                     // Baanx user and refuses one held by someone else, which
                     // the user would otherwise hit three prompts later. An
                     // unanswerable preflight is not a refusal, so only an
                     // explicit `linked_to_other` stops the connect.
-                    const link = await checkFundingAddress(
-                        account.address,
-                    ).catch(() => null)
+                    const link = await checkFundingAddress(address).catch(
+                        () => null,
+                    )
                     if (link?.state === 'linked_to_other') {
                         await showCardError(
                             new CardAccountLinkedElsewhereError(),
@@ -337,10 +346,15 @@ export const useCardOnboardingStatusScreen =
                     // Purely local, the card gets created and linked to this account by the Pera backend
                     useCardStore
                         .getState()
-                        .setConnectedFundingSourceAddress(account.address)
+                        .setConnectedFundingSourceAddress(address)
                 })()
             },
-            [pickFundingSource, checkFundingAddress, showCardError],
+            [
+                pickFundingSource,
+                checkFundingAddress,
+                showCardError,
+                scope.chainId,
+            ],
         )
 
         // Only `canCreateCard` is needed here — the actual creation sequence

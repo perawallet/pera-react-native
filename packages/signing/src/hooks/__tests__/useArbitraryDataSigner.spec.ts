@@ -12,7 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { signingKeyOn } from '@perawallet/wallet-core-accounts'
+import { algo25Account, TEST_CHAIN_ID } from '../../__tests__/accounts'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import { messageSignerChainAdapters } from '../../message-signer'
 import { CannotSignError } from '../../pipeline/errors'
@@ -27,11 +28,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     }),
 }))
 
-const account = {
-    address: 'ADDR',
-    keyPairId: 'key-1',
-    custody: { kind: 'local', seed: null },
-} as unknown as WalletAccount
+const account = algo25Account('ADDR', { keyPairId: 'key-1' })
 
 describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
@@ -46,9 +43,9 @@ describe('useArbitraryDataSigner', () => {
         const { result } = renderHook(() => useArbitraryDataSigner())
 
         await expect(
-            result.current.signArbitraryData(account, ['a', 'b']),
+            result.current.signArbitraryData('algorand', account, ['a', 'b']),
         ).resolves.toBe(signature)
-        await result.current.signArbitraryData(account, 'single')
+        await result.current.signArbitraryData('algorand', account, 'single')
 
         expect(signArbitraryData).toHaveBeenNthCalledWith(
             1,
@@ -67,12 +64,14 @@ describe('useArbitraryDataSigner', () => {
     test('binds signPayloads to the KMS under the signing key domain', async () => {
         registerFakeMessageSignerAdapter({
             signArbitraryData: vi.fn(async (deps, acct) =>
-                deps.signPayloads(acct.keyPairId!, [new Uint8Array([4])]),
+                deps.signPayloads(signingKeyOn(acct, TEST_CHAIN_ID)!, [
+                    new Uint8Array([4]),
+                ]),
             ),
         })
         const { result } = renderHook(() => useArbitraryDataSigner())
 
-        await result.current.signArbitraryData(account, 'x')
+        await result.current.signArbitraryData('algorand', account, 'x')
 
         expect(mockSignDataWithKey).toHaveBeenCalledWith(
             'key-1',
@@ -86,8 +85,24 @@ describe('useArbitraryDataSigner', () => {
         const { result } = renderHook(() => useArbitraryDataSigner())
 
         await expect(
-            result.current.signArbitraryData(account, 'x'),
+            result.current.signArbitraryData('algorand', account, 'x'),
         ).rejects.toBeInstanceOf(CannotSignError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
+
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const signArbitraryData = vi.fn()
+        registerFakeMessageSignerAdapter({ signArbitraryData })
+        const { result } = renderHook(() => useArbitraryDataSigner())
+
+        await expect(
+            result.current.signArbitraryData(
+                'algorand',
+                { ...account, chains: {} },
+                'x',
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signArbitraryData).not.toHaveBeenCalled()
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 })

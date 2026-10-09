@@ -44,6 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 const SOURCE = { name: 'test-source', description: 'Test source' }
+const SCOPE = { chainId: 'algorand', networkId: 'testnet' } as const
 
 type Run = (
     params: string,
@@ -51,9 +52,17 @@ type Run = (
 ) => Promise<AssetHoldingMutationOutcome>
 
 const renderCore = (run: Run) =>
-    renderHook(() => useAssetHoldingMutation<string>({ source: SOURCE, run }), {
-        wrapper,
-    })
+    renderHook(
+        () =>
+            useAssetHoldingMutation<string>({
+                scope: SCOPE,
+                source: SOURCE,
+                run,
+            }),
+        {
+            wrapper,
+        },
+    )
 
 describe('useAssetHoldingMutation', () => {
     beforeEach(() => {
@@ -85,20 +94,18 @@ describe('useAssetHoldingMutation', () => {
             transactions: [{ sender: 'SENDER', fee: 1000n }],
         })
         expect(mockSubmit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ sender: 'SENDER', fee: 3000n }],
             source: SOURCE,
         })
     })
 
-    it('passes the scope and network and invalidates the returned sender after run resolves', async () => {
+    it("passes the caller's scope and invalidates the returned sender after run resolves", async () => {
         const order: string[] = []
         mockInvalidate.mockImplementation(() => order.push('invalidate'))
-        const run = vi.fn<Run>(async (_params, { network, scope }) => {
-            expect(scope).toEqual({
-                chainId: 'algorand',
-                networkId: 'testnet',
-            })
-            order.push(`run:${network}`)
+        const run = vi.fn<Run>(async (_params, { scope }) => {
+            expect(scope).toEqual(SCOPE)
+            order.push(`run:${scope.networkId}`)
             return { txIds: [], sender: 'OTHER' }
         })
         const { result } = renderCore(run)

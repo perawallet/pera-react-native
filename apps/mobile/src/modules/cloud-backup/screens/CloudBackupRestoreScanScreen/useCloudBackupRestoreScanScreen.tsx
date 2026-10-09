@@ -18,6 +18,8 @@ import {
     useRestoreCloudBackupMutation,
     type BackupSyncQrContents,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { scannerNotifier } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
@@ -86,8 +88,9 @@ export const useCloudBackupRestoreScanScreen = ({
     } = useModalState()
 
     const outcome = useRestoreOutcome({ clearDraft, onDone })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { mutate: restore, isPending: isRestoring } =
-        useRestoreCloudBackupMutation(outcome)
+        useRestoreCloudBackupMutation(scope, outcome)
     const restoreProgress = useCloudBackupRestoreProgress()
 
     const handleScanned = useCallback(

@@ -54,7 +54,11 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -129,19 +133,30 @@ const runRestoreFlow = async () => {
  *  gap between the engine and the mobile hooks fails here rather than on a
  *  device. */
 const startRealSyncManager = () => {
-    const importHook = renderQueryHook(() => useCloudBackupImport())
+    const importHook = renderQueryHook(() =>
+        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+    )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const hdHook = renderQueryHook(() => useResolveHdSeedForBackup())
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
-    const listHook = renderQueryHook(() => useListPasskeysForBackup())
+    const hdHook = renderQueryHook(() =>
+        useResolveHdSeedForBackup(LEGACY_CHAIN_ID),
+    )
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
+    const listHook = renderQueryHook(() =>
+        useListPasskeysForBackup(LEGACY_CHAIN_ID),
+    )
     const passkeyImportHook = renderQueryHook(() =>
-        useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+        useCloudBackupPasskeyImport(
+            useResolveSeedEntropyForBackup(LEGACY_CHAIN_ID),
+        ),
     )
 
     return initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveHd: hdHook.current,

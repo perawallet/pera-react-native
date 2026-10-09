@@ -32,6 +32,7 @@ const {
     listPasskeysMock,
     importPasskeysMock,
     resolveSeedEntropyMock,
+    createSourcesMock,
     isEnabledMock,
     backupIdRef,
     keysRef,
@@ -53,6 +54,7 @@ const {
         failed: [],
     })),
     resolveSeedEntropyMock: vi.fn(),
+    createSourcesMock: vi.fn(() => ({})),
     isEnabledMock: vi.fn(),
     backupIdRef: { current: null as string | null },
     keysRef: { current: [] as FakeKeystoreKey[] },
@@ -62,7 +64,7 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    createBackupSyncStoreSources: () => ({}),
+    createBackupSyncStoreSources: createSourcesMock,
     initializeBackupSyncManager: initializeMock,
     getBackupSyncManager: () => managerMock,
     useListPasskeysForBackup: () => listPasskeysMock,
@@ -110,6 +112,10 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { error: vi.fn() },
     registerStore: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -240,6 +246,14 @@ describe('useBackupSyncLifecycle', () => {
         act(() => useSecurityStore.getState().setAppLockActive(true))
 
         expect(deps.isLocked()).toBe(true)
+    })
+
+    it('hands the manager the chain its backup carries', () => {
+        renderHook(() => useBackupSyncLifecycle())
+        const deps = (initializeMock as Mock).mock.calls[0][0]
+
+        expect(deps.chainId).toBe('algorand')
+        expect(createSourcesMock).toHaveBeenCalledWith('algorand')
     })
 
     it('waits for the foreground when the app cold-starts in the background', () => {

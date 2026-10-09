@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type PeraNotification,
     useInboxStatus,
@@ -39,7 +41,8 @@ export type UseNotificationsScreenResult = {
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
-    const { hasUnreadNotifications } = useInboxStatus()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { hasUnreadNotifications } = useInboxStatus(scope)
     const {
         data,
         isPending,
@@ -51,7 +54,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         refetch,
         isUnavailableOnNetwork,
         isDeviceUnregistered,
-    } = useNotificationsListQuery()
+    } = useNotificationsListQuery(scope)
     const { hasInternet } = useNetworkStatus()
 
     // Offline wins over a stale error: a paused, uncached fetch means there is
@@ -59,7 +62,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     // the same "nothing to show" situation — not a dead Retry. Mirrors the
     // charts / staking contract (docs/OFFLINE_PAUSED_STATE.md).
     const isOffline = isPaused || (isError && !hasInternet)
-    const { markAsRead } = useMarkNotificationsAsReadMutation()
+    const { markAsRead } = useMarkNotificationsAsReadMutation(scope)
     const { handleNotificationPress } = useNotificationPress()
 
     const notifications = useMemo(() => data ?? [], [data])

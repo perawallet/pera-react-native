@@ -21,6 +21,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
     resetTestDatabase,
@@ -35,11 +43,10 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
@@ -47,8 +54,12 @@ const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'multi-network-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'multi-network-key',
+        },
+    },
     name: 'Multi-network Account',
 }
 
@@ -70,7 +81,7 @@ describe('Flow: Settings → Network selection', () => {
         useAccountsStore.getState().setAccounts([SAME_ADDRESS_ACCOUNT])
         useAccountsStore
             .getState()
-            .setSelectedAccountAddress(SAME_ADDRESS_ACCOUNT.address)
+            .setSelectedAccountId(SAME_ADDRESS_ACCOUNT.id)
         // Reset network to a known starting point so each test isn't
         // contaminated by the persisted setting from a prior test.
         renderHook(() => useNetwork()).result.current.setNetwork(
@@ -119,7 +130,7 @@ describe('Flow: Settings → Network selection', () => {
         // assertion is "switching network changes which row the
         // hook reads".
         await upsertAccountBalance({
-            accountAddress: SAME_ADDRESS_ACCOUNT.address,
+            accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(100_000_000), // 100 ALGO mainnet
             totalAssetsOptedIn: 0,
@@ -130,7 +141,7 @@ describe('Flow: Settings → Network selection', () => {
             authorityAddress: null,
         })
         await upsertAccountBalance({
-            accountAddress: SAME_ADDRESS_ACCOUNT.address,
+            accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             scope: TESTNET_SCOPE,
             algoBalance: new Decimal(7_000_000), // 7 ALGO testnet
             totalAssetsOptedIn: 0,
@@ -145,13 +156,13 @@ describe('Flow: Settings → Network selection', () => {
         // the per-network holdings table (base units / microalgos), so seed
         // the native balance there too — one row per network.
         await insertAssetHolding({
-            accountAddress: SAME_ADDRESS_ACCOUNT.address,
+            accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: MAINNET_SCOPE,
             amount: '100000000', // 100 ALGO
         })
         await insertAssetHolding({
-            accountAddress: SAME_ADDRESS_ACCOUNT.address,
+            accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: TESTNET_SCOPE,
             amount: '7000000', // 7 ALGO
@@ -164,8 +175,10 @@ describe('Flow: Settings → Network selection', () => {
         const { result } = renderHook(
             () => {
                 const net = useNetwork()
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
                 const balances = useAccountBalancesQuery(
                     [SAME_ADDRESS_ACCOUNT],
+                    scope,
                     true,
                 )
                 return { net, balances }
@@ -178,7 +191,7 @@ describe('Flow: Settings → Network selection', () => {
             () => {
                 expect(result.current.balances.isPending).toBe(false)
                 const balance = result.current.balances.accountBalances.get(
-                    SAME_ADDRESS_ACCOUNT.address,
+                    addressOf(SAME_ADDRESS_ACCOUNT),
                 )
                 const algo = balance?.assetBalances.find(b => b.assetId === '0')
                 // 100 ALGO in display units (base units / 10^6).
@@ -196,7 +209,7 @@ describe('Flow: Settings → Network selection', () => {
         await waitFor(
             () => {
                 const balance = result.current.balances.accountBalances.get(
-                    SAME_ADDRESS_ACCOUNT.address,
+                    addressOf(SAME_ADDRESS_ACCOUNT),
                 )
                 const algo = balance?.assetBalances.find(b => b.assetId === '0')
                 // 7 ALGO in display units — proves the new network's row
@@ -214,7 +227,7 @@ describe('Flow: Settings → Network selection', () => {
         await waitFor(
             () => {
                 const balance = result.current.balances.accountBalances.get(
-                    SAME_ADDRESS_ACCOUNT.address,
+                    addressOf(SAME_ADDRESS_ACCOUNT),
                 )
                 const algo = balance?.assetBalances.find(b => b.assetId === '0')
                 expect(algo?.amount.toString()).toBe('100')

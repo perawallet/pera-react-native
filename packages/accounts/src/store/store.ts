@@ -13,8 +13,9 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
-    ACCOUNT_TYPE_RANK,
     LaunchAccountModes,
+    type AccountChains,
+    type AccountCustody,
     type AccountsState,
     type AccountSortMode,
     type HardwareWalletDetails,
@@ -23,18 +24,19 @@ import {
     type WalletAccount,
 } from '../models'
 import {
+    gateWritesOnHydration,
     logger,
     registerStore,
-    type Network,
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     CHAIN_IDS,
     keyDerivations,
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainId,
+    type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
@@ -42,7 +44,10 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { kmsCore, zeroBytes } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { accountsAdapterFor } from '../chain-adapter'
+import {
+    accountsChainAdapters,
+    type DecodedAccountRecord,
+} from '../chain-adapter'
 import {
     buildAccount,
     canDerive,
@@ -54,99 +59,188 @@ import {
     seedMintableScheme,
 } from '../credentials'
 import {
-    toCurrentAccount,
-    type PersistedAccountRecord,
-} from '../credentials/backfill'
-import {
     DuplicateAccountError,
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
 } from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
-import { liftLegacyAuthority } from './legacyAuthority'
 import {
-    accountType,
     isHardwareWalletAccount,
     isSameAddress,
     isWatchAccount,
 } from '../utils'
 
 const STORE_NAME = 'accounts-store'
-// Bumping this, or changing `migrateAccountsState` or `merge`, adds the payload
-// the outgoing version wrote to conformance/src/suites/store-migration/fixtures.ts.
-const STORE_VERSION = 4
+// Bumping this, or changing `migrateAccountsState`, adds the payload the
+// outgoing version wrote to conformance/src/suites/store-migration/fixtures.ts.
+const STORE_VERSION = 5
 
 type PersistedAccountsState = Pick<
     AccountsState,
     | 'accounts'
-    | 'selectedAccountAddress'
+    | 'selectedAccountId'
     | 'sortMode'
     | 'manualAccountOrder'
     | 'launchAccountMode'
-    | 'launchAccountAddress'
+    | 'launchAccountId'
     | 'authorities'
     | 'unscopedAuthorities'
 >
 
-type PersistedAccountsRecordState = Omit<PersistedAccountsState, 'accounts'> & {
-    accounts?: PersistedAccountRecord[]
+type PersistedRecord = Record<string, unknown> & {
+    id?: unknown
+    address?: string
 }
 
-// v1 persisted `provenance`/`credentials`, which `custody`/`chains` replace.
-// Both are dropped, with the `custody`/`chains` they were derived into, so the
-// legacy `type` decodes again.
-const stripPreV2Custody = (
-    account: PersistedAccountRecord,
-): PersistedAccountRecord => {
-    const rest: Record<string, unknown> = { ...account }
+/** State as v0-v4 persisted it: records carried the legacy fields, and selection was keyed by address. */
+type LegacyPersistedState = Partial<
+    Omit<PersistedAccountsState, 'accounts'>
+> & {
+    accounts?: PersistedRecord[]
+    selectedAccountAddress?: Nullable<string>
+    launchAccountAddress?: Nullable<string>
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null
+
+/** A record already held only as custody and chain entries, as one for a chain with no accounts adapter can be. */
+const currentShapeOf = (
+    raw: PersistedRecord,
+): DecodedAccountRecord | undefined =>
+    isObject(raw.custody) &&
+    typeof raw.custody.kind === 'string' &&
+    isObject(raw.chains) &&
+    Object.keys(raw.chains).length > 0
+        ? {
+              custody: raw.custody as AccountCustody,
+              chains: raw.chains as AccountChains,
+          }
+        : undefined
+
+const decodeRecord = (raw: PersistedRecord): DecodedAccountRecord | undefined =>
+    CHAIN_IDS.flatMap(chainId => {
+        if (!accountsChainAdapters.has(chainId)) return []
+        const adapter = accountsChainAdapters.get(chainId)
+        return adapter.decodeLegacyRecord?.(raw) ?? []
+    })[0] ?? currentShapeOf(raw)
+
+const persistedIdOf = (raw: PersistedRecord): string | undefined =>
+    typeof raw.id === 'string' && raw.id !== '' ? raw.id : undefined
+
+/**
+ * The id for a record persisted without one, derived from its first chain
+ * address. It must be the same wherever the migration runs: the extension's
+ * popup and offscreen document each migrate the same payload, and a random id
+ * would differ between them. The `legacy:` prefix can't collide with the
+ * UUIDs `buildAccount` mints.
+ */
+const derivedIdOf = ({ chains }: DecodedAccountRecord): string => {
+    const chainId = CHAIN_IDS.find(id => chains[id])
+    return chainId ? `legacy:${chainId}:${chains[chainId]?.address}` : 'legacy'
+}
+
+type MigratedRecord = {
+    /** The address the record was persisted under before v5, which selection named. */
+    legacyAddress: string | undefined
+    account: WalletAccount
+}
+
+type LiftedAuthorities = Pick<
+    PersistedAccountsState,
+    'authorities' | 'unscopedAuthorities'
+>
+
+/**
+ * Files the authority each chain decodes from `raw` under the address the
+ * record holds on that chain. Records persisted before v4 carried authority
+ * beside their account fields.
+ */
+const liftLegacyAuthority = (
+    raw: PersistedRecord,
+    { chains }: DecodedAccountRecord,
+    into: LiftedAuthorities,
+): void => {
+    for (const chainId of CHAIN_IDS) {
+        const address = chains[chainId]?.address
+        if (address === undefined || !accountsChainAdapters.has(chainId)) {
+            continue
+        }
+        const decoded = accountsChainAdapters
+            .get(chainId)
+            .decodeLegacyAuthority?.(raw)
+        if (!decoded) continue
+        for (const [key, authority] of Object.entries(decoded.byScope) as [
+            ChainScopeKey,
+            string | undefined,
+        ][]) {
+            if (authority === undefined) continue
+            into.authorities[key] = {
+                ...into.authorities[key],
+                [address]: authority,
+            }
+        }
+        if (decoded.unscoped !== undefined) {
+            into.unscopedAuthorities[address] = decoded.unscoped
+        }
+    }
+}
+
+// No migration ever wrote ids, so a record persisted without one gets a
+// derived id rather than losing the account.
+const migrateRecords = (
+    raws: readonly PersistedRecord[],
+    lifted: LiftedAuthorities,
+): MigratedRecord[] => {
+    const usedIds = new Set(raws.flatMap(raw => persistedIdOf(raw) ?? []))
+    const uniqueId = (base: string): string => {
+        let id = base
+        for (let repeat = 2; usedIds.has(id); repeat++) {
+            id = `${base}:${repeat}`
+        }
+        usedIds.add(id)
+        return id
+    }
+    return raws.flatMap(raw => {
+        const decoded = decodeRecord(raw)
+        if (!decoded) return []
+        liftLegacyAuthority(raw, decoded, lifted)
+        return [
+            {
+                legacyAddress:
+                    typeof raw.address === 'string' ? raw.address : undefined,
+                account: {
+                    id: persistedIdOf(raw) ?? uniqueId(derivedIdOf(decoded)),
+                    ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
+                    ...decoded,
+                },
+            },
+        ]
+    })
+}
+
+// Before v2 the legacy `type` and details were authoritative, and v1's
+// `provenance`/`credentials` were derived from them, so all of it is dropped
+// and the legacy fields decode again.
+const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
+    const rest = { ...raw }
     delete rest.provenance
     delete rest.credentials
     delete rest.custody
     delete rest.chains
-    return rest as PersistedAccountRecord
+    return rest
 }
 
-// v4 replaced the Algorand-named seed scheme with a seedless custody.
-const withStandaloneCustody = (account: WalletAccount): WalletAccount => {
-    const { custody } = account as { custody: { kind: string; seed?: string } }
-    return custody.kind === 'local' && custody.seed === 'algo25'
-        ? ({
-              ...account,
-              custody: { kind: 'local', seed: null },
-          } as WalletAccount)
-        : account
-}
-
-/**
- * Before v2 the legacy `type` and details were authoritative, so those
- * versions derive custody from them again. v3 stops persisting `type`, which
- * re-running this over migrated state leaves alone. v4 rewrites the stored
- * Algorand-named seed scheme to a seedless standalone custody.
- */
-export const migrateAccountsState = (
-    persistedState: unknown,
-    version: number,
-): PersistedAccountsState => {
-    if (version >= 4) return persistedState as PersistedAccountsState
-    const state = persistedState as PersistedAccountsRecordState
-    const lifted = liftLegacyAuthority(state.accounts ?? [])
-    return {
-        ...state,
-        accounts: lifted.records.map(account =>
-            withStandaloneCustody(
-                version < 3
-                    ? toCurrentAccount(
-                          version < 2 ? stripPreV2Custody(account) : account,
-                      )
-                    : (account as unknown as WalletAccount),
-            ),
-        ),
-        authorities: mergeAuthorities(lifted.authorities, state.authorities),
-        unscopedAuthorities: {
-            ...lifted.unscopedAuthorities,
-            ...state.unscopedAuthorities,
-        },
-    }
+/** The id of the account that held `address` before the migration; `null` when none did. */
+const idForLegacyAddress = (
+    address: Nullable<string> | undefined,
+    records: readonly MigratedRecord[],
+): Nullable<string> => {
+    if (!address) return null
+    return (
+        records.find(record => record.legacyAddress === address)?.account.id ??
+        null
+    )
 }
 
 // Entries in `held` win: they were persisted alongside the records the legacy
@@ -174,43 +268,88 @@ const withoutAddress = <V>(
     return rest
 }
 
-type ChainAddresses = Partial<Record<ChainId, string>>
-
-const chainAddressesOf = (account: WalletAccount): ChainAddresses => {
-    const addresses: ChainAddresses = {}
-    for (const chainId of CHAIN_IDS) {
-        const address = chainAccountOf(account, chainId)?.address
-        if (address !== undefined) addresses[chainId] = address
+/**
+ * Every record decodes through the registered chain adapters, so this runs
+ * only after they register (`rehydrateAccountsStore`). Each record keeps only
+ * its custody and chain entries, the authority it carried before v4 moving
+ * into the authority maps, and a record no chain decodes is dropped.
+ * Selection moves from addresses to account ids.
+ */
+export const migrateAccountsState = (
+    persistedState: unknown,
+    version: number,
+): PersistedAccountsState => {
+    if (version >= STORE_VERSION) {
+        return persistedState as PersistedAccountsState
     }
-    return addresses
+    const state = (persistedState ?? {}) as LegacyPersistedState
+    const lifted: LiftedAuthorities = {
+        authorities: {},
+        unscopedAuthorities: {},
+    }
+    const records = migrateRecords(
+        (state.accounts ?? []).map(raw =>
+            version < 2 ? stripPreV2Custody(raw) : raw,
+        ),
+        lifted,
+    )
+    const accounts = records.map(record => record.account)
+    const idOf = (address: Nullable<string> | undefined) =>
+        idForLegacyAddress(address, records)
+    const launchAccountId = idOf(state.launchAccountAddress)
+    return {
+        accounts,
+        selectedAccountId: idOf(state.selectedAccountAddress),
+        sortMode: state.sortMode ?? 'manual',
+        manualAccountOrder: (state.manualAccountOrder ?? []).flatMap(
+            address => idOf(address) ?? [],
+        ),
+        launchAccountMode: launchAccountId
+            ? (state.launchAccountMode ?? LaunchAccountModes.lastUsed)
+            : LaunchAccountModes.lastUsed,
+        launchAccountId,
+        authorities: mergeAuthorities(lifted.authorities, state.authorities),
+        unscopedAuthorities: {
+            ...lifted.unscopedAuthorities,
+            ...state.unscopedAuthorities,
+        },
+    }
 }
+
+type ChainAddress = { chainId: ChainId; address: string }
+
+const chainAddressesOf = (account: WalletAccount): ChainAddress[] =>
+    CHAIN_IDS.flatMap(chainId => {
+        const address = chainAccountOf(account, chainId)?.address
+        return address === undefined ? [] : [{ chainId, address }]
+    })
 
 /** The first of `candidate`'s addresses that `existing` also holds on the same chain. */
 const sharedChainAddress = (
-    candidate: ChainAddresses,
-    existing: ChainAddresses,
-): string | undefined => {
-    for (const chainId of CHAIN_IDS) {
-        const ours = candidate[chainId]
-        const theirs = existing[chainId]
-        if (
-            ours !== undefined &&
-            theirs !== undefined &&
-            isSameAddress(chainId, ours, theirs)
-        ) {
-            return ours
-        }
-    }
-    return undefined
+    candidate: readonly ChainAddress[],
+    existing: readonly ChainAddress[],
+): ChainAddress | undefined => {
+    const existingByChain = new Map(
+        existing.map(({ chainId, address }) => [chainId, address]),
+    )
+    return candidate.find(({ chainId, address }) => {
+        const theirs = existingByChain.get(chainId)
+        return theirs !== undefined && isSameAddress(chainId, address, theirs)
+    })
 }
+
+const duplicateRankOn = (chainId: ChainId, account: WalletAccount): number =>
+    accountsChainAdapters.has(chainId)
+        ? (accountsChainAdapters.get(chainId).duplicateRank?.(account) ?? 0)
+        : 0
 
 /**
  * Collapse accounts that hold the same address on the same chain, the
- * higher-precedence account type winning (see `ACCOUNT_TYPE_RANK`) and equal
- * ranks keeping the first occurrence. One account holding one address on two
+ * account that chain ranks higher winning (`duplicateRank`) and equal ranks
+ * keeping the first occurrence. One account holding one address on two
  * chains is not a duplicate. The survivor sits at the index where it *first*
  * collided:
- * `manualAccountOrder`, `selectedAccountAddress` and the rendered list all read
+ * `manualAccountOrder`, `selectedAccountId` and the rendered list all read
  * this array, so a dedupe that reorders accounts would be a worse bug than the
  * one it fixes.
  *
@@ -224,21 +363,27 @@ const resolveDuplicateAccounts = (
     accounts: WalletAccount[],
 ): WalletAccount[] => {
     const resolved: WalletAccount[] = []
-    const resolvedAddresses: ChainAddresses[] = []
+    const resolvedAddresses: ChainAddress[][] = []
 
     for (const account of accounts) {
         const addresses = chainAddressesOf(account)
-        const position = resolvedAddresses.findIndex(
-            existing => sharedChainAddress(addresses, existing) !== undefined,
-        )
-        if (position === -1) {
+        let position = -1
+        let shared: ChainAddress | undefined
+        for (const [index, existing] of resolvedAddresses.entries()) {
+            shared = sharedChainAddress(addresses, existing)
+            if (shared) {
+                position = index
+                break
+            }
+        }
+        if (position === -1 || !shared) {
             resolved.push(account)
             resolvedAddresses.push(addresses)
             continue
         }
         if (
-            ACCOUNT_TYPE_RANK[accountType(account)] >
-            ACCOUNT_TYPE_RANK[accountType(resolved[position])]
+            duplicateRankOn(shared.chainId, account) >
+            duplicateRankOn(shared.chainId, resolved[position])
         ) {
             resolved[position] = account
             resolvedAddresses[position] = addresses
@@ -246,6 +391,28 @@ const resolveDuplicateAccounts = (
     }
 
     return resolved
+}
+
+/** The account rebound to the hardware wallet, keeping its id, name and chain entries. */
+const rebindToHardware = (
+    current: WalletAccount,
+    details: HardwareWalletDetails,
+): WalletAccount | undefined => {
+    const chainId = CHAIN_IDS.find(id => chainAccountOf(current, id))
+    if (!chainId) return undefined
+    const { accountIndex, ...device } = details
+    return buildAccount({
+        id: current.id,
+        name: current.name,
+        custody: { kind: 'hardware', device, accountIndex },
+        chainId,
+        chains: Object.fromEntries(
+            Object.entries(current.chains).map(([id, entry]) => [
+                id,
+                entry ? { address: entry.address } : entry,
+            ]),
+        ),
+    })
 }
 
 /** Removes a KMS entry no account references; a failure is logged so the caller's own error is the one thrown. */
@@ -263,37 +430,33 @@ const removeUnreferencedKey = async (
     }
 }
 
-/** The account held by the hardware wallet, on the chain whose entry holds `address`; `undefined` when none does. */
-const rebindToHardware = (
-    current: WalletAccount,
+// Structural over the union of keys (all scalar) so a future device field
+// can't silently skip a re-bind by being left out of a hand-listed check.
+const sameDevice = (
+    a: Record<string, unknown>,
+    b: Record<string, unknown>,
+): boolean =>
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].every(
+        key => a[key] === b[key],
+    )
+
+const holdsAddressOn = (
+    accounts: readonly WalletAccount[],
     address: string,
-    details: HardwareWalletDetails,
-): WalletAccount | undefined => {
-    for (const chainId of CHAIN_IDS) {
-        const entry = chainAccountOf(current, chainId)
-        if (!entry || !isSameAddress(chainId, entry.address, address)) continue
-        const { accountIndex, ...device } = details
-        return buildAccount({
-            id: current.id,
-            name: current.name,
-            custody: { kind: 'hardware', device, accountIndex },
-            chainId,
-            chains: {
-                ...current.chains,
-                [chainId]: { address: entry.address },
-            },
-        })
-    }
-    return undefined
-}
+    chainId: ChainId,
+): boolean =>
+    accounts.some(account => {
+        const held = chainAccountOf(account, chainId)?.address
+        return held !== undefined && isSameAddress(chainId, held, address)
+    })
 
 const initialState = {
     accounts: [] as WalletAccount[],
-    selectedAccountAddress: null as Nullable<string>,
+    selectedAccountId: null as Nullable<string>,
     sortMode: 'manual' as AccountSortMode,
     manualAccountOrder: [] as string[],
     launchAccountMode: LaunchAccountModes.lastUsed as LaunchAccountMode,
-    launchAccountAddress: null as Nullable<string>,
+    launchAccountId: null as Nullable<string>,
     authorities: {} as RecordedAuthorities,
     unscopedAuthorities: {} as Record<string, string>,
 }
@@ -305,58 +468,53 @@ export const useAccountsStore: UseBoundStore<
         (set, get) => ({
             ...initialState,
             getSelectedAccount: () => {
-                const { accounts, selectedAccountAddress } = get()
+                const { accounts, selectedAccountId } = get()
 
-                if (!selectedAccountAddress) {
+                if (!selectedAccountId) {
                     return null
                 }
-                return (
-                    accounts.find(a => a.address === selectedAccountAddress) ??
-                    null
-                )
+                return accounts.find(a => a.id === selectedAccountId) ?? null
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 // Single chokepoint for every account write — dedupe by
                 // chain address so no caller can ever persist the same account
-                // twice, keeping the higher-precedence type (see
-                // ACCOUNT_TYPE_RANK) rather than whichever happened to come
+                // twice, keeping the account its chain ranks higher
+                // (`duplicateRank`) rather than whichever happened to come
                 // first. Callers that need to surface duplicates to the user
                 // use addAccount or throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
                 accounts = resolveDuplicateAccounts(accounts)
 
-                const currentSelected = get().selectedAccountAddress
+                const currentSelected = get().selectedAccountId
                 const currentManualOrder = get().manualAccountOrder
                 set({ accounts })
 
+                const accountIds = new Set(accounts.map(a => a.id))
                 if (currentSelected == null && accounts.length) {
-                    set({ selectedAccountAddress: accounts.at(0)?.address })
-                } else if (!accounts.find(a => a.address === currentSelected)) {
-                    set({
-                        selectedAccountAddress: accounts.at(0)?.address ?? null,
-                    })
+                    set({ selectedAccountId: accounts.at(0)?.id })
+                } else if (!accountIds.has(currentSelected ?? '')) {
+                    set({ selectedAccountId: accounts.at(0)?.id ?? null })
                 }
 
-                const accountAddresses = new Set(accounts.map(a => a.address))
-                const prunedOrder = currentManualOrder.filter(addr =>
-                    accountAddresses.has(addr),
+                const prunedOrder = currentManualOrder.filter(id =>
+                    accountIds.has(id),
                 )
-                const newAddresses = accounts
-                    .map(a => a.address)
-                    .filter(addr => !prunedOrder.includes(addr))
-                set({ manualAccountOrder: [...prunedOrder, ...newAddresses] })
+                const newIds = accounts
+                    .map(a => a.id)
+                    .filter(id => !prunedOrder.includes(id))
+                set({ manualAccountOrder: [...prunedOrder, ...newIds] })
 
                 // A launch pin whose account is gone would leave the Launch
                 // Settings screen pointing at nothing, so revert it here rather
-                // than tolerating a dangling address until the next cold start.
-                const { launchAccountMode, launchAccountAddress } = get()
+                // than tolerating a dangling id until the next cold start.
+                const { launchAccountMode, launchAccountId } = get()
                 if (
                     launchAccountMode === LaunchAccountModes.specific &&
-                    !accountAddresses.has(launchAccountAddress ?? '')
+                    !accountIds.has(launchAccountId ?? '')
                 ) {
                     set({
                         launchAccountMode: LaunchAccountModes.lastUsed,
-                        launchAccountAddress: null,
+                        launchAccountId: null,
                     })
                 }
             },
@@ -369,7 +527,10 @@ export const useAccountsStore: UseBoundStore<
                         chainAddressesOf(existing),
                     )
                     if (shared !== undefined) {
-                        throw new DuplicateAccountError(shared, existing)
+                        throw new DuplicateAccountError(
+                            shared.address,
+                            existing,
+                        )
                     }
                 }
                 get().setAccounts([...accounts, account])
@@ -475,7 +636,6 @@ export const useAccountsStore: UseBoundStore<
                 if (existing) {
                     throw new DuplicateAccountError(existing.address, holder)
                 }
-                // Not `buildAccount`: it would rewrite the top-level fields from this chain.
                 const updated = {
                     ...holder,
                     chains: { ...holder.chains, [chainId]: entry },
@@ -485,84 +645,75 @@ export const useAccountsStore: UseBoundStore<
                 )
                 return updated
             },
-            setSelectedAccountAddress: (address: Nullable<string>) => {
+            setSelectedAccountId: (id: Nullable<string>) => {
                 const accounts = get().accounts
-                if (address && !accounts.find(a => a.address === address)) {
+                if (id && !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
+                        `Attempted to select account ${id}, but it does not exist in accounts list.`,
                     )
                     return
                 }
-                set({ selectedAccountAddress: address })
+                set({ selectedAccountId: id })
             },
             setSortMode: (mode: AccountSortMode) => {
                 set({ sortMode: mode })
             },
             setLaunchAccountPreference: (
                 mode: LaunchAccountMode,
-                address?: Nullable<string>,
+                id?: Nullable<string>,
             ) => {
                 if (mode === LaunchAccountModes.lastUsed) {
                     set({
                         launchAccountMode: mode,
-                        launchAccountAddress: null,
+                        launchAccountId: null,
                     })
                     return
                 }
 
                 const accounts = get().accounts
-                if (!address || !accounts.find(a => a.address === address)) {
+                if (!id || !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to pin launch account ${address}, but it does not exist in accounts list.`,
+                        `Attempted to pin launch account ${id}, but it does not exist in accounts list.`,
                     )
                     return
                 }
-                set({ launchAccountMode: mode, launchAccountAddress: address })
+                set({ launchAccountMode: mode, launchAccountId: id })
             },
             applyLaunchAccountPreference: () => {
-                const { launchAccountMode, launchAccountAddress, accounts } =
-                    get()
+                const { launchAccountMode, launchAccountId, accounts } = get()
                 if (launchAccountMode !== LaunchAccountModes.specific) return
-                if (!accounts.find(a => a.address === launchAccountAddress))
-                    return
-                set({ selectedAccountAddress: launchAccountAddress })
+                if (!accounts.some(a => a.id === launchAccountId)) return
+                set({ selectedAccountId: launchAccountId })
             },
             setManualAccountOrder: (order: string[]) => {
                 set({ manualAccountOrder: order })
             },
-            addRekeyedWatchAccounts: (
+            addDelegatedWatchAccounts: (
                 sourceAddress: string,
                 addresses: string[],
-                network: Network,
+                scope: ChainScope,
             ) => {
                 if (addresses.length === 0) return 0
 
                 const current = get().accounts
-                const currentAddresses = new Set(current.map(a => a.address))
-                const adapter = accountsAdapterFor(network)
-                const { chainId } = adapter
-                const watchAccounts = addresses
-                    .filter(addr => !currentAddresses.has(addr))
-                    .map(address =>
-                        buildAccount({
-                            custody: { kind: 'watch' },
-                            chainId,
-                            chains: { [chainId]: { address } },
-                        }),
-                    )
-
-                if (watchAccounts.length === 0) return 0
-
-                const scope = scopeForLegacyNetwork(network)
-                const recorded = Object.fromEntries(
-                    watchAccounts.map(({ address }) => [
-                        address,
-                        sourceAddress,
-                    ]),
+                const { chainId } = scope
+                const newAddresses = addresses.filter(
+                    address => !holdsAddressOn(current, address, chainId),
                 )
+                if (newAddresses.length === 0) return 0
+
+                const watchAccounts = newAddresses.map(address =>
+                    buildAccount({
+                        custody: { kind: 'watch' },
+                        chainId,
+                        chains: { [chainId]: { address } },
+                    }),
+                )
+                const adapter = accountsChainAdapters.get(chainId)
+                const key = toScopeKey(scope)
                 useAccountChainStateStore.getState().fillAccountChainStates({
-                    [toScopeKey(scope)]: Object.fromEntries(
-                        watchAccounts.map(({ address }) => [
+                    [key]: Object.fromEntries(
+                        newAddresses.map(address => [
                             address,
                             adapter.toChainState({
                                 authorityAddress: sourceAddress,
@@ -572,7 +723,11 @@ export const useAccountsStore: UseBoundStore<
                 })
 
                 get().setAccounts([...current, ...watchAccounts])
-                get().recordAuthorities({ [toScopeKey(scope)]: recorded })
+                get().recordAuthorities({
+                    [key]: Object.fromEntries(
+                        newAddresses.map(address => [address, sourceAddress]),
+                    ),
+                })
                 return watchAccounts.length
             },
             recordAuthorities: (incoming: RecordedAuthorities) => {
@@ -580,8 +735,11 @@ export const useAccountsStore: UseBoundStore<
                     authorities: mergeAuthorities(get().authorities, incoming),
                 })
             },
-            settleAuthorities: (authorities: RecordedAuthorities) => {
-                set({ authorities, unscopedAuthorities: {} })
+            settleAuthorities: (
+                authorities: RecordedAuthorities,
+                unscopedAuthorities: Record<string, string> = {},
+            ) => {
+                set({ authorities, unscopedAuthorities })
             },
             forgetAuthorities: (address: string) => {
                 const { authorities, unscopedAuthorities } = get()
@@ -602,20 +760,16 @@ export const useAccountsStore: UseBoundStore<
                 })
             },
             upgradeWatchAccountToHardware: (
-                address: string,
+                id: string,
                 hardwareDetails: HardwareWalletDetails,
             ) => {
                 const accounts = get().accounts
-                const idx = accounts.findIndex(a => a.address === address)
+                const idx = accounts.findIndex(a => a.id === id)
                 if (idx === -1) return false
                 const current = accounts[idx]
                 if (!isWatchAccount(current)) return false
 
-                const upgraded = rebindToHardware(
-                    current,
-                    address,
-                    hardwareDetails,
-                )
+                const upgraded = rebindToHardware(current, hardwareDetails)
                 if (!upgraded) return false
                 const next = [...accounts]
                 next[idx] = upgraded
@@ -623,37 +777,22 @@ export const useAccountsStore: UseBoundStore<
                 return true
             },
             updateHardwareDetails: (
-                address: string,
+                id: string,
                 hardwareDetails: HardwareWalletDetails,
             ) => {
                 const accounts = get().accounts
-                const idx = accounts.findIndex(a => a.address === address)
+                const idx = accounts.findIndex(a => a.id === id)
                 if (idx === -1) return false
                 const current = accounts[idx]
                 if (!isHardwareWalletAccount(current)) return false
 
-                // Structural compare over the union of keys (all scalar) so a
-                // future HardwareWalletDetails field can't silently skip a
-                // re-bind by being omitted from a hand-listed equality check.
-                const currentDetails = current.hardwareDetails
-                const keys = new Set<keyof HardwareWalletDetails>([
-                    ...(Object.keys(
-                        currentDetails,
-                    ) as (keyof HardwareWalletDetails)[]),
-                    ...(Object.keys(
-                        hardwareDetails,
-                    ) as (keyof HardwareWalletDetails)[]),
-                ])
-                const unchanged = [...keys].every(
-                    key => currentDetails[key] === hardwareDetails[key],
-                )
+                const { accountIndex, ...device } = hardwareDetails
+                const unchanged =
+                    current.custody.accountIndex === accountIndex &&
+                    sameDevice(current.custody.device, device)
                 if (unchanged) return false
 
-                const rebound = rebindToHardware(
-                    current,
-                    address,
-                    hardwareDetails,
-                )
+                const rebound = rebindToHardware(current, hardwareDetails)
                 if (!rebound) return false
                 const next = [...accounts]
                 next[idx] = rebound
@@ -664,44 +803,41 @@ export const useAccountsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            ...gateWritesOnHydration<AccountsState, unknown>(
+                createJSONStorage(() => getProvider().keyValueStorage),
+            ),
             version: STORE_VERSION,
+            // `migrate` decodes records through the chain adapters, which
+            // register after every module has evaluated: hydrating at import
+            // would run it against an empty registry.
+            skipHydration: true,
             migrate: migrateAccountsState,
-            // The persisted accounts of a v3 payload may still carry the
-            // authority fields, which migrate never sees.
-            merge: (persisted, current) => {
-                if (!persisted) return current
-                const state = persisted as Partial<PersistedAccountsState>
-                const lifted = liftLegacyAuthority(
-                    state.accounts ?? current.accounts,
-                )
-                return {
-                    ...current,
-                    ...state,
-                    accounts: lifted.records,
-                    authorities: mergeAuthorities(
-                        lifted.authorities,
-                        state.authorities,
-                    ),
-                    unscopedAuthorities: {
-                        ...lifted.unscopedAuthorities,
-                        ...state.unscopedAuthorities,
-                    },
+            onRehydrateStorage: () => (_state, error) => {
+                if (error) {
+                    logger.error(
+                        'Accounts store hydration failed; the persisted state is left untouched',
+                        { error },
+                    )
                 }
             },
             partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
-                selectedAccountAddress: state.selectedAccountAddress,
+                selectedAccountId: state.selectedAccountId,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
                 launchAccountMode: state.launchAccountMode,
-                launchAccountAddress: state.launchAccountAddress,
+                launchAccountId: state.launchAccountId,
                 authorities: state.authorities,
                 unscopedAuthorities: state.unscopedAuthorities,
             }),
         },
     ),
 )
+
+/** Called once the chain adapters are registered; until then the store holds its defaults. */
+export const rehydrateAccountsStore = async (): Promise<void> => {
+    await useAccountsStore.persist.rehydrate()
+}
 
 registerStore({
     name: STORE_NAME,

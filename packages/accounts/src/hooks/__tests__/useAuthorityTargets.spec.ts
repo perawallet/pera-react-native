@@ -13,8 +13,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useAuthorityTargets } from '../useAuthorityTargets'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useAuthorityTargetCategories,
+    useAuthorityTargets,
+} from '../useAuthorityTargets'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -24,51 +26,155 @@ import {
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
+import {
+    AuthorityTargetCategories,
+    type AuthorityTargetCategory,
+} from '../../chain-adapter'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
+
+// A fresh fake whose authority lists `targetKinds` instead of its own.
+const withTargetKinds = (
+    targetKinds: { id: string; category: AuthorityTargetCategory }[],
+) => {
+    const { authority } = registerFakeAccountsChain().adapter
+    return registerFakeAccountsChain({
+        authority: { ...authority!, targetKinds },
+    })
+}
 
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain()
     })
 
-    it('passes the kind, source, accounts and quantum flag to the chain and keeps the accepted targets', () => {
+    it("asks the chain about each of the category's kinds and keeps the accepted targets", () => {
         const source = held('SRC')
         const good = held('GOOD')
         const bad = held('BAD')
         setAccounts([source, good, bad])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.isEligibleTarget).mockImplementation(
-            (_kind, target) => target.address === 'GOOD',
+            (_kindId, target) => target.id === 'GOOD',
         )
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'quantum', {
-                isQuantumTargetEnabled: true,
-            }),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
 
         expect(result.current).toEqual([good])
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
-            'quantum',
+            'fake-target-local',
             good,
             source,
             [source, good, bad],
             MAINNET_SCOPE,
-            { isQuantumTargetEnabled: true },
+        )
+        expect(authority!.isEligibleTarget).not.toHaveBeenCalledWith(
+            'fake-target-hardware',
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+        )
+    })
+
+    it('follows a kind the chain renames', () => {
+        const source = held('SRC')
+        const target = held('A')
+        setAccounts([source, target])
+        const { adapter } = withTargetKinds([
+            { id: 'renamed-local', category: 'standard' },
+        ])
+        vi.mocked(adapter.authority!.isEligibleTarget).mockImplementation(
+            kindId => kindId === 'renamed-local',
+        )
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([source, target])
+    })
+
+    it("lists the targets of every kind the chain adds to a category, in the wallet's order", () => {
+        const source = held('SRC')
+        const first = held('FIRST')
+        const second = held('SECOND')
+        setAccounts([source, first, second])
+        const { adapter } = withTargetKinds([
+            { id: 'ledger-like', category: 'hardware' },
+            { id: 'card-like', category: 'hardware' },
+        ])
+        vi.mocked(adapter.authority!.isEligibleTarget).mockImplementation(
+            (kindId, target) =>
+                (kindId === 'card-like' && target.id === 'FIRST') ||
+                (kindId === 'ledger-like' && target.id === 'SECOND'),
+        )
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.hardware,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([first, second])
+    })
+
+    it('lists nothing for a category the chain files no kind under', () => {
+        const source = held('SRC')
+        setAccounts([source, held('A')])
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.isEligibleTarget,
+        ).mockReturnValue(true)
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.postQuantum,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([])
+    })
+
+    it('asks the chain on the scope it is given', () => {
+        const source = held('SRC')
+        setAccounts([source, held('A')])
+        const { authority } = fakeAccountsChain().adapter
+
+        renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                TESTNET_SCOPE,
+            ),
+        )
+
+        expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'fake-target-local',
+            expect.anything(),
+            source,
+            expect.any(Array),
+            TESTNET_SCOPE,
         )
     })
 
@@ -79,35 +185,21 @@ describe('useAuthorityTargets', () => {
         vi.mocked(
             fakeAccountsChain().adapter.authority!.isEligibleTarget,
         ).mockImplementation(
-            (_kind, _target, from, _accounts, scope) =>
+            (_kindId, _target, from, _accounts, scope) =>
                 authorityOf(from, scope) !== null,
         )
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'standard'),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
         expect(result.current).toEqual([])
 
         act(() => seedAuthority('SRC', 'AUTH'))
 
         expect(result.current).toEqual([source, target])
-    })
-
-    it('asks the chain on the selected network', () => {
-        const source = held('SRC')
-        setAccounts([source, held('A')])
-        const { authority } = fakeAccountsChain().adapter
-        useNetworkStore.getState().setNetwork('testnet')
-
-        renderHook(() => useAuthorityTargets(source, 'standard'))
-
-        expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
-            'standard',
-            expect.anything(),
-            source,
-            expect.any(Array),
-            TESTNET_SCOPE,
-            { isQuantumTargetEnabled: false },
-        )
     })
 
     it('returns nothing for a missing source', () => {
@@ -117,7 +209,11 @@ describe('useAuthorityTargets', () => {
         ).mockReturnValue(true)
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(null, 'standard'),
+            useAuthorityTargets(
+                null,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
 
         expect(result.current).toEqual([])
@@ -129,7 +225,40 @@ describe('useAuthorityTargets', () => {
         setAccounts([source, held('A')])
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'standard'),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([])
+    })
+})
+
+describe('useAuthorityTargetCategories', () => {
+    it('lists each category the chain files a kind under once, in its order', () => {
+        withTargetKinds([
+            { id: 'ledger', category: AuthorityTargetCategories.hardware },
+            { id: 'ed', category: AuthorityTargetCategories.standard },
+            { id: 'ledger-2', category: AuthorityTargetCategories.hardware },
+        ])
+
+        const { result } = renderHook(() =>
+            useAuthorityTargetCategories(MAINNET_SCOPE),
+        )
+
+        expect(result.current).toEqual([
+            AuthorityTargetCategories.hardware,
+            AuthorityTargetCategories.standard,
+        ])
+    })
+
+    it('lists nothing on a chain without an authority', () => {
+        registerFakeAccountsChain({ authority: undefined })
+
+        const { result } = renderHook(() =>
+            useAuthorityTargetCategories(MAINNET_SCOPE),
         )
 
         expect(result.current).toEqual([])

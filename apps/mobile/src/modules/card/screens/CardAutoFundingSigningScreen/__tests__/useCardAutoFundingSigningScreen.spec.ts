@@ -66,8 +66,7 @@ import { useCardAutoFundingSigningScreen } from '../useCardAutoFundingSigningScr
 const CONNECTED_ACCOUNT: WalletAccount = {
     id: 'a1',
     custody: { kind: 'local', seed: null },
-    address: 'ADDR1',
-    keyPairId: 'kp1',
+    chains: { algorand: { address: 'ADDR1', keyPairId: 'kp1' } },
 } as WalletAccount
 
 describe('useCardAutoFundingSigningScreen', () => {

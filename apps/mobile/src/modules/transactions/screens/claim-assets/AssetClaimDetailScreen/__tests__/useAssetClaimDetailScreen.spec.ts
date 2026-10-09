@@ -32,7 +32,14 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [{ address: 'ACCOUNT_ADDR', name: 'Main' }],
+    useAllAccounts: () => [
+        { chains: { algorand: { address: 'ACCOUNT_ADDR' } }, name: 'Main' },
+    ],
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({

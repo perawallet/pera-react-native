@@ -19,7 +19,7 @@ import {
     isMultisigUnsignable,
     canSignWith,
     getAuthAccount,
-    getRekeyAccount,
+    getDelegatedAccount,
     getSignerFor,
     delegateTransitionFor,
     resolveAuthAccount,
@@ -27,11 +27,18 @@ import {
     DelegationTargetNotFoundError,
     type SignerResolution,
     type WalletAccount,
-    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    standaloneAccount,
+    hardwareAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { algorandAddressOf } from '../vocabulary'
 import { seedAuthority } from './seedAuthority'
 
 beforeAll(() => {
@@ -53,7 +60,7 @@ const withAuthority = (
 ): WalletAccount => {
     if (authority) {
         authorities.set(account, authority)
-        seedAuthority(account.address as string, authority)
+        seedAuthority(algorandAddressOf(account) as string, authority)
     }
     return account
 }
@@ -61,50 +68,22 @@ const withAuthority = (
 const seedAuthorities = (accounts: WalletAccount[]): void => {
     for (const account of accounts) {
         const authority = authorities.get(account)
-        if (authority) seedAuthority(account.address as string, authority)
+        if (authority) {
+            seedAuthority(algorandAddressOf(account) as string, authority)
+        }
     }
 }
 
 const algo25 = (address: string, authority?: string): WalletAccount =>
-    withAuthority(
-        {
-            custody: { kind: 'local', seed: null },
-            address,
-            keyPairId: `kp-${address}`,
-        } as WalletAccount,
-        authority,
-    )
+    withAuthority(standaloneAccount(address), authority)
 
 const watch = (address: string, authority?: string): WalletAccount =>
-    withAuthority(
-        { custody: { kind: 'watch' }, address } as WalletAccount,
-        authority,
-    )
+    withAuthority(watchAccount(address), authority)
 
-const hardware = (address: string): WalletAccount =>
-    ({
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 0,
-        },
-        address,
-    }) as WalletAccount
+const hardware = (address: string): WalletAccount => hardwareAccount(address)
 
 const quantum = (address: string, authority?: string): WalletAccount =>
-    withAuthority(
-        {
-            custody: { kind: 'local', seed: 'quantum' },
-            address,
-            keyPairId: `kp-${address}`,
-        } as WalletAccount,
-        authority,
-    )
+    withAuthority(quantumAccount(address), authority)
 
 const multisig = (
     address: string,
@@ -112,15 +91,11 @@ const multisig = (
     authority?: string,
 ): WalletAccount =>
     withAuthority(
-        {
-            custody: { kind: 'multisig' },
-            address,
-            multisigDetails: {
-                threshold: 2,
-                addresses: participantAddresses,
-                version: 1,
-            },
-        } as WalletAccount,
+        multisigAccount(address, {
+            threshold: 2,
+            addresses: participantAddresses,
+            version: 1,
+        }),
         authority,
     )
 
@@ -403,7 +378,7 @@ type SignerCase = {
     signer: string | null
     /** Address at the auth-addr (self when not rekeyed), or null when unresolvable. */
     auth: string | null
-    /** `getRekeyAccount`: the auth only when rekeyed. */
+    /** `getDelegatedAccount`: the auth only when rekeyed. */
     rekeyAccount: string | null
     isRekeyedUnsignable: boolean
     isMultisigUnsignable: boolean
@@ -626,9 +601,12 @@ const signerCases: SignerCase[] = [
     },
 ]
 
+const addressOrNull = (account: WalletAccount | null | undefined) =>
+    account ? (algorandAddressOf(account) ?? null) : null
+
 describe.each(signerCases)('signer resolution: $name', c => {
     const account = c.accounts[0]
-    const address = account.address as string
+    const address = algorandAddressOf(account) as string
 
     beforeEach(() => seedAuthorities(c.accounts))
 
@@ -644,8 +622,7 @@ describe.each(signerCases)('signer resolution: $name', c => {
 
     it('derives the signer and boolean forms from that kind', () => {
         expect(
-            getSignerFor(address, c.accounts, ALGORAND_CHAIN_ID)?.address ??
-                null,
+            addressOrNull(getSignerFor(address, c.accounts, ALGORAND_CHAIN_ID)),
         ).toBe(c.signer)
         expect(canSignWith(account, c.accounts, ALGORAND_CHAIN_ID)).toBe(
             c.signer !== null,
@@ -660,12 +637,14 @@ describe.each(signerCases)('signer resolution: $name', c => {
 
     it('derives the auth-account forms', () => {
         expect(
-            getAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID)?.address ??
-                null,
+            addressOrNull(
+                getAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID),
+            ),
         ).toBe(c.auth)
         expect(
-            getRekeyAccount(address, c.accounts, ALGORAND_CHAIN_ID)?.address ??
-                null,
+            addressOrNull(
+                getDelegatedAccount(address, c.accounts, ALGORAND_CHAIN_ID),
+            ),
         ).toBe(c.rekeyAccount)
         if (c.auth === null) {
             expect(() =>
@@ -673,19 +652,18 @@ describe.each(signerCases)('signer resolution: $name', c => {
             ).toThrow(DelegationTargetNotFoundError)
         } else {
             expect(
-                resolveAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID)
-                    .address,
+                algorandAddressOf(
+                    resolveAuthAccount(account, c.accounts, ALGORAND_CHAIN_ID),
+                ),
             ).toBe(c.auth)
         }
     })
 
     it('reports a rekey transition only for a signable rekeyed account', () => {
-        const signerType = c.accounts.find(a => a.address === c.signer)
-            ? accountType(c.accounts.find(a => a.address === c.signer))
-            : undefined
+        const signer = c.accounts.find(a => algorandAddressOf(a) === c.signer)
         const expected =
-            authorities.has(account) && signerType
-                ? { from: accountType(account), to: signerType }
+            authorities.has(account) && signer
+                ? { from: account, to: signer }
                 : null
         expect(
             delegateTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
@@ -701,23 +679,22 @@ describe('signer resolution: account not in the store', () => {
             kind: 'accountNotFound',
         })
         expect(getSignerFor('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
-        expect(getRekeyAccount('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('account-in-hand forms resolve without the account being stored', () => {
         const outsider = watch('Z', 'A')
         expect(canSignWith(outsider, accounts, ALGORAND_CHAIN_ID)).toBe(true)
         expect(
-            resolveAuthAccount(outsider, accounts, ALGORAND_CHAIN_ID).address,
+            algorandAddressOf(
+                resolveAuthAccount(outsider, accounts, ALGORAND_CHAIN_ID),
+            ),
         ).toBe('A')
     })
 })
 
 describe('auth-account forms on a legacy multisig record without multisigDetails', () => {
-    const legacy = {
-        custody: { kind: 'multisig' },
-        address: 'MS',
-    } as WalletAccount
+    const legacy = multisigAccount('MS', null)
 
     it('resolve the auth hop without evaluating participants', () => {
         expect(resolveAuthAccount(legacy, [legacy], ALGORAND_CHAIN_ID)).toBe(
@@ -731,9 +708,9 @@ describe('auth-account forms on a legacy multisig record without multisigDetails
         expect(
             resolveAuthAccount(account, [account, legacy], ALGORAND_CHAIN_ID),
         ).toBe(legacy)
-        expect(getRekeyAccount('A', [account, legacy], ALGORAND_CHAIN_ID)).toBe(
-            legacy,
-        )
+        expect(
+            getDelegatedAccount('A', [account, legacy], ALGORAND_CHAIN_ID),
+        ).toBe(legacy)
     })
 })
 

@@ -10,16 +10,15 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    StandaloneAccount,
-    HDWalletAccount,
-    QuantumAccount,
+    LocalAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     AddressBackupPayload,
-    BackupAccountType,
+    BackupItemKind,
     BackupId,
     BackupItemKey,
     BackupItemType,
@@ -35,9 +34,16 @@ import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
+/** An account item of a chain kind the restoring chain's backup adapter
+ *  doesn't define; the restore reports it as that item's failure. */
 export class UnsupportedBackupAccountTypeError extends Error {
-    constructor(public readonly type: string) {
-        super(`Backup sync does not support account type: ${type}`)
+    constructor(
+        public readonly type: string,
+        public readonly chainId: ChainId,
+    ) {
+        super(
+            `The ${chainId} backup adapter does not decode item type: ${type}`,
+        )
         this.name = 'UnsupportedBackupAccountTypeError'
     }
 }
@@ -126,17 +132,16 @@ export type SerializedAccount = {
     extraItems?: SerializedItem[]
 }
 
-/** Resolves an account's 25-word phrase. Hook-bound: the phrase only exists
- *  inside a `useKMS().executeWithMnemonic` session, which maps the signing
- *  `keyPairId` back to its seed. Standalone and quantum accounts share the
- *  format, so one resolver covers both. Null when unavailable. */
+/** Resolves a single-key local account's recovery phrase. Hook-bound: the
+ *  phrase only exists inside a `useKMS().executeWithMnemonic` session, which
+ *  maps the signing key back to its seed. Null when unavailable. */
 export type SerializeMnemonicResolver = (
-    account: StandaloneAccount | QuantumAccount,
+    account: LocalAccount,
 ) => Promise<string | null>
 
 /** Resolves an HD account's derived/seed material for serialization. Hook-bound
  *  (needs KMS), injected from the app layer; null when the seed is unavailable. */
-export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
+export type SerializeHdResolver = (account: LocalAccount) => Promise<{
     seedFirstDerivedAddress: string
     publicKeyHex: string
     seedHex: string
@@ -149,7 +154,7 @@ export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
 export type LocalItem = SerializedItem & {
     contentHash: string
     address: string
-    accountType: BackupAccountType | null
+    accountType: BackupItemKind | null
 }
 
 export type LocalSnapshot = {

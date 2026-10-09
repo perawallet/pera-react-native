@@ -13,7 +13,13 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningStore } from '../index'
-import { isResumableRehydratedRequest, wasRestoredFromStorage } from '../store'
+import {
+    isResumableRehydratedRequest,
+    migrateSigningState,
+    rehydrateSigningStore,
+    wasRestoredFromStorage,
+} from '../store'
+import { makeUnsignedTransaction } from '../../__tests__/transactions'
 import type { SignRequest } from '../../models'
 
 const { mockStorage } = vi.hoisted(() => ({
@@ -140,7 +146,8 @@ describe('SigningStore', () => {
         expect(removed).toBe(false)
     })
 
-    test('should filter out callback requests from persistence', () => {
+    test('should filter out callback requests from persistence', async () => {
+        await rehydrateSigningStore({ unstampedRequestChainId: 'algorand' })
         const { result } = renderHook(() => useSigningStore())
 
         act(() => {
@@ -205,12 +212,40 @@ describe('SigningStore', () => {
                 version: 1,
             }),
         )
-        await useSigningStore.persist.rehydrate()
+        await rehydrateSigningStore({ unstampedRequestChainId: 'algorand' })
 
         // Drives the re-presentation guard: only these ids pay for a ledger
         // read before an approval sheet re-opens.
         expect(wasRestoredFromStorage('restored-1')).toBe(true)
         expect(wasRestoredFromStorage('fresh-1')).toBe(false)
+    })
+
+    test('stamps a request persisted before requests named their chain with the chain the caller names', async () => {
+        mockStorage.getItem.mockReturnValueOnce(
+            JSON.stringify({
+                state: {
+                    pendingSignRequests: [
+                        {
+                            id: 'unstamped-1',
+                            type: 'transactions',
+                            transport: 'algod',
+                            sourceType: 'multisig-cosign',
+                            txs: [],
+                        },
+                    ],
+                },
+                version: 1,
+            }),
+        )
+
+        await rehydrateSigningStore({ unstampedRequestChainId: 'algorand' })
+
+        expect(useSigningStore.getState().pendingSignRequests).toEqual([
+            expect.objectContaining({
+                id: 'unstamped-1',
+                chainId: 'algorand',
+            }),
+        ])
     })
 
     test('boots with default state when persisted JSON is malformed', async () => {
@@ -228,8 +263,140 @@ describe('SigningStore', () => {
     })
 })
 
+describe('SigningStore writes before hydration', () => {
+    const request = (id: string): SignRequest => ({
+        id,
+        chainId: 'algorand',
+        txs: [],
+        type: 'transactions',
+        transport: 'algod',
+        sourceType: 'multisig-cosign',
+    })
+    const persisted = JSON.stringify({
+        state: { pendingSignRequests: [request('persisted')] },
+        version: 1,
+    })
+
+    const loadStore = async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        return import('../store')
+    }
+
+    test('drops a write made before hydration, and persists the ones after it', async () => {
+        const store = await loadStore()
+
+        store.useSigningStore.getState().addSignRequest(request('early'))
+
+        expect(mockStorage.setItem).not.toHaveBeenCalled()
+
+        mockStorage.getItem.mockReturnValueOnce(persisted)
+        await store.rehydrateSigningStore({
+            unstampedRequestChainId: 'algorand',
+        })
+        mockStorage.setItem.mockClear()
+        store.useSigningStore.getState().addSignRequest(request('late'))
+
+        expect(mockStorage.setItem).toHaveBeenCalledWith(
+            'signing-store',
+            expect.stringContaining('late'),
+        )
+    })
+
+    test('leaves storage untouched, keeps dropping writes and logs, when the migration throws', async () => {
+        const store = await loadStore()
+        const { logger } = await import('@perawallet/wallet-core-shared')
+        const logError = vi.spyOn(logger, 'error').mockImplementation(() => {})
+        mockStorage.getItem.mockReturnValueOnce(persisted)
+        store.useSigningStore.persist.setOptions({
+            migrate: () => {
+                throw new Error('migration broke')
+            },
+        })
+
+        await store.useSigningStore.persist.rehydrate()
+        store.useSigningStore.getState().addSignRequest(request('after'))
+
+        expect(store.useSigningStore.persist.hasHydrated()).toBe(false)
+        expect(mockStorage.setItem).not.toHaveBeenCalled()
+        expect(mockStorage.removeItem).not.toHaveBeenCalled()
+        expect(logError).toHaveBeenCalledWith(
+            'Signing store hydration failed; the persisted state is left untouched',
+            { error: expect.any(Error) },
+        )
+    })
+})
+
+describe('migrateSigningState', () => {
+    const unstamped = {
+        id: 'u',
+        type: 'transactions',
+        transport: 'algod',
+        sourceType: 'multisig-cosign',
+        txs: [],
+    }
+
+    test('stamps every unstamped request with the named chain', () => {
+        expect(
+            migrateSigningState(
+                { pendingSignRequests: [unstamped] },
+                'algorand',
+            ).pendingSignRequests,
+        ).toEqual([{ ...unstamped, chainId: 'algorand' }])
+    })
+
+    test('keeps a stamped request and a chain-neutral request as stored', () => {
+        const stamped = { ...unstamped, id: 's', chainId: 'ethereum' }
+        const neutral = {
+            ...unstamped,
+            id: 'n',
+            txs: [makeUnsignedTransaction('0xFROM')],
+        }
+
+        expect(
+            migrateSigningState(
+                { pendingSignRequests: [stamped, neutral] },
+                'algorand',
+            ).pendingSignRequests,
+        ).toEqual([stamped, neutral])
+    })
+
+    test('drops an unstamped request when no chain is named', () => {
+        expect(
+            migrateSigningState({ pendingSignRequests: [unstamped] })
+                .pendingSignRequests,
+        ).toEqual([])
+    })
+})
+
 describe('isResumableRehydratedRequest', () => {
-    const base = { id: '1', type: 'transactions', transport: 'algod' }
+    const base = {
+        id: '1',
+        type: 'transactions',
+        transport: 'algod',
+        chainId: 'algorand',
+    }
+
+    test('drops a request that names no chain', () => {
+        const { chainId: _chainId, ...unstamped } = base
+        expect(
+            isResumableRehydratedRequest({
+                ...unstamped,
+                sourceType: 'multisig-cosign',
+            }),
+        ).toBe(false)
+    })
+
+    test('keeps a chain-neutral request, whose transactions name their scope', () => {
+        const { chainId: _chainId, ...unstamped } = base
+        expect(
+            isResumableRehydratedRequest({
+                ...unstamped,
+                sourceType: 'multisig-cosign',
+                txs: [makeUnsignedTransaction('0xFROM')],
+            }),
+        ).toBe(true)
+    })
 
     test('keeps a well-formed interactive (multisig-cosign) request', () => {
         expect(

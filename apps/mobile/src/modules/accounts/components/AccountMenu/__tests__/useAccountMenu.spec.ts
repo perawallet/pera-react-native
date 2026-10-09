@@ -19,12 +19,13 @@ import type { PWFlatListRef } from '@components/core'
 // Mutable global-selection state + fixtures must be hoisted so the vi.mock
 // factory (hoisted above imports) can reference them safely.
 const mockState = vi.hoisted(() => ({
-    globalSelected: 'ADDR_A' as string | null,
+    globalSelected: 'ID_A' as string | null,
 }))
 const { mockSetSelected, ACCT_A, ACCT_B } = vi.hoisted(() => ({
     mockSetSelected: vi.fn(),
     ACCT_A: {
-        address: 'ADDR_A',
+        id: 'ID_A',
+        chains: { algorand: { address: 'ADDR_A' } },
         custody: {
             kind: 'local',
             seed: 'bip39',
@@ -32,7 +33,8 @@ const { mockSetSelected, ACCT_A, ACCT_B } = vi.hoisted(() => ({
         },
     },
     ACCT_B: {
-        address: 'ADDR_B',
+        id: 'ID_B',
+        chains: { algorand: { address: 'ADDR_B' } },
         custody: {
             kind: 'local',
             seed: 'bip39',
@@ -62,10 +64,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         sortMode: mockSortState.sortMode,
         manualAccountOrder: mockSortState.manualAccountOrder,
     }),
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mockState.globalSelected,
-        setSelectedAccountAddress: mockSetSelected,
+    useSelectedAccountId: () => ({
+        selectedAccountId: mockState.globalSelected,
+        setSelectedAccountId: mockSetSelected,
     }),
+    findAccountByAddressOn: (
+        accounts: Array<{ chains: { algorand: { address: string } } }>,
+        _chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains.algorand.address === address),
 }))
 
 vi.mock('@perawallet/wallet-core-card', () => ({
@@ -109,13 +116,13 @@ const flushFrame = async () => {
 describe('useAccountMenu selection', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockState.globalSelected = 'ADDR_A'
+        mockState.globalSelected = 'ID_A'
     })
 
     it('uncontrolled: highlights the global selected account', () => {
         const { result } = renderHook(() => useAccountMenu(baseProps()))
 
-        expect(result.current.selectedAccountAddress).toBe('ADDR_A')
+        expect(result.current.selectedAccountId).toBe('ID_A')
     })
 
     it('uncontrolled: tapping mutates the global selection and notifies', () => {
@@ -124,28 +131,28 @@ describe('useAccountMenu selection', () => {
 
         act(() => result.current.handleTap(ACCT_B as WalletAccount))
 
-        expect(mockSetSelected).toHaveBeenCalledWith('ADDR_B')
+        expect(mockSetSelected).toHaveBeenCalledWith('ID_B')
         expect(props.onSelected).toHaveBeenCalledWith(ACCT_B)
     })
 
-    it('controlled: highlights the passed address, not the global one', () => {
+    it('controlled: highlights the passed account, not the global one', () => {
         const { result } = renderHook(() =>
-            useAccountMenu({ ...baseProps(), selectedAddress: 'ADDR_B' }),
+            useAccountMenu({ ...baseProps(), selectedAccountId: 'ID_B' }),
         )
 
-        expect(result.current.selectedAccountAddress).toBe('ADDR_B')
+        expect(result.current.selectedAccountId).toBe('ID_B')
     })
 
     it('controlled with null: highlights nothing (fresh pick)', () => {
         const { result } = renderHook(() =>
-            useAccountMenu({ ...baseProps(), selectedAddress: null }),
+            useAccountMenu({ ...baseProps(), selectedAccountId: null }),
         )
 
-        expect(result.current.selectedAccountAddress).toBeNull()
+        expect(result.current.selectedAccountId).toBeNull()
     })
 
     it('controlled: tapping notifies but does NOT mutate the global selection', () => {
-        const props = { ...baseProps(), selectedAddress: null }
+        const props = { ...baseProps(), selectedAccountId: null }
         const { result } = renderHook(() => useAccountMenu(props))
 
         act(() => result.current.handleTap(ACCT_B as WalletAccount))
@@ -158,7 +165,7 @@ describe('useAccountMenu selection', () => {
 describe('useAccountMenu pera card row', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockState.globalSelected = 'ADDR_A'
+        mockState.globalSelected = 'ID_A'
         mockCardState.isAuthenticated = false
         mockCardState.connectedFundingSourceAddress = null
         mockPeraCardFlag.enabled = true
@@ -261,7 +268,7 @@ describe('useAccountMenu pera card row', () => {
 describe('useAccountMenu scroll reset on sort commit', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockState.globalSelected = 'ADDR_A'
+        mockState.globalSelected = 'ID_A'
         mockSortState.sortMode = 'alphabeticalAsc'
         mockSortState.manualAccountOrder = []
     })

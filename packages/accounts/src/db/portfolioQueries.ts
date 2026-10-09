@@ -13,8 +13,8 @@
 import { eq, and, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    LEGACY_CHAIN_ID,
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -112,9 +112,11 @@ export async function getAccountPortfolioTotals({
 export async function getAccountFundedNetworks({
     db = getDatabase(),
     accountAddress,
+    chainId,
 }: {
     db?: Database
     accountAddress: string
+    chainId: ChainId
 }): Promise<string[]> {
     const rows = await db
         .select({ network: AccountAssetHoldingsSchema.network })
@@ -124,7 +126,7 @@ export async function getAccountFundedNetworks({
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 eq(
                     AccountAssetHoldingsSchema.assetId,
-                    nativeAssetFor(LEGACY_CHAIN_ID).assetId,
+                    nativeAssetFor(chainId).assetId,
                 ),
                 // Amounts are stored as TEXT; compare numerically so '0' and a
                 // padded zero both read as unfunded.

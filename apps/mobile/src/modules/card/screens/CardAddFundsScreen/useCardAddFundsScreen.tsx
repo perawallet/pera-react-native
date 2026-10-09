@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountBalancesQuery,
     type WalletAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -105,16 +106,20 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
 
     const { accountBalances } = useAccountBalancesQuery(
         fundingAccount ? [fundingAccount] : [],
+        scope,
     )
     const sourceBalance = useMemo(() => {
-        if (!fundingAccount) return new Decimal(0)
+        const fundingAddress = fundingAccount
+            ? chainAccountOf(fundingAccount, scope.chainId)?.address
+            : undefined
+        if (!fundingAddress) return new Decimal(0)
         const balance = accountBalances
-            ?.get(fundingAccount.address)
+            ?.get(fundingAddress)
             ?.assetBalances?.find(
                 asset => asset.assetId === sourceAssetId,
             )?.amount
         return balance ?? new Decimal(0)
-    }, [accountBalances, fundingAccount, sourceAssetId])
+    }, [accountBalances, fundingAccount, sourceAssetId, scope.chainId])
 
     const {
         amount: value,

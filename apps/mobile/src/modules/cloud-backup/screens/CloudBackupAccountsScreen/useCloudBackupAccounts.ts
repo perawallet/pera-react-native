@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    useAccountsStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupAccountReview } from '../../hooks/useBackupAccountReview'
 import type { CloudBackupStackParamList } from '../../routes/types'
+import { backupAccountsOf, type BackupAccount } from '../../utils/backupAddress'
 
 type UseCloudBackupAccountsResult = {
-    accounts: WalletAccount[]
+    /** Only accounts with a backup item: the rest have nothing to back up. */
+    accounts: BackupAccount[]
     isBackedUp: (address: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number
@@ -34,7 +33,11 @@ type UseCloudBackupAccountsResult = {
 export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-    const accounts = useAccountsStore(state => state.accounts)
+    const storedAccounts = useAccountsStore(state => state.accounts)
+    const accounts = useMemo(
+        () => backupAccountsOf(storedAccounts),
+        [storedAccounts],
+    )
     const {
         isBackedUp,
         notBackedUpAccounts,

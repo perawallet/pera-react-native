@@ -15,7 +15,10 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useEnsureAccountEnriched } from '../useEnsureAccountEnriched'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockEnsureAccountFetched = vi.fn(() => Promise.resolve())
 const mockGetAccountHoldings = vi.fn()
@@ -27,9 +30,6 @@ vi.mock('../../sync/account-syncer', () => ({
 }))
 vi.mock('../../db', () => ({
     getAccountHoldings: (...a: unknown[]) => mockGetAccountHoldings(...a),
-}))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchAndPersistAssets: (...a: unknown[]) => mockFetchAndPersistAssets(...a),
@@ -70,16 +70,13 @@ describe('useEnsureAccountEnriched', () => {
 
     it('fetches holdings, then asset metadata + prices, invalidating along the way', async () => {
         const { wrapper, invalidateSpy } = makeWrapper()
-        renderHook(() => useEnsureAccountEnriched('ADDR1'), { wrapper })
+        renderHook(() => useEnsureAccountEnriched('ADDR1', SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(mockFetchAndPersistAssets).toHaveBeenCalled(),
         )
 
-        expect(mockEnsureAccountFetched).toHaveBeenCalledWith(
-            'ADDR1',
-            'mainnet',
-        )
+        expect(mockEnsureAccountFetched).toHaveBeenCalledWith('ADDR1', SCOPE)
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
             chainId: 'algorand',
             networkId: 'mainnet',
@@ -93,7 +90,9 @@ describe('useEnsureAccountEnriched', () => {
 
     it('does nothing without an address', () => {
         const { wrapper } = makeWrapper()
-        renderHook(() => useEnsureAccountEnriched(undefined), { wrapper })
+        renderHook(() => useEnsureAccountEnriched(undefined, SCOPE), {
+            wrapper,
+        })
         expect(mockEnsureAccountFetched).not.toHaveBeenCalled()
     })
 })

@@ -10,17 +10,19 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useFeeConfig } from '@perawallet/wallet-core-signing'
 import {
-    fetchAccountInformation,
+    fetchOnChainAccountState,
     insertAssetHolding,
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import {
+    algosToMicroAlgosBigInt,
     assertOnline,
     formatCurrency,
     microAlgosToAlgos,
+    toBigInt,
 } from '@perawallet/wallet-core-shared'
 import {
     AlreadyOptedInError,
@@ -48,10 +50,11 @@ const SOURCE = {
     description: 'Opt in to an asset',
 }
 
-// minPrecision 0 trims trailing zeros, so 0.1 ALGO reads "0.1", not "0.100000".
-const formatAlgoShortfall = (microAlgos: bigint): string =>
+// `shortfall` is in base units. minPrecision 0 trims trailing zeros, so 0.1
+// ALGO reads "0.1", not "0.100000".
+const formatAlgoShortfall = (shortfall: bigint): string =>
     formatCurrency(
-        microAlgosToAlgos(microAlgos),
+        microAlgosToAlgos(shortfall),
         6,
         'ALGO',
         undefined,
@@ -60,24 +63,25 @@ const formatAlgoShortfall = (microAlgos: bigint): string =>
         0,
     )
 
-export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
-    const { assetOptInMinBalance } = useFeeConfig(LEGACY_CHAIN_ID)
+export const useAssetOptInMutation = (
+    scope: ChainScope,
+): UseAssetOptInMutationResult => {
+    const { assetOptInMinBalance } = useFeeConfig(scope.chainId)
 
     const { mutateAsync, isLoading, isError, error } =
         useAssetHoldingMutation<AssetOptInParams>({
+            scope,
             source: SOURCE,
-            run: async (
-                { sender, assetId },
-                { scope, network, assignFees, submit },
-            ) => {
+            run: async ({ sender, assetId }, { scope, assignFees, submit }) => {
                 assertOnline()
 
-                const accountInfo = await fetchAccountInformation(
+                const accountState = await fetchOnChainAccountState(
                     sender,
-                    network,
+                    scope,
                 )
-                const isOptedIn = accountInfo.assets.some(
-                    a => a.assetId === assetId,
+                const assetIdString = String(assetId)
+                const isOptedIn = accountState.holdings.some(
+                    holding => holding.assetId === assetIdString,
                 )
                 if (isOptedIn) {
                     throw new AlreadyOptedInError()
@@ -97,11 +101,14 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     (total, txn) => total + txn.fee,
                     0n,
                 )
+                const balance = toBigInt(accountState.nativeBalanceBaseUnits)
                 const balanceNeeded =
-                    accountInfo.minBalance + assetOptInMinBalance + feeTotal
-                if (accountInfo.amount < balanceNeeded) {
+                    algosToMicroAlgosBigInt(accountState.minBalance) +
+                    assetOptInMinBalance +
+                    feeTotal
+                if (balance < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError(
-                        formatAlgoShortfall(balanceNeeded - accountInfo.amount),
+                        formatAlgoShortfall(balanceNeeded - balance),
                     )
                 }
 
@@ -110,7 +117,6 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 // Persist the holding and the asset's metadata before the
                 // invalidation, so the UI resolves the asset on its next
                 // render instead of waiting for the next sync poll.
-                const assetIdString = String(assetId)
                 await insertAssetHolding({
                     accountAddress: sender,
                     assetId: assetIdString,

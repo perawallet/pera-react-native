@@ -3,7 +3,8 @@
  */
 
 import { defineRule } from 'lanekeep'
-import { withoutTests } from '../shared/scope.js'
+import { COMPOSITION_ROOTS } from '../shared/chain-package-allowlist.js'
+import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
 /**
  * Mirrors `CHAIN_IDS` in packages/chain-contract/src/models/identity.ts, which
@@ -13,6 +14,9 @@ export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',
+    'chain-shared',
+    'config',
+    'shared',
     'accounts',
     'assets',
     'transactions',
@@ -33,7 +37,26 @@ const SHARED_PACKAGES = [
     'ledger',
     'backup',
     'migrate',
+    'device',
+    'contacts',
+    'hardware-wallet',
+    'passkeys',
+    'search',
+    'currencies',
+    'messages',
+    'banners',
+    'settings',
+    'security',
+    'browser-runtime',
+    'projects',
+    'remote-config',
+    'app-integrity',
+    'database',
 ]
+
+// An app pins the legacy chain at its own call sites, so a chain id literal
+// there is fine; branching on one is not.
+const APP_SOURCE = /(^|\/)apps\/[^/]+\/src\//
 
 const IDENTITY_PROPS = '"chainId" "family"'
 const EQUALITY_OPERATORS = new Set(['===', '!==', '==', '!='])
@@ -79,11 +102,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
-        file: 'packages/accounts/src/credentials/backfill.ts',
-        text: "'algorand'",
-        reason: "Writes Algorand's native member from the legacy multisig details; both go together.",
-    },
-    {
         file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
         text: "'algorand'",
         reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
@@ -92,6 +110,36 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/accounts/src/credentials/accessors.ts',
         text: 'scope.chainId !== LEGACY_CHAIN_ID',
         reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
+    },
+    {
+        file: 'packages/signing/src/hooks/usePlannerHook.ts',
+        text: 'planner.chainId === chainId',
+        reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
+    },
+    {
+        file: 'packages/config/src/network-config.ts',
+        text: 'row.scope.chainId === scope.chainId',
+        reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",
+    },
+    {
+        file: 'packages/config/src/network-config.ts',
+        text: "'algorand'",
+        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
+    },
+    {
+        file: 'packages/config/src/network-config.ts',
+        text: "'ethereum'",
+        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
+    },
+    {
+        file: 'packages/config/src/main.ts',
+        text: "'algorand'",
+        reason: 'The chains a build enables when its environment names none.',
+    },
+    {
+        file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
+        text: "'algorand'",
+        reason: "Bidali's payment-currency code, not a ChainId.",
     },
     {
         file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',
@@ -116,8 +164,15 @@ export default defineRule({
         },
     },
     gates: withoutTests({
-        pathMatches: [`**/packages/{${SHARED_PACKAGES.join(',')}}/src/**`],
-        pathNotMatches: ['**/packages/chain-contract/src/models/identity.ts'],
+        pathMatches: [
+            `**/packages/{${SHARED_PACKAGES.join(',')}}/src/**`,
+            '**/apps/*/src/**',
+        ],
+        pathNotMatches: [
+            '**/packages/chain-contract/src/models/identity.ts',
+            ...TEST_SUPPORT,
+            ...COMPOSITION_ROOTS.map(root => root.glob),
+        ],
     }),
     // ponytail: member access only, no type information, so a destructured
     // `switch (chainId)` is missed; walletconnect's CAIP-2 `chainId`s would
@@ -138,10 +193,24 @@ export default defineRule({
          (#any-of? @prop ${IDENTITY_PROPS}))
         ((string (string_fragment) @lit) @at
          (#any-of? @lit ${CHAIN_IDS.map(id => `"${id}"`).join(' ')}))
+        ((binary_expression
+          left: (string (string_fragment) @cmp) @at
+          operator: _ @op)
+         (#any-of? @cmp ${CHAIN_IDS.map(id => `"${id}"`).join(' ')}))
+        ((binary_expression
+          operator: _ @op
+          right: (string (string_fragment) @cmp) @at)
+         (#any-of? @cmp ${CHAIN_IDS.map(id => `"${id}"`).join(' ')}))
+        ((switch_case value: (string (string_fragment) @cmp) @at)
+         (#any-of? @cmp ${CHAIN_IDS.map(id => `"${id}"`).join(' ')}))
     `,
     check(ctx, m) {
         const at = m.at
         if (at === undefined) return
+        const isApp = APP_SOURCE.test(ctx.filePath)
+        // A package reports every literal through `@lit`; an app only the
+        // ones it compares.
+        if (isApp ? m.lit !== undefined : m.cmp !== undefined) return
         if (
             m.op !== undefined &&
             !EQUALITY_OPERATORS.has(ctx.text(m.op) ?? '')
@@ -155,11 +224,14 @@ export default defineRule({
         )
         if (isAllowed) return
 
+        const where = isApp ? 'app code' : 'a shared package'
         ctx.report(
             at,
-            m.lit === undefined
-                ? `\`${text}\` branches on chain identity in a shared package`
-                : `\`${text}\` is a chain id literal in a shared package`,
+            m.lit !== undefined
+                ? `\`${text}\` is a chain id literal in ${where}`
+                : m.cmp !== undefined
+                  ? `\`${text}\` is compared as a chain id in ${where}`
+                  : `\`${text}\` branches on chain identity in ${where}`,
         )
     },
 })

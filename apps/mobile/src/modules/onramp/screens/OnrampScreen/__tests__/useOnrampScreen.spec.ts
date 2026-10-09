@@ -18,7 +18,11 @@ import {
     useOnramp,
     type RampPair,
 } from '@perawallet/wallet-core-onramp'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useRoute } from '@react-navigation/native'
 
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
@@ -42,8 +46,16 @@ const setHasInternet = (hasInternet: boolean): void => {
 }
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccount: vi.fn(),
+    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
+        account.chains[scope.chainId]?.address,
 }))
+
+const accountAt = (address: string): WalletAccount => ({
+    id: address,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+})
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: vi.fn(),
@@ -145,10 +157,7 @@ describe('useOnrampScreen', () => {
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: 'ADDR',
-            setSelectedAccountAddress: vi.fn(),
-        })
+        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
         vi.mocked(useRampPairsQuery).mockReturnValue({
             data: PAIRS,
             isLoading: false,

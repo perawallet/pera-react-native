@@ -12,8 +12,6 @@
 
 import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -23,8 +21,8 @@ import {
 import {
     ALGO_ASSET_NAME,
     baseUnitsToDisplayUnits,
-    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
@@ -33,17 +31,17 @@ import type {
     UseLedgerAccountPreviewResult,
 } from '../models'
 import { recordAuthority } from '../store/recordAuthority'
-import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
-import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
+import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
+import { useDelegatedAddressesQuery } from './useDelegatedAddressesQuery'
 
 export const useLedgerAccountPreview = (
     address: string,
+    scope: ChainScope,
 ): UseLedgerAccountPreviewResult => {
     const nativeAsset = useNativeAsset()
-    const onChain = useOnChainAccountInformationQuery(address)
-    const rekeyed = useRekeyedAddressesQuery(address)
+    const onChain = useOnChainAccountStateQuery(address, scope)
+    const rekeyed = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const authorityAddress = onChain.data?.authorityAddress
 
     // The sheet's synthetic watch row reads its rekey state from the slice.
@@ -53,9 +51,16 @@ export const useLedgerAccountPreview = (
         }
     }, [scope, address, authorityAddress])
 
+    const heldAssets = useMemo(
+        () =>
+            (onChain.data?.holdings ?? []).filter(
+                holding => holding.assetId !== nativeAsset.assetId,
+            ),
+        [onChain.data, nativeAsset.assetId],
+    )
     const assetIds = useMemo(
-        () => (onChain.data?.assets ?? []).map(a => String(a.assetId)),
-        [onChain.data],
+        () => heldAssets.map(holding => holding.assetId),
+        [heldAssets],
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
@@ -68,7 +73,7 @@ export const useLedgerAccountPreview = (
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
         if (!onChain.data) return undefined
 
-        const algoBalance = microAlgosToAlgos(onChain.data.amount)
+        const algoBalance = onChain.data.nativeBalance
         const algoUsdPrice =
             prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
@@ -90,8 +95,8 @@ export const useLedgerAccountPreview = (
             isFrozen: false,
         })
 
-        for (const holding of onChain.data.assets) {
-            const id = String(holding.assetId)
+        for (const holding of heldAssets) {
+            const id = holding.assetId
             const meta = assets?.get(id)
             const hasKnownDecimals = meta?.decimals !== undefined
             const decimals = meta?.decimals ?? 0
@@ -143,6 +148,7 @@ export const useLedgerAccountPreview = (
         address,
         authorityAddress,
         onChain.data,
+        heldAssets,
         assets,
         prices,
         rekeyed.rekeyedAddresses,

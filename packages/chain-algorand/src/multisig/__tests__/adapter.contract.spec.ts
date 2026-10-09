@@ -48,4 +48,6 @@ multisigContractTests(() => algorandMultisigAdapter, {
         ),
     ),
     malformedAddress: 'NOT_AN_ALGORAND_ADDRESS',
+    participantScheme: 'ed25519',
+    nonParticipantScheme: 'falcon-1024',
 })

@@ -11,13 +11,14 @@
  */
 
 import {
-    isStandaloneAccount,
+    hasCustody,
+    hdIndexOf,
     standaloneSecretOf,
-    isHDWalletAccount,
-    isQuantumAccount,
-    type HDWalletAccount,
+    type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupAdapterFor } from '../../chain-adapter'
 import {
     secretsItemKey,
     BackupAccountType,
@@ -34,6 +35,8 @@ import type {
 } from './types'
 
 type Deps = {
+    /** The chain whose entry on the account is backed up. */
+    chainId: ChainId
     updatedAt: number
     hashAddress: ItemKeyHasher
     /** Omitted/null => the account is skipped rather than backed up without
@@ -48,45 +51,56 @@ type Deps = {
  *  the KMS; secret-less types => address-only. */
 export const serializeAccountForBackup = async (
     account: WalletAccount,
-    { updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
+    { chainId, updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
 ): Promise<SerializedAccount | null> => {
-    if (isHDWalletAccount(account)) {
-        return serializeHdAccount(account, updatedAt, hashAddress, resolveHd)
+    if (hasCustody(account, 'local') && hdIndexOf(account)) {
+        return serializeHdAccount(account, {
+            chainId,
+            updatedAt,
+            hashAddress,
+            resolveHd,
+        })
     }
 
     let secrets: SecretsBackupPayload | null = null
-    if (
-        (isStandaloneAccount(account) &&
-            standaloneSecretOf(account) === 'mnemonic') ||
-        isQuantumAccount(account)
-    ) {
-        if (!resolveMnemonic) return null
+    if (hasCustody(account, 'local')) {
+        // A standalone key stored as a raw private key has no backup item.
+        if (standaloneSecretOf(account) === 'privateKey' || !resolveMnemonic) {
+            return null
+        }
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = {
-            type: isQuantumAccount(account)
-                ? BackupAccountType.quantum
-                : BackupAccountType.algo25,
+        secrets = backupAdapterFor(chainId).serializeMnemonicSecret(
+            account,
             mnemonic,
-            address: account.address,
-        }
+        )
+        if (!secrets) return null
     }
-    return serializeAccountItems(account, { updatedAt, secrets, hashAddress })
+    return serializeAccountItems(account, {
+        chainId,
+        updatedAt,
+        secrets,
+        hashAddress,
+    })
 }
 
-/** HD child -> hdWallet address item; the seed rides as a shared hdSeed secret
+/** HD child -> HD address item; the seed rides as a shared hdSeed secret
  *  at secrets/<hash of seedFirstDerivedAddress> (deduped by buildLocalItems). */
 const serializeHdAccount = async (
-    account: HDWalletAccount,
-    updatedAt: number,
-    hashAddress: ItemKeyHasher,
-    resolveHd?: SerializeHdResolver,
+    account: LocalAccount,
+    {
+        chainId,
+        updatedAt,
+        hashAddress,
+        resolveHd,
+    }: Omit<Deps, 'resolveMnemonic'>,
 ): Promise<SerializedAccount | null> => {
     if (!resolveHd) return null
     const resolved = await resolveHd(account)
     if (!resolved) return null
 
     const base = serializeAccountItems(account, {
+        chainId,
         updatedAt,
         secrets: null,
         hashAddress,

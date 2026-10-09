@@ -93,14 +93,14 @@ describe('sync phases', () => {
                 'account',
             )
 
-            expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith(
-                'A',
-                'mainnet',
-            )
-            expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith(
-                'B',
-                'mainnet',
-            )
+            expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith('A', {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
+            expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith('B', {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
             expect(result.changedAddresses).toEqual(['A'])
             expect(result.hasHoldingsChanged).toBe(true)
             expect(result.hasSuccess).toBe(true)

@@ -12,13 +12,10 @@
 
 import {
     authorityOf,
-    canSignViaParticipants,
+    AuthorityTargetCategories,
     hasSigningKeys,
-    isStandaloneAccount,
     isHardwareWalletAccount,
-    isHDWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
     type AccountAuthorityOps,
     type AuthorityTargetKind,
     type WalletAccount,
@@ -27,6 +24,23 @@ import {
     LEGACY_SCOPES,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { hasLocalCoSigner } from './multisig-participants'
+import { getAlgorandAuthAccount } from './signer-resolution'
+import {
+    algorandAddressOf,
+    isStandaloneAccount,
+    isHDWalletAccount,
+    isQuantumAccount,
+} from './vocabulary'
+
+export const AlgorandAuthorityTargetKinds = {
+    standard: 'standard',
+    quantum: 'quantum',
+    hardware: 'hardware',
+    shared: 'shared',
+} as const
 
 const isDelegated = (account: WalletAccount, scope: ChainScope): boolean =>
     !!authorityOf(account, scope)
@@ -39,9 +53,13 @@ const isCurrentOrSelf = (
     target: WalletAccount,
     source: WalletAccount,
     scope: ChainScope,
-): boolean =>
-    target.address === source.address ||
-    target.address === authorityOf(source, scope)
+): boolean => {
+    const address = algorandAddressOf(target)
+    return (
+        address === algorandAddressOf(source) ||
+        address === authorityOf(source, scope)
+    )
+}
 
 /**
  * Mirrors Android
@@ -63,19 +81,26 @@ const isEligibleStandardTarget = (
 }
 
 /**
- * `isQuantumTargetEnabled` is a hard functional limit rather than a rollout
- * toggle. Signing works locally, but mainnet and testnet algod still reject
- * the `pqsig` field, so on those networks the rekey is a one-way door that
- * strands the funds: every later transaction needs a `pqsig`, *including the
- * rekey-back that would undo it*.
+ * The `quantumAccounts` capability is a hard functional limit rather than a
+ * rollout toggle. Signing works locally, but an algod that rejects the
+ * `pqsig` field makes the rekey a one-way door that strands the funds: every
+ * later transaction needs a `pqsig`, *including the rekey-back that would
+ * undo it*.
  */
+const isQuantumTargetEnabled = (): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(ALGORAND_CHAIN_ID) &&
+        chains.capabilities(ALGORAND_CHAIN_ID).quantumAccounts
+    )
+}
+
 const isEligibleQuantumTarget = (
     target: WalletAccount,
     source: WalletAccount,
     scope: ChainScope,
-    isQuantumTargetEnabled: boolean,
 ): boolean => {
-    if (!isQuantumTargetEnabled) return false
+    if (!isQuantumTargetEnabled()) return false
     if (isCurrentOrSelf(target, source, scope)) return false
     if (!isQuantumAccount(target)) return false
     if (!hasSigningKeys(target)) return false
@@ -108,7 +133,7 @@ const isEligibleSharedTarget = (
     if (isCurrentOrSelf(target, source, scope)) return false
     if (!isMultisigAccount(target)) return false
     if (isDelegated(target, scope)) return false
-    return canSignViaParticipants(target.multisigDetails.addresses, accounts)
+    return hasLocalCoSigner(target, accounts)
 }
 
 /**
@@ -121,8 +146,8 @@ const isEligibleSharedTarget = (
  * - Multisig — permanent for a *delegated* LSig, which carries a single
  *   `sigkey`: `encodeDelegatedLsigAccount` emits one signature, so a threshold
  *   account can never be represented. Stated explicitly rather than relying on
- *   `hasSigningKeys`, because `keyPairId` is optional on `BaseWalletAccount`
- *   and a multisig account is only key-less by convention.
+ *   `hasSigningKeys`, because a chain entry's key is optional and a multisig
+ *   account is only key-less by convention.
  * - Rekeyed accounts — deferred, not impossible. A delegated LSig authorizes
  *   spending, so the chain verifies it against the sender's auth-addr: the
  *   delegation is signable, but only by the auth account. Supporting that
@@ -148,42 +173,90 @@ const accountsDelegatedTo = (
 ): WalletAccount[] =>
     accounts.filter(
         a =>
-            a.address !== address &&
+            algorandAddressOf(a) !== address &&
             LEGACY_SCOPES.some(scope => authorityOf(a, scope) === address),
     )
 
 const isEligibleTarget = (
-    kind: AuthorityTargetKind,
+    kindId: string,
     target: WalletAccount,
     source: WalletAccount,
     accounts: WalletAccount[],
     scope: ChainScope,
-    { isQuantumTargetEnabled }: { isQuantumTargetEnabled: boolean },
 ): boolean => {
-    switch (kind) {
-        case 'standard': {
+    switch (kindId) {
+        case AlgorandAuthorityTargetKinds.standard: {
             return isEligibleStandardTarget(target, source, scope)
         }
-        case 'quantum': {
-            return isEligibleQuantumTarget(
-                target,
-                source,
-                scope,
-                isQuantumTargetEnabled,
-            )
+        case AlgorandAuthorityTargetKinds.quantum: {
+            return isEligibleQuantumTarget(target, source, scope)
         }
-        case 'hardware': {
+        case AlgorandAuthorityTargetKinds.hardware: {
             return isEligibleHardwareTarget(target, source, scope)
         }
-        case 'shared': {
+        case AlgorandAuthorityTargetKinds.shared: {
             return isEligibleSharedTarget(target, source, accounts, scope)
+        }
+        default: {
+            return false
         }
     }
 }
 
+/**
+ * A broken auth chain counts as non-quantum: we cannot assert protection we
+ * cannot resolve.
+ */
+const hasQuantumAuthority = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): boolean => {
+    const auth = getAlgorandAuthAccount(account, accounts, scope)
+    return !!auth && isQuantumAccount(auth)
+}
+
+/**
+ * Compares *effective* authority (one rekey hop), not the account's own kind,
+ * because that is where the protection lives:
+ * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
+ *   back to Ed25519, even though it is still an algo25 account.
+ * - A quantum account already rekeyed away to Ed25519 has no protection
+ *   left, so rekeying it further is NOT a downgrade.
+ */
+const isAuthorityDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): boolean =>
+    hasQuantumAuthority(source, accounts, scope) &&
+    !hasQuantumAuthority(target, accounts, scope)
+
+const TARGET_KINDS: readonly AuthorityTargetKind[] = [
+    {
+        id: AlgorandAuthorityTargetKinds.standard,
+        category: AuthorityTargetCategories.standard,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.quantum,
+        category: AuthorityTargetCategories.postQuantum,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.hardware,
+        category: AuthorityTargetCategories.hardware,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.shared,
+        category: AuthorityTargetCategories.shared,
+    },
+]
+
 export const algorandAuthority: AccountAuthorityOps = {
+    targetKinds: TARGET_KINDS,
     isDelegated,
     accountsDelegatedTo,
     isEligibleTarget,
     canSignProgram,
+    isAuthorityDowngrade,
 }

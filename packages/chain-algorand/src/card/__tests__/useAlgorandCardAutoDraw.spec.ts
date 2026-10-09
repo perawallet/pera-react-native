@@ -59,7 +59,10 @@ vi.mock('../../fee-delegation', () => ({
 import { useAlgorandCardAutoDraw } from '../useAlgorandCardAutoDraw'
 
 const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
-const account = { id: 'a1', address: 'FUNDINGADDR' } as WalletAccount
+const account = {
+    id: 'a1',
+    chains: { algorand: { address: 'FUNDINGADDR' } },
+} as unknown as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -126,6 +129,19 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
         )
     })
 
+    it("refuses an account with no address on the scope's chain before signing", async () => {
+        const elsewhere = {
+            id: 'a2',
+            chains: { ethereum: { address: '0xFUNDING' } },
+        } as unknown as WalletAccount
+
+        await expect(
+            render().current.enableAutoDraw(elsewhere, 'CARD', TESTNET),
+        ).rejects.toThrow('no address on algorand')
+        expect(signProgram).not.toHaveBeenCalled()
+        expect(postCardDelegation).not.toHaveBeenCalled()
+    })
+
     it('only registers the program while the switch contract is unconfigured', async () => {
         autoDraw.isConfigured.mockReturnValue(false)
 
@@ -178,6 +194,7 @@ describe('useAlgorandCardAutoDraw.disableAutoDraw', () => {
             asset: '10458941',
         })
         expect(submit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ txn: 'kill' }],
             source: {
                 name: 'card-autodraw-disable',

@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
+import { hasCustody } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { DataTransport, SourceMetadata } from '../types'
 import { isExternalCallbackSource } from '../types'
@@ -80,7 +80,7 @@ export const createTransportSelector = (
         // wallet delivers once threshold is met). Hoisted above the
         // external-callback rule below so multisig wins over source type.
         if (
-            isMultisigAccount(account) &&
+            hasCustody(account, 'multisig') &&
             (source.type === 'local' || isExternalCallbackSource(source.type))
         ) {
             if (!options.proposeSignRequest) {

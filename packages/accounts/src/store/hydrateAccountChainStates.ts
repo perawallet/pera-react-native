@@ -11,19 +11,21 @@
  */
 
 import {
+    CHAIN_IDS,
     InvalidScopeKeyError,
-    LEGACY_CHAIN_ID,
     parseScopeKey,
     scopeFromNetworkColumn,
     toScopeKey,
     type AccountChainState,
     type ChainScope,
+    type ChainId,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
+import { chainAccountOf } from '../credentials'
 import { getAllAccountBalances } from '../db'
 import type { RecordedAuthorities, WalletAccount } from '../models'
 import {
@@ -44,11 +46,23 @@ const put = (
     built[key] = { ...built[key], [address]: state }
 }
 
+const chainHolding = (
+    accounts: readonly WalletAccount[],
+    address: string,
+): ChainId | undefined =>
+    CHAIN_IDS.find(
+        chainId =>
+            accountsChainAdapters.has(chainId) &&
+            accounts.some(
+                account =>
+                    chainAccountOf(account, chainId)?.address === address,
+            ),
+    )
+
 const heldAddresses = (accounts: readonly WalletAccount[]): Set<string> => {
     const held = new Set<string>()
     for (const account of accounts) {
-        held.add(account.address)
-        for (const entry of Object.values(account.chains ?? {})) {
+        for (const entry of Object.values(account.chains)) {
             if (entry?.address) held.add(entry.address)
         }
     }
@@ -90,23 +104,28 @@ export async function hydrateAccountChainStates({
         }
 
         const accountsState = useAccountsStore.getState()
-        const recorded: RecordedAuthorities = { ...accountsState.authorities }
-        const selectedKey = toScopeKey(getSelectedScope(LEGACY_CHAIN_ID))
-        for (const [address, authorityAddress] of Object.entries(
-            accountsState.unscopedAuthorities,
-        )) {
-            if (recorded[selectedKey]?.[address]) continue
-            recorded[selectedKey] = {
-                ...recorded[selectedKey],
-                [address]: authorityAddress,
-            }
-        }
-
         // Before the accounts store rehydrates its list is empty, which would
         // read as every recorded account being gone.
         const held = useAccountsStore.persist.hasHydrated()
             ? heldAddresses(accountsState.accounts)
             : undefined
+
+        // An unscoped authority settles on the selected network of the chain
+        // its address is held on; until an account holds it, it stays unscoped.
+        const recorded: RecordedAuthorities = { ...accountsState.authorities }
+        const unplaced: Record<string, string> = {}
+        for (const [address, authorityAddress] of Object.entries(
+            accountsState.unscopedAuthorities,
+        )) {
+            const chainId = chainHolding(accountsState.accounts, address)
+            if (!chainId) {
+                if (!held) unplaced[address] = authorityAddress
+                continue
+            }
+            const key = toScopeKey(getSelectedScope(chainId))
+            if (recorded[key]?.[address]) continue
+            recorded[key] = { ...recorded[key], [address]: authorityAddress }
+        }
         const settled: RecordedAuthorities = {}
         for (const [key, entries] of Object.entries(recorded) as [
             ChainScopeKey,
@@ -139,7 +158,7 @@ export async function hydrateAccountChainStates({
         useAccountChainStateStore
             .getState()
             .fillAccountChainStates(built as AccountChainStateSlice)
-        accountsState.settleAuthorities(settled)
+        accountsState.settleAuthorities(settled, unplaced)
     } catch (error) {
         logger.warn('Account chain-state hydration failed', { error })
     }

@@ -17,6 +17,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -27,6 +28,7 @@ import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
 import type { CardStepStatus } from '../../components/CardStepRow'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
 export type CardCreateStepId = 'signCreate' | 'autoFunding'
 export type CardCreateStepRowModel = {
@@ -67,8 +69,7 @@ export const useCardCreateSigningScreen =
         )
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
+            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
             [accounts, connectedAddress],
         )
 

@@ -84,10 +84,10 @@ export const getAccountBalancesHistoryQueryKey = (
 export const isAccountBalancesHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX && queryKey[1] === 'balance-history'
 
-export const getOnChainAccountInformationQueryKey = (
+export const getOnChainAccountStateQueryKey = (
     address: string,
     scope: ChainScope,
-) => [MODULE_PREFIX, 'on-chain-account-information', { address, scope }]
+) => [MODULE_PREFIX, 'on-chain-account-state', { address, scope }]
 
 // The { address } payload keeps this key inside the sync tick's scoped
 // invalidation, so a fresh opt-in reorders the gallery on the next sync.
@@ -96,7 +96,7 @@ export const getAccountOptInRoundsQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'opt-in-rounds', { address, scope }]
 
-export const getRekeyedAddressesQueryKey = (
+export const getDelegatedAddressesQueryKey = (
     address: string,
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'rekeyed-addresses', { address, scope }]

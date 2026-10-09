@@ -11,7 +11,6 @@
  */
 
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -173,7 +172,7 @@ export const resolveSwapHandoffOutcome = async ({
     const { signRequestId, swapIdStr, deviceId, plan } = record
     const network = legacyNetworkOf(record.scope)
 
-    await completeMultisigHandoff({
+    await completeMultisigHandoff(record.scope.chainId, {
         outcome,
         // A crash-recovered record that already landed on chain: the shared
         // orchestrator replays the post-submit tail instead of re-submitting.
@@ -194,7 +193,7 @@ export const resolveSwapHandoffOutcome = async ({
                     )
                     if (groupBytes.length === 0) continue
                     const derived = deriveSubmissionAttemptFromBytes(
-                        LEGACY_CHAIN_ID,
+                        record.scope.chainId,
                         groupBytes,
                     )
                     let attemptId: string | null = null

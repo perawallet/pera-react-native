@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import { parsePeraWebImportFields } from '@perawallet/wallet-core-backup'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
@@ -50,10 +54,6 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
-import { parsePeraWebImportFields } from '@perawallet/wallet-core-backup'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params

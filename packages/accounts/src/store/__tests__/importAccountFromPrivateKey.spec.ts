@@ -23,8 +23,7 @@ import {
     RawKeyImportUnsupportedError,
 } from '../../errors'
 import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
-import { buildTestAccount } from '../../__tests__/accountFactory'
-import { accountType } from '../../utils'
+import { testAccount } from '../../__tests__/accountFactory'
 import { useAccountsStore } from '../store'
 
 const HARDHAT_0_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
@@ -116,7 +115,6 @@ describe('importAccountFromPrivateKey', () => {
             .importAccountFromPrivateKey(FAKE_CHAIN_ID, privateKey(), 'Hardhat')
 
         expect(account.custody).toEqual({ kind: 'local', seed: null })
-        expect(accountType(account)).toBe('standalone')
         expect(account.name).toBe('Hardhat')
         expect(account.chains).toEqual({
             [FAKE_CHAIN_ID]: { address: HARDHAT_0_ADDRESS, keyPairId: KEY_ID },
@@ -142,14 +140,8 @@ describe('importAccountFromPrivateKey', () => {
     })
 
     test('refuses an address a watch account holds, naming it, and removes the entry it just made', async () => {
-        const watch = buildTestAccount('watch')
-        useAccountsStore.getState().setAccounts([
-            {
-                ...watch,
-                address: HARDHAT_0_ADDRESS,
-                chains: { [FAKE_CHAIN_ID]: { address: HARDHAT_0_ADDRESS } },
-            },
-        ])
+        const watch = testAccount('watch', HARDHAT_0_ADDRESS)
+        useAccountsStore.getState().setAccounts([watch])
 
         const result = useAccountsStore
             .getState()

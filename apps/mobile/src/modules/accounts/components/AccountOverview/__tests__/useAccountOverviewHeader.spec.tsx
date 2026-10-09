@@ -69,7 +69,11 @@ vi.mock('@hooks/useChartInteraction', () => ({
 }))
 
 const mockContextValue: UseAccountOverviewModalResult = {
-    account: { address: 'test-address' } as WalletAccount,
+    account: {
+        id: 'test',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'test-address' } },
+    } as WalletAccount,
     openSendFunds: vi.fn(),
     openReceiveFunds: vi.fn(),
     openAccountOptions: vi.fn(),
@@ -82,7 +86,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe('useAccountOverviewHeader', () => {
-    const mockAccount = { address: 'test-address' } as WalletAccount
+    const mockAccount = {
+        id: 'test',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'test-address' } },
+    } as WalletAccount
 
     beforeEach(() => {
         vi.clearAllMocks()

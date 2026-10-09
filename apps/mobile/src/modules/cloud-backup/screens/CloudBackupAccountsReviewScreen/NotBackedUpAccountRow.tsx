@@ -18,25 +18,28 @@ import { BackupAccountRow } from '../../components/BackupAccountRow'
 
 type NotBackedUpAccountRowProps = {
     account: WalletAccount
+    /** The account's backup item key. */
+    address: string
     isBusy: boolean
     onBackUp: (address: string) => void
 }
 
 const NotBackedUpAccountRowComponent = ({
     account,
+    address,
     isBusy,
     onBackUp,
 }: NotBackedUpAccountRowProps) => {
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(account.address),
-        [onBackUp, account.address],
+        () => onBackUp(address),
+        [onBackUp, address],
     )
 
     return (
         <BackupAccountRow
-            address={account.address}
+            address={address}
             account={account}
             isBackedUp={false}
             trailing={
@@ -49,7 +52,7 @@ const NotBackedUpAccountRowComponent = ({
                     testID='backup_review_back_up_button'
                 />
             }
-            testID={`backup_review_not_backed_up_${account.address}`}
+            testID={`backup_review_not_backed_up_${address}`}
         />
     )
 }

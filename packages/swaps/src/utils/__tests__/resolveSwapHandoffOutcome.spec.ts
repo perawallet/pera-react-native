@@ -99,7 +99,7 @@ describe('resolveSwapHandoffOutcome', () => {
             record,
             deps: deps as unknown as SwapHandoffResolutionDeps,
         })
-        return vi.mocked(completeMultisigHandoff).mock.calls[0][0].deps
+        return vi.mocked(completeMultisigHandoff).mock.calls[0][1].deps
     }
 
     beforeEach(() => {
@@ -122,6 +122,7 @@ describe('resolveSwapHandoffOutcome', () => {
         await resolve(record, outcome)
 
         expect(completeMultisigHandoff).toHaveBeenCalledWith(
+            record.scope.chainId,
             expect.objectContaining({
                 outcome,
                 alreadySubmittedTxIds: ['txid-persisted'],
@@ -133,7 +134,7 @@ describe('resolveSwapHandoffOutcome', () => {
         await resolve()
 
         expect(
-            vi.mocked(completeMultisigHandoff).mock.calls[0][0]
+            vi.mocked(completeMultisigHandoff).mock.calls[0][1]
                 .alreadySubmittedTxIds,
         ).toBeUndefined()
     })

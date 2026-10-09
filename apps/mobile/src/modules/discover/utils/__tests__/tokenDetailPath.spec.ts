@@ -17,13 +17,15 @@ import { toDiscoverTokenDetailPath } from '../tokenDetailPath'
 
 describe('toDiscoverTokenDetailPath', () => {
     it('routes ALGO to the dedicated ALGO detail page, not token-detail/0', () => {
-        expect(toDiscoverTokenDetailPath('0')).toBe('token-detail/ALGO')
+        expect(toDiscoverTokenDetailPath('0', 'algorand')).toBe(
+            'token-detail/ALGO',
+        )
     })
 
     it.each(['31566704', '312769'])(
         'routes ASA %s to the generic token-detail page by id',
         assetId => {
-            expect(toDiscoverTokenDetailPath(assetId)).toBe(
+            expect(toDiscoverTokenDetailPath(assetId, 'algorand')).toBe(
                 `token-detail/${assetId}`,
             )
         },

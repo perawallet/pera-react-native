@@ -11,7 +11,6 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAccountsDelegatedTo } from '../useAccountsDelegatedTo'
@@ -23,15 +22,10 @@ import {
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -46,19 +40,23 @@ describe('useAccountsDelegatedTo', () => {
     it('returns an empty list when no address is provided', () => {
         seedAuthority('A', 'PQ')
         setAccounts([held('A')])
-        const { result } = renderHook(() => useAccountsDelegatedTo(null))
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo(null, 'algorand'),
+        )
         expect(result.current).toEqual([])
     })
 
     it('asks the chain which accounts are delegated to the address', () => {
         const rekeyed = held('A')
         seedAuthority('A', 'PQ')
-        const target = held('PQ', { type: 'quantum' })
+        const target = testAccount('explicit', 'PQ', { id: 'PQ' })
         setAccounts([rekeyed, target])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.accountsDelegatedTo).mockReturnValue([rekeyed])
 
-        const { result } = renderHook(() => useAccountsDelegatedTo('PQ'))
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo('PQ', 'algorand'),
+        )
 
         expect(result.current).toEqual([rekeyed])
         expect(authority!.accountsDelegatedTo).toHaveBeenCalledWith('PQ', [
@@ -70,13 +68,14 @@ describe('useAccountsDelegatedTo', () => {
     it('picks up an authority recorded after mount', () => {
         const rekeyed = held('A')
         setAccounts([rekeyed, held('PQ')])
-        useNetworkStore.getState().setNetwork('mainnet')
         vi.mocked(
             fakeAccountsChain().adapter.authority!.accountsDelegatedTo,
         ).mockImplementation((address, accounts) =>
             accounts.filter(a => authorityOf(a, MAINNET_SCOPE) === address),
         )
-        const { result } = renderHook(() => useAccountsDelegatedTo('PQ'))
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo('PQ', 'algorand'),
+        )
         expect(result.current).toEqual([])
 
         act(() => seedAuthority('A', 'PQ'))
@@ -88,7 +87,9 @@ describe('useAccountsDelegatedTo', () => {
         registerFakeAccountsChain({ authority: undefined })
         seedAuthority('A', 'PQ')
         setAccounts([held('A'), held('PQ')])
-        const { result } = renderHook(() => useAccountsDelegatedTo('PQ'))
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo('PQ', 'algorand'),
+        )
         expect(result.current).toEqual([])
     })
 })

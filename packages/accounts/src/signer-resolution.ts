@@ -13,12 +13,11 @@
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { authorityOf } from './credentials'
-import type { AccountType, MultiSigAccount, WalletAccount } from './models'
+import type { MultiSigAccount, WalletAccount } from './models'
 import {
-    accountType,
+    findAccountByAddressOn,
     isMultisigAccount,
-    isQuantumAccount,
-    isRekeyedAccount,
+    isDelegatedAccount,
 } from './utils'
 import { DelegationTargetNotFoundError } from './errors'
 import { accountsChainAdapters } from './chain-adapter'
@@ -61,7 +60,7 @@ export const resolveSignerFor = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): SignerResolution => {
-    const account = accounts.find(a => a.address === address)
+    const account = findAccountByAddressOn(accounts, chainId, address)
     if (!account) return { kind: 'accountNotFound' }
     return resolveSignerForAccount(account, accounts, chainId)
 }
@@ -117,13 +116,13 @@ export const resolveAuthAccount = (
  * The auth account only when `address` is rekeyed; null when it is not, when
  * it isn't held, or when its rekey target isn't held.
  */
-export const getRekeyAccount = (
+export const getDelegatedAccount = (
     address: string,
     accounts: WalletAccount[],
     chainId: ChainId,
 ): WalletAccount | null => {
-    const account = accounts.find(a => a.address === address)
-    if (!account || !isRekeyedAccount(account, chainId)) return null
+    const account = findAccountByAddressOn(accounts, chainId, address)
+    if (!account || !isDelegatedAccount(account, chainId)) return null
     return getAuthAccount(account, accounts, chainId)
 }
 
@@ -133,7 +132,7 @@ export const isRekeyedUnsignable = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): boolean =>
-    isRekeyedAccount(account, chainId) &&
+    isDelegatedAccount(account, chainId) &&
     !canSignWith(account, accounts, chainId)
 
 /** Display-state counterpart to `isRekeyedUnsignable`. */
@@ -145,10 +144,10 @@ export const isMultisigUnsignable = (
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
 export type DelegateTransition = {
-    /** Type of the rekeyed account itself, not followed through the rekey. */
-    from: AccountType
-    /** Type of the account it is now rekeyed to. */
-    to: AccountType
+    /** The rekeyed account itself, not followed through the rekey. */
+    from: WalletAccount
+    /** The account it is now rekeyed to. */
+    to: WalletAccount
 }
 
 /** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
@@ -157,40 +156,23 @@ export const delegateTransitionFor = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): DelegateTransition | null => {
-    if (!isRekeyedAccount(account, chainId)) return null
+    if (!isDelegatedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
-    return r.kind === 'ok'
-        ? { from: accountType(account), to: accountType(r.signer) }
-        : null
+    return r.kind === 'ok' ? { from: account, to: r.signer } : null
 }
 
-/**
- * A broken auth chain counts as non-quantum: we cannot assert protection we
- * cannot resolve.
- */
-const hasQuantumAuthority = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-    chainId: ChainId,
-): boolean => {
-    const auth = getAuthAccount(account, accounts, chainId)
-    return !!auth && isQuantumAccount(auth)
-}
-
-/**
- * Compares *effective* authority (one rekey hop), not raw account type,
- * because that is where the protection lives:
- * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
- *   back to Ed25519, even though it is still a standalone account.
- * - A quantum-typed account already rekeyed away to Ed25519 has no protection
- *   left, so rekeying it further is NOT a downgrade.
- */
-export const isQuantumDowngrade = (
+/** False on a chain whose signing authority can't be delegated. */
+export const isAuthorityDowngrade = (
     source: WalletAccount,
     target: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): boolean => {
-    if (!hasQuantumAuthority(source, accounts, chainId)) return false
-    return !hasQuantumAuthority(target, accounts, chainId)
-}
+): boolean =>
+    accountsChainAdapters
+        .get(chainId)
+        .authority?.isAuthorityDowngrade(
+            source,
+            target,
+            accounts,
+            getSelectedScope(chainId),
+        ) ?? false

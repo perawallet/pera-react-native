@@ -83,7 +83,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it("persists the chain's account state as the balance row and holdings", async () => {
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -136,7 +136,7 @@ describe('fetchAndPersistAccount', () => {
             authorityAddress: null,
         })
 
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -151,7 +151,7 @@ describe('fetchAndPersistAccount', () => {
         fetchAccountState().mockRejectedValue(new Error('429'))
 
         await expect(
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
         ).rejects.toThrow('429')
 
         expect(mockUpsertAccountBalance).not.toHaveBeenCalled()
@@ -162,7 +162,7 @@ describe('fetchAndPersistAccount', () => {
     it('still refreshes holdings when the chain-state write fails', async () => {
         mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
 
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(mockRefreshAccountHoldings).toHaveBeenCalled()
         expect(result.changed).toBe(true)
@@ -190,7 +190,7 @@ describe('fetchAndPersistAccount', () => {
         })
         mockRefreshAccountHoldings.mockResolvedValue(false)
 
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(result).toEqual({
             changed: false,
@@ -201,8 +201,8 @@ describe('fetchAndPersistAccount', () => {
 
     it('coalesces concurrent fetches for the same account', async () => {
         const [a, b] = await Promise.all([
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
         ])
 
         expect(a).toEqual(b)
@@ -221,7 +221,7 @@ describe('ensureAccountFetched', () => {
     it('skips the fetch when a balance row already exists', async () => {
         mockGetAccountBalance.mockResolvedValue({ algoBalance: new Decimal(1) })
 
-        await ensureAccountFetched('ADDR1', 'mainnet')
+        await ensureAccountFetched('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).not.toHaveBeenCalled()
     })
@@ -229,7 +229,7 @@ describe('ensureAccountFetched', () => {
     it('fetches when there is no balance row yet', async () => {
         mockGetAccountBalance.mockResolvedValue(undefined)
 
-        await ensureAccountFetched('ADDR1', 'mainnet')
+        await ensureAccountFetched('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -245,7 +245,7 @@ describe('ensureAccountFetched', () => {
         fetchAccountState().mockRejectedValue(new Error('algod down'))
 
         await expect(
-            ensureAccountFetched('ADDR1', 'mainnet'),
+            ensureAccountFetched('ADDR1', MAINNET_SCOPE),
         ).resolves.toBeUndefined()
     })
 })

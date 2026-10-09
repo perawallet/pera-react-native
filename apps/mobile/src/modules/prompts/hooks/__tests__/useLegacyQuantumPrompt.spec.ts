@@ -45,7 +45,9 @@ const mockGetKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({ getKey: mockGetKey }),
+    FALCON_CHILD_KEY_TYPE: 'falcon-1024',
     PQ_DERIVATION_CANONICAL: 'pqk1',
+    SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
 
 import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
@@ -53,15 +55,13 @@ import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
 const legacyAccount = (id: string, address: string): WalletAccount => ({
     id,
     custody: { kind: 'local', seed: 'quantum' },
-    address,
-    keyPairId: `${id}-quantum`,
+    chains: { algorand: { address, keyPairId: `${id}-quantum` } },
 })
 
 const canonicalAccount = (id: string, address: string): WalletAccount => ({
     id,
     custody: { kind: 'local', seed: 'quantum' },
-    address,
-    keyPairId: `${id}-quantum-pqk1`,
+    chains: { algorand: { address, keyPairId: `${id}-quantum-pqk1` } },
 })
 
 const buildWrapper = () => {
@@ -96,7 +96,10 @@ describe('useLegacyQuantumPrompt', () => {
     test('is not due when every quantum account is canonical', () => {
         const account = canonicalAccount('a1', 'ADDR1')
         mockUseAllAccounts.mockReturnValue([account])
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'pqk1' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'pqk1' },
+        })
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
             wrapper: buildWrapper(),
@@ -108,7 +111,10 @@ describe('useLegacyQuantumPrompt', () => {
     test('is due when the wallet holds at least one legacy quantum account', () => {
         const account = legacyAccount('a1', 'ADDR1')
         mockUseAllAccounts.mockReturnValue([account])
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
@@ -123,7 +129,10 @@ describe('useLegacyQuantumPrompt', () => {
     test('is due when a legacy account has no derivation marker at all', () => {
         const account = legacyAccount('a1', 'ADDR1')
         mockUseAllAccounts.mockReturnValue([account])
-        mockGetKey.mockReturnValue({ metadata: {} })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: {},
+        })
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
@@ -139,7 +148,10 @@ describe('useLegacyQuantumPrompt', () => {
             legacyAccount('a2', 'ADDR2'),
         ]
         mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
@@ -157,7 +169,10 @@ describe('useLegacyQuantumPrompt', () => {
             legacyAccount('a2', 'ADDR2'),
         ]
         mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockFetchRekeyedAddresses.mockImplementation(async (address: string) =>
             address === 'ADDR2' ? ['SOME_DEPENDENT'] : [],
         )
@@ -177,7 +192,10 @@ describe('useLegacyQuantumPrompt', () => {
             legacyAccount('a2', 'ADDR2'),
         ]
         mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockFetchRekeyedAddresses.mockImplementation(async (address: string) =>
             address === 'ADDR2'
                 ? Promise.reject(new Error('indexer down'))
@@ -196,7 +214,10 @@ describe('useLegacyQuantumPrompt', () => {
     test('uses the dependent-aware copy while a lookup is still in flight', () => {
         const account = legacyAccount('a1', 'ADDR1')
         mockUseAllAccounts.mockReturnValue([account])
-        mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
+        mockGetKey.mockReturnValue({
+            type: 'falcon-1024',
+            metadata: { pqDerivation: 'legacy' },
+        })
         mockFetchRekeyedAddresses.mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {

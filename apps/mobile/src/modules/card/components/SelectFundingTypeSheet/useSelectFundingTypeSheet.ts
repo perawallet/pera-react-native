@@ -29,6 +29,7 @@ import {
     useAutoDrawSwitch,
     useCardErrorToast,
 } from '../../hooks'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseSelectFundingTypeSheetResult = {
@@ -69,9 +70,8 @@ export const useSelectFundingTypeSheet =
         const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // The switch acts on the card created for THIS account on THIS network

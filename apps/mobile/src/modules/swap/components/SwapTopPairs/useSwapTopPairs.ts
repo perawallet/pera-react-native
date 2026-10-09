@@ -17,6 +17,8 @@ import {
     type TopPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 const TOP_PAIRS_LIMIT = 5
@@ -29,13 +31,14 @@ export type UseSwapTopPairsResult = {
 }
 
 export const useSwapTopPairs = (): UseSwapTopPairsResult => {
-    const { setFromAsset, setToAsset } = useSwaps()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { setFromAsset, setToAsset } = useSwaps(scope)
     const { analytics } = usePeraProvider()
     const {
         data: pairs = [],
         isLoading,
         isError,
-    } = useTopPairsQuery(TOP_PAIRS_LIMIT)
+    } = useTopPairsQuery(scope, TOP_PAIRS_LIMIT)
 
     const handlePairPress = useCallback(
         (pair: TopPairItem) => {

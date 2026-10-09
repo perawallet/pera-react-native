@@ -11,6 +11,7 @@
  */
 
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
     UnsignedTransaction,
@@ -64,6 +65,11 @@ type BaseSignRequest = {
     signRequestId?: string
     /** Threaded into {@link SourceMetadata.transportOptions}. */
     transportOptions?: SignRequestTransportOptions
+}
+
+/** Set by whoever builds the request; routes it to that chain's adapters. */
+type ChainStamp = {
+    chainId: ChainId
 }
 
 /** Algorand group and delivery concepts; a chain-neutral request carries none. */
@@ -124,17 +130,18 @@ type TransactionRequestCallbacks = {
 } & BaseSignRequest
 
 export type PeraTransactionSignRequest = AlgorandRequestFields &
+    ChainStamp &
     TransactionRequestCallbacks & {
         txs: PeraTransaction[]
     }
 
 /**
  * Each transaction names its scope, so the request's chain comes from them.
- * The Algorand fields are typed out so a source can't set one the pipeline
- * would ignore.
+ * The Algorand fields and the chain stamp are typed out so a source can't set
+ * one the pipeline would ignore.
  */
 export type UnsignedTransactionSignRequest = {
-    [Field in keyof AlgorandRequestFields]?: never
+    [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
 } & TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
     }
@@ -156,22 +163,23 @@ export type PeraArbitraryDataSignResult = {
     signer: string
 }
 
-export type ArbitraryDataSignRequest = {
+export type ArbitraryDataSignRequest = ChainStamp & {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
-export type AuthDataSignRequest = AuthDataPayload & {
-    /**
-     * Always invoked with a single-element array, so the response shape stays
-     * consistent with arbitrary-data signing.
-     */
-    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: (reason?: RejectReason) => Promise<void>
-    error?: (error: Error) => Promise<void>
-} & BaseSignRequest
+export type AuthDataSignRequest = AuthDataPayload &
+    ChainStamp & {
+        /**
+         * Always invoked with a single-element array, so the response shape stays
+         * consistent with arbitrary-data signing.
+         */
+        approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
+        reject?: (reason?: RejectReason) => Promise<void>
+        error?: (error: Error) => Promise<void>
+    } & BaseSignRequest
 
 export type SignRequest =
     | TransactionSignRequest

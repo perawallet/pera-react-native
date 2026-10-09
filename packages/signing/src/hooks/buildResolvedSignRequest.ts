@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { findAccountByAddressOn } from '@perawallet/wallet-core-accounts'
 import type { SigningMachineContext } from '../machine/context'
-import { findSignerAccount } from '../machine/utils/findSignerAccount'
-import { chainIdOfSignRequest } from '../models/chain'
 import {
     isArbitraryDataRequest,
     isAuthDataRequest,
@@ -27,6 +25,7 @@ import type {
     SourceKind,
     TransportKind,
 } from './types'
+import { chainIdOfSignRequest } from '../models/chain'
 
 const resolveSourceKind = (sourceType: string | undefined): SourceKind =>
     (sourceType ?? 'local') as SourceKind
@@ -68,7 +67,7 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
         return {
             type: 'auth-data',
             parsed: messageSignerChainAdapters
-                .get(LEGACY_CHAIN_ID)
+                .get(chainIdOfSignRequest(req))
                 .parseAuthDataForDisplay(
                     req.authData.data,
                     req.metadata.encoding,
@@ -91,10 +90,10 @@ export const buildResolvedSignRequest = (
     const signerType = groupSigners.get(signerAddress)?.custody
     if (!signerType) return null
 
-    const signerAccount = findSignerAccount(
+    const signerAccount = findAccountByAddressOn(
         allAccounts,
+        context.deps.scope.chainId,
         signerAddress,
-        chainIdOfSignRequest(context.request),
     )
     if (!signerAccount) return null
 

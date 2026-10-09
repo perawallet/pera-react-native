@@ -50,10 +50,12 @@ vi.mock('../useAuthDataSigner', () => ({
 
 vi.mock('../useMultisigTransportAdapters', () => ({
     useMultisigTransportAdapters: vi.fn(() => ({
-        proposeSignRequest: vi.fn(),
-        addSignatures: vi.fn(),
-        getMsigMetadata: vi.fn(),
-        getDeviceId: vi.fn(),
+        adaptersFor: () => ({
+            proposeSignRequest: vi.fn(),
+            addSignatures: vi.fn(),
+            getMsigMetadata: vi.fn(),
+            getDeviceId: vi.fn(),
+        }),
     })),
 }))
 
@@ -208,6 +210,7 @@ const makeTxRequest = (
     ({
         id: 'tx-1',
         type: 'transactions',
+        chainId: 'algorand',
         transport: 'algod',
         txs: [{ sender: { toString: () => 'ADDR1' } } as never],
         ...overrides,

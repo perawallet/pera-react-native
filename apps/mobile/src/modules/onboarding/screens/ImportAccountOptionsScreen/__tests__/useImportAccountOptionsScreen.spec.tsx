@@ -13,7 +13,7 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 import { DeeplinkType } from '@modules/deeplink/types'
@@ -22,6 +22,8 @@ import {
     type UseImportAccountOptionsScreenResult,
 } from '../useImportAccountOptionsScreen'
 import { capabilityState } from '@test-utils/capability-mock'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { OnboardingEvent, trackEvent } from '@analytics'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -37,6 +39,11 @@ const { mockCapabilities, mockRouteParams, mockHandoff } = vi.hoisted(() => ({
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<object>()),
     useRoute: () => ({ params: mockRouteParams.current }),
+}))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@hooks/useTabHandoff', () => ({
@@ -94,7 +101,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        resolveImportAccountType: vi.fn(),
+        detectImportKind: vi.fn(),
         setPendingImportMnemonic: vi.fn(),
     }
 })
@@ -169,6 +176,7 @@ const pressCloudBackupOption = async (result: {
 describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         mockRouteParams.current = undefined
         mockHandoff.shouldHandOff = false
         mockCapabilities.ledgerUsb = false
@@ -245,7 +253,7 @@ describe('useImportAccountOptionsScreen', () => {
     })
 
     it('navigates to ImportInfo when the import options sheet resolves with a result', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('standalone')
+        mockRequestBottomSheet.mockResolvedValueOnce(null)
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const recoverOption = result.current.options.find(
@@ -257,8 +265,46 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'standalone',
+            accountType: null,
         })
+    })
+
+    it.each([
+        ['bip39', OnboardingEvent.RecoverOneKey],
+        [null, OnboardingEvent.RecoverAlgo25],
+    ] as const)(
+        "tracks the picked kind's recover event (%s)",
+        async (seed, event) => {
+            mockRequestBottomSheet.mockResolvedValueOnce(seed)
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await act(async () => {
+                await result.current.options
+                    .find(
+                        o =>
+                            o.testID ===
+                            'import_account_options_recover_wallet_button',
+                    )!
+                    .onPress()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(event)
+        },
+    )
+
+    it('stays put when the import options sheet is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const recoverOption = result.current.options.find(
+            o => o.testID === 'import_account_options_recover_wallet_button',
+        )!
+
+        await act(async () => {
+            await recoverOption.onPress()
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
     })
 
     it('hands the QR scan off to the expanded tab from the extension popup', () => {
@@ -449,9 +495,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'hdWallet',
+            seed: 'bip39',
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -463,7 +509,7 @@ describe('useImportAccountOptionsScreen', () => {
         // Mnemonic goes through the in-memory store, never the route params.
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'hdWallet',
+            accountType: 'bip39',
         })
     })
 
@@ -473,9 +519,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'standalone',
+            seed: null,
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -486,7 +532,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'standalone',
+            accountType: null,
         })
     })
 
@@ -513,9 +559,10 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic: 'too short',
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: false,
-        } as never)
+            wordCount: 2,
+        })
         const restartScanning = vi.fn()
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())

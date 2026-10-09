@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 
 const {
     seedReferenceMock,
@@ -34,7 +34,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    logger: { warn: loggerWarnMock },
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: loggerWarnMock,
+        error: vi.fn(),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -58,13 +63,11 @@ import { useResolveHdSeedForBackup } from '../useResolveHdSeedForBackup'
 
 const ENTROPY = Uint8Array.from({ length: 16 }, (_, i) => i)
 
-const account = {
+const account: LocalAccount = {
     id: 'acc-1',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 3, keyIndex: 7 } },
-    address: 'ADDR-2',
-    keyPairId: 'child-1',
-    hdWalletDetails: { account: 3, change: 0, keyIndex: 7, derivationType: 9 },
-} as unknown as HDWalletAccount
+    chains: { algorand: { address: 'ADDR-2', keyPairId: 'child-1' } },
+}
 
 describe('useResolveHdSeedForBackup', () => {
     let grantedDomain: string
@@ -124,7 +127,9 @@ describe('useResolveHdSeedForBackup', () => {
     })
 
     it('derives the public values once but reads the secrets on every run', async () => {
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         await result.current(account)
         const second = await result.current(account)
@@ -141,7 +146,9 @@ describe('useResolveHdSeedForBackup', () => {
 
     it('does not cache a derivation that failed', async () => {
         seedReferenceMock.mockRejectedValueOnce(new Error('locked'))
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         expect(await result.current(account)).toBeNull()
         expect(await result.current(account)).toMatchObject({
@@ -150,7 +157,9 @@ describe('useResolveHdSeedForBackup', () => {
     })
 
     it('resolves the seed root plus the entropy the mnemonic session hands over', async () => {
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 
@@ -173,13 +182,15 @@ describe('useResolveHdSeedForBackup', () => {
         expect(deriveHdAccountMock).toHaveBeenCalledWith(
             expect.anything(),
             'seed-1',
-            account.hdWalletDetails,
+            { account: 3, keyIndex: 7 },
         )
     })
 
     it('reads no entropy when the seed ACL does not grant the backup domain', async () => {
         grantedDomain = 'pera.accounts'
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 
@@ -191,7 +202,9 @@ describe('useResolveHdSeedForBackup', () => {
         executeWithMnemonicMock.mockRejectedValue(
             new Error('HD seed is missing its entropy secret'),
         )
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 

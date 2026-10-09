@@ -12,15 +12,13 @@
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type { AccountAssetBalanceHistoryItem, WalletAccount } from '../models'
+import { chainAccountOf } from '../credentials/accessors'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import { fetchAccountAssetBalanceHistory } from './endpoints'
 import { Decimal } from 'decimal.js'
@@ -42,9 +40,9 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     account: WalletAccount,
     assetId: string,
     period: HistoryPeriod,
+    scope: ChainScope,
 ): UseAccountsAssetsBalanceHistoryQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
+    const address = chainAccountOf(account, scope.chainId)?.address ?? ''
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
@@ -54,7 +52,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
             scope,
-            account.address,
+            address,
             assetId,
             period,
             preferredCurrency,
@@ -62,11 +60,11 @@ export const useAccountsAssetsBalanceHistoryQuery = (
         enabled: !isUnavailableOnNetwork,
         queryFn: () =>
             fetchAccountAssetBalanceHistory(
-                account.address,
+                address,
                 assetId,
                 period,
                 preferredCurrency,
-                network,
+                legacyNetworkOf(scope),
             ),
         // `data` / `data.results` can be absent when the endpoint answers with
         // an empty or 204 body (the fetch layer yields `undefined` for those).

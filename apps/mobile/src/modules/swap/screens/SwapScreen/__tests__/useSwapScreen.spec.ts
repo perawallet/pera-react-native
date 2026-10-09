@@ -32,9 +32,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'ADDR' }),
-    useSigningAccounts: () => [{ address: 'ADDR' }],
-    useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
+    useSelectedAccount: () => ({ id: 'acc-1' }),
+    useSigningAccounts: () => [{ id: 'acc-1' }],
+    useSelectedAccountId: () => ({ setSelectedAccountId: vi.fn() }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({

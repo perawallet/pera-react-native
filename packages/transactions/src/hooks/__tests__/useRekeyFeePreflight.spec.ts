@@ -13,92 +13,109 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRekeyFeePreflight } from '../useRekeyFeePreflight'
 
-const mockUseAccountInformationQuery = vi.fn()
+const mockUseOnChainAccountStateQuery = vi.fn()
 
+// The real accounts module pulls in react-native-mmkv, which cannot load here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountInformationQuery: (address: string) =>
-        mockUseAccountInformationQuery(address),
+    useOnChainAccountStateQuery: (address: string, scope: ChainScope) =>
+        mockUseOnChainAccountStateQuery(address, scope),
 }))
 
-// Faithful reimplementation — the real module pulls in react-native-mmkv,
-// which cannot load in the node test environment.
-
+const SCOPE: ChainScope = {
+    chainId: 'fixturehex' as ChainId,
+    networkId: 'devnet',
+}
 const SOURCE_ADDRESS = 'SOURCE'.padEnd(58, 'A')
 const FEE_ALGOS = new Decimal('0.001')
 
-const accountInfo = (amount: bigint, minBalance: bigint) => ({
-    data: { amount, minBalance },
+/** Base-unit inputs; the snapshot's balance and reserve are display units. */
+const liveState = (balance: bigint, minBalance: bigint) => ({
+    data: {
+        nativeBalance: new Decimal(balance.toString()).div(1_000_000),
+        minBalance: new Decimal(minBalance.toString()).div(1_000_000),
+    },
 })
+
+const renderPreflight = (feeAlgos: Decimal | undefined) =>
+    renderHook(() => useRekeyFeePreflight(SOURCE_ADDRESS, feeAlgos, SCOPE))
 
 describe('useRekeyFeePreflight', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAccountInformationQuery.mockReturnValue({ data: undefined })
+        mockUseOnChainAccountStateQuery.mockReturnValue({ data: undefined })
     })
 
     it('passes when spendable balance exactly equals the fee', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(101_000n, 100_000n),
+        mockUseOnChainAccountStateQuery.mockReturnValue(
+            liveState(101_000n, 100_000n),
         )
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result } = renderPreflight(FEE_ALGOS)
 
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('flags underfunded when spendable is one microalgo short of the fee', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(100_999n, 100_000n),
+    it('flags underfunded when spendable is one base unit short of the fee', () => {
+        mockUseOnChainAccountStateQuery.mockReturnValue(
+            liveState(100_999n, 100_000n),
         )
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result } = renderPreflight(FEE_ALGOS)
 
         expect(result.current.isUnderfunded).toBe(true)
     })
 
     it('flags a zero-balance account', () => {
-        mockUseAccountInformationQuery.mockReturnValue(accountInfo(0n, 0n))
+        mockUseOnChainAccountStateQuery.mockReturnValue(liveState(0n, 0n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result } = renderPreflight(FEE_ALGOS)
 
         expect(result.current.isUnderfunded).toBe(true)
     })
 
     it('does not flag while the fee is still unresolved', () => {
-        mockUseAccountInformationQuery.mockReturnValue(accountInfo(0n, 0n))
+        mockUseOnChainAccountStateQuery.mockReturnValue(liveState(0n, 0n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, undefined),
-        )
+        const { result } = renderPreflight(undefined)
 
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('does not flag while the balance row has not loaded', () => {
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+    it('does not flag while the account state is still loading', () => {
+        const { result } = renderPreflight(FEE_ALGOS)
 
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('reads the balance of the source address', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(101_000n, 100_000n),
+    it("reads the source's live chain state on the caller's scope", () => {
+        mockUseOnChainAccountStateQuery.mockReturnValue(
+            liveState(101_000n, 100_000n),
         )
 
-        renderHook(() => useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS))
+        renderPreflight(FEE_ALGOS)
 
-        expect(mockUseAccountInformationQuery).toHaveBeenCalledWith(
+        expect(mockUseOnChainAccountStateQuery).toHaveBeenCalledWith(
             SOURCE_ADDRESS,
+            SCOPE,
         )
+    })
+
+    it('unblocks once the live state shows the account was funded', () => {
+        mockUseOnChainAccountStateQuery.mockReturnValue(liveState(0n, 0n))
+        const { result, rerender } = renderPreflight(FEE_ALGOS)
+        expect(result.current.isUnderfunded).toBe(true)
+
+        mockUseOnChainAccountStateQuery.mockReturnValue(
+            liveState(1_000_000n, 100_000n),
+        )
+        rerender()
+
+        expect(result.current.isUnderfunded).toBe(false)
     })
 })

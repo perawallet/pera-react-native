@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 vi.mock('../legacyKeyConversion', () => ({
     hdWalletEntropyToIndices: vi.fn(() => new Uint16Array(24).fill(1)),
@@ -56,7 +57,7 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: null,
-        hdWalletId: 'wallet-1',
+        hdSeedId: 'wallet-1',
         ledger: null,
         joint: null,
         authAddress: null,
@@ -73,13 +74,13 @@ const buildArgs = (
         keyIndex: 7,
     })
     const parent = buildWallet({
-        walletId: account.hdWalletId ?? 'wallet-1',
+        walletId: account.hdSeedId ?? 'wallet-1',
         keys: [childKey],
     })
     return {
         account,
-        hdWalletsById:
-            overrides.hdWalletsById ?? new Map([[parent.walletId, parent]]),
+        hdSeedsById:
+            overrides.hdSeedsById ?? new Map([[parent.walletId, parent]]),
         importedHdRoots: overrides.importedHdRoots ?? new Map(),
         importAccount:
             vi.fn() as unknown as MigrateAccountArgs['importAccount'],
@@ -92,9 +93,12 @@ const buildArgs = (
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
                 },
-                address: account.address,
-                keyPairId: 'kp',
-                hdWalletDetails: {} as never,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: account.address,
+                        keyPairId: 'kp',
+                    },
+                },
             }) as unknown as MigrateAccountArgs['createHdWalletAccount']),
         createHDWalletKey:
             overrides.createHDWalletKey ??
@@ -117,18 +121,18 @@ beforeEach(() => {
 })
 
 describe('migrateHdAccount', () => {
-    it('throws when the legacy account has no hdWalletId', async () => {
-        const args = buildArgs({ account: buildAccount({ hdWalletId: null }) })
+    it('throws when the legacy account has no hdSeedId', async () => {
+        const args = buildArgs({ account: buildAccount({ hdSeedId: null }) })
 
         await expect(migrateHdAccount(args)).rejects.toThrow(
-            'HD account missing hdWalletId',
+            'HD account missing hdSeedId',
         )
     })
 
     it('throws when the HD parent wallet is missing from the payload', async () => {
         const args = buildArgs({
-            account: buildAccount({ hdWalletId: 'missing' }),
-            hdWalletsById: new Map(),
+            account: buildAccount({ hdSeedId: 'missing' }),
+            hdSeedsById: new Map(),
         })
 
         await expect(migrateHdAccount(args)).rejects.toThrow(
@@ -144,9 +148,9 @@ describe('migrateHdAccount', () => {
         const args = buildArgs({
             account: buildAccount({
                 address: 'ADDR_MISSING',
-                hdWalletId: 'wallet-orphan',
+                hdSeedId: 'wallet-orphan',
             }),
-            hdWalletsById: new Map([[orphan.walletId, orphan]]),
+            hdSeedsById: new Map([[orphan.walletId, orphan]]),
         })
 
         await expect(migrateHdAccount(args)).rejects.toThrow(
@@ -156,7 +160,7 @@ describe('migrateHdAccount', () => {
 
     it('wipes the decrypted seed entropy after importing the HD root', async () => {
         const args = buildArgs()
-        const parent = args.hdWalletsById.get('wallet-1')
+        const parent = args.hdSeedsById.get('wallet-1')
         expect(parent?.entropy?.every(b => b === 1)).toBe(true)
 
         await migrateHdAccount(args)
@@ -172,7 +176,7 @@ describe('migrateHdAccount', () => {
             createHDWalletKey:
                 createHDWalletKey as unknown as MigrateAccountArgs['createHDWalletKey'],
         })
-        const parent = args.hdWalletsById.get('wallet-1')
+        const parent = args.hdSeedsById.get('wallet-1')
 
         await expect(migrateHdAccount(args)).rejects.toThrow(
             'transient keystore error',
@@ -215,9 +219,12 @@ describe('migrateHdAccount', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'ADDR_CHILD',
-            keyPairId: 'kp',
-            hdWalletDetails: {} as never,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_CHILD',
+                    keyPairId: 'kp',
+                },
+            },
         })
         const args = buildArgs({
             hasSeedWithEntropy,
@@ -282,9 +289,12 @@ describe('migrateHdAccount', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'ADDR_CHILD',
-            keyPairId: 'kp',
-            hdWalletDetails: {} as never,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_CHILD',
+                    keyPairId: 'kp',
+                },
+            },
         })
         const importedHdRoots = new Map<string, ImportedHdRoot>([
             ['wallet-1', { seedKeyId: 'cached-root' }],
@@ -326,9 +336,12 @@ describe('migrateHdAccount', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'ADDR_MISMATCH',
-            keyPairId: 'kp',
-            hdWalletDetails: {} as never,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_MISMATCH',
+                    keyPairId: 'kp',
+                },
+            },
         })
         const args = buildArgs({
             createHdWalletAccount:

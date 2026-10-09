@@ -28,15 +28,14 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: mocks.useAssetsQuery,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
-
 vi.mock('../../db', () => ({
     getAllHeldAssetIdsForNetwork: mocks.getAllHeldAssetIdsForNetwork,
 }))
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useOwnedAssets } from '../useOwnedAssets'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const USDC = { assetId: 31566704, name: 'USD Coin', unitName: 'USDC' }
 
@@ -71,7 +70,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -88,7 +87,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -109,7 +108,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -119,7 +118,7 @@ describe('useOwnedAssets', () => {
 
     it('does not query held ids and is not loading when disabled', () => {
         const { result } = renderHook(
-            () => useOwnedAssets({ enabled: false }),
+            () => useOwnedAssets(SCOPE, { enabled: false }),
             {
                 wrapper: createWrapper(),
             },

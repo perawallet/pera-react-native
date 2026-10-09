@@ -84,7 +84,10 @@ const {
     const mockQueryClient = {}
     const mockRekeyedScan = vi.fn()
     const mockAllAccounts = vi.fn<
-        () => { address: string; custody: AccountCustody }[]
+        () => {
+            chains: { algorand: { address: string } }
+            custody: AccountCustody
+        }[]
     >(() => [])
     return {
         mockPrefetch,
@@ -108,6 +111,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useAllAccounts: () => mockAllAccounts(),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
     accountType: ({ custody }: { custody: AccountCustody }) =>
         custody.kind !== 'local'
             ? custody.kind
@@ -116,7 +123,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
               : custody.seed,
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
-    useLedgerRekeyedScan: mockRekeyedScan,
+    useLedgerDelegatedScan: mockRekeyedScan,
     AccountTypes: {
         standalone: 'standalone',
         hdWallet: 'hdWallet',
@@ -140,6 +147,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -171,6 +179,8 @@ const derivedAccounts = (
     r: ReturnType<typeof useLedgerSelectAccountsScreen>,
 ): HardwareWalletDerivedAccount[] =>
     r.selectableAccounts.flatMap(s => (s.kind === 'derived' ? [s.account] : []))
+
+const MAINNET_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
 
 describe('useLedgerSelectAccountsScreen', () => {
     beforeEach(() => {
@@ -433,12 +443,12 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'AAA111',
-                'mainnet',
+                MAINNET_SCOPE,
             )
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'BBB222',
-                'mainnet',
+                MAINNET_SCOPE,
             )
         })
     })
@@ -465,7 +475,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'REKEYED_A',
-                'mainnet',
+                MAINNET_SCOPE,
             )
         })
     })
@@ -478,7 +488,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'AAA111',
-                'mainnet',
+                MAINNET_SCOPE,
             )
         })
 
@@ -490,7 +500,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'CCC333',
-                'mainnet',
+                MAINNET_SCOPE,
             )
         })
 
@@ -526,7 +536,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
                 'CCC333',
-                'mainnet',
+                MAINNET_SCOPE,
             )
         })
     })
@@ -564,7 +574,7 @@ describe('useLedgerSelectAccountsScreen', () => {
     it('reports areAllImported and exits the flow on continue when every discovered account is already imported', () => {
         mockAllAccounts.mockReturnValue([
             {
-                address: 'AAA111',
+                chains: { algorand: { address: 'AAA111' } },
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -577,7 +587,7 @@ describe('useLedgerSelectAccountsScreen', () => {
                 },
             },
             {
-                address: 'BBB222',
+                chains: { algorand: { address: 'BBB222' } },
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -671,7 +681,10 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('keeps a derived address imported as a watch account selectable and marks it upgradeable', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111', custody: { kind: 'watch' } },
+            {
+                chains: { algorand: { address: 'AAA111' } },
+                custody: { kind: 'watch' },
+            },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -699,7 +712,7 @@ describe('useLedgerSelectAccountsScreen', () => {
     it('still disables a derived address imported as a hardware account', () => {
         mockAllAccounts.mockReturnValue([
             {
-                address: 'AAA111',
+                chains: { algorand: { address: 'AAA111' } },
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -741,7 +754,10 @@ describe('useLedgerSelectAccountsScreen', () => {
             isScanning: false,
         })
         mockAllAccounts.mockReturnValue([
-            { address: 'REKEYED_A', custody: { kind: 'watch' } },
+            {
+                chains: { algorand: { address: 'REKEYED_A' } },
+                custody: { kind: 'watch' },
+            },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -754,9 +770,12 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('does not report areAllImported while a watch upgrade is still actionable', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111', custody: { kind: 'watch' } },
             {
-                address: 'BBB222',
+                chains: { algorand: { address: 'AAA111' } },
+                custody: { kind: 'watch' },
+            },
+            {
+                chains: { algorand: { address: 'BBB222' } },
                 custody: {
                     kind: 'hardware',
                     device: {

@@ -15,10 +15,11 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useSwaps } from '@perawallet/wallet-core-swaps'
 import {
     useSelectedAccount,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
@@ -30,15 +31,15 @@ export type UseSwapScreenResult = {
 }
 
 export const useSwapScreen = (): UseSwapScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const route =
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
-    const { network } = useNetwork()
-    const { setFromAsset, setToAsset } = useSwaps()
+    const { setFromAsset, setToAsset } = useSwaps(scope)
     const selectedAccount = useSelectedAccount()
-    const signingAccounts = useSigningAccounts()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const signingAccounts = useSigningAccounts(scope.chainId)
+    const { setSelectedAccountId } = useSelectedAccountId()
 
-    const resolvedAssets = resolveSwapRouteAssets(route.params, network)
+    const resolvedAssets = resolveSwapRouteAssets(route.params, scope)
     const assetInId = resolvedAssets?.assetInId
     const assetOutId = resolvedAssets?.assetOutId
 
@@ -47,12 +48,12 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     useEffect(() => {
         if (
             selectedAccount &&
-            !signingAccounts.some(a => a.address === selectedAccount.address) &&
+            !signingAccounts.some(a => a.id === selectedAccount.id) &&
             signingAccounts.length > 0
         ) {
-            setSelectedAccountAddress(signingAccounts[0].address)
+            setSelectedAccountId(signingAccounts[0].id)
         }
-    }, [selectedAccount, signingAccounts, setSelectedAccountAddress])
+    }, [selectedAccount, signingAccounts, setSelectedAccountId])
 
     useEffect(() => {
         if (!assetInId || !assetOutId) return

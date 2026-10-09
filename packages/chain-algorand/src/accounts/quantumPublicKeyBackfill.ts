@@ -12,7 +12,6 @@
 
 import {
     chainAccountOf,
-    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms'
@@ -21,6 +20,7 @@ import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { deriveQuantumAddress } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { quantumNative, storedQuantumPublicKey } from './quantum'
+import { isQuantumAccount } from './vocabulary'
 
 /**
  * Records the public key on a quantum account minted before it was stored, so
@@ -34,11 +34,11 @@ export const withStoredQuantumPublicKey = (
         return account
     }
     const entry = chainAccountOf(account, ALGORAND_CHAIN_ID)
-    if (!entry) return account
+    if (!entry?.keyPairId) return account
     try {
         const info = resolvePQSigningInfo(
             getKeystoreStore().state.keys,
-            account.keyPairId,
+            entry.keyPairId,
         )
         if (
             !info ||

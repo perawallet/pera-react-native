@@ -63,9 +63,20 @@ export type BuildSiwxAuthDataArgs = {
     now?: Date
 }
 
+/** What a message signer is asked to sign. */
+export type MessageSignKind = 'arbitraryData' | 'authData'
+
 /** The chain-specific legs of signing a message; registered by the chain package. */
 export interface MessageSignerChainAdapter {
     chainId: ChainId
+    /** Whether `account` can sign `kind` on this chain, judged from the account alone. */
+    canSign(account: WalletAccount, kind: MessageSignKind): boolean
+    /**
+     * Whether a requester can verify the signature `account` makes for
+     * `kind`. A key of a scheme the message format doesn't carry still passes
+     * {@link canSign}, so the review blocks it instead of refusing the request.
+     */
+    signsVerifiably(account: WalletAccount, kind: MessageSignKind): boolean
     /** One signature per base64 item, with the account's own key; never follows rekey. */
     signArbitraryData(
         deps: MessageSigningDeps,
@@ -104,6 +115,24 @@ export interface MessageSignerChainAdapter {
 
 export const messageSignerChainAdapters =
     createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
+
+/** False on a chain with no message signer: it signs nothing. */
+export const canSignMessage = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).canSign(account, kind)
+
+/** False on a chain with no message signer, so a review blocks the request. */
+export const signsMessageVerifiably = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).signsVerifiably(account, kind)
 
 /** The refusal gate: with no signer registered, nothing is signed or passed through unsigned. */
 export const messageSignerFor = (

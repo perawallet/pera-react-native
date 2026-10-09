@@ -22,6 +22,14 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: currentNetwork,
+    }),
+    getSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: currentNetwork,
+    }),
     useNetworkStore: {
         getState: () => ({ network: currentNetwork }),
     },

@@ -28,6 +28,7 @@ import {
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { requireCardAccountAddress } from '../utils/cardAccountAddress'
 import { useCardScope } from './useCardScope'
 
 export type UseEscrowCardCreationResult = {
@@ -62,6 +63,8 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
     const { mutateAsync: createAndApproveAsync } =
         useCreateAndApproveCardMutation(scope)
 
+    // An ARC-60 signature verifies against the signer's own key, so rekey is
+    // never followed; Ledger signs it on-device without a local key.
     const canCreateCard = useCallback(
         (account: WalletAccount) =>
             getCardFundingSourceEligibility(account, scope).canProveOwnership,
@@ -82,6 +85,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'auth-data',
+                    chainId: scope.chainId,
                     transport: 'callback',
                     sourceType: 'card',
                     authData,
@@ -97,28 +101,32 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                     },
                 })
             }),
-        [addSignRequest],
+        [addSignRequest, scope.chainId],
     )
 
     const signOwnership = useCallback(
         (account: WalletAccount) => {
             // Fail before any network call so nothing is half-applied.
+            const address = requireCardAccountAddress(account, scope.chainId)
             if (!canCreateCard(account)) {
-                throw new ProgramSigningUnsupportedError(account.address)
+                throw new ProgramSigningUnsupportedError(address)
             }
             return signOwnershipAsync({
-                address: account.address,
+                address,
                 signAuthData: (authData, metadata) =>
                     requestArc60Approval(account, authData, metadata),
             })
         },
-        [canCreateCard, signOwnershipAsync, requestArc60Approval],
+        [canCreateCard, signOwnershipAsync, requestArc60Approval, scope],
     )
 
     const createAndApprove = useCallback(
         (account: WalletAccount, proof: CardOwnershipProof) =>
-            createAndApproveAsync({ address: account.address, proof }),
-        [createAndApproveAsync],
+            createAndApproveAsync({
+                address: requireCardAccountAddress(account, scope.chainId),
+                proof,
+            }),
+        [createAndApproveAsync, scope],
     )
 
     return {

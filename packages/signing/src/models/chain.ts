@@ -10,18 +10,15 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { isTransactionRequest, isUnsignedTransactionRequest } from './guards'
-import type { SignRequest } from './index'
+import type { SignRequest, UnsignedTransactionSignRequest } from './index'
 
 // The one place a request's chain is decided. It cannot come from the signer
 // account, which may hold addresses on several chains. Chain-neutral
-// transactions name their scope; every other shape carries Algorand payloads
-// (PeraTransaction, MX and ARC-60 data).
+// transactions name their scope; every other request is stamped when built.
 export const chainIdOfSignRequest = (request: SignRequest): ChainId =>
     isTransactionRequest(request) && isUnsignedTransactionRequest(request)
         ? request.txs[0].scope.chainId
-        : LEGACY_CHAIN_ID
+        : (request as Exclude<SignRequest, UnsignedTransactionSignRequest>)
+              .chainId

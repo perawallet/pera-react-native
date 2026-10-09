@@ -11,11 +11,15 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainFamily,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
-    accountType,
-    type AccountType,
+    addressOn,
+    findAddressHolder,
     useAccountValueTotalsQuery,
     useAllAccounts,
     useSortedAccounts,
@@ -47,7 +51,8 @@ type UseAddressSearchViewProps = {
     /** Only contacts holding an address in this family are offered. */
     chainFamily: ChainFamily
     excludeAddress?: string
-    excludeTypes?: AccountType[]
+    /** Only accounts passing this predicate are offered. */
+    accountFilter?: (account: WalletAccount) => boolean
     showAllContactsWhenEmpty?: boolean
     /**
      * Offer the clipboard's address as the first row. Opt-in because reading the
@@ -69,7 +74,7 @@ type UseAddressSearchViewResult = {
 export const useAddressSearchView = ({
     chainFamily,
     excludeAddress,
-    excludeTypes,
+    accountFilter,
     showAllContactsWhenEmpty = false,
     showClipboardPaste = false,
 }: UseAddressSearchViewProps): UseAddressSearchViewResult => {
@@ -79,13 +84,18 @@ export const useAddressSearchView = ({
     const { findContacts } = useContacts()
     const { readText } = useClipboard()
     const allAccounts = useAllAccounts()
-    const { accountValueTotals } = useAccountValueTotalsQuery(allAccounts)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        allAccounts,
+        scope,
+    )
     // The switcher and the sort sheet render the user's chosen account order,
     // so the picker has to sort too — otherwise the same accounts read in a
     // different order here than everywhere else in the app.
     const { sortedAccounts: accounts } = useSortedAccounts(
         allAccounts,
         accountValueTotals,
+        scope.chainId,
     )
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
@@ -119,20 +129,21 @@ export const useAddressSearchView = ({
         () =>
             addressIsValid
                 ? []
-                : accounts.filter(
-                      a =>
-                          a.address !== excludeAddress &&
-                          (!excludeTypes ||
-                              !excludeTypes.includes(accountType(a))) &&
+                : accounts.filter(a => {
+                      const address = addressOn(a, scope) ?? ''
+                      return (
+                          address !== excludeAddress &&
+                          (!accountFilter || accountFilter(a)) &&
                           (!value?.length ||
-                              a.address
+                              address
                                   .toLowerCase()
                                   .includes(value.toLowerCase()) ||
                               a.name
                                   ?.toLowerCase()
-                                  .includes(value.toLowerCase())),
-                  ),
-        [value, accounts, excludeAddress, excludeTypes, addressIsValid],
+                                  .includes(value.toLowerCase()))
+                      )
+                  }),
+        [value, accounts, excludeAddress, accountFilter, addressIsValid, scope],
     )
 
     const matchingContacts = useMemo(() => {
@@ -141,7 +152,9 @@ export const useAddressSearchView = ({
         // A contact must not appear under "Contacts" if its address is:
         // - any wallet account (so an account saved as a contact only shows under "My Accounts")
         // - the explicitly-excluded address (e.g. the FROM account in a send flow)
-        const excludedAddresses = new Set(accounts.map(a => a.address))
+        const excludedAddresses = new Set(
+            accounts.flatMap(a => addressOn(a, scope) ?? []),
+        )
         if (excludeAddress) excludedAddresses.add(excludeAddress)
         return findContacts({ keyword: value, family: chainFamily }).flatMap(
             contact => {
@@ -159,6 +172,7 @@ export const useAddressSearchView = ({
         showAllContactsWhenEmpty,
         accounts,
         excludeAddress,
+        scope,
     ])
 
     const matchingItems = useMemo(() => {
@@ -175,7 +189,7 @@ export const useAddressSearchView = ({
         }
 
         if (addressIsValid) {
-            const ownAccount = accounts.find(a => a.address === value)
+            const ownAccount = findAddressHolder(accounts, scope, value)
             items.push({
                 type: 'section_header',
                 title: 'address_entry.address',
@@ -221,7 +235,7 @@ export const useAddressSearchView = ({
                 items.push({
                     type: 'account',
                     account: a,
-                    key: `account-${a.address}-${items.length}`,
+                    key: `account-${addressOn(a, scope)}-${items.length}`,
                 })
             }
         }
@@ -251,6 +265,7 @@ export const useAddressSearchView = ({
         matchingContacts,
         nfdResults,
         clipboardAddress,
+        scope,
     ])
 
     const hasResults = matchingItems.length > 0

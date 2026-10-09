@@ -30,7 +30,6 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    DerivationTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -39,6 +38,7 @@ import {
     type Algo25KeyResult,
     type HDWalletKeyResult,
 } from '@perawallet/wallet-core-kms'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import {
     useMnemonicBackupStore,
@@ -60,6 +60,7 @@ import {
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
+import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
 
 // Mint an algo25 key from the pinned `ALGO25_TEST_MNEMONIC` and register
 // the resulting WalletAccount in the store, returning the keyPairId the
@@ -77,12 +78,16 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'algo25-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Algo25 Test',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -120,15 +125,10 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 0 },
         },
-        address: HD_TEST_ADDRESS,
-        keyPairId: rootKeyId,
-        name: 'HD Root',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
+        chains: {
+            algorand: { address: HD_TEST_ADDRESS, keyPairId: rootKeyId },
         },
+        name: 'HD Root',
     }
     const sibling1: WalletAccount = {
         id: 'hd-s1',
@@ -137,15 +137,8 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 1 },
         },
-        address: s1Address,
-        keyPairId: rootKeyId,
+        chains: { algorand: { address: s1Address, keyPairId: rootKeyId } },
         name: 'HD Sibling 1',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 1,
-            derivationType: DerivationTypes.Peikert,
-        },
     }
     const sibling2: WalletAccount = {
         id: 'hd-s2',
@@ -154,18 +147,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 2 },
         },
-        address: s2Address,
-        keyPairId: rootKeyId,
+        chains: { algorand: { address: s2Address, keyPairId: rootKeyId } },
         name: 'HD Sibling 2',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 2,
-            derivationType: DerivationTypes.Peikert,
-        },
     }
     useAccountsStore.getState().setAccounts([rootAccount, sibling1, sibling2])
-    useAccountsStore.getState().setSelectedAccountAddress(rootAccount.address)
+    useAccountsStore.getState().setSelectedAccountId(rootAccount.id)
     return { rootAccount, sibling1, sibling2, rootKeyId }
 }
 
@@ -284,10 +270,10 @@ describe('Flow: Account backup', () => {
     it('Given an algo25 account, when the user walks the full backup flow and answers verification correctly, then the wallet root is marked backed up and the success screen renders', async () => {
         const account = await seedAlgo25Account()
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
         ).toBe(false)
 
-        renderBackupStack(account.address)
+        renderBackupStack(addressOf(account))
 
         // Info → write-down → mnemonic.
         fireEvent.click(await screen.findByTestId('backup_info_continue'))
@@ -320,14 +306,14 @@ describe('Flow: Account backup', () => {
             expect(screen.getByTestId('backup_success_done')).toBeTruthy()
         })
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
         ).toBe(true)
     })
 
     it('Given an HD wallet root account, when the user walks the full backup flow, then the 24-word HD mnemonic renders and verification succeeds', async () => {
         const { rootAccount, rootKeyId } = await seedHDWalletAccounts()
 
-        renderBackupStack(rootAccount.address)
+        renderBackupStack(addressOf(rootAccount))
 
         fireEvent.click(await screen.findByTestId('backup_info_continue'))
         fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
@@ -363,7 +349,7 @@ describe('Flow: Account backup', () => {
         // marked backed up yet.
         const requires = renderHook(
             ({ account }: { account: WalletAccount }) =>
-                useRequiresMnemonicBackup(account),
+                useRequiresMnemonicBackup(account, LEGACY_CHAIN_ID),
             { initialProps: { account: rootAccount } },
         )
         expect(requires.result.current).toBe(true)
@@ -372,7 +358,7 @@ describe('Flow: Account backup', () => {
         requires.rerender({ account: sibling2 })
         expect(requires.result.current).toBe(true)
 
-        renderBackupStack(rootAccount.address)
+        renderBackupStack(addressOf(rootAccount))
 
         fireEvent.click(await screen.findByTestId('backup_info_continue'))
         fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
@@ -411,7 +397,7 @@ describe('Flow: Account backup', () => {
         // Skip straight to verification — the wrong-answer path is the
         // subject, the Info/WriteDown/Mnemonic legs are exercised by
         // the happy-path tests above.
-        renderBackupStack(account.address, 'BackupVerification')
+        renderBackupStack(addressOf(account), 'BackupVerification')
 
         await waitFor(
             () => {
@@ -456,7 +442,7 @@ describe('Flow: Account backup', () => {
         expect(screen.queryByTestId('backup_success_done')).toBeNull()
         expect(screen.getByTestId('backup_verification_next')).toBeTruthy()
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
         ).toBe(false)
     })
 
@@ -475,7 +461,7 @@ describe('Flow: Account backup', () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })
 
-        renderBackupStack(account.address, 'BackupMnemonic')
+        renderBackupStack(addressOf(account), 'BackupMnemonic')
 
         // The PIN numpad mounts in front of the words grid. The
         // continue CTA is absent (the grid renders only after the

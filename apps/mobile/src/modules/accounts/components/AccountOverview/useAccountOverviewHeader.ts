@@ -13,12 +13,15 @@
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    addressOn,
     type AccountBalanceHistoryItem,
     useAccountSummaryQuery,
     useAllAccounts,
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
@@ -45,8 +48,9 @@ export type UseAccountOverviewHeaderResult = {
 export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency()
-    const canSign = useCanSignWith(account)
+    const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {
         algoAmount,
@@ -54,7 +58,7 @@ export const useAccountOverviewHeader = (
         portfolioUsdValue,
         isComplete,
         isPending,
-    } = useAccountSummaryQuery(account?.address)
+    } = useAccountSummaryQuery(addressOn(account, scope), scope)
     const allAccounts = useAllAccounts()
     // Show the "get started" empty state only for a lone account with no ALGO
     // (a brand-new wallet). Any funded account, or any account in a multi-

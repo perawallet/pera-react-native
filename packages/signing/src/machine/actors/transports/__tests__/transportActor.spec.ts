@@ -26,6 +26,7 @@ import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algo25Account, multisigAccount } from '../../../../__tests__/accounts'
 import {
     algodBackedTransport,
     registerFakeBroadcaster,
@@ -35,6 +36,19 @@ import {
     registerFakePlannerAdapter,
 } from '../../../../__tests__/fakePlannerAdapter'
 import { plannerChainAdapters } from '../../../../chain-adapter'
+import { CannotSignError } from '../../../../pipeline/errors'
+import { resolveSigningAccount } from '../../../utils/resolveSigningAccount'
+
+vi.mock('../../../utils/resolveSigningAccount', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../../utils/resolveSigningAccount')
+        >()
+    return {
+        ...actual,
+        resolveSigningAccount: vi.fn(actual.resolveSigningAccount),
+    }
+})
 
 const ALGORAND_TESTNET: ChainScope = {
     chainId: 'algorand',
@@ -44,12 +58,7 @@ const ALGORAND_TESTNET: ChainScope = {
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-// Minimal mock account (algo25, local signing keys)
-const mockAlgo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: null },
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAlgo25Account = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockSigningResult: SigningResult = {
     signedData: {
@@ -161,6 +170,12 @@ describe('transportActor', () => {
             { type: 'local' },
             {
                 signingResults: [dataResult],
+                allAccounts: [
+                    {
+                        ...mockAlgo25Account,
+                        chains: { ethereum: { address: MOCK_ADDRESS } },
+                    },
+                ],
                 createTransport: () => ({ send }),
                 scope: { chainId: 'ethereum', networkId: 'sepolia' },
                 allAccounts: [
@@ -270,25 +285,17 @@ describe('transportActor', () => {
             'G3EG2YQE72G52LIV5AHOA5VEVM7AFT2BFKOSZXJIJBDHBSBPXPTZC5OM24'
         const J2_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
-        const jointSender = {
-            custody: { kind: 'multisig' },
-            address: J1_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p1', 'p2'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const jointSender = multisigAccount(J1_ADDRESS, {
+            threshold: 2,
+            addresses: ['p1', 'p2'],
+            version: 1,
+        })
         seedAuthority(J1_ADDRESS, J2_ADDRESS, scopeForLegacyNetwork('testnet'))
-        const authAccount = {
-            custody: { kind: 'multisig' },
-            address: J2_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p3', 'p4'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const authAccount = multisigAccount(J2_ADDRESS, {
+            threshold: 2,
+            addresses: ['p3', 'p4'],
+            version: 1,
+        })
 
         const proposeMock = vi
             .fn()
@@ -324,21 +331,17 @@ describe('transportActor', () => {
         // keyed on the sender's own (standard) type.
         const MSIG_AUTH_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
-        const rekeyedSender = mockAlgo25Account as unknown as WalletAccount
+        const rekeyedSender: WalletAccount = mockAlgo25Account
         seedAuthority(
-            rekeyedSender.address,
+            MOCK_ADDRESS,
             MSIG_AUTH_ADDRESS,
             scopeForLegacyNetwork('testnet'),
         )
-        const msigAuth = {
-            custody: { kind: 'multisig' },
-            address: MSIG_AUTH_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p1', 'p2'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const msigAuth = multisigAccount(MSIG_AUTH_ADDRESS, {
+            threshold: 2,
+            addresses: ['p1', 'p2'],
+            version: 1,
+        })
 
         const proposeMock = vi
             .fn()
@@ -372,9 +375,9 @@ describe('transportActor', () => {
         // Multisig-cosign participants sign with their own key — the rekey
         // hop must not be followed for transport keying either.
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
-        const rekeyedParticipant = mockAlgo25Account as unknown as WalletAccount
+        const rekeyedParticipant: WalletAccount = mockAlgo25Account
         seedAuthority(
-            rekeyedParticipant.address,
+            MOCK_ADDRESS,
             'SOMEOTHERAUTH',
             scopeForLegacyNetwork('testnet'),
         )
@@ -398,5 +401,25 @@ describe('transportActor', () => {
             signRequestId: 'sign-req-2',
             signers: mockSigningResult.signers,
         })
+    })
+
+    it('refuses before any transport when the signing account has no address on the chain', async () => {
+        const authWithoutChainEntry: WalletAccount = {
+            id: 'auth-elsewhere',
+            custody: { kind: 'local', seed: null },
+            chains: {},
+        }
+        vi.mocked(resolveSigningAccount).mockReturnValueOnce(
+            authWithoutChainEntry,
+        )
+        const createTransport = vi.fn()
+
+        const actor = createActor(transportActor, {
+            input: makeInput({ type: 'local' }, { createTransport }),
+        })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toBeInstanceOf(CannotSignError)
+        expect(createTransport).not.toHaveBeenCalled()
     })
 })

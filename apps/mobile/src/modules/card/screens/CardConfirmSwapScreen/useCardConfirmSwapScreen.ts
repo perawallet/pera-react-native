@@ -18,7 +18,10 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useAccountBalancesInvalidator } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesInvalidator,
+    chainAccountOf,
+} from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
     useAssetsQuery,
@@ -137,6 +140,9 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
 
     // Same account the Add Funds screen swaps from: the one linked to the card.
     const account = useCardFundingAccount()
+    const accountAddress = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
 
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const assetIds = useMemo(
@@ -243,13 +249,13 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     // Moves the swapped USDC onto the card. The swap pays the linked account,
     // so wait for the credit to show on chain and deposit exactly that.
     const depositCredit = useCallback(async () => {
-        if (!account) return
+        if (!account || !accountAddress) return
         setStep('depositing')
         try {
             const credited =
                 creditedRef.current ??
                 (await waitForUsdcCredit({
-                    address: account.address,
+                    address: accountAddress,
                     before: balanceBeforeRef.current ?? 0n,
                     minimum: quote?.amountOutWithSlippage
                         ? BigInt(quote.amountOutWithSlippage.toFixed(0))
@@ -280,6 +286,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         }
     }, [
         account,
+        accountAddress,
         quote,
         usdcDecimals,
         waitForUsdcCredit,
@@ -300,10 +307,8 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         // Get-USDC flow isn't built — this screen is only reachable from Add Funds.
         trackEvent(CardEvent.AddFundsConfirm)
         const run = async () => {
-            if (account) {
-                balanceBeforeRef.current = await readUsdcBalance(
-                    account.address,
-                )
+            if (accountAddress) {
+                balanceBeforeRef.current = await readUsdcBalance(accountAddress)
             }
             creditedRef.current = null
             setStep('swapping')
@@ -346,7 +351,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         }
         void run()
     }, [
-        account,
+        accountAddress,
         readUsdcBalance,
         executeSwap,
         refreshQuote,

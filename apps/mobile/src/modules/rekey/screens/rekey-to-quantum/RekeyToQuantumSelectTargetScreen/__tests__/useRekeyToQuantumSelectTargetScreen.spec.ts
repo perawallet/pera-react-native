@@ -13,13 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRekeyToQuantumSelectTargetScreen } from '../useRekeyToQuantumSelectTargetScreen'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { capabilityState } from '@test-utils/capability-mock'
-
-const sourceAccount = { address: 'SRC', name: 'Src' } as WalletAccount
-const targetA = { address: 'A', name: 'A' } as WalletAccount
-const targetB = { address: 'B', name: 'B' } as WalletAccount
+import {
+    registerTargetFixtureChain,
+    sourceAccount,
+    targetA,
+    targetB,
+} from '../../../__tests__/authorityTargetFixture'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -34,58 +33,59 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-vi.mock('@hooks/useCapability', async () =>
-    (await import('@test-utils/capability-mock')).capabilityHookMock(),
-)
-
-const mockUseAuthorityTargets = vi.fn(
-    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
-        targetA,
-        targetB,
-    ],
-)
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useFindAccountByAddress: (address: string) =>
-        address === 'SRC' ? sourceAccount : undefined,
-    useAuthorityTargets: (
-        source: WalletAccount | undefined,
-        kind: string,
-        options?: object,
-    ) => mockUseAuthorityTargets(source, kind, options),
+// The real target lookup, so the screen lists what the fixture chain accepts.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
 }))
 
 describe('useRekeyToQuantumSelectTargetScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        capabilityState.reset()
     })
 
-    it('returns the targets the chain accepts for the resolved source', () => {
+    it('lists the targets the chain accepts under its quantum kinds', () => {
+        const adapter = registerTargetFixtureChain(
+            [
+                { id: 'fixture-quantum', category: 'postQuantum' },
+                { id: 'fixture-standard', category: 'standard' },
+            ],
+            { 'fixture-quantum': ['A'], 'fixture-standard': ['B'] },
+        )
+
         const { result } = renderHook(() =>
             useRekeyToQuantumSelectTargetScreen(),
         )
 
-        expect(result.current.targets).toEqual([targetA, targetB])
-        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
+        expect(result.current.targets).toEqual([targetA])
+        expect(adapter.authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'fixture-quantum',
+            targetA,
             sourceAccount,
-            'quantum',
-            { isQuantumTargetEnabled: true },
+            [sourceAccount, targetA, targetB],
+            expect.objectContaining({ chainId: 'algorand' }),
         )
     })
 
-    it('passes the quantum flag through when quantum accounts are disabled', () => {
-        capabilityState.turnOff('quantumAccounts')
-
-        renderHook(() => useRekeyToQuantumSelectTargetScreen())
-
-        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
-            sourceAccount,
-            'quantum',
-            { isQuantumTargetEnabled: false },
+    it('lists nothing when the chain files no kind under quantum', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-standard', category: 'standard' }],
+            { 'fixture-standard': ['A', 'B'] },
         )
+
+        const { result } = renderHook(() =>
+            useRekeyToQuantumSelectTargetScreen(),
+        )
+
+        expect(result.current.targets).toEqual([])
     })
 
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-quantum', category: 'postQuantum' }],
+            { 'fixture-quantum': ['A'] },
+        )
         const { result } = renderHook(() =>
             useRekeyToQuantumSelectTargetScreen(),
         )

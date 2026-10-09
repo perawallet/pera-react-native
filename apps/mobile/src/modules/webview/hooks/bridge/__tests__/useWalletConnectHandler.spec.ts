@@ -55,8 +55,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
         >('../../../../../../../../packages/shared/src/errors/base')
     ).ErrorSeverity,
     // The `@modules/network` barrel transitively pulls store modules that
-    // self-register for reset-on-logout.
+    // self-register for reset-on-logout, and persist through this gate.
     registerStore: vi.fn(),
+    gateWritesOnHydration: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/shared/src/utils/hydration-gate')
+        >('../../../../../../../../packages/shared/src/utils/hydration-gate')
+    ).gateWritesOnHydration,
 }))
 
 // The real `useConnectionPairing` runs here — only the registry underneath it

@@ -15,9 +15,15 @@ import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
 import { resolveHardwareDeviceName } from '../resolveHardwareDeviceName'
 
 import {
+    chainAccountOf,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    TEST_CHAIN_ID,
+    ledgerAccount as ledgerFixture,
+    watchAccount as watchFixture,
+} from '../../../__tests__/accounts'
 import type { AnalyzedSignableGroup } from '../../../pipeline/types'
 
 beforeEach(() => {
@@ -28,43 +34,20 @@ const withAuthority = (
     account: WalletAccount,
     authority?: string,
 ): WalletAccount => {
-    if (authority) seedAuthority(account.address as string, authority)
+    if (authority) {
+        seedAuthority(
+            chainAccountOf(account, TEST_CHAIN_ID)?.address as string,
+            authority,
+        )
+    }
     return account
 }
 
 const ledgerAccount = (address: string, authority?: string) =>
-    withAuthority(
-        {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev-1',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as unknown as WalletAccount,
-        authority,
-    )
+    withAuthority(ledgerFixture(address, 0, { deviceId: 'dev-1' }), authority)
 
 const watchAccount = (address: string, authority?: string) =>
-    withAuthority(
-        {
-            custody: { kind: 'watch' },
-            address,
-        } as unknown as WalletAccount,
-        authority,
-    )
+    withAuthority(watchFixture(address), authority)
 
 const group = (
     signerAddress: string,
@@ -94,7 +77,7 @@ describe('resolveHardwareDeviceName', () => {
 
     it('resolves the device name from the auth account for a rekeyed-to-Ledger sender', () => {
         // The signature comes from the AUTH account's device — the sender has
-        // no hardwareDetails, so reading the sender leaves the overlay with
+        // no hardware device, so reading the sender leaves the overlay with
         // generic copy.
         const sender = watchAccount('SENDER', 'AUTH')
         const auth = ledgerAccount('AUTH')

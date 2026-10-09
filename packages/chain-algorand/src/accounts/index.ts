@@ -17,7 +17,15 @@ export { algorandQuantumDerivation } from './quantum'
 export {
     ALGORAND_COIN_TYPE,
     assertAlgorandBip44PathMatches,
-    hdPathMatchesDetails,
+    hdPathMatchesIndex,
     parseAlgorandBip44Path,
     type ParsedAlgorandBip44Path,
 } from './bip44'
+export * from './vocabulary'
+export { AlgorandAuthorityTargetKinds } from './authority'
+export { algorandAccountPresentation } from './presentation'
+export {
+    algorandMultisigOf,
+    canSignViaParticipants,
+    hasLocalCoSigner,
+} from './multisig-participants'

@@ -13,11 +13,17 @@
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    resolveImportAccountType,
+    detectImportKind,
+    keyKindOptionsOf,
+    offeredLocalKeyKinds,
     setPendingImportMnemonic,
+    type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -36,6 +42,7 @@ import {
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
 import type { ImportFlowParamList } from '../../routes/types'
+import { trackChainOnboardingEvent } from '../../utils'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
@@ -54,7 +61,7 @@ export const useImportAccountOptionsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { chooseRestoreRoute, isReadingCredentials } =
             useRestoreBackupOptions()
-        const isQuantumAccountsEnabled = useCapability({
+        const isQuantumEnabled = useCapability({
             platform: 'quantum',
             anyChain: 'quantumAccounts',
         })
@@ -116,11 +123,10 @@ export const useImportAccountOptionsScreen =
                     },
                 },
             )
-            if (!result) return
-            trackEvent(
-                result === 'standalone'
-                    ? OnboardingEvent.RecoverAlgo25
-                    : OnboardingEvent.RecoverOneKey,
+            if (result === undefined) return
+            trackChainOnboardingEvent(
+                keyKindOptionsOf(LEGACY_CHAIN_ID, result)?.recover
+                    ?.analyticsEvent,
             )
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])
@@ -151,7 +157,8 @@ export const useImportAccountOptionsScreen =
                     return
                 }
 
-                const resolved = resolveImportAccountType(
+                const resolved = detectImportKind(
+                    LEGACY_CHAIN_ID,
                     parsedDeeplink.mnemonic,
                 )
                 if (!resolved.success) {
@@ -174,7 +181,7 @@ export const useImportAccountOptionsScreen =
                 // secret never enters the navigation state tree.
                 setPendingImportMnemonic(parsedDeeplink.mnemonic)
                 navigation.push('ImportAccount', {
-                    accountType: resolved.accountType,
+                    accountType: resolved.seed,
                 })
             },
             [closeQRScanner, parseDeeplink, navigation, errorToast, t],
@@ -215,9 +222,33 @@ export const useImportAccountOptionsScreen =
             navigation,
         ])
 
-        const handleImportQuantum = useCallback(() => {
-            navigation.push('ImportAccount', { accountType: 'quantum' })
-        }, [navigation])
+        const handleImportKind = useCallback(
+            (seed: LocalKeySeed) =>
+                navigation.push('ImportAccount', { accountType: seed }),
+            [navigation],
+        )
+
+        const kindImportOptions: AccountOption[] = useMemo(
+            () =>
+                offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
+                    ({ kind, options: { import: entry } }) =>
+                        entry &&
+                        (!isPostQuantumScheme(kind.signingScheme) ||
+                            isQuantumEnabled)
+                            ? [
+                                  {
+                                      testID: `import_account_${entry.id}_button`,
+                                      titleKey: entry.titleKey,
+                                      descriptionKey: entry.descriptionKey,
+                                      leftIcon: entry.icon as IconName,
+                                      onPress: () =>
+                                          handleImportKind(kind.seed),
+                                  },
+                              ]
+                            : [],
+                ),
+            [isQuantumEnabled, handleImportKind],
+        )
 
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
@@ -230,19 +261,7 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
-                ...(isQuantumAccountsEnabled
-                    ? [
-                          {
-                              testID: 'import_account_quantum_button',
-                              titleKey:
-                                  'onboarding.import_account_options.quantum_title',
-                              descriptionKey:
-                                  'onboarding.import_account_options.quantum_description',
-                              leftIcon: 'quantum' as IconName,
-                              onPress: handleImportQuantum,
-                          },
-                      ]
-                    : []),
+                ...kindImportOptions,
                 {
                     testID: 'import_account_options_recover_qr_button',
                     titleKey:
@@ -334,10 +353,9 @@ export const useImportAccountOptionsScreen =
             handleImportAsb,
             handleImportPeraWeb,
             handleImportCloudBackup,
-            handleImportQuantum,
+            kindImportOptions,
             isCloudBackupAvailable,
             canImportSecureBackup,
-            isQuantumAccountsEnabled,
             canUseLedger,
             canUseLedgerUsb,
             canImportPeraWeb,

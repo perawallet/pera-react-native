@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     useCreateAccount,
     useImportAccount,
@@ -46,13 +47,18 @@ export type MigrationDeps = {
     walletConnectSessionKeys?: WalletConnectV1SessionKeyStore
 }
 
+export type MigrationRunOptions = MigrationDeps & {
+    /** The chain Pera 6 accounts and their extras migrate onto; Pera 6 data names none. */
+    chainId: ChainId
+}
+
 export type ImportedHdRoot = {
     seedKeyId: string
 }
 
 export type MigrateAccountArgs = MigrationDeps & {
     account: LegacyAccount
-    hdWalletsById: Map<string, LegacyHDWallet>
+    hdSeedsById: Map<string, LegacyHDWallet>
     importedHdRoots: Map<string, ImportedHdRoot>
 }
 

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletAccount,
     AccountSortMode,
@@ -18,11 +21,7 @@ import type {
     LaunchAccountMode,
 } from './accounts'
 import type { HdIndex } from './credentials'
-import type {
-    BaseStoreState,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
 export * from './accounts'
@@ -38,13 +37,14 @@ export type RecordedAuthorities = Partial<
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
-    selectedAccountAddress: Nullable<string>
+    selectedAccountId: Nullable<string>
     sortMode: AccountSortMode
+    /** Account ids in the user's order. */
     manualAccountOrder: string[]
     /** Which account a cold start selects. See `applyLaunchAccountPreference`. */
     launchAccountMode: LaunchAccountMode
     /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
-    launchAccountAddress: Nullable<string>
+    launchAccountId: Nullable<string>
     /**
      * Authorities observed outside a sync: a pre-upgrade payload's record
      * fields, discovery, a Ledger read. The chain-state slice is memory-only, so
@@ -53,21 +53,25 @@ export type AccountsState = BaseStoreState & {
     authorities: RecordedAuthorities
     /**
      * Authorities from a payload that predates the per-network map, whose scope
-     * is the selected Algorand scope. Hydration resolves them into `authorities`.
+     * is the selected network of the chain their address is held on. Hydration
+     * resolves them into `authorities`.
      */
     unscopedAuthorities: Record<string, string>
     /** Records authorities, replacing any held for the same scope and address. */
     recordAuthorities: (incoming: RecordedAuthorities) => void
     /** Replaces both authority maps; hydration's reconciliation. */
-    settleAuthorities: (authorities: RecordedAuthorities) => void
+    settleAuthorities: (
+        authorities: RecordedAuthorities,
+        unscopedAuthorities?: Record<string, string>,
+    ) => void
     /** Drops every authority held for `address`, on any scope. */
     forgetAuthorities: (address: string) => void
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
     /**
      * Appends one account, throwing `DuplicateAccountError` naming the
-     * existing account when its address is already taken. Unlike
-     * `setAccounts`, which resolves duplicates silently.
+     * existing account when one of its chain addresses is already taken.
+     * Unlike `setAccounts`, which resolves duplicates silently.
      */
     addAccount: (account: WalletAccount) => void
     /**
@@ -96,51 +100,51 @@ export type AccountsState = BaseStoreState & {
         index: HdIndex,
         name?: string,
     ) => Promise<WalletAccount>
-    setSelectedAccountAddress: (address: Nullable<string>) => void
+    setSelectedAccountId: (id: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**
-     * Set both halves of the launch preference together, so mode and address
-     * can never disagree. `lastUsed` clears the address; `specific` refuses an
-     * address that is not a current account.
+     * Set both halves of the launch preference together, so mode and account
+     * can never disagree. `lastUsed` clears the account; `specific` refuses an
+     * id that is not a current account.
      */
     setLaunchAccountPreference: (
         mode: LaunchAccountMode,
-        address?: Nullable<string>,
+        id?: Nullable<string>,
     ) => void
     /**
-     * Apply the launch preference to `selectedAccountAddress`. Cold start only
+     * Apply the launch preference to `selectedAccountId`. Cold start only
      * — called from app bootstrap once the store has rehydrated, never on
      * foreground. No-ops under `lastUsed` or when the pin no longer resolves.
      */
     applyLaunchAccountPreference: () => void
     setManualAccountOrder: (order: string[]) => void
     /** Append watch-only accounts and record `sourceAddress` as each one's
-     * authority on `network`, skipping addresses that are already present in
+     * authority on `scope`, skipping addresses that are already present in
      * the store. Returns the number of accounts actually appended. Validation
-     * (Algorand-address shape) is the caller's responsibility. */
-    addRekeyedWatchAccounts: (
+     * (address shape) is the caller's responsibility. */
+    addDelegatedWatchAccounts: (
         sourceAddress: string,
         addresses: string[],
-        network: Network,
+        scope: ChainScope,
     ) => number
     /**
-     * Replace the watch account at `address` with a hardware account bound to
-     * `hardwareDetails`, preserving its id and name. Returns
-     * whether an upgrade happened; refuses (false) when the address is
-     * missing or not a watch account. Callers own the user confirmation.
+     * Replace the watch account `id` with a hardware account bound to
+     * `hardwareDetails`, preserving its id, name and chain addresses. Returns
+     * whether an upgrade happened; refuses (false) when the account is missing
+     * or not a watch account. Callers own the user confirmation.
      */
     upgradeWatchAccountToHardware: (
-        address: string,
+        id: string,
         hardwareDetails: HardwareWalletDetails,
     ) => boolean
     /**
-     * Re-bind the hardware account at `address` to `hardwareDetails` (e.g.
-     * after an OS forget/re-pair rotated the BLE device id — an address match
-     * proves it is the same key). Returns whether anything changed; refuses
-     * (false) for non-hardware accounts.
+     * Re-bind the hardware account `id` to `hardwareDetails` (e.g. after an
+     * OS forget/re-pair rotated the BLE device id — an address match proves it
+     * is the same key). Returns whether anything changed; refuses (false) for
+     * non-hardware accounts.
      */
     updateHardwareDetails: (
-        address: string,
+        id: string,
         hardwareDetails: HardwareWalletDetails,
     ) => boolean
 }

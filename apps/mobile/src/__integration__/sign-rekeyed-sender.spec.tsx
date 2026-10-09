@@ -95,14 +95,7 @@ const ledgerAccount: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: LEDGER_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'test-device-id',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 describe('Flow: interactive signing with a rekeyed sender / WC device reject', () => {
@@ -133,7 +126,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
             custody: { kind: 'watch' },
-            address: REKEYED_SENDER_ADDRESS,
+            chains: { algorand: { address: REKEYED_SENDER_ADDRESS } },
             name: 'Rekeyed sender',
         }
         seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)
@@ -235,7 +228,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
             custody: { kind: 'watch' },
-            address: REKEYED_SENDER_ADDRESS,
+            chains: { algorand: { address: REKEYED_SENDER_ADDRESS } },
             name: 'Rekeyed sender',
         }
         seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)

@@ -13,10 +13,12 @@
 import { useCallback } from 'react'
 import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { EnqueueTransactionSigning } from '@perawallet/wallet-core-connections'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
  * Algorand's `DappRequestChainAdapter.useEnqueueTransactionSigning`. Resolves
@@ -28,8 +30,9 @@ import {
  * Promise instead.
  */
 export const useAlgorandTransactionSigning = (): EnqueueTransactionSigning => {
-    const resolve = useArc0001Resolver()
-    const enqueue = useEnqueueArc0001SignRequest()
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
+    const resolve = useArc0001Resolver(scope)
+    const enqueue = useEnqueueArc0001SignRequest(scope)
 
     return useCallback(
         (request, transport) => {

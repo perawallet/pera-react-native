@@ -68,6 +68,17 @@ vi.mock('@hooks/useLanguage')
 
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 
+const SIGNER = {
+    id: 'signer',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
+}
+const AUTH_SIGNER = {
+    id: 'auth-signer',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'AUTH' } },
+}
+
 const WIRE_OPERATION = {
     type: 'sign-transactions' as const,
     group: [{ txn: 'AAA' }],
@@ -134,8 +145,8 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.rejectApproval.mockResolvedValue(undefined)
         // Hydrated by default with the account the approval authorizes, so
         // cases exercise the post-hydration path unless they say otherwise.
-        mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
-        mocks.useAllAccounts.mockReturnValue([{ address: 'ADDR' }])
+        mocks.useSigningAccounts.mockReturnValue([SIGNER])
+        mocks.useAllAccounts.mockReturnValue([SIGNER])
 
         closeSpy = vi.fn()
         vi.stubGlobal('close', closeSpy)
@@ -165,7 +176,7 @@ describe('useSignRequestApprovalScreen', () => {
             )
             expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
 
-            mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
+            mocks.useSigningAccounts.mockReturnValue([SIGNER])
             rerender()
             rerender()
 
@@ -198,7 +209,7 @@ describe('useSignRequestApprovalScreen', () => {
                 transactionSigning: mocks.transactionSigning,
                 addSignRequest: mocks.addSignRequest,
                 removeSignRequest: mocks.removeSignRequest,
-                accounts: [{ address: 'ADDR' }],
+                accounts: [SIGNER],
             })
             // The adapter owns validation and enqueueing; this screen never
             // re-parses the payload itself.
@@ -236,16 +247,13 @@ describe('useSignRequestApprovalScreen', () => {
         // The adapter matches a signer against approved accounts' auth
         // addresses, and the signing-accounts filter can hide a keyless one.
         it('gives the adapter every account, not only the signing ones', () => {
-            mocks.useAllAccounts.mockReturnValue([
-                { address: 'ADDR' },
-                { address: 'AUTH' },
-            ])
+            mocks.useAllAccounts.mockReturnValue([SIGNER, AUTH_SIGNER])
 
             renderHook(() => useSignRequestApprovalScreen())
 
             expect(
                 mocks.enqueueInboundRequest.mock.calls[0][1].accounts,
-            ).toEqual([{ address: 'ADDR' }, { address: 'AUTH' }])
+            ).toEqual([SIGNER, AUTH_SIGNER])
         })
 
         it('respond encodes the result for the wire, delivers it and closes the window', async () => {

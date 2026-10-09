@@ -21,8 +21,12 @@ import {
     type RampRegion,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import type {
     Network,
     Nullable,
@@ -85,7 +89,11 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const { hasInternet } = useNetworkStatus()
     const { network } = useNetwork()
     const { data: region } = useRampRegionQuery()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const {
         selectedSourceTokenId,
         selectedDestinationTokenId,

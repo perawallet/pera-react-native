@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import { describe, expect, it } from 'vitest'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
+import { DerivationTypes } from '../vocabulary'
 import { algorandAddressCodec } from '../address-codec'
 import { hdDerivedKeyId } from '../hd-derivation'
 import { algorandKeyDerivation } from '../key-derivation'

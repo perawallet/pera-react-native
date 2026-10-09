@@ -21,6 +21,7 @@ import {
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import {
     registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -35,8 +36,8 @@ const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
     mockIsAccountEnabled: vi.fn(() => true),
     mockSetAccountEnabled: vi.fn(),
 }))
-const { mockRemoveAccountByAddress } = vi.hoisted(() => ({
-    mockRemoveAccountByAddress: vi.fn(),
+const { mockRemoveAccount } = vi.hoisted(() => ({
+    mockRemoveAccount: vi.fn(),
 }))
 const { mockAllAccounts } = vi.hoisted(() => ({
     mockAllAccounts: vi.fn((): WalletAccount[] => []),
@@ -165,7 +166,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useRemoveAccountByAddress: () => mockRemoveAccountByAddress,
+        useRemoveAccount: () => mockRemoveAccount,
         useUpdateAccount: () => mockUpdateAccount,
         useAllAccounts: () => mockAllAccounts(),
         useCanSignWith: (account?: WalletAccount | null) =>
@@ -174,48 +175,48 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
+const addressOf = (account: WalletAccount): string | undefined =>
+    account.chains.algorand?.address
+
 describe('useAccountOptions', () => {
     const mockOnClose = vi.fn()
     const mockOnShowAddress = vi.fn()
 
     const algo25Account: WalletAccount = {
         id: 'acc-1',
-        address: 'ALGO25ADDRESS',
+        chains: { algorand: { address: 'ALGO25ADDRESS', keyPairId: 'key-1' } },
         custody: { kind: 'local', seed: null },
-        keyPairId: 'key-1',
         name: 'My Account',
     }
 
     const watchAccount: WalletAccount = {
         id: 'acc-2',
-        address: 'WATCHADDRESS',
+        chains: { algorand: { address: 'WATCHADDRESS' } },
         custody: { kind: 'watch' },
     }
 
     const quantumAccount: WalletAccount = {
         id: 'acc-q',
-        address: 'QUANTUMADDRESS',
+        chains: { algorand: { address: 'QUANTUMADDRESS', keyPairId: 'key-q' } },
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'key-q',
         name: 'My Quantum Account',
     }
 
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
-        address: 'REKEYEDADDRESS',
+        chains: { algorand: { address: 'REKEYEDADDRESS', keyPairId: 'key-3' } },
         custody: { kind: 'local', seed: null },
-        keyPairId: 'key-3',
     }
 
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
-        address: 'REKEYEDWATCHADDRESS',
+        chains: { algorand: { address: 'REKEYEDWATCHADDRESS' } },
         custody: { kind: 'watch' },
     }
 
     const hardwareAccount: WalletAccount = {
         id: 'acc-4',
-        address: 'HARDWAREADDRESS',
+        chains: { algorand: { address: 'HARDWAREADDRESS' } },
         custody: {
             kind: 'hardware',
             device: {
@@ -226,32 +227,33 @@ describe('useAccountOptions', () => {
             },
             accountIndex: 0,
         },
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'test-device',
-            deviceName: 'Ledger Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
     }
 
     const multisigAccount: WalletAccount = {
         id: 'acc-6',
-        address: 'MULTISIGADDRESS',
-        custody: { kind: 'multisig' },
-        multisigDetails: {
-            threshold: 2,
-            addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
-            version: 1,
+        chains: {
+            algorand: {
+                address: 'MULTISIGADDRESS',
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        threshold: 2,
+                        addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
+                        version: 1,
+                    },
+                },
+            },
         },
+        custody: { kind: 'multisig' },
     }
 
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
         useAccountChainStateStore.getState().resetState()
-        seedAuthority(rekeyedAccount.address, 'AUTHADDRESS')
-        seedAuthority(rekeyedWatchAccount.address, 'ALGO25ADDRESS')
+        seedAuthority('REKEYEDADDRESS', 'AUTHADDRESS')
+        seedAuthority('REKEYEDWATCHADDRESS', 'ALGO25ADDRESS')
         useRemoteConfigStore.getState().resetState()
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
@@ -262,13 +264,13 @@ describe('useAccountOptions', () => {
         mockIsTogglePending.mockReturnValue(false)
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
         mockUseCanSignWith.mockImplementation(account => {
-            switch (account?.address) {
-                case algo25Account.address:
-                case quantumAccount.address:
-                case rekeyedAccount.address:
-                case rekeyedWatchAccount.address:
-                case hardwareAccount.address:
-                case multisigAccount.address: {
+            switch (account ? addressOf(account) : undefined) {
+                case addressOf(algo25Account):
+                case addressOf(quantumAccount):
+                case addressOf(rekeyedAccount):
+                case addressOf(rekeyedWatchAccount):
+                case addressOf(hardwareAccount):
+                case addressOf(multisigAccount): {
                     return true
                 }
                 default: {
@@ -492,9 +494,7 @@ describe('useAccountOptions', () => {
             expect(result.current.removeConfirmView).not.toBe(
                 'cloud-backup-delete',
             )
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
         it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {
@@ -724,7 +724,7 @@ describe('useAccountOptions', () => {
 
             // Inline confirmation: signing accounts see the backup warning first.
             expect(result.current.removeConfirmView).toBe('backup-warning')
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
         })
 
         it('skips the backup warning and goes straight to remove confirm for a watch account', async () => {
@@ -769,7 +769,7 @@ describe('useAccountOptions', () => {
             })
 
             expect(result.current.removeConfirmView).toBe('remove-confirm')
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
         })
 
         it('cancelling the confirmation does not remove the account', async () => {
@@ -793,7 +793,7 @@ describe('useAccountOptions', () => {
             })
 
             expect(result.current.removeConfirmView).toBe('none')
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
         })
 
         it('removes account and navigates home when the inline confirm is pressed', async () => {
@@ -807,9 +807,7 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
             })
@@ -828,7 +826,7 @@ describe('useAccountOptions', () => {
             await driveFullRemoval(result)
 
             expect(result.current.removeConfirmView).toBe('cloud-backup-delete')
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
         })
 
         it('removes without asking when cloud backup is off', async () => {
@@ -843,9 +841,7 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
         it('deletes from the backup, then removes locally', async () => {
@@ -869,9 +865,7 @@ describe('useAccountOptions', () => {
             expect(mockDeleteAccountFromBackup).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
             )
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
         it('ignores a second choice while the first is still being recorded', async () => {
@@ -905,7 +899,7 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockKeepAccountInBackup).not.toHaveBeenCalled()
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledTimes(1)
+            expect(mockRemoveAccount).toHaveBeenCalledTimes(1)
             expect(result.current.pendingBackupChoice).toBeUndefined()
         })
 
@@ -931,9 +925,7 @@ describe('useAccountOptions', () => {
                 'ALGO25ADDRESS',
             )
             expect(mockDeleteAccountFromBackup).not.toHaveBeenCalled()
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
         it('reports a refused keep as a device removal failure', async () => {
@@ -952,7 +944,7 @@ describe('useAccountOptions', () => {
                 await result.current.handleKeepInBackup()
             })
 
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'error',
@@ -977,9 +969,7 @@ describe('useAccountOptions', () => {
                 await result.current.handleDeleteFromBackup()
             })
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
         it('does not remove locally when the backup refused the choice', async () => {
@@ -998,7 +988,7 @@ describe('useAccountOptions', () => {
                 await result.current.handleDeleteFromBackup()
             })
 
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'error',
@@ -1025,7 +1015,7 @@ describe('useAccountOptions', () => {
                 await result.current.handleDeleteFromBackup()
             })
 
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'error',
@@ -1118,7 +1108,7 @@ describe('useAccountOptions', () => {
             // we don't end up with stacked sheets.
             expect(mockOnClose).toHaveBeenCalled()
             expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
-                algo25Account.address,
+                addressOf(algo25Account),
             )
         })
 
@@ -1141,15 +1131,15 @@ describe('useAccountOptions', () => {
             return rendered
         }
 
-        it('navigates to RekeyToLedger intro when the sheet resolves to ledger', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('ledger')
+        it('navigates to RekeyToLedger intro when the sheet resolves to hardware', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('hardware')
 
             await pressRekey(algo25Account)
 
             expect(mockOnClose).toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToLedger', {
                 screen: 'RekeyToLedgerIntro',
-                params: { sourceAddress: algo25Account.address },
+                params: { sourceAddress: addressOf(algo25Account) },
             })
         })
 
@@ -1160,18 +1150,18 @@ describe('useAccountOptions', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
                 screen: 'RekeyToStandardIntro',
-                params: { sourceAddress: algo25Account.address },
+                params: { sourceAddress: addressOf(algo25Account) },
             })
         })
 
-        it('navigates to RekeyToQuantum intro when the sheet resolves to quantum', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+        it('navigates to RekeyToQuantum intro when the sheet resolves to post-quantum', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('postQuantum')
 
             await pressRekey(algo25Account)
 
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
                 screen: 'RekeyToQuantumIntro',
-                params: { sourceAddress: algo25Account.address },
+                params: { sourceAddress: addressOf(algo25Account) },
             })
         })
 
@@ -1189,7 +1179,7 @@ describe('useAccountOptions', () => {
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
                 screen: 'RekeyToSharedIntro',
-                params: { sourceAddress: multisigAccount.address },
+                params: { sourceAddress: addressOf(multisigAccount) },
             })
         })
 
@@ -1213,7 +1203,7 @@ describe('useAccountOptions', () => {
             expect(mockOnClose).toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RescanRekeyed', {
                 screen: 'RescanRekeyedSelect',
-                params: { sourceAddress: algo25Account.address },
+                params: { sourceAddress: addressOf(algo25Account) },
             })
         })
 
@@ -1286,20 +1276,22 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
             expect(mockNavigate).not.toHaveBeenCalled()
         })
 
         it('shows error toast and prevents removal when account has rekeyed dependents', async () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
-                address: 'SOMEOTHERADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'SOMEOTHERADDRESS',
+                        keyPairId: 'key-rekeyed',
+                    },
+                },
                 custody: { kind: 'local', seed: null },
-                keyPairId: 'key-rekeyed',
             }
-            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
+            seedAuthority('SOMEOTHERADDRESS', 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>
@@ -1312,7 +1304,7 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith({
                 title: 'account_options.remove_rekey_error_title',
                 body: 'account_options.remove_rekey_error_message',
@@ -1324,11 +1316,15 @@ describe('useAccountOptions', () => {
             mockIsBackedUp.mockReturnValue(true)
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
-                address: 'SOMEOTHERADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'SOMEOTHERADDRESS',
+                        keyPairId: 'key-rekeyed',
+                    },
+                },
                 custody: { kind: 'local', seed: null },
-                keyPairId: 'key-rekeyed',
             }
-            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
+            seedAuthority('SOMEOTHERADDRESS', 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>
@@ -1344,7 +1340,7 @@ describe('useAccountOptions', () => {
             expect(result.current.removeConfirmView).toBe('none')
             expect(mockDeleteAccountFromBackup).not.toHaveBeenCalled()
             expect(mockKeepAccountInBackup).not.toHaveBeenCalled()
-            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockRemoveAccount).not.toHaveBeenCalled()
         })
 
         it('allows removal when no other accounts are rekeyed to it', async () => {
@@ -1360,17 +1356,13 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'ALGO25ADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
         })
 
-        it('removes a Ledger (hardware) account via the address path', async () => {
-            // Removal keys on address, not id (regression: silent no-op with
-            // a success toast).
+        it('removes a Ledger (hardware) account by its id', async () => {
             const ledgerAccount: WalletAccount = {
                 id: 'acc-ledger',
-                address: 'LEDGERADDRESS',
+                chains: { algorand: { address: 'LEDGERADDRESS' } },
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -1380,13 +1372,6 @@ describe('useAccountOptions', () => {
                         transportType: 'ble',
                     },
                     accountIndex: 0,
-                },
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'test-device',
-                    deviceName: 'Ledger Nano X',
-                    accountIndex: 0,
-                    transportType: 'ble',
                 },
             }
             mockAllAccounts.mockReturnValue([algo25Account, ledgerAccount])
@@ -1401,9 +1386,7 @@ describe('useAccountOptions', () => {
 
             await driveFullRemoval(result)
 
-            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
-                'LEDGERADDRESS',
-            )
+            expect(mockRemoveAccount).toHaveBeenCalledWith('acc-ledger')
         })
     })
 

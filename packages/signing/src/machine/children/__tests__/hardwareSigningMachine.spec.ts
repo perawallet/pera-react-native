@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createActor, fromCallback, waitFor } from 'xstate'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { LEDGER_CONFIRMATION_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
 import { hardwareSigningMachine } from '../hardwareSigningMachine'
 import {
@@ -26,6 +27,7 @@ const makeInput = (
 ): HardwareSigningInput => ({
     groups: [],
     allAccounts: [],
+    scope: scopeForLegacyNetwork('mainnet'),
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
     totalTxs: 1,

@@ -11,12 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { messageSignerFor } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
 export type UseAuthDataSignerResult = {
     /**
@@ -24,19 +28,28 @@ export type UseAuthDataSignerResult = {
      * Rejects with the chain's own error for every refusal, so the caller can
      * surface a precise reason to the dApp.
      */
-    signAuthData: LocalAuthDataSigningFunction
+    signAuthData: (
+        chainId: ChainId,
+        ...args: Parameters<LocalAuthDataSigningFunction>
+    ) => ReturnType<LocalAuthDataSigningFunction>
 }
 
 // Local-key-only path. A Ledger account takes the hardware strategy instead,
-// so it never reaches this hook. Sign requests carry no chain yet, so every
-// caller resolves the legacy one.
+// so it never reaches this hook.
 export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
 
-    const signAuthData = useCallback<LocalAuthDataSigningFunction>(
-        async (account, authData, metadata) =>
-            messageSignerFor(LEGACY_CHAIN_ID, account.address).signAuthData(
+    const signAuthData = useCallback<UseAuthDataSignerResult['signAuthData']>(
+        async (chainId, account, authData, metadata) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
+                )
+            }
+            return messageSignerFor(chainId, address).signAuthData(
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -49,7 +62,8 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
                 authData,
                 metadata,
                 accounts,
-            ),
+            )
+        },
         // `accounts` backs the signer's rekey cross-check; without it the
         // callback would validate against the account list as of first render
         // and fail open on a rekey revoked after mount.

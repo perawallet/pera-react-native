@@ -21,6 +21,7 @@ import {
     useAsbAccountImport,
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -56,7 +57,7 @@ export const useAsbImportSelectAccountsScreen =
         const toggle = useAsbImportFlowStore(state => state.toggleSelection)
         const reset = useAsbImportFlowStore(state => state.reset)
         const allAccounts = useAllAccounts()
-        const { importAccount } = useAsbAccountImport()
+        const { importAccount } = useAsbAccountImport(LEGACY_CHAIN_ID)
 
         const [isProcessing, setIsProcessing] = useState(false)
 
@@ -105,6 +106,7 @@ export const useAsbImportSelectAccountsScreen =
             const partition = partitionImportableAccounts(
                 payload.accounts,
                 allAccounts,
+                LEGACY_CHAIN_ID,
             )
             const importableSet = new Set(
                 partition.importable.map(a => a.address),

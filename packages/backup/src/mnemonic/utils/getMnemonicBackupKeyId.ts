@@ -10,28 +10,12 @@
  limitations under the License
  */
 
-import {
-    isStandaloneAccount,
-    isHDWalletAccount,
-    isQuantumAccount,
-    standaloneSecretOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupAdapterFor } from '../../chain-adapter'
 
+/** Every account one recovery phrase restores shares one backup state, kept under this id. */
 export const getMnemonicBackupKeyId = (
     account: WalletAccount,
-): string | null => {
-    if (
-        (isStandaloneAccount(account) &&
-            standaloneSecretOf(account) === 'mnemonic') ||
-        isHDWalletAccount(account) ||
-        isQuantumAccount(account)
-    ) {
-        // All accounts derived from the same wallet root share a single
-        // backup state, keyed on the root id (keyPairId). Quantum accounts
-        // export the same 25-word recovery phrase, so they back up through
-        // the identical key-scoped state.
-        return account.keyPairId
-    }
-    return null
-}
+    chainId: ChainId,
+): string | null => backupAdapterFor(chainId).mnemonicBackupKeyId(account)

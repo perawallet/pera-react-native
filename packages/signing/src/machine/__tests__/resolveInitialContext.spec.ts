@@ -36,7 +36,7 @@ import type {
     SignRequest,
     TransactionSignRequest,
 } from '../../models'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { algo25Account, ledgerAccount } from '../../__tests__/accounts'
 import {
     CannotSignError,
     HardwareWalletError,
@@ -56,11 +56,8 @@ const dappAddr = makeTestAddress(2)
 const makePayment = (sender: Address, amount: bigint): Transaction =>
     makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
-const userAccount = {
-    custody: { kind: 'local', seed: null },
-    address: userAddr.toString(),
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const USER_ADDRESS = userAddr.toString()
+const userAccount = algo25Account(USER_ADDRESS, { keyPairId: 'key-1' })
 
 const baseInput = (request: SignRequest): SigningMachineInput =>
     ({
@@ -254,7 +251,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             sourceType: 'walletconnect',
             data: [
                 {
-                    signer: userAccount.address,
+                    signer: USER_ADDRESS,
                     data: 'hello',
                     chainId: 4160,
                 },
@@ -263,9 +260,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         const context = resolveInitialContext(baseInput(request))
         expect(context.signableGroups).toHaveLength(1)
-        expect(context.signableGroups![0].signerAddress).toBe(
-            userAccount.address,
-        )
+        expect(context.signableGroups![0].signerAddress).toBe(USER_ADDRESS)
         expect(context.signableGroups![0].data.type).toBe('arbitrary-data')
     })
 
@@ -296,7 +291,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             transport: 'callback',
             sourceType: 'walletconnect',
             data: [
-                { signer: userAccount.address, data: 'hello', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'hello', chainId: 4160 },
                 { signer: 'OTHER_SIGNER', data: 'world', chainId: 4160 },
             ],
         }
@@ -313,9 +308,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             type: 'arbitrary-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            data: [
-                { signer: userAccount.address, data: 'hello', chainId: 4160 },
-            ],
+            data: [{ signer: USER_ADDRESS, data: 'hello', chainId: 4160 }],
             approve: arbApprove,
         }
 
@@ -325,11 +318,11 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'arbitrary-data', signatures: [sig] },
-            signers: [{ address: userAccount.address }],
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
         expect(arbApprove).toHaveBeenCalledWith([
-            { signature: sig, signer: userAccount.address },
+            { signature: sig, signer: USER_ADDRESS },
         ])
     })
 
@@ -344,8 +337,8 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             transport: 'callback',
             sourceType: 'walletconnect',
             data: [
-                { signer: userAccount.address, data: 'one', chainId: 4160 },
-                { signer: userAccount.address, data: 'two', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'one', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'two', chainId: 4160 },
             ],
             approve: arbApprove,
         }
@@ -357,12 +350,12 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'arbitrary-data', signatures: [sigA, sigB] },
-            signers: [{ address: userAccount.address }],
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
         expect(arbApprove).toHaveBeenCalledWith([
-            { signature: sigA, signer: userAccount.address },
-            { signature: sigB, signer: userAccount.address },
+            { signature: sigA, signer: USER_ADDRESS },
+            { signature: sigB, signer: USER_ADDRESS },
         ])
     })
 })
@@ -370,7 +363,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 describe('resolveInitialContext — auth-data requests', () => {
     const authData = {
         data: 'e30=',
-        signer: userAccount.address,
+        signer: USER_ADDRESS,
         domain: 'example.io',
         authenticatorData: new Uint8Array(37),
     }
@@ -389,9 +382,7 @@ describe('resolveInitialContext — auth-data requests', () => {
         const context = resolveInitialContext(baseInput(request))
         expect(context.signableGroups).toHaveLength(1)
         expect(context.signableGroups![0].data.type).toBe('auth-data')
-        expect(context.signableGroups![0].signerAddress).toBe(
-            userAccount.address,
-        )
+        expect(context.signableGroups![0].signerAddress).toBe(USER_ADDRESS)
     })
 
     it('wraps the approve callback to project the single signature into the [{signature,signer}] shape', async () => {
@@ -412,36 +403,18 @@ describe('resolveInitialContext — auth-data requests', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'auth-data', signature: sig },
-            signers: [{ address: userAccount.address }],
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
         expect(authDataApprove).toHaveBeenCalledWith([
-            { signature: sig, signer: userAccount.address },
+            { signature: sig, signer: USER_ADDRESS },
         ])
     })
 })
 
 describe('resolveInitialContext — hardware wallet registry requirement', () => {
-    const hardwareAccount = {
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'd1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 0,
-        },
-        address: new Address(new Uint8Array(32).fill(3)).toString(),
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'd1',
-            deviceName: 'Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
-    } as unknown as WalletAccount
+    const HW_ADDRESS = new Address(new Uint8Array(32).fill(3)).toString()
+    const hardwareAccount = ledgerAccount(HW_ADDRESS, 0, { deviceId: 'd1' })
 
     const buildHardwareInput = (
         request: TransactionSignRequest,
@@ -463,7 +436,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
         // Critical wiring guard: hardware actors require a registry to call
         // the device. The machine refuses to start rather than failing
         // partway through.
-        const hwAddr = (hardwareAccount as { address: string }).address
+        const hwAddr = HW_ADDRESS
         const request: TransactionSignRequest = {
             id: 'req-hw',
             type: 'transactions',

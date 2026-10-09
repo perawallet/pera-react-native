@@ -11,7 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainAccountOf } from '../credentials'
 import {
     delegateTransitionFor,
     type DelegateTransition,
@@ -21,14 +22,17 @@ import { useSelectedChainStates } from './useSelectedChainStates'
 
 export const useDelegatedTransition = (
     address: string | undefined | null,
+    chainId: ChainId,
 ): DelegateTransition | null => {
     const accounts = useAccountsStore(state => state.accounts)
-    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
+    const chainStates = useSelectedChainStates(chainId)
 
     return useMemo(() => {
         if (!address) return null
-        const account = accounts.find(a => a.address === address)
+        const account = accounts.find(
+            a => chainAccountOf(a, chainId)?.address === address,
+        )
         if (!account) return null
-        return delegateTransitionFor(account, accounts, LEGACY_CHAIN_ID)
-    }, [address, accounts, chainStates])
+        return delegateTransitionFor(account, accounts, chainId)
+    }, [address, accounts, chainId, chainStates])
 }

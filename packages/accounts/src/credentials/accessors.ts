@@ -11,7 +11,6 @@
  */
 
 import {
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
     type StandaloneSecret,
@@ -23,8 +22,10 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import type {
     AccountCustody,
+    AccountWithCustody,
     ChainAccount,
     HardwareRef,
+    HardwareWalletDetails,
     HdIndex,
     WalletAccount,
 } from '../models'
@@ -40,28 +41,12 @@ export const custodyOf = (account: WalletAccount): AccountCustody =>
 export const hasCustody = <K extends AccountCustody['kind']>(
     account: WalletAccount,
     kind: K,
-): account is WalletAccount & {
-    custody: Extract<AccountCustody, { kind: K }>
-} => account.custody.kind === kind
+): account is AccountWithCustody<K> => account.custody.kind === kind
 
-// The top-level address and key answer for the legacy chain only on a record
-// that predates `chains`; once `chains` exists it is authoritative, so an
-// account on another chain never reads as held on the legacy one.
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
-): ChainAccount | undefined => {
-    if (account.chains) return account.chains[chainId]
-    if (chainId !== LEGACY_CHAIN_ID || account.address === undefined) {
-        return undefined
-    }
-    return {
-        address: account.address,
-        ...(account.keyPairId !== undefined
-            ? { keyPairId: account.keyPairId }
-            : {}),
-    }
-}
+): ChainAccount | undefined => account.chains[chainId]
 
 /** Takes a scope so a chain whose encoding varies by network can answer per network. */
 export const addressOn = (
@@ -79,12 +64,10 @@ export const isKeyReferenced = (
     accounts: readonly WalletAccount[],
     keyPairId: string,
 ): boolean =>
-    accounts.some(
-        account =>
-            account.keyPairId === keyPairId ||
-            Object.values(account.chains ?? {}).some(
-                entry => entry?.keyPairId === keyPairId,
-            ),
+    accounts.some(account =>
+        Object.values(account.chains).some(
+            entry => entry?.keyPairId === keyPairId,
+        ),
     )
 
 export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
@@ -103,11 +86,9 @@ export const standaloneSecretOf = (
 ): StandaloneSecret | undefined => {
     const { custody } = account
     if (custody.kind !== 'local' || custody.seed !== null) return undefined
-    const chainId =
-        (Object.keys(account.chains ?? {})[0] as ChainId | undefined) ??
-        LEGACY_CHAIN_ID
+    const chainId = Object.keys(account.chains)[0] as ChainId | undefined
     const { chains } = getProvider()
-    return chains.has(chainId)
+    return chainId !== undefined && chains.has(chainId)
         ? chains.get(chainId).descriptor.signing.standaloneSecret
         : undefined
 }
@@ -121,6 +102,23 @@ export const hardwareDeviceOf = (
         : undefined
 }
 
+/** The device record a hardware account was paired with, flattened as the store and Ledger flows keep it. */
+export const hardwareDetailsOf = (
+    account: WalletAccount,
+): HardwareWalletDetails | undefined => {
+    const held = hardwareDeviceOf(account)
+    return held
+        ? { ...held.device, accountIndex: held.accountIndex }
+        : undefined
+}
+
+/** Whether the account has a phrase to back up or reveal: every seed is mnemonic-backed, a standalone key only where its chain says so. */
+export const hasRecoverySeed = (account: WalletAccount): boolean => {
+    const { custody } = account
+    if (custody.kind !== 'local') return false
+    return custody.seed !== null || standaloneSecretOf(account) === 'mnemonic'
+}
+
 /**
  * The KMS id of the seed behind the account's local keys, or `undefined` for
  * non-local custody or a key the snapshot lacks.
@@ -131,9 +129,9 @@ export const seedOf = (
 ): string | undefined => {
     const { custody } = account
     if (custody.kind !== 'local') return undefined
-    const keyPairId =
-        Object.values(account.chains ?? {}).find(entry => entry?.keyPairId)
-            ?.keyPairId ?? account.keyPairId
+    const keyPairId = Object.values(account.chains).find(
+        entry => entry?.keyPairId,
+    )?.keyPairId
     if (!keyPairId) return undefined
     try {
         return resolveSeedKeyFrom(keys, keyPairId).id

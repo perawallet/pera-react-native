@@ -11,6 +11,8 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     PWFlatList,
     PWIcon,
@@ -84,7 +86,7 @@ export const SearchScreen = () => {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAccountPress(item.account)}
-                            testID={`search_result_account_${item.account.address}`}
+                            testID={`search_result_account_${chainAccountOf(item.account, LEGACY_CHAIN_ID)?.address}`}
                         >
                             <AccountDisplay
                                 account={item.account}

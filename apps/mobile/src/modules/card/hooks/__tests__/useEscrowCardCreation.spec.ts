@@ -16,6 +16,10 @@ import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // The global setup stubs shared with a partial surface; restore the real
 // encoding helpers the injected signers use.
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-shared')),
 }))
@@ -54,13 +58,13 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 }))
 
 import { useEscrowCardCreation } from '../useEscrowCardCreation'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localKeyAccount: WalletAccount = {
     id: 'a1',
     custody: { kind: 'local', seed: null },
-    address: 'FUNDINGADDR',
-    keyPairId: 'kp1',
+    chains: { algorand: { address: 'FUNDINGADDR', keyPairId: 'kp1' } },
 } as WalletAccount
 
 const ledgerAccount: WalletAccount = {
@@ -75,13 +79,13 @@ const ledgerAccount: WalletAccount = {
         },
         accountIndex: 0,
     },
-    address: 'LEDGERADDR',
+    chains: { algorand: { address: 'LEDGERADDR' } },
 } as WalletAccount
 
 const watchAccount: WalletAccount = {
     id: 'a3',
     custody: { kind: 'watch' },
-    address: 'WATCHADDR',
+    chains: { algorand: { address: 'WATCHADDR' } },
 } as WalletAccount
 
 beforeEach(() => {
@@ -100,6 +104,7 @@ beforeEach(() => {
 })
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     registerAlgorandCardAdapter()
 })
 

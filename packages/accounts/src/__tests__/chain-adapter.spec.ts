@@ -12,14 +12,39 @@
 
 import { describe, expect, it } from 'vitest'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { deriveHdAccount } from '../chain-adapter'
-import { fakeAccountsChain } from './fakeAccountsChain'
+import { deriveHdAccount, hdDeriveOpts } from '../chain-adapter'
+import { HdAccountsUnsupportedError } from '../errors'
+import {
+    FAKE_LOCAL_KEY_KINDS,
+    MAINNET_SCOPE,
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from './fakeAccountsChain'
+
+describe('hdDeriveOpts', () => {
+    it("takes the scheme from the chain's HD key kind and the network from the scope", () => {
+        expect(hdDeriveOpts(MAINNET_SCOPE)).toEqual({
+            scheme: 'ed25519',
+            networkId: 'mainnet',
+        })
+    })
+
+    it('refuses a chain that declares no HD key kind', () => {
+        registerFakeAccountsChain({
+            localKeyKinds: FAKE_LOCAL_KEY_KINDS.filter(kind => !kind.isHd),
+        })
+
+        expect(() => hdDeriveOpts(MAINNET_SCOPE)).toThrow(
+            HdAccountsUnsupportedError,
+        )
+    })
+})
 
 describe('deriveHdAccount', () => {
     it('derives through the registered key derivation with the shared KMS core', async () => {
         const { deriveAccount } = fakeAccountsChain().derivation
 
-        const derived = await deriveHdAccount('mainnet', 'seed-1', {
+        const derived = await deriveHdAccount(MAINNET_SCOPE, 'seed-1', {
             account: 2,
             keyIndex: 5,
         })

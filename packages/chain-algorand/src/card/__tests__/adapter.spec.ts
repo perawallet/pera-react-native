@@ -19,13 +19,13 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 const {
     getAlgorandClient,
     waitForTransactionConfirmation,
-    isRekeyedAccount,
+    isDelegatedAccount,
     canSignArc60,
     canSignProgram,
 } = vi.hoisted(() => ({
     getAlgorandClient: vi.fn(),
     waitForTransactionConfirmation: vi.fn(),
-    isRekeyedAccount: vi.fn(),
+    isDelegatedAccount: vi.fn(),
     canSignArc60: vi.fn(),
     canSignProgram: vi.fn(),
 }))
@@ -36,9 +36,12 @@ vi.mock('../../blockchain', async () => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
-    isRekeyedAccount,
-    canSignArc60,
+    isDelegatedAccount,
     canSignProgram,
+}))
+vi.mock('../../accounts/vocabulary', async () => ({
+    ...(await vi.importActual<object>('../../accounts/vocabulary')),
+    canSignArc60,
 }))
 
 import { CardEscrowNotConfiguredError } from '@perawallet/wallet-core-card'
@@ -210,10 +213,72 @@ describe('algorandCardAdapter.buildManualDeposit', () => {
 })
 
 describe('algorandCardAdapter.fundingSourceEligibility', () => {
-    const account = { address: SENDER } as WalletAccount
+    const account = {
+        id: 'a1',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: SENDER } },
+    } as unknown as WalletAccount
+    const withCustody = (
+        custody: WalletAccount['custody'],
+        chains: WalletAccount['chains'] = { algorand: { address: SENDER } },
+    ): WalletAccount => ({ id: 'a2', custody, chains })
+    const canFund = (candidate: WalletAccount): boolean =>
+        adapter.fundingSourceEligibility(candidate, TESTNET).canFund
+
+    it.each([
+        ['standalone', { kind: 'local', seed: null }],
+        ['HD', { kind: 'local', seed: 'bip39' }],
+        [
+            'Ledger',
+            {
+                kind: 'hardware',
+                device: { manufacturer: 'ledger', id: 'd1', index: 0 },
+            },
+        ],
+    ] as const)('lets a %s account fund the card', (_, custody) => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(canFund(withCustody(custody as WalletAccount['custody']))).toBe(
+            true,
+        )
+    })
+
+    it('refuses a quantum account, whose Falcon key cannot sign the Ed25519 proofs', () => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(canFund(withCustody({ kind: 'local', seed: 'quantum' }))).toBe(
+            false,
+        )
+    })
+
+    it.each([
+        ['watch', { kind: 'watch' }],
+        ['multisig', { kind: 'multisig', threshold: 1, participants: [] }],
+    ] as const)('refuses a %s account', (_, custody) => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(
+            canFund(
+                withCustody(custody as unknown as WalletAccount['custody']),
+            ),
+        ).toBe(false)
+    })
+
+    it('refuses an account with no Algorand address', () => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(
+            canFund(
+                withCustody(
+                    { kind: 'local', seed: null },
+                    { ethereum: { address: '0xabc' } },
+                ),
+            ),
+        ).toBe(false)
+    })
 
     it('refuses a rekeyed account as a funding source', () => {
-        isRekeyedAccount.mockReturnValue(true)
+        isDelegatedAccount.mockReturnValue(true)
         canSignArc60.mockReturnValue(true)
         canSignProgram.mockReturnValue(true)
 
@@ -222,11 +287,11 @@ describe('algorandCardAdapter.fundingSourceEligibility', () => {
             canProveOwnership: true,
             canAutoDraw: true,
         })
-        expect(isRekeyedAccount).toHaveBeenCalledWith(account, 'algorand')
+        expect(isDelegatedAccount).toHaveBeenCalledWith(account, 'algorand')
     })
 
     it('lets a Ledger prove ownership but not sign the auto-draw program', () => {
-        isRekeyedAccount.mockReturnValue(false)
+        isDelegatedAccount.mockReturnValue(false)
         canSignArc60.mockReturnValue(true)
         canSignProgram.mockReturnValue(false)
 

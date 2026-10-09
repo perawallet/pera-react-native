@@ -22,10 +22,10 @@ import { CreateMultisigScreen } from '@modules/multisig/screens/CreateMultisigSc
 import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen/SetThresholdScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
 import { useMultisigCreationStore } from '@modules/multisig'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
-    type MultiSigAccount,
-    accountType,
+    multisigParametersOf,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
@@ -158,17 +158,15 @@ describe('Flow: Create a multisig account from scratch', () => {
         await waitFor(() =>
             expect(useAccountsStore.getState().accounts).toHaveLength(1),
         )
-        const saved = useAccountsStore.getState().accounts[0] as MultiSigAccount
-        expect(accountType(saved)).toBe('multisig')
+        const saved = useAccountsStore.getState().accounts[0]
+        expect(saved.custody).toEqual({ kind: 'multisig' })
         expect(saved.name).toBe('Team treasury')
-        expect(saved.multisigDetails).toEqual({
+        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
             threshold: 2,
             addresses: PARTICIPANTS,
             version: 1,
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            saved.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(saved.id)
 
         await waitFor(() => screen.getByTestId('create-flow-home'))
     })

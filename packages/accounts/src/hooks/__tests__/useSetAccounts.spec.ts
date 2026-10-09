@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useSetAccounts } from '../useSetAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -44,7 +45,7 @@ describe('useSetAccounts', () => {
     beforeEach(() => {
         useAccountsStore.setState({
             accounts: [],
-            selectedAccountAddress: null,
+            selectedAccountId: null,
             manualAccountOrder: [],
         })
     })
@@ -57,13 +58,7 @@ describe('useSetAccounts', () => {
 
     test('writes accounts to the store when called', () => {
         const accounts: WalletAccount[] = [
-            {
-                id: '1',
-                address: 'A',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-                name: 'A',
-            },
+            testAccount('local', 'A', { id: '1', name: 'A' }),
         ]
 
         const { result } = renderHook(() => useSetAccounts())

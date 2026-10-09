@@ -60,7 +60,10 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
             setMnemonic: setMnemonicMock,
             clearDraft: clearDraftMock,
         }),
-    useRestoreCloudBackupMutation: (options: typeof restoreCallbacks) => {
+    useRestoreCloudBackupMutation: (
+        _scope: unknown,
+        options: typeof restoreCallbacks,
+    ) => {
         restoreCallbacks = options
         return { mutate: restoreMock, isPending: false }
     },

@@ -78,6 +78,8 @@ let stored: Connection[] = []
 const list = vi.fn(async () => stored)
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        // Before bootstrap registers a chain, the scope reads the tier name.
+        chains: { has: () => false },
         connections: { store: { list, subscribe: () => () => {} } },
     }),
 }))

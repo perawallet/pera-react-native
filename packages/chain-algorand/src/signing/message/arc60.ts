@@ -33,6 +33,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 /**
  * ARC-60 scope value for `AUTH` (the only scope defined by the spec today).
@@ -193,7 +194,9 @@ export const validateArc60AuthRequest = (
     // its own (revoked) key.
     const scope = getSelectedScope(ALGORAND_CHAIN_ID)
     if (siwa.account_address === authData.signer) {
-        const named = accounts.find(a => a.address === authData.signer)
+        const named = accounts.find(
+            a => algorandAddressOf(a) === authData.signer,
+        )
         const authority = named ? authorityOf(named, scope) : null
         if (authority) {
             throw new Arc60InvalidSignerError(
@@ -204,7 +207,7 @@ export const validateArc60AuthRequest = (
     } else if (
         !accounts.find(
             a =>
-                a.address === siwa.account_address &&
+                algorandAddressOf(a) === siwa.account_address &&
                 authorityOf(a, scope) === authData.signer,
         )
     ) {

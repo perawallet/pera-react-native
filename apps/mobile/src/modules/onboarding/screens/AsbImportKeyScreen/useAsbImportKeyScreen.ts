@@ -17,6 +17,7 @@ import {
     AsbImportError,
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -116,7 +117,11 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             // re-render before the heavy work runs; without an await/microtask
             // boundary the loading indicator never paints.
             await Promise.resolve()
-            const payload = decryptBackupPayload(envelope, mnemonicIndices)
+            const payload = decryptBackupPayload(
+                envelope,
+                mnemonicIndices,
+                LEGACY_CHAIN_ID,
+            )
             setPayload(payload)
             // `replace` (not `push`) so the Key screen unmounts on success: the
             // input hook wipes the typed words on unmount, and back-navigating

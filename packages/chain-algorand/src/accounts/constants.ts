@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
+import { DerivationTypes } from './vocabulary'
 
 // Every HD account derives with Peikert. Stored accounts reference keys by an
 // id that ends in this value, so changing it orphans them.

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type InboxItem,
     useCleanupDuplicateMultisigInvitations,
@@ -47,6 +49,7 @@ const getItemKey = (item: InboxItem, index: number): string => {
 }
 
 export const useInboxScreen = (): UseInboxScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         data: inboxItems,
         isPending,
@@ -55,8 +58,8 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isRefetching,
         refetch,
         isUnavailableOnNetwork,
-    } = useInboxQuery()
-    useCleanupDuplicateMultisigInvitations()
+    } = useInboxQuery(scope)
+    useCleanupDuplicateMultisigInvitations(scope)
     const handleInboxItemPress = useHandleInboxItemPress()
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()

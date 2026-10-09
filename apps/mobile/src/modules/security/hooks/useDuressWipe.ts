@@ -12,6 +12,8 @@
 
 import { useCallback } from 'react'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { UserPreferences } from '@constants/user-preferences'
@@ -36,7 +38,8 @@ type UseDuressWipeResult = {
 
 export const useDuressWipe = (): UseDuressWipeResult => {
     const { wipeAllUserData } = useDeleteAllData()
-    const { createHdWalletAccount } = useCreateAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { createHdWalletAccount } = useCreateAccount(scope)
     const { setPreference } = usePreferences()
 
     const performDuressWipe = useCallback(async () => {

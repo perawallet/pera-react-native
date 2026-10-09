@@ -10,19 +10,20 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useMemo } from 'react'
 import {
-    accountType,
-    AccountTypes,
+    addressOn,
+    authorityTransitionLabel,
+    useAccountPresentation,
     useAuthorityOf,
     useCanSignWith,
     useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { getRekeyLabelI18n, splitAccountTypeLabel } from '@utils/rekeyLabels'
+import { splitAccountTypeLabel } from '@utils/rekeyLabels'
 
 export type AccountTypeLabel = {
     /** Full single-line label, e.g. "Rekeyed (Signed by a Ledger account)". */
@@ -54,9 +55,14 @@ export const useAccountTypeLabel = (
     account: WalletAccount | null | undefined,
 ): AccountTypeLabel => {
     const { t } = useLanguage()
-    const canSign = useCanSignWith(account)
-    const delegateTransition = useDelegatedTransition(account?.address)
-    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const canSign = useCanSignWith(account, scope.chainId)
+    const delegateTransition = useDelegatedTransition(
+        account ? addressOn(account, scope) : undefined,
+        scope.chainId,
+    )
+    const authority = useAuthorityOf(account, scope)
+    const presentation = useAccountPresentation(account, scope)
 
     return useMemo(() => {
         if (!account) return plain('')
@@ -65,39 +71,25 @@ export const useAccountTypeLabel = (
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }
-            if (!delegateTransition) {
+            const transitionLabel = delegateTransition
+                ? authorityTransitionLabel(delegateTransition, scope.chainId)
+                : null
+            if (!transitionLabel) {
                 return plain(t('account_info.type_rekeyed'))
             }
-            const { labelKey, signerKey } =
-                getRekeyLabelI18n(delegateTransition)
+            const { labelKey, signerKey } = transitionLabel
             const label = t(labelKey, { to: t(signerKey) })
             return { label, ...splitAccountTypeLabel(label) }
         }
 
-        switch (accountType(account)) {
-            case AccountTypes.hdWallet: {
-                return plain(t('account_info.type_universal_wallet'))
-            }
-            case AccountTypes.standalone: {
-                return plain(t('account_info.type_algo25'))
-            }
-            case AccountTypes.quantum: {
-                return plain(t('account_info.type_quantum'))
-            }
-            case AccountTypes.hardware: {
-                return plain(t('account_info.type_ledger'))
-            }
-            case AccountTypes.multisig: {
-                return canSign
-                    ? plain(t('account_info.type_multisig'))
-                    : plain(t('account_info.type_no_auth'))
-            }
-            case AccountTypes.watch: {
-                return plain(t('account_info.type_watch'))
-            }
-            default: {
-                return plain(t('account_info.type_unknown'))
-            }
-        }
-    }, [account, authority, canSign, delegateTransition, t])
+        return plain(t(presentation?.labelKey ?? 'account_info.type_unknown'))
+    }, [
+        account,
+        authority,
+        canSign,
+        delegateTransition,
+        presentation,
+        t,
+        scope.chainId,
+    ])
 }

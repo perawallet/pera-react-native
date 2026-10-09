@@ -17,33 +17,18 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     getAssetHolderAddresses: vi.fn(),
-    selectedAccountAddress: 'SELECTED',
-    accounts: [
-        { address: 'SELECTED' },
-        { address: 'HOLDER_A' },
-        { address: 'HOLDER_B' },
-    ] as Array<{ address: string }>,
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../db', () => ({
     getAssetHolderAddresses: mocks.getAssetHolderAddresses,
 }))
 
-vi.mock('../useSelectedAccountAddress', () => ({
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mocks.selectedAccountAddress,
-    }),
-}))
-
-vi.mock('../useAllAccounts', () => ({
-    useAllAccounts: () => mocks.accounts,
-}))
-
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useAccountsStore } from '../../store'
+import { testAccount } from '../../__tests__/accountFactory'
 import { useResolveAssetHolderAddress } from '../useResolveAssetHolderAddress'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
@@ -58,19 +43,22 @@ const createWrapper = () => {
 }
 
 const renderResolver = () =>
-    renderHook(() => useResolveAssetHolderAddress(), {
+    renderHook(() => useResolveAssetHolderAddress(SCOPE), {
         wrapper: createWrapper(),
     })
 
 describe('useResolveAssetHolderAddress', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.selectedAccountAddress = 'SELECTED'
-        mocks.accounts = [
-            { address: 'SELECTED' },
-            { address: 'HOLDER_A' },
-            { address: 'HOLDER_B' },
-        ]
+        useAccountsStore.getState().resetState()
+        useAccountsStore
+            .getState()
+            .setAccounts(
+                ['SELECTED', 'HOLDER_A', 'HOLDER_B'].map(address =>
+                    testAccount('local', address, { id: address }),
+                ),
+            )
+        useAccountsStore.getState().setSelectedAccountId('SELECTED')
     })
 
     it('resolves the holding account when the selected one does not hold the asset', async () => {

@@ -14,7 +14,11 @@ import { memo, useCallback } from 'react'
 import { PWTouchableOpacity } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type SelectableAccountRowProps = {
     account: WalletAccount
@@ -37,7 +41,10 @@ const SelectableAccountRowComponent = ({
     return (
         <PWTouchableOpacity
             onPress={handlePress}
-            testID={testID ?? `account-row-${account.address}`}
+            testID={
+                testID ??
+                `account-row-${chainAccountOf(account, LEGACY_CHAIN_ID)?.address}`
+            }
         >
             <AccountWithBalance
                 account={account}

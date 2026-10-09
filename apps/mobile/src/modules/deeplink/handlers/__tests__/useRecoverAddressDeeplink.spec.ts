@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 
@@ -23,7 +23,7 @@ const { mockNavigate, mockShowError } = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    resolveImportAccountType: vi.fn(),
+    detectImportKind: vi.fn(),
     setPendingImportMnemonic: vi.fn(),
 }))
 
@@ -58,7 +58,7 @@ describe('useRecoverAddressDeeplink', () => {
     })
 
     it('shows an error for an invalid mnemonic and does not navigate', async () => {
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: false,
         } as never)
 
@@ -80,9 +80,9 @@ describe('useRecoverAddressDeeplink', () => {
 
     it('opens the pre-filled Import screen instead of importing silently', async () => {
         const mnemonic = new Array(24).fill('word').join(' ')
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'hdWallet',
+            seed: 'bip39',
         } as never)
 
         const { result } = renderHook(() => useRecoverAddressDeeplink())
@@ -100,16 +100,16 @@ describe('useRecoverAddressDeeplink', () => {
         expect(mockNavigate).toHaveBeenCalledWith(true, 'AddAccount', {
             screen: 'ImportAccount',
             params: {
-                accountType: 'hdWallet',
+                accountType: 'bip39',
             },
         })
         expect(mockShowError).not.toHaveBeenCalled()
     })
 
     it('normalizes a comma-separated mnemonic before forwarding it', async () => {
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'algo25',
+            seed: null,
         } as never)
 
         const { result } = renderHook(() => useRecoverAddressDeeplink())
@@ -126,7 +126,7 @@ describe('useRecoverAddressDeeplink', () => {
         expect(mockNavigate).toHaveBeenCalledWith(false, 'AddAccount', {
             screen: 'ImportAccount',
             params: {
-                accountType: 'algo25',
+                accountType: null,
             },
         })
     })

@@ -32,6 +32,7 @@ import {
     classifyPeraTransaction,
     getExpectedGenesisHash,
 } from '../blockchain'
+import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../legacy-network'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
@@ -69,7 +70,9 @@ const decode = async (
             return {
                 totalFees: 0n,
                 transactionSummaries: [],
-                signableAddresses: context.accounts.map(a => a.address),
+                signableAddresses: context.accounts.flatMap(
+                    a => algorandAddressOf(a) ?? [],
+                ),
             }
         }
 
@@ -90,7 +93,7 @@ const decode = async (
         // so gate on `group.signerAddress`; `tx.sender` misses ARC-0001
         // `signers` / `authAddr` overrides.
         const signedByUs = context.accounts.some(
-            a => a.address === group.signerAddress,
+            a => algorandAddressOf(a) === group.signerAddress,
         )
         return {
             totalFees: signedByUs

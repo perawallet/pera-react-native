@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { registerDevice, deleteDevice } from '../endpoints'
-import { DeviceAccountTypes, type DeviceRegistration } from '../../models'
+import type { DeviceRegistration } from '../../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -30,7 +30,8 @@ const registration: DeviceRegistration = {
     accounts: [
         {
             address: 'ADDR_A',
-            accountType: DeviceAccountTypes.quantum,
+            accountType: 'signing-kind',
+            rank: 2,
             receiveNotifications: true,
         },
     ],
@@ -63,7 +64,7 @@ describe('device endpoints', () => {
                     accounts: [
                         {
                             address: 'ADDR_A',
-                            account_type: 'quantum',
+                            account_type: 'signing-kind',
                             receive_notifications: true,
                         },
                     ],

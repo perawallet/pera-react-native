@@ -14,12 +14,22 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    accountKindIdOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { AnalyticsMetadataKey, TransactionsEvent } from '@analytics'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 
 const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
@@ -46,18 +56,16 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    accountType: vi.fn(() => 'algo25'),
+    accountKindIdOf: vi.fn(() => 'standalone'),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
     // The processing-screen hook derives Ledger-aware copy from these; the
     // existing tests focus on send-pipeline routing and don't care about
     // the copy branch, so a minimal stub keeps them green.
-    AccountTypes: {
-        standalone: 'standalone',
-        hardware: 'hardware',
-        watch: 'watch',
-        multisig: 'multisig',
-        hd: 'hd',
-    },
+    hardwareDetailsOf: vi.fn(() => undefined),
     isHardwareWalletAccount: vi.fn(() => false),
     useAllAccounts: vi.fn(() => []),
     resolveAuthAccount: vi.fn((account: unknown) => account),
@@ -90,8 +98,10 @@ describe('useTransactionProcessingScreen', () => {
     const mockExecute = vi.fn()
 
     const mockAccount = {
-        address: 'TEST_ADDRESS',
+        id: 'test-account',
         name: 'Test Account',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: 'TEST_ADDRESS' } },
     }
 
     const mockAsset = { id: '123', name: 'Test Asset' }
@@ -247,6 +257,28 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
             transactionId: 'TX_ID_123',
         })
+    })
+
+    it("reports the sender's account kind id with the completed send", async () => {
+        ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+        ;(useSendFunds as Mock).mockReturnValue({
+            ...mockSendFundsState,
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+            destination: 'DEST_ADDRESS',
+        })
+
+        await act(async () => {
+            renderHook(() => useTransactionProcessingScreen())
+        })
+
+        expect(accountKindIdOf).toHaveBeenCalledWith(mockAccount, 'algorand')
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            TransactionsEvent.Complete,
+            expect.objectContaining({
+                [AnalyticsMetadataKey.AccountType]: 'standalone',
+            }),
+        )
     })
 
     it('should include arc59Summary when sendMode is sendArc59', async () => {

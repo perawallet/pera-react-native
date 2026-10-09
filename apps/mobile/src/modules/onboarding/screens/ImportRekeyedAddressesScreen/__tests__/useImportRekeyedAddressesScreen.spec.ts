@@ -17,7 +17,7 @@ import { useRoute } from '@react-navigation/native'
 import {
     useAllAccounts,
     useSetAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
@@ -26,13 +26,13 @@ import { useExitAccountFlow } from '@modules/onboarding/hooks'
 const MOCK_ACCOUNTS = [
     {
         id: '1',
-        address: 'ACC1',
         custody: { kind: 'watch' } as const,
+        chains: { algorand: { address: 'ACC1' } },
     },
     {
         id: '2',
-        address: 'ACC2',
         custody: { kind: 'watch' } as const,
+        chains: { algorand: { address: 'ACC2' } },
     },
 ]
 
@@ -45,13 +45,13 @@ const mockStoreAccounts: { current: unknown[] } = { current: [] }
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
     useSetAccounts: vi.fn(),
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccountId: vi.fn(),
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     useAccountsStore: {
         getState: () => ({ accounts: mockStoreAccounts.current }),
-    },
-    AccountTypes: {
-        standalone: 'standalone',
-        watch: 'watch',
     },
 }))
 
@@ -63,14 +63,15 @@ vi.mock('@modules/onboarding/hooks', () => ({
     useExitAccountFlow: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
     deferToNextCycle: (cb: () => void) => setTimeout(cb, 0),
 }))
 
 describe('useImportRekeyedAddressesScreen', () => {
     const mockExitAccountFlow = vi.fn()
     const mockSetAccounts = vi.fn()
-    const mockSetSelectedAccountAddress = vi.fn()
+    const mockSetSelectedAccountId = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -87,9 +88,9 @@ describe('useImportRekeyedAddressesScreen', () => {
             setAccounts: mockSetAccounts,
         })
 
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        vi.mocked(useSelectedAccountId).mockReturnValue({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         })
 
         vi.mocked(useExitAccountFlow).mockReturnValue({
@@ -164,22 +165,21 @@ describe('useImportRekeyedAddressesScreen', () => {
         // Pin the persisted shape: watch with no key, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
             custody: { kind: string }
-            keyPairId?: string
+            chains: Record<string, { keyPairId?: string }>
         }>
         for (const account of persisted) {
             expect(account.custody.kind).toBe('watch')
-            expect(account.keyPairId).toBeUndefined()
+            expect(account.chains.algorand.keyPairId).toBeUndefined()
         }
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 
     it('reads the store fresh inside the deferred write so a concurrent add is not dropped', () => {
         const concurrent = {
             id: 'c',
-            address: 'CONCURRENT',
             custody: { kind: 'local', seed: null },
-            keyPairId: 'pkc',
+            chains: { algorand: { address: 'CONCURRENT', keyPairId: 'pkc' } },
         }
         // Lands after render (useAllAccounts snapshot) but before the
         // deferred commit — e.g. background sync or another import flow.
@@ -214,7 +214,7 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(result.current.isImporting).toBe(false)
     })
 

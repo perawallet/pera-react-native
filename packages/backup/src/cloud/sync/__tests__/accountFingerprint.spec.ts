@@ -14,8 +14,15 @@ import { describe, expect, it } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { accountFingerprint } from '../accountFingerprint'
 
-const account = (over: Partial<WalletAccount>): WalletAccount =>
-    ({ address: 'A', custody: { kind: 'watch' }, ...over }) as WalletAccount
+const account = ({
+    address = 'A',
+    ...over
+}: Partial<WalletAccount> & { address?: string }): WalletAccount => ({
+    id: address,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+    ...over,
+})
 
 describe('accountFingerprint', () => {
     it('changes when an account is added', () => {
@@ -25,6 +32,17 @@ describe('accountFingerprint', () => {
             account({ address: 'B' }),
         ])
         expect(after).not.toBe(before)
+    })
+
+    it('changes when an account gains an address on another chain', () => {
+        const before = account({ address: 'A' })
+        const after: WalletAccount = {
+            ...before,
+            chains: { ...before.chains, ethereum: { address: '0xA' } },
+        }
+        expect(accountFingerprint([after])).not.toBe(
+            accountFingerprint([before]),
+        )
     })
 
     it('changes when an account is renamed', () => {

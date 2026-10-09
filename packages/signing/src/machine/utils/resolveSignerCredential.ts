@@ -11,7 +11,7 @@
  */
 
 import {
-    accountType,
+    chainAccountOf,
     credentialScheme,
     type AccountCustody,
     type WalletAccount,
@@ -47,8 +47,8 @@ export const resolveSignerCredential = (
     )
     if (custody === 'watch' || scheme === null) {
         throw new CannotSignError(
-            account.address,
-            `No signing capability found for account type: ${accountType(account)}`,
+            chainAccountOf(account, chainId)?.address ?? account.id,
+            `No signing capability found for account custody: ${custody}`,
         )
     }
     return { custody, scheme }

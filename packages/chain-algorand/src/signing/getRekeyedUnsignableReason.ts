@@ -23,6 +23,7 @@ import {
     type DelegatedUnsignableReason,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { algorandAddressOf } from '../accounts/vocabulary'
 
 // Every signer the request names, across all transactions/data entries — not
 // just the first (a mixed group can hide its unsignable sender in a later
@@ -76,7 +77,7 @@ export const getRekeyedUnsignableReason = (
 
     const uniqueSigners = [...new Set(resolveAllSignerAddresses(request))]
     for (const address of uniqueSigners) {
-        const account = accounts.find(a => a.address === address)
+        const account = accounts.find(a => algorandAddressOf(a) === address)
         if (!account) continue
         const resolution = resolveSignerForAccount(
             account,
@@ -94,7 +95,7 @@ export const getRekeyedUnsignableReason = (
             return {
                 kind: 'authIsWatch',
                 senderAddress: address,
-                authAddress: resolution.auth.address,
+                authAddress: algorandAddressOf(resolution.auth) ?? '',
             }
         }
     }

@@ -14,7 +14,6 @@ import type {
     ChainAccountNative,
     ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import type { HardwareWalletDetails } from './accounts'
 
 /** Pera's position in the seed, the same on every chain; each chain's path template places it. */
@@ -29,11 +28,12 @@ export type LocalCustody =
     | StandaloneCustody
     | {
           kind: 'local'
-          seed: typeof SeedScheme.Quantum
+          // lanekeep-ignore-next-line pera/no-algorand-account-vocabulary reason: the persisted custody seed of a post-quantum key; the store's records carry this exact value
+          seed: 'quantum'
       }
     | {
           kind: 'local'
-          seed: typeof SeedScheme.Bip39
+          seed: 'bip39'
           hd: HdIndex
       }
 

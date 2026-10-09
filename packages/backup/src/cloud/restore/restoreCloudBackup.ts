@@ -23,7 +23,7 @@ import {
 } from '../models'
 import type {
     Argon2idConfig,
-    BackupAccountType,
+    BackupItemKind,
     BackupId,
     BackupItemKey,
     ContactBackupPayload,
@@ -69,7 +69,7 @@ export class CloudBackupRestoreError extends Error {
 export type RestoreProgress =
     | { phase: 'unlocking' }
     | { phase: 'downloading' }
-    // Counts backup entries, not wallet accounts: a quantum entry adds two.
+    // Counts backup entries, not wallet accounts: one recovery phrase can add several.
     | { phase: 'importing'; done: number; total: number }
     | { phase: 'finishing' }
 
@@ -159,14 +159,14 @@ const importContactsSafely = async (
     }
 }
 
-type PulledAccountTypes = {
-    address: BackupAccountType
-    secrets: BackupAccountType | null
+type PulledAccountKinds = {
+    address: BackupItemKind
+    secrets: BackupItemKind | null
 }
 
 const accountTypesByAddress = (
     accounts: PulledAccount[],
-): Map<string, PulledAccountTypes> =>
+): Map<string, PulledAccountKinds> =>
     new Map(
         accounts.map(({ address, addressPayload, secretsPayload }) => [
             address,
@@ -180,8 +180,8 @@ const accountTypesByAddress = (
 const accountTypeOf = (
     key: BackupItemKey,
     address: string,
-    types: Map<string, PulledAccountTypes>,
-): BackupAccountType | null => {
+    types: Map<string, PulledAccountKinds>,
+): BackupItemKind | null => {
     if (isContactItemKey(key)) return null
     const pulled = types.get(address)
     if (pulled === undefined) return null

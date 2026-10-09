@@ -76,7 +76,11 @@ describe('createQuotes', () => {
             },
         })
 
-        const result = await createQuotes(request, 'mainnet', providers)
+        const result = await createQuotes(
+            request,
+            { chainId: 'algorand', networkId: 'mainnet' },
+            providers,
+        )
 
         expect(result[0].provider).toBe('deflex')
         expect(result[0].providerDisplayName).toBe('Deflex')
@@ -98,7 +102,11 @@ describe('createQuotes', () => {
             },
         })
 
-        const result = await createQuotes(request, 'mainnet', providers)
+        const result = await createQuotes(
+            request,
+            { chainId: 'algorand', networkId: 'mainnet' },
+            providers,
+        )
 
         expect(result[0].provider).toBe('unknown-dex')
         expect(result[0].providerDisplayName).toBeUndefined()
@@ -118,7 +126,11 @@ describe('createQuotes', () => {
             },
         })
 
-        const result = await createQuotes(request, 'mainnet', providers)
+        const result = await createQuotes(
+            request,
+            { chainId: 'algorand', networkId: 'mainnet' },
+            providers,
+        )
 
         expect(result[0].swapperAddress).toBe(request.swapper_address)
     })
@@ -139,7 +151,11 @@ describe('createQuotes', () => {
         })
 
         await expect(
-            createQuotes(request, 'mainnet', providers),
+            createQuotes(
+                request,
+                { chainId: 'algorand', networkId: 'mainnet' },
+                providers,
+            ),
         ).rejects.toThrow('Quote swapper address does not match')
     })
 })

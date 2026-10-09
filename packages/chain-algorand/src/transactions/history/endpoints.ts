@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     parseTransactionHistoryResponse,
@@ -23,10 +23,17 @@ import {
 } from './indexer/endpoints'
 import {
     DEFAULT_ITEMS_PER_PAGE,
-    type FetchMoreTransactionsParams,
-    type FetchTransactionHistoryParams,
+    type FetchMoreTransactionsParams as FetchMoreParams,
+    type FetchTransactionHistoryParams as FetchHistoryParams,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+
+type FetchTransactionHistoryParams = Omit<FetchHistoryParams, 'scope'> & {
+    network: Network
+}
+type FetchMoreTransactionsParams = Omit<FetchMoreParams, 'scope'> & {
+    network: Network
+}
 
 /**
  * Builds query parameters object for the API request.

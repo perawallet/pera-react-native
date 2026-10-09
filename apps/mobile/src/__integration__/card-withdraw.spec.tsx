@@ -212,12 +212,16 @@ const seedOwnerAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'card-owner',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
         name: 'Main Account',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 

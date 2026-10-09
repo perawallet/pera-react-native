@@ -11,6 +11,7 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -42,6 +43,7 @@ export type RestoreCloudBackupVariables = {
  * category with `restoreErrorCategoryOf`.
  */
 export const useRestoreCloudBackupMutation = (
+    scope: ChainScope,
     options?: UseMutationOptions<
         RestoreCloudBackupResult,
         Error,
@@ -55,10 +57,10 @@ export const useRestoreCloudBackupMutation = (
     const setProgress = useCloudBackupRestoreProgressStore(
         state => state.setProgress,
     )
-    const { importAccounts } = useCloudBackupImport()
+    const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
     const { importPasskeys } = useCloudBackupPasskeyImport(
-        useResolveSeedEntropyForBackup(),
+        useResolveSeedEntropyForBackup(scope.chainId),
     )
 
     return useMutation({
@@ -87,7 +89,8 @@ export const useRestoreCloudBackupMutation = (
                     importAccounts,
                     importContacts,
                     importPasskeys,
-                    importSettings: applyBackupSettings,
+                    importSettings: settings =>
+                        applyBackupSettings(settings, scope.chainId),
                     onProgress: setProgress,
                 })
             } finally {

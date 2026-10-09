@@ -53,6 +53,7 @@ const fakeChainAdapter = (
 ): DappRequestChainAdapter => ({
     chainId: 'algorand',
     relayableErrorNames: [RELAYABLE_ERROR_NAME],
+    accountTypeOf: () => 'Fixture',
     parseSigningParams: (type, params) => {
         const key = type === 'sign-transactions' ? 'txns' : 'data'
         return params[key] === undefined

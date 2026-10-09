@@ -11,12 +11,13 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import { useAccountDisplay } from '../useAccountDisplay'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 
 let mockNfdNames: { name: string }[] | undefined
 let mockAccountTypeLabel: string | undefined
@@ -42,10 +43,18 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 
 const ADDRESS = 'A'.repeat(58)
 
-const makeAccount = (name?: string): WalletAccount =>
-    ({ address: ADDRESS, name }) as unknown as WalletAccount
+const makeAccount = (name?: string): WalletAccount => ({
+    id: 'account-1',
+    name,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: ADDRESS } },
+})
 
 describe('useAccountDisplay', () => {
+    beforeAll(() => {
+        registerAlgorandAddressCodec()
+    })
+
     beforeEach(() => {
         mockNfdNames = undefined
         mockAccountTypeLabel = undefined

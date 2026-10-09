@@ -70,14 +70,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
-    DeviceAccountTypes: {
-        standalone: 'standalone',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
@@ -185,8 +177,7 @@ const mockQueryReturn = (
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: null },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 describe('usePendingSignaturesContent', () => {
@@ -1178,12 +1169,5 @@ const buildHardwareAccount = (address: string): WalletAccount => ({
         },
         accountIndex: 0,
     },
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address } },
 })

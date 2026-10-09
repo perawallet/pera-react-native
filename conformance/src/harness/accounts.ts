@@ -23,12 +23,11 @@ import nacl from 'tweetnacl'
 // in every accounts hook (multisig, staking, currencies), none of which is
 // reachable from a Node suite. `models/accounts` has no dependencies beyond
 // types.
-import {
-    DerivationTypes,
-    type HDWalletDetails,
-    type MultiSigAccount,
-    type WalletAccount,
+import type {
+    MultiSigAccount,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts/models/accounts'
+import type { HdIndex } from '@perawallet/wallet-core-accounts/models/credentials'
 import { buildAccount } from '@perawallet/wallet-core-accounts/credentials/buildAccount'
 import { algorandAddressCodec } from '@perawallet/wallet-core-chain-algorand/accounts/address-codec'
 import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-algorand/accounts/bip44'
@@ -249,16 +248,11 @@ export const createHdAccount = async (
     )
     prepared.rootKey.fill(0)
 
-    const hdWalletDetails: HDWalletDetails = {
-        account: HD_ACCOUNT,
-        change: 0,
-        keyIndex: index,
-        derivationType: DerivationTypes.Peikert,
-    }
+    const hdIndex: HdIndex = { account: HD_ACCOUNT, keyIndex: index }
     const path = buildHdAddressPath(HD_ACCOUNT, index)
     // The app's own BIP44 parser is the judge of whether the path this harness
     // built is the path the app would have derived at these coordinates.
-    assertAlgorandBip44PathMatches(path, hdWalletDetails)
+    assertAlgorandBip44PathMatches(path, hdIndex)
 
     const keyId = await keyStore.deriveFromSeed(rootKeyId, path, {
         id: `${id}-idx${index}`,
@@ -290,7 +284,7 @@ export const createHdAccount = async (
             custody: {
                 kind: 'local',
                 seed: 'bip39',
-                hd: { account: HD_ACCOUNT, keyIndex: index },
+                hd: hdIndex,
             },
             chainId: LEGACY_CHAIN_ID,
             chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },

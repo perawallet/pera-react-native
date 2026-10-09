@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 // Hardware-participant signing reaches into `Address.fromString` for rekey
 // detection. The fixture addresses below are not canonical 58-char Algorand
@@ -62,19 +63,30 @@ const PARTICIPANT_B =
 const makeMultisigAccount = (): WalletAccount =>
     ({
         custody: { kind: 'multisig' },
-        address: MULTISIG_ADDRESS,
-        multisigDetails: {
-            version: 1,
-            threshold: 2,
-            addresses: [PARTICIPANT_A, PARTICIPANT_B],
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: MULTISIG_ADDRESS,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 2,
+                        addresses: [PARTICIPANT_A, PARTICIPANT_B],
+                    },
+                },
+            },
         },
     }) as unknown as WalletAccount
 
 const makeAlgo25Account = (address: string, keyPairId = 'key'): WalletAccount =>
     ({
         custody: { kind: 'local', seed: null },
-        address,
-        keyPairId,
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address,
+                keyPairId,
+            },
+        },
     }) as unknown as WalletAccount
 
 const MOCK_HARDWARE_SIG = new Uint8Array([0xab, 0xcd, 0xef])
@@ -233,11 +245,18 @@ describe('signMultisigGroups', () => {
             makeAlgo25Account(PARTICIPANT_B),
             {
                 custody: { kind: 'multisig' },
-                address: otherMultisig,
-                multisigDetails: {
-                    version: 1,
-                    threshold: 1,
-                    addresses: [otherParticipant],
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: otherMultisig,
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                version: 1,
+                                threshold: 1,
+                                addresses: [otherParticipant],
+                            },
+                        },
+                    },
                 },
             } as unknown as WalletAccount,
             makeAlgo25Account(otherParticipant),
@@ -273,13 +292,10 @@ describe('signMultisigGroups', () => {
                 },
                 accountIndex: 0,
             },
-            address: PARTICIPANT_B,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: PARTICIPANT_B,
+                },
             },
         } as unknown as WalletAccount
 
@@ -338,13 +354,10 @@ describe('signMultisigGroups', () => {
                 },
                 accountIndex: 0,
             },
-            address: PARTICIPANT_A,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: PARTICIPANT_A,
+                },
             },
         } as unknown as WalletAccount
 

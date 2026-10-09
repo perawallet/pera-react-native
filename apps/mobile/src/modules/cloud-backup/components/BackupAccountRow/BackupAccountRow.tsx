@@ -12,14 +12,18 @@
 
 import type { ReactNode } from 'react'
 import {
+    accountKindGlyph,
     getAccountDisplayName,
-    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { BackupAccountType } from '@perawallet/wallet-core-backup'
+import {
+    backupItemKindId,
+    type BackupItemKind,
+} from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWRoundIcon, PWText, PWView } from '@components/core'
-import { AccountIcon, accountGlyphForType } from '@components/AccountIcon'
+import { AccountIcon, accountGlyphFor } from '@components/AccountIcon'
 import { AccountSummaryLine } from './AccountSummaryLine'
 import { useStyles } from './styles'
 
@@ -30,7 +34,7 @@ export type BackupAccountRowProps = {
     account?: WalletAccount
     /** Picks the glyph for an address held only in the backup; ignored once
      *  `account` is present. */
-    accountType?: BackupAccountType | null
+    accountType?: BackupItemKind | null
     isBackedUp: boolean
     trailing?: ReactNode
     /** Renders under the text column, so a wide control can't squeeze the name. */
@@ -49,12 +53,14 @@ export const BackupAccountRow = ({
 }: BackupAccountRowProps) => {
     const styles = useStyles()
 
-    const backupGlyph =
-        !account &&
-        accountType != null &&
-        accountType !== BackupAccountType.hdSeed
-            ? accountGlyphForType(accountType as AccountType)
-            : null
+    const backupKindId =
+        !account && accountType != null
+            ? backupItemKindId(accountType, LEGACY_CHAIN_ID)
+            : undefined
+    const backupGlyphId = backupKindId
+        ? accountKindGlyph(backupKindId, LEGACY_CHAIN_ID)
+        : undefined
+    const backupGlyph = backupGlyphId ? accountGlyphFor(backupGlyphId) : null
 
     return (
         <PWView
@@ -88,7 +94,7 @@ export const BackupAccountRow = ({
                         style={styles.title}
                     >
                         {account
-                            ? getAccountDisplayName(account)
+                            ? getAccountDisplayName(account, LEGACY_CHAIN_ID)
                             : truncateAlgorandAddress(address)}
                     </PWText>
                     <PWIcon

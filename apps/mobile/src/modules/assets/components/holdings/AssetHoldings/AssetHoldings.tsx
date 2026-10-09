@@ -11,6 +11,8 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -52,6 +54,7 @@ export const AssetHoldings = ({
     asset,
     isCollectible,
 }: AssetHoldingsProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -63,6 +66,7 @@ export const AssetHoldings = ({
     const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
         asset.assetId,
+        scope,
     )
 
     const cryptoAmount = useMemo(() => {

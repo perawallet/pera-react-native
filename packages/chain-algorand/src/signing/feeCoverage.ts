@@ -11,15 +11,14 @@
  */
 
 import { modelsv2, SignedTransaction } from 'algosdk'
-import {
-    LEGACY_CHAIN_ID,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
-    isQuantumAccount,
+    usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandAddressOf } from '../accounts/vocabulary'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
     bytesToHex,
     logger,
@@ -87,7 +86,8 @@ const signedShapeOf = (
     txn: PeraTransaction,
     signer: Nullable<WalletAccount>,
 ): Nullable<SignedTransaction> => {
-    if (!signer) return null
+    const signerAddress = signer ? algorandAddressOf(signer) : undefined
+    if (!signer || !signerAddress) return null
     let fields: Nullable<EmptySignatureFields>
     try {
         fields = emptySignatureFieldsOf(signer)
@@ -98,9 +98,9 @@ const signedShapeOf = (
     return new SignedTransaction({
         txn: asAlgosdkTransaction(txn),
         ...fields,
-        ...(signer.address === txn.sender.toString()
+        ...(signerAddress === txn.sender.toString()
             ? {}
-            : { sgnr: Address.fromString(signer.address) }),
+            : { sgnr: Address.fromString(signerAddress) }),
     })
 }
 
@@ -140,7 +140,7 @@ export const findFundedIndices = async ({
                 ? undefined
                 : signerOverrides?.get(subsetIndex)) ??
             transactions[index].sender.toString()
-        return getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
+        return getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
     }
 
     // A co-signed partition is never bumped, so it needs no check.
@@ -149,7 +149,10 @@ export const findFundedIndices = async ({
             partition.every(index => subsetIndexOf.has(index)) &&
             partition.some(index => {
                 const signer = signerAt(index)
-                return signer !== null && isQuantumAccount(signer)
+                return (
+                    signer !== null &&
+                    usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
+                )
             }),
     )
 

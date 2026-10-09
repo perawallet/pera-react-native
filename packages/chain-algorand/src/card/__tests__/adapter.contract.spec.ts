@@ -54,10 +54,13 @@ vi.mock('../../fee-delegation', () => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
-    isRekeyedAccount: (account: WalletAccount) =>
-        account.address === REKEYED_ADDRESS,
-    canSignArc60: () => true,
+    isDelegatedAccount: (account: WalletAccount) =>
+        account.chains.algorand?.address === REKEYED_ADDRESS,
     canSignProgram: () => true,
+}))
+vi.mock('../../accounts/vocabulary', async () => ({
+    ...(await vi.importActual<object>('../../accounts/vocabulary')),
+    canSignArc60: () => true,
 }))
 
 import { AlgodError } from '../../blockchain'
@@ -65,6 +68,12 @@ import { algorandCardAdapter } from '../adapter'
 
 const ADDRESS = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
 const REKEYED_ADDRESS = 'REKEYED'
+const algorandAccount = (address: string) =>
+    ({
+        id: address,
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address } },
+    }) as unknown as WalletAccount
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
 const arrangeClient = (client: object) =>
@@ -110,14 +119,14 @@ cardContractTests(() => algorandCardAdapter, {
             }),
     },
     eligibility: {
-        account: { address: ADDRESS } as WalletAccount,
-        ineligibleAccount: { address: REKEYED_ADDRESS } as WalletAccount,
+        account: algorandAccount(ADDRESS),
+        ineligibleAccount: algorandAccount(REKEYED_ADDRESS),
     },
     insufficientBalanceError: new AlgodError('overspend', {} as never),
     ownLegNetwork: 'algorand',
     foreignLegNetwork: 'linea',
     autoDraw: {
-        account: { address: ADDRESS } as WalletAccount,
+        account: algorandAccount(ADDRESS),
         cardAddress: ADDRESS,
         // The switch's per-(account, asset) box exists exactly while it is on.
         arrangeState: enabled =>

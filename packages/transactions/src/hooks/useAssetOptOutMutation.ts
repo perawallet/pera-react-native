@@ -10,22 +10,19 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
-    fetchAccountInformation,
+    fetchOnChainAccountState,
+    type AccountHoldingSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
-import type {
-    Network,
-    Nullable,
-    Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
     sender: string
@@ -56,15 +53,12 @@ const SOURCE = {
 
 const resolveCreator = async (
     params: AssetOptOutParams,
-    network: Network,
+    scope: ChainScope,
 ): Promise<ResolvedOptOutParams> => {
     if (params.creator) {
         return params as ResolvedOptOutParams
     }
-    const asset = await fetchOnChainAsset(
-        String(params.assetId),
-        scopeForLegacyNetwork(network),
-    )
+    const asset = await fetchOnChainAsset(String(params.assetId), scope)
     return {
         ...params,
         creator: asset.creator.address,
@@ -78,37 +72,41 @@ const resolveCreator = async (
 // returns-or-throws contract.
 const assertCanOptOut = (
     params: ResolvedOptOutParams,
-    holding: Optional<{ assetId: bigint; amount: bigint }>,
+    holding: Optional<AccountHoldingSnapshot>,
 ): void => {
     if (params.sender === params.creator) {
         throw new CreatorCannotOptOutError()
     }
-    if (holding && holding.amount !== 0n) {
+    if (holding && !holding.amount.isZero()) {
         throw new NonZeroBalanceError()
     }
 }
 
-export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
+export const useAssetOptOutMutation = (
+    scope: ChainScope,
+): UseAssetOptOutMutationResult => {
     const { mutateAsync, isLoading, isError, error } = useAssetHoldingMutation<
         AssetOptOutParams[]
     >({
+        scope,
         source: SOURCE,
-        run: async (rawList, { scope, network, assignFees, submit }) => {
+        run: async (rawList, { assignFees, submit }) => {
             const paramsList = await Promise.all(
-                rawList.map(p => resolveCreator(p, network)),
+                rawList.map(p => resolveCreator(p, scope)),
             )
 
             const sender = paramsList[0].sender
 
-            const accountInfo = await fetchAccountInformation(sender, network)
-            const assets = accountInfo.assets
+            const { holdings } = await fetchOnChainAccountState(sender, scope)
 
             // Skip txn-building for assets the chain shows as already
             // gone (a prior opt-out already settled and the local UI
             // is stale) — submitting again would be rejected as
             // `duplicate_txn`. We still reconcile local state below.
             const toSubmit = paramsList.filter(p => {
-                const holding = assets.find(a => a.assetId === p.assetId)
+                const holding = holdings.find(
+                    h => h.assetId === String(p.assetId),
+                )
                 assertCanOptOut(p, holding)
                 return holding !== undefined
             })

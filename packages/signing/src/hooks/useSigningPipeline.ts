@@ -10,20 +10,23 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+import type {
+    ChainId,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 
 import {
     canSignWith,
+    chainAccountOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isUnsignedTransactionRequest,
+    type PeraTransactionSignRequest,
     type PipelineStage,
     type TransactionSignRequest,
 } from '../models'
@@ -31,7 +34,7 @@ import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
     createTransactionListItems,
-    legacyPlannerAdapter,
+    plannerChainAdapters,
     reviewerChainAdapters,
 } from '../chain-adapter'
 import type {
@@ -43,6 +46,7 @@ import type {
     HardwareChildSnapshot,
 } from './types'
 import { buildResolvedSignRequest } from './buildResolvedSignRequest'
+import { chainIdOfSignRequest } from '../models/chain'
 import {
     EMPTY_TRANSACTIONS,
     EMPTY_LIST_ITEMS,
@@ -56,9 +60,19 @@ import {
     deriveEvent,
 } from './utils'
 import { useSigningRequest } from './useSigningRequest'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSigningPipelineResult = SigningPipeline
+
+const addressesOn = (
+    accounts: WalletAccount[],
+    chainId: ChainId,
+): Set<string> =>
+    new Set(
+        accounts.flatMap(account => {
+            const address = chainAccountOf(account, chainId)?.address
+            return address === undefined ? [] : [address]
+        }),
+    )
 
 /**
  * Pure transform: a transaction request + the wallet's accounts → everything
@@ -66,18 +80,16 @@ export type UseSigningPipelineResult = SigningPipeline
  * warnings, structure). At 1000 transactions this is ~800ms of work.
  */
 const computeDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ) => {
     // Show the FULL atomic group when the source filtered down to a
     // signable subset — gives the user context for partial-group
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
-    // A chain-neutral request is reviewed by its own chain, not this Algorand view.
-    const source = isUnsignedTransactionRequest(txRequest)
-        ? []
-        : (txRequest.groupContext ?? txRequest.txs)
-    const reviewer = reviewerChainAdapters.get(LEGACY_CHAIN_ID)
+    const chainId = chainIdOfSignRequest(txRequest)
+    const source = txRequest.groupContext ?? txRequest.txs
+    const reviewer = reviewerChainAdapters.get(chainId)
     const allTransactions = source
         .map(tx => reviewer.toDisplayableTransaction(tx))
         .filter((tx): tx is PeraDisplayableTransaction => !!tx)
@@ -89,27 +101,22 @@ const computeDisplayData = (
         txRequest.signableIndices ?? allTransactions.map((_, i) => i),
     )
 
-    // This view is Algorand's; a chain-neutral request reached it with no transactions.
     const listItems = createTransactionListItems(
-        LEGACY_CHAIN_ID,
+        chainId,
         allTransactions,
         signableIndices,
     )
 
-    const signableAddresses = new Set(
-        accounts
-            .filter(a => canSignWith(a, accounts, LEGACY_CHAIN_ID))
-            .map(a => a.address),
+    const signableAddresses = addressesOn(
+        accounts.filter(a => canSignWith(a, accounts, chainId)),
+        chainId,
     )
 
-    const userAccountAddresses = new Set(accounts.map(a => a.address))
+    const userAccountAddresses = addressesOn(accounts, chainId)
 
-    // The cache this feeds is keyed by request alone, so it has no network to
-    // resolve a chain from.
-    const { totalFee, highFeeWarning } = legacyPlannerAdapter().reviewGroupFees(
-        allTransactions,
-        signableAddresses,
-    )
+    const { totalFee, highFeeWarning } = plannerChainAdapters
+        .get(chainId)
+        .reviewGroupFees(allTransactions, signableAddresses)
 
     // Gate warnings on the authorizing entity, not the raw sender: a dApp
     // can set a foreign `sender` it never imported while signing with an
@@ -129,7 +136,7 @@ const computeDisplayData = (
     }
 
     const addressWarnings = aggregateTransactionWarnings(
-        LEGACY_CHAIN_ID,
+        chainId,
         allTransactions,
         userAccountAddresses,
         signableAddresses,
@@ -148,10 +155,7 @@ const computeDisplayData = (
             warnings.findIndex(w => w.type === warning.type) === index,
     )
 
-    const requestStructure = classifyRequestStructure(
-        LEGACY_CHAIN_ID,
-        listItems,
-    )
+    const requestStructure = classifyRequestStructure(chainId, listItems)
 
     return {
         allTransactions,
@@ -197,7 +201,7 @@ let displayDataCache: {
 } | null = null
 
 const getSharedDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ): DisplayData => {
     if (
@@ -260,9 +264,11 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
+    // A chain-neutral request is reviewed by its own chain, not this view,
+    // whose reviewer and planner read Algorand-shaped transactions.
     const displayData = useMemo(
         () =>
-            txRequest
+            txRequest && !isUnsignedTransactionRequest(txRequest)
                 ? getSharedDisplayData(txRequest, accounts)
                 : EMPTY_DISPLAY_DATA,
         [txRequest, accounts],

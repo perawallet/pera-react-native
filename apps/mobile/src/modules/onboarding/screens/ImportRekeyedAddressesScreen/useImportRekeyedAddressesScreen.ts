@@ -14,11 +14,14 @@ import { useState, useMemo, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
+    addressOn,
     useAccountsStore,
     useAllAccounts,
     useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
@@ -49,24 +52,28 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         params: { accounts },
     } = useRoute<ImportRekeyedAddressesRouteProp>()
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const allAccounts = useAllAccounts()
 
     const { exitAccountFlow } = useExitAccountFlow()
     const { setAccounts } = useSetAccounts()
 
     const alreadyImportedAddresses = useMemo(() => {
-        return new Set(allAccounts.map(acc => acc.address))
-    }, [allAccounts])
+        return new Set(allAccounts.flatMap(acc => addressOn(acc, scope) ?? []))
+    }, [allAccounts, scope])
 
     const newAccounts = useMemo(() => {
-        return accounts.filter(
-            acc => !alreadyImportedAddresses.has(acc.address),
-        )
-    }, [accounts, alreadyImportedAddresses])
+        return accounts.filter(acc => {
+            const address = addressOn(acc, scope)
+            return (
+                address !== undefined && !alreadyImportedAddresses.has(address)
+            )
+        })
+    }, [accounts, alreadyImportedAddresses, scope])
 
     const selectableAddresses = useMemo(
-        () => newAccounts.map(acc => acc.address),
-        [newAccounts],
+        () => newAccounts.flatMap(acc => addressOn(acc, scope) ?? []),
+        [newAccounts, scope],
     )
 
     const {
@@ -81,9 +88,10 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const [isImporting, setIsImporting] = useState(false)
 
     const handleContinue = useCallback(() => {
-        const accountsToAdd = accounts.filter(acc =>
-            selectedAddresses.has(acc.address),
-        )
+        const accountsToAdd = accounts.filter(acc => {
+            const address = addressOn(acc, scope)
+            return address !== undefined && selectedAddresses.has(address)
+        })
 
         if (accountsToAdd.length === 0) {
             exitAccountFlow()
@@ -100,7 +108,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
             exitAccountFlow()
             setIsImporting(false)
         })
-    }, [accounts, selectedAddresses, exitAccountFlow, setAccounts])
+    }, [accounts, selectedAddresses, exitAccountFlow, setAccounts, scope])
 
     const handleSkip = useCallback(() => {
         exitAccountFlow()

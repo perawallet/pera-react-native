@@ -12,18 +12,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
-import { bottomSheetNotifier } from '@components/core'
-import { useCapability } from '@hooks/useCapability'
-import { useToast } from '@hooks/useToast'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import {
-    isQuantumAccount,
+    chainAccountOf,
     useAccountAssetBalanceQuery,
-    useOnChainAccountInformationQuery,
+    useOnChainAccountStateQuery,
     useSelectedAccount,
     useSignerFor,
+    usesNonPrimaryScheme,
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -36,16 +31,26 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
-import { useIsFocused, useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useLanguage } from '@hooks/useLanguage'
 import {
     type Maybe,
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
+    displayUnitsToBaseUnitsBigInt,
+    toBigInt,
 } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { bottomSheetNotifier } from '@components/core'
+import { useCapability } from '@hooks/useCapability'
+import { useToast } from '@hooks/useToast'
+import { useSendFunds } from '@modules/transactions/hooks'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useLanguage } from '@hooks/useLanguage'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -72,6 +77,7 @@ type useTransactionConfirmationScreenResult = {
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const nativeAsset = useNativeAsset()
         const isNativeAssetId = useIsNativeAssetId()
         const navigation =
@@ -94,8 +100,12 @@ export const useTransactionConfirmationScreen =
         const { showToast } = useToast()
         const { request: requestBottomSheet } = useBottomSheet()
 
+        const selectedAddress = selectedAccount
+            ? chainAccountOf(selectedAccount, scope.chainId)?.address
+            : undefined
         const { minFee, isPending: paramsPending } = useMinFeeForSender(
-            selectedAccount?.address,
+            selectedAddress,
+            scope.chainId,
         )
         const params = minFee !== undefined ? { minFee } : undefined
 
@@ -103,12 +113,12 @@ export const useTransactionConfirmationScreen =
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
         // Platform part only: an existing quantum account still pays the
         // premium after remote config switches `quantumAccounts` off.
-        const isQuantumAccountsEnabled = useCapability({ platform: 'quantum' })
-        const signer = useSignerFor(selectedAccount?.address)
+        const isQuantumEnabled = useCapability({ platform: 'quantum' })
+        const signer = useSignerFor(selectedAddress, scope.chainId)
         const isQuantumFee =
-            isQuantumAccountsEnabled &&
+            isQuantumEnabled &&
             signer !== null &&
-            isQuantumAccount(signer)
+            usesNonPrimaryScheme(signer, scope.chainId)
 
         const openNote = useCallback(() => {
             void requestBottomSheet({
@@ -125,14 +135,33 @@ export const useTransactionConfirmationScreen =
             useAccountAssetBalanceQuery(
                 selectedAccount ?? undefined,
                 selectedAssetId,
+                scope,
             )
 
         const isAlgoSend = isNativeAssetId(selectedAssetId)
         const {
-            data: recipientAccountInfo,
+            data: recipientAccountState,
             isPending: recipientAccountInfoPending,
-        } = useOnChainAccountInformationQuery(
+        } = useOnChainAccountStateQuery(
             isAlgoSend ? (destination ?? '') : '',
+            scope,
+        )
+        // Base units of the chain's native asset, as the MBR check below
+        // compares base units.
+        const recipientAccountInfo = useMemo(
+            () =>
+                recipientAccountState
+                    ? {
+                          amount: toBigInt(
+                              recipientAccountState.nativeBalanceBaseUnits,
+                          ),
+                          minBalance: displayUnitsToBaseUnitsBigInt(
+                              recipientAccountState.minBalance,
+                              nativeAsset.decimals,
+                          ),
+                      }
+                    : undefined,
+            [recipientAccountState, nativeAsset.decimals],
         )
         const isRecipientInfoPending =
             isAlgoSend && !!destination && recipientAccountInfoPending
@@ -146,14 +175,14 @@ export const useTransactionConfirmationScreen =
                     recipientMbrDisplay: mbrDisplay,
                 }
             }
-            const amountInMicroAlgos = BigInt(
+            const amountBaseUnits = BigInt(
                 displayUnitsToBaseUnits(
                     amount,
                     nativeAsset.decimals,
                 ).toString(),
             )
             const recipientBalanceAfter =
-                recipientAccountInfo.amount + amountInMicroAlgos
+                recipientAccountInfo.amount + amountBaseUnits
             // The ledger allows leaving a receiver at exactly 0 (a zero-amount
             // note payment to an empty account); only a positive balance below
             // the MBR fails on-chain.

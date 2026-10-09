@@ -13,8 +13,14 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     CSV_MIME_TYPE,
     useTransactionHistoryQuery,
@@ -41,6 +47,7 @@ import {
     PeraServiceUnavailableError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -79,6 +86,8 @@ export const useAssetTransactionList = ({
     account,
     asset,
 }: UseAssetTransactionListParams): UseAssetTransactionListResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountAddress = chainAccountOf(account, scope.chainId)?.address ?? ''
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
@@ -107,9 +116,9 @@ export const useAssetTransactionList = ({
         hasNextPage,
         fetchNextPage,
     } = useTransactionHistoryQuery({
-        accountAddress: account.address,
-        network,
-        isEnabled: !!account.address,
+        accountAddress,
+        scope,
+        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
         assetId,
@@ -126,7 +135,7 @@ export const useAssetTransactionList = ({
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const refreshAddresses = useMemo(() => [account.address], [account.address])
+    const refreshAddresses = useMemo(() => [accountAddress], [accountAddress])
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
     })
@@ -139,7 +148,7 @@ export const useAssetTransactionList = ({
         isLoading: isExportingCsv,
         isUnavailableOnNetwork,
     } = useCsvExportMutation({
-        network,
+        scope,
         onSuccess: result => {
             void (async () => {
                 try {
@@ -166,14 +175,14 @@ export const useAssetTransactionList = ({
             )
             return
         }
-        if (account.address) {
+        if (accountAddress) {
             exportCsv({
-                accountAddress: account.address,
+                accountAddress,
                 assetId,
             })
         }
     }, [
-        account.address,
+        accountAddress,
         assetId,
         exportCsv,
         isUnavailableOnNetwork,

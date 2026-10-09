@@ -13,13 +13,10 @@
 import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
     fetchNotificationList,
@@ -80,78 +77,74 @@ export type UseNotificationsListQueryResult = {
     isDeviceUnregistered: boolean
 }
 
-export const useNotificationsListQuery =
-    (): UseNotificationsListQueryResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const network = legacyNetworkOf(scope)
-        const deviceID = useDeviceID(network)
-        const isUnavailableOnNetwork = !useChainCapability(
-            scope.chainId,
-            'notifications',
-        )
-        const isEnabled = !!deviceID?.length && !isUnavailableOnNetwork
+export const useNotificationsListQuery = (
+    scope: ChainScope,
+): UseNotificationsListQueryResult => {
+    const network = legacyNetworkOf(scope)
+    const deviceID = useDeviceID(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'notifications',
+    )
+    const isEnabled = !!deviceID?.length && !isUnavailableOnNetwork
 
-        const query = useInfiniteQuery({
-            queryKey: getNotificationsListQueryKey(scope, deviceID!),
-            queryFn: ({ pageParam }) =>
-                fetchNotificationList(
-                    network,
-                    deviceID ?? '',
-                    pageParam as Optional<string>,
-                ),
-            initialPageParam: '',
-            getNextPageParam: lastPage => extractCursor(lastPage.next),
-            getPreviousPageParam: firstPage =>
-                extractCursor(firstPage.previous),
-            enabled: isEnabled,
-            select: useCallback(
-                (data: InfiniteData<NotificationsListResponse>) => {
-                    return data.pages.flatMap((p: NotificationsListResponse) =>
-                        p.results.map((r: NotificationResponse) =>
-                            mapNotificationResponseToNotification(r),
-                        ),
-                    )
-                },
-                [],
+    const query = useInfiniteQuery({
+        queryKey: getNotificationsListQueryKey(scope, deviceID!),
+        queryFn: ({ pageParam }) =>
+            fetchNotificationList(
+                network,
+                deviceID ?? '',
+                pageParam as Optional<string>,
             ),
-        })
+        initialPageParam: '',
+        getNextPageParam: lastPage => extractCursor(lastPage.next),
+        getPreviousPageParam: firstPage => extractCursor(firstPage.previous),
+        enabled: isEnabled,
+        select: useCallback((data: InfiniteData<NotificationsListResponse>) => {
+            return data.pages.flatMap((p: NotificationsListResponse) =>
+                p.results.map((r: NotificationResponse) =>
+                    mapNotificationResponseToNotification(r),
+                ),
+            )
+        }, []),
+    })
 
-        const { isPaused, isError } = getQueryRenderState(query)
+    const { isPaused, isError } = getQueryRenderState(query)
 
-        // The observer's fetchNextPage()/refetch() ignore `enabled` and would
-        // still fire the doomed Pera request on a non-backed network, or with
-        // no device id (`/v2/devices//notifications/`, a 404). Both guards
-        // MUST be referentially stable: NotificationsScreen refetches on
-        // focus with `refetch` in its effect deps, so a per-render identity
-        // re-runs the effect after every render the refetch itself causes — an
-        // infinite request loop with the refresh spinner pinned.
-        const fetchNextPage = useCallback(() => {
-            if (!isEnabled) return
-            void query.fetchNextPage()
-        }, [isEnabled, query.fetchNextPage])
+    // The observer's fetchNextPage()/refetch() ignore `enabled` and would
+    // still fire the doomed Pera request on a non-backed network, or with
+    // no device id (`/v2/devices//notifications/`, a 404). Both guards
+    // MUST be referentially stable: NotificationsScreen refetches on
+    // focus with `refetch` in its effect deps, so a per-render identity
+    // re-runs the effect after every render the refetch itself causes — an
+    // infinite request loop with the refresh spinner pinned.
+    const fetchNextPage = useCallback(() => {
+        if (!isEnabled) return
+        void query.fetchNextPage()
+    }, [isEnabled, query.fetchNextPage])
 
-        const refetch = useCallback(() => {
-            if (!isEnabled) return
-            void query.refetch()
-        }, [isEnabled, query.refetch])
+    const refetch = useCallback(() => {
+        if (!isEnabled) return
+        void query.refetch()
+    }, [isEnabled, query.refetch])
 
-        return {
-            data: query.data ?? [],
-            // Disabled and paused queries never leave `status: 'pending'` in
-            // React Query v5, so raw `query.isPending` stays true forever while
-            // gated off (no device id) or offline. Only report loading when a
-            // fetch can actually run, otherwise the empty view spins
-            // indefinitely.
-            isPending: isEnabled && !isPaused ? query.isPending : false,
-            isPaused,
-            isError,
-            isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
-            isFetchingNextPage: isUnavailableOnNetwork
-                ? false
-                : query.isFetchingNextPage,
-            isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
-            fetchNextPage,
-            refetch,
-            isUnavailableOnNetwork,
-        }
+    return {
+        data: query.data ?? [],
+        // Disabled and paused queries never leave `status: 'pending'` in
+        // React Query v5, so raw `query.isPending` stays true forever while
+        // gated off (no device id) or offline. Only report loading when a
+        // fetch can actually run, otherwise the empty view spins
+        // indefinitely.
+        isPending: isEnabled && !isPaused ? query.isPending : false,
+        isPaused,
+        isError,
+        isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
+        isFetchingNextPage: isUnavailableOnNetwork
+            ? false
+            : query.isFetchingNextPage,
+        isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
+        fetchNextPage,
+        refetch,
+        isUnavailableOnNetwork,
     }
+}

@@ -10,4 +10,8 @@
  limitations under the License
  */
 
-export { useSigningStore, wasRestoredFromStorage } from './store'
+export {
+    rehydrateSigningStore,
+    useSigningStore,
+    wasRestoredFromStorage,
+} from './store'

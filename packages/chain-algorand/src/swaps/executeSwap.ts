@@ -28,6 +28,8 @@ import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
 } from '@perawallet/wallet-core-signing'
+import { algorandMultisigOf } from '../accounts/multisig-participants'
+import { algorandAddressOf } from '../accounts/vocabulary'
 import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import {
@@ -123,15 +125,17 @@ export const executeAlgorandSwap = async (
         return failed({ phase: 'prepare', reason: 'missing-quote-id' })
     }
 
-    const [isInFrozen, isOutFrozen] = account
+    const accountAddress = account ? algorandAddressOf(account) : undefined
+
+    const [isInFrozen, isOutFrozen] = accountAddress
         ? await Promise.all([
               isAssetFrozen({
-                  accountAddress: account.address,
+                  accountAddress,
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
               isAssetFrozen({
-                  accountAddress: account.address,
+                  accountAddress,
                   assetId: quote.assetOut.assetId,
                   scope,
               }),
@@ -161,12 +165,12 @@ export const executeAlgorandSwap = async (
     // errors: the check is advisory, prepare and the node still validate.
     // Reported as 'preparing' so the sheet's close gesture cancels instead of
     // dismissing over a still-running execution.
-    if (account) {
+    if (accountAddress) {
         onProgress('preparing')
         let shortfall: Nullable<Decimal> = null
         try {
             const info = await algorandClient.client.algod
-                .accountInformation(account.address)
+                .accountInformation(accountAddress)
                 .do()
             const holdsAssetOut =
                 isAlgorandNativeAssetId(quote.assetOut.assetId) ||
@@ -225,7 +229,7 @@ export const executeAlgorandSwap = async (
     // row it was meant to catch. Both flows, because a shared-account swap
     // records its row under 'cosign' and a swap-only filter would miss a
     // re-proposed multisig retry.
-    const swapSender = account?.address ?? quote.swapperAddress ?? undefined
+    const swapSender = accountAddress ?? quote.swapperAddress ?? undefined
     if (swapSender) {
         const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
         let blocked: boolean
@@ -286,16 +290,19 @@ export const executeAlgorandSwap = async (
     // resolver assembles the composite multisig, interleaves the pre-signed
     // slots, and submits once the co-signer approves. Skipped when every slot
     // is pre-signed (nothing to co-sign).
+    const multisigParameters =
+        account && isMultisigAccount(account)
+            ? algorandMultisigOf(account)
+            : undefined
     if (
-        account &&
-        isMultisigAccount(account) &&
-        account.multisigDetails &&
+        multisigParameters &&
+        accountAddress &&
         unsignedTxs.length > 0 &&
         prepareResult.swapIdStr
     ) {
         const swapIdStr = prepareResult.swapIdStr
-        const { threshold, addresses } = account.multisigDetails
-        const multisigAddress = account.address
+        const { threshold, addresses } = multisigParameters
+        const multisigAddress = accountAddress
         try {
             onProgress('signing')
             const serializedPlan = serializeGroupPlans(
@@ -383,7 +390,7 @@ export const executeAlgorandSwap = async (
                     intentKey: prepareResult.swapIdStr
                         ? { kind: 'swap', swapId: prepareResult.swapIdStr }
                         : undefined,
-                    sender: account?.address ?? quote.swapperAddress,
+                    sender: accountAddress ?? quote.swapperAddress,
                 },
             )
             txIds.push(...ids)

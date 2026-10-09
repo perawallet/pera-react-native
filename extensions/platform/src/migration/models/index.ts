@@ -95,7 +95,7 @@ export interface LegacyMigrationData {
     preferences: LegacyPreferences
     auth: LegacyAuth
     accounts: LegacyAccount[]
-    hdWallets: LegacyHDWallet[]
+    hdSeeds: LegacyHDWallet[]
     contacts: LegacyContact[]
     notificationFilters: string[]
     walletConnectV1: LegacyWalletConnectV1Session[]
@@ -222,7 +222,7 @@ export interface LegacyAccount {
 
     secretKey: Uint8Array | null
 
-    hdWalletId: string | null
+    hdSeedId: string | null
 
     ledger: LegacyLedgerAccountDetails | null
 

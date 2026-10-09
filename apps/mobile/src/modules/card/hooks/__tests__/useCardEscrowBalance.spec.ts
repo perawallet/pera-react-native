@@ -12,7 +12,8 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
+import { Decimal } from 'decimal.js'
+import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     escrowCardAddress: null as string | null,
@@ -25,20 +26,27 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     ) => selector({ escrowCardAddress: mocks.escrowCardAddress }),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
 import { useCardEscrowBalance } from '../useCardEscrowBalance'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 // Tests run on mainnet, so this is the mainnet USDC id.
-const USDC_ASSET_ID = 31_566_704n
+const USDC_ASSET_ID = '31566704'
 
 const onChain = (
-    assets: { assetId: bigint; amount: bigint }[],
+    holdings: { assetId: string; amount: Decimal }[],
     isPending = false,
 ) =>
-    vi.mocked(useOnChainAccountInformationQuery).mockReturnValue({
-        data: { assets },
+    vi.mocked(useOnChainAccountStateQuery).mockReturnValue({
+        data: { holdings },
         isPending,
-    } as ReturnType<typeof useOnChainAccountInformationQuery>)
+    } as ReturnType<typeof useOnChainAccountStateQuery>)
 
 beforeEach(() => {
     registerAlgorandCardAdapter()
@@ -51,7 +59,7 @@ describe('useCardEscrowBalance', () => {
     })
 
     it('converts the escrow USDC holding to display units', () => {
-        onChain([{ assetId: USDC_ASSET_ID, amount: 1_500_000n }])
+        onChain([{ assetId: USDC_ASSET_ID, amount: new Decimal(1_500_000) }])
 
         const { result } = renderHook(() => useCardEscrowBalance())
 
@@ -59,7 +67,10 @@ describe('useCardEscrowBalance', () => {
     })
 
     it('is zero when the escrow account holds no USDC', () => {
-        onChain([{ assetId: 999n, amount: 42_000_000n }])
+        onChain([
+            { assetId: '0', amount: new Decimal(5_000_000) },
+            { assetId: '999', amount: new Decimal(42_000_000) },
+        ])
 
         const { result } = renderHook(() => useCardEscrowBalance())
 

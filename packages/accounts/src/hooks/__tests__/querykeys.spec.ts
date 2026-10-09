@@ -30,9 +30,9 @@ import {
     getAccountOptInRoundsQueryKey,
     getAccountSummaryQueryKey,
     getAssetHoldersQueryKey,
-    getOnChainAccountInformationQueryKey,
+    getOnChainAccountStateQueryKey,
     getOwnedAssetIdsQueryKey,
-    getRekeyedAddressesQueryKey,
+    getDelegatedAddressesQueryKey,
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
 
@@ -51,11 +51,11 @@ describe('query keys', () => {
             getAccountBalancesHistoryQueryKey(['ADDR1'], 'one-day', MAINNET),
         ],
         [
-            'on-chain-account-information',
-            getOnChainAccountInformationQueryKey('ADDR1', MAINNET),
+            'on-chain-account-state',
+            getOnChainAccountStateQueryKey('ADDR1', MAINNET),
         ],
         ['opt-in-rounds', getAccountOptInRoundsQueryKey('ADDR1', MAINNET)],
-        ['rekeyed-addresses', getRekeyedAddressesQueryKey('ADDR1', MAINNET)],
+        ['rekeyed-addresses', getDelegatedAddressesQueryKey('ADDR1', MAINNET)],
         ['owned-asset-ids', getOwnedAssetIdsQueryKey(MAINNET)],
         ['asset-holders', getAssetHoldersQueryKey('123', MAINNET)],
         [

@@ -41,7 +41,7 @@ const {
     mockRequestBottomSheet,
     mockConnect,
     mockAddSignRequest,
-    mockSetSelectedAccountAddress,
+    mockSetSelectedAccountId,
     mockSetDestination,
     mockSetSelectedAssetId,
     mockSetCanSelectAsset,
@@ -49,7 +49,7 @@ const {
     mockSetAmount,
     mockSetPendingAmountBaseUnits,
     mockSendFundsReset,
-    mockSelectedAccountAddress,
+    mockWalletAccounts,
     mockOnlineKeyRegistration,
     mockOfflineKeyRegistration,
     mockErrorToast,
@@ -64,7 +64,7 @@ const {
     mockRequestBottomSheet: vi.fn(),
     mockConnect: vi.fn(async () => ({ type: 'session' })),
     mockAddSignRequest: vi.fn(),
-    mockSetSelectedAccountAddress: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     mockSetDestination: vi.fn(),
     mockSetSelectedAssetId: vi.fn(),
     mockSetCanSelectAsset: vi.fn(),
@@ -72,7 +72,23 @@ const {
     mockSetAmount: vi.fn(),
     mockSetPendingAmountBaseUnits: vi.fn(),
     mockSendFundsReset: vi.fn(),
-    mockSelectedAccountAddress: { current: null as string | null },
+    mockWalletAccounts: [
+        {
+            id: 'mock-a',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'A'.repeat(58) } },
+        },
+        {
+            id: 'mock-csv',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                algorand: {
+                    address:
+                        '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA',
+                },
+            },
+        },
+    ],
     mockOnlineKeyRegistration: vi.fn(async (_params: unknown) => ({
         mock: 'online-keyreg',
     })),
@@ -115,7 +131,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const { microAlgosToAlgos } = await vi.importActual<
+    const { baseUnitsToDisplayUnits } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
 
@@ -132,7 +148,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
-        microAlgosToAlgos,
+        baseUnitsToDisplayUnits,
     }
 })
 
@@ -148,29 +164,21 @@ const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'addr1' }),
-    useSelectedAccountAddress: () => ({
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    useSelectedAccount: () => mockWalletAccounts[0],
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
     }),
     useAccountsStore: Object.assign(vi.fn(), {
-        getState: () => ({
-            selectedAccountAddress: mockSelectedAccountAddress.current,
-        }),
+        getState: () => ({ accounts: mockWalletAccounts }),
     }),
-    useAllAccounts: () => [
-        // Include the keyreg test sender so the preflight passes.
-        {
-            address: 'A'.repeat(58),
-            id: 'mock-a',
-            custody: { kind: 'local', seed: null },
-        },
-        {
-            address:
-                '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA',
-            id: 'mock-csv',
-            custody: { kind: 'local', seed: null },
-        },
-    ],
+    findAccountByAddressOn: (
+        accounts: typeof mockWalletAccounts,
+        chainId: 'algorand',
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
+    hdIndexOf: () => undefined,
+    // Include the keyreg test sender so the preflight passes.
+    useAllAccounts: () => mockWalletAccounts,
     resolveAuthAccount: (account: unknown) => account,
     // The keyreg preflight resolves the signer through this; the seeded
     // accounts above are all locally signable.
@@ -178,10 +186,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         kind: 'ok',
         signer: account,
     }),
-    resolveImportAccountType: (mnemonic: string) => {
+    detectImportKind: (_chainId: string, mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/[,\s]+/).length
-        if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
-        if (wordCount === 25) return { success: true, accountType: 'algo25' }
+        if (wordCount === 24) return { success: true, seed: 'bip39' }
+        if (wordCount === 25) return { success: true, seed: null }
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
@@ -308,6 +316,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -619,7 +629,7 @@ const cases: Case[] = [
                     params: { assetId: ASSET_ID },
                 },
             })
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(ADDRESS)
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('mock-csv')
         },
     ),
 
@@ -742,7 +752,7 @@ const cases: Case[] = [
                 screen: 'Home',
                 params: { screen: 'AccountDetails' },
             })
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(ADDRESS)
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('mock-csv')
         },
     ),
 
@@ -960,7 +970,6 @@ const cases: Case[] = [
 describe('deeplink format coverage', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSelectedAccountAddress.current = 'fallback-addr'
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
@@ -970,7 +979,7 @@ describe('deeplink format coverage', () => {
         mockImportAccount.mockResolvedValue({
             custody: { kind: 'local', seed: null },
             id: 'mock-id',
-            address: ADDRESS,
+            chains: { algorand: { address: ADDRESS } },
         })
     })
 

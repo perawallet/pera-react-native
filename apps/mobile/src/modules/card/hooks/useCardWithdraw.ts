@@ -21,7 +21,8 @@ import {
     type PendingWithdrawal,
 } from '@perawallet/wallet-core-card'
 import {
-    getOnChainAccountInformationQueryKey,
+    addressOn,
+    getOnChainAccountStateQueryKey,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -88,7 +89,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const scope = useCardScope()
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const { buildRequest, buildWithdraw, buildCancel } =
         useEscrowWithdrawal(scope)
     const {
@@ -141,11 +142,13 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const [isCancelling, setIsCancelling] = useState(false)
 
     const requireCard = useCallback(() => {
-        if (owner === null || escrowCardAddress === null) {
+        const ownerAddress =
+            owner === null ? undefined : addressOn(owner, scope)
+        if (ownerAddress === undefined || escrowCardAddress === null) {
             throw new CardEscrowUnavailableError()
         }
-        return { owner, escrowCardAddress }
-    }, [owner, escrowCardAddress])
+        return { ownerAddress, escrowCardAddress }
+    }, [owner, escrowCardAddress, scope])
 
     const request = useCallback<UseCardWithdrawResult['request']>(
         async amount => {
@@ -154,7 +157,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             try {
                 assertOnline()
                 const transactions = await buildRequest({
-                    sender: card.owner.address,
+                    sender: card.ownerAddress,
                     cardAddress: card.escrowCardAddress,
                     amount: BigInt(
                         displayUnitsToBaseUnits(amount, decimals).toFixed(0),
@@ -190,7 +193,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         try {
             assertOnline()
             const transactions = await buildWithdraw({
-                sender: card.owner.address,
+                sender: card.ownerAddress,
                 cardAddress: card.escrowCardAddress,
                 amount: pending.amount,
             })
@@ -201,14 +204,14 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             await Promise.all([
                 invalidatePending(),
                 queryClient.invalidateQueries({
-                    queryKey: getOnChainAccountInformationQueryKey(
+                    queryKey: getOnChainAccountStateQueryKey(
                         card.escrowCardAddress,
                         scope,
                     ),
                 }),
             ])
             invalidateAccountQueriesForAddresses(queryClient, [
-                card.owner.address,
+                card.ownerAddress,
             ])
         } catch (error) {
             throw toError(error)
@@ -232,7 +235,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         try {
             assertOnline()
             const transactions = await buildCancel({
-                sender: card.owner.address,
+                sender: card.ownerAddress,
                 cardAddress: card.escrowCardAddress,
             })
             const { transactions: unsignedTxs } = await assignFeeToGroup({

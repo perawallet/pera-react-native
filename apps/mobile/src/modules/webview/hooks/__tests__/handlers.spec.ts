@@ -33,6 +33,13 @@ import {
 } from '../handlers'
 
 const mockLogger = { debug: vi.fn(), warn: vi.fn(), error: vi.fn() }
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     get logger() {
         return mockLogger
@@ -149,6 +156,7 @@ describe('sanitizeErrorForWebview', () => {
     it("relays an error the legacy chain's dApp adapter names", () => {
         dappRequestChainAdapters.register({
             chainId: 'algorand',
+            accountTypeOf: () => 'Fixture',
             relayableErrorNames: ['Arc0001Error'],
             parseSigningParams: () => ({ ok: true, payload: [] }),
             resolveReportedNetwork: scope => scope.networkId,

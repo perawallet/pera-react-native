@@ -11,9 +11,12 @@
  */
 
 import {
-    useRekeyedAddressesQuery,
+    addressOn,
+    useDelegatedAddressesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { isLegacyQuantumChild } from '@modules/accounts/utils/legacyQuantum'
 
@@ -40,7 +43,12 @@ export const useLegacyQuantumNotice = (
     account: WalletAccount,
 ): UseLegacyQuantumNoticeResult => {
     const { getKey } = useKMS()
-    const isLegacyQuantumAccount = isLegacyQuantumChild(getKey, account)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const isLegacyQuantumAccount = isLegacyQuantumChild(
+        getKey,
+        account,
+        scope.chainId,
+    )
 
     // Only probe the indexer for a legacy account — canonical and non-quantum
     // accounts never need this check, and an empty address disables the query.
@@ -48,7 +56,10 @@ export const useLegacyQuantumNotice = (
         rekeyedAddresses,
         isLoading: isRekeyLookupLoading,
         isError: isRekeyLookupError,
-    } = useRekeyedAddressesQuery(isLegacyQuantumAccount ? account.address : '')
+    } = useDelegatedAddressesQuery(
+        isLegacyQuantumAccount ? (addressOn(account, scope) ?? '') : '',
+        scope,
+    )
 
     const hasProvenNoDependents =
         !isRekeyLookupLoading &&

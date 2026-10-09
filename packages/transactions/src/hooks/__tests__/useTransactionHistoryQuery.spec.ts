@@ -113,7 +113,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -143,7 +143,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -175,7 +175,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -205,7 +205,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                     afterTime: '2024-01-01',
                     beforeTime: '2024-01-31',
                 }),
@@ -231,7 +231,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -247,7 +247,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -262,7 +262,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                     isEnabled: false,
                 }),
             { wrapper },
@@ -295,7 +295,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -332,7 +332,7 @@ describe('useTransactionHistoryQuery', () => {
             ({ address }: { address: string }) =>
                 useTransactionHistoryQuery({
                     accountAddress: address,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper, initialProps: { address: mockAddress } },
         )
@@ -377,7 +377,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -410,7 +410,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -458,7 +458,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -486,7 +486,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -533,7 +533,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -595,7 +595,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -650,7 +650,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -673,7 +673,7 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: 'CURSOR1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: mockAddress,
             }),
         )
@@ -725,7 +725,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'testnet',
+                    scope: scopeForLegacyNetwork('testnet'),
                     assetId: '31566704',
                     afterTime: '2025-02-01',
                     beforeTime: '2025-02-13',
@@ -751,7 +751,7 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: 'CURSOR1',
-                network: 'testnet',
+                scope: scopeForLegacyNetwork('testnet'),
                 accountAddress: mockAddress,
                 assetId: '31566704',
                 afterTime: '2025-02-01',
@@ -766,7 +766,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             { wrapper },
         )
@@ -807,7 +807,7 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        network: 'mainnet',
+                        scope: scopeForLegacyNetwork('mainnet'),
                     }),
                 { wrapper },
             )
@@ -831,7 +831,7 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        network: 'mainnet',
+                        scope: scopeForLegacyNetwork('mainnet'),
                     }),
                 { wrapper },
             )
@@ -853,7 +853,7 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        network: 'mainnet',
+                        scope: scopeForLegacyNetwork('mainnet'),
                     }),
                 { wrapper },
             )
@@ -877,7 +877,7 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        network: 'mainnet',
+                        scope: scopeForLegacyNetwork('mainnet'),
                         assetId: '123',
                     }),
                 { wrapper },

@@ -17,7 +17,12 @@ import {
     useRoute,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    findAddressHolder,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useRequirePinVerification } from '@modules/security'
@@ -44,8 +49,11 @@ export const useBackupReminderMnemonicScreen =
         const route =
             useRoute<RouteProp<BackupStackParamList, 'BackupMnemonic'>>()
         const address = route.params?.address
-        const account = useAccountsStore(
-            state => state.accounts.find(a => a.address === address) ?? null,
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const account = useAccountsStore(state =>
+            address
+                ? (findAddressHolder(state.accounts, scope, address) ?? null)
+                : null,
         )
         const { requirePinVerification } = useRequirePinVerification()
         const [isPinGateResolved, setIsPinGateResolved] = useState(false)

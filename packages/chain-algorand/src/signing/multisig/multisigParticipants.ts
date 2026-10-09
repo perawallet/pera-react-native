@@ -11,22 +11,21 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type {
-    WalletAccount,
-    MultiSigAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     getAuthAccount,
-    hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     isUnsignedTransactionsData,
     type AnalyzedSignableGroup,
     type SigningResult,
 } from '@perawallet/wallet-core-signing'
+import {
+    algorandMultisigOf,
+    signableParticipantAt,
+} from '../../accounts/multisig-participants'
 import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 
 /**
@@ -48,28 +47,14 @@ export const getLocalParticipants = (
         return []
     }
 
-    const multisigAccount = account as MultiSigAccount
-    const participantAddresses = multisigAccount.multisigDetails.addresses
+    const participantAddresses = algorandMultisigOf(account)?.addresses ?? []
 
     return participantAddresses.flatMap(participantAddress => {
-        const localAccount = allAccounts.find(
-            a => a.address === participantAddress,
+        const participant = signableParticipantAt(
+            participantAddress,
+            allAccounts,
         )
-        if (!localAccount) return []
-        // Quantum participants are excluded even though they have signing
-        // keys: multisig slots verify Ed25519 signatures only, and algosdk's
-        // own PQ signer throws "FALCON-1024 does not support multisig
-        // signing" — a quantum participant can never contribute a usable
-        // subsignature. Mirrors canSignViaParticipants in
-        // packages/accounts/src/utils.ts; keep both in agreement rather than
-        // "fixing" this by admitting quantum instead.
-        if (
-            (!hasSigningKeys(localAccount) &&
-                !isHardwareWalletAccount(localAccount)) ||
-            isQuantumAccount(localAccount)
-        )
-            return []
-        return [localAccount]
+        return participant ? [participant] : []
     })
 }
 

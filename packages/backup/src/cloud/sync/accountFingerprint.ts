@@ -12,7 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-/** Address and custom name are the only stored fields the backup's address
+/** Addresses and custom name are the only stored fields the backup's address
  *  payload carries for every account type. Rekey data is deliberately absent:
  *  account polling rewrites it, and reacting to that would sync on a timer the
  *  user never touched. */
@@ -20,6 +20,11 @@ export const accountFingerprint = (
     accounts: readonly WalletAccount[],
 ): string =>
     accounts
-        .map(account => `${account.address} ${account.name ?? ''}`)
+        .map(account => {
+            const addresses = Object.values(account.chains)
+                .flatMap(entry => entry?.address ?? [])
+                .join(',')
+            return `${addresses} ${account.name ?? ''}`
+        })
         .sort()
         .join('')

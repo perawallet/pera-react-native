@@ -26,6 +26,7 @@ import {
     type SigningResult,
     type SigningStrategy,
 } from '@perawallet/wallet-core-signing'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 /**
  * Creates a signing strategy for multisig accounts.
@@ -67,7 +68,9 @@ export const createMultisigStrategy = (
             )
 
             if (localParticipants.length === 0) {
-                throw new NoLocalParticipantsError(multisigAccount.address)
+                throw new NoLocalParticipantsError(
+                    algorandAddressOf(multisigAccount) ?? multisigAccount.id,
+                )
             }
 
             // Sign with each local participant in parallel

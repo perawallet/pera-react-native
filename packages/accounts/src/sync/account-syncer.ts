@@ -16,6 +16,12 @@ import {
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
 import {
+    toScopeKey,
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
     upsertAccountBalance,
     upsertAccountChainState,
     refreshAccountHoldings,
@@ -25,14 +31,8 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { accountsAdapterFor } from '../chain-adapter'
+import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore } from '../store/accountChainState'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
 
 export type AccountSyncResult = {
     /** True if the balance row or holdings changed — drives query invalidation. */
@@ -55,13 +55,13 @@ const inFlight = new Map<string, Promise<AccountSyncResult>>()
 
 export function fetchAndPersistAccount(
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<AccountSyncResult> {
-    const key = `${network}:${address}`
+    const key = `${toScopeKey(scope)}:${address}`
     const existing = inFlight.get(key)
     if (existing) return existing
 
-    const promise = doFetchAndPersistAccount(address, network).finally(() => {
+    const promise = doFetchAndPersistAccount(address, scope).finally(() => {
         inFlight.delete(key)
     })
     inFlight.set(key, promise)
@@ -76,19 +76,19 @@ export function fetchAndPersistAccount(
  */
 export async function ensureAccountFetched(
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
     const balance = await getAccountBalance({
         accountAddress: address,
-        scope: scopeForLegacyNetwork(network),
+        scope,
     })
     if (balance) return
     try {
-        await fetchAndPersistAccount(address, network)
+        await fetchAndPersistAccount(address, scope)
     } catch (error) {
         logger.warn('On-demand account fetch failed', {
             address,
-            network,
+            scope,
             error:
                 error instanceof Error
                     ? { message: error.message, stack: error.stack }
@@ -110,16 +110,16 @@ export async function ensureAccountFetched(
  */
 export async function syncAndEnrichNewAccount(
     address: string,
-    network: Network,
+    scope: ChainScope,
     queryClient: QueryClient,
 ): Promise<void> {
     try {
-        await fetchAndPersistAccount(address, network)
+        await fetchAndPersistAccount(address, scope)
         invalidateAccountQueriesForAddresses(queryClient, [address])
 
         const holdings = await getAccountHoldings({
             accountAddress: address,
-            scope: scopeForLegacyNetwork(network),
+            scope,
         })
         const assetIds = holdings.map(h => h.assetId)
         if (assetIds.length === 0) return
@@ -127,14 +127,14 @@ export async function syncAndEnrichNewAccount(
         // Metadata + prices in parallel; both fetchers skip already-fresh
         // assets, so overlap with the background sync stays cheap.
         await Promise.allSettled([
-            fetchAndPersistAssets(assetIds, scopeForLegacyNetwork(network)),
-            fetchAndPersistPrices(assetIds, network),
+            fetchAndPersistAssets(assetIds, scope),
+            fetchAndPersistPrices(assetIds, legacyNetworkOf(scope)),
         ])
         invalidateAccountQueriesForAddresses(queryClient, [address])
     } catch (error) {
         logger.warn('New-account sync failed', {
             address,
-            network,
+            scope,
             error:
                 error instanceof Error
                     ? { message: error.message, stack: error.stack }
@@ -145,13 +145,12 @@ export async function syncAndEnrichNewAccount(
 
 async function doFetchAndPersistAccount(
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<AccountSyncResult> {
     // The prior balance row both tells the chain how large the account was at
     // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
-    const scope = scopeForLegacyNetwork(network)
-    const adapter = accountsAdapterFor(network)
+    const adapter = accountsChainAdapters.get(scope.chainId)
     const prior = await getAccountBalance({ accountAddress: address, scope })
     const priorResourceCount = prior
         ? prior.totalAssetsOptedIn +
@@ -213,7 +212,7 @@ async function doFetchAndPersistAccount(
     } catch (error) {
         logger.warn('Account chain-state write failed', {
             address,
-            network,
+            scope,
             error:
                 error instanceof Error
                     ? { message: error.message, stack: error.stack }

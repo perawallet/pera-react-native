@@ -111,7 +111,7 @@ describe('fetchAndPersistAccount dual-write', () => {
     })
 
     it('writes the same account state to account_balances and account_chain_state', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const { balance, chainState, chainData } = await readBothTables()
         expect(microAlgosToAlgos(chainState.nativeBalance)).toEqual(
@@ -130,7 +130,7 @@ describe('fetchAndPersistAccount dual-write', () => {
     })
 
     it('hands the chain-state slice the same variant it persists', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const { chainData } = await readBothTables()
         expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toEqual(chainData)
@@ -138,7 +138,7 @@ describe('fetchAndPersistAccount dual-write', () => {
     })
 
     it('keeps both tables in step when a later sync changes the account', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
         vi.mocked(
             fakeAccountsChain().adapter.fetchAccountState,
         ).mockResolvedValue(
@@ -158,7 +158,7 @@ describe('fetchAndPersistAccount dual-write', () => {
             }),
         )
 
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const { balance, chainState, chainData } = await readBothTables()
         expect(balance.algoBalance).toEqual(new Decimal('3'))

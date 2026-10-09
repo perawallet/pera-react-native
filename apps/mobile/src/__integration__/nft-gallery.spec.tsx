@@ -67,14 +67,19 @@ import {
     USDC_TEST_ASSET_ID,
 } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const HOLDER: WalletAccount = {
     id: 'gallery-holder',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'gallery-holder-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'gallery-holder-key',
+        },
+    },
     name: 'Gallery Holder',
 }
 
@@ -101,11 +106,11 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([HOLDER])
-        useAccountsStore.getState().setSelectedAccountAddress(HOLDER.address)
+        useAccountsStore.getState().setSelectedAccountId(HOLDER.id)
         vi.mocked(Notifier.showNotification).mockClear()
 
         await upsertAccountBalance({
-            accountAddress: HOLDER.address,
+            accountAddress: addressOf(HOLDER),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
@@ -120,13 +125,13 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         // the showOptedIn preference doesn't enter into filtering — the
         // assertion is purely "collectible vs fungible".
         await insertAssetHolding({
-            accountAddress: HOLDER.address,
+            accountAddress: addressOf(HOLDER),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
         })
         await insertAssetHolding({
-            accountAddress: HOLDER.address,
+            accountAddress: addressOf(HOLDER),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '50000000',
@@ -168,7 +173,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
     it('Given two held NFTs with opt-in rounds served by the indexer, when the sort mode is recentlyAdded, then the most recently opted-in NFT comes first', async () => {
         await seedAssets([NFT_TEST_ASSET_2], 'mainnet')
         await insertAssetHolding({
-            accountAddress: HOLDER.address,
+            accountAddress: addressOf(HOLDER),
             assetId: NFT_TEST_ASSET_2_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
@@ -227,7 +232,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         await seedAssets([NFT_TEST_ASSET_2, NFT_TEST_ASSET_3], 'mainnet')
         for (const assetId of [NFT_TEST_ASSET_2_ID, NFT_TEST_ASSET_3_ID]) {
             await insertAssetHolding({
-                accountAddress: HOLDER.address,
+                accountAddress: addressOf(HOLDER),
                 assetId,
                 scope: MAINNET_SCOPE,
                 amount: '1',

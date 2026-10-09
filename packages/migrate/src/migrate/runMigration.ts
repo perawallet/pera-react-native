@@ -30,7 +30,7 @@ import {
     resolveCompletedStepVersions,
     MIGRATION_STEP_TARGET_VERSIONS,
 } from './stepVersions'
-import type { MigrationDeps, MigrationResult } from './types'
+import type { MigrationResult, MigrationRunOptions } from './types'
 
 export type MigrationRunIncompleteReason =
     | 'no-legacy-data'
@@ -77,7 +77,7 @@ const logStepVersions = async (migration: MigrationService): Promise<void> => {
 
 export const runMigration = async (
     migration: MigrationService,
-    deps: MigrationDeps,
+    options: MigrationRunOptions,
 ): Promise<MigrationRunResult> => {
     let hasData: boolean
     try {
@@ -145,7 +145,7 @@ export const runMigration = async (
     try {
         return await runMigrationWithLegacyData(
             migration,
-            deps,
+            options,
             data,
             pending,
             isRerun,
@@ -157,12 +157,12 @@ export const runMigration = async (
 
 const runMigrationWithLegacyData = async (
     migration: MigrationService,
-    deps: MigrationDeps,
+    options: MigrationRunOptions,
     data: LegacyMigrationData,
     pending: MigrationStepName[],
     isRerun: boolean,
 ): Promise<MigrationRunResult> => {
-    const { walletConnectSessionKeys, ...accountDeps } = deps
+    const { walletConnectSessionKeys, ...accountOptions } = options
     const accountsPending = pending.includes('accounts')
     // Sound by construction: ExtrasMigrationStepName is defined as
     // Exclude<MigrationStepName, 'accounts'>.
@@ -176,9 +176,9 @@ const runMigrationWithLegacyData = async (
             accountResult = await runMigrationLoop({
                 accounts: data.accounts,
                 undecodableAccounts: data.undecodableAccounts,
-                hdWallets: data.hdWallets,
+                hdSeeds: data.hdSeeds,
                 isRerun,
-                ...accountDeps,
+                ...accountOptions,
             })
         } catch (err) {
             const error = toError(err)
@@ -199,7 +199,9 @@ const runMigrationWithLegacyData = async (
 
     let extrasResult: ExtrasMigrationResult
     try {
-        extrasResult = await runExtrasMigration(data, pendingExtras, {
+        extrasResult = await runExtrasMigration(data, {
+            chainId: options.chainId,
+            steps: pendingExtras,
             walletConnectSessionKeys,
         })
     } catch (err) {

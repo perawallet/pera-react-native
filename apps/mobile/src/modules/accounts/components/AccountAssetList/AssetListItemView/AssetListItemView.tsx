@@ -59,7 +59,10 @@ const AssetListItemViewBase = ({
     const styles = useStyles()
     const isNativeAssetId = useIsNativeAssetId()
 
-    const asset = useMemo(() => assetFromHoldingLiteRow(holding), [holding])
+    const asset = useMemo(
+        () => assetFromHoldingLiteRow(holding, LEGACY_CHAIN_ID),
+        [holding],
+    )
 
     const amount = useMemo(
         () =>

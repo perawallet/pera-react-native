@@ -10,13 +10,20 @@
  limitations under the License
  */
 
-import { HdDerivationTypeUnsupportedError } from '@perawallet/wallet-core-accounts'
 import type { BackupChainAdapter } from '@perawallet/wallet-core-backup'
 import { encodeAlgorandAddress } from '../blockchain'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
 import { ALGORAND_HD_DERIVATION_TYPE } from '../accounts/constants'
 import { algorandHdDerivationRequest } from '../accounts/hd-derivation'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { HdDerivationTypeUnsupportedError } from '../accounts/errors'
+import {
+    algorandBackupKindIdOf,
+    algorandBackupLocalKindOf,
+    algorandMnemonicBackupKeyId,
+    serializeAlgorandAccount,
+    serializeAlgorandMnemonicSecret,
+} from './serialize-account'
 import { useAsbAccountImport } from './asb/useAsbAccountImport'
 import { decryptBackupPayload } from './asb/decrypt-backup-payload'
 import { parseBackupEnvelope } from './asb/parse-backup-envelope'
@@ -30,11 +37,11 @@ const deriveHdAccount: BackupChainAdapter['deriveHdAccount'] = async (
 ) => {
     // A backup payload's derivation type is unvalidated; deriving any other
     // type would commit a key that doesn't match the account it restores.
-    if (derivationType !== ALGORAND_HD_DERIVATION_TYPE) {
-        throw new HdDerivationTypeUnsupportedError(
-            derivationType,
-            ALGORAND_CHAIN_ID,
-        )
+    if (
+        derivationType !== undefined &&
+        derivationType !== ALGORAND_HD_DERIVATION_TYPE
+    ) {
+        throw new HdDerivationTypeUnsupportedError(derivationType)
     }
     const key = await kms.deriveFromSeed(
         seedKeyId,
@@ -57,12 +64,16 @@ export const algorandBackupAdapter: BackupChainAdapter = {
         (
             await deriveHdAccount(kms, seedKeyId, {
                 account: 0,
-                change: 0,
                 keyIndex: 0,
                 derivationType: ALGORAND_HD_DERIVATION_TYPE,
             })
         ).address,
     deriveHdAccount,
+    serializeAccount: serializeAlgorandAccount,
+    localKindOf: algorandBackupLocalKindOf,
+    kindIdOf: algorandBackupKindIdOf,
+    serializeMnemonicSecret: serializeAlgorandMnemonicSecret,
+    mnemonicBackupKeyId: algorandMnemonicBackupKeyId,
     useImportFromSeed: () => useImportAlgo25FromSeed().importFromSeed,
     secureBackup: {
         parseEnvelope: parseBackupEnvelope,

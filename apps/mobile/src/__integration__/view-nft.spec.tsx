@@ -65,6 +65,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -77,8 +78,9 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     id: 'holder-1',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'holder-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'holder-key' },
+    },
     name: 'NFT Holder',
 }
 
@@ -97,12 +99,16 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
     const holder: WalletAccount = {
         id: 'holder-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'NFT Holder',
     }
     useAccountsStore.getState().setAccounts([holder])
-    useAccountsStore.getState().setSelectedAccountAddress(holder.address)
+    useAccountsStore.getState().setSelectedAccountId(holder.id)
     return holder
 }
 
@@ -129,7 +135,7 @@ describe('Flow: View NFT collectible detail', () => {
         useAccountsStore.getState().setAccounts([NFT_HOLDER_PLACEHOLDER])
         useAccountsStore
             .getState()
-            .setSelectedAccountAddress(NFT_HOLDER_PLACEHOLDER.address)
+            .setSelectedAccountId(NFT_HOLDER_PLACEHOLDER.id)
         useSendFundsStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
 
@@ -137,13 +143,13 @@ describe('Flow: View NFT collectible detail', () => {
         // resolves to a non-zero amount and the screen renders the
         // "Send" / "Copy" / "Save" action row.
         await insertAssetHolding({
-            accountAddress: NFT_HOLDER_PLACEHOLDER.address,
+            accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
         })
         await upsertAccountBalance({
-            accountAddress: NFT_HOLDER_PLACEHOLDER.address,
+            accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
@@ -261,7 +267,7 @@ describe('Flow: View NFT collectible detail', () => {
         // address is the same as the placeholder, so this is
         // essentially a no-op, but keeps the seed explicit.
         await insertAssetHolding({
-            accountAddress: holder.address,
+            accountAddress: addressOf(holder),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
@@ -289,7 +295,7 @@ describe('Flow: View NFT collectible detail', () => {
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
             mockAlgodAccountInformation({
-                address: holder.address,
+                address: addressOf(holder),
                 response: {
                     amount: 5_000_000,
                     'min-balance': 200_000,

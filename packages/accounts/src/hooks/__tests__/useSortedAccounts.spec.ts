@@ -20,6 +20,8 @@ import type {
     AccountBalances,
     AccountBalance,
 } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
+import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -34,18 +36,17 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+// Ids equal addresses so one string names an account in every assertion.
 const makeAccount = (address: string, name?: string): WalletAccount =>
-    ({
+    testAccount('local', address, {
         id: address,
-        address,
-        custody: { kind: 'local', seed: null },
-        name,
-        keyPairId: address,
-    }) as WalletAccount
+        ...(name === undefined ? {} : { name }),
+    })
 
 const makeBalance = (algoValue: number): AccountBalance => ({
     assetBalances: [],
     algoValue: new Decimal(algoValue),
+    usdValue: new Decimal(algoValue),
     isPending: false,
     isFetched: true,
     isRefetching: false,
@@ -75,7 +76,7 @@ describe('useSortedAccounts', () => {
     test('sorts alphabetically A to Z', () => {
         useAccountsStore.setState({ sortMode: 'alphabeticalAsc' })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
         expect(result.current.sortedAccounts.map(a => a.name)).toEqual([
@@ -88,7 +89,7 @@ describe('useSortedAccounts', () => {
     test('sorts alphabetically Z to A', () => {
         useAccountsStore.setState({ sortMode: 'alphabeticalDesc' })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
         expect(result.current.sortedAccounts.map(a => a.name)).toEqual([
@@ -101,10 +102,10 @@ describe('useSortedAccounts', () => {
     test('sorts by balance ascending', () => {
         useAccountsStore.setState({ sortMode: 'balanceAsc' })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
-        expect(result.current.sortedAccounts.map(a => a.address)).toEqual([
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
             'ADDR_B',
             'ADDR_A',
             'ADDR_C',
@@ -114,10 +115,10 @@ describe('useSortedAccounts', () => {
     test('sorts by balance descending', () => {
         useAccountsStore.setState({ sortMode: 'balanceDesc' })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
-        expect(result.current.sortedAccounts.map(a => a.address)).toEqual([
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
             'ADDR_C',
             'ADDR_A',
             'ADDR_B',
@@ -130,10 +131,10 @@ describe('useSortedAccounts', () => {
             manualAccountOrder: ['ADDR_C', 'ADDR_A', 'ADDR_B'],
         })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
-        expect(result.current.sortedAccounts.map(a => a.address)).toEqual([
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
             'ADDR_C',
             'ADDR_A',
             'ADDR_B',
@@ -146,15 +147,17 @@ describe('useSortedAccounts', () => {
             manualAccountOrder: ['ADDR_A'],
         })
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
-        expect(result.current.sortedAccounts[0].address).toBe('ADDR_A')
+        expect(result.current.sortedAccounts[0].id).toBe('ADDR_A')
         expect(result.current.sortedAccounts).toHaveLength(3)
     })
 
     test('handles empty accounts', () => {
-        const { result } = renderHook(() => useSortedAccounts([], new Map()))
+        const { result } = renderHook(() =>
+            useSortedAccounts([], new Map(), FAKE_CHAIN_ID),
+        )
 
         expect(result.current.sortedAccounts).toEqual([])
     })
@@ -165,16 +168,16 @@ describe('useSortedAccounts', () => {
             ['ADDR_A', makeBalance(100)],
         ])
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, partialBalances),
+            useSortedAccounts(accounts, partialBalances, FAKE_CHAIN_ID),
         )
 
         // Accounts without balance data (-1) should come first in ascending
-        expect(result.current.sortedAccounts[2].address).toBe('ADDR_A')
+        expect(result.current.sortedAccounts[2].id).toBe('ADDR_A')
     })
 
     test('exposes setSortMode and setManualAccountOrder', () => {
         const { result } = renderHook(() =>
-            useSortedAccounts(accounts, balances),
+            useSortedAccounts(accounts, balances, FAKE_CHAIN_ID),
         )
 
         act(() => {
@@ -182,5 +185,19 @@ describe('useSortedAccounts', () => {
         })
 
         expect(result.current.sortMode).toBe('alphabeticalAsc')
+    })
+
+    test('names an unnamed account by its address on the chain when sorting alphabetically', () => {
+        useAccountsStore.setState({ sortMode: 'alphabeticalAsc' })
+        const unnamed = makeAccount('AAA_UNNAMED')
+
+        const { result } = renderHook(() =>
+            useSortedAccounts([accountA, unnamed], balances, FAKE_CHAIN_ID),
+        )
+
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
+            'AAA_UNNAMED',
+            'ADDR_A',
+        ])
     })
 })

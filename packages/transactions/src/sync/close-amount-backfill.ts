@@ -11,8 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import { fetchCloseAmount as defaultFetchCloseAmount } from '../history-adapter'
 import {
@@ -22,7 +22,7 @@ import {
 
 type BackfillParams = {
     db?: Database
-    network: Network
+    scope: ChainScope
     /**
      * Resolves a transaction's swept close amount (base units, decimal
      * string) from the chain indexer; null when the transaction has no close
@@ -30,7 +30,7 @@ type BackfillParams = {
      */
     fetchCloseAmount?: (
         txId: string,
-        network: Network,
+        scope: ChainScope,
     ) => Promise<string | null>
 }
 
@@ -44,10 +44,9 @@ type BackfillParams = {
  */
 export async function backfillMissingCloseAmounts({
     db,
-    network,
+    scope,
     fetchCloseAmount = defaultFetchCloseAmount,
 }: BackfillParams): Promise<void> {
-    const scope = scopeForLegacyNetwork(network)
     let rows: Array<{ id: string }>
     try {
         rows = await getCloseRowsMissingCloseAmount({ db, scope })
@@ -58,7 +57,7 @@ export async function backfillMissingCloseAmounts({
 
     for (const { id } of rows) {
         try {
-            const closeAmount = await fetchCloseAmount(id, network)
+            const closeAmount = await fetchCloseAmount(id, scope)
             if (closeAmount === null) continue
             await updateTransactionCloseAmount({
                 db,

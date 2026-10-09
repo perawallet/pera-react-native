@@ -99,6 +99,7 @@ import {
     settingsItemKey,
     SETTINGS_ITEM_ID,
     BackupAccountType,
+    chainBackupKind,
 } from '../../models'
 import {
     CloudBackupRestoreError,
@@ -110,6 +111,8 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyImport'
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
+
+const HD_ACCOUNT_KIND = chainBackupKind('hdWallet')
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
@@ -176,7 +179,7 @@ const pull = {
         {
             address: 'A',
             addressPayload: {
-                type: BackupAccountType.hdWallet,
+                type: HD_ACCOUNT_KIND,
                 address: 'A',
             },
             secretsPayload: { type: BackupAccountType.hdSeed, address: 'A' },
@@ -333,7 +336,7 @@ describe('restoreCloudBackup', () => {
 
         expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
             address: 'A',
-            accountType: BackupAccountType.hdWallet,
+            accountType: HD_ACCOUNT_KIND,
         })
         expect(syncState.items[SECRETS_KEY]).toMatchObject({
             address: 'A',
@@ -656,7 +659,9 @@ describe('restoreCloudBackup: passkey acceptance', () => {
         })
 
         const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+            useCloudBackupPasskeyImport(
+                useResolveSeedEntropyForBackup('algorand'),
+            ),
         )
 
         await restoreCloudBackup({
@@ -699,7 +704,9 @@ describe('restoreCloudBackup: passkey acceptance', () => {
         })
 
         const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+            useCloudBackupPasskeyImport(
+                useResolveSeedEntropyForBackup('algorand'),
+            ),
         )
 
         await restoreCloudBackup({

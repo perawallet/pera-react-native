@@ -21,55 +21,26 @@ import {
     SigningError,
     SIGNING_ERROR_KEYS,
 } from '@perawallet/wallet-core-signing'
-import { accountType } from '@perawallet/wallet-core-accounts'
+import {
+    standaloneAccount as algo25,
+    hardwareAccount,
+    hdAccount,
+    quantumAccount as quantum,
+} from '../../../__tests__/algorandAccounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-const mocks = vi.hoisted(() => ({
-    hasSigningKeys: vi.fn(),
-    isStandaloneAccount: vi.fn(),
-    isHDWalletAccount: vi.fn(),
-    isQuantumAccount: vi.fn(),
-}))
+const ALGORAND_MAINNET = {
+    chainId: ALGORAND_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...original,
-        hasSigningKeys: mocks.hasSigningKeys,
-        isStandaloneAccount: mocks.isStandaloneAccount,
-        isHDWalletAccount: mocks.isHDWalletAccount,
-        isQuantumAccount: mocks.isQuantumAccount,
-    }
-})
+const standaloneAccount = algo25('ADDR', { keyPairId: 'key-1' })
 
-const algo25Account = {
-    custody: { kind: 'local', seed: null },
-    address: 'ADDR',
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const quantumAccount = quantum('ADDR', { keyPairId: 'key-q' })
 
-const quantumAccount = {
-    custody: { kind: 'local', seed: 'quantum' },
-    address: 'ADDR',
-    keyPairId: 'key-q',
-} as unknown as WalletAccount
+const hdWalletAccount = hdAccount('ADDR', { keyPairId: 'key-hd' })
 
-const unsupportedAccount = {
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    address: 'ADDR',
-} as unknown as WalletAccount
+const unsupportedAccount = hardwareAccount('ADDR')
 
 const emptyAnalysis = {
     totalFees: 0n,
@@ -138,31 +109,6 @@ describe('createLocalKeyStrategy', () => {
             ])
         signArbitraryData = vi.fn().mockResolvedValue([new Uint8Array([1])])
         signAuthData = vi.fn().mockResolvedValue(new Uint8Array([2]))
-        mocks.hasSigningKeys
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) =>
-                    accountType(account) === 'standalone' ||
-                    accountType(account) === 'hd-wallet' ||
-                    accountType(account) === 'quantum',
-            )
-        mocks.isStandaloneAccount
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) =>
-                    accountType(account) === 'standalone',
-            )
-        mocks.isHDWalletAccount
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) =>
-                    accountType(account) === 'hd-wallet',
-            )
-        mocks.isQuantumAccount
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) => accountType(account) === 'quantum',
-            )
         errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     })
 
@@ -180,7 +126,7 @@ describe('createLocalKeyStrategy', () => {
 
     describe('canSign', () => {
         test('returns true when account has signing keys', () => {
-            expect(makeStrategy().canSign(algo25Account)).toBe(true)
+            expect(makeStrategy().canSign(standaloneAccount)).toBe(true)
         })
 
         test('returns false when account lacks signing keys', () => {
@@ -192,7 +138,11 @@ describe('createLocalKeyStrategy', () => {
         })
 
         test('returns true for algo25 accounts', () => {
-            expect(makeStrategy().canSign(algo25Account)).toBe(true)
+            expect(makeStrategy().canSign(standaloneAccount)).toBe(true)
+        })
+
+        test('returns true for HD wallet accounts', () => {
+            expect(makeStrategy().canSign(hdWalletAccount)).toBe(true)
         })
     })
 
@@ -208,7 +158,7 @@ describe('createLocalKeyStrategy', () => {
             } as unknown as AnalyzedSignableGroup
 
             await expect(
-                makeStrategy().sign(group, algo25Account),
+                makeStrategy().sign(group, standaloneAccount),
             ).rejects.toMatchObject({
                 metadata: expect.objectContaining({ retryable: false }),
             })
@@ -225,7 +175,7 @@ describe('createLocalKeyStrategy', () => {
 
             const result = await makeStrategy().sign(
                 group,
-                algo25Account,
+                standaloneAccount,
                 callbacks,
             )
 
@@ -255,7 +205,7 @@ describe('createLocalKeyStrategy', () => {
                 group.data.type === 'transactions'
                     ? group.data.indicesToSign
                     : undefined,
-                algo25Account,
+                standaloneAccount,
                 ALGORAND_MAINNET,
             )
         })
@@ -297,7 +247,7 @@ describe('createLocalKeyStrategy', () => {
 
             const result = await makeStrategy().sign(
                 makeTransactionGroup(),
-                algo25Account,
+                standaloneAccount,
             )
 
             expect(result.signers).toHaveLength(1)
@@ -313,7 +263,7 @@ describe('createLocalKeyStrategy', () => {
             const onError = vi.fn()
 
             await expect(
-                makeStrategy().sign(makeTransactionGroup(), algo25Account, {
+                makeStrategy().sign(makeTransactionGroup(), standaloneAccount, {
                     onError,
                 }),
             ).rejects.toThrow('bad key')
@@ -324,7 +274,7 @@ describe('createLocalKeyStrategy', () => {
             signTransactions.mockRejectedValue('boom')
 
             await expect(
-                makeStrategy().sign(makeTransactionGroup(), algo25Account),
+                makeStrategy().sign(makeTransactionGroup(), standaloneAccount),
             ).rejects.toThrow('boom')
         })
     })
@@ -333,10 +283,10 @@ describe('createLocalKeyStrategy', () => {
         test('delegates to signArbitraryData with message payloads', async () => {
             const result = await makeStrategy().sign(
                 makeArbitraryGroup(),
-                algo25Account,
+                standaloneAccount,
             )
 
-            expect(signArbitraryData).toHaveBeenCalledWith(algo25Account, [
+            expect(signArbitraryData).toHaveBeenCalledWith(standaloneAccount, [
                 'payload-1',
                 'payload-2',
             ])
@@ -348,7 +298,7 @@ describe('createLocalKeyStrategy', () => {
             const onError = vi.fn()
 
             await expect(
-                makeStrategy().sign(makeArbitraryGroup(), algo25Account, {
+                makeStrategy().sign(makeArbitraryGroup(), standaloneAccount, {
                     onError,
                 }),
             ).rejects.toThrow('sig fail')
@@ -359,7 +309,7 @@ describe('createLocalKeyStrategy', () => {
             signArbitraryData.mockRejectedValue(42)
 
             await expect(
-                makeStrategy().sign(makeArbitraryGroup(), algo25Account),
+                makeStrategy().sign(makeArbitraryGroup(), standaloneAccount),
             ).rejects.toThrow('42')
         })
 
@@ -378,7 +328,7 @@ describe('createLocalKeyStrategy', () => {
             }
 
             await expect(
-                makeStrategy().sign(group, algo25Account),
+                makeStrategy().sign(group, standaloneAccount),
             ).rejects.toThrow(/signer/i)
             expect(signArbitraryData).not.toHaveBeenCalled()
         })
@@ -387,10 +337,10 @@ describe('createLocalKeyStrategy', () => {
     describe('sign - arc60', () => {
         test('delegates to signAuthData with authData and metadata', async () => {
             const group = makeArc60Group()
-            const result = await makeStrategy().sign(group, algo25Account)
+            const result = await makeStrategy().sign(group, standaloneAccount)
 
             expect(signAuthData).toHaveBeenCalledWith(
-                algo25Account,
+                standaloneAccount,
                 group.data.type === 'auth-data'
                     ? group.data.authData
                     : undefined,
@@ -406,7 +356,7 @@ describe('createLocalKeyStrategy', () => {
             const onError = vi.fn()
 
             await expect(
-                makeStrategy().sign(makeArc60Group(), algo25Account, {
+                makeStrategy().sign(makeArc60Group(), standaloneAccount, {
                     onError,
                 }),
             ).rejects.toThrow('arc60 fail')
@@ -417,7 +367,7 @@ describe('createLocalKeyStrategy', () => {
             signAuthData.mockRejectedValue('bad')
 
             await expect(
-                makeStrategy().sign(makeArc60Group(), algo25Account),
+                makeStrategy().sign(makeArc60Group(), standaloneAccount),
             ).rejects.toThrow('bad')
         })
     })
@@ -429,15 +379,16 @@ describe('createLocalKeyStrategy', () => {
             ).rejects.toThrow('Account does not have local signing keys')
         })
 
-        test('throws CannotSignError for unsupported account type', async () => {
-            const weirdAccount = {
-                custody: { kind: 'weird-kind' },
-                address: 'ADDR',
-            } as unknown as WalletAccount
-            mocks.hasSigningKeys.mockReturnValue(true)
-            mocks.isStandaloneAccount.mockReturnValue(false)
-            mocks.isHDWalletAccount.mockReturnValue(false)
-            mocks.isQuantumAccount.mockReturnValue(false)
+        test('throws CannotSignError for a non-local account that carries a key', async () => {
+            const weirdAccount: WalletAccount = {
+                ...hardwareAccount('ADDR'),
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: 'ADDR',
+                        keyPairId: 'stray-key',
+                    },
+                },
+            }
 
             await expect(
                 makeStrategy().sign(makeTransactionGroup(), weirdAccount),
@@ -445,17 +396,12 @@ describe('createLocalKeyStrategy', () => {
         })
 
         describe('failure reporting', () => {
-            beforeEach(() => {
-                mocks.hasSigningKeys.mockReturnValue(true)
-                mocks.isStandaloneAccount.mockReturnValue(true)
-            })
-
             test('forwards a KMS cause key so the toast names the key fault', async () => {
                 const cause = new KeyNotFoundError('key-1')
                 signTransactions.mockRejectedValue(cause)
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect(error).toBeInstanceOf(SigningError)
@@ -474,7 +420,7 @@ describe('createLocalKeyStrategy', () => {
                 )
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect((error as SigningError).metadata.messageKey).toBe(
@@ -486,7 +432,7 @@ describe('createLocalKeyStrategy', () => {
                 signTransactions.mockRejectedValue(new AppError('internal', {}))
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect((error as SigningError).metadata.messageKey).toBe(
@@ -499,7 +445,7 @@ describe('createLocalKeyStrategy', () => {
                 signTransactions.mockRejectedValue(cause)
 
                 await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch(() => undefined)
 
                 expect(errorSpy).toHaveBeenCalledTimes(1)
@@ -516,7 +462,10 @@ describe('createLocalKeyStrategy', () => {
             test('does not report a successful sign', async () => {
                 signTransactions.mockResolvedValue([])
 
-                await makeStrategy().sign(makeTransactionGroup(), algo25Account)
+                await makeStrategy().sign(
+                    makeTransactionGroup(),
+                    standaloneAccount,
+                )
 
                 expect(errorSpy).not.toHaveBeenCalled()
             })
@@ -529,7 +478,7 @@ describe('createLocalKeyStrategy', () => {
                 )
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect(error).toBeInstanceOf(SigningError)
@@ -548,7 +497,7 @@ describe('createLocalKeyStrategy', () => {
                 )
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect((error as SigningError).metadata.messageKey).toBe(
@@ -563,7 +512,7 @@ describe('createLocalKeyStrategy', () => {
                 )
 
                 const error = await makeStrategy()
-                    .sign(makeTransactionGroup(), algo25Account)
+                    .sign(makeTransactionGroup(), standaloneAccount)
                     .catch((e: unknown) => e)
 
                 expect((error as SigningError).metadata.messageKey).toBe(

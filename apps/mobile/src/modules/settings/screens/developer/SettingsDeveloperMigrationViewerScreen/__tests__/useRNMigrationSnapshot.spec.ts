@@ -64,11 +64,19 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
             })
             Object.assign(stores.accounts, {
                 accounts: [
-                    { address: 'ADDR_A', name: 'A' },
-                    { address: 'ADDR_B', name: 'B' },
+                    {
+                        id: 'id-a',
+                        name: 'A',
+                        chains: { algorand: { address: 'ADDR_A' } },
+                    },
+                    {
+                        id: 'id-b',
+                        name: 'B',
+                        chains: { algorand: { address: 'ADDR_B' } },
+                    },
                 ],
                 sortMode: 'manual',
-                manualAccountOrder: ['ADDR_A', 'ADDR_B'],
+                manualAccountOrder: ['id-a', 'id-b'],
             })
             Object.assign(stores.contacts, {
                 contacts: [
@@ -121,6 +129,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: mkStore(stores.accounts),
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -147,6 +159,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: mkStore(stores.swaps),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
 vi.mock('@perawallet/wallet-core-config', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
 }))
@@ -232,7 +247,7 @@ describe('useRNMigrationSnapshot > preferences', () => {
 })
 
 describe('useRNMigrationSnapshot > derived maps', () => {
-    it('builds accountsByAddress keyed by account.address', () => {
+    it('builds accountsByAddress keyed by the Algorand address', () => {
         const { result } = renderHook(() => useRNMigrationSnapshot())
 
         expect(result.current.accountsByAddress.get('ADDR_A')?.name).toBe('A')

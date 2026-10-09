@@ -10,18 +10,19 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     useAccountChainStateStore,
     type WalletAccount,
-    type AccountType,
 } from '@perawallet/wallet-core-accounts'
+import { renderHook } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // The global setup stubs the account-type helpers with looser shapes — use
 // the real ones so the eligibility filter is tested for real.
+let mockAllAccounts: WalletAccount[] = []
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    useAllAccounts: () => mockAllAccounts,
 }))
 
 let mockConnectedAddress: string | null = null
@@ -75,7 +76,10 @@ import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
-import { custodyForType } from '@test-utils/accountCustody'
+import {
+    custodyForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
@@ -83,10 +87,13 @@ const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const account = (
     address: string,
-    type: AccountType,
-    extra: Partial<WalletAccount> = {},
-): WalletAccount =>
-    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
+    type: AlgorandAccountKind,
+    { keyPairId }: { keyPairId?: string } = {},
+): WalletAccount => ({
+    id: address,
+    custody: custodyForType(type),
+    chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
+})
 
 beforeEach(() => {
     registerAlgorandAccountsAdapter()
@@ -94,6 +101,7 @@ beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
     vi.clearAllMocks()
     mockConnectedAddress = null
+    mockAllAccounts = []
 })
 
 describe('isEligibleFundingSource', () => {
@@ -117,6 +125,30 @@ describe('isEligibleFundingSource', () => {
         expect(isEligibleFundingSource(account('F', 'standalone'), SCOPE)).toBe(
             false,
         )
+    })
+
+    it('rejects a quantum account, whose key cannot sign the card proofs', () => {
+        expect(
+            isEligibleFundingSource(
+                account('Q', 'quantum', { keyPairId: 'kq' }),
+                SCOPE,
+            ),
+        ).toBe(false)
+        expect(
+            isSigningCapableFundingSource(
+                account('Q', 'quantum', { keyPairId: 'kq' }),
+                SCOPE,
+            ),
+        ).toBe(false)
+    })
+
+    it('rejects an account that holds no address on the card chain', () => {
+        const elsewhere: WalletAccount = {
+            id: 'G',
+            custody: custodyForType('standalone'),
+            chains: { ethereum: { address: '0xG' } },
+        }
+        expect(isEligibleFundingSource(elsewhere, SCOPE)).toBe(false)
     })
 })
 
@@ -173,7 +205,7 @@ describe('useCardFundingSourcePicker', () => {
             headerContent: unknown
             hideDefaultHeader: boolean
             accountFilter: (account: WalletAccount) => boolean
-            selectedAddress: string | null
+            selectedAccountId: string | null
         }
         expect(props.headerContent).toBeTruthy()
         // The card header supplies its own title row, so the shared one (with
@@ -182,7 +214,7 @@ describe('useCardFundingSourcePicker', () => {
         expect(props.accountFilter(account('A', 'standalone'))).toBe(true)
         expect(props.accountFilter(account('D', 'watch'))).toBe(false)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
-        expect(props.selectedAddress).toBeNull()
+        expect(props.selectedAccountId).toBeNull()
     })
 
     it('threads a custom account filter through to the menu', async () => {
@@ -204,15 +236,16 @@ describe('useCardFundingSourcePicker', () => {
 
     it('highlights the connected funding source when one exists', async () => {
         mockConnectedAddress = 'ADDR1'
+        mockAllAccounts = [account('ADDR1', 'hdWallet')]
         mockRequest.mockResolvedValue(undefined)
         const { result } = renderHook(() => useCardFundingSourcePicker())
 
         await result.current.pickFundingSource()
 
         const props = mockRequest.mock.calls[0][0].contents.props as {
-            selectedAddress: string | null
+            selectedAccountId: string | null
         }
-        expect(props.selectedAddress).toBe('ADDR1')
+        expect(props.selectedAccountId).toBe('ADDR1')
     })
 
     it('resolves with the chosen account', async () => {

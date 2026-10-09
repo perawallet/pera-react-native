@@ -66,7 +66,7 @@ const {
     mockResetSyncState: vi.fn(),
     storedSyncState: { current: null as unknown },
     storedDeviceId: { current: null as string | null },
-    accountsState: { current: [] as { address: string; name?: string }[] },
+    accountsState: { current: [] as WalletAccount[] },
     accountsListeners: {
         current: [] as ((accounts: unknown[]) => void)[],
     },
@@ -205,6 +205,14 @@ import { BackupPushIncompleteError, BackupSyncAbortedError } from '../types'
 import type { BackupSyncSources, BackupSyncStatePort } from '../types'
 import type { BackupSettings } from '../../models'
 import { TEST_SETTINGS } from './testSettings'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+
+const watch = (address: string, name?: string): WalletAccount => ({
+    id: address,
+    ...(name !== undefined ? { name } : {}),
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+})
 
 const settingsState = { current: TEST_SETTINGS as BackupSettings }
 const settingsListeners = { current: [] as (() => void)[] }
@@ -244,6 +252,7 @@ const makeSources = (): BackupSyncSources => ({
 })
 
 const makeDeps = () => ({
+    chainId: 'algorand' as const,
     sources: makeSources(),
     importAccounts: vi.fn(async () => ({
         imported: 0,
@@ -289,7 +298,7 @@ const setSettings = (settings: BackupSettings) => {
     for (const listener of [...settingsListeners.current]) listener()
 }
 
-const setAccounts = (accounts: { address: string; name?: string }[]) => {
+const setAccounts = (accounts: WalletAccount[]) => {
     accountsState.current = accounts
     for (const listener of [...accountsListeners.current]) {
         listener(accounts)
@@ -1064,7 +1073,7 @@ describe('BackupSyncManager account watcher', () => {
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setAccounts([{ address: 'A' }])
+        setAccounts([watch('A')])
         expect(mockSyncBackup).not.toHaveBeenCalled()
 
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
@@ -1077,9 +1086,9 @@ describe('BackupSyncManager account watcher', () => {
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setAccounts([{ address: 'A' }])
-        setAccounts([{ address: 'A' }, { address: 'B' }])
-        setAccounts([{ address: 'A' }, { address: 'B' }, { address: 'C' }])
+        setAccounts([watch('A')])
+        setAccounts([watch('A'), watch('B')])
+        setAccounts([watch('A'), watch('B'), watch('C')])
 
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
@@ -1088,11 +1097,11 @@ describe('BackupSyncManager account watcher', () => {
 
     it('syncs when an account is renamed', async () => {
         const mgr = new BackupSyncManager(makeDeps())
-        accountsState.current = [{ address: 'A', name: 'Old' }]
+        accountsState.current = [watch('A', 'Old')]
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setAccounts([{ address: 'A', name: 'New' }])
+        setAccounts([watch('A', 'New')])
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
@@ -1152,11 +1161,11 @@ describe('BackupSyncManager account watcher', () => {
 
     it('does not sync for a store write the backup cannot see', async () => {
         const mgr = new BackupSyncManager(makeDeps())
-        accountsState.current = [{ address: 'A', name: 'Same' }]
+        accountsState.current = [watch('A', 'Same')]
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setAccounts([{ address: 'A', name: 'Same' }])
+        setAccounts([watch('A', 'Same')])
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).not.toHaveBeenCalled()
@@ -1169,7 +1178,7 @@ describe('BackupSyncManager account watcher', () => {
         mgr.stop()
         mockSyncBackup.mockClear()
 
-        setAccounts([{ address: 'A' }])
+        setAccounts([watch('A')])
         setSettings({ ...TEST_SETTINGS, language: 'tr' })
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
@@ -1192,7 +1201,7 @@ describe('BackupSyncManager account watcher', () => {
         const mgr = new BackupSyncManager(makeDeps())
         const started = mgr.start()
 
-        setAccounts([{ address: 'A' }])
+        setAccounts([watch('A')])
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
 

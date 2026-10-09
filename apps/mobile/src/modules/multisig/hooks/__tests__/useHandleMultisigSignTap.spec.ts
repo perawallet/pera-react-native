@@ -125,8 +125,7 @@ const buildSignRequest = (
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: null },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
@@ -141,14 +140,7 @@ const buildHardwareAccount = (address: string): WalletAccount => ({
         },
         accountIndex: 0,
     },
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address } },
 })
 
 describe('useHandleMultisigSignTap', () => {
@@ -175,7 +167,7 @@ describe('useHandleMultisigSignTap', () => {
             expect(buildCosignArgsMock).toHaveBeenCalledWith({
                 signRequest,
                 signerAddress: 'A',
-                network: 'mainnet',
+                scope: expect.objectContaining({ chainId: 'algorand' }),
                 decodeTransaction: decodeTransactionMock,
                 localAccounts: allAccountsStub,
             })

@@ -11,11 +11,12 @@
  */
 
 import type {
-    HDWalletDetails,
+    AccountKindId,
+    HdIndex,
+    LocalKeySeed,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     createChainAdapterRegistry,
     type ChainId,
     type ChainKeyStore,
@@ -28,6 +29,31 @@ import type {
     AsbBackupPayload,
     AsbImportablePartition,
 } from './asb/models'
+import type {
+    AddressBackupPayload,
+    BackupItemKind,
+    SecretsBackupPayload,
+} from './cloud/models/payloads'
+
+/**
+ * HD coordinates. A backup payload also records the derivation type, which
+ * the chain validates; a held account's coordinates omit it.
+ */
+export type BackupHdCoordinates = HdIndex & { derivationType?: number }
+
+/** What an HD account's address item records beyond the account itself. */
+export type BackupHdContext = {
+    /** The wallet seed's first derived address, which files the seed's `secrets/` item. */
+    seedFirstDerivedAddress: string
+    publicKeyHex: string
+}
+
+/** The local key an account's backup item restores into. */
+export type BackupLocalKind = {
+    seed: LocalKeySeed
+    /** Derives from a backed-up HD seed rather than holding its own recovery phrase. */
+    isHd: boolean
+}
 
 export type ImportFromSeed = (params: {
     /** Encoded account address; validated before any keystore work. */
@@ -50,8 +76,40 @@ export interface BackupChainAdapter {
     deriveHdAccount(
         kms: ChainKeyStore,
         seedKeyId: string,
-        details: HDWalletDetails,
+        coordinates: BackupHdCoordinates,
     ): Promise<DerivedAccount>
+    /**
+     * The account's address item, byte-for-byte what the backup format
+     * stores for its kind, or `null` when it isn't backed up: an HD account
+     * without `hd`, or an account with no address on this chain.
+     */
+    serializeAccount(
+        account: WalletAccount,
+        context: { updatedAt: number; hd?: BackupHdContext },
+    ): AddressBackupPayload | null
+    /**
+     * Decodes an address item's wire `type` into the local key it restores;
+     * `undefined` for an item that holds no local key (watch, hardware,
+     * multisig, a bare seed) and for a chain kind this chain doesn't define.
+     */
+    localKindOf(type: BackupItemKind): BackupLocalKind | undefined
+    /**
+     * Decodes an address item's wire `type` into the kind id the chain's
+     * accounts adapter gives the account it restores (`kindIdOf`), which its
+     * presentation describes; `undefined` for an item that isn't an account
+     * (a bare seed).
+     */
+    kindIdOf(type: BackupItemKind): AccountKindId | undefined
+    /** The secrets item a single-key local account's recovery phrase is stored as; `null` for any other account. */
+    serializeMnemonicSecret(
+        account: WalletAccount,
+        mnemonic: string,
+    ): SecretsBackupPayload | null
+    /**
+     * The id one backup state is kept under for every account the same
+     * recovery phrase restores; `null` for an account without one.
+     */
+    mnemonicBackupKeyId(account: WalletAccount): string | null
     /** Imports one account from its raw ed25519 key and marks it backed up. */
     useImportFromSeed(): ImportFromSeed
     readonly secureBackup: {
@@ -73,9 +131,19 @@ export interface BackupChainAdapter {
 export const backupChainAdapters =
     createChainAdapterRegistry<BackupChainAdapter>('backup')
 
-// Every backup item kind and every legacy account belongs to the legacy chain.
-export const backupAdapterFor = (): BackupChainAdapter =>
-    backupChainAdapters.get(LEGACY_CHAIN_ID)
+// The backup format records no chain, so every caller names the chain whose
+// accounts it is backing up or restoring.
+export const backupAdapterFor = (chainId: ChainId): BackupChainAdapter =>
+    backupChainAdapters.get(chainId)
 
-export const backupSeedReference = (seedKeyId: string): Promise<string> =>
-    backupAdapterFor().seedReference(kmsCore, seedKeyId)
+export const backupSeedReference = (
+    seedKeyId: string,
+    chainId: ChainId,
+): Promise<string> =>
+    backupAdapterFor(chainId).seedReference(kmsCore, seedKeyId)
+
+/** The account kind id for a backup item shown without a local account. */
+export const backupItemKindId = (
+    type: BackupItemKind,
+    chainId: ChainId,
+): AccountKindId | undefined => backupAdapterFor(chainId).kindIdOf(type)

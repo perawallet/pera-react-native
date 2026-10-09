@@ -60,6 +60,7 @@ import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAcco
 
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -106,7 +107,7 @@ const CLASSIFIED_RESPONSE = {
 // account screen. The FlatList doesn't render usefully under jsdom, so the
 // gallery contents are surfaced through a text node.
 const AccountViewHost = () => {
-    useEnsureAccountEnriched(ALGO25_TEST_ADDRESS)
+    useEnsureAccountEnriched(ALGO25_TEST_ADDRESS, MAINNET_SCOPE)
     const { collectibles, isPending } = useAccountNfts()
 
     return (
@@ -151,8 +152,9 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
     const account: WalletAccount = {
         id: 'holder-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: 'holder-key',
+        chains: {
+            algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'holder-key' },
+        },
         name: 'Holder',
     }
 
@@ -160,7 +162,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         await upsertAccountBalance({
-            accountAddress: account.address,
+            accountAddress: addressOf(account),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(1_000_000),
             totalAssetsOptedIn: 1,
@@ -171,14 +173,14 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             authorityAddress: null,
         })
         await insertAssetHolding({
-            accountAddress: account.address,
+            accountAddress: addressOf(account),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
         })
 
         useAccountsStore.getState().setAccounts([account])
-        useAccountsStore.getState().setSelectedAccountAddress(account.address)
+        useAccountsStore.getState().setSelectedAccountId(account.id)
 
         server.use(
             // The crawler has since finished, so the backend now says

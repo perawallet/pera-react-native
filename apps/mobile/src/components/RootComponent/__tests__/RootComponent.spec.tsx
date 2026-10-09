@@ -80,7 +80,10 @@ vi.mock('@modules/deeplink/shell', () => ({
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: vi.fn() }),
 }))
-vi.mock('@perawallet/wallet-core-device', () => ({
+vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-device')
+    >()),
     useDeviceRegistration: vi.fn(),
 }))
 // Pairs with the useDeviceRegistration stub above to keep DeviceRegistrar

@@ -10,26 +10,34 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import { plannerAdapterFor, type AssignFeeToGroup } from '../chain-adapter'
+import type { AssignFeeToGroup } from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
 
 export type UseMinimumFeeCalculatorResult = {
     assignFeeToGroup: AssignFeeToGroup
 }
 
+const keepFees: AssignFeeToGroup = async ({ transactions }) => ({
+    transactions,
+    adjustments: [],
+})
+
 /**
  * The one place callers assign required minimum fees to a transaction group.
  * `assignFeeToGroup` returns the group with any underfunded fees raised, plus a
  * `FeeAdjustment` record per raise (empty and reference-identical when nothing
- * needed raising, so the no-op path is free to always call).
+ * needed raising, so the no-op path is free to always call). A chain with no
+ * planner keeps the group's fees as they are.
  *
  * Throws `InvalidSignableDataError` when a fee must be raised but the group is
  * invalid as received (stale/tampered group ID).
  */
-export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
-    const { network } = useNetwork()
-    const useAssignFeeToGroup = plannerAdapterFor(network).useAssignFeeToGroup
-
-    return { assignFeeToGroup: useAssignFeeToGroup() }
-}
+export const useMinimumFeeCalculator = (
+    chainId: ChainId,
+): UseMinimumFeeCalculatorResult => ({
+    assignFeeToGroup: usePlannerHook(chainId, keepFees, planner =>
+        planner.useAssignFeeToGroup(),
+    ),
+})

@@ -11,10 +11,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { trackEvent, MultisigEvent } from '@analytics'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -29,6 +32,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -118,6 +122,7 @@ const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, string> = {
 
 export const usePendingSignaturesContent =
     (): UsePendingSignaturesContentResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { t } = useLanguage()
         const { errorToast } = useToast()
         const { network } = useNetwork()
@@ -236,9 +241,10 @@ export const usePendingSignaturesContent =
                 return { localKey: [], hardware: new Set<string>() }
             }
             return splitLocalUnsignedSigners(
-                getLocalUnsignedSigners(signRequest, accounts),
+                getLocalUnsignedSigners(signRequest, accounts, scope.chainId),
+                scope.chainId,
             )
-        }, [signRequest, status, accounts])
+        }, [signRequest, status, accounts, scope.chainId])
 
         /**
          * The signing store is the source of truth: once the actor finishes,
@@ -289,7 +295,7 @@ export const usePendingSignaturesContent =
                     const cosignRequest = buildMultisigCosignRequest({
                         signRequest,
                         signerAddress: address,
-                        network,
+                        scope,
                         decodeTransaction,
                         localAccounts: accounts,
                     })
@@ -308,12 +314,12 @@ export const usePendingSignaturesContent =
             },
             [
                 signRequest,
-                network,
                 decodeTransaction,
                 addSignRequest,
                 accounts,
                 errorToast,
                 t,
+                scope,
             ],
         )
 
@@ -328,6 +334,7 @@ export const usePendingSignaturesContent =
                 inFlightAddresses: inFlightCosignAddresses,
                 threshold,
                 signedCount,
+                chainId: scope.chainId,
             })
             if (toDispatch.length === 0) return
             trackEvent(MultisigEvent.ConfirmTransaction)
@@ -341,6 +348,7 @@ export const usePendingSignaturesContent =
             threshold,
             signedCount,
             dispatchCosign,
+            scope.chainId,
         ])
 
         const handleSignParticipant = useCallback(

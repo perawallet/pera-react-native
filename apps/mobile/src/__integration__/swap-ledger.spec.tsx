@@ -68,6 +68,7 @@ import {
 
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
+import { addressOf } from './__fixtures__/accounts'
 
 const SWAP_ID = '98765'
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
@@ -107,14 +108,7 @@ const ledgerAccount: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: LEDGER_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'test-device-id',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 // Captured from the host so tests can kick off the swap at controlled times.
@@ -257,7 +251,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
     it('Given a Ledger sender, when the user approves on the device, then the swap submits to algod and reports in_progress with the txn ids', async () => {
         useAccountsStore.getState().setAccounts([ledgerAccount])
-        useAccountsStore.getState().setSelectedAccountAddress(LEDGER_ADDRESS)
+        useAccountsStore.getState().setSelectedAccountId(ledgerAccount.id)
         mockPrepareWithPayment(LEDGER_ADDRESS)
         const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
@@ -296,7 +290,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         // reportSwapFailure (status failed/blockchain_error) must stay
         // unreachable, and nothing may reach algod.
         useAccountsStore.getState().setAccounts([ledgerAccount])
-        useAccountsStore.getState().setSelectedAccountAddress(LEDGER_ADDRESS)
+        useAccountsStore.getState().setSelectedAccountId(ledgerAccount.id)
         mockPrepareWithPayment(LEDGER_ADDRESS)
         const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
@@ -336,26 +330,24 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-swapper',
             custody: { kind: 'watch' },
-            address: LEDGER_ADDRESS,
+            chains: { algorand: { address: LEDGER_ADDRESS } },
             name: 'Rekeyed swapper',
         }
         seedAuthority(LEDGER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(rekeyedSender.address)
-        mockPrepareWithPayment(rekeyedSender.address)
+        useAccountsStore.getState().setSelectedAccountId(rekeyedSender.id)
+        mockPrepareWithPayment(addressOf(rekeyedSender))
         const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
         renderWithNavigation(SwapHost, 'SwapLedgerHost')
         await waitFor(() => expect(executeSwap).not.toBeNull())
 
-        const outcome = await executeSwap!(buildQuote(rekeyedSender.address))
+        const outcome = await executeSwap!(buildQuote(addressOf(rekeyedSender)))
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(algodBodies).toHaveLength(1)
         const signed = decodeSignedTransaction(algodBodies[0])
-        expect(signed.txn.sender.toString()).toBe(rekeyedSender.address)
+        expect(signed.txn.sender.toString()).toBe(addressOf(rekeyedSender))
         expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
         expect(statusPayloads[0]?.status).toBe('in_progress')
     })

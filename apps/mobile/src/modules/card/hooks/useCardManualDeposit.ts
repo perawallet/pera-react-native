@@ -20,7 +20,8 @@ import {
     useSubmitAndConfirmMutation,
 } from '@perawallet/wallet-core-card'
 import {
-    getOnChainAccountInformationQueryKey,
+    addressOn,
+    getOnChainAccountStateQueryKey,
     invalidateAccountQueriesForAddresses,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -71,7 +72,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
     const scope = useCardScope()
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
@@ -82,7 +83,12 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
             account,
             amount,
         }: CardManualDepositParams): Promise<{ txIds: string[] }> => {
-            if (escrowCardAddress === null || usdcAssetId === null) {
+            const sender = addressOn(account, scope)
+            if (
+                escrowCardAddress === null ||
+                usdcAssetId === null ||
+                sender === undefined
+            ) {
                 throw new CardEscrowUnavailableError()
             }
             setIsDepositing(true)
@@ -93,7 +99,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                     assets.get(usdcAssetId)?.decimals ?? USDC_FALLBACK_DECIMALS
                 const transactions = await buildCardManualDeposit(
                     {
-                        sender: account.address,
+                        sender,
                         cardAddress: escrowCardAddress,
                         amount: BigInt(
                             displayUnitsToBaseUnits(amount, decimals).toFixed(
@@ -112,14 +118,12 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                 const result = await submit({ unsignedTxs, source: SOURCE })
 
                 await queryClient.invalidateQueries({
-                    queryKey: getOnChainAccountInformationQueryKey(
+                    queryKey: getOnChainAccountStateQueryKey(
                         escrowCardAddress,
                         scope,
                     ),
                 })
-                invalidateAccountQueriesForAddresses(queryClient, [
-                    account.address,
-                ])
+                invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return result
             } catch (error) {

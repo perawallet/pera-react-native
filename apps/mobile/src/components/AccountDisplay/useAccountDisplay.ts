@@ -17,9 +17,12 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
+    addressOn,
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
@@ -48,17 +51,23 @@ export const useAccountDisplay = ({
     showAccountType,
     iconSize,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const fullAddress = account ? addressOn(account, scope) : undefined
     const displayName = useMemo(
-        () => (account ? getAccountDisplayName(account) : 'No Account'),
-        [account],
+        () =>
+            account
+                ? getAccountDisplayName(account, scope.chainId)
+                : 'No Account',
+        [account, scope.chainId],
     )
     const address = useMemo(
-        () => (account ? truncateAlgorandAddress(account?.address) : undefined),
-        [account],
+        () =>
+            account ? truncateAlgorandAddress(fullAddress ?? '') : undefined,
+        [account, fullAddress],
     )
 
-    const { data: nfdNames } = useNfdForAddressQuery(account?.address ?? '', {
-        enabled: !!account?.address,
+    const { data: nfdNames } = useNfdForAddressQuery(fullAddress ?? '', {
+        enabled: !!fullAddress,
     })
 
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
@@ -78,7 +87,7 @@ export const useAccountDisplay = ({
     const secondaryText = compact ? rawSecondary : dedupedSecondary
     const renderSecondary = compact || Boolean(dedupedSecondary)
 
-    const shouldPromptBackup = useShouldPromptMnemonicBackup(account)
+    const shouldPromptBackup = useShouldPromptMnemonicBackup(account, scope)
     // Every non-`sm` account-icon size renders the 40px round-icon format
     // (the account-selector size); `sm` is the 24px format, too small for a
     // legible badge.

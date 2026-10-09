@@ -22,13 +22,25 @@ import {
     readBackupSettings,
     subscribeBackupSettings,
 } from '../backupSettingsStores'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+
+const HELD_ID = 'held-id'
 
 describe('backupSettingsStores', () => {
     beforeEach(() => {
         useCurrenciesStore.getState().resetState()
         useSettingsStore.getState().resetState()
         useAccountsStore.getState().resetState()
-        useAccountsStore.setState({ accounts: [{ address: 'HELD' }] as never })
+        useAccountsStore.setState({
+            accounts: [
+                {
+                    id: HELD_ID,
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'HELD' } },
+                },
+            ],
+        })
+        registerFakeBackupAdapter()
     })
 
     it('reads every synced setting from its store', () => {
@@ -39,10 +51,10 @@ describe('backupSettingsStores', () => {
         useSettingsStore.setState({ language: 'tr', confirmationMode: 'tap' })
         useAccountsStore.setState({
             launchAccountMode: LaunchAccountModes.specific,
-            launchAccountAddress: 'HELD',
+            launchAccountId: HELD_ID,
         })
 
-        expect(readBackupSettings()).toEqual({
+        expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
             language: 'tr',
             confirmationMode: 'tap',
@@ -51,14 +63,17 @@ describe('backupSettingsStores', () => {
     })
 
     it('applies every present setting', () => {
-        applyBackupSettings({
-            currency: { preferred: 'EUR', fallback: 'ALGO' },
-            language: 'de',
-            confirmationMode: 'tap',
-            launchAccount: { mode: 'specific', address: 'HELD' },
-        })
+        applyBackupSettings(
+            {
+                currency: { preferred: 'EUR', fallback: 'ALGO' },
+                language: 'de',
+                confirmationMode: 'tap',
+                launchAccount: { mode: 'specific', address: 'HELD' },
+            },
+            'algorand',
+        )
 
-        expect(readBackupSettings()).toEqual({
+        expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
             language: 'de',
             confirmationMode: 'tap',
@@ -67,14 +82,17 @@ describe('backupSettingsStores', () => {
     })
 
     it('skips values this device does not recognise or cannot honour', () => {
-        const before = readBackupSettings()
+        const before = readBackupSettings('algorand')
 
-        applyBackupSettings({
-            confirmationMode: 'hold',
-            launchAccount: { mode: 'specific', address: 'NOT_HELD' },
-        })
+        applyBackupSettings(
+            {
+                confirmationMode: 'hold',
+                launchAccount: { mode: 'specific', address: 'NOT_HELD' },
+            },
+            'algorand',
+        )
 
-        expect(readBackupSettings()).toEqual(before)
+        expect(readBackupSettings('algorand')).toEqual(before)
     })
 
     it('notifies on a write to any of the three stores until unsubscribed', () => {
@@ -85,7 +103,7 @@ describe('backupSettingsStores', () => {
         useSettingsStore.getState().setLanguage('tr')
         useAccountsStore
             .getState()
-            .setLaunchAccountPreference(LaunchAccountModes.specific, 'HELD')
+            .setLaunchAccountPreference(LaunchAccountModes.specific, HELD_ID)
         unsubscribe()
         useSettingsStore.getState().setLanguage('de')
 

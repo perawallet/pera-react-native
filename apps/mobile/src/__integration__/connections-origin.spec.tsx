@@ -53,15 +53,17 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'origin-a',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'origin-a-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'origin-a-key' },
+    },
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'origin-b',
     custody: { kind: 'local', seed: null },
-    address: HD_TEST_ADDRESS,
-    keyPairId: 'origin-b-key',
+    chains: {
+        algorand: { address: HD_TEST_ADDRESS, keyPairId: 'origin-b-key' },
+    },
     name: 'DeFi',
 }
 
@@ -175,9 +177,7 @@ describe('Flow: connection origin → return to the dApp', () => {
         useAccountsStore
             .getState()
             .setAccounts([SIGNING_ACCOUNT, OTHER_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SIGNING_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SIGNING_ACCOUNT.id)
         await getProvider().connections.store.clear()
         vi.clearAllMocks()
     })

@@ -11,11 +11,17 @@
  */
 
 import { memo, useCallback } from 'react'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWFlatList } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SelectableAccountRow } from '@components/SelectableAccountRow'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 export type AccountPickerProps = {
     accounts: WalletAccount[]
@@ -26,7 +32,8 @@ export type AccountPickerProps = {
     rowTestIDPrefix?: string
 }
 
-const keyExtractor = (account: WalletAccount) => account.address
+const addressOf = (account: WalletAccount, chainId: ChainId) =>
+    chainAccountOf(account, chainId)?.address
 
 const AccountPickerComponent = ({
     accounts,
@@ -35,6 +42,11 @@ const AccountPickerComponent = ({
     emptyBody,
     rowTestIDPrefix,
 }: AccountPickerProps) => {
+    const keyExtractor = useCallback(
+        (account: WalletAccount) =>
+            addressOf(account, LEGACY_CHAIN_ID) ?? account.id,
+        [],
+    )
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
             <SelectableAccountRow
@@ -42,11 +54,11 @@ const AccountPickerComponent = ({
                 onSelect={onSelect}
                 isHighlighted={
                     highlightedAddress != null &&
-                    item.address === highlightedAddress
+                    addressOf(item, LEGACY_CHAIN_ID) === highlightedAddress
                 }
                 testID={
                     rowTestIDPrefix
-                        ? `${rowTestIDPrefix}-${item.address}`
+                        ? `${rowTestIDPrefix}-${addressOf(item, LEGACY_CHAIN_ID)}`
                         : undefined
                 }
             />

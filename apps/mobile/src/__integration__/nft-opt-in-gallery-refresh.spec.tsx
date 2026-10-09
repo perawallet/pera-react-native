@@ -81,6 +81,7 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -96,7 +97,7 @@ const GalleryOptInHost = ({
     assetId: string
 }) => {
     const { collectibles, isPending, sortMode, setSortMode } = useAccountNfts()
-    const { optIn } = useAssetOptInMutation()
+    const { optIn } = useAssetOptInMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
 
     useEffect(() => {
@@ -104,14 +105,14 @@ const GalleryOptInHost = ({
             contents: (
                 <OptInConfirmationContent
                     assetId={assetId}
-                    accountAddress={sender.address}
+                    accountAddress={addressOf(sender)}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         }).then(result => {
             if (result !== 'confirm') return
             optIn({
-                sender: sender.address,
+                sender: addressOf(sender),
                 assetId: BigInt(assetId),
             }).catch(() => {})
         })
@@ -189,15 +190,19 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         sender = {
             id: 'sender-1',
             custody: { kind: 'local', seed: null },
-            address: ALGO25_TEST_ADDRESS,
-            keyPairId: key!.seedKey.id ?? '',
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: key!.seedKey.id ?? '',
+                },
+            },
             name: 'Sender',
         }
         useAccountsStore.getState().setAccounts([sender])
-        useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+        useAccountsStore.getState().setSelectedAccountId(sender.id)
 
         await upsertAccountBalance({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
@@ -208,13 +213,13 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             authorityAddress: null,
         })
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
         })
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_2_ID,
             scope: MAINNET_SCOPE,
             amount: '1',

@@ -9,7 +9,7 @@ import { locations, runRule } from './helpers.js'
 
 const RULE = 'lanekeep/rules/no-chain-identity-in-shared-packages.ts'
 const FIXTURES =
-    'lanekeep/__tests__/fixtures/packages/*/src/chain-identity.*.ts'
+    'lanekeep/__tests__/fixtures/{packages/*/src,apps/mobile/src/**}/chain-identity.*.ts'
 
 // Debt the chain-split moves out of shared packages. Remove an entry when its
 // line goes; flip the rule to `error` when the list is empty.
@@ -53,6 +53,21 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         ).toEqual(['chain-identity.product.ts:8'])
     })
 
+    it('scans the foundation packages every feature builds on', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v =>
+                    v.file.endsWith('chain-identity.foundation.ts'),
+                ),
+            ),
+        ).toEqual([
+            'chain-identity.foundation.ts:7',
+            'chain-identity.foundation.ts:7',
+        ])
+    })
+
     it('leaves packages outside the shared list alone', async () => {
         const found = await runRule(RULE, FIXTURES)
 
@@ -61,12 +76,27 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         ).toEqual([])
     })
 
+    it('reports chain ids an app compares, not ones it pins', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            found
+                .filter(v => v.file.endsWith('chain-identity.app.ts'))
+                .map(v => `${v.line}: ${v.message}`),
+        ).toEqual([
+            "6: `'algorand'` is compared as a chain id in app code",
+            "7: `'ethereum'` is compared as a chain id in app code",
+            '8: `scope.chainId === x` branches on chain identity in app code',
+            "11: `'algorand'` is compared as a chain id in app code",
+        ])
+    })
+
     it('bans every ChainId', () => {
         expect(RULE_CHAIN_IDS).toEqual(CHAIN_IDS)
     })
 
-    it('reports exactly the known offenders across the real packages', async () => {
-        const found = await runRule(RULE, 'packages/*/src/**/*.{ts,tsx}')
+    it('reports exactly the known offenders across the real packages and apps', async () => {
+        const found = await runRule(RULE, '{packages,apps}/*/src/**/*.{ts,tsx}')
 
         expect(found.map(v => `${v.file}: ${v.message}`)).toEqual(
             KNOWN_OFFENDERS,

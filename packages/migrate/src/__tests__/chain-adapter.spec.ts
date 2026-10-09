@@ -16,7 +16,6 @@ import {
     DuplicateChainAdapterError,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    migrationAdapterFor,
     migrationChainAdapters,
     type MigrationChainAdapter,
 } from '../chain-adapter'
@@ -34,18 +33,18 @@ describe('migrationChainAdapters', () => {
         migrationChainAdapters.reset()
     })
 
-    it("resolves the legacy chain's adapter", () => {
+    it("resolves the chain's adapter", () => {
         const adapter = fakeAdapter()
         migrationChainAdapters.register(adapter)
 
-        expect(migrationAdapterFor()).toBe(adapter)
+        expect(migrationChainAdapters.get('algorand')).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => migrationAdapterFor()).toThrow(
+        expect(() => migrationChainAdapters.get('algorand')).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => migrationAdapterFor()).toThrow(
+        expect(() => migrationChainAdapters.get('algorand')).toThrow(
             'No migration adapter is registered for chain "algorand"',
         )
     })

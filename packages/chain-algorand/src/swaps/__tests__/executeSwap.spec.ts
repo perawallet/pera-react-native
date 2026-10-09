@@ -29,6 +29,12 @@ import {
     type AlgorandSwapExecutionContext,
 } from '../executeSwap'
 import { requestSwapProposal } from '../swapExecutionHelpers'
+import {
+    multisigAccount as multisigFixture,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import '../../__tests__/registerAlgorandAccounts'
 
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefreshOptions = vi.fn()
@@ -109,12 +115,11 @@ vi.mock('../computeSwapAlgoShortfall', () => ({
     computeSwapAlgoShortfall: mockComputeShortfall,
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
-    // Real predicate reads the kind from custody.
-    isQuantumAccount: (account: unknown) =>
-        (account as { custody?: { seed?: string } } | undefined)?.custody
-            ?.seed === 'quantum',
     isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
 }))
 
@@ -221,23 +226,32 @@ const makeQuote = (quoteIdStr: string): SwapQuote =>
         fetchedAt: Date.now(),
     }) as unknown as SwapQuote
 
-const senderAccount = { address: 'SENDER_ADDR' } as unknown as WalletAccount
+const senderAccount = watchAccount('SENDER_ADDR')
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-account-1',
-    address: 'QUANTUM_ADDR',
     custody: { kind: 'local', seed: 'quantum' },
-    keyPairId: 'quantum-keypair-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'QUANTUM_ADDR',
+            keyPairId: 'quantum-keypair-1',
+        },
+    },
 }
 
-// A standard account rekeyed to a quantum auth account: `type` stays 'algo25',
+// A standard account rekeyed to a quantum auth account: its seed stays algo25,
 // but the resolved signer for it is the quantum account above — the exact case
 // `isQuantumAccount(account)` alone would miss.
 const standardAccountRekeyedToQuantum: WalletAccount = {
     id: 'standard-account-1',
-    address: 'STANDARD_ADDR',
     custody: { kind: 'local', seed: null },
-    keyPairId: 'standard-keypair-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'STANDARD_ADDR',
+            keyPairId: 'standard-keypair-1',
+        },
+    },
+    rekeyAddress: 'QUANTUM_ADDR',
 }
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
@@ -332,6 +346,7 @@ describe('executeAlgorandSwap', () => {
         // must stay `'local'` (outside `INTERACTIVE_SOURCES`) to skip the
         // standard review/completion sheets.
         expect(request.sourceType).toBe('local')
+        expect(request).toMatchObject({ chainId: 'algorand' })
         expect(request.sourceMetadata).toEqual(SIGNING_SOURCE)
         expect(request.txs).toHaveLength(2)
         // The signing-machine analyzer recomputes the group hash over
@@ -943,9 +958,13 @@ describe('executeAlgorandSwap', () => {
     it('swaps successfully for a standard account that is NOT rekeyed', async () => {
         const standardAccount: WalletAccount = {
             id: 'standard-account-2',
-            address: 'STANDARD_ADDR_2',
             custody: { kind: 'local', seed: null },
-            keyPairId: 'standard-keypair-2',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'STANDARD_ADDR_2',
+                    keyPairId: 'standard-keypair-2',
+                },
+            },
         }
 
         const result = await run(makeQuote('quote-standard-not-rekeyed'), {
@@ -1068,10 +1087,10 @@ describe('executeAlgorandSwap', () => {
     })
 
     describe('shared-account (multisig) swaps', () => {
-        const multisigAccount = {
-            address: 'JOINT_ADDR',
-            multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
-        } as unknown as WalletAccount
+        const multisigAccount = multisigFixture('JOINT_ADDR', {
+            threshold: 2,
+            addresses: ['A', 'B'],
+        })
 
         /** Fire the request's onProposed as the propose transport would. */
         const autoPropose = (info: {

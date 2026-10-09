@@ -12,11 +12,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
     queryKeyReferencesScope,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
@@ -58,6 +56,7 @@ export type UseAccountCollectiblesQueryResult = {
  */
 export const useAccountCollectiblesQuery = (
     address: string | undefined,
+    scope: ChainScope,
     {
         sortMode,
         search,
@@ -65,9 +64,6 @@ export const useAccountCollectiblesQuery = (
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const query = useQuery({
         queryKey: getAccountCollectiblesQueryKey(address ?? '', scope, {
             sortMode,
@@ -99,7 +95,7 @@ export const useAccountCollectiblesQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountCollectiblesLite({
                 accountAddress: address as string,
                 scope,

@@ -17,9 +17,11 @@ import {
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import {
+    findAccountByAddressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
@@ -116,7 +118,9 @@ export const useAddressDisplay = ({
         if (displayType !== 'full') {
             return null
         }
-        return accounts.find(a => a.address === address) ?? null
+        return (
+            findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address) ?? null
+        )
     }, [displayType, accounts, address])
 
     const contact = useMemo(() => {

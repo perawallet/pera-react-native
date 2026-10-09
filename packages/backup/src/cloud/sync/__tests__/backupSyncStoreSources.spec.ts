@@ -60,7 +60,7 @@ import { createBackupSyncStoreSources } from '../backupSyncStoreSources'
 
 describe('createBackupSyncStoreSources', () => {
     it('reads the network and accounts, and an unset contact list as empty', () => {
-        const sources = createBackupSyncStoreSources()
+        const sources = createBackupSyncStoreSources('algorand')
 
         expect(sources.getNetwork()).toBe('testnet')
         expect(sources.listAccounts()).toEqual([{ address: 'ADDR1' }])
@@ -68,7 +68,7 @@ describe('createBackupSyncStoreSources', () => {
     })
 
     it('hands subscribers the changed list and returns the store unsubscribe', () => {
-        const sources = createBackupSyncStoreSources()
+        const sources = createBackupSyncStoreSources('algorand')
         const onAccounts = vi.fn()
         const onContacts = vi.fn()
 
@@ -82,11 +82,15 @@ describe('createBackupSyncStoreSources', () => {
         expect(unsubscribe).toBe(mocks.unsubscribe)
     })
 
-    it('reads, watches and applies settings through the settings stores', () => {
-        const sources = createBackupSyncStoreSources()
+    it("reads, watches and applies settings through the settings stores on the sources' chain", () => {
+        const sources = createBackupSyncStoreSources('algorand')
+        const settings = { language: 'de' }
 
-        expect(sources.getSettings).toBe(readBackupSettings)
+        sources.getSettings()
+        sources.importSettings(settings)
+
+        expect(readBackupSettings).toHaveBeenCalledWith('algorand')
         expect(sources.subscribeSettings).toBe(subscribeBackupSettings)
-        expect(sources.importSettings).toBe(applyBackupSettings)
+        expect(applyBackupSettings).toHaveBeenCalledWith(settings, 'algorand')
     })
 })

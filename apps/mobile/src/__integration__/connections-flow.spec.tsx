@@ -116,6 +116,7 @@ import {
 } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+import { addressOf } from './__fixtures__/accounts'
 
 // v2 has no anonymous mode: with no Reown project id the handler reports
 // itself unavailable and builds no client at all. `generated-env.ts` is
@@ -135,15 +136,15 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'conn-a-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'conn-a-key' },
+    },
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'conn-b',
     custody: { kind: 'local', seed: null },
-    address: HD_TEST_ADDRESS,
-    keyPairId: 'conn-b-key',
+    chains: { algorand: { address: HD_TEST_ADDRESS, keyPairId: 'conn-b-key' } },
     name: 'DeFi',
 }
 
@@ -151,8 +152,9 @@ const OTHER_ACCOUNT: WalletAccount = {
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'conn-q',
     custody: { kind: 'local', seed: 'quantum' },
-    address: QUANTUM_TEST_ADDRESS,
-    keyPairId: 'conn-q-key',
+    chains: {
+        algorand: { address: QUANTUM_TEST_ADDRESS, keyPairId: 'conn-q-key' },
+    },
     name: 'Falcon',
 }
 
@@ -305,7 +307,7 @@ const payTransactionFrom = (sender: string): Transaction =>
             genesisHash: new Uint8Array(32).fill(0xab),
         },
         paymentParams: {
-            receiver: Address.fromString(SIGNING_ACCOUNT.address),
+            receiver: Address.fromString(addressOf(SIGNING_ACCOUNT)),
             amount: 1_000_000n,
         },
     })
@@ -384,9 +386,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         useAccountsStore
             .getState()
             .setAccounts([SIGNING_ACCOUNT, OTHER_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SIGNING_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SIGNING_ACCOUNT.id)
         await getProvider().connections.store.clear()
         // The front-door dispatcher dedupes concurrent pairings by topic in
         // module state, and every v2 case here pairs on the same URI.
@@ -411,7 +411,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         })
         const call = connector.approveSessionCalls[0]
         expect(call.chainId).toBe(AlgorandWalletConnectChainId.mainnet)
-        expect(call.accounts).toEqual([SIGNING_ACCOUNT.address])
+        expect(call.accounts).toEqual([addressOf(SIGNING_ACCOUNT)])
 
         const stored = await getProvider().connections.store.list()
         expect(stored.map(connection => connection.id)).toEqual([
@@ -419,7 +419,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         ])
         // The session key never reaches the record — it lives in the
         // keystore behind `secretRef`.
-        expect(stored[0].accounts).toEqual([SIGNING_ACCOUNT.address])
+        expect(stored[0].accounts).toEqual([addressOf(SIGNING_ACCOUNT)])
     })
 
     it('Given a v2 URI arrives at the deeplink front door, when the dApp proposes, then the approval sheet opens and the session is persisted', async () => {
@@ -449,7 +449,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         expect(walletKit.approveSession).toHaveBeenCalledTimes(1)
         const stored =
             await getProvider().connections.store.get(V2_SESSION_TOPIC)
-        expect(stored?.accounts).toEqual([SIGNING_ACCOUNT.address])
+        expect(stored?.accounts).toEqual([addressOf(SIGNING_ACCOUNT)])
         // The scanner's source, carried from the dispatcher through the
         // registry onto the record.
         expect(stored?.origin?.source).toBe('qr')
@@ -469,7 +469,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
 
         // Sender is OTHER_ACCOUNT: signable by the wallet, but never
         // approved for this session.
-        const unauthorized = payTransactionFrom(OTHER_ACCOUNT.address)
+        const unauthorized = payTransactionFrom(addressOf(OTHER_ACCOUNT))
 
         const requestId = 9101
         act(() => {
@@ -567,10 +567,10 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             expect(second.approveSessionCalls).toHaveLength(1)
         })
         expect(first.approveSessionCalls[0].accounts).toEqual([
-            SIGNING_ACCOUNT.address,
+            addressOf(SIGNING_ACCOUNT),
         ])
         expect(second.approveSessionCalls[0].accounts).toEqual([
-            OTHER_ACCOUNT.address,
+            addressOf(OTHER_ACCOUNT),
         ])
         const stored = await getProvider().connections.store.list()
         expect(stored.map(connection => connection.origin?.source)).toEqual([
@@ -598,15 +598,17 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                         {
                             txn: encodeToBase64(
                                 encodeTransaction(
-                                    payTransactionFrom(SIGNING_ACCOUNT.address),
+                                    payTransactionFrom(
+                                        addressOf(SIGNING_ACCOUNT),
+                                    ),
                                 ),
                             ),
                             msig: {
                                 version: 1,
                                 threshold: 2,
                                 addrs: [
-                                    SIGNING_ACCOUNT.address,
-                                    OTHER_ACCOUNT.address,
+                                    addressOf(SIGNING_ACCOUNT),
+                                    addressOf(OTHER_ACCOUNT),
                                 ],
                             },
                         },
@@ -756,7 +758,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             await waitForStoredConnection(connector.clientId)
 
             const requested = buildPaymentTransaction({
-                sender: signer.address,
+                sender: addressOf(signer),
                 receiver: HD_TEST_ADDRESS,
                 amount: 1_000_000n,
             })
@@ -832,7 +834,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                             txn: encodeToBase64(
                                 encodeTransactionRaw(
                                     buildPaymentTransaction({
-                                        sender: signer.address,
+                                        sender: addressOf(signer),
                                         receiver: HD_TEST_ADDRESS,
                                         amount: 1_000_000n,
                                     }),
@@ -899,7 +901,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                                 txn: encodeToBase64(
                                     encodeTransactionRaw(
                                         buildPaymentTransaction({
-                                            sender: signer.address,
+                                            sender: addressOf(signer),
                                             receiver: HD_TEST_ADDRESS,
                                             amount: 1_000_000n,
                                         }),
@@ -948,7 +950,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
 
             const foreign = new Transaction({
                 type: TransactionType.pay,
-                sender: Address.fromString(signer.address),
+                sender: Address.fromString(addressOf(signer)),
                 suggestedParams: {
                     fee: 1000n,
                     minFee: 1000n,
@@ -1012,7 +1014,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             await waitForStoredConnection(V2_SESSION_TOPIC)
 
             const requested = buildPaymentTransaction({
-                sender: signer.address,
+                sender: addressOf(signer),
                 receiver: HD_TEST_ADDRESS,
                 amount: 1_000_000n,
             })

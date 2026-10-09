@@ -67,10 +67,10 @@ import {
 import {
     useAccountChainStateStore,
     useAccountsStore,
-    type QuantumAccount,
+    type LocalAccount,
     type WalletAccount,
-    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
@@ -129,6 +129,7 @@ import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
+import { addressOf } from './__fixtures__/accounts'
 
 const ADJUSTED_LABEL_KEY = 'transactions.quantum_fee.adjusted_label'
 const EXTERNAL_PILL_KEY = 'signing.external_transaction.pill_label'
@@ -184,20 +185,24 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: Nullable<QuantumKeyResult> = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
-    const account: QuantumAccount = {
+    const account: LocalAccount = {
         id: 'wc-quantum-signer',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: keyResult!.signKeyId,
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: keyResult!.signKeyId,
+            },
+        },
         name: 'Quantum WC signer',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -458,7 +463,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         await waitForStoredConnection(connector.clientId)
 
         const { entries, originalGroup } = buildSignableGroupEntries(
-            signer.address,
+            addressOf(signer),
         )
         const requestId = 7001
         fireSignRequest(connector, requestId, entries)
@@ -540,7 +545,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         await approveViaUi([signer.name as string])
         await waitForStoredConnection(connector.clientId)
 
-        const { entries, originalGroup } = buildGroupEntries(signer.address)
+        const { entries, originalGroup } = buildGroupEntries(addressOf(signer))
         const requestId = 7003
         fireSignRequest(connector, requestId, entries)
 
@@ -601,7 +606,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         await approveViaUi([account.name as string])
         await waitForStoredConnection(connector.clientId)
 
-        const { entries } = buildGroupEntries(account.address)
+        const { entries } = buildGroupEntries(addressOf(account))
         const requestId = 7002
         fireSignRequest(connector, requestId, entries)
 
@@ -675,7 +680,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
                 )
         })
 
-        const { entries } = buildGroupEntries(signer.address)
+        const { entries } = buildGroupEntries(addressOf(signer))
         fireSignRequest(connector, 7003, entries)
 
         await waitFor(
@@ -843,9 +848,9 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
             quantumAuth.name as string,
         ])
 
-        applyRekey(sender.address, quantumAuth.address)
+        applyRekey(addressOf(sender), addressOf(quantumAuth))
 
-        const { entries } = buildSignableGroupEntries(sender.address)
+        const { entries } = buildSignableGroupEntries(addressOf(sender))
         // The signing store is a module singleton with no per-test
         // reset, so count from the pre-request baseline, not zero.
         const baseline = signReq.current.pendingSignRequests.length
@@ -870,7 +875,7 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         const quantumAuth = await seedQuantumSigner()
         // Rekeyed to a HELD quantum auth address from the start: signable
         // throughout, so the fee is the only thing the undo changes.
-        applyRekey(sender.address, quantumAuth.address)
+        applyRekey(addressOf(sender), addressOf(quantumAuth))
         await mountProviderWithTransientSurface()
         const { result: signReq } = renderHook(() => useSigningRequest(), {
             wrapper: HookWrapper,
@@ -881,9 +886,9 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
             quantumAuth.name as string,
         ])
 
-        applyRekey(sender.address, undefined)
+        applyRekey(addressOf(sender), undefined)
 
-        const { entries } = buildSignableGroupEntries(sender.address)
+        const { entries } = buildSignableGroupEntries(addressOf(sender))
         const baseline = signReq.current.pendingSignRequests.length
         fireSignRequest(connector, 7102, entries)
 

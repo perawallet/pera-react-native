@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
             wire.isArc60WirePayload(...args),
         parseAuthDataWireRequest: (_chainId: string, ...args: [unknown]) =>
             wire.parseArc60WireRequest(...args),
+        messageSignerChainAdapters: { has: () => false },
         useArc0001Resolver: () => () => {
             throw new Error(
                 'useArc0001Resolver is stubbed in walletconnect specs; nothing here should call it',
@@ -47,9 +48,15 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
 // it, for a hook this package's specs never call (see the signing mock
 // above). Stubbed rather than real, same wall as the other two.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    AuthorityTargetCategories: {
+        standard: 'standard',
+        postQuantum: 'postQuantum',
+        hardware: 'hardware',
+        shared: 'shared',
+    },
     useAllAccounts: () => [],
-    canSignArbitraryData: () => false,
-    canSignArc60: () => false,
+    chainAccountOf: () => undefined,
+    findAccountByAddressOn: () => undefined,
 }))
 
 // Reached through the adapter's `emptySignaturesFor`, which specs here stub;

@@ -12,26 +12,29 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-    isQuantumAccount,
+    findAccountByAddressOn,
     isWatchAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    AccountSigTypes,
-    useAccountSigTypeQuery,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
-    ParticipantIsQuantumError,
+    ParticipantSchemeUnsupportedError,
     ParticipantIsWatchError,
+    ParticipantVerdicts,
     useIsMultisigAddressQuery,
+    useParticipantVerdictQuery,
     type MultisigValidationError,
 } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { signsWithParticipantScheme } from '../../utils/participantEligibility'
 
 /**
  * Value the add-participant bottom sheet resolves with. `nfdName` is set
@@ -51,6 +54,7 @@ export type UseAddParticipantContentResult = {
 export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
     const [selectedAddress, setSelectedAddress] = useState('')
@@ -58,7 +62,12 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
 
     const isLocalAccount = useMemo(
-        () => accounts.some(a => a.address === selectedAddress),
+        () =>
+            !!findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                selectedAddress,
+            ),
         [accounts, selectedAddress],
     )
 
@@ -68,13 +77,11 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         enabled: !!selectedAddress && !isLocalAccount,
     })
 
-    // A post-quantum address is a hash of the PQ key — indistinguishable from
-    // an Ed25519 address offline — so external addresses (QR scans included)
-    // are classified by the indexer's observed sig-type. An account that never
-    // signed on chain stays unknown and passes; nothing client-visible can
-    // classify it.
-    const sigTypeCheck = useAccountSigTypeQuery({
+    // External addresses (QR scans included) hold no local key, so the chain
+    // classifies them; one it can't classify passes.
+    const verdictCheck = useParticipantVerdictQuery({
         address: selectedAddress,
+        scope,
         enabled: !!selectedAddress && !isLocalAccount,
     })
 
@@ -110,7 +117,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         if (
             !selectedAddress ||
             multisigCheck.isFetching ||
-            sigTypeCheck.isFetching
+            verdictCheck.isFetching
         )
             return
 
@@ -121,8 +128,8 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
             return
         }
 
-        if (sigTypeCheck.sigType === AccountSigTypes.pqsig) {
-            showValidationError(new ParticipantIsQuantumError())
+        if (verdictCheck.verdict === ParticipantVerdicts.incompatibleScheme) {
+            showValidationError(new ParticipantSchemeUnsupportedError())
             setSelectedAddress('')
             setSelectedNfdName(undefined)
             return
@@ -136,22 +143,28 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         selectedNfdName,
         multisigCheck.data?.isMultisig,
         multisigCheck.isFetching,
-        sigTypeCheck.sigType,
-        sigTypeCheck.isFetching,
+        verdictCheck.verdict,
+        verdictCheck.isFetching,
         resolve,
         showValidationError,
     ])
 
     const handleSelected = useCallback(
         (address: string, nfdName?: string) => {
-            const localAccount = accounts.find(a => a.address === address)
+            const localAccount = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                address,
+            )
             if (localAccount) {
                 if (isWatchAccount(localAccount)) {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (isQuantumAccount(localAccount)) {
-                    showValidationError(new ParticipantIsQuantumError())
+                if (
+                    !signsWithParticipantScheme(localAccount, LEGACY_CHAIN_ID)
+                ) {
+                    showValidationError(new ParticipantSchemeUnsupportedError())
                     return
                 }
                 resolve({ address, nfdName })

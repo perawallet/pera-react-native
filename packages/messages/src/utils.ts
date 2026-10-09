@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ASAInbox, InboxItem } from './models'
 
 const SORT_ORDER = ['multisig_import', 'multisig_sign', 'asa_inbox']
@@ -18,7 +17,8 @@ const SORT_ORDER = ['multisig_import', 'multisig_sign', 'asa_inbox']
 export const sortInboxItems = (
     a: InboxItem,
     b: InboxItem,
-    accounts: WalletAccount[],
+    /** The signing accounts' addresses, in display order. */
+    accountAddresses: readonly string[],
 ): number => {
     const aSortIndex = SORT_ORDER.indexOf(a.type)
     const bSortIndex = SORT_ORDER.indexOf(b.type)
@@ -28,11 +28,11 @@ export const sortInboxItems = (
     }
 
     if (aSortIndex === 2) {
-        const aAccountIndex = accounts.findIndex(
-            acc => acc.address === (a.data as ASAInbox).address,
+        const aAccountIndex = accountAddresses.indexOf(
+            (a.data as ASAInbox).address,
         )
-        const bAccountIndex = accounts.findIndex(
-            acc => acc.address === (b.data as ASAInbox).address,
+        const bAccountIndex = accountAddresses.indexOf(
+            (b.data as ASAInbox).address,
         )
         return aAccountIndex - bAccountIndex
     }

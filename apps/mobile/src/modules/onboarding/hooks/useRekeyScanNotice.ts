@@ -15,6 +15,8 @@ import {
     useAccountDiscovery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -37,7 +39,8 @@ export type UseRekeyScanNoticeResult = {
  * "already added".
  */
 export const useRekeyScanNotice = (): UseRekeyScanNoticeResult => {
-    const { discoverRekeyedAccounts } = useAccountDiscovery()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { discoverRekeyedAccounts } = useAccountDiscovery(scope)
     const { showToast } = useToast()
     const { t } = useLanguage()
 

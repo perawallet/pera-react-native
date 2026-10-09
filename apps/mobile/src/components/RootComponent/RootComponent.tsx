@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { MainRoutes } from '@routes/index'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
@@ -22,7 +27,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useAllAccounts,
     useSyncNewAccounts,
@@ -124,6 +128,7 @@ const DeviceRegistrar = () => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
@@ -132,11 +137,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // The Zustand `accounts` array gets a new reference on every store write
     // (incl. sync ticks); depending on it directly re-arms the sync service in a
     // tight loop, so effects key on a stable scalar instead.
-    const addresses = useMemo(
-        () => accounts?.map(account => account.address) ?? [],
-        [accounts],
-    )
-    const hasAccounts = addresses.length > 0
+    const hasAccounts = (accounts?.length ?? 0) > 0
 
     const { isChecking, needsMigration } = useNeedsMigration()
     const migrationInProgress = isChecking || needsMigration
@@ -144,7 +145,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // Accounts added mid-session get an immediate fetch: the background poll never
     // picks up an account whose activity predates its checkpoint. Gated on
     // migration because syncing before the migrated device id lands caches favorites as false.
-    useSyncNewAccounts({ isEnabled: !migrationInProgress })
+    useSyncNewAccounts(scope, { isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {

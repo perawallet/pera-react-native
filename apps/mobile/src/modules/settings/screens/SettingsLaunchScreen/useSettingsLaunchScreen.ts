@@ -10,18 +10,21 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
+    chainAccountOf,
     LaunchAccountModes,
     useAccountsStore,
     useAllAccounts,
     type LaunchAccountMode,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSettingsLaunchScreenResult = {
     launchAccountMode: LaunchAccountMode
+    /** The pinned account's address, for highlighting its row in the picker. */
     launchAccountAddress: Nullable<string>
     accounts: WalletAccount[]
     isAccountPickerVisible: boolean
@@ -33,9 +36,13 @@ export type UseSettingsLaunchScreenResult = {
 export const useSettingsLaunchScreen = (): UseSettingsLaunchScreenResult => {
     const accounts = useAllAccounts()
     const launchAccountMode = useAccountsStore(state => state.launchAccountMode)
-    const launchAccountAddress = useAccountsStore(
-        state => state.launchAccountAddress,
-    )
+    const launchAccountId = useAccountsStore(state => state.launchAccountId)
+    const launchAccountAddress = useMemo(() => {
+        const pinned = accounts.find(account => account.id === launchAccountId)
+        return pinned
+            ? (chainAccountOf(pinned, LEGACY_CHAIN_ID)?.address ?? null)
+            : null
+    }, [accounts, launchAccountId])
     const setLaunchAccountPreference = useAccountsStore(
         state => state.setLaunchAccountPreference,
     )
@@ -44,26 +51,23 @@ export const useSettingsLaunchScreen = (): UseSettingsLaunchScreenResult => {
         setLaunchAccountPreference(LaunchAccountModes.lastUsed)
     }, [setLaunchAccountPreference])
 
-    // The store refuses `specific` without a resolvable address, so tapping the
+    // The store refuses `specific` without a resolvable account, so tapping the
     // radio pre-selects the currently pinned account, falling back to the first
     // account. Without that the radio would appear inert on first tap.
     const handleSelectSpecific = useCallback(() => {
         if (launchAccountMode === LaunchAccountModes.specific) return
-        const fallback = launchAccountAddress ?? accounts.at(0)?.address
+        const fallback = launchAccountId ?? accounts.at(0)?.id
         setLaunchAccountPreference(LaunchAccountModes.specific, fallback)
     }, [
         accounts,
-        launchAccountAddress,
+        launchAccountId,
         launchAccountMode,
         setLaunchAccountPreference,
     ])
 
     const handleSelectAccount = useCallback(
         (account: WalletAccount) => {
-            setLaunchAccountPreference(
-                LaunchAccountModes.specific,
-                account.address,
-            )
+            setLaunchAccountPreference(LaunchAccountModes.specific, account.id)
         },
         [setLaunchAccountPreference],
     )

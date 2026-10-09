@@ -15,12 +15,11 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    accountType,
-    AccountTypes,
+    chainAccountOf,
     type LedgerSelectableAccount,
     prefetchLedgerAccountPreview,
     useAllAccounts,
-    useLedgerRekeyedScan,
+    useLedgerDelegatedScan,
 } from '@perawallet/wallet-core-accounts'
 import {
     type LedgerAccount,
@@ -31,7 +30,11 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
@@ -92,6 +95,7 @@ export const useLedgerSelectAccountsScreen =
 
         const queryClient = useQueryClient()
         const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { request } = useBottomSheet()
         const { exitAccountFlow } = useExitAccountFlow()
 
@@ -125,7 +129,7 @@ export const useLedgerSelectAccountsScreen =
             prefetchedRef.current = new Set()
         }, [network])
 
-        const { rekeyed, isScanning } = useLedgerRekeyedScan(accounts)
+        const { rekeyed, isScanning } = useLedgerDelegatedScan(accounts, scope)
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
             () => [
@@ -147,9 +151,9 @@ export const useLedgerSelectAccountsScreen =
                 const key = `${network}:${address}`
                 if (prefetchedRef.current.has(key)) continue
                 prefetchedRef.current.add(key)
-                void prefetchLedgerAccountPreview(queryClient, address, network)
+                void prefetchLedgerAccountPreview(queryClient, address, scope)
             }
-        }, [selectableAccounts, queryClient, network])
+        }, [selectableAccounts, queryClient, network, scope])
 
         const selectableByAddress = useMemo(() => {
             const m = new Map<string, LedgerSelectableAccount>()
@@ -159,13 +163,14 @@ export const useLedgerSelectAccountsScreen =
             return m
         }, [selectableAccounts])
 
-        const accountTypeByAddress = useMemo(() => {
+        const custodyByAddress = useMemo(() => {
             const m = new Map<string, string>()
             for (const acc of allAccounts) {
-                if (acc.address) m.set(acc.address, accountType(acc))
+                const address = chainAccountOf(acc, scope.chainId)?.address
+                if (address) m.set(address, acc.custody.kind)
             }
             return m
-        }, [allAccounts])
+        }, [allAccounts, scope.chainId])
 
         // Rows that stay disabled: the address is already in the wallet in a
         // shape this import can't improve. A derived (signable) address held
@@ -177,32 +182,26 @@ export const useLedgerSelectAccountsScreen =
             for (const s of selectableAccounts) {
                 const address =
                     s.kind === 'derived' ? s.account.address : s.address
-                const existingType = accountTypeByAddress.get(address)
-                if (existingType === undefined) continue
-                if (
-                    s.kind === 'derived' &&
-                    existingType === AccountTypes.watch
-                ) {
+                const existingCustody = custodyByAddress.get(address)
+                if (existingCustody === undefined) continue
+                if (s.kind === 'derived' && existingCustody === 'watch') {
                     continue
                 }
                 disabled.add(address)
             }
             return disabled
-        }, [selectableAccounts, accountTypeByAddress])
+        }, [selectableAccounts, custodyByAddress])
 
         const upgradeableAddresses = useMemo(() => {
             const upgradeable = new Set<string>()
             for (const s of selectableAccounts) {
                 if (s.kind !== 'derived') continue
-                if (
-                    accountTypeByAddress.get(s.account.address) ===
-                    AccountTypes.watch
-                ) {
+                if (custodyByAddress.get(s.account.address) === 'watch') {
                     upgradeable.add(s.account.address)
                 }
             }
             return upgradeable
-        }, [selectableAccounts, accountTypeByAddress])
+        }, [selectableAccounts, custodyByAddress])
 
         const newAccounts = useMemo(() => {
             return selectableAccounts.filter(

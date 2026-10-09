@@ -12,6 +12,8 @@
 
 import { useAccountSummaryQuery } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,11 +22,14 @@ import { useSummaryStyles } from './styles'
 /** Reads the same cheap per-account SQL aggregate the account list already
  *  warms, so adding this line costs no extra query. */
 export const AccountSummaryLine = ({ address }: { address: string }) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const styles = useSummaryStyles()
-    const { holdingsCount, portfolioAlgoValue } =
-        useAccountSummaryQuery(address)
+    const { holdingsCount, portfolioAlgoValue } = useAccountSummaryQuery(
+        address,
+        scope,
+    )
 
     return (
         <PWView style={styles.line}>

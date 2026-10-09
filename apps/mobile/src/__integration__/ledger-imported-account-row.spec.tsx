@@ -64,14 +64,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
                     },
                     accountIndex: 0,
                 },
-                address: LEDGER_ADDRESS,
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'Ledger Nano X',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
+                chains: { algorand: { address: LEDGER_ADDRESS } },
             } satisfies HardwareWalletAccount,
         ])
 

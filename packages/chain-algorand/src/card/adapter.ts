@@ -12,9 +12,10 @@
 
 import { toAlgodError, waitForTransactionConfirmation } from '../blockchain'
 import {
-    canSignArc60,
     canSignProgram,
-    isRekeyedAccount,
+    hasCustody,
+    isDelegatedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
@@ -22,6 +23,11 @@ import {
     type CardChainAdapter,
 } from '@perawallet/wallet-core-card'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import {
+    algorandAddressOf,
+    canSignArc60,
+    isQuantumAccount,
+} from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { cardAlgorandClient } from './client'
@@ -39,6 +45,13 @@ const INSUFFICIENT_BALANCE_CODES: ReadonlySet<string> = new Set([
     'below_min_balance',
     'overspend',
 ])
+
+// The card's ownership proof and AutoDraw delegation are Ed25519 signatures,
+// so a quantum (Falcon) key can't back the card.
+const holdsCardSigningKey = (account: WalletAccount): boolean =>
+    algorandAddressOf(account) !== undefined &&
+    (hasCustody(account, 'hardware') ||
+        (hasCustody(account, 'local') && !isQuantumAccount(account)))
 
 const settlementAsset: CardChainAdapter['settlementAsset'] = scope =>
     getKnownAssetId('USDC', scope)
@@ -75,7 +88,9 @@ export const algorandCardAdapter: CardChainAdapter = {
     // draw from it. Ledger signs the sign-in proof on-device but its firmware
     // never signs a program.
     fundingSourceEligibility: account => ({
-        canFund: !isRekeyedAccount(account, ALGORAND_CHAIN_ID),
+        canFund:
+            holdsCardSigningKey(account) &&
+            !isDelegatedAccount(account, ALGORAND_CHAIN_ID),
         canProveOwnership: canSignArc60(account),
         canAutoDraw: canSignProgram(account, ALGORAND_CHAIN_ID),
     }),

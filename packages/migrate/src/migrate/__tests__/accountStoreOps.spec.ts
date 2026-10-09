@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    chainAccountOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -29,16 +30,37 @@ vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
     return await importOriginal()
 })
 
-const buildWalletAccount = (
-    overrides: Partial<WalletAccount> = {},
-): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: null },
-        address: 'ADDR_A',
+type AccountInput = Partial<Omit<WalletAccount, 'chains'>> & {
+    address?: string
+}
+
+// The id is derived from the address so order and removal assertions can name it.
+const idFor = (address: string) => `id-${address}`
+
+const buildWalletAccount = ({
+    address = 'ADDR_A',
+    ...overrides
+}: AccountInput = {}): WalletAccount => {
+    const custody = overrides.custody ?? {
+        kind: 'local' as const,
+        seed: null,
+    }
+    return {
+        id: idFor(address),
         name: 'Account A',
-        keyPairId: 'kp-a',
         ...overrides,
-    }) as WalletAccount
+        custody,
+        chains: {
+            algorand:
+                custody.kind === 'local'
+                    ? { address, keyPairId: `kp-${address}` }
+                    : { address },
+        },
+    }
+}
+
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, 'algorand')?.address
 
 const buildLegacyAccount = (
     overrides: Partial<LegacyAccount> = {},
@@ -50,13 +72,13 @@ const buildLegacyAccount = (
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: null,
-        hdWalletId: null,
+        hdSeedId: null,
         authAddress: null,
         ...overrides,
     }) as LegacyAccount
 
 const buildPair = (
-    created: Partial<WalletAccount>,
+    created: AccountInput,
     legacy: Partial<LegacyAccount>,
 ): MigratedAccountPair => ({
     created: buildWalletAccount({ ...created }),
@@ -84,9 +106,10 @@ describe('addKeylessAccountToStore', () => {
 
         addKeylessAccountToStore(incoming)
 
-        expect(
-            useAccountsStore.getState().accounts.map(a => a.address),
-        ).toEqual(['ADDR_EXISTING', 'ADDR_INCOMING'])
+        expect(useAccountsStore.getState().accounts.map(addressOf)).toEqual([
+            'ADDR_EXISTING',
+            'ADDR_INCOMING',
+        ])
     })
 })
 
@@ -99,7 +122,7 @@ describe('applyAllLegacyMetadata', () => {
             'setAccounts',
         )
 
-        applyAllLegacyMetadata([])
+        applyAllLegacyMetadata([], 'algorand')
 
         expect(setAccountsSpy).not.toHaveBeenCalled()
     })
@@ -111,12 +134,15 @@ describe('applyAllLegacyMetadata', () => {
         })
         useAccountsStore.getState().setAccounts([account])
 
-        applyAllLegacyMetadata([
-            buildPair(
-                { address: 'ADDR_A', name: 'Created Name' },
-                { name: 'Legacy Name' },
-            ),
-        ])
+        applyAllLegacyMetadata(
+            [
+                buildPair(
+                    { address: 'ADDR_A', name: 'Created Name' },
+                    { name: 'Legacy Name' },
+                ),
+            ],
+            'algorand',
+        )
 
         expect(useAccountsStore.getState().accounts[0].name).toBe('Legacy Name')
     })
@@ -128,12 +154,15 @@ describe('applyAllLegacyMetadata', () => {
         })
         useAccountsStore.getState().setAccounts([account])
 
-        applyAllLegacyMetadata([
-            buildPair(
-                { address: 'ADDR_A', name: 'Created Name' },
-                { name: '' },
-            ),
-        ])
+        applyAllLegacyMetadata(
+            [
+                buildPair(
+                    { address: 'ADDR_A', name: 'Created Name' },
+                    { name: '' },
+                ),
+            ],
+            'algorand',
+        )
 
         expect(useAccountsStore.getState().accounts[0].name).toBe(
             'Created Name',
@@ -151,13 +180,23 @@ describe('applyAllLegacyMetadata', () => {
         })
         useAccountsStore.getState().setAccounts([matched, untouched])
 
-        applyAllLegacyMetadata([
-            buildPair({ address: 'ADDR_A', name: 'A old' }, { name: 'A new' }),
-        ])
+        applyAllLegacyMetadata(
+            [
+                buildPair(
+                    { address: 'ADDR_A', name: 'A old' },
+                    { name: 'A new' },
+                ),
+            ],
+            'algorand',
+        )
 
         const accounts = useAccountsStore.getState().accounts
-        expect(accounts.find(a => a.address === 'ADDR_A')?.name).toBe('A new')
-        expect(accounts.find(a => a.address === 'ADDR_B')?.name).toBe('B old')
+        expect(accounts.find(a => addressOf(a) === 'ADDR_A')?.name).toBe(
+            'A new',
+        )
+        expect(accounts.find(a => addressOf(a) === 'ADDR_B')?.name).toBe(
+            'B old',
+        )
     })
 
     it('preserves the accounts array reference when no names actually change', () => {
@@ -168,12 +207,15 @@ describe('applyAllLegacyMetadata', () => {
         useAccountsStore.getState().setAccounts([account])
         const accountsBefore = useAccountsStore.getState().accounts
 
-        applyAllLegacyMetadata([
-            buildPair(
-                { address: 'ADDR_A', name: 'Same Name' },
-                { name: 'Same Name' },
-            ),
-        ])
+        applyAllLegacyMetadata(
+            [
+                buildPair(
+                    { address: 'ADDR_A', name: 'Same Name' },
+                    { name: 'Same Name' },
+                ),
+            ],
+            'algorand',
+        )
 
         expect(useAccountsStore.getState().accounts).toBe(accountsBefore)
     })
@@ -193,7 +235,7 @@ describe('markLegacyBackedUpAccounts', () => {
 
         expect(markAccountBackedUp).toHaveBeenCalledTimes(1)
         expect(markAccountBackedUp).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'ADDR_A' }),
+            expect.objectContaining({ id: idFor('ADDR_A') }),
         )
     })
 
@@ -211,7 +253,7 @@ describe('markLegacyBackedUpAccounts', () => {
         )
 
         expect(markAccountBackedUp).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'ADDR_W' }),
+            expect.objectContaining({ id: idFor('ADDR_W') }),
         )
     })
 
@@ -233,9 +275,10 @@ describe('applyLegacyAccountOrder', () => {
             'setManualAccountOrder',
         )
 
-        applyLegacyAccountOrder([
-            buildLegacyAccount({ address: 'ADDR_A', preferredOrder: -1 }),
-        ])
+        applyLegacyAccountOrder(
+            [buildLegacyAccount({ address: 'ADDR_A', preferredOrder: -1 })],
+            'algorand',
+        )
 
         expect(setOrderSpy).not.toHaveBeenCalled()
     })
@@ -249,16 +292,19 @@ describe('applyLegacyAccountOrder', () => {
                 buildWalletAccount({ address: 'ADDR_C' }),
             ])
 
-        applyLegacyAccountOrder([
-            buildLegacyAccount({ address: 'ADDR_A', preferredOrder: 2 }),
-            buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
-            buildLegacyAccount({ address: 'ADDR_C', preferredOrder: 1 }),
-        ])
+        applyLegacyAccountOrder(
+            [
+                buildLegacyAccount({ address: 'ADDR_A', preferredOrder: 2 }),
+                buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
+                buildLegacyAccount({ address: 'ADDR_C', preferredOrder: 1 }),
+            ],
+            'algorand',
+        )
 
         expect(useAccountsStore.getState().manualAccountOrder).toEqual([
-            'ADDR_B',
-            'ADDR_C',
-            'ADDR_A',
+            idFor('ADDR_B'),
+            idFor('ADDR_C'),
+            idFor('ADDR_A'),
         ])
     })
 
@@ -271,15 +317,17 @@ describe('applyLegacyAccountOrder', () => {
                 buildWalletAccount({ address: 'ADDR_B' }),
             ])
 
-        applyLegacyAccountOrder([
-            buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
-            buildLegacyAccount({ address: 'ADDR_A', preferredOrder: 1 }),
-        ])
+        applyLegacyAccountOrder(
+            [
+                buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
+                buildLegacyAccount({ address: 'ADDR_A', preferredOrder: 1 }),
+            ],
+            'algorand',
+        )
 
         const order = useAccountsStore.getState().manualAccountOrder
-        expect(order.slice(0, 2)).toEqual(['ADDR_B', 'ADDR_A'])
-        expect(order).toContain('ADDR_UNORDERED')
-        expect(order.indexOf('ADDR_UNORDERED')).toBe(2)
+        expect(order.slice(0, 2)).toEqual([idFor('ADDR_B'), idFor('ADDR_A')])
+        expect(order.indexOf(idFor('ADDR_UNORDERED'))).toBe(2)
     })
 
     it('skips legacy entries with negative preferredOrder and orders the rest', () => {
@@ -290,19 +338,22 @@ describe('applyLegacyAccountOrder', () => {
                 buildWalletAccount({ address: 'ADDR_B' }),
             ])
 
-        applyLegacyAccountOrder([
-            buildLegacyAccount({ address: 'ADDR_A', preferredOrder: -1 }),
-            buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
-        ])
+        applyLegacyAccountOrder(
+            [
+                buildLegacyAccount({ address: 'ADDR_A', preferredOrder: -1 }),
+                buildLegacyAccount({ address: 'ADDR_B', preferredOrder: 0 }),
+            ],
+            'algorand',
+        )
 
         const order = useAccountsStore.getState().manualAccountOrder
-        expect(order[0]).toBe('ADDR_B')
-        expect(order).toContain('ADDR_A')
+        expect(order[0]).toBe(idFor('ADDR_B'))
+        expect(order).toContain(idFor('ADDR_A'))
     })
 })
 
 describe('removeAccountFromStore', () => {
-    it('removes exactly the requested address', () => {
+    it('removes exactly the requested account', () => {
         useAccountsStore.getState().setAccounts([
             buildWalletAccount({
                 custody: { kind: 'watch' },
@@ -314,10 +365,10 @@ describe('removeAccountFromStore', () => {
             }),
         ])
 
-        removeAccountFromStore('ADDR_A')
+        removeAccountFromStore(idFor('ADDR_A'))
 
-        expect(
-            useAccountsStore.getState().accounts.map(a => a.address),
-        ).toEqual(['ADDR_B'])
+        expect(useAccountsStore.getState().accounts.map(addressOf)).toEqual([
+            'ADDR_B',
+        ])
     })
 })

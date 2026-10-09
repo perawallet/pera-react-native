@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    findAccountByAddressOn,
+} from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
@@ -24,6 +27,7 @@ import {
     useSigningRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useToast } from '@hooks/useToast'
 import { getSignedResponseCount } from '../utils/signRequestStatus'
 
@@ -102,7 +106,11 @@ export const useMultisigSignRequestDecline = (
         const signRequest = params.signRequest
         if (!signRequest?.proposerAddress) return null
         const proposer = signRequest.proposerAddress
-        const isLocalAccount = accounts.some(a => a.address === proposer)
+        const isLocalAccount = !!findAccountByAddressOn(
+            accounts,
+            LEGACY_CHAIN_ID,
+            proposer,
+        )
         if (!isLocalAccount) return null
         return proposer
     }, [params, accounts])

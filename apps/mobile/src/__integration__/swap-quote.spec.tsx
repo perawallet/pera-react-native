@@ -20,6 +20,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
@@ -166,9 +168,12 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
     it('Given the providers list and the quotes endpoint return data, when the user requests a swap quote, then the mutation resolves with both quotes including provider display names, slippage, and minimum-received amounts', async () => {
         server.use(mockCreateQuotes({ response: ALGO_USDC_QUOTES }))
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         // Drive the mutation the way `useSwapForm` does after the
         // user enters an amount and the debounce settles.
@@ -223,9 +228,12 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
     it('Given the quotes endpoint returns an empty list, when the user requests a quote, then the mutation succeeds with an empty array (the UI surfaces "no route")', async () => {
         server.use(mockCreateQuotes({ response: { results: [] } }))
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapper_address: SWAPPER_ADDRESS,
@@ -256,9 +264,12 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapper_address: SWAPPER_ADDRESS,

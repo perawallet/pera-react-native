@@ -21,10 +21,6 @@ import {
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
-
 const fetchAssetOptInRounds = () =>
     vi.mocked(fakeAccountsChain().adapter.fetchAssetOptInRounds)
 
@@ -56,7 +52,7 @@ describe('useAccountOptInRoundsQuery', () => {
         )
 
         const { result } = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress),
+            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
             { wrapper },
         )
 
@@ -74,7 +70,7 @@ describe('useAccountOptInRoundsQuery', () => {
 
     test('does not fetch when disabled and keeps a stable empty map', async () => {
         const { result, rerender } = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress, false),
+            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE, false),
             { wrapper },
         )
 
@@ -91,7 +87,7 @@ describe('useAccountOptInRoundsQuery', () => {
 
     test('does not fetch when the address is missing', async () => {
         const { result } = renderHook(
-            () => useAccountOptInRoundsQuery(undefined),
+            () => useAccountOptInRoundsQuery(undefined, MAINNET_SCOPE),
             { wrapper },
         )
 
@@ -106,7 +102,7 @@ describe('useAccountOptInRoundsQuery', () => {
         fetchAssetOptInRounds().mockResolvedValue(new Map([['10', 100]]))
 
         const first = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress),
+            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
             {
                 wrapper,
             },
@@ -117,7 +113,7 @@ describe('useAccountOptInRoundsQuery', () => {
         first.unmount()
 
         const second = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress),
+            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
             { wrapper },
         )
         await waitFor(() =>
