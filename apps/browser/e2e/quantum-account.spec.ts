@@ -61,8 +61,8 @@ let quantumAddress: string
 const PASSWORD = 'e2e-quantum-account-password-1'
 
 type StoredAccount = {
-    custody?: { kind: string; seed?: string }
-    address: string
+    custody?: { kind: string; seed?: string | null }
+    chains?: { algorand?: { address: string } }
 }
 
 const readStoredAccounts = async (): Promise<StoredAccount[]> => {
@@ -169,7 +169,7 @@ test('Add Account creates a quantum account through the web keystore', async () 
         account => account.custody?.seed === 'quantum',
     )
     expect(quantumAccounts).toHaveLength(1)
-    quantumAddress = quantumAccounts[0].address
+    quantumAddress = quantumAccounts[0].chains?.algorand?.address ?? ''
     expect(algosdk.isValidAddress(quantumAddress)).toBe(true)
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
