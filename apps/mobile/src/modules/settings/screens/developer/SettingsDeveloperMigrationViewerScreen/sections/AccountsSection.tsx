@@ -31,6 +31,7 @@ const getDisplayType = (account: LegacyAccount): string => {
     if (account.joint !== null) return 'multisig'
     if (account.ledger !== null) return 'hardware'
     if (account.hdSeedId !== null) return 'hd'
+    // lanekeep-ignore-next-line pera/no-algorand-account-vocabulary reason: labels a legacy native-app record in the developer migration viewer, which shows that app's own vocabulary
     return 'algo25'
 }
 
