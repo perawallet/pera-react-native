@@ -11,94 +11,22 @@
  */
 
 import {
-    InvalidBip44PathError,
+    assertBip44PathMatches,
+    parseBip44Path,
+    type Bip44Coordinates,
     type HDWalletDetails,
 } from '@perawallet/wallet-core-accounts'
 
-/**
- * Algorand's SLIP-0044 coin type. Used as the second segment of BIP44 paths
- * for all Algorand HD wallet derivations.
- */
+/** Algorand's SLIP-0044 coin type. */
 export const ALGORAND_COIN_TYPE = 283
 
-/**
- * Structured form of an Algorand BIP44 path
- * `m/44'/283'/<account>'/<change>/<keyIndex>`.
- */
-export type ParsedAlgorandBip44Path = {
-    account: number
-    change: number
-    keyIndex: number
-}
+export type ParsedAlgorandBip44Path = Bip44Coordinates
 
-/**
- * Parses an Algorand BIP44 path `m/44'/283'/<account>'/<change>/<keyIndex>`.
- *
- * Accepts both `m/44'/...` and `44'/...` forms. The hardened marker may be
- * either `'` (apostrophe) or `h`.
- *
- * Throws {@link InvalidBip44PathError} with `reason: 'malformed'` if the path
- * is not a well-formed Algorand BIP44 path.
- */
 export const parseAlgorandBip44Path = (
     hdPath: string,
-): ParsedAlgorandBip44Path => {
-    const fail = (detail: string): never => {
-        throw new InvalidBip44PathError(hdPath, 'malformed', detail)
-    }
+): ParsedAlgorandBip44Path => parseBip44Path(hdPath, ALGORAND_COIN_TYPE)
 
-    const segments = hdPath
-        .replace(/^m\//, '')
-        .split('/')
-        .map(s => s.trim())
-        .filter(Boolean)
-
-    if (segments.length !== 5) {
-        return fail('expected 5 path segments')
-    }
-
-    const parseHardened = (segment: string, label: string): number => {
-        if (!segment.endsWith("'") && !segment.endsWith('h')) {
-            return fail(`${label} must be hardened`)
-        }
-        const value = Number(segment.slice(0, -1))
-        if (!Number.isInteger(value) || value < 0) {
-            return fail(`${label} is not a valid integer`)
-        }
-        return value
-    }
-
-    const parseUnhardened = (segment: string, label: string): number => {
-        const value = Number(segment)
-        if (!Number.isInteger(value) || value < 0) {
-            return fail(`${label} is not a valid integer`)
-        }
-        return value
-    }
-
-    const purpose = parseHardened(segments[0], 'purpose')
-    const coin = parseHardened(segments[1], 'coin type')
-    const account = parseHardened(segments[2], 'account')
-    const change = parseUnhardened(segments[3], 'change')
-    const keyIndex = parseUnhardened(segments[4], 'keyIndex')
-
-    if (purpose !== 44) {
-        return fail(`purpose must be 44, got ${purpose}`)
-    }
-    if (coin !== ALGORAND_COIN_TYPE) {
-        return fail(`coin type must be ${ALGORAND_COIN_TYPE}, got ${coin}`)
-    }
-
-    return { account, change, keyIndex }
-}
-
-/**
- * Returns `true` when `path` resolves to the same BIP44 coordinates as the
- * given HD wallet details. Throws {@link InvalidBip44PathError} (with
- * `reason: 'malformed'`) if the path is not parseable — malformed is a
- * distinct failure mode from mismatch and callers typically want to surface
- * different errors to the user.
- */
+/** Throws `InvalidBip44PathError` (`reason: 'malformed'`) when the path doesn't parse; a mismatch returns false. */
 export const hdPathMatchesDetails = (
     path: string,
     details: HDWalletDetails,
@@ -111,30 +39,7 @@ export const hdPathMatchesDetails = (
     )
 }
 
-/**
- * Asserts that `path` resolves to the same BIP44 coordinates as the given
- * HD wallet details. Throws {@link InvalidBip44PathError}:
- *
- * - `reason: 'malformed'` — path cannot be parsed
- * - `reason: 'mismatch'` — path parses but targets a different derivation
- *
- * Callers that need a domain-specific error should catch and rewrap using
- * the `reason` field.
- */
 export const assertAlgorandBip44PathMatches = (
     path: string,
     details: HDWalletDetails,
-): void => {
-    const parsed = parseAlgorandBip44Path(path)
-    if (
-        parsed.account !== details.account ||
-        parsed.change !== details.change ||
-        parsed.keyIndex !== details.keyIndex
-    ) {
-        throw new InvalidBip44PathError(
-            path,
-            'mismatch',
-            `does not match HD wallet (account=${details.account}, change=${details.change}, keyIndex=${details.keyIndex})`,
-        )
-    }
-}
+): void => assertBip44PathMatches(path, details, ALGORAND_COIN_TYPE)

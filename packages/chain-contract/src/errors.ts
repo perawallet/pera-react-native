@@ -66,15 +66,3 @@ export class DuplicateChainAdapterError extends Error {
         this.chainId = chainId
     }
 }
-
-export class ChainHttpClientUnavailableError extends Error {
-    readonly chainId: ChainId
-
-    constructor(chainId: ChainId) {
-        super(
-            `No HTTP client is wired into the chain context for chain "${chainId}"`,
-        )
-        this.name = 'ChainHttpClientUnavailableError'
-        this.chainId = chainId
-    }
-}

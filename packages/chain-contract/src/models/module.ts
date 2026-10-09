@@ -21,23 +21,6 @@ import type { ChainScope } from './identity'
 /** Base URLs keyed by the chain's own endpoint names. */
 export type ChainEndpoints = Readonly<Record<string, string>>
 
-export interface ChainHttpRequest {
-    url: string
-    method?: 'GET' | 'POST'
-    headers?: Readonly<Record<string, string>>
-    body?: string
-    signal?: AbortSignal
-}
-
-export interface ChainHttpResponse {
-    status: number
-    body: string
-}
-
-export interface ChainHttpClient {
-    request(req: ChainHttpRequest): Promise<ChainHttpResponse>
-}
-
 /**
  * The wallet's ceilings for a node request, in milliseconds. A chain client
  * adds no retries on top: TanStack Query retries reads and the signing
@@ -48,11 +31,6 @@ export interface ChainRequestTimeouts {
     submitMs: number
 }
 
-/**
- * Everything a chain package may reach; it never reads config or a store
- * directly. Scope and endpoints are getters because `register` runs once,
- * before the selected network can change.
- */
 /** The Pera backend serving a scope; `baseUrl` is empty where `services` is. */
 export interface ChainPeraBackend {
     baseUrl: string
@@ -60,12 +38,17 @@ export interface ChainPeraBackend {
     services: ReadonlySet<string>
 }
 
+/**
+ * What a chain package is handed at registration. Scope and endpoints are
+ * getters because `register` runs once, before the selected network can
+ * change. Pera backend requests go through shared's `queryClient`, which
+ * holds the Pera credential.
+ */
 export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
     getScope(): ChainScope
     getEndpoints(): E
     getPeraBackend(scope: ChainScope): ChainPeraBackend
     timeouts: ChainRequestTimeouts
-    http: ChainHttpClient
     kms: ChainKeyStore
 }
 

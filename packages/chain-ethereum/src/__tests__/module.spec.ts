@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
     createChainRegistry,
@@ -19,13 +20,12 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
-import { ethereumAddressCodec } from '../addresses'
-import { ethereumKeyDerivation } from '../keys/derivation'
+import { ethereumAddressCodec } from '../accounts/address-codec'
+import { ethereumKeyDerivation } from '../accounts/key-derivation'
 
 const context: ChainContext = {
     getScope: vi.fn(),
     getEndpoints: vi.fn(),
-    http: { request: vi.fn() },
     kms: { deriveFromSeed: vi.fn(), importRawKey: vi.fn(), sign: vi.fn() },
 } as unknown as ChainContext
 
@@ -52,7 +52,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec, key derivation and defaults through the setup', () => {
+    it('registers its descriptor, address codec, key derivation, accounts adapter and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -76,6 +76,7 @@ describe('ethereumModule', () => {
         )
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
+        expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },

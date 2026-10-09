@@ -344,13 +344,15 @@ describe('hasPeraService', () => {
 })
 
 describe('configuredScopes', () => {
-    test('lists the four Algorand scopes in network order', () => {
-        expect(configuredScopes()).toStrictEqual(
-            Object.values(Networks).map(network => ({
+    test('lists the Algorand scopes in network order, then the Ethereum ones', () => {
+        expect(configuredScopes()).toStrictEqual([
+            ...Object.values(Networks).map(network => ({
                 chainId: 'algorand',
                 networkId: network,
             })),
-        )
+            { chainId: 'ethereum', networkId: 'mainnet' },
+            { chainId: 'ethereum', networkId: 'sepolia' },
+        ])
     })
 })
 
@@ -492,14 +494,5 @@ describe('ethereum scopes', () => {
 
         expect(freshFor(ETHEREUM_MAINNET).size).toBe(0)
         expect(fresh(ETHEREUM_MAINNET)).toStrictEqual(NO_PERA_SERVICES)
-    })
-
-    test('configuredScopes keeps Ethereum out of the Algorand client build', async () => {
-        const { configuredScopes: fresh } = await withEthereumConfig({
-            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
-            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
-        })
-
-        expect(fresh().map(scope => scope.chainId)).not.toContain('ethereum')
     })
 })

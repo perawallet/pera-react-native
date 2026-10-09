@@ -2550,9 +2550,15 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
