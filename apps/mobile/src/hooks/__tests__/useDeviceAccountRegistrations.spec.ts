@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { act } from '@testing-library/react'
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
@@ -20,7 +21,10 @@ import { useNotificationsStore } from '@perawallet/wallet-core-messages'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandDeviceAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import { allCapabilities } from '@test-utils/chain-fixtures'
 
 // The mobile-wide vitest setup mocks `@perawallet/wallet-core-accounts` with a
@@ -66,10 +70,7 @@ const seedDisabledAccounts = (addresses: string[]) => {
 describe('useDeviceAccountRegistrations', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
-        const { chains } = getProvider()
-        if (!chains.has(LEGACY_CHAIN_ID)) {
-            chains.register(algorandDescriptor, allCapabilities(true))
-        }
+        registerAlgorandDeviceAdapter()
         useAccountsStore.getState().resetState()
         useNotificationsStore.getState().resetState()
     })
@@ -117,6 +118,50 @@ describe('useDeviceAccountRegistrations', () => {
         const { result } = renderHook(() => useDeviceAccountRegistrations())
 
         expect(result.current[0].receiveNotifications).toBe(false)
+    })
+
+    // Whether a chain's accounts register is the device registry's call: a
+    // developer override that turns notifications off must not empty the payload.
+    it('registers every Algorand account while the chain has notifications off', () => {
+        const { chains } = getProvider()
+        chains.reset()
+        chains.register(algorandDescriptor, allCapabilities(false))
+        expect(chains.capabilities(LEGACY_CHAIN_ID).notifications).toBe(false)
+        seedAccounts([
+            { id: '1', address: 'WADDR', custody: { kind: 'watch' } },
+        ])
+
+        const { result } = renderHook(() => useDeviceAccountRegistrations())
+
+        expect(result.current.map(entry => entry.address)).toEqual(['WADDR'])
+    })
+
+    it('recomputes when the accounts or the muted addresses change', () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', custody: { kind: 'watch' } },
+        ])
+        const { result } = renderHook(() => useDeviceAccountRegistrations())
+
+        act(() => {
+            seedAccounts([
+                { id: '1', address: 'ADDR_A', custody: { kind: 'watch' } },
+                { id: '2', address: 'ADDR_B', custody: { kind: 'watch' } },
+            ])
+        })
+        act(() => {
+            seedDisabledAccounts(['ADDR_B'])
+        })
+
+        expect(result.current).toEqual([
+            expect.objectContaining({
+                address: 'ADDR_A',
+                receiveNotifications: true,
+            }),
+            expect.objectContaining({
+                address: 'ADDR_B',
+                receiveNotifications: false,
+            }),
+        ])
     })
 
     it('returns an empty array when no accounts exist', () => {

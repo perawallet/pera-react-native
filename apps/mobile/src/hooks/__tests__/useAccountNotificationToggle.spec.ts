@@ -19,7 +19,10 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandDeviceAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import { allCapabilities } from '@test-utils/chain-fixtures'
 
 const mocks = vi.hoisted(() => ({
@@ -41,8 +44,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 // The mobile-wide vitest setup mocks `@perawallet/wallet-core-accounts` with a
 // fixed empty-store double. This hook reads the real account list to build
 // the registration payload, so restore the actual implementation and only
-// override `useAllAccounts` — the rest (types, `buildDeviceAccountRegistrations`)
-// runs for real.
+// override `useAllAccounts`.
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -51,7 +53,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return { ...actual, useAllAccounts: () => mocks.accounts }
 })
 
-// Partial mock: only `useDevice` itself is overridden.
+// Partial mock: only `useDevice` itself is overridden, so
+// `buildDeviceAccountRegistrations` runs for real.
 vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
@@ -111,6 +114,7 @@ describe('useAccountNotificationToggle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandAccountsAdapter()
+        registerAlgorandDeviceAdapter()
         const { chains } = getProvider()
         if (!chains.has(LEGACY_CHAIN_ID)) {
             chains.register(algorandDescriptor, allCapabilities(true))

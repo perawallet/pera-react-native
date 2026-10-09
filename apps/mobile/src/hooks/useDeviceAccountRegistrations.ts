@@ -11,12 +11,12 @@
  */
 
 import { useMemo } from 'react'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     buildDeviceAccountRegistrations,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+    type DeviceAccountRegistration,
+} from '@perawallet/wallet-core-device'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
-import type { DeviceAccountRegistration } from '@perawallet/wallet-core-device'
 
 /**
  * Joins the accounts store with the persisted notification preferences into
