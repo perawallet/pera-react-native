@@ -60,7 +60,6 @@ import { algorandMultisigAdapter } from '../multisig'
 import { algorandBackupAdapter } from '../backup'
 import { algorandPinnedHosts } from '../blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from '../blockchain/remote-config'
-import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 
 // register ignores its context: the adapters are module-level instances.
 const stubCtx = {} as ChainContext
@@ -172,7 +171,10 @@ describe('chainModule', () => {
     })
 
     it('declares the i18n keys its transfer summaries carry', () => {
-        expect(chainModule.i18nKeys()).toEqual(ALGORAND_TRANSFER_TITLE_KEYS)
+        expect(chainModule.i18nKeys()).toEqual([
+            'transactions.list_item.send',
+            'transactions.list_item.opt_in',
+        ])
     })
 })
 

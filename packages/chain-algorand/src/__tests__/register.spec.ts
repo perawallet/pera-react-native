@@ -75,7 +75,6 @@ describe('registerChain', () => {
         sendFlowChainAdapters.reset()
         historyChainAdapters.reset()
         transferChainAdapters.reset()
-        transferChainAdapters.reset()
         nameServiceChainAdapters.reset()
         cardChainAdapters.reset()
         rampChainAdapters.reset()

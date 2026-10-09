@@ -162,6 +162,7 @@ export type TransferIntent = {
     from: string
     to: string
     assetRef: AssetRef
+    /** Base units. */
     amount: Decimal
     note?: string
 }

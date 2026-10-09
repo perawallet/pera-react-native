@@ -25,10 +25,7 @@ import { getMinimumFeeConfig } from '../blockchain'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { assignFeeToGroup } from '../signing/assignMinimumFeesToGroup'
 import { buildOptInTxs, buildTransferTxs } from './builders'
-import {
-    fetchSuggestedMinFee,
-    resolveAlgorandSenderFee,
-} from './transfer-fees'
+import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
 import { assertBuildableIntent } from './transfer-validation'
 
 const SEND_TITLE_KEY = 'transactions.list_item.send'
