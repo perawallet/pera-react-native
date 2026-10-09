@@ -114,9 +114,12 @@ export const useCardOnboardingAddressScreen =
         const onboardingId = useCardStore(state => state.onboardingId)
         // Baanx refuses this step on an unverified record just like the
         // personal-details step, so it shares the same gate.
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate(scope, {
-            onboardingId,
-        })
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
+            scope,
+            {
+                onboardingId,
+            },
+        )
 
         const handleVerifyIdentity = useCallback(() => {
             navigation.navigate('CardOnboardingVerification')

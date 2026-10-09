@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     verifyPasswordReset,
     type VerifyPasswordResetParams,
@@ -34,19 +37,15 @@ export type UseVerifyPasswordResetMutationResult = CardMutationResult<
  * must go straight to the confirm step via navigation params; it is never
  * written to the persisted card store.
  */
-export const useVerifyPasswordResetMutation =
-    (scope: ChainScope): UseVerifyPasswordResetMutationResult => {
-        const network = legacyNetworkOf(scope)
+export const useVerifyPasswordResetMutation = (
+    scope: ChainScope,
+): UseVerifyPasswordResetMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            string,
-            Error,
-            VerifyPasswordResetVariables
-        >({
-            mutationFn: variables =>
-                verifyPasswordReset({ ...variables, network }),
-            throwOnError: false,
-        })
+    const mutation = useMutation<string, Error, VerifyPasswordResetVariables>({
+        mutationFn: variables => verifyPasswordReset({ ...variables, network }),
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

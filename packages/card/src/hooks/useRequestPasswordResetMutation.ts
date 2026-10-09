@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     requestPasswordReset,
     type RequestPasswordResetParams,
@@ -31,19 +34,16 @@ export type UseRequestPasswordResetMutationResult =
  * Resolves even for unregistered emails (Baanx never reveals which emails
  * exist), so callers can always advance to the code screen.
  */
-export const useRequestPasswordResetMutation =
-    (scope: ChainScope): UseRequestPasswordResetMutationResult => {
-        const network = legacyNetworkOf(scope)
+export const useRequestPasswordResetMutation = (
+    scope: ChainScope,
+): UseRequestPasswordResetMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            void,
-            Error,
-            RequestPasswordResetVariables
-        >({
-            mutationFn: variables =>
-                requestPasswordReset({ ...variables, network }),
-            throwOnError: false,
-        })
+    const mutation = useMutation<void, Error, RequestPasswordResetVariables>({
+        mutationFn: variables =>
+            requestPasswordReset({ ...variables, network }),
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

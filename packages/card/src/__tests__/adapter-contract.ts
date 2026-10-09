@@ -66,9 +66,9 @@ export const cardContractTests = (
         })
 
         it('names a settlement asset on a configured scope', () => {
-            expect(
-                makeAdapter().settlementAsset(fixtures.scope),
-            ).toBeTypeOf('string')
+            expect(makeAdapter().settlementAsset(fixtures.scope)).toBeTypeOf(
+                'string',
+            )
         })
 
         it.runIf(fixtures.unconfiguredScope !== undefined)(
@@ -135,9 +135,9 @@ export const cardContractTests = (
             const adapter = makeAdapter()
 
             expect(adapter.describeError(new Error('boom'))).toBeNull()
-            expect(adapter.describeError(fixtures.insufficientBalanceError)).toBe(
-                'insufficient-native-balance',
-            )
+            expect(
+                adapter.describeError(fixtures.insufficientBalanceError),
+            ).toBe('insufficient-native-balance')
         })
 
         it('links only its own transaction legs', () => {

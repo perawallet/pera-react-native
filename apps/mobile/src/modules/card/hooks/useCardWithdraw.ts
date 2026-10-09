@@ -12,7 +12,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { getCardSettlementAssetId, useCardPendingWithdrawalQuery, useCardStore, useEscrowWithdrawal, useSubmitAndConfirmMutation, type PendingWithdrawal } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    useCardPendingWithdrawalQuery,
+    useCardStore,
+    useEscrowWithdrawal,
+    useSubmitAndConfirmMutation,
+    type PendingWithdrawal,
+} from '@perawallet/wallet-core-card'
 import {
     getOnChainAccountInformationQueryKey,
     invalidateAccountQueriesForAddresses,
@@ -82,7 +89,8 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
     const { assignFeeToGroup } = useMinimumFeeCalculator()
-    const { buildRequest, buildWithdraw, buildCancel } = useEscrowWithdrawal(scope)
+    const { buildRequest, buildWithdraw, buildCancel } =
+        useEscrowWithdrawal(scope)
     const {
         pending,
         waitTimeSeconds,
@@ -92,10 +100,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const owner = useCardOwnerAccount()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const decimals =
         (usdcAssetId === null

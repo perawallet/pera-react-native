@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CardUserUnavailableError,
@@ -35,46 +38,47 @@ export type UseRestoreEscrowCardMutationResult = CardMutationResult<
  * creation. The backend has no by-user lookup, only a per-address one, so
  * every candidate address is asked.
  */
-export const useRestoreEscrowCardMutation =
-    (scope: ChainScope): UseRestoreEscrowCardMutationResult => {
-        const network = legacyNetworkOf(scope)
+export const useRestoreEscrowCardMutation = (
+    scope: ChainScope,
+): UseRestoreEscrowCardMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<Nullable<string>, Error, string[]>({
-            mutationFn: async addresses => {
-                if (addresses.length === 0) return null
-                const user = await fetchUser({ network })
-                if (!user) {
-                    throw new CardUserUnavailableError()
-                }
-                // One failed lookup must not hide a card linked to another
-                // address, so each is settled on its own.
-                const links = await Promise.all(
-                    addresses.map(address =>
-                        fetchFundingAddressLink({
-                            network,
-                            address,
-                            baanxUserId: user.id,
-                        }).catch(() => null),
-                    ),
-                )
-                const index = links.findIndex(
-                    link =>
-                        link?.state === 'linked_to_caller' &&
-                        link.cardAddress !== null,
-                )
-                const cardAddress = links[index]?.cardAddress ?? null
-                if (cardAddress === null) return null
+    const mutation = useMutation<Nullable<string>, Error, string[]>({
+        mutationFn: async addresses => {
+            if (addresses.length === 0) return null
+            const user = await fetchUser({ network })
+            if (!user) {
+                throw new CardUserUnavailableError()
+            }
+            // One failed lookup must not hide a card linked to another
+            // address, so each is settled on its own.
+            const links = await Promise.all(
+                addresses.map(address =>
+                    fetchFundingAddressLink({
+                        network,
+                        address,
+                        baanxUserId: user.id,
+                    }).catch(() => null),
+                ),
+            )
+            const index = links.findIndex(
+                link =>
+                    link?.state === 'linked_to_caller' &&
+                    link.cardAddress !== null,
+            )
+            const cardAddress = links[index]?.cardAddress ?? null
+            if (cardAddress === null) return null
 
-                useCardStore.getState().restoreEscrowCard({
-                    cardAddress,
-                    ownerAddress: addresses[index],
-                    network,
-                })
-                return cardAddress
-            },
-            // The caller falls back to the setup checklist on failure.
-            throwOnError: false,
-        })
+            useCardStore.getState().restoreEscrowCard({
+                cardAddress,
+                ownerAddress: addresses[index],
+                network,
+            })
+            return cardAddress
+        },
+        // The caller falls back to the setup checklist on failure.
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

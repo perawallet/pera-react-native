@@ -12,7 +12,10 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { getCardSettlementAssetId, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
 import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
@@ -36,10 +39,7 @@ export type UseCardEscrowBalanceResult = {
 export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
     const scope = useCardScope()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
 
     const { data: accountInformation, isPending } =
         useOnChainAccountInformationQuery(escrowCardAddress ?? '')

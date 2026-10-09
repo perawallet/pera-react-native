@@ -143,7 +143,10 @@ describe('algorandCardAdapter chain reads', () => {
         expect(adapter.settlementAsset(MAINNET)).toBe('31566704')
         expect(adapter.settlementAsset(TESTNET)).toBe('10458941')
         expect(
-            adapter.settlementAsset({ chainId: 'algorand', networkId: 'betanet' }),
+            adapter.settlementAsset({
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
         ).toBeNull()
     })
 })
@@ -240,9 +243,9 @@ describe('algorandCardAdapter.describeError', () => {
     it.each(['below_min_balance', 'overspend'] as const)(
         'reads %s as an insufficient native balance',
         code => {
-            expect(adapter.describeError(new AlgodError(code, {} as never))).toBe(
-                'insufficient-native-balance',
-            )
+            expect(
+                adapter.describeError(new AlgodError(code, {} as never)),
+            ).toBe('insufficient-native-balance')
         },
     )
 

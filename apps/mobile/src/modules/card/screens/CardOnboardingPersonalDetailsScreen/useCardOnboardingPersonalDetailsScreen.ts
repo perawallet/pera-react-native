@@ -117,9 +117,12 @@ export const useCardOnboardingPersonalDetailsScreen =
         const isLastNameLocked = Boolean(onboardingDetails?.lastName)
         const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
 
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate(scope, {
-            onboardingId,
-        })
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
+            scope,
+            {
+                onboardingId,
+            },
+        )
 
         const handleVerifyIdentity = useCallback(() => {
             navigation.navigate('CardOnboardingVerification')

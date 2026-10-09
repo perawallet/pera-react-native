@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { createSetPinSession } from '../api/card-sensitive'
 import type { CardSetPinSession } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -25,7 +28,9 @@ export type UseSetCardPinMutationResult = CardMutationResult<
  * Starts a set-PIN session and returns a hosted page URL for the caller to
  * open (the PIN is entered in Baanx's hosted page, never through this client).
  */
-export const useSetCardPinMutation = (scope: ChainScope): UseSetCardPinMutationResult => {
+export const useSetCardPinMutation = (
+    scope: ChainScope,
+): UseSetCardPinMutationResult => {
     const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<CardSetPinSession, Error, void>({

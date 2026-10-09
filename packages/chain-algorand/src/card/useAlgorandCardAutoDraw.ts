@@ -119,7 +119,9 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
         async (account: WalletAccount, scope: ChainScope): Promise<void> => {
             const network = algorandNetworkOf(scope)
             if (!algorandAutoDraw.isConfigured(network)) {
-                logger.warn('Killswitch not configured — skipping on-chain kill')
+                logger.warn(
+                    'Killswitch not configured — skipping on-chain kill',
+                )
                 return
             }
             // Pre-check instead of tolerating ALREADY_DISABLED (same

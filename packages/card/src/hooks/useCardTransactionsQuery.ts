@@ -12,7 +12,10 @@
 
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchCardTransactions } from '../api/transactions'
 import type { CardTransactionFilters } from '../models'
 import { cardQueryKeys } from './querykeys'

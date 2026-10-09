@@ -98,13 +98,25 @@ beforeEach(() => {
 
 describe('isEligibleFundingSource', () => {
     it('accepts standard / HD / Ledger and rejects watch, multisig, rekeyed', () => {
-        expect(isEligibleFundingSource(account('A', 'algo25'), SCOPE)).toBe(true)
-        expect(isEligibleFundingSource(account('B', 'hdWallet'), SCOPE)).toBe(true)
-        expect(isEligibleFundingSource(account('C', 'hardware'), SCOPE)).toBe(true)
-        expect(isEligibleFundingSource(account('D', 'watch'), SCOPE)).toBe(false)
-        expect(isEligibleFundingSource(account('E', 'multisig'), SCOPE)).toBe(false)
+        expect(isEligibleFundingSource(account('A', 'algo25'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('B', 'hdWallet'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('C', 'hardware'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('D', 'watch'), SCOPE)).toBe(
+            false,
+        )
+        expect(isEligibleFundingSource(account('E', 'multisig'), SCOPE)).toBe(
+            false,
+        )
         seedAuthority('F', 'X')
-        expect(isEligibleFundingSource(account('F', 'algo25'), SCOPE)).toBe(false)
+        expect(isEligibleFundingSource(account('F', 'algo25'), SCOPE)).toBe(
+            false,
+        )
     })
 })
 
@@ -112,32 +124,38 @@ describe('isSigningCapableFundingSource', () => {
     it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
-                account('A', 'algo25', { keyPairId: 'k1' }), SCOPE),
+                account('A', 'algo25', { keyPairId: 'k1' }),
+                SCOPE,
+            ),
         ).toBe(true)
         expect(
             isSigningCapableFundingSource(
-                account('B', 'hdWallet', { keyPairId: 'k2' }), SCOPE),
+                account('B', 'hdWallet', { keyPairId: 'k2' }),
+                SCOPE,
+            ),
         ).toBe(true)
         // Ledger signs the creation proof on-device; it carries no keyPairId.
-        expect(isSigningCapableFundingSource(account('C', 'hardware'), SCOPE)).toBe(
-            true,
-        )
+        expect(
+            isSigningCapableFundingSource(account('C', 'hardware'), SCOPE),
+        ).toBe(true)
         // A local-key type with no keyPairId can't sign at all.
-        expect(isSigningCapableFundingSource(account('D', 'algo25'), SCOPE)).toBe(
-            false,
-        )
-        expect(isSigningCapableFundingSource(account('E', 'watch'), SCOPE)).toBe(false)
+        expect(
+            isSigningCapableFundingSource(account('D', 'algo25'), SCOPE),
+        ).toBe(false)
+        expect(
+            isSigningCapableFundingSource(account('E', 'watch'), SCOPE),
+        ).toBe(false)
     })
 })
 
 describe('canAutoFund', () => {
     it('allows local-key accounts and rejects Ledger (cannot sign the delegation)', () => {
-        expect(canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }), SCOPE)).toBe(
-            true,
-        )
-        expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }), SCOPE)).toBe(
-            true,
-        )
+        expect(
+            canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }), SCOPE),
+        ).toBe(true)
+        expect(
+            canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }), SCOPE),
+        ).toBe(true)
         // Ledger creates cards but can never sign the delegation.
         expect(canAutoFund(account('C', 'hardware'), SCOPE)).toBe(false)
         expect(canAutoFund(account('D', 'algo25'), SCOPE)).toBe(false)

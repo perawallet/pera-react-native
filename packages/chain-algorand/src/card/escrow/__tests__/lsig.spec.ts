@@ -19,12 +19,12 @@ const {
     appEnvironment,
     templateHash,
 } = vi.hoisted(() => ({
-        getNetworkConfig: vi.fn(),
-        algorandCardConfig: vi.fn(),
-        getAlgorandClient: vi.fn(),
-        appEnvironment: { value: 'development' as string },
-        templateHash: { value: '' as string },
-    }))
+    getNetworkConfig: vi.fn(),
+    algorandCardConfig: vi.fn(),
+    getAlgorandClient: vi.fn(),
+    appEnvironment: { value: 'development' as string },
+    templateHash: { value: '' as string },
+}))
 
 vi.mock('@perawallet/wallet-core-config', async () => ({
     ...(await vi.importActual('@perawallet/wallet-core-config')),
@@ -104,11 +104,7 @@ describe('resolveEscrowChainConfig', () => {
         // delegation an attacker could construct transactions for, not a
         // harmless placeholder. There is no environment where signing that is
         // acceptable, so a missing id fails loudly everywhere.
-        for (const missing of [
-            'mainAppId',
-            'killswitchAppId',
-            'usdcAssetId',
-        ]) {
+        for (const missing of ['mainAppId', 'killswitchAppId', 'usdcAssetId']) {
             algorandCardConfig.mockReturnValue({
                 mainAppId: '111',
                 killswitchAppId: '222',

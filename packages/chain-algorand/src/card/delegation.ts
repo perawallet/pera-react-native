@@ -58,7 +58,6 @@ export const algorandDelegationRequests: Pick<
             token,
         },
     }),
-
 }
 
 // Baanx rejects unknown fields on this route with a 422.

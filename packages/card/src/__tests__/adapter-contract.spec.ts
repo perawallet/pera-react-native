@@ -18,8 +18,7 @@ import { fakeCardAdapter } from './fakeCardAdapter'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 const UNCONFIGURED: ChainScope = { chainId: 'algorand', networkId: 'betanet' }
-const isConfigured = (scope: ChainScope) =>
-    scope.networkId === SCOPE.networkId
+const isConfigured = (scope: ChainScope) => scope.networkId === SCOPE.networkId
 
 const account = { address: 'FUNDING' } as WalletAccount
 const rekeyed = { address: 'REKEYED' } as WalletAccount

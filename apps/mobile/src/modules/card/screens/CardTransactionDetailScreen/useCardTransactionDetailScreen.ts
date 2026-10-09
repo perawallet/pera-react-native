@@ -61,7 +61,9 @@ export const useCardTransactionDetailScreen =
             hasNextPage,
             fetchNextPage,
             refetch,
-        } = useCardTransactionsQuery(scope, undefined, { refetchOnMount: false })
+        } = useCardTransactionsQuery(scope, undefined, {
+            refetchOnMount: false,
+        })
 
         const transaction = useMemo(
             () => transactions.find(item => item.id === id),

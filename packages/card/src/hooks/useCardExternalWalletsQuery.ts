@@ -12,7 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchExternalWallets } from '../api/delegation'

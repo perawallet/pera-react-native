@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitOnboardingConsent,
@@ -32,7 +35,9 @@ export type UseSubmitConsentMutationResult = CardMutationResult<
     SubmitOnboardingConsentResult
 >
 
-export const useSubmitConsentMutation = (scope: ChainScope): UseSubmitConsentMutationResult => {
+export const useSubmitConsentMutation = (
+    scope: ChainScope,
+): UseSubmitConsentMutationResult => {
     const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<

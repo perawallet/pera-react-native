@@ -35,7 +35,8 @@ export type UseCardCountryPickerResult = {
  */
 export const useCardCountryPicker = (): UseCardCountryPickerResult => {
     const scope = useCardScope()
-    const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery(scope)
+    const { data, isLoading, isError, refetch } =
+        useRegistrationSettingsQuery(scope)
     const { resolve } = useBottomSheetResult<SupportedCountry>()
     const [search, setSearch] = useState('')
 

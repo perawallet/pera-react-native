@@ -15,20 +15,18 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const { useCardAutoDraw, enableAutoDraw, disableAutoDraw } = vi.hoisted(
-    () => {
-        const enable = vi.fn()
-        const disable = vi.fn()
-        return {
+const { useCardAutoDraw, enableAutoDraw, disableAutoDraw } = vi.hoisted(() => {
+    const enable = vi.fn()
+    const disable = vi.fn()
+    return {
+        enableAutoDraw: enable,
+        disableAutoDraw: disable,
+        useCardAutoDraw: vi.fn(() => ({
             enableAutoDraw: enable,
             disableAutoDraw: disable,
-            useCardAutoDraw: vi.fn(() => ({
-                enableAutoDraw: enable,
-                disableAutoDraw: disable,
-            })),
-        }
-    },
-)
+        })),
+    }
+})
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     useCardAutoDraw,

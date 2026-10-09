@@ -73,10 +73,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
     const { assignFeeToGroup } = useMinimumFeeCalculator()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const [isDepositing, setIsDepositing] = useState(false)
 
@@ -99,7 +96,9 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                         sender: account.address,
                         cardAddress: escrowCardAddress,
                         amount: BigInt(
-                            displayUnitsToBaseUnits(amount, decimals).toFixed(0),
+                            displayUnitsToBaseUnits(amount, decimals).toFixed(
+                                0,
+                            ),
                         ),
                     },
                     scope,

@@ -36,7 +36,8 @@ export type UseCardUsStatePickerResult = {
  */
 export const useCardUsStatePicker = (): UseCardUsStatePickerResult => {
     const scope = useCardScope()
-    const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery(scope)
+    const { data, isLoading, isError, refetch } =
+        useRegistrationSettingsQuery(scope)
     const { resolve } = useBottomSheetResult<SupportedUsState>()
     const [search, setSearch] = useState('')
 

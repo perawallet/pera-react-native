@@ -12,7 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { getCardSettlementAssetId, DEFAULT_CARD_CURRENCY, CardWalletKind, useCardWalletBalanceQuery, useCardTransactionsQuery } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    DEFAULT_CARD_CURRENCY,
+    CardWalletKind,
+    useCardWalletBalanceQuery,
+    useCardTransactionsQuery,
+} from '@perawallet/wallet-core-card'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccountAddress,
@@ -102,10 +108,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // figure. Reading it from the chain also keeps it right on platforms Baanx
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(
             isAutoFunding ? (fundingAccount ?? undefined) : undefined,
@@ -125,10 +128,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const canFundLinkedAccount = canSwapToUsdc || canBuy
 
     // Both live in their own Baanx wallets, null until something is credited.
-    const { wallet: rewardWallet } = useCardWalletBalanceQuery(scope, 
+    const { wallet: rewardWallet } = useCardWalletBalanceQuery(
+        scope,
         CardWalletKind.Reward,
     )
-    const { wallet: creditWallet } = useCardWalletBalanceQuery(scope, 
+    const { wallet: creditWallet } = useCardWalletBalanceQuery(
+        scope,
         CardWalletKind.Credit,
     )
     const credits = useMemo<PeraCardCredits>(

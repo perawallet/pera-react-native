@@ -57,7 +57,8 @@ export type UseEscrowCardCreationResult = {
 export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
     const scope = useCardScope()
     const { addSignRequest } = useSigningRequest()
-    const { mutateAsync: signOwnershipAsync } = useSignCardOwnershipMutation(scope)
+    const { mutateAsync: signOwnershipAsync } =
+        useSignCardOwnershipMutation(scope)
     const { mutateAsync: createAndApproveAsync } =
         useCreateAndApproveCardMutation(scope)
 

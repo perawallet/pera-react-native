@@ -61,9 +61,9 @@ export type UseOnboardingKycPollResult = {
  * via the authenticated user record instead.
  */
 export const useOnboardingKycPoll = (
-    scope: ChainScope,{
-    enabled = true,
-}: UseOnboardingKycPollOptions = {}): UseOnboardingKycPollResult => {
+    scope: ChainScope,
+    { enabled = true }: UseOnboardingKycPollOptions = {},
+): UseOnboardingKycPollResult => {
     const onboardingId = useCardStore(state => state.onboardingId)
     const isRegistrationComplete = useCardStore(
         state => state.onboardingStep === OnboardingStep.Completed,

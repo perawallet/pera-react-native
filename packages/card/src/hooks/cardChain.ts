@@ -41,8 +41,7 @@ export const getCardFundingSourceEligibility = (
 export const describeCardChainError = (
     error: unknown,
     scope: ChainScope,
-): Nullable<CardChainErrorReason> =>
-    cardAdapterFor(scope).describeError(error)
+): Nullable<CardChainErrorReason> => cardAdapterFor(scope).describeError(error)
 
 export const getCardTransactionUrl = (
     hash: string,

@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { verifyPhone, type VerifyPhoneParams } from '../api/onboarding'
 import { OnboardingStep } from '../models'
 import { useCardStore } from '../store'
@@ -22,7 +25,9 @@ export type VerifyPhoneVariables = Omit<VerifyPhoneParams, 'network' | 'signal'>
 export type UseVerifyPhoneMutationResult =
     CardMutationResult<VerifyPhoneVariables>
 
-export const useVerifyPhoneMutation = (scope: ChainScope): UseVerifyPhoneMutationResult => {
+export const useVerifyPhoneMutation = (
+    scope: ChainScope,
+): UseVerifyPhoneMutationResult => {
     const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({

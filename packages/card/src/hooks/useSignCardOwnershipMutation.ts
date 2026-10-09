@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     buildSiwxAuthData,
     type AuthDataMetadata,
@@ -64,43 +67,41 @@ export type UseSignCardOwnershipMutationResult = CardMutationResult<
  * produce a fresh proof if Step 2 needs a retry — the token is single-use and
  * valid ~10 minutes, so a retry must re-sign rather than reuse.
  */
-export const useSignCardOwnershipMutation =
-    (scope: ChainScope): UseSignCardOwnershipMutationResult => {
-        const network = legacyNetworkOf(scope)
+export const useSignCardOwnershipMutation = (
+    scope: ChainScope,
+): UseSignCardOwnershipMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            CardOwnershipProof,
-            Error,
-            SignCardOwnershipVariables
-        >({
-            mutationFn: async ({ address, signAuthData }) => {
-                // Baanx binds the proof to this token: its nonce has to be
-                // inside the payload the user signs, so it is fetched first.
-                const { token, nonce } = await fetchDelegationToken({ network })
-                const { authData, metadata } = buildSiwxAuthData(
-                    scope.chainId,
-                    {
-                        domain: CARD_SIGN_IN_DOMAIN,
-                        address,
-                        uri: CARD_SIGN_IN_URI,
-                        nonce,
-                        statement: CARD_SIGN_IN_STATEMENT,
-                    },
-                )
-                const signature = await signAuthData(authData, metadata)
-                return {
-                    signData: {
-                        data: authData.data,
-                        authenticatorData: encodeToBase64(
-                            authData.authenticatorData,
-                        ),
-                    },
-                    signature: encodeToBase64(signature),
-                    delegationToken: token,
-                }
-            },
-            throwOnError: false,
-        })
+    const mutation = useMutation<
+        CardOwnershipProof,
+        Error,
+        SignCardOwnershipVariables
+    >({
+        mutationFn: async ({ address, signAuthData }) => {
+            // Baanx binds the proof to this token: its nonce has to be
+            // inside the payload the user signs, so it is fetched first.
+            const { token, nonce } = await fetchDelegationToken({ network })
+            const { authData, metadata } = buildSiwxAuthData(scope.chainId, {
+                domain: CARD_SIGN_IN_DOMAIN,
+                address,
+                uri: CARD_SIGN_IN_URI,
+                nonce,
+                statement: CARD_SIGN_IN_STATEMENT,
+            })
+            const signature = await signAuthData(authData, metadata)
+            return {
+                signData: {
+                    data: authData.data,
+                    authenticatorData: encodeToBase64(
+                        authData.authenticatorData,
+                    ),
+                },
+                signature: encodeToBase64(signature),
+                delegationToken: token,
+            }
+        },
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

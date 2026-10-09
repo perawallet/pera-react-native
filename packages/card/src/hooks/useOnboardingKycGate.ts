@@ -48,9 +48,9 @@ export type UseOnboardingKycGateResult = {
  * errored query.)
  */
 export const useOnboardingKycGate = (
-    scope: ChainScope,{
-    onboardingId,
-}: UseOnboardingKycGateParams): UseOnboardingKycGateResult => {
+    scope: ChainScope,
+    { onboardingId }: UseOnboardingKycGateParams,
+): UseOnboardingKycGateResult => {
     const { data: onboardingDetails, dataUpdatedAt } =
         useOnboardingDetailsQuery(scope, { onboardingId })
     // Snapshots the query's own dataUpdatedAt, not Date.now(): "newer" means

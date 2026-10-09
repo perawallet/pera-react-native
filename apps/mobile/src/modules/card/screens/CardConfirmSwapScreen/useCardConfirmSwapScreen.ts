@@ -24,7 +24,10 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { getCardSettlementAssetId, useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    useCardUsdcCreditQuery,
+} from '@perawallet/wallet-core-card'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -135,10 +138,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     // Same account the Add Funds screen swaps from: the one linked to the card.
     const account = useCardFundingAccount()
 
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const assetIds = useMemo(
         () => [usdcAssetId, params.sourceAssetId].filter(id => id !== null),
         [usdcAssetId, params.sourceAssetId],

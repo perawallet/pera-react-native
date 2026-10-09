@@ -11,7 +11,10 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { withdrawWalletBalance } from '../api/wallet-balance'
 import type { CardWalletKind, WalletWithdrawResult } from '../models'
 import { cardQueryKeys } from './querykeys'

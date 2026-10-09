@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     linkOnboardingConsent,
@@ -28,7 +31,9 @@ export type LinkConsentVariables = Omit<
 export type UseLinkConsentMutationResult =
     CardMutationResult<LinkConsentVariables>
 
-export const useLinkConsentMutation = (scope: ChainScope): UseLinkConsentMutationResult => {
+export const useLinkConsentMutation = (
+    scope: ChainScope,
+): UseLinkConsentMutationResult => {
     const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<void, Error, LinkConsentVariables>({

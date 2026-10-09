@@ -62,7 +62,9 @@ export type UseCardUsdcCreditQueryResult = {
  * The watch is a query observer rather than `useQuery` so it outlives the
  * screen that started it, like the deposit awaiting it.
  */
-export const useCardUsdcCreditQuery = (scope: ChainScope): UseCardUsdcCreditQueryResult => {
+export const useCardUsdcCreditQuery = (
+    scope: ChainScope,
+): UseCardUsdcCreditQueryResult => {
     const queryClient = useQueryClient()
 
     const readUsdcBalance = useCallback(

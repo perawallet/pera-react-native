@@ -79,10 +79,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     // currently has selected.
     const fundingAccount = useCardFundingAccount()
 
-    const usdcAssetId = useMemo(
-        () => getCardSettlementAssetId(scope),
-        [scope],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const [pickedAssetId, setPickedAssetId] = useState<Nullable<string>>(null)
     const sourceAssetId = pickedAssetId ?? usdcAssetId
     // Both sides could independently be null; only call it USDC when there is
