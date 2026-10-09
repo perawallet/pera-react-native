@@ -191,6 +191,15 @@ describe('buildAlgorandTransfer', () => {
             send({ amount: new Decimal('0.5') }),
         ],
         ['a negative amount', send({ amount: new Decimal(-1) })],
+        ['an empty asset id', send({ assetRef: { ...USDC, assetId: '' } })],
+        [
+            'an asset id that is not canonical decimal',
+            send({ assetRef: { ...USDC, assetId: '0x1' } }),
+        ],
+        [
+            'an asset id with a leading zero',
+            send({ assetRef: { ...USDC, assetId: '00' } }),
+        ],
     ])('refuses %s', async (_, intent) => {
         await expect(buildAlgorandTransfer(intent, context)).rejects.toThrow(
             InvalidSendParamsError,
@@ -204,6 +213,19 @@ describe('buildAlgorandTransfer', () => {
                     kind: 'asset-opt-in',
                     account: SENDER.toString(),
                     assetRef: ALGO,
+                },
+                context,
+            ),
+        ).rejects.toThrow(InvalidSendParamsError)
+    })
+
+    it('refuses an opt-in to an empty asset id, which would read as ALGO', async () => {
+        await expect(
+            buildAlgorandTransfer(
+                {
+                    kind: 'asset-opt-in',
+                    account: SENDER.toString(),
+                    assetRef: { ...USDC, assetId: '' },
                 },
                 context,
             ),

@@ -18,35 +18,11 @@ import type {
     FeeEstimate,
     TransactionIntent,
 } from '@perawallet/wallet-core-chain-contract'
-import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
 import { createWalletAlgorandClient, getMinimumFeeConfig } from '../blockchain'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
+import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
 import { resolveMinFeeForSender } from '../signing/minFeeResolver'
-
-/** Throws unless the intent can be built on the context's Algorand network. */
-export const assertBuildableIntent = (
-    intent: TransactionIntent,
-    context: BuildContext,
-): void => {
-    algorandNetworkOf(context.scope)
-    if (intent.assetRef.chainId !== ALGORAND_CHAIN_ID) {
-        throw new InvalidSendParamsError()
-    }
-    if (
-        intent.kind === 'transfer' &&
-        (!intent.amount.isInteger() || intent.amount.isNegative())
-    ) {
-        throw new InvalidSendParamsError()
-    }
-    if (
-        intent.kind === 'asset-opt-in' &&
-        isAlgorandNativeAssetId(intent.assetRef.assetId)
-    ) {
-        throw new InvalidSendParamsError()
-    }
-}
+import { assertBuildableIntent } from './transfer-validation'
 
 const signerOf = (intent: TransactionIntent): string =>
     intent.kind === 'transfer' ? intent.from : intent.account
