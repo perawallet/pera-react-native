@@ -16,6 +16,25 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-/** Backup items are keyed by the account's address on the chain the backup carries, the same on every network. */
-export const backupAddressOf = (account: WalletAccount): string =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
+/**
+ * Backup items are keyed by the account's address on the chain the backup
+ * carries, the same on every network. Undefined for an account with nothing on
+ * that chain: it has no backup item.
+ */
+export const backupAddressOf = (account: WalletAccount): string | undefined =>
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+
+export type BackupAccount = {
+    account: WalletAccount
+    /** The account's backup item key. */
+    address: string
+}
+
+/** The accounts that have a backup item, each with its key. */
+export const backupAccountsOf = (
+    accounts: readonly WalletAccount[],
+): BackupAccount[] =>
+    accounts.flatMap(account => {
+        const address = backupAddressOf(account)
+        return address === undefined ? [] : [{ account, address }]
+    })

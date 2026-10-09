@@ -20,7 +20,6 @@ import { SectionHeading } from '../../components/SectionHeading'
 import { DeviceAccountRow } from './DeviceAccountRow'
 import { useCloudBackupAccounts } from './useCloudBackupAccounts'
 import { useStyles } from './styles'
-import { backupAddressOf } from '../../utils/backupAddress'
 
 export const CloudBackupAccountsScreen = () => {
     const { t } = useLanguage()
@@ -77,15 +76,14 @@ export const CloudBackupAccountsScreen = () => {
                         subtitle={t('cloud_backup.accounts.device_subtitle')}
                     />
                     <PWView>
-                        {accounts.map((account, index) => (
+                        {accounts.map(({ account, address }, index) => (
                             <Fragment key={account.id}>
                                 {index > 0 && <ListItemDivider />}
                                 <DeviceAccountRow
                                     account={account}
-                                    isBackedUp={isBackedUp(
-                                        backupAddressOf(account),
-                                    )}
-                                    isBusy={isBusy(backupAddressOf(account))}
+                                    address={address}
+                                    isBackedUp={isBackedUp(address)}
+                                    isBusy={isBusy(address)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

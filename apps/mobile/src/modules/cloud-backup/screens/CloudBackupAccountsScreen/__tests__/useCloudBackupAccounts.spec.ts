@@ -36,17 +36,23 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         custody: { kind: 'watch' },
         chains: { algorand: { address } },
     })
+    // An account with nothing on the backup's chain has no backup item.
+    const elsewhere = { id: 'ETH', custody: { kind: 'watch' }, chains: {} }
     return {
+        chainAccountOf: (
+            account: { chains: Record<string, unknown> },
+            chainId: string,
+        ) => account.chains[chainId],
         useAccountsStore: (
             selector: (state: { accounts: unknown[] }) => unknown,
-        ) => selector({ accounts: [account('A'), account('B')] }),
+        ) => selector({ accounts: [account('A'), elsewhere, account('B')] }),
     }
 })
 
 vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
         isBackedUp: isBackedUpMock,
-        notBackedUpAccounts: [{ id: 'B' }],
+        notBackedUpAccounts: [{ account: { id: 'B' }, address: 'B' }],
         availableFromBackup: ['GONE', 'ALSO_GONE'],
         isBusy: (address: string) => address === 'B',
         backUpAccount: backUpAccountMock,
@@ -58,12 +64,18 @@ beforeEach(() => {
 })
 
 describe('useCloudBackupAccounts', () => {
-    it('lists the device accounts alongside the counts awaiting review', () => {
+    it('lists the device accounts that have a backup item alongside the counts awaiting review', () => {
         const { result } = renderHook(() => useCloudBackupAccounts())
 
         expect(
-            result.current.accounts.map(a => a.chains.algorand?.address),
-        ).toEqual(['A', 'B'])
+            result.current.accounts.map(({ account, address }) => [
+                account.id,
+                address,
+            ]),
+        ).toEqual([
+            ['A', 'A'],
+            ['B', 'B'],
+        ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
         expect(result.current.notBackedUpCount).toBe(1)

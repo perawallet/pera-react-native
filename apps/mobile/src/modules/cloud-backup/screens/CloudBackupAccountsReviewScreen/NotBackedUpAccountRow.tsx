@@ -15,21 +15,22 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
-import { backupAddressOf } from '../../utils/backupAddress'
 
 type NotBackedUpAccountRowProps = {
     account: WalletAccount
+    /** The account's backup item key. */
+    address: string
     isBusy: boolean
     onBackUp: (address: string) => void
 }
 
 const NotBackedUpAccountRowComponent = ({
     account,
+    address,
     isBusy,
     onBackUp,
 }: NotBackedUpAccountRowProps) => {
     const { t } = useLanguage()
-    const address = backupAddressOf(account)
 
     const handleBackUp = useCallback(
         () => onBackUp(address),

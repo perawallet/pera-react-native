@@ -27,7 +27,7 @@ const {
     NoConnectionError,
 } = vi.hoisted(() => ({
     accountsMock: {
-        current: [] as { chains: { algorand: { address: string } } }[],
+        current: [] as { chains: { algorand?: { address: string } } }[],
     },
     reviewMock: {
         current: {
@@ -139,12 +139,26 @@ describe('useBackupAccountReview', () => {
         const { result } = renderReview()
 
         expect(result.current.backedUpAccounts).toEqual([heldAccount('A')])
-        expect(result.current.notBackedUpAccounts).toEqual([heldAccount('B')])
+        expect(result.current.notBackedUpAccounts).toEqual([
+            { account: heldAccount('B'), address: 'B' },
+        ])
         expect(result.current.availableFromBackup).toEqual([
             { address: 'GONE', type: 'algo25' },
         ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
+    })
+
+    test('leaves out an account with nothing on the backup chain', () => {
+        const elsewhere = { chains: {} }
+        accountsMock.current = [heldAccount('A'), elsewhere, heldAccount('B')]
+
+        const { result } = renderReview()
+
+        expect(result.current.backedUpAccounts).toEqual([heldAccount('A')])
+        expect(result.current.notBackedUpAccounts).toEqual([
+            { account: heldAccount('B'), address: 'B' },
+        ])
     })
 
     test('carries a null cached type through when the device never decrypted the item', () => {

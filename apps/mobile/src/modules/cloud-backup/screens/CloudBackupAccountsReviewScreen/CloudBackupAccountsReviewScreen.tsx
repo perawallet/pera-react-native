@@ -22,7 +22,6 @@ import { AvailableFromBackupRow } from './AvailableFromBackupRow'
 import { NotBackedUpAccountRow } from './NotBackedUpAccountRow'
 import { useCloudBackupAccountsReview } from './useCloudBackupAccountsReview'
 import { useStyles } from './styles'
-import { backupAddressOf } from '../../utils/backupAddress'
 
 export const CloudBackupAccountsReviewScreen = () => {
     const { t } = useLanguage()
@@ -113,18 +112,19 @@ export const CloudBackupAccountsReviewScreen = () => {
                             count={notBackedUpAccounts.length}
                         />
                         <PWView>
-                            {notBackedUpAccounts.map((account, index) => (
-                                <Fragment key={account.id}>
-                                    {index > 0 && <ListItemDivider />}
-                                    <NotBackedUpAccountRow
-                                        account={account}
-                                        isBusy={isBusy(
-                                            backupAddressOf(account),
-                                        )}
-                                        onBackUp={onBackUp}
-                                    />
-                                </Fragment>
-                            ))}
+                            {notBackedUpAccounts.map(
+                                ({ account, address }, index) => (
+                                    <Fragment key={account.id}>
+                                        {index > 0 && <ListItemDivider />}
+                                        <NotBackedUpAccountRow
+                                            account={account}
+                                            address={address}
+                                            isBusy={isBusy(address)}
+                                            onBackUp={onBackUp}
+                                        />
+                                    </Fragment>
+                                ),
+                            )}
                         </PWView>
                     </PWView>
                 )}

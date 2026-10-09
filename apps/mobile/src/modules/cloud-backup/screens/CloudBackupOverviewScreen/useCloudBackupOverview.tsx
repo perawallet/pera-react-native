@@ -45,7 +45,7 @@ import {
     useProvenPasskeysQuery,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
-import { backupAddressOf } from '../../utils/backupAddress'
+import { backupAccountsOf } from '../../utils/backupAddress'
 
 type UseCloudBackupOverviewResult = {
     credentialAddressLabel: string
@@ -115,7 +115,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     )
 
     const addresses = useMemo(
-        () => accounts.map(backupAddressOf).filter(Boolean),
+        () => backupAccountsOf(accounts).map(({ address }) => address),
         [accounts],
     )
     const { backedUp, notBackedUp } = useMemo(
