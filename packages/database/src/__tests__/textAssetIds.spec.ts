@@ -36,6 +36,10 @@ const INSERT_CHUNK = 500
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// Later migrations rebuild some of these tables, so the assertions stop here.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const seedCachedRows = async (db: Database): Promise<void> => {
     for (const network of NETWORKS) {
         for (
@@ -119,7 +123,7 @@ describe('text asset id migration', () => {
     it('empties the asset caches and keeps balances and history', async () => {
         const db = await createCachedDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(REBUILD_TAG))
 
         for (const table of REBUILT_TABLES) {
             expect(await countRows(db, table)).toBe(0)
