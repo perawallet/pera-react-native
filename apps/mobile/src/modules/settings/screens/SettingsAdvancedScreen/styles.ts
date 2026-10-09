@@ -22,7 +22,8 @@ export const useStyles = makeStyles(theme => ({
     toggleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
+        paddingVertical: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xs,
     },
     toggleLabel: {
