@@ -19,9 +19,9 @@ export {
     type EvmRpcMethod,
     type EvmRpcResponder,
     type EvmRpcResults,
-} from './rpc/msw-handlers'
+} from './blockchain/msw-handlers'
 export {
     peraEvmHandlers,
     type PeraEvmFixtures,
     type ShouldRefreshRequest,
-} from './pera/msw-handlers'
+} from './accounts/msw-handlers'

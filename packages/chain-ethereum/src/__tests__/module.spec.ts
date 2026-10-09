@@ -19,8 +19,8 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
-import { ethereumAddressCodec } from '../addresses'
-import { ethereumKeyDerivation } from '../keys/derivation'
+import { ethereumAddressCodec } from '../accounts/address-codec'
+import { ethereumKeyDerivation } from '../accounts/key-derivation'
 
 const context: ChainContext = {
     getScope: vi.fn(),

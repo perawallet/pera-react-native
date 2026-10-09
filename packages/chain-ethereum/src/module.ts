@@ -15,11 +15,11 @@ import {
     keyDerivations,
     type ChainModule,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumAddressCodec } from './addresses'
+import { ethereumAddressCodec } from './accounts/address-codec'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
-import { EVM_ERROR_I18N_KEYS } from './errors/translate'
-import { ethereumKeyDerivation } from './keys/derivation'
+import { EVM_ERROR_I18N_KEYS } from './blockchain/errors'
+import { ethereumKeyDerivation } from './accounts/key-derivation'
 
 export const ethereumModule: ChainModule = {
     descriptor: ethereumDescriptor,
