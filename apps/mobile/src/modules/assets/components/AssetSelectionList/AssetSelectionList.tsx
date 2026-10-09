@@ -11,10 +11,9 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { ActivityIndicator } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
-import { PWView } from '@components/core'
+import { PWLoadingIndicator, PWView } from '@components/core'
 import { SearchableList } from '@components/SearchableList'
 import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
 import { useStyles } from './styles'
@@ -106,7 +105,7 @@ export const AssetSelectionList = <T,>({
 
     const footerComponent = isFetchingNextPage ? (
         <PWView style={styles.footer}>
-            <ActivityIndicator />
+            <PWLoadingIndicator />
         </PWView>
     ) : undefined
 

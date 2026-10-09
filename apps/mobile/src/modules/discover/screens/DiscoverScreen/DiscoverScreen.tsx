@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWScreen, PWView } from '@components/core'
+import { PWLoadingIndicator, PWScreen, PWView } from '@components/core'
 import { PWWebView } from '@modules/webview/browser'
 import { useDiscoverScreen } from './useDiscoverScreen'
 import { useStyles } from './styles'
@@ -41,7 +40,7 @@ export const DiscoverScreen = () => {
                 />
             ) : (
                 <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                 </PWView>
             )}
         </PWScreen>

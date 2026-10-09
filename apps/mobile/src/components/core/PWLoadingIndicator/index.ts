@@ -10,23 +10,5 @@
  limitations under the License
  */
 
-import { PWLoadingIndicator, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
-
-export const PasskeysLoadingState = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-
-    return (
-        <PWView style={styles.centered}>
-            <PWLoadingIndicator />
-            <PWText
-                variant='h3'
-                style={styles.centeredText}
-            >
-                {t('settings.passkeys.loading')}
-            </PWText>
-        </PWView>
-    )
-}
+export { PWLoadingIndicator } from './PWLoadingIndicator'
+export type { PWLoadingIndicatorProps } from './PWLoadingIndicator'

@@ -10,23 +10,26 @@
  limitations under the License
  */
 
-import { PWLoadingIndicator, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+import { makeStyles } from '@rneui/themed'
 
-export const PasskeysLoadingState = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
+type StyleProps = { size: 'sm' | 'lg' | 'xl' }
 
-    return (
-        <PWView style={styles.centered}>
-            <PWLoadingIndicator />
-            <PWText
-                variant='h3'
-                style={styles.centeredText}
-            >
-                {t('settings.passkeys.loading')}
-            </PWText>
-        </PWView>
-    )
-}
+export const useStyles = makeStyles((theme, { size }: StyleProps) => {
+    const side = {
+        sm: theme.spacing.xl,
+        lg: theme.spacing['3xl'],
+        xl: theme.spacing['4xl'],
+    }[size]
+    return {
+        container: {
+            width: side,
+            height: side,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        animation: {
+            width: side,
+            height: side,
+        },
+    }
+})

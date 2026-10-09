@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWIcon, PWText, PWTouchableOpacity } from '@components/core'
+import {
+    PWIcon,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -43,7 +47,7 @@ export const RevealCardDetailsButton = ({
             testID='pera_card_reveal_button'
         >
             {isLoading ? (
-                <ActivityIndicator size='small' />
+                <PWLoadingIndicator size='sm' />
             ) : (
                 <PWIcon
                     name='eye'

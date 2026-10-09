@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
-import { ActivityIndicator, Modal } from 'react-native'
+import { Modal } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
@@ -21,7 +21,13 @@ import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
+import {
+    PWButton,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -242,8 +248,8 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                                 must stay on top. */}
                             {isHandling ? (
                                 <PWView style={styles.handlingOverlay}>
-                                    <ActivityIndicator
-                                        size='large'
+                                    <PWLoadingIndicator
+                                        size='lg'
                                         color={theme.colors.textWhite}
                                     />
                                     <PWText

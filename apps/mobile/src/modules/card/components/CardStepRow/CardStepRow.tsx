@@ -11,9 +11,7 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type CardStepStatus = 'pending' | 'active' | 'done' | 'failed'
@@ -36,7 +34,6 @@ export const CardStepRow = ({
     testID,
 }: CardStepRowProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const isPending = status === 'pending'
     const isFailed = status === 'failed'
 
@@ -69,9 +66,8 @@ export const CardStepRow = ({
                         testID={testID ? `${testID}-failed` : undefined}
                     />
                 ) : isBusy ? (
-                    <ActivityIndicator
-                        size='small'
-                        color={theme.colors.positive}
+                    <PWLoadingIndicator
+                        size='sm'
                         testID={testID ? `${testID}-spinner` : undefined}
                     />
                 ) : (

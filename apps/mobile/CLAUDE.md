@@ -16,7 +16,7 @@ All external components (from `@rneui/themed`, `react-native`, third-party) **MU
 
 **ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
 
-Exceptions: `ActivityIndicator`, basic layout primitives used only inside PW components.
+Exception: basic layout primitives used only inside PW components. Loading spinners are `PWLoadingIndicator`.
 
 ### Component Locations
 
