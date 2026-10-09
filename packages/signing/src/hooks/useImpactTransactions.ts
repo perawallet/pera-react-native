@@ -16,7 +16,7 @@ import type {
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import { plannerAdapterForScope } from '../chain-adapter'
+import { needsSimulation } from '../chain-adapter'
 import {
     isUnsignedTransactionRequest,
     type TransactionSignRequest,
@@ -62,8 +62,8 @@ export const useImpactTransactions = (
             : undefined
 
     const hasAppCall = useMemo(
-        () => plannerAdapterForScope(scope).needsSimulation(allTransactions),
-        [scope, allTransactions],
+        () => needsSimulation(scope.chainId, allTransactions),
+        [scope.chainId, allTransactions],
     )
 
     const simulation = useGroupSimulationQuery({

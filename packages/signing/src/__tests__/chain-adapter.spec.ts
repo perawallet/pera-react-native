@@ -15,6 +15,7 @@ import {
     ChainAdapterNotRegisteredError,
     DuplicateChainAdapterError,
     LEGACY_CHAIN_ID,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
@@ -29,8 +30,10 @@ import {
     isSignRequestMultisigUnsignable,
     localKeySignerAdapterFor,
     localKeySignerChainAdapters,
+    needsSimulation,
     plannerAdapterForScope,
     plannerChainAdapters,
+    registeredPlanners,
     resolveAllSignerAddresses,
     resolveMinFeeForSender,
     reviewerChainAdapters,
@@ -47,6 +50,7 @@ import {
     registerFakePlannerAdapter,
 } from './fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './fakeReviewerAdapter'
+import { makeUnsignedTransaction } from './transactions'
 
 type WrapperName =
     | 'createTransactionListItems'
@@ -182,6 +186,85 @@ describe('planner chain adapters', () => {
             sig,
             'A',
         )
+    })
+})
+
+describe('planner helpers on a chain that registers no planner', () => {
+    const NO_PLANNER_CHAIN = 'fixturehex' as ChainId
+
+    beforeEach(() => {
+        registerFakePlannerAdapter()
+    })
+
+    it('keeps the suggested minimum fee, so no fee override applies', () => {
+        expect(
+            resolveMinFeeForSender(NO_PLANNER_CHAIN, {
+                senderAddress: 'A',
+                accounts: [],
+                suggestedMinFee: 1000n,
+                configMinTxnFee: 2000n,
+                pqMultiplier: 3n,
+            }),
+        ).toBe(1000n)
+    })
+
+    it('reports no balance impact', () => {
+        expect(
+            computeBalanceImpact(NO_PLANNER_CHAIN, [], new Set(['A'])),
+        ).toEqual({
+            deltas: [],
+            totalFeeMicroAlgos: 0n,
+            hasCloseRemainder: false,
+            closedAssetIds: [],
+            createdAssets: [],
+        })
+    })
+
+    it('needs no simulation', () => {
+        expect(needsSimulation(NO_PLANNER_CHAIN, [])).toBe(false)
+    })
+
+    it('treats a chain-neutral request as not multisig-unsignable', () => {
+        const request = {
+            id: 'r1',
+            type: 'transactions',
+            txs: [
+                makeUnsignedTransaction('0xA', {
+                    chainId: NO_PLANNER_CHAIN,
+                    networkId: 'devnet',
+                }),
+            ],
+        } as never
+
+        expect(isSignRequestMultisigUnsignable(request, [])).toBe(false)
+    })
+
+    it('leaves the registered planner untouched', () => {
+        const [planner] = registeredPlanners()
+        isSignRequestMultisigUnsignable(
+            { chainId: NO_PLANNER_CHAIN } as never,
+            [],
+        )
+        computeBalanceImpact(NO_PLANNER_CHAIN, [], new Set())
+
+        expect(planner.isSignRequestMultisigUnsignable).not.toHaveBeenCalled()
+        expect(planner.computeBalanceImpact).not.toHaveBeenCalled()
+    })
+})
+
+describe('registered planners', () => {
+    it('lists each planner once, in registration order, until reset', () => {
+        const algorand = registerFakePlannerAdapter()
+        const fixture = fakePlannerAdapter({
+            chainId: 'fixturehex' as ChainId,
+        })
+        plannerChainAdapters.register(fixture)
+        plannerChainAdapters.register(fixture)
+
+        expect(registeredPlanners()).toEqual([algorand, fixture])
+
+        plannerChainAdapters.reset()
+        expect(registeredPlanners()).toEqual([])
     })
 })
 

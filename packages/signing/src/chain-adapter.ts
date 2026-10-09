@@ -12,6 +12,7 @@
 
 import {
     createChainAdapterRegistry,
+    type ChainAdapterRegistry,
     type ChainId,
     type ChainScope,
     type Arc0001ResolveContext,
@@ -827,8 +828,32 @@ export interface PlannerChainAdapter {
     ): boolean
 }
 
-export const plannerChainAdapters =
+const plannerRegistry =
     createChainAdapterRegistry<PlannerChainAdapter>('planner')
+const plannersInRegistrationOrder: PlannerChainAdapter[] = []
+
+export const plannerChainAdapters: ChainAdapterRegistry<PlannerChainAdapter> = {
+    register: adapter => {
+        plannerRegistry.register(adapter)
+        if (!plannersInRegistrationOrder.includes(adapter)) {
+            plannersInRegistrationOrder.push(adapter)
+        }
+    },
+    get: chainId => plannerRegistry.get(chainId),
+    has: chainId => plannerRegistry.has(chainId),
+    reset: () => {
+        plannerRegistry.reset()
+        plannersInRegistrationOrder.length = 0
+    },
+}
+
+/**
+ * Every registered planner, in registration order. A hook that runs each
+ * planner's hook from this list calls the same hooks whatever chain it serves,
+ * because chains register before the first render.
+ */
+export const registeredPlanners = (): readonly PlannerChainAdapter[] =>
+    plannersInRegistrationOrder
 
 export const plannerAdapterForScope = (
     scope: ChainScope,
@@ -859,19 +884,42 @@ export const localKeySignerAdapterFor = (
     scope: ChainScope,
 ): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
+/** The suggested minimum, so no fee override, on a chain with no planner. */
 export const resolveMinFeeForSender = (
     chainId: ChainId,
     params: ResolveMinFeeForSenderParams,
-): bigint => plannerChainAdapters.get(chainId).minFeeForSender(params)
+): bigint =>
+    plannerChainAdapters.has(chainId)
+        ? plannerChainAdapters.get(chainId).minFeeForSender(params)
+        : params.suggestedMinFee
 
+const NO_BALANCE_IMPACT: BalanceImpact = {
+    deltas: [],
+    totalFeeMicroAlgos: 0n,
+    hasCloseRemainder: false,
+    closedAssetIds: [],
+    createdAssets: [],
+}
+
+/** No impact on a chain with no planner: there is nothing to compute it from. */
 export const computeBalanceImpact = (
     chainId: ChainId,
     transactions: PeraDisplayableTransaction[],
     userAddresses: Set<string>,
 ): BalanceImpact =>
-    plannerChainAdapters
-        .get(chainId)
-        .computeBalanceImpact(transactions, userAddresses)
+    plannerChainAdapters.has(chainId)
+        ? plannerChainAdapters
+              .get(chainId)
+              .computeBalanceImpact(transactions, userAddresses)
+        : NO_BALANCE_IMPACT
+
+/** False on a chain with no planner: nothing there needs simulating. */
+export const needsSimulation = (
+    chainId: ChainId,
+    transactions: PeraDisplayableTransaction[],
+): boolean =>
+    plannerChainAdapters.has(chainId) &&
+    plannerChainAdapters.get(chainId).needsSimulation(transactions)
 
 export const encodeProgramAccount = (
     chainId: ChainId,
@@ -895,10 +943,16 @@ export const completeMultisigHandoff = (
 ): Promise<void> =>
     plannerChainAdapters.get(chainId).completeMultisigHandoff(args)
 
+/** False on a chain with no planner: it has no multisig to be unsignable. */
 export const isSignRequestMultisigUnsignable = (
     request: SignRequest,
     accounts: WalletAccount[],
-): boolean =>
-    plannerChainAdapters
-        .get(chainIdOfSignRequest(request))
-        .isSignRequestMultisigUnsignable(request, accounts)
+): boolean => {
+    const chainId = chainIdOfSignRequest(request)
+    return (
+        plannerChainAdapters.has(chainId) &&
+        plannerChainAdapters
+            .get(chainId)
+            .isSignRequestMultisigUnsignable(request, accounts)
+    )
+}

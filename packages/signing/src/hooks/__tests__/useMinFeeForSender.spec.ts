@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinFeeForSender } from '../useMinFeeForSender'
 
@@ -40,5 +41,28 @@ describe('useMinFeeForSender', () => {
 
         expect(chainHook).toHaveBeenCalledWith(undefined)
         expect(result.current.minFee).toBeUndefined()
+    })
+
+    it('gives no fee on a chain with no planner, still running the registered hooks', () => {
+        const { result } = renderHook(() =>
+            useMinFeeForSender('0xA', 'fixturehex' as ChainId),
+        )
+
+        expect(result.current).toEqual({ minFee: undefined, isPending: false })
+        expect(chainHook).toHaveBeenCalledWith(undefined)
+    })
+
+    it('calls the same hooks when the chain changes between renders', () => {
+        const { result, rerender } = renderHook(
+            ({ chainId }: { chainId: ChainId }) =>
+                useMinFeeForSender('QADDR', chainId),
+            { initialProps: { chainId: 'algorand' as ChainId } },
+        )
+        expect(result.current.minFee).toBe(3000n)
+
+        rerender({ chainId: 'fixturehex' as ChainId })
+
+        expect(result.current.minFee).toBeUndefined()
+        expect(chainHook).toHaveBeenCalledTimes(2)
     })
 })

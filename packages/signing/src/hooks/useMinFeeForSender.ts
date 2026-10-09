@@ -12,21 +12,34 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
-    plannerChainAdapters,
+    registeredPlanners,
     type MinFeeForSenderResult,
 } from '../chain-adapter'
+
+const NO_MIN_FEE: MinFeeForSenderResult = {
+    minFee: undefined,
+    isPending: false,
+}
 
 /**
  * PQ-aware minimum fee for display and fee inputs: resolves the effective
  * signer of `senderAddress` and applies the remote-config PQ multiplier.
  * Keeps UI fee displays in agreement with fees applied when building
- * transactions.
+ * transactions. No fee on a chain with no planner.
  */
 export const useMinFeeForSender = (
     senderAddress: string | undefined,
     chainId: ChainId,
 ): MinFeeForSenderResult => {
-    const useChainMinFeeForSender =
-        plannerChainAdapters.get(chainId).useMinFeeForSender
-    return useChainMinFeeForSender(senderAddress)
+    let result = NO_MIN_FEE
+    // Every planner's hook runs, so the hooks called never depend on `chainId`;
+    // only the chain's own planner sees the sender.
+    for (const planner of registeredPlanners()) {
+        const isChain = planner.chainId === chainId
+        const chainResult = planner.useMinFeeForSender(
+            isChain ? senderAddress : undefined,
+        )
+        if (isChain) result = chainResult
+    }
+    return result
 }

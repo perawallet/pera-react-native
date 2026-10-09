@@ -12,17 +12,23 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import { plannerChainAdapters, type AssignFeeToGroup } from '../chain-adapter'
+import { registeredPlanners, type AssignFeeToGroup } from '../chain-adapter'
 
 export type UseMinimumFeeCalculatorResult = {
     assignFeeToGroup: AssignFeeToGroup
 }
 
+const keepFees: AssignFeeToGroup = async ({ transactions }) => ({
+    transactions,
+    adjustments: [],
+})
+
 /**
  * The one place callers assign required minimum fees to a transaction group.
  * `assignFeeToGroup` returns the group with any underfunded fees raised, plus a
  * `FeeAdjustment` record per raise (empty and reference-identical when nothing
- * needed raising, so the no-op path is free to always call).
+ * needed raising, so the no-op path is free to always call). A chain with no
+ * planner keeps the group's fees as they are.
  *
  * Throws `InvalidSignableDataError` when a fee must be raised but the group is
  * invalid as received (stale/tampered group ID).
@@ -30,8 +36,11 @@ export type UseMinimumFeeCalculatorResult = {
 export const useMinimumFeeCalculator = (
     chainId: ChainId,
 ): UseMinimumFeeCalculatorResult => {
-    const useAssignFeeToGroup =
-        plannerChainAdapters.get(chainId).useAssignFeeToGroup
-
-    return { assignFeeToGroup: useAssignFeeToGroup() }
+    let assignFeeToGroup = keepFees
+    // Every planner's hook runs, so the hooks called never depend on `chainId`.
+    for (const planner of registeredPlanners()) {
+        const chainAssigner = planner.useAssignFeeToGroup()
+        if (planner.chainId === chainId) assignFeeToGroup = chainAssigner
+    }
+    return { assignFeeToGroup }
 }

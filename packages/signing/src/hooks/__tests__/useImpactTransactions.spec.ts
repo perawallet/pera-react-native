@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type {
+    ChainId,
     ChainScope,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -118,5 +119,22 @@ describe('useImpactTransactions', () => {
         const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(result.current.simulationFailed).toBe(false)
+    })
+
+    test('never simulates on a chain with no planner', () => {
+        mockPipeline([appCall])
+        const scope: ChainScope = {
+            chainId: 'fixturehex' as ChainId,
+            networkId: 'devnet',
+        }
+
+        const { result } = renderHook(() => useImpactTransactions(scope))
+
+        expect(result.current.transactions).toEqual([appCall])
+        expect(result.current.isSimulating).toBe(false)
+        expect(result.current.simulationFailed).toBe(false)
+        expect(useGroupSimulationQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ enabled: false }),
+        )
     })
 })
