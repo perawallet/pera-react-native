@@ -87,14 +87,14 @@ const createFakeKeystore = () => {
                 chain: { addressFromPublicKey(publicKey: Uint8Array): string }
             }) => {
                 const n = ++minted
+                const publicKey = new Uint8Array(32).fill(n)
                 return {
                     seedKey: {
                         id: params.reuseSeedId ?? params.id ?? `seed-${n}`,
                     },
-                    address: params.chain.addressFromPublicKey(
-                        new Uint8Array(32).fill(n),
-                    ),
+                    address: params.chain.addressFromPublicKey(publicKey),
                     signKeyId: `seed-${n}-sign`,
+                    publicKey,
                 }
             },
         ),

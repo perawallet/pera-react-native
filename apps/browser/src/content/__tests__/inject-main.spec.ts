@@ -66,6 +66,7 @@ describe('window.pera provider', () => {
             'connect',
             'disconnect',
             'getAddresses',
+            'getEmptySignatures',
             'signTransactions',
             'signData',
             'on',
@@ -154,6 +155,23 @@ describe('window.pera provider', () => {
             method: 'requestTransactionSigning',
             params: { txns: [{ txn: 'AA==' }], opts: { message: 'm' } },
         })
+        relay.detach()
+    })
+
+    it('getEmptySignatures sends its options, or an empty object, as params', async () => {
+        const relay = stubRelay(sent => ({
+            jsonrpc: '2.0',
+            id: sent.request.id,
+            result: { A: 'gA==' },
+        }))
+        await expect(
+            window.pera.getEmptySignatures({ network: 'mainnet' }),
+        ).resolves.toEqual({ A: 'gA==' })
+        await window.pera.getEmptySignatures()
+        expect(relay.sent.map(({ request }) => request)).toMatchObject([
+            { method: 'getEmptySignatures', params: { network: 'mainnet' } },
+            { method: 'getEmptySignatures', params: {} },
+        ])
         relay.detach()
     })
 

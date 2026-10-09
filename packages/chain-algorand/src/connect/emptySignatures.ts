@@ -42,6 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { PQ_SCHEMES } from '../blockchain/pq/schemes'
+import { storedQuantumPublicKey } from '../accounts/quantum'
 
 export type EmptySignatureFields = {
     msig?: EncodedMultisig
@@ -91,10 +92,15 @@ export const emptySignatureFieldsOf = (
     auth: WalletAccount,
 ): Nullable<Omit<EmptySignatureFields, 'sgnr'>> => {
     if (isQuantumAccount(auth)) {
-        const info = resolvePQSigningInfo(
-            getKeystoreStore().state.keys,
-            auth.keyPairId,
-        )
+        // The stored key first: the extension's offscreen document has no
+        // keystore it can open. `pq.scheme` admits only Falcon-1024.
+        const stored = storedQuantumPublicKey(auth)
+        const info = stored
+            ? { schemeId: 'falcon1024' as const, publicKey: stored }
+            : resolvePQSigningInfo(
+                  getKeystoreStore().state.keys,
+                  auth.keyPairId,
+              )
         if (!info) return null
         const scheme = PQ_SCHEMES[info.schemeId]
         const { salt } = addressFromPQKey(scheme, info.publicKey)

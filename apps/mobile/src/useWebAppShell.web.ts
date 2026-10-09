@@ -35,12 +35,19 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import {
+    backfillAccountRecords,
     hydrateAccountChainStates,
+    useAccountsStore,
     useHasAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@providers/QueryProvider'
+import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
+
+// Past it this launch backfills nothing and the next one retries; see
+// waitForStoreHydration for why the wait needs a ceiling at all.
+const ACCOUNTS_HYDRATION_TIMEOUT_MS = 2000
 
 // The keystore asks for this on every seal and open. Registered here because
 // the provider cannot import the vault, and every surface that opens material
@@ -140,6 +147,13 @@ export const useWebAppShell = (): UseWebAppShellResult => {
                     reminted: resealReport.reminted,
                 })
             }
+            // The offscreen document can't open the keystore, so it reads what
+            // this records (quantum public keys) through the synced accounts store.
+            await waitForStoreHydration(
+                useAccountsStore,
+                ACCOUNTS_HYDRATION_TIMEOUT_MS,
+            )
+            backfillAccountRecords()
             await initializeDatabase(getProvider().database)
             await seedNativeAssets(getDatabase())
             await hydrateAccountChainStates()

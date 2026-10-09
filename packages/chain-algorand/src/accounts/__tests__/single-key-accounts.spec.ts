@@ -25,6 +25,7 @@ import {
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
 } from '@perawallet/wallet-core-kms'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAddressCodec } from '../address-codec'
 import { algorandAccountExists } from '../discovery'
@@ -62,6 +63,15 @@ const ALGO25_ADDRESS =
 
 const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
 const ALGO25_PUBLIC_KEY = new Uint8Array(32).fill(7)
+const QUANTUM_PUBLIC_KEY = new Uint8Array(1793).fill(9)
+// Stored so a realm without keystore access can still describe the account.
+const QUANTUM_NATIVE = {
+    family: 'algorand',
+    pq: {
+        scheme: 'falcon-1024',
+        publicKey: encodeToBase64(QUANTUM_PUBLIC_KEY),
+    },
+}
 
 const seedKey = (id: string) => ({ id }) as never
 
@@ -112,6 +122,7 @@ describe('algorandSingleKeyAccounts', () => {
                     signKeyId: isLegacy
                         ? `${seedId}-quantum`
                         : `${seedId}-quantum-pqk1`,
+                    publicKey: QUANTUM_PUBLIC_KEY,
                 }
             },
         )
@@ -198,6 +209,7 @@ describe('algorandSingleKeyAccounts', () => {
                     algorand: {
                         address: CANONICAL_ADDRESS,
                         keyPairId: 'QSEED1-quantum-pqk1',
+                        native: QUANTUM_NATIVE,
                     },
                 },
             })
@@ -265,6 +277,7 @@ describe('algorandSingleKeyAccounts', () => {
                 algorand: {
                     address: CANONICAL_ADDRESS,
                     keyPairId: 'QSEED1-quantum-pqk1',
+                    native: QUANTUM_NATIVE,
                 },
             })
             expect(keystore.createQuantumKey).toHaveBeenCalledWith({
@@ -338,6 +351,7 @@ describe('algorandSingleKeyAccounts', () => {
                     seedKey: seedKey('QSEED1'),
                     address: CANONICAL_ADDRESS,
                     signKeyId: 'QSEED1-quantum-pqk1',
+                    publicKey: QUANTUM_PUBLIC_KEY,
                 })
                 .mockRejectedValueOnce(new Error('boom'))
 

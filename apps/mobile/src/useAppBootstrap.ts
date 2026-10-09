@@ -37,6 +37,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
+    backfillAccountRecords,
     hydrateAccountChainStates,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
@@ -232,6 +233,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     languageBranch,
                     launchAccountBranch,
                 ])
+
+                // Needs the hydrated keystore and accounts store, both awaited above.
+                backfillAccountRecords()
 
                 // Runs before the splash lifts so signing never reads an unhydrated slice.
                 await hydrateAccountChainStates()

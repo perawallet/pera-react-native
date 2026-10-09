@@ -38,7 +38,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
-import { algorandQuantumDerivation } from './quantum'
+import { algorandQuantumDerivation, quantumNative } from './quantum'
 
 type Save = (minted: MintedAccount) => Promise<void>
 
@@ -111,6 +111,7 @@ const createQuantum = async (
                     [ALGORAND_CHAIN_ID]: {
                         address: result.address,
                         keyPairId: result.signKeyId,
+                        native: quantumNative(result.publicKey),
                     },
                 },
             }),
@@ -206,6 +207,7 @@ const importQuantum = async (
                                       PQ_DERIVATION_CANONICAL,
                                   )
                                 : result.signKeyId,
+                        native: quantumNative(result.publicKey),
                     },
                 },
             }),

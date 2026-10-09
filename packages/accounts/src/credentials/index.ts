@@ -26,6 +26,7 @@ export {
     type AccountForCustody,
     type BuildAccountInput,
 } from './buildAccount'
+export { backfillAccountRecords } from './backfillRecords'
 export { credentialScheme, type SchemeChain } from './credentialScheme'
 export {
     canDerive,

@@ -279,6 +279,11 @@ export interface AccountsChainAdapter {
         account: WalletAccount,
         accounts: WalletAccount[],
     ): WalletAccount | null
+    /**
+     * Fills in record data this chain needs that older records lack, or
+     * returns `account` itself. May read the keystore.
+     */
+    backfillRecord?(account: WalletAccount): WalletAccount
 }
 
 export const accountsChainAdapters =

@@ -37,6 +37,7 @@ import { algorandEmptySignaturesFor } from '../emptySignatures'
 const state = vi.hoisted(() => ({
     accounts: [] as unknown[],
     pqPublicKey: new Uint8Array(),
+    isKeystoreOpen: true,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -48,10 +49,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
-    resolvePQSigningInfo: () => ({
-        schemeId: 'falcon1024',
-        publicKey: state.pqPublicKey,
-    }),
+    resolvePQSigningInfo: () => {
+        if (!state.isKeystoreOpen) throw new Error('keystore cannot open')
+        return { schemeId: 'falcon1024', publicKey: state.pqPublicKey }
+    },
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -122,6 +123,7 @@ beforeAll(() => {
 beforeEach(() => {
     state.accounts = []
     state.pqPublicKey = PQ_PUBLIC_KEY
+    state.isKeystoreOpen = true
 })
 
 describe('algorandEmptySignaturesFor', () => {
@@ -142,6 +144,32 @@ describe('algorandEmptySignaturesFor', () => {
 
     it('matches algosdk for a post-quantum account', async () => {
         state.accounts = [quantum(PQ_ADDRESS)]
+
+        expect(algorandEmptySignaturesFor([PQ_ADDRESS])).toEqual({
+            [PQ_ADDRESS]: await algosdkPqEmptySignature(PQ_ADDRESS),
+        })
+    })
+
+    // The extension's offscreen document has no keystore it can open.
+    it('builds the pqsig from the key stored on the account when the keystore cannot open', async () => {
+        state.isKeystoreOpen = false
+        state.accounts = [
+            {
+                ...quantum(PQ_ADDRESS),
+                chains: {
+                    algorand: {
+                        address: PQ_ADDRESS,
+                        native: {
+                            family: 'algorand',
+                            pq: {
+                                scheme: 'falcon-1024',
+                                publicKey: encodeToBase64(PQ_PUBLIC_KEY),
+                            },
+                        },
+                    },
+                },
+            },
+        ]
 
         expect(algorandEmptySignaturesFor([PQ_ADDRESS])).toEqual({
             [PQ_ADDRESS]: await algosdkPqEmptySignature(PQ_ADDRESS),

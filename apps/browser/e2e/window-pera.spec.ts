@@ -268,6 +268,20 @@ test('a second connect resolves silently with the same account and no window', a
     expect(context.pages().length).toBe(pagesBefore)
 })
 
+test('connect and getEmptySignatures both mark the ed25519 account, with no window', async () => {
+    const pagesBefore = context.pages().length
+
+    const [fromConnect, fromRequest] = await dappPage.evaluate(async () => [
+        (await window.pera.connect()).emptySignatures,
+        await window.pera.getEmptySignatures(),
+    ])
+
+    // `gA==` is an empty map: an ed25519 signature with no rekey.
+    expect(fromConnect).toEqual({ [grantedAddress]: 'gA==' })
+    expect(fromRequest).toEqual(fromConnect)
+    expect(context.pages().length).toBe(pagesBefore)
+})
+
 test('getAddresses returns the approved account', async () => {
     await dappPage.getByTestId('addresses').click()
 

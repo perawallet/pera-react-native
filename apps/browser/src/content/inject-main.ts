@@ -43,6 +43,8 @@ export type PeraConnectOptions = {
     icons?: string[]
     network?: string
 }
+/** Address to base64 empty signature; see {@link PeraConnectResult}. */
+export type PeraEmptySignatures = Record<string, string>
 export type PeraConnectResult = {
     accounts: PeraAccount[]
     network: string
@@ -50,7 +52,7 @@ export type PeraConnectResult = {
      * Address to base64 msgpack `SignedTransaction` minus `txn`, per use-wallet's
      * empty-signature spec. An address left out is of unknown account type.
      */
-    emptySignatures: Record<string, string>
+    emptySignatures: PeraEmptySignatures
 }
 export type PeraEvent = keyof typeof DAPP_NOTIFICATIONS
 export type PeraSignTransactionsItem = {
@@ -66,6 +68,10 @@ export type PeraProvider = {
     connect(options?: PeraConnectOptions): Promise<PeraConnectResult>
     disconnect(): Promise<void>
     getAddresses(): Promise<PeraAccount[]>
+    /** `network` is refused unless it is the wallet's current one. */
+    getEmptySignatures(options?: {
+        network?: string
+    }): Promise<PeraEmptySignatures>
     signTransactions(
         txns: PeraSignTransactionsItem[],
         opts?: { message?: string },
@@ -195,6 +201,11 @@ const provider: PeraProvider = Object.freeze({
     connect,
     disconnect: () => send('disconnect').then(() => undefined),
     getAddresses: () => send('getAddresses') as Promise<PeraAccount[]>,
+    getEmptySignatures: options =>
+        send(
+            'getEmptySignatures',
+            options ?? {},
+        ) as Promise<PeraEmptySignatures>,
     signTransactions: (txns, opts) =>
         send(
             'requestTransactionSigning',

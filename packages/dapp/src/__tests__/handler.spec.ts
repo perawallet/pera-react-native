@@ -165,9 +165,12 @@ describe('DappConnectionHandler', () => {
                 icons: ['https://app.example/icon.png'],
             })
             expect(proposal.requesterOrigin).toBe(ORIGIN)
+            // Empty signatures are served unprompted, never granted.
             expect(proposal.requested).toEqual({
                 networks: ['mainnet'],
-                methods: [...DAPP_METHODS],
+                methods: DAPP_METHODS.filter(
+                    method => method !== 'getEmptySignatures',
+                ),
             })
             expect(proposal.pairingId).toBeUndefined()
 
@@ -649,6 +652,64 @@ describe('DappConnectionHandler', () => {
                         m.connectionId === ORIGIN,
                 ),
             ).toBe(true)
+        })
+    })
+
+    describe('getEmptySignatures', () => {
+        const signaturesAdapter = () =>
+            fakeChainAdapter({
+                emptySignaturesFor: addresses =>
+                    Object.fromEntries(
+                        addresses.map(address => [address, 'gA==']),
+                    ),
+            })
+
+        it("answers a connected origin with its live accounts' empty signatures, no prompt", async () => {
+            const { transport, registry, proposals, messages } = setup(
+                [{ ...connected(), accounts: [ADDR_A, ADDR_C] }],
+                { adapter: signaturesAdapter() },
+            )
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'getEmptySignatures',
+                { network: 'mainnet' },
+                { hasUserActivation: false },
+            )
+
+            // ADDR_C is no longer a signing account, so it is never answered.
+            expect(resultOf(response)).toEqual({ [ADDR_A]: 'gA==' })
+            expect(proposals).toHaveLength(0)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('refuses an origin that is not connected', async () => {
+            const { transport, registry } = setup([], {
+                adapter: signaturesAdapter(),
+            })
+            await registry.initialize()
+
+            const response = await transport.send(ORIGIN, 'getEmptySignatures')
+
+            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
+        })
+
+        it("refuses a network other than the wallet's current one", async () => {
+            const { transport, registry } = setup([connected()], {
+                adapter: signaturesAdapter(),
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'getEmptySignatures',
+                { network: 'testnet' },
+            )
+
+            expect(errorOf(response)?.code).toBe(
+                JsonRpcErrorCode.NetworkNotSupported,
+            )
         })
     })
 

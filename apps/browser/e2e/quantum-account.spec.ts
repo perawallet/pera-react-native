@@ -206,11 +206,34 @@ test('a dApp signing request from the quantum account returns a valid Falcon pqs
         .not.toBe('')
     const connected = JSON.parse(
         (await dappPage.locator('#connect-result').textContent()) ?? '{}',
-    ) as { accounts: { address: string }[] }
+    ) as {
+        accounts: { address: string }[]
+        emptySignatures: Record<string, string>
+    }
     await connect.approvalPage.close()
     expect(connected.accounts.map(account => account.address)).toContain(
         quantumAddress,
     )
+
+    // Built in the offscreen document from the keystore's public metadata:
+    // the key must commit to the account's address and carry no signature.
+    const emptySignature = algosdk.msgpackRawDecodeAsMap(
+        Buffer.from(connected.emptySignatures[quantumAddress] ?? '', 'base64'),
+    ) as Map<string, unknown>
+    expect([...emptySignature.keys()]).toEqual(['pqsig'])
+    const emptyPqsig = emptySignature.get('pqsig') as Map<string, Uint8Array>
+    expect(emptyPqsig.has('sig')).toBe(false)
+    expect(
+        algosdk
+            .addressFromPQKey(
+                emptyPqsig.get('sch') as Uint8Array,
+                emptyPqsig.get('pk') as Uint8Array,
+            )
+            .address.toString(),
+    ).toBe(quantumAddress)
+    await expect(
+        dappPage.evaluate(() => window.pera.getEmptySignatures()),
+    ).resolves.toEqual(connected.emptySignatures)
 
     const { genesisHash } = getNetworkConfig(Networks.mainnet)
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({

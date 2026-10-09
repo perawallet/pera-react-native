@@ -29,6 +29,7 @@ import { algorandNetworkOf } from '../legacy-network'
 import { algorandAuthority } from './authority'
 import { algorandLegacyDetails } from './legacy-details'
 import { algorandQuantumDerivation } from './quantum'
+import { withStoredQuantumPublicKey } from './quantumPublicKeyBackfill'
 import { algorandSingleKeyAccounts } from './single-key-accounts'
 import {
     getAlgorandAuthAccount,
@@ -66,4 +67,5 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     authority: algorandAuthority,
     resolveSigner: resolveAlgorandSigner,
     getAuthAccount: getAlgorandAuthAccount,
+    backfillRecord: withStoredQuantumPublicKey,
 }
