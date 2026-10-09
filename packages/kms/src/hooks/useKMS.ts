@@ -396,6 +396,7 @@ export const useKMS = () => {
         executeWithMnemonic,
         deriveSecp256k1Child: core.deriveSecp256k1Child,
         importSecp256k1Key: core.importSecp256k1Key,
+        exportSecp256k1Key: core.exportSecp256k1Key,
         signSecp256k1Digest: core.signSecp256k1Digest,
     }
 }

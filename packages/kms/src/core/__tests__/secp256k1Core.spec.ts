@@ -66,14 +66,18 @@ const deriveFromSeed = vi.fn(
         return opts!.id!
     },
 )
+const sealedPrivateKeys = new Map<string, Uint8Array>()
+// The buffers `export` handed out, to check the core scrubs the keystore's copy.
+let exportedBuffers: Uint8Array[] = []
 const importKey = vi.fn(async (data: KeyData) => {
+    sealedPrivateKeys.set(data.id, Uint8Array.from(data.privateKey ?? []))
     keys = [
         ...keys,
         {
             id: data.id,
             type: data.type,
             algorithm: data.algorithm,
-            extractable: false,
+            extractable: data.extractable,
             publicKey: PUBLIC_KEY,
             metadata: data.metadata,
         },
@@ -81,9 +85,20 @@ const importKey = vi.fn(async (data: KeyData) => {
     return data.id
 })
 const sign = vi.fn(async () => Uint8Array.from(SIGNATURE))
+const exportKey = vi.fn(async (id: string) => {
+    const sealed = sealedPrivateKeys.get(id)
+    const privateKey = sealed ? Uint8Array.from(sealed) : undefined
+    if (privateKey) exportedBuffers.push(privateKey)
+    return { id, privateKey }
+})
 
 const keyStore = () =>
-    ({ deriveFromSeed, import: importKey, sign }) as unknown as KeyStoreAPI
+    ({
+        deriveFromSeed,
+        import: importKey,
+        sign,
+        export: exportKey,
+    }) as unknown as KeyStoreAPI
 
 const makeCore = () => createKmsCore({ keyStore, keys: () => keys })
 
@@ -109,6 +124,7 @@ const expectNoKeystoreCall = () => {
     expect(deriveFromSeed).not.toHaveBeenCalled()
     expect(importKey).not.toHaveBeenCalled()
     expect(sign).not.toHaveBeenCalled()
+    expect(exportKey).not.toHaveBeenCalled()
 }
 
 const deriveFirst = (domain = SIGNING_ACCESS_DOMAIN, path = FIRST_PATH) =>
@@ -118,6 +134,8 @@ describe('createKmsCore secp256k1', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         keys = [seedKey(), entropyKey()]
+        sealedPrivateKeys.clear()
+        exportedBuffers = []
     })
 
     describe('deriveSecp256k1Child', () => {
@@ -303,7 +321,7 @@ describe('createKmsCore secp256k1', () => {
             },
         )
 
-        test('seals a valid key as non-extractable and zeroes the input', async () => {
+        test('seals a valid key as extractable and zeroes the input', async () => {
             const input = Uint8Array.from(VALID_KEY)
 
             const imported = await makeCore().importSecp256k1Key(
@@ -321,7 +339,7 @@ describe('createKmsCore secp256k1', () => {
                     id: 'imported-1',
                     type: SECP256K1_IMPORTED_KEY_TYPE,
                     algorithm: SECP256K1_KEY_ALGORITHM,
-                    extractable: false,
+                    extractable: true,
                 }),
                 'raw',
             )
@@ -344,6 +362,47 @@ describe('createKmsCore secp256k1', () => {
             expect(isZero(input)).toBe(true)
         })
 
+        test('importing the same key again resolves to its entry without touching the keystore', async () => {
+            await makeCore().importSecp256k1Key(
+                Uint8Array.from(VALID_KEY),
+                { id: 'imported-1' },
+                SIGNING_ACCESS_DOMAIN,
+            )
+            vi.clearAllMocks()
+            const again = Uint8Array.from(VALID_KEY)
+
+            const imported = await makeCore().importSecp256k1Key(
+                again,
+                { id: 'imported-1' },
+                SIGNING_ACCESS_DOMAIN,
+            )
+
+            expect(imported).toEqual({
+                keyPairId: 'imported-1',
+                publicKey: PUBLIC_KEY,
+            })
+            expectNoKeystoreCall()
+            expect(isZero(again)).toBe(true)
+        })
+
+        test('an imported entry under another parent is not the same key', async () => {
+            await makeCore().importSecp256k1Key(
+                Uint8Array.from(VALID_KEY),
+                { id: 'imported-1' },
+                SIGNING_ACCESS_DOMAIN,
+            )
+            vi.clearAllMocks()
+
+            await expect(
+                makeCore().importSecp256k1Key(
+                    Uint8Array.from(VALID_KEY),
+                    { id: 'imported-1', parentKeyId: SEED_ID },
+                    SIGNING_ACCESS_DOMAIN,
+                ),
+            ).rejects.toBeInstanceOf(KeyManagementError)
+            expectNoKeystoreCall()
+        })
+
         test('a parentless import under a foreign domain is refused', async () => {
             const input = Uint8Array.from(VALID_KEY)
 
@@ -356,6 +415,66 @@ describe('createKmsCore secp256k1', () => {
             ).rejects.toBeInstanceOf(KeyAccessError)
             expectNoKeystoreCall()
             expect(isZero(input)).toBe(true)
+        })
+    })
+
+    describe('exportSecp256k1Key', () => {
+        const importFirst = () =>
+            makeCore().importSecp256k1Key(
+                Uint8Array.from(VALID_KEY),
+                { id: 'imported-1' },
+                SIGNING_ACCESS_DOMAIN,
+            )
+
+        test('returns the imported bytes and zeroes the keystore copy', async () => {
+            await importFirst()
+
+            const exported = await makeCore().exportSecp256k1Key(
+                'imported-1',
+                SIGNING_ACCESS_DOMAIN,
+            )
+
+            expect(exported).toEqual(Uint8Array.from(VALID_KEY))
+            expect(exportedBuffers).toHaveLength(1)
+            expect(isZero(exportedBuffers[0])).toBe(true)
+        })
+
+        test('never exports a derived child', async () => {
+            await deriveFirst()
+            vi.clearAllMocks()
+
+            await expect(
+                makeCore().exportSecp256k1Key(FIRST_ID, SIGNING_ACCESS_DOMAIN),
+            ).rejects.toBeInstanceOf(InvalidKeyError)
+            expect(exportKey).not.toHaveBeenCalled()
+        })
+
+        test('refuses a foreign domain before the keystore is read', async () => {
+            await importFirst()
+            vi.clearAllMocks()
+
+            await expect(
+                makeCore().exportSecp256k1Key('imported-1', FOREIGN_DOMAIN),
+            ).rejects.toBeInstanceOf(KeyAccessError)
+            expect(exportKey).not.toHaveBeenCalled()
+        })
+
+        test('an entry the keystore holds no private key for is a keystore error', async () => {
+            await importFirst()
+            sealedPrivateKeys.clear()
+
+            await expect(
+                makeCore().exportSecp256k1Key(
+                    'imported-1',
+                    SIGNING_ACCESS_DOMAIN,
+                ),
+            ).rejects.toBeInstanceOf(KeyManagementError)
+        })
+
+        test('an unknown id is not found', async () => {
+            await expect(
+                makeCore().exportSecp256k1Key('missing', SIGNING_ACCESS_DOMAIN),
+            ).rejects.toBeInstanceOf(KeyNotFoundError)
         })
     })
 
