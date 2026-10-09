@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
-    ParticipantIsQuantumError,
+    ParticipantSchemeUnsupportedError,
     ParticipantIsWatchError,
     ParticipantVerdicts,
     useIsMultisigAddressQuery,
@@ -129,7 +129,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         }
 
         if (verdictCheck.verdict === ParticipantVerdicts.incompatibleScheme) {
-            showValidationError(new ParticipantIsQuantumError())
+            showValidationError(new ParticipantSchemeUnsupportedError())
             setSelectedAddress('')
             setSelectedNfdName(undefined)
             return
@@ -164,7 +164,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
                 if (
                     !signsWithParticipantScheme(localAccount, LEGACY_CHAIN_ID)
                 ) {
-                    showValidationError(new ParticipantIsQuantumError())
+                    showValidationError(new ParticipantSchemeUnsupportedError())
                     return
                 }
                 resolve({ address, nfdName })
