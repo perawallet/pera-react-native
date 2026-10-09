@@ -50,10 +50,11 @@ const SOURCE = {
     description: 'Opt in to an asset',
 }
 
-// minPrecision 0 trims trailing zeros, so 0.1 ALGO reads "0.1", not "0.100000".
-const formatAlgoShortfall = (microAlgos: bigint): string =>
+// `shortfall` is in base units. minPrecision 0 trims trailing zeros, so 0.1
+// ALGO reads "0.1", not "0.100000".
+const formatAlgoShortfall = (shortfall: bigint): string =>
     formatCurrency(
-        microAlgosToAlgos(microAlgos),
+        microAlgosToAlgos(shortfall),
         6,
         'ALGO',
         undefined,
