@@ -64,7 +64,7 @@ const accountOfType = (type: AccountType): WalletAccount =>
 
 const rekeyedAccount: WalletAccount = {
     id: 'rekeyed-account',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'REKEYED_ADDR',
     keyPairId: 'key-1',
 }
@@ -114,7 +114,7 @@ describe('useAccountTypeLabel', () => {
 
     it.each([
         ['hdWallet', 'account_info.type_universal_wallet'],
-        ['algo25', 'account_info.type_algo25'],
+        ['standalone', 'account_info.type_algo25'],
         ['hardware', 'account_info.type_ledger'],
         ['watch', 'account_info.type_watch'],
         ['quantum', 'account_info.type_quantum'],

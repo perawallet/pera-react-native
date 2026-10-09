@@ -80,7 +80,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'sender-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',

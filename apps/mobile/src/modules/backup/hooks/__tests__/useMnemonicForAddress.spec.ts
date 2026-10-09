@@ -65,7 +65,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for an algo25 account', async () => {
         const account: WalletAccount = {
             id: 'algo25-account',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A25_ADDR',
             keyPairId: 'wallet-2',
         }

@@ -21,6 +21,9 @@ const kvStore = new Map<string, string>()
 // vi.resetModules must see what the test registered.
 const chains = createChainRegistry()
 
+// Tests read it back through `getProvider().key.store.remove`.
+const removeKey = vi.fn()
+
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
         keyValueStorage: {
@@ -52,11 +55,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
         chains,
+        key: { store: { remove: removeKey } },
     }),
 }))
 
 // Hooks and the syncer resolve the chain through the registries.
 beforeEach(() => {
+    removeKey.mockReset()
     chains.reset()
     registerFakeAccountsChain()
     registerFakeAssetsAdapter()

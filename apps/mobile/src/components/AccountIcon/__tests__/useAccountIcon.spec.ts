@@ -55,7 +55,7 @@ describe('useAccountIcon', () => {
 
     it('maps a base algo25 account to the turquoise glyph', () => {
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25)),
+            useAccountIcon(account(AccountTypes.standalone)),
         )
         expect(result.current).toEqual({
             name: 'accounts/glyph/algo25-account',
@@ -77,7 +77,7 @@ describe('useAccountIcon', () => {
         vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(true)
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25)),
+            useAccountIcon(account(AccountTypes.standalone)),
         )
         expect(result.current).toEqual({
             name: 'accounts/glyph/rekeyed-standard',
@@ -92,7 +92,7 @@ describe('useAccountIcon', () => {
             account(AccountTypes.hardware),
         )
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25)),
+            useAccountIcon(account(AccountTypes.standalone)),
         )
         expect(result.current).toEqual({
             name: 'accounts/glyph/rekeyed-ledger',
@@ -142,7 +142,7 @@ describe('useAccountIcon', () => {
         vi.mocked(useAuthorityOf).mockReturnValue('AUTH')
         vi.mocked(useCanSignWith).mockReturnValue(false)
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25)),
+            useAccountIcon(account(AccountTypes.standalone)),
         )
         expect(result.current).toEqual({
             name: 'accounts/glyph/noauth-account',
@@ -178,7 +178,7 @@ describe('useAccountIcon', () => {
 
     it('lets an explicit displayState override the derived state', () => {
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25), {
+            useAccountIcon(account(AccountTypes.standalone), {
                 displayState: 'rekeyedUnsignable',
             }),
         )

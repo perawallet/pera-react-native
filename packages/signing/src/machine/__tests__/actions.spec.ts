@@ -406,7 +406,7 @@ describe('quantum-signed transactions over the callback transport', () => {
     const userAddr = makeTestAddress(11)
     const dappAddr = makeTestAddress(12)
     const userAccount = {
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: userAddr.toString(),
         keyPairId: 'key-quantum-cb',
     } as unknown as WalletAccount

@@ -14,7 +14,7 @@ import {
     accountType,
     canSignArbitraryData,
     InvalidBip44PathError,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
     type WalletAccount,
@@ -85,7 +85,7 @@ export const signArc60AuthRequest = async (
                 throw caught
             }
         }
-    } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
+    } else if (isStandaloneAccount(account) || isQuantumAccount(account)) {
         // Neither Algo25 nor quantum accounts are BIP-44 derived, so an
         // hdPath is meaningless for them and is rejected rather than ignored.
         if (hdPath) {

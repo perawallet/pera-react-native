@@ -45,7 +45,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT_A: WalletAccount = {
     id: 'reactivity-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'A'.repeat(58),
     keyPairId: 'reactivity-a-key',
     name: 'Funder',

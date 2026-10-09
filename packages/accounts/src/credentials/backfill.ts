@@ -24,6 +24,9 @@ import type {
 } from '../models'
 import { buildAccount } from './buildAccount'
 
+/** `algo25` is only ever read: it is what a standalone account was persisted as. */
+export type LegacyAccountType = Exclude<AccountType, 'standalone'> | 'algo25'
+
 export type CustodyFields = {
     custody: AccountCustody
     chains: AccountChains
@@ -32,7 +35,7 @@ export type CustodyFields = {
 /** An account as store v0-v2 persisted it: `type` is authoritative and `custody` may be absent or stale. */
 export type PersistedAccountRecord = Omit<BaseWalletAccount, 'custody'> & {
     address: string
-    type?: AccountType
+    type?: LegacyAccountType
     custody?: AccountCustody
     hdWalletDetails?: HDWalletDetails
     hardwareDetails?: HardwareWalletDetails
@@ -52,10 +55,15 @@ export const custodyFromLegacy = (
         ? { address, keyPairId: account.keyPairId }
         : { address }
     switch (account.type) {
-        case 'algo25':
+        case 'algo25': {
+            return {
+                custody: { kind: 'local', seed: null },
+                chains: { [LEGACY_CHAIN_ID]: keyed },
+            }
+        }
         case 'quantum': {
             return {
-                custody: { kind: 'local', seed: account.type },
+                custody: { kind: 'local', seed: 'quantum' },
                 chains: { [LEGACY_CHAIN_ID]: keyed },
             }
         }

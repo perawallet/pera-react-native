@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useDelegatedAccount: () => null,
     useSignerFor: () => null,
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',

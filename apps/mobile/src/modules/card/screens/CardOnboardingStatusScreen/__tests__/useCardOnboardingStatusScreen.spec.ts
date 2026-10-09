@@ -447,7 +447,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('resolves the connected funding source from the wallet', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25', { name: 'Spending' })]
+        mockAccounts = [account('ADDR1', 'standalone', { name: 'Spending' })]
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.isFundsConnected).toBe(true)
@@ -626,7 +626,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('navigates to the signing screen with the selected funding type when the account can sign', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -723,7 +723,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('flags auto funding unavailable when the kill-switch flag is off', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         mockIsAutoFundingEnabled = false
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
@@ -734,7 +734,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('migrates the Auto default to Manual when the kill-switch flag is off', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         mockIsAutoFundingEnabled = false
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 

@@ -155,7 +155,7 @@ const seedRekeyInAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-in-source',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
@@ -202,7 +202,7 @@ const seedRekeyOutAccounts = async (): Promise<{
     }
     const target: WalletAccount = {
         id: 'rekey-out-target',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: HD_TEST_ADDRESS,
         keyPairId: 'rekey-out-target-key',
         name: 'Target',

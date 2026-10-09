@@ -28,8 +28,8 @@ const device = {
 const multisig = { version: 1, threshold: 2, addresses: ['P1', 'P2'] }
 
 const inputs: Record<string, BuildAccountInput> = {
-    algo25: {
-        custody: { kind: 'local', seed: 'algo25' },
+    standalone: {
+        custody: { kind: 'local', seed: null },
         chainId: 'algorand',
         chains: { algorand: { address: 'ADDR', keyPairId: 'seed-ed25519' } },
     },
@@ -78,12 +78,12 @@ describe('buildAccount', () => {
         registerFakeAccountsChain()
     })
 
-    test('builds a legacy algo25 account keyed by its Algorand key', () => {
-        expect(buildAccount({ id: 'id', ...inputs.algo25 })).toStrictEqual({
+    test('builds a standalone account keyed by its Algorand key', () => {
+        expect(buildAccount({ id: 'id', ...inputs.standalone })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
             keyPairId: 'seed-ed25519',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: { address: 'ADDR', keyPairId: 'seed-ed25519' },
             },
@@ -158,8 +158,13 @@ describe('buildAccount', () => {
         (_kind, input) => {
             const account = buildAccount(input)
 
+            const type = accountType(account)
+
             expect(
-                custodyFromLegacy({ ...account, type: accountType(account) }),
+                custodyFromLegacy({
+                    ...account,
+                    type: type === 'standalone' ? 'algo25' : type,
+                }),
             ).toEqual({
                 custody: input.custody,
                 chains: input.chains,
@@ -179,7 +184,7 @@ describe('buildAccount', () => {
 
     test('refuses a local custody without a key on its chain', () => {
         const input = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chainId: 'algorand',
             chains: { algorand: { address: 'ADDR' } },
         } as unknown as BuildAccountInput<AccountCustody>

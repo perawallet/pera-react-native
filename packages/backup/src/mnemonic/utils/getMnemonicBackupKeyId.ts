@@ -11,9 +11,10 @@
  */
 
 import {
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
+    standaloneSecretOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -21,14 +22,15 @@ export const getMnemonicBackupKeyId = (
     account: WalletAccount,
 ): string | null => {
     if (
-        isAlgo25Account(account) ||
+        (isStandaloneAccount(account) &&
+            standaloneSecretOf(account) === 'mnemonic') ||
         isHDWalletAccount(account) ||
         isQuantumAccount(account)
     ) {
         // All accounts derived from the same wallet root share a single
         // backup state, keyed on the root id (keyPairId). Quantum accounts
-        // export the same 25-word (algo25 wire format) recovery phrase, so
-        // they back up through the identical key-scoped state.
+        // export the same 25-word recovery phrase, so they back up through
+        // the identical key-scoped state.
         return account.keyPairId
     }
     return null

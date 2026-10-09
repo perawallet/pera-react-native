@@ -125,7 +125,7 @@ describe('useRemoveAccountByAddress', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE',
             keyPairId: 'kp-alice-ed25519',
         }
@@ -414,5 +414,45 @@ describe('useRemoveAccountByAddress', () => {
         ).toEqual(['LEDGER1'])
 
         errorSpy.mockRestore()
+    })
+
+    describe('a standalone key with no seed above it', () => {
+        const rawKeyAccount = (id: string, address: string): WalletAccount => ({
+            id,
+            address,
+            keyPairId: 'raw-key',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address, keyPairId: 'raw-key' } },
+        })
+
+        test('deletes the key when no other account references it', async () => {
+            useAccountsStore.setState({
+                accounts: [rawKeyAccount('1', 'RAW1')],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('RAW1')
+            })
+
+            expect(deleteKeySpy).toHaveBeenCalledWith('raw-key')
+            expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
+        })
+
+        test('keeps the key while another account still references it', async () => {
+            useAccountsStore.setState({
+                accounts: [
+                    rawKeyAccount('1', 'RAW1'),
+                    rawKeyAccount('2', 'RAW2'),
+                ],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('RAW1')
+            })
+
+            expect(deleteKeySpy).not.toHaveBeenCalled()
+        })
     })
 })

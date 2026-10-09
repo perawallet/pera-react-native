@@ -30,19 +30,19 @@ const accounts = [
     {
         id: 'ok',
         address: OK_SENDER,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-ok',
     },
     {
         id: 'ext',
         address: REKEYED_EXTERNAL,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-ext',
     },
     {
         id: 'rw',
         address: REKEYED_TO_WATCH,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-rw',
     },
     {

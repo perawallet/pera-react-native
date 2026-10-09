@@ -17,7 +17,8 @@ import {
     type WalletAccount,
     authorityOf,
     hasSigningKeys,
-    isAlgo25Account,
+    isStandaloneAccount,
+    standaloneSecretOf,
     isHDWalletAccount,
     isMultisigAccount,
     isQuantumAccount,
@@ -140,7 +141,8 @@ export const useAccountOptions = ({
     const showPassphrase =
         canBackUpMnemonic &&
         !isRekeyed &&
-        (isAlgo25Account(account) ||
+        ((isStandaloneAccount(account) &&
+            standaloneSecretOf(account) === 'mnemonic') ||
             isHDWalletAccount(account) ||
             isQuantumAccount(account))
     const canUndoRekey = canRekey && isRekeyed && canSign

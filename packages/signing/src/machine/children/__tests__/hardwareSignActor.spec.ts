@@ -70,7 +70,7 @@ const hardwareAccount = {
 } as unknown as HardwareWalletAccount
 
 const nonHardwareAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: OTHER_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount

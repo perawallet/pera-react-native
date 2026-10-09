@@ -85,7 +85,7 @@ describe('useDeviceAccountRegistrations', () => {
             {
                 id: '1',
                 address: 'ADDR_A',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             },
         ])

@@ -30,8 +30,8 @@ vi.mock('../useSigningRequest', () => ({
 const mockAllAccounts = vi.fn<
     () => Array<{ address: string; custody: { kind: string; seed?: string } }>
 >(() => [
-    { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
-    { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
+    { address: 'ADDR_A', custody: { kind: 'local', seed: null } },
+    { address: 'ADDR_B', custody: { kind: 'local', seed: null } },
 ])
 const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
     () => true,
@@ -67,8 +67,8 @@ beforeEach(() => {
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
     mockAllAccounts.mockReturnValue([
-        { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
+        { address: 'ADDR_A', custody: { kind: 'local', seed: null } },
+        { address: 'ADDR_B', custody: { kind: 'local', seed: null } },
     ])
     mockCanSignWith.mockReturnValue(true)
     mockMapToDisplayable.mockClear()
@@ -338,7 +338,7 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses contains only accounts where canSignWith returns true', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'SIGNER', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'SIGNER', custody: { kind: 'local', seed: null } },
             { address: 'WATCH', custody: { kind: 'watch' } },
             { address: 'REKEYED_UNSIGNABLE', custody: { kind: 'watch' } },
         ])
@@ -429,7 +429,7 @@ describe('useSigningPipeline', () => {
                 allAccounts: [
                     {
                         address: 'A123',
-                        custody: { kind: 'local', seed: 'algo25' },
+                        custody: { kind: 'local', seed: null },
                     },
                 ],
                 groupSigners: new Map([

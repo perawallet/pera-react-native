@@ -133,7 +133,7 @@ export type AccountStateReadHint = {
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
 
 export type SingleKeyAccountKind =
-    | typeof AccountTypes.algo25
+    | typeof AccountTypes.standalone
     | typeof AccountTypes.quantum
 
 /** The `useKMS()` calls single-key creation and import make; the hooks pass their own. */
@@ -174,13 +174,13 @@ export type SingleKeyAccountOps = {
         save: (minted: MintedAccount) => Promise<void>,
     ): Promise<WalletAccount | WalletAccount[]>
     /**
-     * A quantum passphrase has as many words as an algo25 one, so a standard
-     * import can't tell them apart. Returns the on-chain quantum account these
-     * algo25 words also control when the algo25 address itself has no on-chain
-     * footprint, else null. A failed probe reads as null: this is advisory and
+     * A quantum passphrase has as many words as a standard 25-word one, so a
+     * standard import can't tell them apart. Returns the on-chain quantum
+     * account these words also control when the standard address itself has no
+     * on-chain footprint, else null. A failed probe reads as null: this is advisory and
      * must never block an import.
      */
-    findQuantumAccountForAlgo25Mnemonic(
+    findQuantumAccountForMnemonic(
         /** Wordlist indices; the caller zeroes them. */
         mnemonicIndices: Uint16Array,
         scope: ChainScope,

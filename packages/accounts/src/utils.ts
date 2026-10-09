@@ -26,7 +26,7 @@ import {
     type LocalCustody,
     type HardwareWalletAccount,
     type HDWalletAccount,
-    type Algo25Account,
+    type StandaloneAccount,
     type QuantumAccount,
     type MultiSigAccount,
     type WatchAccount,
@@ -65,15 +65,16 @@ export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
 }
 
 const LOCAL_ACCOUNT_TYPES = {
-    algo25: AccountTypes.algo25,
     quantum: AccountTypes.quantum,
     bip39: AccountTypes.hdWallet,
-} as const satisfies Record<LocalCustody['seed'], AccountType>
+} as const satisfies Record<NonNullable<LocalCustody['seed']>, AccountType>
 
 const accountTypeOf = (custody: AccountCustody): AccountType => {
     switch (custody.kind) {
         case 'local': {
-            return LOCAL_ACCOUNT_TYPES[custody.seed]
+            return custody.seed === null
+                ? AccountTypes.standalone
+                : LOCAL_ACCOUNT_TYPES[custody.seed]
         }
         case 'hardware': {
             return AccountTypes.hardware
@@ -123,10 +124,10 @@ export const isRekeyedAccount = (
         .authority?.isDelegated(account, getSelectedScope(chainId)) ??
         false)
 
-export const isAlgo25Account = (
+export const isStandaloneAccount = (
     account: WalletAccount,
-): account is Algo25Account => {
-    return accountType(account) === AccountTypes.algo25
+): account is StandaloneAccount => {
+    return accountType(account) === AccountTypes.standalone
 }
 
 export const isQuantumAccount = (
@@ -230,8 +231,8 @@ export type MnemonicAccountTypeResult =
     | { success: false; wordCount: number }
 
 /**
- * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to algo25
- * (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
+ * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to
+ * standalone (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
  * goes through auto-detection, only its dedicated entrypoint.
  */
 export const resolveImportAccountType = (

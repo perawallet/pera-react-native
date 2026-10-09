@@ -87,7 +87,7 @@ export class HDImportSessionNotFoundError extends AccountError {
 /**
  * The address derived from the import flow already exists in the wallet.
  *
- * Surfaced from the algo25 import path so the UI can show a specific
+ * Surfaced from the standard-mnemonic import path so the UI can show a specific
  * "already imported" toast instead of the generic failure message. HD
  * imports get the same protection at the selection screen (already-
  * imported addresses render a chip rather than a checkbox).
@@ -158,6 +158,12 @@ export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
     }
 }
 
+export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Private-key import', chainId)
+    }
+}
+
 export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Post-quantum accounts', chainId)
@@ -173,5 +179,16 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
 export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(derivationType: number, chainId: ChainId) {
         super(`HD derivation type ${derivationType}`, chainId)
+    }
+}
+
+export class PrivateKeyRevealUnsupportedError extends AccountError {
+    readonly accountId: string
+
+    constructor(accountId: string) {
+        super('This account has no private key to reveal', undefined, {
+            params: { accountId },
+        })
+        this.accountId = accountId
     }
 }

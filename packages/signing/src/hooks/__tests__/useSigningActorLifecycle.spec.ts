@@ -65,8 +65,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useAllAccounts: vi.fn(() => [
-            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-            { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'ADDR1', custody: { kind: 'local', seed: null } },
+            { address: 'ADDR2', custody: { kind: 'local', seed: null } },
         ]),
     }
 })

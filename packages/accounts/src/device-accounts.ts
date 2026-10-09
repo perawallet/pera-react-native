@@ -16,6 +16,8 @@ import {
     type DeviceAccountRegistration,
     type DeviceAccountType,
 } from '@perawallet/wallet-core-device'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { chainAccountOf } from './credentials'
 import type { ACCOUNT_TYPE_RANK, AccountType, WalletAccount } from './models'
 import { accountType } from './utils'
 
@@ -29,13 +31,13 @@ import { accountType } from './utils'
  * minimum fee and the swap fails on chain.
  */
 const DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE = {
-    algo25: DeviceAccountTypes.algo25,
+    standalone: DeviceAccountTypes.algo25,
     hdWallet: DeviceAccountTypes.hdWallet,
     hardware: DeviceAccountTypes.hardware,
     multisig: DeviceAccountTypes.multisig,
     watch: DeviceAccountTypes.watch,
     quantum: DeviceAccountTypes.quantum,
-} satisfies Record<AccountType, DeviceAccountType>
+} as const satisfies Record<AccountType, DeviceAccountType>
 
 export const toDeviceAccountType = (type: AccountType): DeviceAccountType =>
     DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE[type]
@@ -65,15 +67,23 @@ export const toDeviceAccountType = (type: AccountType): DeviceAccountType =>
 type AssertTrue<T extends true> = T
 type Extends<A, B> = A extends B ? true : false
 
+/** The internal ranks re-keyed by the wire name each type registers under. */
+type RanksOnWire = {
+    [
+        K in AccountType as (typeof DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE)[K]
+    ]: (typeof ACCOUNT_TYPE_RANK)[K]
+}
+
 export type RanksInSyncForward = AssertTrue<
-    Extends<typeof ACCOUNT_TYPE_RANK, typeof DEVICE_ACCOUNT_TYPE_RANK>
+    Extends<RanksOnWire, typeof DEVICE_ACCOUNT_TYPE_RANK>
 >
 export type RanksInSyncBackward = AssertTrue<
-    Extends<typeof DEVICE_ACCOUNT_TYPE_RANK, typeof ACCOUNT_TYPE_RANK>
+    Extends<typeof DEVICE_ACCOUNT_TYPE_RANK, RanksOnWire>
 >
 
 /**
- * Project the wallet's accounts onto the registration payload. Notification
+ * Project the wallet's accounts onto the registration payload; the device API
+ * only knows the legacy chain, so an account without an entry there is left out. Notification
  * state is passed in rather than read from a store so callers can register the
  * *result* of a pending toggle without waiting for the store write to
  * propagate through React.
@@ -83,9 +93,11 @@ export const buildDeviceAccountRegistrations = (
     disabledAddresses: readonly string[],
 ): DeviceAccountRegistration[] => {
     const disabled = new Set(disabledAddresses)
-    return accounts.map(account => ({
-        address: account.address,
-        accountType: toDeviceAccountType(accountType(account)),
-        receiveNotifications: !disabled.has(account.address),
-    }))
+    return accounts
+        .filter(account => chainAccountOf(account, LEGACY_CHAIN_ID))
+        .map(account => ({
+            address: account.address,
+            accountType: toDeviceAccountType(accountType(account)),
+            receiveNotifications: !disabled.has(account.address),
+        }))
 }

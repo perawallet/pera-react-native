@@ -33,7 +33,7 @@ const buildWalletAccount = (
     overrides: Partial<WalletAccount> = {},
 ): WalletAccount =>
     ({
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: 'ADDR_A',
         name: 'Account A',
         keyPairId: 'kp-a',

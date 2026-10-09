@@ -36,7 +36,7 @@ describe('getMnemonicBackupKeyId', () => {
 
     test('returns keyPairId for Algo25 accounts', () => {
         const account: WalletAccount = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_25',
             keyPairId: 'kp-2',
         }

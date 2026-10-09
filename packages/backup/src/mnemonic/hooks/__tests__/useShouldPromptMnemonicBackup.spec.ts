@@ -142,7 +142,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockAccountsRekeyedTo.mockReturnValue([
             {
                 id: 'a',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'A',
             },
         ])
@@ -160,7 +160,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockAccountsRekeyedTo.mockReturnValue([
             {
                 id: 'a',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'A',
             },
         ])

@@ -110,7 +110,7 @@ const watchAccount = (
 const algo25Account = (address: string): WalletAccount => ({
     id: address,
     address,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-1',
 })
 
@@ -181,7 +181,7 @@ describe('useAsbAccountImport', () => {
 
         expect(mockImportAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            type: 'standalone',
         })
         // No `name` on the asb row, so updateAccount must not be called.
         expect(mockUpdateAccount).not.toHaveBeenCalled()

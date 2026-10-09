@@ -33,7 +33,7 @@ describe('useHasHDWallet', () => {
     it('returns false when the wallet holds only non-HD accounts', () => {
         setAccounts([
             {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'A',
             } as WalletAccount,
             { custody: { kind: 'watch' }, address: 'W' } as WalletAccount,
@@ -45,7 +45,7 @@ describe('useHasHDWallet', () => {
     it('returns true when at least one HD account exists', () => {
         setAccounts([
             {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'A',
             } as WalletAccount,
             {

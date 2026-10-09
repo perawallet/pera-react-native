@@ -15,7 +15,7 @@ import { canSignArbitraryData } from '../utils'
 import { useAccountChainStateStore } from '../store'
 import { registerFakeAccountsChain, seedAuthority } from './fakeAccountsChain'
 import {
-    type Algo25Account,
+    type StandaloneAccount,
     type HDWalletAccount,
     type HardwareWalletAccount,
     type MultiSigAccount,
@@ -25,9 +25,9 @@ import {
 
 const algo25 = (
     address: string,
-    extra: Partial<Algo25Account> = {},
-): Algo25Account => ({
-    custody: { kind: 'local', seed: 'algo25' },
+    extra: Partial<StandaloneAccount> = {},
+): StandaloneAccount => ({
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: 'kp',
     ...extra,

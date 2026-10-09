@@ -187,7 +187,7 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith returns true for rekeyed account when auth account has keys', () => {
         const authAccount = {
             id: '2',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'AUTH_ADDR',
             keyPairId: 'pk2',
         } as any
@@ -237,7 +237,7 @@ describe('services/accounts/utils - account type checks', () => {
     test('canSignWith resolves a single rekey hop only, not a chain', () => {
         const rootAccount = {
             id: '1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ROOT_ADDR',
             keyPairId: 'pk1',
         } as any
@@ -346,7 +346,7 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 
     test('returns true for a multisig with a local signable participant', () => {
         const participant = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'P1',
             keyPairId: 'pk1',
         } as any
@@ -381,12 +381,12 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
 describe('services/accounts/utils - getRekeyAccount', () => {
     test('returns the auth account when rekeyed and target is in the wallet', () => {
         const auth = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'AUTH',
             keyPairId: 'pk1',
         } as any
         const rekeyed = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk2',
         } as any
@@ -398,7 +398,7 @@ describe('services/accounts/utils - getRekeyAccount', () => {
 
     test('returns null when the address is not rekeyed', () => {
         const account = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -422,7 +422,7 @@ describe('services/accounts/utils - getRekeyAccount', () => {
 describe('services/accounts/utils - getSignerFor', () => {
     test('returns the account itself when it holds its own key', () => {
         const account = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -431,12 +431,12 @@ describe('services/accounts/utils - getSignerFor', () => {
 
     test('returns the immediate auth account when rekeyed and we can sign', () => {
         const auth = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'AUTH',
             keyPairId: 'pk1',
         } as any
         const rekeyed = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk2',
         } as any
@@ -460,7 +460,7 @@ describe('services/accounts/utils - getSignerFor', () => {
 
     test('returns the multisig itself when at least one participant is local and signable', () => {
         const participant = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'P1',
             keyPairId: 'pk1',
         } as any
@@ -486,7 +486,7 @@ describe('services/accounts/utils - getSignerFor', () => {
 describe('services/accounts/utils - delegateTransitionFor', () => {
     test('returns null for a non-rekeyed account', () => {
         const account = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -497,7 +497,7 @@ describe('services/accounts/utils - delegateTransitionFor', () => {
 
     test('returns null for a rekeyed account whose auth is not in the wallet', () => {
         const rekeyed = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -529,7 +529,7 @@ describe('services/accounts/utils - delegateTransitionFor', () => {
             },
         } as any
         const rekeyed = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'A',
             keyPairId: 'pk1',
         } as any
@@ -537,7 +537,7 @@ describe('services/accounts/utils - delegateTransitionFor', () => {
         expect(
             delegateTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
         ).toEqual({
-            from: 'algo25',
+            from: 'standalone',
             to: 'hardware',
         })
     })

@@ -11,9 +11,11 @@
  */
 
 import { beforeEach, describe, test, expect } from 'vitest'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { Decimal } from 'decimal.js'
 import type {
     AccountChainState,
+    ChainDescriptor,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAccountChainStateStore } from '../../store/accountChainState'
@@ -27,8 +29,10 @@ import {
     hardwareDeviceOf,
     hasCustody,
     hdIndexOf,
+    isKeyReferenced,
     seedOf,
     signingKeyOn,
+    standaloneSecretOf,
 } from '../accessors'
 
 type Keys = NonNullable<Parameters<typeof seedOf>[1]>
@@ -42,7 +46,7 @@ const withoutChains = (type: AccountType): WalletAccount => {
 }
 
 const TYPES = [
-    'algo25',
+    'standalone',
     'quantum',
     'hdWallet',
     'hardware',
@@ -69,7 +73,7 @@ describe('accessors on every stored shape', () => {
         const account = buildTestAccount(type)
 
         expect(custodyOf(account).kind).toBe(
-            type === 'hdWallet' || type === 'algo25' || type === 'quantum'
+            type === 'hdWallet' || type === 'standalone' || type === 'quantum'
                 ? 'local'
                 : type,
         )
@@ -81,7 +85,7 @@ describe('accessors on every stored shape', () => {
             account: 0,
             keyIndex: 0,
         })
-        expect(hdIndexOf(buildTestAccount('algo25'))).toBeUndefined()
+        expect(hdIndexOf(buildTestAccount('standalone'))).toBeUndefined()
         expect(hdIndexOf(buildTestAccount('watch'))).toBeUndefined()
     })
 
@@ -99,7 +103,7 @@ describe('accessors on every stored shape', () => {
     })
 
     test('a chain the account is not on has no entry, address or key', () => {
-        const account = buildTestAccount('algo25')
+        const account = buildTestAccount('standalone')
         const elsewhere = {
             chainId: 'other',
             networkId: 'x',
@@ -171,7 +175,7 @@ describe('seedOf', () => {
     ] as unknown as Keys
 
     const local = (keyPairId: string): WalletAccount => ({
-        ...buildTestAccount('algo25'),
+        ...buildTestAccount('standalone'),
         keyPairId,
         chains: { algorand: { address: 'ADDR', keyPairId } },
     })
@@ -200,4 +204,100 @@ describe('seedOf', () => {
             expect(seedOf(buildTestAccount(type), keys)).toBeUndefined()
         },
     )
+})
+
+describe('an account on a chain other than the legacy one', () => {
+    const onEthereum = {
+        id: 'e',
+        address: '0xabc',
+        keyPairId: 'raw-key',
+        custody: { kind: 'local', seed: null },
+        chains: { ethereum: { address: '0xabc', keyPairId: 'raw-key' } },
+    } as unknown as WalletAccount
+
+    test('is not answered for the legacy chain from its top-level fields', () => {
+        expect(chainAccountOf(onEthereum, 'algorand')).toBeUndefined()
+        expect(signingKeyOn(onEthereum, 'algorand')).toBeUndefined()
+        expect(chainAccountOf(onEthereum, 'ethereum' as never)?.address).toBe(
+            '0xabc',
+        )
+    })
+
+    test('a record without chains still answers for the legacy chain', () => {
+        const { chains: _chains, ...legacy } = onEthereum
+
+        expect(chainAccountOf(legacy as WalletAccount, 'algorand')).toEqual({
+            address: '0xabc',
+            keyPairId: 'raw-key',
+        })
+    })
+})
+
+describe('standaloneSecretOf', () => {
+    const register = (
+        id: string,
+        standaloneSecret?: 'mnemonic' | 'privateKey',
+    ) =>
+        getProvider().chains.register({
+            id,
+            signing: {
+                schemes: ['ed25519'],
+                derivationPaths: {},
+                rawKeySchemes: [],
+                ...(standaloneSecret ? { standaloneSecret } : {}),
+            },
+        } as unknown as ChainDescriptor)
+
+    const standaloneOn = (chainId: string): WalletAccount =>
+        ({
+            id: 'a',
+            address: 'ADDR',
+            custody: { kind: 'local', seed: null },
+            chains: { [chainId]: { address: 'ADDR', keyPairId: 'k' } },
+        }) as unknown as WalletAccount
+
+    beforeEach(() => {
+        getProvider().chains.reset()
+        register('algorand', 'mnemonic')
+        register('ethereum', 'privateKey')
+    })
+
+    test('reads the secret format from the chain the account lives on', () => {
+        expect(standaloneSecretOf(standaloneOn('algorand'))).toBe('mnemonic')
+        expect(standaloneSecretOf(standaloneOn('ethereum'))).toBe('privateKey')
+    })
+
+    test('reads the legacy chain for a record without chains', () => {
+        const { chains: _chains, ...legacy } = standaloneOn('algorand')
+
+        expect(standaloneSecretOf(legacy as WalletAccount)).toBe('mnemonic')
+    })
+
+    test('is undefined for HD, quantum and watch accounts', () => {
+        for (const type of ['hdWallet', 'quantum', 'watch'] as const) {
+            expect(standaloneSecretOf(buildTestAccount(type))).toBeUndefined()
+        }
+    })
+
+    test('is undefined on a chain that is not registered', () => {
+        expect(standaloneSecretOf(standaloneOn('unknown'))).toBeUndefined()
+    })
+})
+
+describe('isKeyReferenced', () => {
+    test('finds a key by the top-level field or a chain entry', () => {
+        const accounts = [
+            buildTestAccount('standalone'),
+            {
+                id: 'e',
+                address: '0xabc',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xabc', keyPairId: 'raw' } },
+            } as unknown as WalletAccount,
+        ]
+
+        expect(isKeyReferenced(accounts, 'standalone-key')).toBe(true)
+        expect(isKeyReferenced(accounts, 'raw')).toBe(true)
+        expect(isKeyReferenced(accounts, 'other')).toBe(false)
+    })
 })

@@ -75,7 +75,7 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const account = buildAccount({
         id: 'algo25-1',
         name: 'Algo25 Test',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chainId: LEGACY_CHAIN_ID,
         chains: {
             [LEGACY_CHAIN_ID]: {

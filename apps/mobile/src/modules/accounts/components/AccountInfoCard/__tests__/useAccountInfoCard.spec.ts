@@ -277,7 +277,7 @@ describe('useAccountInfoCard', () => {
     test('RekeyedSignable account with a transition shows the "Rekeyed (Signed by …)" label', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseDelegatedTransition.mockReturnValue({
-            from: 'algo25',
+            from: 'standalone',
             to: 'hardware',
         })
         const rekeyed = ledgerAccount

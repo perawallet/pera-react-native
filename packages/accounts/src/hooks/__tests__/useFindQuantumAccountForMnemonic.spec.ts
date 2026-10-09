@@ -34,7 +34,7 @@ const INDICES = new Uint16Array(25)
 const findOp = () =>
     vi.mocked(
         fakeAccountsChain().adapter.singleKeyAccounts!
-            .findQuantumAccountForAlgo25Mnemonic,
+            .findQuantumAccountForMnemonic,
     )
 
 describe('useFindQuantumAccountForMnemonic', () => {

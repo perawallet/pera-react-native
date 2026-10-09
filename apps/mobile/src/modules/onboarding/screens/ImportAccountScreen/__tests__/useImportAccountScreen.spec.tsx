@@ -76,7 +76,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     consumePendingImportMnemonic: vi.fn(),
     MNEMONIC_WORD_COUNT: {
         hdWallet: 24,
-        algo25: 25,
+        standalone: 25,
         quantum: 25,
     },
 }))
@@ -670,12 +670,12 @@ describe('useImportAccountScreen', () => {
     describe('algo25 account type', () => {
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: 'standalone' },
             } as never)
         })
 
         it('forwards the explicit algo25 type to importAccount and uses generic copy', async () => {
-            mockImportAccount.mockResolvedValue({ type: 'algo25' })
+            mockImportAccount.mockResolvedValue({ type: 'standalone' })
             const mnemonic = new Array(25).fill('abandon').join(' ')
 
             const { result } = renderHook(() => useImportAccountScreen())
@@ -691,7 +691,7 @@ describe('useImportAccountScreen', () => {
 
             expect(mockImportAccount).toHaveBeenCalledWith({
                 mnemonicIndices: expect.any(Uint16Array),
-                type: 'algo25',
+                type: 'standalone',
             })
             expect(result.current.titleKey).toBe(
                 'onboarding.import_account.title',
@@ -759,7 +759,7 @@ describe('useImportAccountScreen', () => {
 
             it('imports the standard account without checking where the platform has no quantum support', async () => {
                 setQuantumEnabled(false)
-                mockImportAccount.mockResolvedValue({ type: 'algo25' })
+                mockImportAccount.mockResolvedValue({ type: 'standalone' })
 
                 await submit25Words()
 
@@ -767,7 +767,7 @@ describe('useImportAccountScreen', () => {
                 expect(mockRequestBottomSheet).not.toHaveBeenCalled()
                 expect(mockImportAccount).toHaveBeenCalledWith({
                     mnemonicIndices: expect.any(Uint16Array),
-                    type: 'algo25',
+                    type: 'standalone',
                 })
             })
         })
@@ -804,7 +804,7 @@ describe('useImportAccountScreen', () => {
 
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: 'standalone' },
             } as never)
         })
 
@@ -838,7 +838,7 @@ describe('useImportAccountScreen', () => {
                     mnemonicIndices: Uint16Array
                 }) => {
                     submitted = Array.from(mnemonicIndices)
-                    return { type: 'algo25' }
+                    return { type: 'standalone' }
                 },
             )
             const { result } = renderHook(() => useImportAccountScreen())

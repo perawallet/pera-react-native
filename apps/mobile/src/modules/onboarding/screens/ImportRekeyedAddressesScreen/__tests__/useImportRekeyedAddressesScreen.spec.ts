@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         getState: () => ({ accounts: mockStoreAccounts.current }),
     },
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         watch: 'watch',
     },
 }))
@@ -178,7 +178,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         const concurrent = {
             id: 'c',
             address: 'CONCURRENT',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             keyPairId: 'pkc',
         }
         // Lands after render (useAllAccounts snapshot) but before the

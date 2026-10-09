@@ -68,7 +68,7 @@ vi.mock('@modules/webview', () => ({
 const mockSourceAccount = {
     address: 'SRC',
     name: 'Source',
-    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
 const mockTargetAccount = {
     address: 'TGT',
@@ -87,7 +87,7 @@ const mockTargetAccount = {
 const mockAuthAccount = {
     address: 'AUTH',
     name: 'Auth',
-    custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {

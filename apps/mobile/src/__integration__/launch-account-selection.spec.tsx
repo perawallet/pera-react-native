@@ -24,7 +24,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const TRADING: WalletAccount = {
     id: 'a-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'a-key',
     name: 'Trading',
@@ -32,7 +32,7 @@ const TRADING: WalletAccount = {
 
 const SAVINGS: WalletAccount = {
     id: 'a-2',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: HD_TEST_ADDRESS,
     keyPairId: 'b-key',
     name: 'Savings',

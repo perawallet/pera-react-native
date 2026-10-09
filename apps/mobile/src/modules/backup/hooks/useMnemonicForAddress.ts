@@ -12,7 +12,8 @@
 
 import { useCallback, useRef } from 'react'
 import {
-    isAlgo25Account,
+    isStandaloneAccount,
+    standaloneSecretOf,
     isHDWalletAccount,
     isQuantumAccount,
     type WalletAccount,
@@ -65,7 +66,10 @@ export const useMnemonicForAddress = (
 
             if (
                 !isHDWalletAccount(currentAccount) &&
-                !isAlgo25Account(currentAccount) &&
+                !(
+                    isStandaloneAccount(currentAccount) &&
+                    standaloneSecretOf(currentAccount) === 'mnemonic'
+                ) &&
                 !isQuantumAccount(currentAccount)
             ) {
                 throw new Error('Account type does not support backup')

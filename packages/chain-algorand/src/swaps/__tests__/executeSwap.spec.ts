@@ -236,7 +236,7 @@ const quantumAccount: WalletAccount = {
 const standardAccountRekeyedToQuantum: WalletAccount = {
     id: 'standard-account-1',
     address: 'STANDARD_ADDR',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'standard-keypair-1',
 }
 
@@ -944,7 +944,7 @@ describe('executeAlgorandSwap', () => {
         const standardAccount: WalletAccount = {
             id: 'standard-account-2',
             address: 'STANDARD_ADDR_2',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             keyPairId: 'standard-keypair-2',
         }
 

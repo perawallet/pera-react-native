@@ -311,7 +311,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         const concurrent = {
             id: 'c',
             address: 'CONCURRENT',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             keyPairId: 'kp-c',
         } as WalletAccount
         // Lands after render (useAllAccounts snapshot) but before the

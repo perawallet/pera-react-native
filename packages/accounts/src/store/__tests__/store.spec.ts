@@ -71,14 +71,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -89,7 +89,7 @@ describe('services/accounts/store', () => {
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -147,14 +147,14 @@ describe('services/accounts/store', () => {
             const first: WalletAccount = {
                 id: '1',
                 name: 'First',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'FIRST-ADDR',
                 keyPairId: 'kp1',
             }
             const last: WalletAccount = {
                 id: '3',
                 name: 'Last',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'LAST-ADDR',
                 keyPairId: 'kp3',
             }
@@ -176,14 +176,14 @@ describe('services/accounts/store', () => {
             const a1: WalletAccount = {
                 id: '1',
                 name: 'Alice',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp1',
             }
             const a2: WalletAccount = {
                 id: '2',
                 name: 'Alice copy',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp2',
             }
@@ -206,7 +206,7 @@ describe('services/accounts/store', () => {
                 {
                     id: '2',
                     name: 'Bob',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                     address: 'B',
                     keyPairId: 'kp2',
                 },
@@ -269,14 +269,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -305,14 +305,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -334,7 +334,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -350,7 +350,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -369,21 +369,21 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -402,7 +402,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -435,7 +435,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -605,7 +605,7 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: 'h1',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                     address: 'SIGNER',
                     keyPairId: 'kp1',
                 } as WalletAccount,
@@ -617,7 +617,7 @@ describe('services/accounts/store', () => {
 
             expect(upgraded).toBe(false)
             expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-                'algo25',
+                'standalone',
             )
         })
 
@@ -721,14 +721,14 @@ describe('services/accounts/store', () => {
         const alice: WalletAccount = {
             id: '1',
             name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const bob: WalletAccount = {
             id: '2',
             name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -964,7 +964,7 @@ describe('services/accounts/store', () => {
 
     describe('custody', () => {
         const kinds = [
-            'algo25',
+            'standalone',
             'quantum',
             'hdWallet',
             'hardware',
@@ -999,7 +999,7 @@ describe('services/accounts/store', () => {
                 id: 'a',
                 address: 'ALGO25-ADDR',
                 keyPairId: 'seed-ed25519',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
                         address: 'ALGO25-ADDR',
@@ -1139,7 +1139,7 @@ describe('services/accounts/store', () => {
             [
                 ...kinds.map(kind => ({
                     ...buildTestAccount(kind),
-                    type: kind,
+                    type: kind === 'standalone' ? 'algo25' : kind,
                 })),
                 { id: 'bare-multisig', type: 'multisig', address: 'BARE-MSIG' },
                 { id: 'bare-algo25', type: 'algo25', address: 'BARE-ALGO25' },
@@ -1167,7 +1167,7 @@ describe('services/accounts/store', () => {
         const v2Kinds = [
             ...kinds,
             'multisig',
-            'algo25',
+            'standalone',
             'watch',
             'watch',
             'watch',
@@ -1224,11 +1224,39 @@ describe('services/accounts/store', () => {
             expect(state.launchAccountMode).toBe('lastUsed')
         })
 
-        test('persisted v3 state is not migrated again', async () => {
+        test('persisted v4 state is not migrated again', async () => {
             const { migrateAccountsState } = await import('../store')
-            const v3State = { ...makeV2State(), accounts: migratedAccounts }
+            const v4State = { ...makeV2State(), accounts: migratedAccounts }
 
-            expect(migrateAccountsState(v3State, 3)).toBe(v3State)
+            expect(migrateAccountsState(v4State, 4)).toBe(v4State)
+        })
+
+        test('a v3 state with the Algorand-named seed scheme loads as a seedless custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const [stored] = migratedAccounts
+            const v3Account = {
+                ...stored,
+                custody: { kind: 'local', seed: 'algo25' },
+            }
+
+            const { accounts } = migrateAccountsState(
+                { ...v0State, accounts: [v3Account] },
+                3,
+            )
+
+            expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
+            expect(accountType(accounts[0])).toBe('standalone')
+        })
+
+        test('a v1 record persisted as an algo25 account loads as a seedless custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const { accounts } = migrateAccountsState(
+                { ...v0State, accounts: [legacyAccounts[0]] },
+                1,
+            )
+
+            expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
         })
 
         test('hydrating a v0 payload twice yields identical state', async () => {
@@ -1257,7 +1285,7 @@ describe('services/accounts/store', () => {
         test('setAccounts keeps the custody an account was built with', () => {
             const accounts = (
                 [
-                    'algo25',
+                    'standalone',
                     'quantum',
                     'hdWallet',
                     'hardware',

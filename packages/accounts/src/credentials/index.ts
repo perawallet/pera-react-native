@@ -18,8 +18,10 @@ export {
     hardwareDeviceOf,
     hasCustody,
     hdIndexOf,
+    isKeyReferenced,
     seedOf,
     signingKeyOn,
+    standaloneSecretOf,
 } from './accessors'
 export {
     buildAccount,

@@ -16,7 +16,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { accountsAdapterFor, requireSingleKeyAccounts } from '../chain-adapter'
 
 /**
- * Before a standard (algo25) import: the on-chain quantum account the same
+ * Before a standard 25-word import: the on-chain quantum account the same
  * words control, if the standard account has no footprint of its own. A
  * quantum passphrase is also 25 words, so without this the standard flow
  * silently mints an empty account from someone's quantum passphrase.
@@ -30,7 +30,7 @@ export const useFindQuantumAccountForMnemonic = () => {
     ): Promise<Nullable<string>> =>
         requireSingleKeyAccounts(
             accountsAdapterFor(network),
-        ).findQuantumAccountForAlgo25Mnemonic(
+        ).findQuantumAccountForMnemonic(
             mnemonicIndices,
             scopeForLegacyNetwork(network),
         )

@@ -97,7 +97,7 @@ import { useCardCreateSigningScreen } from '../useCardCreateSigningScreen'
 
 const CONNECTED_ACCOUNT: WalletAccount = {
     id: 'a1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'ADDR1',
     keyPairId: 'kp1',
 } as WalletAccount

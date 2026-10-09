@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         accountValueTotals: new Map(),
     })),
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',

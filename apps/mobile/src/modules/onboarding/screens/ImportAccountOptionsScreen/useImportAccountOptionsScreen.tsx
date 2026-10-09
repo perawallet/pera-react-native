@@ -118,7 +118,7 @@ export const useImportAccountOptionsScreen =
             )
             if (!result) return
             trackEvent(
-                result === 'algo25'
+                result === 'standalone'
                     ? OnboardingEvent.RecoverAlgo25
                     : OnboardingEvent.RecoverOneKey,
             )

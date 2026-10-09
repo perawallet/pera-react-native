@@ -204,7 +204,7 @@ describe('Flow: Cloud backup → Restore', () => {
             .getState()
             .accounts.find(a => a.address === ALGO25_TEST_ADDRESS)
         expect(restored ? accountType(restored) : undefined).toBe(
-            AccountTypes.algo25,
+            AccountTypes.standalone,
         )
         expect(restored?.name).toBe('Restored')
 

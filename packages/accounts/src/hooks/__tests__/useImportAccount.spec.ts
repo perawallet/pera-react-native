@@ -32,7 +32,7 @@ const mintedOf = (address: string, seedKeyId = 'SEED1'): MintedAccount => ({
     account: {
         id: `ACC-${address}`,
         address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: `${seedKeyId}-ed25519`,
     },
     seedKeyId,

@@ -357,7 +357,7 @@ describe('areKeysDeletedFromBackup', () => {
 
 const algo25 = {
     id: '1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'kp-1',
     name: 'Main',

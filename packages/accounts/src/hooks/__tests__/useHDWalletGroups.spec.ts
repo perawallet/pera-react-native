@@ -76,7 +76,7 @@ const HD_ACCOUNT_WALLET_2 = {
 const ALGO25_ACCOUNT = {
     id: 'algo25-1',
     address: 'ALGO25_ADDRESS',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'algo25-key-1-ed25519',
 }
 

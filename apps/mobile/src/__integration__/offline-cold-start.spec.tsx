@@ -79,7 +79,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'offline-cold-start-key',
     name: 'Synced',

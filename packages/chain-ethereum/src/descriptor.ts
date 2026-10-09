@@ -74,6 +74,7 @@ export const ethereumDescriptor: ChainDescriptor = {
             secp256k1: ethereumHdPath,
         },
         rawKeySchemes: ['secp256k1'],
+        standaloneSecret: 'privateKey',
     },
     protocol: {
         feeModel: 'gas',

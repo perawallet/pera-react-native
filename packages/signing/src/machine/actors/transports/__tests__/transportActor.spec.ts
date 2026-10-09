@@ -46,7 +46,7 @@ const MOCK_ADDRESS =
 
 // Minimal mock account (algo25, local signing keys)
 const mockAlgo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount

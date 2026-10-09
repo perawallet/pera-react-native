@@ -20,12 +20,16 @@ import type { HardwareWalletDetails } from './accounts'
 /** Pera's position in the seed, the same on every chain; each chain's path template places it. */
 export type HdIndex = { account: number; keyIndex: number }
 
+/** The stored secret is the private key itself; nothing derives it. */
+export type StandaloneCustody = { kind: 'local'; seed: null }
+
 // No signature scheme here: it depends on the chain and the seed, and is
 // resolved at runtime (`credentialScheme`), so it needs no data migration.
 export type LocalCustody =
+    | StandaloneCustody
     | {
           kind: 'local'
-          seed: typeof SeedScheme.Algo25 | typeof SeedScheme.Quantum
+          seed: typeof SeedScheme.Quantum
       }
     | {
           kind: 'local'

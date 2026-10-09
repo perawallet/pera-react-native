@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAllAccounts: () => [
             {
                 address: LOCAL_ALGO_ADDR,
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             },
             { address: LOCAL_WATCH_ADDR, custody: { kind: 'watch' } },
             {

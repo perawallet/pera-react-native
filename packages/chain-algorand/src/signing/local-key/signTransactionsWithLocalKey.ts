@@ -26,7 +26,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     accountType,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
     type WalletAccount,
@@ -70,7 +70,7 @@ const signSingleAccountTransactions = async (
     txns: PeraTransactionGroup,
 ): Promise<PeraSignedTransaction[]> => {
     if (
-        !isAlgo25Account(account) &&
+        !isStandaloneAccount(account) &&
         !isHDWalletAccount(account) &&
         !isQuantumAccount(account)
     ) {

@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
-            }
+            },
+            "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan."
         },
         "submission": {
             "unknown_outcome": {

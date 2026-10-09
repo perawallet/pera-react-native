@@ -102,7 +102,7 @@ describe('useAssetTransactionList', () => {
     const mockAccount = {
         address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         name: 'Test Account',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
     } as WalletAccount
 
     const mockAsset: PeraAsset = {

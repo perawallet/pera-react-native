@@ -220,7 +220,10 @@ const importFromMnemonic = async (
     }
     let result
     try {
-        result = await importAccount({ mnemonicIndices, type })
+        result = await importAccount({
+            mnemonicIndices,
+            type: type === BackupAccountType.quantum ? 'quantum' : 'standalone',
+        })
     } finally {
         zeroBytes(mnemonicIndices)
     }

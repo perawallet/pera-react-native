@@ -127,7 +127,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
                 {
                     address: 'second',
                     name: 'Second',
-                    custody: { kind: 'local', seed: 'algo25' },
+                    custody: { kind: 'local', seed: null },
                 },
                 {
                     address: 'third',

@@ -66,7 +66,7 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 const makeAccount = (address: string, name?: string): WalletAccount => ({
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: '',
     name,
