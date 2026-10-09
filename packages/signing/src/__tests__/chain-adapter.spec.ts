@@ -26,7 +26,7 @@ import {
     createTransactionListItems,
     decodeArbitraryDataForDisplay,
     encodeProgramAccount,
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     isSignRequestMultisigUnsignable,
     localKeySignerAdapterFor,
     localKeySignerChainAdapters,
@@ -57,7 +57,7 @@ type WrapperName =
     | 'classifyRequestStructure'
     | 'aggregateTransactionWarnings'
     | 'resolveAllSignerAddresses'
-    | 'getRekeyedUnsignableReason'
+    | 'getDelegatedUnsignableReason'
     | 'decodeArbitraryDataForDisplay'
 
 const wrappers: Record<WrapperName, (...args: never[]) => unknown> = {
@@ -65,7 +65,7 @@ const wrappers: Record<WrapperName, (...args: never[]) => unknown> = {
     classifyRequestStructure,
     aggregateTransactionWarnings,
     resolveAllSignerAddresses,
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     decodeArbitraryDataForDisplay,
 }
 
@@ -79,7 +79,7 @@ const argsByWrapper: Record<WrapperName, unknown[]> = {
         new Map(),
     ],
     resolveAllSignerAddresses: [{ id: 'r1' }],
-    getRekeyedUnsignableReason: [{ id: 'r1' }, []],
+    getDelegatedUnsignableReason: [{ id: 'r1' }, []],
     decodeArbitraryDataForDisplay: ['aGk='],
 }
 

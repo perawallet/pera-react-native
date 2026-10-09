@@ -144,7 +144,7 @@ export interface ReviewerChainAdapter {
         authorizerByIndex?: Map<number, string>,
     ): TransactionWarning[]
     resolveAllSignerAddresses(request: SignRequest): string[]
-    getRekeyedUnsignableReason(
+    getDelegatedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
     ): DelegatedUnsignableReason | null
@@ -184,10 +184,10 @@ export const resolveAllSignerAddresses: WithChain<
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).resolveAllSignerAddresses(...args)
 
-export const getRekeyedUnsignableReason: WithChain<
-    ReviewerChainAdapter['getRekeyedUnsignableReason']
+export const getDelegatedUnsignableReason: WithChain<
+    ReviewerChainAdapter['getDelegatedUnsignableReason']
 > = (chainId, ...args) =>
-    reviewerChainAdapters.get(chainId).getRekeyedUnsignableReason(...args)
+    reviewerChainAdapters.get(chainId).getDelegatedUnsignableReason(...args)
 
 export const decodeArbitraryDataForDisplay: WithChain<
     ReviewerChainAdapter['decodeArbitraryDataForDisplay']

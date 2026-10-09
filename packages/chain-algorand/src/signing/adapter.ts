@@ -91,7 +91,7 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     classifyRequestStructure,
     aggregateTransactionWarnings,
     resolveAllSignerAddresses,
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason: getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
     toDisplayableTransaction: mapToDisplayableTransaction,
 }

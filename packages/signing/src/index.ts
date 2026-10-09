@@ -151,9 +151,11 @@ export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
 export {
     buildSiwxAuthData,
+    canSignMessage,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     parseAuthDataWireRequest,
+    signsMessageVerifiably,
     type BuildSiwxAuthDataArgs,
     type MessageSignerChainAdapter,
     type MessageSignKind,
@@ -164,7 +166,7 @@ export {
 export {
     aggregateTransactionWarnings,
     decodeArbitraryDataForDisplay,
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     resolveAllSignerAddresses,
     reviewerChainAdapters,
     type ArbitraryDataDisplay,
