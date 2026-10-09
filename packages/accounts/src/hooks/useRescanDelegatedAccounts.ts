@@ -80,8 +80,8 @@ export type UseRescanDelegatedAccountsResult = {
 export const useRescanDelegatedAccounts = (
     scope: ChainScope,
 ): UseRescanDelegatedAccountsResult => {
-    const addRekeyedWatchAccounts = useAccountsStore(
-        state => state.addRekeyedWatchAccounts,
+    const addDelegatedWatchAccounts = useAccountsStore(
+        state => state.addDelegatedWatchAccounts,
     )
     const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
 
@@ -219,9 +219,9 @@ export const useRescanDelegatedAccounts = (
             const valid = addresses.filter(address => codec.isValid(address))
             if (valid.length === 0) return 0
 
-            return addRekeyedWatchAccounts(sourceAddress, valid, scope)
+            return addDelegatedWatchAccounts(sourceAddress, valid, scope)
         },
-        [addRekeyedWatchAccounts, scope],
+        [addDelegatedWatchAccounts, scope],
     )
 
     const importFromSweep = useCallback(

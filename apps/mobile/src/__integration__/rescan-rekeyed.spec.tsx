@@ -17,7 +17,7 @@
 //
 // No signing pipeline is involved — this exercises the indexer discovery
 // (`fetchRekeyedAddresses`) and the store persistence
-// (`addRekeyedWatchAccounts`).
+// (`addDelegatedWatchAccounts`).
 
 import { useEffect } from 'react'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'

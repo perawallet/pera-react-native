@@ -122,7 +122,7 @@ export type AccountsState = BaseStoreState & {
      * authority on `scope`, skipping addresses that are already present in
      * the store. Returns the number of accounts actually appended. Validation
      * (address shape) is the caller's responsibility. */
-    addRekeyedWatchAccounts: (
+    addDelegatedWatchAccounts: (
         sourceAddress: string,
         addresses: string[],
         scope: ChainScope,
