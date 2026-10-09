@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
 import { resolveSigningAccount } from './resolveSigningAccount'
 
@@ -28,6 +29,7 @@ import { resolveSigningAccount } from './resolveSigningAccount'
 export const resolveHardwareDeviceName = (
     groups: AnalyzedSignableGroup[],
     allAccounts: WalletAccount[],
+    chainId: ChainId,
 ): string | null => {
     const firstGroup = groups[0]
     if (!firstGroup) return null
@@ -43,6 +45,7 @@ export const resolveHardwareDeviceName = (
             firstGroup.source,
             firstGroup.data.type,
             allAccounts,
+            chainId,
         )
     } catch {
         // Rekey target not held — the sign itself will fail with a typed

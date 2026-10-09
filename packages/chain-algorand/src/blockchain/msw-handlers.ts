@@ -156,6 +156,12 @@ export const mockAlgodSendRawTransaction = ({
 export type MockAlgodSimulateParams = {
     /** Called once per simulate request, so a test can count or inspect them. */
     onRequest?: (request: modelsv2.SimulateRequest) => void
+    /**
+     * Fails the group at its first transaction with algod's own wording, e.g.
+     * `transaction already in ledger: <txid>`. A function sees the request, so
+     * the message can name one of its txids. AlgoKit throws on a failure.
+     */
+    failureMessage?: string | ((request: modelsv2.SimulateRequest) => string)
 }
 
 /**
@@ -167,6 +173,7 @@ export type MockAlgodSimulateParams = {
  */
 export const mockAlgodSimulate = ({
     onRequest,
+    failureMessage,
 }: MockAlgodSimulateParams = {}): HttpHandler =>
     http.post('*/v2/transactions/simulate', async ({ request }) => {
         const decoded = decodeMsgpack(
@@ -174,12 +181,19 @@ export const mockAlgodSimulate = ({
             modelsv2.SimulateRequest,
         )
         onRequest?.(decoded)
+        const failure =
+            typeof failureMessage === 'function'
+                ? failureMessage(decoded)
+                : failureMessage
         const response = new modelsv2.SimulateResponse({
             version: 2n,
             lastRound: decoded.round ?? 1n,
             txnGroups: decoded.txnGroups.map(
                 group =>
                     new modelsv2.SimulateTransactionGroupResult({
+                        ...(failure
+                            ? { failureMessage: failure, failedAt: [0n] }
+                            : {}),
                         txnResults: group.txns.map(
                             stxn =>
                                 new modelsv2.SimulateTransactionResult({

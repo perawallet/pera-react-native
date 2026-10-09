@@ -23,7 +23,7 @@ import {
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: 'k',
         ...extra,
@@ -59,7 +59,7 @@ describe('useRekeyTransition', () => {
         const signer = held('S')
         setAccounts([
             held('A', {
-                type: 'watch',
+                custody: { kind: 'watch' },
                 keyPairId: undefined,
                 rekeyAddress: 'S',
             }),

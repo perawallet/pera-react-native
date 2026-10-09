@@ -16,7 +16,7 @@ import type {
     SignableAnalysis,
     AnalysisContext,
 } from '../../pipeline/types'
-import { reviewerAdapterFor } from '../../chain-adapter'
+import { reviewerChainAdapters } from '../../chain-adapter'
 
 export type AnalyzerActorInput = {
     groups: SignableGroup[]
@@ -31,7 +31,7 @@ export const analyzerActor = fromPromise<
     SignableAnalysis[],
     AnalyzerActorInput
 >(async ({ input }) => {
-    const adapter = reviewerAdapterFor(input.context.network)
+    const adapter = reviewerChainAdapters.get(input.context.scope.chainId)
     return Promise.all(
         input.groups.map(group => adapter.analyze(group, input.context)),
     )

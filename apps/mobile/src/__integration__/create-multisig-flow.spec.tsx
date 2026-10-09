@@ -25,6 +25,7 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import {
     useAccountsStore,
     type MultiSigAccount,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
@@ -181,7 +182,7 @@ describe('Flow: Create a multisig account from scratch', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
         const saved = useAccountsStore.getState().accounts[0]
-        expect(saved.type).toBe('multisig')
+        expect(accountType(saved)).toBe('multisig')
         expect(saved.address).toBe(expectedAddress)
         expect(saved.name).toBe('Ops treasury')
         expect((saved as MultiSigAccount).multisigDetails).toEqual({

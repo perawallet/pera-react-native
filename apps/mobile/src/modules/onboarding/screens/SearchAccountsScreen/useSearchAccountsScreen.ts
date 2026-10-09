@@ -17,13 +17,14 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
+    isAlgo25Account,
+    isHDWalletAccount,
+    isQuantumAccount,
     useAccountDiscovery,
+    useAllAccounts,
+    useCreateAccount,
     useHDImportSession,
     useSelectedAccountAddress,
-    useCreateAccount,
-    useAllAccounts,
-    isHDWalletAccount,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -142,7 +143,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const walletKeyId = seedIdOf(account.keyPairId) ?? account.keyPairId
             if (!walletKeyId) return
 
-            if (account.type === AccountTypes.hdWallet) {
+            if (isHDWalletAccount(account)) {
                 const discoveredAccounts = await discoverAccounts({
                     walletKeyId,
                 })
@@ -211,10 +212,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         accounts: discoveredAccounts,
                     })
                 }
-            } else if (
-                account.type === AccountTypes.algo25 ||
-                account.type === AccountTypes.quantum
-            ) {
+            } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
                 // Quantum accounts are flat single-key accounts like algo25:
                 // discovery is an address-only rekey scan (no derivation), and
                 // an empty result must still move the flow on to NameAccount —

@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -77,14 +76,14 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-shared-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const target: WalletAccount = {
         id: 'rekey-shared-target',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         address: MULTISIG_REKEY_INTEGRATION_ADDRESS,
         name: 'Shared target',
         multisigDetails: {

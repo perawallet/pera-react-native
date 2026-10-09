@@ -13,10 +13,10 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
+    buildAccount,
+    useAccountsStore,
     useAllAccounts,
     useSelectedAccountAddress,
-    useAccountsStore,
-    type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     multisigAdapterFor,
@@ -25,7 +25,6 @@ import {
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -104,7 +103,8 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const multisigAddress = multisigAdapterFor(network).deriveAddress({
+            const adapter = multisigAdapterFor(network)
+            const multisigAddress = adapter.deriveAddress({
                 version,
                 threshold,
                 addresses,
@@ -145,17 +145,20 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 device_id: deviceId,
             })
 
-            const newAccount: MultiSigAccount = {
-                id: generateOrderedUniqueId(),
-                type: 'multisig',
-                address: multisigAddress,
+            const newAccount = buildAccount({
                 name: accountName,
-                multisigDetails: {
-                    threshold,
-                    addresses,
-                    version,
+                custody: { kind: 'multisig' },
+                chainId: adapter.chainId,
+                chains: {
+                    [adapter.chainId]: {
+                        address: multisigAddress,
+                        native: {
+                            family: 'algorand',
+                            multisig: { version, threshold, addresses },
+                        },
+                    },
                 },
-            }
+            })
 
             setAccounts([...accounts, newAccount])
             setSelectedAccountAddress(multisigAddress)

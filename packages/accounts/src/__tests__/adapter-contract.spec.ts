@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import type { AccountsChainAdapter } from '../chain-adapter'
 import { InvalidBip44PathError } from '../errors'
-import { AccountTypes, DerivationTypes, type WalletAccount } from '../models'
+import { DerivationTypes, type WalletAccount } from '../models'
 import { canSignDirectly } from '../utils'
 import { accountsContractTests } from './adapter-contract'
 
@@ -53,7 +53,7 @@ const fixtureAdapter: AccountsChainAdapter = {
             nativeBalanceBaseUnits: new Decimal(account.balance),
             minBalance: new Decimal(0),
             authAddress: null,
-            chainState: { family: 'evm' },
+            chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
             holdings: [
                 {
                     assetId: NATIVE_ASSET_ID,
@@ -129,11 +129,11 @@ const walletAccount = (
     type: 'algo25' | 'watch',
 ): WalletAccount =>
     type === 'watch'
-        ? { id, address, type: AccountTypes.watch }
+        ? { id, address, custody: { kind: 'watch' } }
         : {
               id,
               address,
-              type: AccountTypes.algo25,
+              custody: { kind: 'local', seed: 'algo25' },
               keyPairId: `${id}-key`,
           }
 

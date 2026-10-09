@@ -18,14 +18,14 @@ import { useSettingsLaunchScreen } from '../useSettingsLaunchScreen'
 const alice: WalletAccount = {
     id: '1',
     name: 'Alice',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ALICE-ADDR',
     keyPairId: 'kp-1',
 }
 const bob: WalletAccount = {
     id: '2',
     name: 'Bob',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'BOB-ADDR',
     keyPairId: 'kp-2',
 }

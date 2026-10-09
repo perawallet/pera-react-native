@@ -16,7 +16,7 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
     accountsStoreMock: {
         accounts: [] as Array<{
             address: string
-            type?: string
+            custody?: { kind: string }
             rekeyAddress?: string
         }>,
     },
@@ -30,14 +30,8 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsStoreMock },
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
+    isWatchAccount: (account: { custody?: { kind?: string } }) =>
+        account.custody?.kind === 'watch',
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -90,14 +84,20 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
 
 const watchAccount = (
     address: string,
-): { address: string; type: string; rekeyAddress?: string } => ({
+): {
+    address: string
+    custody: { kind: string }
+    rekeyAddress?: string
+} => ({
     address,
-    type: 'watch',
+    custody: { kind: 'watch' },
 })
 
-const algo25Account = (address: string): { address: string; type: string } => ({
+const algo25Account = (
+    address: string,
+): { address: string; custody: { kind: string } } => ({
     address,
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
 })
 
 const buildDeps = (): MigrationDeps => ({

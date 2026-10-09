@@ -10,20 +10,24 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import {
     DerivationTypes,
     type DerivationType,
-    type WalletAccount,
+    type MultiSigAccount,
 } from '../../models'
 import {
     custodyFromLegacy,
-    rebuildCustody,
-    withCustody,
+    toCurrentAccount,
+    withLegacyMultisigDetails,
     type CustodyFields,
+    type PersistedAccountRecord,
 } from '../backfill'
+import { accountType } from '../../utils'
+import { buildTestAccount } from '../../__tests__/accountFactory'
+import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
-const hdAccount = (derivationType: DerivationType): WalletAccount => ({
+const hdAccount = (derivationType: DerivationType): PersistedAccountRecord => ({
     id: 'hd',
     address: 'HD-ADDR',
     type: 'hdWallet',
@@ -42,7 +46,7 @@ const hdCustody = (): CustodyFields => ({
     },
 })
 
-const legacyFixtures: Array<[string, WalletAccount, Custody]> = [
+const legacyFixtures: Array<[string, PersistedAccountRecord, CustodyFields]> = [
     [
         'algo25',
         {
@@ -156,93 +160,132 @@ describe('custodyFromLegacy', () => {
             expect(custodyFromLegacy(account)).toEqual(expected)
         },
     )
-})
 
-describe('withCustody', () => {
-    test.each(legacyFixtures)(
-        'adds custody to a legacy %s account and keeps every other field',
-        (_label, account, expected) => {
-            expect(withCustody(account)).toEqual({ ...account, ...expected })
+    test('keeps a multisig without details, with no native data', () => {
+        expect(
+            custodyFromLegacy({ id: 'm', type: 'multisig', address: 'MSIG' }),
+        ).toEqual({
+            custody: { kind: 'multisig' },
+            chains: { algorand: { address: 'MSIG' } },
+        })
+    })
+
+    test.each([['algo25'], ['quantum']] as const)(
+        'keeps a %s account without a key id, with no signing key',
+        type => {
+            expect(
+                custodyFromLegacy({ id: 'k', type, address: 'ADDR' }),
+            ).toEqual({
+                custody: { kind: 'local', seed: type },
+                chains: { algorand: { address: 'ADDR' } },
+            })
         },
     )
+
+    test('keeps an hdWallet that has details but no key id', () => {
+        const { keyPairId: _keyPairId, ...record } = hdAccount(
+            DerivationTypes.Peikert,
+        )
+
+        expect(custodyFromLegacy(record)?.chains).toEqual({
+            algorand: { address: 'HD-ADDR' },
+        })
+    })
 
     test.each([
         ['an hdWallet without derivation details', { type: 'hdWallet' }],
         ['a hardware account without device details', { type: 'hardware' }],
-        ['a multisig account without participants', { type: 'multisig' }],
-        ['an algo25 account without a key id', { type: 'algo25' }],
         ['an account of an unknown type', { type: 'card' }],
-    ])('leaves %s without custody instead of throwing', (_label, shape) => {
-        const account = {
+        ['an account without a type', {}],
+    ])('has no decoding for %s', (_label, shape) => {
+        const record = {
             id: 'x',
             address: 'ADDR',
             ...shape,
-        } as unknown as WalletAccount
+        } as unknown as PersistedAccountRecord
 
-        expect(withCustody(account)).toBe(account)
+        expect(custodyFromLegacy(record)).toBeUndefined()
+    })
+})
+
+describe('toCurrentAccount', () => {
+    test.each(legacyFixtures)(
+        'adds custody to a legacy %s account, drops its type and keeps every other field',
+        (_label, account, expected) => {
+            const { type: _type, ...rest } = account
+
+            expect(toCurrentAccount(account)).toEqual({ ...rest, ...expected })
+        },
+    )
+
+    test('keeps an existing custody over a contradicting type', () => {
+        const hardware = buildTestAccount('hardware')
+        const record = { ...hardware, type: 'watch' } as PersistedAccountRecord
+
+        const account = toCurrentAccount(record)
+
+        expect(accountType(account)).toBe('hardware')
+        expect(account).not.toHaveProperty('type')
+        expect(account.chains).toEqual(hardware.chains)
     })
 
-    test('returns an account that already has a custody unchanged', () => {
-        const account: WalletAccount = {
-            id: 'w',
-            address: 'WATCH-ADDR',
-            type: 'watch',
+    test('turns a record it cannot decode into a watch account without signing material', () => {
+        const record = {
+            id: 'x',
+            name: 'Broken',
+            address: 'ADDR',
+            type: 'hdWallet',
+            keyPairId: 'kp',
+            rekeyAddress: 'AUTH',
+        } as PersistedAccountRecord
+
+        expect(toCurrentAccount(record)).toEqual({
+            id: 'x',
+            name: 'Broken',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
             custody: { kind: 'watch' },
-            chains: { algorand: { address: 'WATCH-ADDR' } },
-        }
-
-        expect(withCustody(account)).toBe(account)
+            chains: { algorand: { address: 'ADDR' } },
+        })
     })
 
-    test('is idempotent', () => {
+    test('changes nothing when run on its own output', () => {
         for (const [, account] of legacyFixtures) {
-            const once = withCustody(account)
-            expect(withCustody(once)).toBe(once)
+            const once = toCurrentAccount(account)
+
+            expect(toCurrentAccount(once)).toEqual(once)
         }
     })
 })
 
-describe('rebuildCustody', () => {
-    test('replaces custody that no longer matches the details', () => {
-        const account: WalletAccount = {
-            id: 'w',
-            address: 'ADDR',
-            type: 'hardware',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'new',
-                deviceName: 'Nano X',
-                accountIndex: 1,
-                transportType: 'ble',
-            },
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR' } },
-        }
-
-        expect(rebuildCustody(account).custody).toEqual({
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'new',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 1,
-        })
+describe('withLegacyMultisigDetails', () => {
+    beforeEach(() => {
+        registerFakeAccountsChain()
     })
 
-    test('removes custody when the details it needs are missing', () => {
-        const account = {
+    test('writes the details to the legacy field and the chain entry', () => {
+        const bare = toCurrentAccount({
             id: 'm',
-            address: 'ADDR',
+            name: 'Shared',
             type: 'multisig',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR' } },
-        } as unknown as WalletAccount
+            address: 'MSIG',
+            rekeyAddress: 'AUTH',
+        }) as MultiSigAccount
+        const details = { threshold: 2, addresses: ['P1', 'P2'], version: 1 }
 
-        const rebuilt = rebuildCustody(account)
+        const healed = withLegacyMultisigDetails(bare, details)
 
-        expect(rebuilt).not.toHaveProperty('custody')
-        expect(rebuilt).not.toHaveProperty('chains')
+        expect(healed).toMatchObject({
+            id: 'm',
+            name: 'Shared',
+            address: 'MSIG',
+            rekeyAddress: 'AUTH',
+            custody: { kind: 'multisig' },
+            multisigDetails: details,
+        })
+        expect(healed.chains?.algorand?.native).toEqual({
+            family: 'algorand',
+            multisig: details,
+        })
     })
 })

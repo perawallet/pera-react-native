@@ -27,10 +27,6 @@ import {
     it,
 } from 'vitest'
 
-import { act, renderHook } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-
-import { createTestQueryClient } from '@test-utils/render'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -42,6 +38,7 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
     renderSignReview,
     screen,
     waitFor,
@@ -50,14 +47,12 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type QuantumAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import {
@@ -75,7 +70,7 @@ const seedQuantumSigner = async (): Promise<void> => {
     const account = await seedAlgo25Signer()
     const quantumAccount: QuantumAccount = {
         id: account.id,
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: REVIEW_SIGNER_ADDRESS,
         keyPairId: account.keyPairId ?? '',
         name: account.name,
@@ -96,7 +91,7 @@ const seedQuantumRekeyedToStandard = async (): Promise<void> => {
     const signer = await seedAlgo25Signer()
     const rekeyedQuantum: QuantumAccount = {
         id: 'rekeyed-quantum',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'unused-once-rekeyed',
         name: 'Rekeyed Quantum',
@@ -117,7 +112,7 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     await seedQuantumSigner()
     const rekeyedWatch: WatchAccount = {
         id: 'rekeyed-watch',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         address: REVIEW_RECEIVER_ADDRESS,
         name: 'Rekeyed Watch',
         rekeyAddress: REVIEW_SIGNER_ADDRESS,
@@ -125,30 +120,6 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, rekeyedWatch])
     store.setSelectedAccountAddress(rekeyedWatch.address)
-}
-
-/**
- * `renderSignReview` enqueues into a persisted store that nothing drains when a
- * test ends, so the review a later test renders is the FIRST request still
- * pending — an earlier test's. Every assertion here would then be made against
- * the wrong signer, which is exactly how the rekey cases below can pass while
- * the bug they cover is present.
- */
-const drainPendingSignRequests = (): void => {
-    const client = createTestQueryClient()
-    const { result, unmount } = renderHook(() => useSigningRequest(), {
-        wrapper: ({ children }) => (
-            <QueryClientProvider client={client}>
-                {children}
-            </QueryClientProvider>
-        ),
-    })
-    act(() => {
-        for (const request of [...result.current.pendingSignRequests]) {
-            result.current.removeSignRequest(request)
-        }
-    })
-    unmount()
 }
 
 describe('Flow: quantum-fee explainer on the signing review surface', () => {

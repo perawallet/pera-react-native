@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
+    ChainScope,
     PeraTransaction,
     PeraSignedTransaction,
     PeraTransactionType,
@@ -278,8 +279,14 @@ export interface SignableAnalysis {
     riskLevel: 'low' | 'medium' | 'high'
 }
 
+/** What a group does, before any warning or risk is attached. */
+export type DecodedGroup = Pick<
+    SignableAnalysis,
+    'totalFees' | 'transactionSummaries' | 'signableAddresses'
+>
+
 export interface AnalysisContext {
-    network: Network
+    scope: ChainScope
     /** All user accounts, for detecting internal transfers. */
     accounts: WalletAccount[]
     /** Known contracts/apps, for risk assessment. */

@@ -32,7 +32,7 @@ const mintedOf = (address: string, seedKeyId = 'SEED1'): MintedAccount => ({
     account: {
         id: `ACC-${address}`,
         address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: `${seedKeyId}-ed25519`,
     },
     seedKeyId,
@@ -280,7 +280,7 @@ describe('useImportAccount', () => {
         const sibling: WalletAccount = {
             id: 'SIBLING',
             address: 'SIBLING_ADDR',
-            type: 'quantum',
+            custody: { kind: 'local', seed: 'quantum' },
             keyPairId: 'SEED1-quantum-pqk1',
         }
         useAccountsStore.setState({

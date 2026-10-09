@@ -19,7 +19,16 @@ import type { AnalyzedSignableGroup } from '../../../pipeline/types'
 
 const ledgerAccount = (address: string, rekeyAddress?: string) =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address,
         rekeyAddress,
         hardwareDetails: {
@@ -33,7 +42,7 @@ const ledgerAccount = (address: string, rekeyAddress?: string) =>
 
 const watchAccount = (address: string, rekeyAddress?: string) =>
     ({
-        type: 'watch',
+        custody: { kind: 'watch' },
         address,
         rekeyAddress,
     }) as unknown as WalletAccount
@@ -59,9 +68,9 @@ describe('resolveHardwareDeviceName', () => {
     it('resolves the device name when the sender itself is the Ledger', () => {
         const sender = ledgerAccount('SENDER')
 
-        expect(resolveHardwareDeviceName([group('SENDER')], [sender])).toBe(
-            'Nano X',
-        )
+        expect(
+            resolveHardwareDeviceName([group('SENDER')], [sender], 'algorand'),
+        ).toBe('Nano X')
     })
 
     it('resolves the device name from the auth account for a rekeyed-to-Ledger sender', () => {
@@ -72,7 +81,11 @@ describe('resolveHardwareDeviceName', () => {
         const auth = ledgerAccount('AUTH')
 
         expect(
-            resolveHardwareDeviceName([group('SENDER')], [sender, auth]),
+            resolveHardwareDeviceName(
+                [group('SENDER')],
+                [sender, auth],
+                'algorand',
+            ),
         ).toBe('Nano X')
     })
 
@@ -88,23 +101,26 @@ describe('resolveHardwareDeviceName', () => {
                     }),
                 ],
                 [participant],
+                'algorand',
             ),
         ).toBe('Nano X')
     })
 
     it('returns null when the signer account is unknown', () => {
-        expect(resolveHardwareDeviceName([group('SENDER')], [])).toBeNull()
+        expect(
+            resolveHardwareDeviceName([group('SENDER')], [], 'algorand'),
+        ).toBeNull()
     })
 
     it('returns null when the rekey target is not held', () => {
         const sender = watchAccount('SENDER', 'MISSING_AUTH')
 
         expect(
-            resolveHardwareDeviceName([group('SENDER')], [sender]),
+            resolveHardwareDeviceName([group('SENDER')], [sender], 'algorand'),
         ).toBeNull()
     })
 
     it('returns null for an empty group list', () => {
-        expect(resolveHardwareDeviceName([], [])).toBeNull()
+        expect(resolveHardwareDeviceName([], [], 'algorand')).toBeNull()
     })
 })

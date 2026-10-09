@@ -13,11 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
-import type {
-    RekeyTransition,
-    WalletAccount,
+import {
+    type RekeyTransition,
+    type WalletAccount,
+    type AccountType,
 } from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { custodyForType } from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -67,11 +69,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const accountOfType = (
-    type: WalletAccount['type'],
+    type: AccountType,
     rekeyAddress?: string,
 ): WalletAccount =>
     ({
-        type,
+        custody: custodyForType(type),
         address: `${type.toUpperCase()}_ADDR`,
         keyPairId: 'key-1',
         rekeyAddress,

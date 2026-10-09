@@ -11,7 +11,12 @@
  */
 
 import {
-    AccountTypes,
+    isAlgo25Account,
+    isHardwareWalletAccount,
+    isHDWalletAccount,
+    isMultisigAccount,
+    isQuantumAccount,
+    isWatchAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -44,75 +49,71 @@ const toAddressPayload = (
     updatedAt: number,
     hd?: { seedFirstDerivedAddress: string; publicKeyHex: string },
 ): AddressBackupPayload | null => {
-    switch (a.type) {
-        case AccountTypes.algo25: {
-            return {
-                type: BackupAccountType.algo25,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.quantum: {
-            return {
-                type: BackupAccountType.quantum,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.watch: {
-            return {
-                type: BackupAccountType.watch,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.hardware: {
-            return {
-                type: BackupAccountType.hardware,
-                address: a.address,
-                deviceId: a.hardwareDetails.deviceId,
-                deviceName: a.hardwareDetails.deviceName,
-                accountIndex: a.hardwareDetails.accountIndex,
-                manufacturer: a.hardwareDetails.manufacturer,
-                transportType: a.hardwareDetails.transportType,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.multisig: {
-            return {
-                type: BackupAccountType.multisig,
-                address: a.address,
-                participantAddresses: a.multisigDetails.addresses,
-                threshold: a.multisigDetails.threshold,
-                version: a.multisigDetails.version,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.hdWallet: {
-            if (!hd) return null
-            return {
-                type: BackupAccountType.hdWallet,
-                address: a.address,
-                seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
-                publicKey: hd.publicKeyHex,
-                account: a.hdWalletDetails.account,
-                change: a.hdWalletDetails.change,
-                keyIndex: a.hdWalletDetails.keyIndex,
-                derivationType: a.hdWalletDetails.derivationType,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        default: {
-            const exhaustive: never = a
-            return exhaustive
+    if (isAlgo25Account(a)) {
+        return {
+            type: BackupAccountType.algo25,
+            address: a.address,
+            customName: nameValue(a),
+            updatedAt,
         }
     }
+    if (isQuantumAccount(a)) {
+        return {
+            type: BackupAccountType.quantum,
+            address: a.address,
+            customName: nameValue(a),
+            updatedAt,
+        }
+    }
+    if (isWatchAccount(a)) {
+        return {
+            type: BackupAccountType.watch,
+            address: a.address,
+            customName: nameValue(a),
+            updatedAt,
+        }
+    }
+    if (isHardwareWalletAccount(a)) {
+        return {
+            type: BackupAccountType.hardware,
+            address: a.address,
+            deviceId: a.hardwareDetails.deviceId,
+            deviceName: a.hardwareDetails.deviceName,
+            accountIndex: a.hardwareDetails.accountIndex,
+            manufacturer: a.hardwareDetails.manufacturer,
+            transportType: a.hardwareDetails.transportType,
+            customName: nameValue(a),
+            updatedAt,
+        }
+    }
+    if (isMultisigAccount(a)) {
+        return {
+            type: BackupAccountType.multisig,
+            address: a.address,
+            participantAddresses: a.multisigDetails.addresses,
+            threshold: a.multisigDetails.threshold,
+            version: a.multisigDetails.version,
+            customName: nameValue(a),
+            updatedAt,
+        }
+    }
+    if (isHDWalletAccount(a)) {
+        if (!hd) return null
+        return {
+            type: BackupAccountType.hdWallet,
+            address: a.address,
+            seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
+            publicKey: hd.publicKeyHex,
+            account: a.hdWalletDetails.account,
+            change: a.hdWalletDetails.change,
+            keyIndex: a.hdWalletDetails.keyIndex,
+            derivationType: a.hdWalletDetails.derivationType,
+            customName: nameValue(a),
+            updatedAt,
+        }
+    }
+    const exhaustive: never = a
+    return exhaustive
 }
 
 export const serializeAccountItems = (

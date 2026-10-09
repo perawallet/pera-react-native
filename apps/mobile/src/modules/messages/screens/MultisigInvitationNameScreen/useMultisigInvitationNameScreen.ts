@@ -18,11 +18,10 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    AccountTypes,
+    buildAccount,
     useAccountsStore,
     useAllAccounts,
     useSelectedAccountAddress,
-    type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -34,10 +33,7 @@ import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding'
 import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
-import {
-    generateOrderedUniqueId,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string
@@ -139,9 +135,8 @@ export const useMultisigInvitationNameScreen =
                 // invitation is corrupt or tampered. Checked before the inbox
                 // delete so a bad invitation isn't consumed. Mirrors the QR
                 // import path in useNameMultisigScreen.
-                const derivedAddress = multisigAdapterFor(
-                    network,
-                ).deriveAddress({
+                const adapter = multisigAdapterFor(network)
+                const derivedAddress = adapter.deriveAddress({
                     version: invitation.version,
                     threshold: invitation.threshold,
                     addresses: invitation.participantAddresses,
@@ -158,17 +153,24 @@ export const useMultisigInvitationNameScreen =
                     multisigAddress: invitation.address,
                 })
 
-                const newAccount: MultiSigAccount = {
-                    id: generateOrderedUniqueId(),
-                    type: AccountTypes.multisig,
-                    address: derivedAddress,
+                const newAccount = buildAccount({
                     name: trimmedName,
-                    multisigDetails: {
-                        threshold: invitation.threshold,
-                        addresses: invitation.participantAddresses,
-                        version: invitation.version,
+                    custody: { kind: 'multisig' },
+                    chainId: adapter.chainId,
+                    chains: {
+                        [adapter.chainId]: {
+                            address: derivedAddress,
+                            native: {
+                                family: 'algorand',
+                                multisig: {
+                                    version: invitation.version,
+                                    threshold: invitation.threshold,
+                                    addresses: invitation.participantAddresses,
+                                },
+                            },
+                        },
                     },
-                }
+                })
 
                 setAccounts([...accounts, newAccount])
                 setSelectedAccountAddress(derivedAddress)

@@ -61,7 +61,7 @@ const PARTICIPANT_B =
 
 const makeMultisigAccount = (): WalletAccount =>
     ({
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address: MULTISIG_ADDRESS,
         multisigDetails: {
             version: 1,
@@ -72,7 +72,7 @@ const makeMultisigAccount = (): WalletAccount =>
 
 const makeAlgo25Account = (address: string, keyPairId = 'key'): WalletAccount =>
     ({
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId,
     }) as unknown as WalletAccount
@@ -137,7 +137,7 @@ const buildInput = (
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
     encodeTransaction: vi.fn(),
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     ...overrides,
 })
 
@@ -232,7 +232,7 @@ describe('signMultisigGroups', () => {
             makeAlgo25Account(PARTICIPANT_A),
             makeAlgo25Account(PARTICIPANT_B),
             {
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 address: otherMultisig,
                 multisigDetails: {
                     version: 1,
@@ -263,7 +263,16 @@ describe('signMultisigGroups', () => {
 
     it('skips hardware participants during propose when a local-key participant is available — Ledger prompt is deferred to per-row Sign in the pending sheet', async () => {
         const ledgerParticipant = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: PARTICIPANT_B,
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -319,7 +328,16 @@ describe('signMultisigGroups', () => {
 
     it('short-circuits to an empty-signers deferred result when only hardware participants exist — propose call is deferred to the per-row Sign in the pending sheet', async () => {
         const ledgerParticipant = {
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: PARTICIPANT_A,
             hardwareDetails: {
                 manufacturer: 'ledger',

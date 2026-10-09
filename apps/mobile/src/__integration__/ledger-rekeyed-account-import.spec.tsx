@@ -27,6 +27,7 @@ import {
     AccountTypes,
     canSignWith,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import {
     mockAlgodAccountInformation,
@@ -152,9 +153,13 @@ describe('Flow: Ledger rekeyed-account import', () => {
                 const accounts = useAccountsStore.getState().accounts
                 const watch = accounts.find(a => a.address === REKEYED_ADDRESS)
                 const hw = accounts.find(a => a.address === LEDGER_ADDRESS)
-                expect(watch?.type).toBe(AccountTypes.watch)
+                expect(watch ? accountType(watch) : undefined).toBe(
+                    AccountTypes.watch,
+                )
                 expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
-                expect(hw?.type).toBe(AccountTypes.hardware)
+                expect(hw ? accountType(hw) : undefined).toBe(
+                    AccountTypes.hardware,
+                )
                 expect(canSignWith(watch!, accounts, LEGACY_CHAIN_ID)).toBe(
                     true,
                 )

@@ -60,7 +60,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -374,7 +373,7 @@ const buildMeldHistoryPage = (): RampHistoryPageApiResponse => ({
 const seedSelectedAccount = (): WalletAccount => {
     const account: WalletAccount = {
         id: 'buyer-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'buyer-key-1',
         name: 'Buyer',
@@ -398,7 +397,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'buyer-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Buyer',

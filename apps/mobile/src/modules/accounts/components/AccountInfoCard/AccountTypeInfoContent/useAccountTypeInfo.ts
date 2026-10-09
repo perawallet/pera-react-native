@@ -13,11 +13,13 @@
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
 import {
+    accountType,
+    type AccountType,
     AccountTypes,
+    isMultisigAccount,
     isRekeyedAccount,
     useCanSignWith,
     useRekeyTransition,
-    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -123,7 +125,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (account.type === AccountTypes.multisig && !canSign) {
+        if (isMultisigAccount(account) && !canSign) {
             return {
                 title: t(MULTISIG_UNSIGNABLE_I18N.title),
                 titleQualifier: null,
@@ -131,7 +133,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        const i18n = TYPE_I18N[account.type]
+        const i18n = TYPE_I18N[accountType(account)]
         return {
             title: t(i18n.title),
             titleQualifier: null,
@@ -142,9 +144,9 @@ export const useAccountTypeInfo = ({
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own
         // type, so the article has to follow the same type to match.
-        const type = rekeyTransition?.to ?? account.type
+        const type = rekeyTransition?.to ?? accountType(account)
         pushWebView({ url: SUPPORT_URL[type] })
-    }, [pushWebView, account.type, rekeyTransition])
+    }, [pushWebView, account, rekeyTransition])
 
     return {
         title,

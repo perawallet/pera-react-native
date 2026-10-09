@@ -33,7 +33,6 @@ import {
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -43,7 +42,7 @@ import {
 const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const unsignableMultisig: MultiSigAccount = {
     id: 'msig-unsignable',
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address: MSIG_ADDRESS,
     name: 'Shared (unsignable)',
     multisigDetails: {

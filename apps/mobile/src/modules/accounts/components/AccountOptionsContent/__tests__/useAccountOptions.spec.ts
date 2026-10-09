@@ -14,10 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { trackEvent, AccountOptionsEvent } from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -178,7 +175,7 @@ describe('useAccountOptions', () => {
     const algo25Account: WalletAccount = {
         id: 'acc-1',
         address: 'ALGO25ADDRESS',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'key-1',
         name: 'My Account',
     }
@@ -186,13 +183,13 @@ describe('useAccountOptions', () => {
     const watchAccount: WalletAccount = {
         id: 'acc-2',
         address: 'WATCHADDRESS',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
     }
 
     const quantumAccount: WalletAccount = {
         id: 'acc-q',
         address: 'QUANTUMADDRESS',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'key-q',
         name: 'My Quantum Account',
     }
@@ -200,7 +197,7 @@ describe('useAccountOptions', () => {
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'key-3',
         rekeyAddress: 'AUTHADDRESS',
     }
@@ -208,14 +205,23 @@ describe('useAccountOptions', () => {
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
         address: 'REKEYEDWATCHADDRESS',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         rekeyAddress: 'ALGO25ADDRESS',
     }
 
     const hardwareAccount: WalletAccount = {
         id: 'acc-4',
         address: 'HARDWAREADDRESS',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: {
             manufacturer: 'ledger',
             deviceId: 'test-device',
@@ -228,7 +234,7 @@ describe('useAccountOptions', () => {
     const multisigAccount: WalletAccount = {
         id: 'acc-6',
         address: 'MULTISIGADDRESS',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
@@ -1239,7 +1245,7 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'key-rekeyed',
                 rekeyAddress: 'ALGO25ADDRESS',
             }
@@ -1268,7 +1274,7 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'key-rekeyed',
                 rekeyAddress: 'ALGO25ADDRESS',
             }
@@ -1314,7 +1320,16 @@ describe('useAccountOptions', () => {
             const ledgerAccount: WalletAccount = {
                 id: 'acc-ledger',
                 address: 'LEDGERADDRESS',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: {
                     manufacturer: 'ledger',
                     deviceId: 'test-device',

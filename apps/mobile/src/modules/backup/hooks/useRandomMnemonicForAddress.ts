@@ -11,7 +11,10 @@
  */
 
 import { useEffect, useState } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    accountType,
+} from '@perawallet/wallet-core-accounts'
 import {
     mnemonicIndexToWord,
     pickDistinctIndexes,
@@ -80,7 +83,7 @@ export const useRandomMnemonicForAddress = (
                 logger.error(
                     'BackupVerification: failed to sample mnemonic words',
                     {
-                        accountType: account.type,
+                        accountType: accountType(account),
                         error: err instanceof Error ? err.message : String(err),
                         stack: err instanceof Error ? err.stack : undefined,
                     },

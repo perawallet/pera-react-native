@@ -80,8 +80,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useAllAccounts: vi.fn(() => [
-            { address: 'ADDR1', type: 'algo25' },
-            { address: 'ADDR2', type: 'algo25' },
+            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
         ]),
     }
 })
@@ -91,6 +91,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    getSelectedScope: vi.fn((chainId: string) => ({
+        chainId,
+        networkId: 'testnet',
+    })),
 }))
 
 vi.mock('../../machine/createSigningMachine')

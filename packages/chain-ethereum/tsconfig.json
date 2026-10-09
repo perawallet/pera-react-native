@@ -1,11 +1,10 @@
 {
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
     "types": ["node"],
     // Typecheck-only: the build's program excludes the specs that import this.
     "paths": {
+      "@perawallet/wallet-core-accounts/testing/account-state": ["../accounts/src/__tests__/account-state-contract.ts"],
       "@perawallet/wallet-core-chain-contract/testing": ["../chain-contract/src/__tests__/testing.ts"]
     }
   },

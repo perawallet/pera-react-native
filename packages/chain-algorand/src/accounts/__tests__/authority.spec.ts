@@ -14,7 +14,6 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import {
     accountsChainAdapters,
     canSignArbitraryData,
-    AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -76,7 +75,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount
@@ -85,7 +84,11 @@ const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'h',
         address: overrides.address ?? 'H',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         keyPairId: 'kp-hd',
         hdWalletDetails: {
             account: 0,
@@ -100,7 +103,16 @@ const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'l',
         address: overrides.address ?? 'L',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
         ...overrides,
     }) as WalletAccount
@@ -109,7 +121,7 @@ const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'w',
         address: overrides.address ?? 'W',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         ...overrides,
     }) as WalletAccount
 
@@ -117,7 +129,7 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'm',
         address: overrides.address ?? 'M',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['P1', 'P2', 'P3'],
@@ -130,7 +142,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'f',
         address: overrides.address ?? 'F',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -138,7 +150,11 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
 describe('algorandAuthority.isDelegated', () => {
     const baseAccount = {
         id: '1',
-        type: 'hdWallet',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'ADDR1',
         keyPairId: 'pk1',
     } as any

@@ -1054,6 +1054,36 @@
                 "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema persistir."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "O smart contract recusou a transação",
+                "body": "O smart contract recusou esta transação sem informar o motivo. Confira os detalhes e tente novamente."
+            },
+            "reverted_with_reason": {
+                "title": "O smart contract recusou a transação",
+                "body": "O contrato retornou: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Gas insuficiente",
+                "body": "Esta transação precisa de mais gas do que o limite permite. Tente novamente e entre em contato com o suporte se o problema persistir."
+            },
+            "nonce_too_low": {
+                "title": "Transação fora de ordem",
+                "body": "Outra transação desta conta foi processada primeiro. Tente novamente."
+            },
+            "replacement_underpriced": {
+                "title": "Taxa de rede muito baixa",
+                "body": "Uma transação pendente desta conta só pode ser substituída com uma taxa de rede mais alta. Aguarde a conclusão dela ou tente novamente com uma taxa mais alta."
+            },
+            "insufficient_funds": {
+                "title": "ETH insuficiente",
+                "body": "Esta conta não tem ETH suficiente para cobrir o valor e a taxa de rede. Adicione mais ETH e tente novamente."
+            },
+            "rate_limited": {
+                "title": "Rede congestionada",
+                "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
+            }
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Status da transação desconhecido",

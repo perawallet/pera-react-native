@@ -12,13 +12,14 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
-import { legacyPlannerAdapter } from '../../../chain-adapter'
+import { plannerAdapterForScope } from '../../../chain-adapter'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -33,6 +34,7 @@ export type TransportActorInput = {
     allAccounts: WalletAccount[]
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
+    scope: ChainScope
 }
 
 /**
@@ -48,6 +50,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             signerAddress,
             allAccounts,
             createTransport,
+            scope,
         } = input
 
         const signerAccount = allAccounts.find(a => a.address === signerAddress)
@@ -72,11 +75,12 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             source,
             dataType,
             allAccounts,
+            scope.chainId,
         )
 
         const transport = createTransport(source, authAccount)
         const merged =
-            legacyPlannerAdapter().mergeSigningResults(signingResults)
+            plannerAdapterForScope(scope).mergeSigningResults(signingResults)
 
         return transport.send(merged, source, authAccount.address)
     },

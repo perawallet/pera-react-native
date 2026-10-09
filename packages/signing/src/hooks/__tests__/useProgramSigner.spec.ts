@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 const hdAccount = {
     address: 'HD_ADDR',
     keyPairId: 'key-hd-child',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -74,7 +74,7 @@ describe('useProgramSigner', () => {
     test('rejects watch accounts with the typed error', async () => {
         const watchAccount = {
             address: 'WATCH_ADDR',
-            type: 'watch',
+            custody: { kind: 'watch' },
         } as unknown as WalletAccount
 
         const { result } = renderHook(() => useProgramSigner())
@@ -108,7 +108,16 @@ describe('useProgramSigner', () => {
     test('rejects hardware wallet accounts with the typed error', async () => {
         const hwAccount = {
             address: 'HW_ADDR',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd',
+                    deviceName: 'L',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'd',

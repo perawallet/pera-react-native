@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import { PWDivider, PWScreen, PWView } from '@components/core'
+import { PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
-import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
-import { KeyRegistrationSummary } from '@modules/signing/components/KeyRegistrationSummary'
-import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
+import { TransactionReviewBody } from '@modules/signing/family-bodies/TransactionReviewBody'
 import {
     useSigningPipeline,
     type TransactionSignRequest,
@@ -25,11 +21,9 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
-import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
 
 export const SingleTransactionScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const pipeline = useSigningPipeline()
     const request = pipeline.currentRequest as Optional<TransactionSignRequest>
@@ -60,26 +54,12 @@ export const SingleTransactionScreen = () => {
             testID='signing_transaction_review'
         >
             <PWView style={styles.contentContainer}>
-                <TransactionSummaryHeader
-                    transaction={transaction}
-                    metadata={request?.sourceMetadata}
-                    verifiedOrigin={request?.verifiedOrigin}
+                {/* The signing pipeline carries only Algorand transactions. */}
+                <TransactionReviewBody
+                    transaction={{ family: 'algorand', transaction }}
+                    source={request.sourceMetadata}
+                    verifiedOrigin={request.verifiedOrigin}
                 />
-
-                <SigningWarnings />
-
-                <PWDivider
-                    color={theme.colors.layerGray}
-                    style={styles.paddedDivider}
-                />
-
-                <SigningAccountDisplay transaction={transaction} />
-
-                {transaction.txType === 'keyreg' && (
-                    <KeyRegistrationSummary transaction={transaction} />
-                )}
-
-                <FeeDisplay transaction={transaction} />
             </PWView>
         </PWScreen>
     )

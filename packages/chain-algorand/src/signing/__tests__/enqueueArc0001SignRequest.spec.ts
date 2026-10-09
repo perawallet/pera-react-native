@@ -20,10 +20,7 @@ import {
     decodeUnsignedTransaction,
     encodeUnsignedTransaction,
 } from 'algosdk'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
@@ -116,7 +113,7 @@ const makeTransport = () => ({
     sourceMetadata: { name: 'Test' },
     respondWithResult: vi.fn(),
     respondWithReject: vi.fn(),
-    respondWithError: vi.fn(),
+    respondWithError: vi.fn((_error: Error) => true),
 })
 
 const enqueue = (
@@ -153,7 +150,7 @@ const quantumAccount = (): WalletAccount =>
     ({
         id: 'q1',
         address: QUANTUM_ADDRESS.toString(),
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
     }) as WalletAccount
 
@@ -339,7 +336,7 @@ describe('enqueueArc0001SignRequest', () => {
         )
     })
 
-    it('error callback forwards the error AND removes the queued request', async () => {
+    it('error callback forwards the error AND removes the queued request once the peer is answered', async () => {
         const transport = makeTransport()
 
         await enqueue(makeResolved(1, 1), transport)
@@ -349,6 +346,18 @@ describe('enqueueArc0001SignRequest', () => {
 
         expect(transport.respondWithError).toHaveBeenCalledWith(incoming)
         expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
+    })
+
+    it('error callback keeps the queued request when the transport holds it open for a retry', async () => {
+        const transport = makeTransport()
+        transport.respondWithError.mockReturnValue(false)
+
+        await enqueue(makeResolved(1, 1), transport)
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        await signRequest.error(new Error('bridge socket did not reopen'))
+
+        expect(transport.respondWithError).toHaveBeenCalledTimes(1)
+        expect(mockRemoveSignRequest).not.toHaveBeenCalled()
     })
 
     describe('quantum fee override', () => {

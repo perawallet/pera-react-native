@@ -60,13 +60,8 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
+    isMultisigAccount: (account: { custody?: { kind: string } }) =>
+        account.custody?.kind === 'multisig',
     useAllAccounts: () => accountsMock.current,
 }))
 
@@ -91,7 +86,7 @@ const multisigAccount = (
     multisigDetails: MultiSigDetails = DETAILS,
 ): MultiSigAccount => ({
     id: `multisig-${address}`,
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address,
     name: address,
     multisigDetails,
@@ -99,7 +94,7 @@ const multisigAccount = (
 
 const watchAccount = (address: string): WatchAccount => ({
     id: `watch-${address}`,
-    type: 'watch',
+    custody: { kind: 'watch' },
     address,
 })
 

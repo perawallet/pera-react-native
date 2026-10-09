@@ -33,7 +33,7 @@ import { useResolveMnemonicForBackup } from '../useResolveMnemonicForBackup'
 
 const ACCOUNT = {
     id: 'a-1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR',
     keyPairId: 'key-1',
     name: 'Algo25',

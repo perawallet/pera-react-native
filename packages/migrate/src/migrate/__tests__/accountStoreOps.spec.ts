@@ -12,9 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    AccountTypes,
     useAccountsStore,
-    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
@@ -36,7 +34,7 @@ const buildWalletAccount = (
     overrides: Partial<WalletAccount> = {},
 ): WalletAccount =>
     ({
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: 'ADDR_A',
         name: 'Account A',
         keyPairId: 'kp-a',
@@ -77,9 +75,7 @@ describe('addKeylessAccountToStore', () => {
         const returned = addKeylessAccountToStore(account)
 
         expect(returned).toBe(account)
-        expect(useAccountsStore.getState().accounts).toEqual([
-            withCustody(account),
-        ])
+        expect(useAccountsStore.getState().accounts).toEqual([account])
     })
 
     it('appends to existing accounts without dropping them', () => {
@@ -208,7 +204,7 @@ describe('markLegacyBackedUpAccounts', () => {
         markLegacyBackedUpAccounts(
             [
                 buildPair(
-                    { address: 'ADDR_W', type: AccountTypes.watch },
+                    { address: 'ADDR_W', custody: { kind: 'watch' } },
                     { isBackedUp: true },
                 ),
             ],
@@ -310,11 +306,11 @@ describe('removeAccountFromStore', () => {
     it('removes exactly the requested address', () => {
         useAccountsStore.getState().setAccounts([
             buildWalletAccount({
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ADDR_A',
             }),
             buildWalletAccount({
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ADDR_B',
             }),
         ])
@@ -331,7 +327,7 @@ describe('applyRekeyAddressToStoreAccount', () => {
     it('sets the rekeyAddress mirror on the matching account', () => {
         useAccountsStore.getState().setAccounts([
             buildWalletAccount({
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ADDR_A',
             }),
         ])
@@ -346,11 +342,11 @@ describe('applyRekeyAddressToStoreAccount', () => {
     it('leaves other accounts untouched', () => {
         useAccountsStore.getState().setAccounts([
             buildWalletAccount({
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ADDR_A',
             }),
             buildWalletAccount({
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ADDR_B',
             }),
         ])

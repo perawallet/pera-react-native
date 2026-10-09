@@ -21,11 +21,6 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
-import type { Decimal } from 'decimal.js'
-import type {
-    AddressCodec,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
 import {
     requireQuantum,
     requireRekey,
@@ -36,34 +31,13 @@ import {
     type SingleKeyAccountKind,
 } from '../chain-adapter'
 import type { HDWalletDetails, HdIndex, WalletAccount } from '../models'
+import { accountType } from '../utils'
+import {
+    accountStateCases,
+    type AccountStateContractFixtures,
+} from './account-state-contract'
 
-type ChainState = {
-    address: string
-    /** Installed before the call, so the adapter reads this state. */
-    handlers: readonly RequestHandler[]
-}
-
-export interface AccountsContractFixtures {
-    scope: ChainScope
-    /** The chain's own codec: every address the adapter derives must pass it. */
-    codec: AddressCodec
-    /** An account holding the native asset and one other asset. */
-    funded: ChainState & {
-        nativeAssetId: string
-        /** Display units. */
-        nativeBalance: Decimal
-        heldAssetId: string
-    }
-    /** An address with no on-chain footprint at all. */
-    empty: ChainState
-    /** The activity probe reporting `active` as active and `inactive` as not. */
-    activity: {
-        active: string
-        inactive: string
-        handlers: readonly RequestHandler[]
-    }
-    /** Handlers under which every activity probe fails. */
-    activityFailure: readonly RequestHandler[]
+export interface AccountsContractFixtures extends AccountStateContractFixtures {
     rootKey: Uint8Array
     hdPath: {
         details: HDWalletDetails
@@ -150,63 +124,7 @@ export const accountsContractTests = (
         afterEach(() => server.resetHandlers())
         afterAll(() => server.close())
 
-        it('reads account state with the native asset among the holdings', async () => {
-            server.use(...fixtures.funded.handlers)
-
-            const state = await makeAdapter().fetchAccountState(
-                fixtures.funded.address,
-                scope,
-                { priorResourceCount: 0 },
-            )
-
-            expect(state.nativeBalance.toString()).toBe(
-                fixtures.funded.nativeBalance.toString(),
-            )
-            const heldIds = state.holdings.map(h => h.assetId)
-            expect(heldIds).toContain(fixtures.funded.nativeAssetId)
-            expect(heldIds).toContain(fixtures.funded.heldAssetId)
-            if (state.authAddress !== null) {
-                expect(codec.isValid(state.authAddress)).toBe(true)
-            }
-        })
-
-        it('tells a funded account from an address with no footprint', async () => {
-            server.use(...fixtures.funded.handlers, ...fixtures.empty.handlers)
-            const adapter = makeAdapter()
-
-            await expect(
-                adapter.accountExists(fixtures.funded.address, scope),
-            ).resolves.toBe(true)
-            await expect(
-                adapter.accountExists(fixtures.empty.address, scope),
-            ).resolves.toBe(false)
-        })
-
-        it('answers activity per address', async () => {
-            server.use(...fixtures.activity.handlers)
-            const { active, inactive } = fixtures.activity
-
-            const activity = await makeAdapter().checkActivity(
-                [active, inactive],
-                scope,
-            )
-
-            expect(activity.get(active)).toBe(true)
-            expect(activity.get(inactive)).toBe(false)
-        })
-
-        it('reads a failed activity probe as inactive instead of rejecting', async () => {
-            server.use(...fixtures.activityFailure)
-            const { active, inactive } = fixtures.activity
-
-            const activity = await makeAdapter().checkActivity(
-                [active, inactive],
-                scope,
-            )
-
-            expect(activity.get(active) ?? false).toBe(false)
-            expect(activity.get(inactive) ?? false).toBe(false)
-        })
+        accountStateCases(makeAdapter, fixtures, server)
 
         it('derives public keys per coordinate that its codec encodes as valid addresses', async () => {
             const adapter = makeAdapter()
@@ -399,7 +317,7 @@ export const accountsContractTests = (
                     scope,
                 )
 
-                expect(minted.account.type).toBe(kind)
+                expect(accountType(minted.account)).toBe(kind)
                 expect(
                     codec.isValid(minted.account.address, scope.networkId),
                 ).toBe(true)
@@ -435,7 +353,7 @@ export const accountsContractTests = (
                 expect(accounts.length).toBeGreaterThan(0)
                 expect(accounts).toEqual(saved.map(minted => minted.account))
                 for (const account of accounts) {
-                    expect(account.type).toBe(kind)
+                    expect(accountType(account)).toBe(kind)
                     expect(
                         codec.isValid(account.address, scope.networkId),
                     ).toBe(true)

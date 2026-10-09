@@ -27,6 +27,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -169,7 +170,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accountType(accounts[0])).toBe(AccountTypes.algo25)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
         expect(useAccountsStore.getState().selectedAccountAddress).toBe(
             ALGO25_TEST_ADDRESS,
@@ -255,7 +256,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accountType(accounts[0])).toBe(AccountTypes.algo25)
     })
 
     it('Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored', async () => {
@@ -266,7 +267,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-algo25-1',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: 'algo25' },
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },

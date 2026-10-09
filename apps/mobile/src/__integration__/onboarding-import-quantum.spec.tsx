@@ -27,6 +27,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
@@ -211,7 +212,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].type).toBe(AccountTypes.quantum)
+        expect(accountType(accounts[0])).toBe(AccountTypes.quantum)
         expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
         expect(useAccountsStore.getState().selectedAccountAddress).toBe(
             accounts[0].address,
@@ -226,7 +227,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-quantum-1',
-                type: AccountTypes.quantum,
+                custody: { kind: 'local', seed: 'quantum' },
                 address: QUANTUM_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },
@@ -285,7 +286,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accountType(accounts[0])).toBe(AccountTypes.algo25)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
     })
 
@@ -332,7 +333,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             )
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.quantum)
+            expect(accountType(accounts[0])).toBe(AccountTypes.quantum)
             expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
         })
     })

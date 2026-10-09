@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../models'
+import { signingKeyOn } from './accessors'
 
 export type KeystoreSnapshot = Parameters<typeof resolveSeedKeyFrom>[0]
 
@@ -52,7 +53,7 @@ export const credentialScheme = (
     const primary = chain.signing.schemes[0] ?? null
     const { custody } = account
 
-    switch (custody?.kind) {
+    switch (custody.kind) {
         case 'hardware': {
             return primary
         }
@@ -60,7 +61,7 @@ export const credentialScheme = (
             return chain.protocol.supportsNativeMultisig ? primary : null
         }
         case 'local': {
-            const keyPairId = account.chains?.[chain.id]?.keyPairId
+            const keyPairId = signingKeyOn(account, chain.id)
             if (!keyPairId) return null
             const seed = loadedSeedScheme(keys, keyPairId) ?? custody.seed
             const scheme = seed === SeedScheme.Quantum ? 'falcon-1024' : primary

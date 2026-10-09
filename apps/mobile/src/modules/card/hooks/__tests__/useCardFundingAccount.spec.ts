@@ -32,7 +32,10 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 
 import { useCardFundingAccount } from '../useCardFundingAccount'
 
-const localAccount = { address: 'LOCAL', type: 'algo25' } as WalletAccount
+const localAccount = {
+    address: 'LOCAL',
+    custody: { kind: 'local', seed: 'algo25' },
+} as WalletAccount
 
 describe('useCardFundingAccount', () => {
     beforeEach(() => {

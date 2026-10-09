@@ -46,7 +46,6 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type MultiSigAccount,
     type WalletAccount,
@@ -62,7 +61,7 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {
@@ -74,7 +73,7 @@ const multisigAccount: MultiSigAccount = {
 
 const rekeyedSender: WalletAccount = {
     id: 'rekeyed-to-msig',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: REKEY_TARGET_ADDRESS,
     name: 'Rekeyed to shared',
     rekeyAddress: MSIG_ADDRESS,

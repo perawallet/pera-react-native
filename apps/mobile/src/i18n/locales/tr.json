@@ -1054,6 +1054,36 @@
                 "body": "Ağ işlemi reddetti. Tekrar dene veya sorun devam ederse destek ekibiyle iletişime geç."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Akıllı sözleşme işlemi reddetti",
+                "body": "Akıllı sözleşme bu işlemi bir neden belirtmeden reddetti. Ayrıntıları kontrol et ve tekrar dene."
+            },
+            "reverted_with_reason": {
+                "title": "Akıllı sözleşme işlemi reddetti",
+                "body": "Sözleşmenin döndürdüğü yanıt: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Yetersiz gas",
+                "body": "Bu işlem, limitinin izin verdiğinden daha fazla gas gerektiriyor. Tekrar dene, sorun devam ederse destek ekibiyle iletişime geç."
+            },
+            "nonce_too_low": {
+                "title": "İşlem sırası bozuk",
+                "body": "Bu hesaptan başka bir işlem önce işlendi. Tekrar dene."
+            },
+            "replacement_underpriced": {
+                "title": "Ağ ücreti çok düşük",
+                "body": "Bu hesaptaki bekleyen bir işlem ancak daha yüksek bir ağ ücretiyle değiştirilebilir. Tamamlanmasını bekle veya daha yüksek bir ücretle tekrar dene."
+            },
+            "insufficient_funds": {
+                "title": "Yetersiz ETH",
+                "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli ETH yok. Daha fazla ETH ekle ve tekrar dene."
+            },
+            "rate_limited": {
+                "title": "Ağ yoğun",
+                "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
+            }
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "İşlem durumu bilinmiyor",

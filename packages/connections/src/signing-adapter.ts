@@ -457,9 +457,13 @@ export const enqueueInboundRequest = (
                         forgetRequest(deps, message)
                     },
                     respondWithError: error => {
-                        if (failRequest(message, error, deps.onError)) {
-                            forgetRequest(deps, message)
-                        }
+                        const isAnswered = failRequest(
+                            message,
+                            error,
+                            deps.onError,
+                        )
+                        if (isAnswered) forgetRequest(deps, message)
+                        return isAnswered
                     },
                 },
             )

@@ -15,7 +15,6 @@
 import { describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
-    AccountTypes,
     buildAccount,
     DerivationTypes,
     type AccountChains,
@@ -146,29 +145,29 @@ const legacyShaped: Record<AccountKind, WalletAccount> = {
     algo25: {
         id: 'algo25',
         name: 'Main',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: 'ALGO25ADDR',
         keyPairId: 'algo25-key',
     },
     quantum: {
         id: 'quantum',
         name: 'Quantum',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: 'QUANTUMADDR',
         keyPairId: 'quantum-key',
     },
-    watch: { id: 'watch', type: AccountTypes.watch, address: 'WATCHADDR' },
+    watch: { id: 'watch', custody: { kind: 'watch' }, address: 'WATCHADDR' },
     hardware: {
         id: 'hardware',
         name: 'Ledger',
-        type: AccountTypes.hardware,
+        custody: { kind: 'hardware', device: LEDGER, accountIndex: 2 },
         address: 'LEDGERADDR',
         hardwareDetails: { ...LEDGER, accountIndex: 2 },
     },
     multisig: {
         id: 'multisig',
         name: 'Shared',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         address: 'MSIGADDR',
         multisigDetails: {
             threshold: 1,
@@ -179,7 +178,11 @@ const legacyShaped: Record<AccountKind, WalletAccount> = {
     hdWallet: {
         id: 'hdWallet',
         name: 'Child 1',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'HDCHILDADDR',
         keyPairId: 'hd-key',
         hdWalletDetails: HD_PATH,

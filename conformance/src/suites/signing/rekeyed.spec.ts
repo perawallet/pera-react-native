@@ -14,7 +14,8 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { buildGroupSignerTypeMap } from '@perawallet/wallet-core-signing/machine/actions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { buildGroupSignerMap } from '@perawallet/wallet-core-signing/machine/actions'
 import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
 import type {
     SignableGroup,
@@ -55,7 +56,7 @@ import {
  * rekey-envelope rule fails here rather than passing against a harness copy
  * of it. The account-side half of the rule (which key to reach for) is
  * asserted separately below against `resolveSigningAccount` and
- * `buildGroupSignerTypeMap`, the app's own dispatch.
+ * `buildGroupSignerMap`, the app's own dispatch.
  */
 describe('rekeyed signing conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -230,6 +231,7 @@ describe('rekeyed signer resolution conformance', () => {
             WALLETCONNECT_SOURCE,
             'transactions',
             allAccounts,
+            LEGACY_CHAIN_ID,
         )
 
         expect(resolved.address).toBe(auth.address)
@@ -252,6 +254,7 @@ describe('rekeyed signer resolution conformance', () => {
                 WALLETCONNECT_SOURCE,
                 'arbitrary-data',
                 allAccounts,
+                LEGACY_CHAIN_ID,
             ).address,
         ).toBe(rekeyed.address)
     })
@@ -273,8 +276,11 @@ describe('rekeyed signer resolution conformance', () => {
             },
         }
 
-        const map = buildGroupSignerTypeMap([group], allAccounts)
+        const map = buildGroupSignerMap([group], allAccounts, LEGACY_CHAIN_ID)
 
-        expect(map.get(rekeyed.address)).toBe('localKey')
+        expect(map.get(rekeyed.address)).toEqual({
+            custody: 'local',
+            scheme: 'ed25519',
+        })
     })
 })

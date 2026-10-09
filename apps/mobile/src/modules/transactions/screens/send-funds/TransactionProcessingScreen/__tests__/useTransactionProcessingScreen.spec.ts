@@ -95,6 +95,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useSelectedAccount: vi.fn(() => ({
             address: 'test-address',
             name: 'Test',
+            custody: { kind: 'local', seed: 'algo25' },
         })),
         useAllAccounts: vi.fn(() => []),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
@@ -314,12 +315,21 @@ describe('useTransactionProcessingScreen', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
             address: 'SRC',
-            type: 'watch',
+            custody: { kind: 'watch' },
             rekeyAddress: 'LEDGER_AUTH',
         }
         const ledgerAuth = {
             address: 'LEDGER_AUTH',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'dev-1',
@@ -341,7 +351,7 @@ describe('useTransactionProcessingScreen', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
             address: 'SRC',
-            type: 'algo25',
+            custody: { kind: 'local', seed: 'algo25' },
             keyPairId: 'kp',
         }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)

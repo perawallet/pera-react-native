@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
-import { withCustody } from '../../credentials'
+import { accountType } from '../../utils'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { SingleKeyAccountsUnsupportedError } from '../../errors'
 import type { MintedAccount } from '../../chain-adapter'
@@ -126,7 +126,7 @@ describe('useCreateAccount', () => {
             await result.current.saveAccount({
                 id: 'ACC1',
                 address: 'ADDR1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'WALLET1-ed25519',
             })
         })
@@ -161,7 +161,7 @@ describe('useCreateAccount', () => {
         )
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
-        expect(created.type).toBe('hdWallet')
+        expect(accountType(created)).toBe('hdWallet')
         // keyPairId is the deterministic derived child id; the seed parent
         // is reachable via metadata.parentKeyId on the child.
         expect(created.keyPairId).toBe('WALLET1-acc0-idx0-dt9')
@@ -300,7 +300,7 @@ describe('useCreateAccount', () => {
             0,
             MAINNET_ED25519,
         )
-        expect(created.type).toBe('hdWallet')
+        expect(accountType(created)).toBe('hdWallet')
         expect(created.keyPairId).toBe('IMPORTED_SEED-acc0-idx0-dt9')
     })
 
@@ -309,7 +309,7 @@ describe('useCreateAccount', () => {
             account: {
                 id: 'ACC1',
                 address: 'ADDR1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: 'algo25' },
                 keyPairId: 'SEED1-ed25519',
             },
             seedKeyId: 'SEED1',
@@ -373,7 +373,7 @@ describe('useCreateAccount', () => {
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([
-                withCustody(mintedAccount(true).account),
+                mintedAccount(true).account,
             ])
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,

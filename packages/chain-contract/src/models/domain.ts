@@ -62,7 +62,11 @@ export type AccountChainState =
           totalCreatedAssets: number
           totalAppsOptedIn: number
       }
-    | { family: 'evm' }
+    | {
+          family: 'evm'
+          /** Transaction count; `pending` includes transactions still in the mempool. */
+          nonce: { latest: number; pending: number }
+      }
 
 export interface AccountState {
     address: string

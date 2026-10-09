@@ -54,19 +54,19 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: vi.fn().mockReturnValue([
-        { address: 'ADDR1', type: 'algo25' },
-        { address: 'ADDR2', type: 'algo25' },
+        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
+        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
     ]),
     useAllAccounts: vi.fn().mockReturnValue([
-        { address: 'ADDR1', type: 'algo25' },
-        { address: 'ADDR2', type: 'algo25' },
+        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
+        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
     ]),
 }))
 
 beforeEach(() => {
     vi.mocked(useAllAccounts).mockReturnValue([
-        { address: 'ADDR1', type: 'algo25' },
-        { address: 'ADDR2', type: 'algo25' },
+        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
+        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
     ] as ReturnType<typeof useAllAccounts>)
     vi.mocked(useSelectedScope).mockReturnValue(
         scopeForLegacyNetwork('mainnet'),
@@ -196,9 +196,9 @@ describe('useInboxQuery', () => {
 
     it('filters out multisig_import items whose address is already a local account', async () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'ADDR1', type: 'algo25' },
-            { address: 'ADDR2', type: 'algo25' },
-            { address: 'MSIG_ADDR1', type: 'multisig' },
+            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
+            { address: 'MSIG_ADDR1', custody: { kind: 'multisig' } },
         ] as ReturnType<typeof useAllAccounts>)
 
         const mockResponse = {

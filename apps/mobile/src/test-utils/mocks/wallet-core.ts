@@ -312,7 +312,15 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 
 // Mock @perawallet/wallet-core-accounts
 vi.mock('@perawallet/wallet-core-accounts', () => {
+    // Mirrors `accountType()`: the kind is read from custody alone.
+    const kindOf = (account: any): string | undefined => {
+        const custody = account?.custody
+        if (!custody) return undefined
+        if (custody.kind !== 'local') return custody.kind
+        return custody.seed === 'bip39' ? 'hdWallet' : custody.seed
+    }
     return {
+        accountType: vi.fn(kindOf),
         useAllAccounts: vi.fn(() => []),
         useAccountDiscovery: vi.fn(() => ({
             discoverRekeyedAccounts: vi.fn(),
@@ -341,37 +349,42 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         getAccountDisplayName: vi.fn(a => a?.name || ''),
         // Account type functions with actual implementations
         isHardwareWalletAccount: vi.fn(
-            (account: any) => account?.type === 'hardware',
+            (account: any) => kindOf(account) === 'hardware',
         ),
         isLedgerAccount: vi.fn(
             (account: any) =>
-                account?.type === 'hardware' &&
+                kindOf(account) === 'hardware' &&
                 account?.hardwareDetails?.manufacturer === 'ledger',
         ),
         isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
-        isHDWalletAccount: vi.fn((account: any) => !!account?.hdWalletDetails),
-        isAlgo25Account: vi.fn((account: any) => account?.type === 'algo25'),
-        isWatchAccount: vi.fn((account: any) => account?.type === 'watch'),
+        isHDWalletAccount: vi.fn(
+            (account: any) => kindOf(account) === 'hdWallet',
+        ),
+        isAlgo25Account: vi.fn((account: any) => kindOf(account) === 'algo25'),
+        isQuantumAccount: vi.fn(
+            (account: any) => kindOf(account) === 'quantum',
+        ),
+        isWatchAccount: vi.fn((account: any) => kindOf(account) === 'watch'),
         isMultisigAccount: vi.fn(
-            (account: any) => account?.type === 'multisig',
+            (account: any) => kindOf(account) === 'multisig',
         ),
         hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
         canSignWith: vi.fn((account: any) => !!account?.keyPairId),
         canSignArbitraryData: vi.fn(
             (account: any) =>
-                !!account?.keyPairId && account?.type !== 'hardware',
+                !!account?.keyPairId && kindOf(account) !== 'hardware',
         ),
         // Mirrors the real predicate: account-local (no rekey hop), non-multisig
         // with a local key, or hardware.
         canSignArc60: vi.fn(
             (account: any) =>
                 !!account &&
-                account.type !== 'multisig' &&
-                (!!account.keyPairId || account.type === 'hardware'),
+                kindOf(account) !== 'multisig' &&
+                (!!account.keyPairId || kindOf(account) === 'hardware'),
         ),
         canSignProgram: vi.fn(
             (account: any) =>
-                account?.type !== 'hardware' &&
+                kindOf(account) !== 'hardware' &&
                 !account?.rekeyAddress &&
                 !!account?.keyPairId,
         ),

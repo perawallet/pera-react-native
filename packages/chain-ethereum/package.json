@@ -19,10 +19,13 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
     "decimal.js": "catalog:",
-    "viem": "catalog:"
+    "viem": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

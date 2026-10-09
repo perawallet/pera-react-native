@@ -54,7 +54,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
         address: 'QADDR',
-        type: 'quantum',
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -63,7 +63,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
         address: 'SRC',
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp-algo25',
         ...overrides,
     }) as WalletAccount

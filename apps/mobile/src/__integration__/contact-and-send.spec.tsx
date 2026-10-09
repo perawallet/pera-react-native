@@ -17,7 +17,6 @@ import { Notifier } from 'react-native-notifier'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -46,7 +45,7 @@ const resetTestContacts = () => {
 
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'sender-key',
     name: 'Sender',

@@ -82,33 +82,36 @@ describe('isRetryableError', () => {
 })
 
 describe('derivePrimarySignerType', () => {
-    const makeContext = (types: string[]) =>
+    const makeContext = (custodies: string[]) =>
         ({
-            groupSignerTypes: new Map(types.map((t, i) => [`g${i}`, t])),
+            groupSigners: new Map(
+                custodies.map((custody, i) => [
+                    `g${i}`,
+                    { custody, scheme: 'ed25519' },
+                ]),
+            ),
         }) as never
 
-    test('returns null when groupSignerTypes is absent', () => {
+    test('returns null when groupSigners is absent', () => {
         expect(derivePrimarySignerType({} as never)).toBeNull()
     })
 
-    test('prefers hardware over multisig and localKey', () => {
+    test('prefers hardware over multisig and local', () => {
         expect(
             derivePrimarySignerType(
-                makeContext(['localKey', 'hardware', 'multisig']),
+                makeContext(['local', 'hardware', 'multisig']),
             ),
         ).toBe('hardware')
     })
 
-    test('prefers multisig over localKey', () => {
+    test('prefers multisig over local', () => {
         expect(
-            derivePrimarySignerType(makeContext(['localKey', 'multisig'])),
+            derivePrimarySignerType(makeContext(['local', 'multisig'])),
         ).toBe('multisig')
     })
 
-    test('returns localKey when only localKey present', () => {
-        expect(derivePrimarySignerType(makeContext(['localKey']))).toBe(
-            'localKey',
-        )
+    test('returns local when only local is present', () => {
+        expect(derivePrimarySignerType(makeContext(['local']))).toBe('local')
     })
 
     test('returns null when no known types present', () => {
@@ -122,7 +125,9 @@ describe('deriveEvent', () => {
             { awaiting_user: true },
             {
                 analyses: [{ totalFees: 0n } as never],
-                groupSignerTypes: new Map([['g0', 'localKey']]),
+                groupSigners: new Map([
+                    ['g0', { custody: 'local', scheme: 'ed25519' }],
+                ]),
             },
         )
 
@@ -138,7 +143,11 @@ describe('deriveEvent', () => {
     test('returns signing_started event when signer type resolved', () => {
         const snapshot = makeSnapshot(
             { signing: true },
-            { groupSignerTypes: new Map([['g0', 'hardware']]) },
+            {
+                groupSigners: new Map([
+                    ['g0', { custody: 'hardware', scheme: 'ed25519' }],
+                ]),
+            },
         )
 
         const event = deriveEvent(snapshot, 'signing')

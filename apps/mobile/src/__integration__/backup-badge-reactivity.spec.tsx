@@ -24,7 +24,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     invalidateAccountQueriesForAddresses,
     refreshAccountHoldings,
@@ -45,7 +44,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT_A: WalletAccount = {
     id: 'reactivity-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'A'.repeat(58),
     keyPairId: 'reactivity-a-key',
     name: 'Funder',
@@ -53,7 +52,7 @@ const ACCOUNT_A: WalletAccount = {
 
 const ACCOUNT_B: WalletAccount = {
     id: 'reactivity-b',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'B'.repeat(58),
     keyPairId: 'reactivity-b-key',
     name: 'Needs backup',

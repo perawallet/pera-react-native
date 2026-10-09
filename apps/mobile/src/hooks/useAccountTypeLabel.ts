@@ -13,6 +13,7 @@
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 import {
+    accountType,
     AccountTypes,
     isRekeyedAccount,
     useCanSignWith,
@@ -70,7 +71,7 @@ export const useAccountTypeLabel = (
             return { label, ...splitAccountTypeLabel(label) }
         }
 
-        switch (account.type) {
+        switch (accountType(account)) {
             case AccountTypes.hdWallet: {
                 return plain(t('account_info.type_universal_wallet'))
             }

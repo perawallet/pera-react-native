@@ -13,6 +13,7 @@
 import { logger } from '@perawallet/wallet-core-shared'
 import type { WalletConnectConnectorRegistry } from '../connection'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
+import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 
 /**
  * Answers a v1 request by `clientId` and JSON-RPC id alone, for a request
@@ -32,6 +33,7 @@ export type WalletConnectV1Delivery = {
 // through a socket verified open; a failed revival throws a retryable timeout.
 export const createWalletConnectV1Delivery = (
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>,
+    answeredRequests: WalletConnectV1AnsweredRequests,
 ): WalletConnectV1Delivery => {
     const deliverReject = async (
         clientId: string,
@@ -43,6 +45,7 @@ export const createWalletConnectV1Delivery = (
             WC_DELIVERY_TIMEOUT_MS,
         )
         readyConnector.rejectRequest({ id, error })
+        answeredRequests.record(clientId, id)
     }
 
     return {
@@ -52,6 +55,7 @@ export const createWalletConnectV1Delivery = (
                 WC_DELIVERY_TIMEOUT_MS,
             )
             await readyConnector.approveRequest({ id, result })
+            answeredRequests.record(clientId, id)
         },
         deliverReject,
         deliverRejectInBackground: (clientId, id, error) => {

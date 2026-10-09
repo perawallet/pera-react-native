@@ -449,7 +449,8 @@ describe('useConnectionSigningAdapter', () => {
             retryable: true,
         })
 
-        lastTransport().respondWithError(timeout)
+        // `false` is what tells the enqueue to keep the request queued.
+        expect(lastTransport().respondWithError(timeout)).toBe(false)
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(reject).not.toHaveBeenCalled()
@@ -510,7 +511,7 @@ describe('useConnectionSigningAdapter', () => {
         })
         const fatal = new Error('signing failed')
 
-        lastTransport().respondWithError(fatal)
+        expect(lastTransport().respondWithError(fatal)).toBe(true)
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(reject).toHaveBeenCalledWith(fatal)

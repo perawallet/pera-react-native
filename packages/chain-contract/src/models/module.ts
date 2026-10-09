@@ -53,9 +53,17 @@ export interface ChainRequestTimeouts {
  * directly. Scope and endpoints are getters because `register` runs once,
  * before the selected network can change.
  */
+/** The Pera backend serving a scope; `baseUrl` is empty where `services` is. */
+export interface ChainPeraBackend {
+    baseUrl: string
+    /** Pera service names, such as `blockFollowing`, the scope's backend offers. */
+    services: ReadonlySet<string>
+}
+
 export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
     getScope(): ChainScope
     getEndpoints(): E
+    getPeraBackend(scope: ChainScope): ChainPeraBackend
     timeouts: ChainRequestTimeouts
     http: ChainHttpClient
     kms: ChainKeyStore

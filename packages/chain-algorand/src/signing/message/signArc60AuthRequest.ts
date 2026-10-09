@@ -11,6 +11,7 @@
  */
 
 import {
+    accountType,
     canSignArbitraryData,
     InvalidBip44PathError,
     isAlgo25Account,
@@ -90,7 +91,7 @@ export const signArc60AuthRequest = async (
         if (hdPath) {
             throw new Arc60FailedHdPathError(
                 hdPath,
-                `${account.type} accounts have no BIP44 derivation path`,
+                `${accountType(account)} accounts have no BIP44 derivation path`,
             )
         }
     } else {
@@ -99,7 +100,7 @@ export const signArc60AuthRequest = async (
         // fallback for any account type not yet handled above.
         throw new Arc60InvalidSignerError(
             account.address,
-            `unsupported account type ${account.type}`,
+            `unsupported account type ${accountType(account)}`,
         )
     }
 

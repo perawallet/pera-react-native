@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { beforeEach, describe, test, expect, vi } from 'vitest'
+import {
+    ScopeChangedError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
-    NetworkChangedError,
     SubmissionError,
     TransportError,
     type SigningResult,
@@ -21,17 +25,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { createAlgodTransport } from '../createAlgodTransport'
 
-const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetworkStore: {
-        getState: () => getNetworkMock(),
-        subscribe: () => () => {},
-    },
-}))
+const ALGORAND_TESTNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'testnet',
+}
 
 const transactionResult = {
     signedData: {
@@ -50,6 +47,11 @@ const arbitraryResult = {
 } as unknown as SigningResult
 
 describe('createAlgodTransport', () => {
+    beforeEach(() => {
+        useNetworkStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('testnet')
+    })
+
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
         client: {
             algod: {
@@ -68,7 +70,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         const result = await transport.send(transactionResult, {
@@ -84,7 +86,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         const result = await transport.send(transactionResult, {
@@ -120,7 +122,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         const result = await transport.send(signedWithId, {
@@ -139,7 +141,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -160,7 +162,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -181,7 +183,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -189,20 +191,37 @@ describe('createAlgodTransport', () => {
         ).rejects.toThrow(SubmissionError)
     })
 
-    test('aborts with NetworkChangedError when live network differs from captured', async () => {
+    test("aborts with ScopeChangedError when Algorand's network switches", async () => {
         const algokit = makeAlgokit('TX1')
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
-        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+        useNetworkStore.getState().setNetwork('mainnet')
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toBeInstanceOf(NetworkChangedError)
+        ).rejects.toBeInstanceOf(ScopeChangedError)
         expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
+    })
+
+    test('still submits when only another chain switches network', async () => {
+        const algokit = makeAlgokit('TX1')
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            ALGORAND_TESTNET,
+        )
+
+        useNetworkStore.getState().selectNetwork('ethereum', 'sepolia')
+
+        const result = await transport.send(transactionResult, {
+            type: 'local',
+        })
+
+        expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
     })
 
     test('invokes source.callbacks.approve after successful submission', async () => {
@@ -210,7 +229,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
         const approve = vi.fn().mockResolvedValue(undefined)
         const source: SourceMetadata = {
@@ -229,7 +248,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
         const approve = vi.fn().mockRejectedValue(new Error('webview gone'))
         const source: SourceMetadata = {
@@ -256,7 +275,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
-            'testnet',
+            ALGORAND_TESTNET,
         )
         const approve = vi.fn()
         const source: SourceMetadata = {

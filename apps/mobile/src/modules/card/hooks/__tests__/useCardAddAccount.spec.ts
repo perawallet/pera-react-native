@@ -78,7 +78,10 @@ const RETURN_TO = {
     },
 }
 
-const NEW_ACCOUNT = { address: 'NEW', type: 'hdWallet' } as WalletAccount
+const NEW_ACCOUNT = {
+    address: 'NEW',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+} as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()

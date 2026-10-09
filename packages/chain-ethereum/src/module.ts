@@ -18,6 +18,7 @@ import {
 import { ethereumAddressCodec } from './addresses'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
+import { EVM_ERROR_I18N_KEYS } from './errors/translate'
 import { ethereumKeyDerivation } from './keys/derivation'
 
 export const ethereumModule: ChainModule = {
@@ -28,5 +29,5 @@ export const ethereumModule: ChainModule = {
         addressCodecs.register(ethereumAddressCodec)
         keyDerivations.register(ethereumKeyDerivation)
     },
-    i18nKeys: () => [],
+    i18nKeys: () => EVM_ERROR_I18N_KEYS,
 }

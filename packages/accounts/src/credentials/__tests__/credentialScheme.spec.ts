@@ -40,7 +40,6 @@ const account = (custody: AccountCustody, keyPairId?: string): WalletAccount =>
     ({
         id: 'a',
         address: 'ADDR',
-        type: 'algo25',
         custody,
         chains: { algorand: { address: 'ADDR', keyPairId } },
     }) as WalletAccount
@@ -116,6 +115,17 @@ describe('credentialScheme', () => {
         expect(credentialScheme(algo25(), algorand, [])).toBeNull()
     })
 
+    test("reads a legacy record's top-level key on the legacy chain", () => {
+        const legacy = {
+            id: 'a',
+            address: 'ADDR',
+            keyPairId: 'missing',
+            custody: { kind: 'local', seed: 'algo25' },
+        } as WalletAccount
+
+        expect(credentialScheme(legacy, algorand, [])).toBe('ed25519')
+    })
+
     test('has no scheme when the chain does not support the seed scheme', () => {
         expect(
             credentialScheme(quantum('missing'), chainWith(['ed25519']), []),
@@ -155,7 +165,7 @@ describe('credentialScheme', () => {
         ).toBeNull()
         expect(
             credentialScheme(
-                { id: 'a', address: 'ADDR', type: 'watch' },
+                { id: 'a', address: 'ADDR', custody: { kind: 'watch' } },
                 algorand,
                 [],
             ),

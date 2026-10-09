@@ -45,7 +45,6 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -58,7 +57,7 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {

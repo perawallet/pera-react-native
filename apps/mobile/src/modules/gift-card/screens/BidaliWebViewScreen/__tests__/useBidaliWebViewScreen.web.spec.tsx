@@ -131,7 +131,7 @@ const mockAccount: WalletAccount = {
     id: 'bidali-webview-web-account',
     address: VALID_ADDRESS,
     name: 'Test',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'test-key-pair-id',
 }
 

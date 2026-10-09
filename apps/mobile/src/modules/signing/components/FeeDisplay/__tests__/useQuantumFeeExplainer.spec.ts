@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -49,7 +48,7 @@ const FOREIGN_ADDRESS = 'FOREIGN_ADDR'
 const quantumAccount = (rekeyAddress?: string): WalletAccount =>
     ({
         id: 'quantum-id',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_ADDRESS,
         keyPairId: 'quantum-key',
         name: 'Quantum',
@@ -59,7 +58,7 @@ const quantumAccount = (rekeyAddress?: string): WalletAccount =>
 const standardAccount = (rekeyAddress?: string): WalletAccount =>
     ({
         id: 'standard-id',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         address: STANDARD_ADDRESS,
         keyPairId: 'standard-key',
         name: 'Standard',

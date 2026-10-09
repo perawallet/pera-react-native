@@ -13,10 +13,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { Address, computeGroupID, Transaction } from 'algosdk'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     encodeTransactionRaw,
     groupTransactions,
@@ -42,7 +39,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
         address: quantumAddress.toString(),
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -51,7 +48,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
         address: algoAddress.toString(),
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: 'algo25' },
         keyPairId: 'kp-algo25',
         ...overrides,
     }) as WalletAccount

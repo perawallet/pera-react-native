@@ -28,6 +28,11 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            '@perawallet/wallet-core-accounts/testing/account-state':
+                path.resolve(
+                    __dirname,
+                    '../accounts/src/__tests__/account-state-contract.ts',
+                ),
             '@perawallet/wallet-core-chain-contract/testing': path.resolve(
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',

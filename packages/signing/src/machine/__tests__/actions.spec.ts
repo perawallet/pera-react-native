@@ -15,7 +15,7 @@ import '../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SignableGroup } from '../../pipeline/types'
-import { buildGroupSignerTypeMap, resolveInitialContext } from '../actions'
+import { buildGroupSignerMap, resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
 import type { TransactionSignRequest } from '../../models'
 import {
@@ -26,9 +26,14 @@ import {
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
 
+const LOCAL = { custody: 'local', scheme: 'ed25519' }
+const FALCON = { custody: 'local', scheme: 'falcon-1024' }
+const HARDWARE = { custody: 'hardware', scheme: 'ed25519' }
+const MULTISIG = { custody: 'multisig', scheme: 'ed25519' }
+
 const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: `kp-${address}`,
         rekeyAddress,
@@ -36,7 +41,16 @@ const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address,
         rekeyAddress,
         hardwareDetails: {
@@ -50,21 +64,21 @@ const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const watch = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'watch',
+        custody: { kind: 'watch' },
         address,
         rekeyAddress,
     }) as unknown as WalletAccount
 
 const multisig = (address: string, addresses: string[] = []): WalletAccount =>
     ({
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address,
         multisigDetails: { threshold: 1, addresses, version: 1 },
     }) as unknown as WalletAccount
 
 const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
     ({
-        type: 'quantum',
+        custody: { kind: 'local', seed: 'quantum' },
         address,
         keyPairId: `kp-${address}`,
         rekeyAddress,
@@ -82,9 +96,9 @@ const buildGroup = (
     ...overrides,
 })
 
-describe('buildGroupSignerTypeMap', () => {
+describe('buildGroupSignerMap', () => {
     describe('multisig-cosign groups (rekey MUST be bypassed)', () => {
-        it('classifies a local-key participant rekeyed to hardware as localKey (uses participant own type)', () => {
+        it('classifies a local-key participant rekeyed to hardware as local custody (uses participant own type)', () => {
             const participant = algo25(PARTICIPANT, AUTH)
             const auth = hardware(AUTH)
             const group = buildGroup({
@@ -94,9 +108,13 @@ describe('buildGroupSignerTypeMap', () => {
                 },
             })
 
-            const map = buildGroupSignerTypeMap([group], [participant, auth])
+            const map = buildGroupSignerMap(
+                [group],
+                [participant, auth],
+                'algorand',
+            )
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
 
         it('classifies a hardware participant rekeyed to local-key as hardware (uses participant own type)', () => {
@@ -109,12 +127,16 @@ describe('buildGroupSignerTypeMap', () => {
                 },
             })
 
-            const map = buildGroupSignerTypeMap([group], [participant, auth])
+            const map = buildGroupSignerMap(
+                [group],
+                [participant, auth],
+                'algorand',
+            )
 
-            expect(map.get(PARTICIPANT)).toBe('hardware')
+            expect(map.get(PARTICIPANT)).toEqual(HARDWARE)
         })
 
-        it('classifies a non-rekeyed local-key participant as localKey', () => {
+        it('classifies a non-rekeyed local-key participant as local custody', () => {
             const participant = algo25(PARTICIPANT)
             const group = buildGroup({
                 source: {
@@ -123,9 +145,9 @@ describe('buildGroupSignerTypeMap', () => {
                 },
             })
 
-            const map = buildGroupSignerTypeMap([group], [participant])
+            const map = buildGroupSignerMap([group], [participant], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
 
         it('classifies a non-rekeyed hardware participant as hardware', () => {
@@ -137,9 +159,9 @@ describe('buildGroupSignerTypeMap', () => {
                 },
             })
 
-            const map = buildGroupSignerTypeMap([group], [participant])
+            const map = buildGroupSignerMap([group], [participant], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('hardware')
+            expect(map.get(PARTICIPANT)).toEqual(HARDWARE)
         })
 
         it('throws when a watch-account participant has no own signing capability (rekey is not consulted)', () => {
@@ -153,7 +175,7 @@ describe('buildGroupSignerTypeMap', () => {
             })
 
             expect(() =>
-                buildGroupSignerTypeMap([group], [participant, auth]),
+                buildGroupSignerMap([group], [participant, auth], 'algorand'),
             ).toThrow(/No signing capability/)
         })
     })
@@ -164,19 +186,19 @@ describe('buildGroupSignerTypeMap', () => {
             const auth = hardware(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('hardware')
+            expect(map.get(PARTICIPANT)).toEqual(HARDWARE)
         })
 
-        it('classifies a hardware sender rekeyed to local-key as localKey (auth-account rule)', () => {
+        it('classifies a hardware sender rekeyed to local-key as local custody (auth-account rule)', () => {
             const sender = hardware(PARTICIPANT, AUTH)
             const auth = algo25(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
 
         it('classifies a multisig sender rekeyed to another multisig as multisig', () => {
@@ -185,9 +207,9 @@ describe('buildGroupSignerTypeMap', () => {
             const auth = multisig(AUTH, ['P1', 'P2'])
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('multisig')
+            expect(map.get(PARTICIPANT)).toEqual(MULTISIG)
         })
 
         it('classifies a local-key sender rekeyed to a multisig auth as multisig (auth-account rule)', () => {
@@ -198,9 +220,9 @@ describe('buildGroupSignerTypeMap', () => {
             const auth = multisig(AUTH, ['P1', 'P2'])
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('multisig')
+            expect(map.get(PARTICIPANT)).toEqual(MULTISIG)
         })
 
         it('classifies a watch sender rekeyed to a multisig auth as multisig', () => {
@@ -208,12 +230,12 @@ describe('buildGroupSignerTypeMap', () => {
             const auth = multisig(AUTH, ['P1', 'P2'])
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('multisig')
+            expect(map.get(PARTICIPANT)).toEqual(MULTISIG)
         })
 
-        it('classifies a multisig sender externally rekeyed to a local-key auth as localKey (auth-account rule)', () => {
+        it('classifies a multisig sender externally rekeyed to a local-key auth as local custody (auth-account rule)', () => {
             // msig → standard is unreachable through the in-app rekey UI but
             // can exist on-chain — the auth key signs, so route to it instead
             // of failing with NoLocalParticipantsError.
@@ -222,45 +244,42 @@ describe('buildGroupSignerTypeMap', () => {
             const auth = algo25(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
     })
 
     describe('quantum classification', () => {
-        it('classifies a quantum account as localKey, like algo25 and HD', () => {
-            // Quantum accounts carry a keyPairId, so they satisfy
-            // hasSigningKeys just like algo25/HD — there is no separate
-            // 'quantum' ResolvedSignerType any more (createQuantumStrategy /
-            // quantumSignerActor are deleted; the scheme is resolved inside
-            // useLocalKeyTransactionSigner instead).
+        it('resolves a quantum account to local custody with the Falcon scheme', () => {
+            // Same custody as algo25/HD, so the same actor; only the scheme
+            // differs, which is why no quantum machine state exists.
             const sender = quantum(PARTICIPANT)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender])
+            const map = buildGroupSignerMap([group], [sender], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(FALCON)
         })
 
-        it('classifies a local-key sender rekeyed to a quantum auth account as localKey', () => {
+        it("resolves a local-key sender rekeyed to a quantum auth account to the auth's Falcon scheme", () => {
             const sender = algo25(PARTICIPANT, AUTH)
             const auth = quantum(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(FALCON)
         })
 
-        it('classifies a quantum sender rekeyed to a local-key auth as localKey (auth-account rule)', () => {
+        it("resolves a quantum sender rekeyed to a local-key auth to the auth's Ed25519 scheme", () => {
             const sender = quantum(PARTICIPANT, AUTH)
             const auth = algo25(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender, auth])
+            const map = buildGroupSignerMap([group], [sender, auth], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
 
         it('still classifies a multisig with quantum participants as multisig', () => {
@@ -270,9 +289,9 @@ describe('buildGroupSignerTypeMap', () => {
             const sender = multisig(PARTICIPANT, ['Q1', 'Q2'])
             const group = buildGroup({ source: { type: 'local' } })
 
-            const map = buildGroupSignerTypeMap([group], [sender])
+            const map = buildGroupSignerMap([group], [sender], 'algorand')
 
-            expect(map.get(PARTICIPANT)).toBe('multisig')
+            expect(map.get(PARTICIPANT)).toEqual(MULTISIG)
         })
     })
 
@@ -295,15 +314,16 @@ describe('buildGroupSignerTypeMap', () => {
                 source: { type: 'local' },
             })
 
-            const map = buildGroupSignerTypeMap(
+            const map = buildGroupSignerMap(
                 [cosignGroup, localGroup],
                 [cosignParticipant, cosignAuth, localSender, localAuth],
+                'algorand',
             )
 
             // Same underlying account type, different sources → different
             // classification.
-            expect(map.get('A')).toBe('localKey') // participant own type
-            expect(map.get('B')).toBe('hardware') // auth account's type
+            expect(map.get('A')).toEqual(LOCAL) // participant own type
+            expect(map.get('B')).toEqual(HARDWARE) // auth account's type
         })
 
         it('does not duplicate classification work when multiple groups share a signerAddress', () => {
@@ -315,16 +335,20 @@ describe('buildGroupSignerTypeMap', () => {
                 source: { type: 'multisig-cosign', signRequestId: 'sr-1' },
             })
 
-            const map = buildGroupSignerTypeMap([groupA, groupB], [participant])
+            const map = buildGroupSignerMap(
+                [groupA, groupB],
+                [participant],
+                'algorand',
+            )
 
             expect(map.size).toBe(1)
-            expect(map.get(PARTICIPANT)).toBe('localKey')
+            expect(map.get(PARTICIPANT)).toEqual(LOCAL)
         })
     })
 
     describe('error paths', () => {
         it('throws CannotSignError when signerAddress is not in allAccounts', () => {
-            // Direct call to buildGroupSignerTypeMap with a group whose
+            // Direct call to buildGroupSignerMap with a group whose
             // signerAddress is not in the wallet — verifies the explicit
             // "signer account not found in wallet" branch (the resolveInitialContext
             // path silently skips unknown signers before reaching here).
@@ -333,7 +357,7 @@ describe('buildGroupSignerTypeMap', () => {
                 source: { type: 'local' },
             })
 
-            expect(() => buildGroupSignerTypeMap([group], [])).toThrow(
+            expect(() => buildGroupSignerMap([group], [], 'algorand')).toThrow(
                 /signer account not found/,
             )
         })
@@ -359,7 +383,7 @@ describe('quantum-signed transactions over the callback transport', () => {
     const userAddr = makeTestAddress(11)
     const dappAddr = makeTestAddress(12)
     const userAccount = {
-        type: 'algo25',
+        custody: { kind: 'local', seed: 'algo25' },
         address: userAddr.toString(),
         keyPairId: 'key-quantum-cb',
     } as unknown as WalletAccount
@@ -372,7 +396,7 @@ describe('quantum-signed transactions over the callback transport', () => {
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            network: 'mainnet' as never,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             encodeTransaction: vi.fn(),
         }) as unknown as SigningMachineInput
 

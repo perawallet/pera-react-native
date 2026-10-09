@@ -12,7 +12,10 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    type AccountType,
+} from '@perawallet/wallet-core-accounts'
 
 // The global setup stubs the account-type helpers with looser shapes — use
 // the real ones so the eligibility filter is tested for real.
@@ -68,12 +71,14 @@ import {
     useCardFundingSourcePicker,
 } from '../useCardFundingSourcePicker'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { custodyForType } from '@test-utils/accountCustody'
 
 const account = (
     address: string,
-    type: WalletAccount['type'],
+    type: AccountType,
     extra: Partial<WalletAccount> = {},
-): WalletAccount => ({ address, type, ...extra }) as WalletAccount
+): WalletAccount =>
+    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
 
 beforeEach(() => {
     registerAlgorandAccountsAdapter()

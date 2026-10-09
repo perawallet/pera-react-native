@@ -24,10 +24,7 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual }
 })
 
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     MultisigSignRequest,
     SignerResponse,
@@ -36,21 +33,30 @@ import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildQuantumAccount = (address: string): WalletAccount => ({
     id: `quantum-${address}`,
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -154,7 +160,7 @@ describe('getLocalUnsignedSigners', () => {
         const a = buildAlgo25Account('A')
         const watch: WalletAccount = {
             id: 'watch-w',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'W',
         }
         const signRequest = buildSignRequest(['A', 'W'])
@@ -177,7 +183,7 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildAlgo25Account('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-local',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',
         }
@@ -192,7 +198,7 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildHardwareAccount('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-hardware',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',
         }

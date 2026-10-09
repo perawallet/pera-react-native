@@ -35,7 +35,6 @@ vi.unmock('@perawallet/wallet-extension-platform')
 import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -89,7 +88,7 @@ const resetNotificationPreferences = (): void => {
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-1',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'quantum-1-key',
     name: 'Quantum account',
@@ -97,14 +96,14 @@ const quantumAccount: WalletAccount = {
 
 const watchedAccount: WalletAccount = {
     id: 'watch-1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: HD_TEST_ADDRESS,
     name: 'Watched account',
 }
 
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'algo25-1-key',
     name: 'Algo25 account',

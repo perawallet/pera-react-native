@@ -130,7 +130,10 @@ export {
 } from './hooks/useSignAndSubmitGroup'
 // The pure applier, not the hook: the app layer owns the AppState
 // subscription and feeds it in, keeping this package free of react-native.
-export { applyAppStateToHardwareSessions } from './hooks/useSigningActorLifecycle'
+export {
+    applyAppStateToHardwareSessions,
+    isSignRequestAwaitingPreflight,
+} from './hooks/useSigningActorLifecycle'
 export { useSigningEvent } from './hooks/useSigningEvent'
 export { useSigningPipeline } from './hooks/useSigningPipeline'
 export { useSigningRequest } from './hooks/useSigningRequest'
@@ -165,9 +168,13 @@ export {
     type DelegatedUnsignableReason,
     type RequestStructure,
     type ReviewerChainAdapter,
+    type ReviewPolicy,
     type SingleTransactionItem,
+    type TransactionDecoder,
     type TransactionListItem,
+    type WarningDetector,
 } from './chain-adapter'
+export { composeAnalysis } from './pipeline/composeAnalysis'
 
 export {
     isExternalCallbackSource,
@@ -181,6 +188,7 @@ export {
     type AuthDataSignableData,
     type AuthData,
     type DataAnalyzer,
+    type DecodedGroup,
     type RejectReason,
     type DataTransport,
     type SigningResult,
@@ -199,7 +207,6 @@ export {
     FeeAdjustmentDeliveryError,
     GenesisHashMismatchError,
     InvalidSignableDataError,
-    NetworkChangedError,
     NoLocalParticipantsError,
     SigningError,
     SourceError,
@@ -215,6 +222,11 @@ export { createSigningStrategySelector } from './pipeline/signing/getSigningStra
 export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
+export {
+    resolveSignerCredential,
+    type SignerCredential,
+    type SignerCustody,
+} from './machine/utils/resolveSignerCredential'
 export { signGroupsBySignerAccount } from './machine/actors/signers/signGroupsBySignerAccount'
 export type {
     AnalyzedSignableGroup,
@@ -236,6 +248,7 @@ export {
     type DerivedSubmissionAttempt,
     type OnConfirmedHandler,
     type ReconcileSummary,
+    type StaleGroupReason,
     type SubmissionSettledHandler,
     type SubmitAndAutoRefreshOptions,
 } from './broadcaster'

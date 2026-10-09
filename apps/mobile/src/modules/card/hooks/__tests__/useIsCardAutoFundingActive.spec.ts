@@ -40,13 +40,22 @@ import { useIsCardAutoFundingActive } from '../useIsCardAutoFundingActive'
 
 const localAccount = {
     address: 'LOCAL',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'key-1',
 } as WalletAccount
 
 const ledgerAccount = {
     address: 'LEDGER',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
 

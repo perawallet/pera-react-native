@@ -40,27 +40,27 @@ vi.mock('@modules/webview', () => ({
 const mockQuantumSource = {
     address: 'SRC',
     name: 'Quantum Source',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'kp-src',
     rekeyAddress: undefined as string | undefined,
 }
 const mockEd25519Source = {
     address: 'SRC',
     name: 'Standard Source',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'kp-src',
     rekeyAddress: undefined as string | undefined,
 }
 const mockEd25519Target = {
     address: 'TGT',
     name: 'Standard Target',
-    type: 'algo25',
+    custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'kp-tgt',
 }
 const mockQuantumTarget = {
     address: 'TGT',
     name: 'Quantum Target',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'kp-tgt',
 }
 

@@ -27,10 +27,7 @@ vi.mock('../../api', async importOriginal => ({
     deleteItem: (...a: unknown[]) => deleteItem(...a),
 }))
 
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError, UpsertResult } from '../../api'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
@@ -75,7 +72,7 @@ const withSyncedSettings = (state: SyncState): SyncState => {
 const encryptionKey = new Uint8Array(32).fill(7)
 const watch: WalletAccount = {
     id: '1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: 'W',
     name: 'Watcher',
 }

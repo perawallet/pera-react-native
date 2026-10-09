@@ -166,6 +166,7 @@ describe('Flow: offline submission reconnect', () => {
             [unsignedTxn],
             [0],
             account,
+            scopeForLegacyNetwork(NETWORK),
         )
         const txIds = await submitAndAutoRefresh(LEGACY_CHAIN_ID, signedTxns)
         expect(txIds).toHaveLength(1)

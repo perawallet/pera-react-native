@@ -73,7 +73,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 
 const hdAccount: HDWalletAccount = {
     id: 'hd-account',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'HD_ADDR',
     keyPairId: 'key-1',
     hdWalletDetails: {
@@ -86,7 +86,16 @@ const hdAccount: HDWalletAccount = {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'ledger-account',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-abc',
+            deviceName: 'My Ledger',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'LEDGER_ADDR',
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -99,13 +108,13 @@ const ledgerAccount: HardwareWalletAccount = {
 
 const watchAccount: WalletAccount = {
     id: 'watch-account',
-    type: 'watch',
+    custody: { kind: 'watch' },
     address: 'WATCH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address: 'MULTISIG_ADDR',
     multisigDetails: {
         threshold: 2,
@@ -116,7 +125,7 @@ const multisigAccount: MultiSigAccount = {
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-account',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'QUANTUM_ADDR',
     keyPairId: 'key-1',
 }
@@ -181,7 +190,16 @@ describe('useAccountInfoCard', () => {
     test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
         const subLedgerAccount: HardwareWalletAccount = {
             id: 'ledger-sub-account',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-abc',
+                    deviceName: 'My Ledger',
+                    transportType: 'ble',
+                },
+                accountIndex: 1,
+            },
             address: 'LEDGER_SUB_ADDR',
             hardwareDetails: {
                 manufacturer: 'ledger',

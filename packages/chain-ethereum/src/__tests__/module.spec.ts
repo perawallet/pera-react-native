@@ -82,7 +82,9 @@ describe('ethereumModule', () => {
         })
     })
 
-    it('has no i18n keys yet', () => {
-        expect(ethereumModule.i18nKeys()).toEqual([])
+    it('declares the error keys its adapters emit as data', () => {
+        expect(ethereumModule.i18nKeys()).toContain(
+            'errors.evm.insufficient_funds.body',
+        )
     })
 })

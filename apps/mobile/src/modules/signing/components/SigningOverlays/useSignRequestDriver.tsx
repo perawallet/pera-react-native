@@ -15,6 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet, useBottomSheetStore } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
+    isSignRequestAwaitingPreflight,
     useSigningPipeline,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -57,9 +58,15 @@ export const useSignRequestDriver = () => {
     const hostCount = useBottomSheetStore(s => s.hostCount)
     const openIdRef = useRef<string | null>(null)
 
-    const nextRequest = pendingSignRequests.find(r =>
+    const firstInteractive = pendingSignRequests.find(r =>
         isInteractiveSource(r.sourceType),
     )
+    // Opened early, the sheet would sit blank behind the chain check, and a
+    // request the check declines would flash a sheet for nothing.
+    const nextRequest =
+        firstInteractive && !isSignRequestAwaitingPreflight(firstInteractive)
+            ? firstInteractive
+            : undefined
 
     const isHardwareBusyForOtherRequest =
         resolved?.activeChild?.kind === 'hardware' &&

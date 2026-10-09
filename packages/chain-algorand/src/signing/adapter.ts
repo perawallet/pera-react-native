@@ -74,10 +74,18 @@ import {
     validateCosignSubsetIntegrity,
     validateTransactionGroupIntegrity,
 } from './validateTransactionGroupIntegrity'
+import {
+    algorandReviewPolicy,
+    algorandTransactionDecoder,
+    algorandWarningDetector,
+} from './review'
 import { aggregateTransactionWarnings } from './warnings'
 
 export const algorandReviewerAdapter: ReviewerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    decoder: algorandTransactionDecoder,
+    warnings: algorandWarningDetector,
+    policy: algorandReviewPolicy,
     analyze: createStandardAnalyzer().analyze,
     createTransactionListItems,
     classifyRequestStructure,

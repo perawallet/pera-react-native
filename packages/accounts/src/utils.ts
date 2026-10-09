@@ -86,12 +86,9 @@ const accountTypeOf = (custody: AccountCustody): AccountType => {
     }
 }
 
-/**
- * Rekey state is ignored: a watch account with an auth address stays `watch`.
- * A record the backfill left without a custody keeps its stored `type`.
- */
+/** Rekey state is ignored: a watch account with an auth address stays `watch`. */
 export const accountType = (account: WalletAccount): AccountType =>
-    account.custody ? accountTypeOf(account.custody) : account.type
+    accountTypeOf(account.custody)
 
 export const isHDWalletAccount = (
     account: WalletAccount,

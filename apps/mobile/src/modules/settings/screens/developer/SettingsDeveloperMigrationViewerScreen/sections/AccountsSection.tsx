@@ -23,6 +23,7 @@ import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { useStyles } from '../styles'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
 const getDisplayType = (account: LegacyAccount): string => {
     if (account.type === 'watch') return 'watch'
@@ -149,7 +150,11 @@ const AccountCard = ({
                                 <LegacyVsRnRow
                                     label='type'
                                     legacyValue={account.type}
-                                    rnValue={rnAccount?.type ?? '(missing)'}
+                                    rnValue={
+                                        rnAccount
+                                            ? accountType(rnAccount)
+                                            : '(missing)'
+                                    }
                                 />
                                 <LegacyVsRnRow
                                     label='preferredOrder'

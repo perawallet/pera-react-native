@@ -41,10 +41,12 @@ import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequ
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     AnalysisContext,
+    AnalysisWarning,
     AnalyzedSignableGroup,
     AuthData,
     AuthDataMetadata,
     DataTransport,
+    DecodedGroup,
     SignableAnalysis,
     SignableGroup,
     SignRequestStatus,
@@ -88,9 +90,40 @@ export type ArbitraryDataDisplay =
     | { kind: 'text'; text: string }
     | { kind: 'hex'; hex: string }
 
+/**
+ * Explains a group without guessing: what the chain can't identify comes back
+ * unrecognised, never as an error. A transaction for another network throws.
+ */
+export interface TransactionDecoder {
+    decode(
+        group: SignableGroup,
+        context: AnalysisContext,
+    ): Promise<DecodedGroup>
+}
+
+export interface WarningDetector {
+    /**
+     * Reads the decoder's result, so warnings follow what it recognised.
+     * Transactions carry warnings only when a wallet account signs them.
+     */
+    detect(
+        group: SignableGroup,
+        decoded: DecodedGroup,
+        context: AnalysisContext,
+    ): AnalysisWarning[]
+}
+
+export interface ReviewPolicy {
+    /** Whether a request the app built itself may sign without the review screen. */
+    autoApproveLocal(analysis: SignableAnalysis): boolean
+}
+
 /** The chain-specific legs of reviewing a sign request; registered by the chain package. */
 export interface ReviewerChainAdapter {
     chainId: ChainId
+    decoder: TransactionDecoder
+    warnings: WarningDetector
+    policy: ReviewPolicy
     analyze(
         group: SignableGroup,
         context: AnalysisContext,
@@ -122,10 +155,6 @@ export interface ReviewerChainAdapter {
 
 export const reviewerChainAdapters =
     createChainAdapterRegistry<ReviewerChainAdapter>('reviewer')
-
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const reviewerAdapterFor = (network: Network): ReviewerChainAdapter =>
-    reviewerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
 
 export type WithChain<F extends (...args: never[]) => unknown> = (
     chainId: ChainId,
@@ -303,10 +332,12 @@ export type LocalKeySigningDeps = {
     yieldBetweenBatches?: () => Promise<void>
 }
 
+/** `scope` picks the chain's local-key signer, which reads the scheme off the account's key. */
 export type LocalSigningFunction = (
     txnGroup: PeraSignedTransaction['txn'][],
     indexesToSign: number[],
     account: WalletAccount,
+    scope: ChainScope,
 ) => Promise<PeraSignedTransaction[]>
 
 export type LocalArbitrarySigningFunction = (
@@ -324,6 +355,7 @@ export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
+    scope: ChainScope
 }
 
 export type LocalKeySignerInput = {
@@ -332,7 +364,7 @@ export type LocalKeySignerInput = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
-    network: Network
+    scope: ChainScope
 }
 
 export type MultisigSignerInput = LocalKeySignerInput & {
@@ -751,14 +783,14 @@ export interface PlannerChainAdapter {
     signMultisigGroups(input: MultisigSignerInput): Promise<SigningResult[]>
     createMultisigProposeTransport(
         proposeSignRequest: ProposeSignRequestFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
         getMsigMetadata: GetMsigMetadataFn,
         getDeviceId: GetDeviceIdFn,
         createDraftSignRequest?: CreateDraftSignRequestFn,
     ): DataTransport
     createMultisigCosignTransport(
         addSignatures: AddSignaturesFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
     ): DataTransport
     /** Removes and returns the stashed context; call once, after the bootstrap propose succeeded. */
     takeDraftProposeContext(
@@ -813,9 +845,8 @@ export const localKeySignerChainAdapters =
     createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
 
 export const localKeySignerAdapterFor = (
-    network: Network,
-): LocalKeySignerChainAdapter =>
-    localKeySignerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    scope: ChainScope,
+): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
 export const resolveMinFeeForSender = (
     params: ResolveMinFeeForSenderParams,

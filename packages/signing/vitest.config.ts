@@ -36,6 +36,10 @@ export default defineConfig({
                 __dirname,
                 '../chain-algorand/src/accounts/index.ts',
             ),
+            '@perawallet/wallet-core-chain-algorand/descriptor': path.resolve(
+                __dirname,
+                '../chain-algorand/src/descriptor/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

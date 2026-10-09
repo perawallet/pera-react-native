@@ -11,11 +11,13 @@
  */
 
 import {
-    AccountTypes,
     canSignViaParticipants,
     hasSigningKeys,
+    isAlgo25Account,
     isHardwareWalletAccount,
+    isHDWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     type AccountAuthorityOps,
     type AuthorityTargetKind,
     type WalletAccount,
@@ -45,11 +47,7 @@ const isEligibleStandardTarget = (
     source: WalletAccount,
 ): boolean => {
     if (isCurrentOrSelf(target, source)) return false
-    if (
-        target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet
-    )
-        return false
+    if (!isAlgo25Account(target) && !isHDWalletAccount(target)) return false
     if (!hasSigningKeys(target)) return false
     if (isDelegated(target)) return false
     return true
@@ -69,7 +67,7 @@ const isEligibleQuantumTarget = (
 ): boolean => {
     if (!isQuantumTargetEnabled) return false
     if (isCurrentOrSelf(target, source)) return false
-    if (target.type !== AccountTypes.quantum) return false
+    if (!isQuantumAccount(target)) return false
     if (!hasSigningKeys(target)) return false
     if (isDelegated(target)) return false
     return true
@@ -80,7 +78,7 @@ const isEligibleHardwareTarget = (
     source: WalletAccount,
 ): boolean => {
     if (isCurrentOrSelf(target, source)) return false
-    if (target.type !== AccountTypes.hardware) return false
+    if (!isHardwareWalletAccount(target)) return false
     if (isDelegated(target)) return false
     return true
 }

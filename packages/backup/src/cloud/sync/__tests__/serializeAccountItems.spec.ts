@@ -13,10 +13,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     parseAddressPayload,
     parseSecretsPayload,
@@ -30,7 +27,7 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: 'ADDR',
     keyPairId: 'seed-1-ed25519',
     name: 'Main',
@@ -70,7 +67,7 @@ describe('serializeAccountItems', () => {
     it('serializes a watch account to an address-only item (no secrets)', () => {
         const watch: WalletAccount = {
             id: '2',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'WADDR',
             name: 'Watcher',
         }
@@ -93,7 +90,11 @@ describe('serializeAccountItems', () => {
     it('returns null for HD accounts when no hd context is provided', () => {
         const hd: WalletAccount = {
             id: '3',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'HADDR',
             keyPairId: 'k',
             hdWalletDetails: {
@@ -115,7 +116,11 @@ describe('serializeAccountItems', () => {
     it('builds an hdWallet address payload from the injected hd context (no personal secret)', () => {
         const hd: WalletAccount = {
             id: '3',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 1 },
+            },
             address: 'CHILD',
             keyPairId: 'seed-1-acc0-idx1-dt9',
             name: 'Child 1',

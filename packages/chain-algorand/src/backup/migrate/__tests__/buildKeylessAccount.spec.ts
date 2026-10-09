@@ -27,7 +27,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 import {
-    AccountTypes,
+    isHardwareWalletAccount,
+    isMultisigAccount,
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -90,7 +91,6 @@ describe('buildWatchAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'My Watcher',
-            type: AccountTypes.watch,
             address: 'ADDR_WATCH',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR_WATCH' } },
@@ -152,7 +152,6 @@ describe('buildLedgerAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Ledger 1',
-            type: AccountTypes.hardware,
             address: 'ADDR_LEDGER',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -187,7 +186,7 @@ describe('buildLedgerAccount', () => {
 
         const account = buildLedgerAccount(legacy)
 
-        if (account.type !== AccountTypes.hardware)
+        if (!isHardwareWalletAccount(account))
             throw new Error('expected hardware account')
         expect(account.hardwareDetails.deviceName).toBe('')
     })
@@ -247,7 +246,6 @@ describe('buildMultiSigAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Joint',
-            type: AccountTypes.multisig,
             address: 'ADDR_MSIG',
             multisigDetails: {
                 threshold: 2,
@@ -283,7 +281,7 @@ describe('buildMultiSigAccount', () => {
 
         const account = buildMultiSigAccount(legacy)
 
-        if (account.type !== AccountTypes.multisig)
+        if (!isMultisigAccount(account))
             throw new Error('expected multisig account')
         expect(account.multisigDetails.threshold).toBe(2)
         expect(deriveAddress).toHaveBeenCalledWith({

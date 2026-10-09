@@ -181,7 +181,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
     useAllAccounts: () => [
-        { address: 'A'.repeat(58), id: 'mock', type: 'algo25' },
+        {
+            address: 'A'.repeat(58),
+            id: 'mock',
+            custody: { kind: 'local', seed: 'algo25' },
+        },
     ],
     resolveAuthAccount: (account: unknown) => account,
     // The keyreg preflight resolves the signer through this; the seeded

@@ -24,6 +24,7 @@ import { Decimal } from 'decimal.js'
 import {
     act,
     fireEvent,
+    within,
     renderHook,
     screen,
     waitFor,
@@ -44,7 +45,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -54,6 +54,7 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
@@ -65,7 +66,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: 'algo25' },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'observer-key',
     name: 'Observer',
@@ -344,6 +345,26 @@ describe('Flow: View transactions → tap into details', () => {
             },
             { timeout: 5000 },
         )
+
+        expect(
+            within(screen.getByTestId('transaction_detail_from')).getByText(
+                truncateAlgorandAddress(TX_PAYMENT.sender),
+            ),
+        ).toBeTruthy()
+        expect(
+            within(screen.getByTestId('transaction_detail_to')).getByText(
+                truncateAlgorandAddress(TX_PAYMENT.receiver ?? ''),
+            ),
+        ).toBeTruthy()
+        expect(
+            within(screen.getByTestId('transaction_detail_fee')).getByText(
+                /0\.001/,
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getAllByText(truncateAlgorandAddress(TX_PAYMENT.id)).length,
+        ).toBeGreaterThan(0)
+        expect(screen.getByTestId('transaction_detail_explorer')).toBeTruthy()
     })
 
     it('Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row', async () => {
