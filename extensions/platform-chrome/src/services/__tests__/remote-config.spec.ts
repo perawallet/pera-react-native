@@ -38,7 +38,10 @@ const configMock = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-config', () => configMock)
 
-import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
+import {
+    RemoteConfigDefaults,
+    remoteConfigDefaultsRegistry,
+} from '@perawallet/wallet-extension-platform'
 import { ChromeRemoteConfigService } from '../remote-config'
 
 describe('ChromeRemoteConfigService', () => {
@@ -55,7 +58,9 @@ describe('ChromeRemoteConfigService', () => {
 
         expect(service.getNumberValue('fixture_fee')).toBe(1000)
         expect(service.getBooleanValue('enable_pera_card')).toBe(false)
-        expect(service.getStringValue('terms_version')).toBe('2')
+        expect(service.getStringValue('terms_version')).toBe(
+            RemoteConfigDefaults.terms_version,
+        )
         expect(mockFetchAndActivate).not.toHaveBeenCalled()
     })
 
@@ -90,7 +95,10 @@ describe('ChromeRemoteConfigService', () => {
         remoteConfigDefaultsRegistry.declare({ fixture_late_fee: 5 })
 
         expect(remoteConfig.defaultConfig).toEqual(
-            expect.objectContaining({ fixture_fee: 1000, terms_version: '1' }),
+            expect.objectContaining({
+                fixture_fee: 1000,
+                terms_version: RemoteConfigDefaults.terms_version,
+            }),
         )
         expect(service.getNumberValue('fixture_late_fee')).toBe(5)
     })

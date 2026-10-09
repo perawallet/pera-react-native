@@ -57,7 +57,7 @@ describe('createRemoteConfigDefaultsRegistry', () => {
     it('refuses a declaration that would shadow a platform default', () => {
         const registry = createRemoteConfigDefaultsRegistry()
 
-        expect(() => registry.declare({ terms_version: '2' })).toThrow(
+        expect(() => registry.declare({ terms_version: '99' })).toThrow(
             expect.objectContaining({ key: 'terms_version' }),
         )
     })
