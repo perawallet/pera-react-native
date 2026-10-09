@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export const BackupAccountType = {
     algo25: 'algo25',
@@ -20,6 +21,13 @@ export const BackupAccountType = {
     watch: 'watch',
     multisig: 'multisig',
     quantum: 'quantum',
+    /** An HD-derived account on a non-legacy chain; carries `chain`. */
+    hdChain: 'hdChain',
+    /** A private-key account on a non-legacy chain; its key rides as a secret. */
+    standaloneKey: 'standaloneKey',
+    /** Distinct from `watch` so a client that predates chains rejects it at
+     *  parse instead of importing it as an Algorand watch account. */
+    watchChain: 'watchChain',
 } as const
 export type BackupAccountType =
     (typeof BackupAccountType)[keyof typeof BackupAccountType]
@@ -30,6 +38,9 @@ export type BackupHardwareTransportType = z.infer<
 >
 
 const nonNegativeInt = z.number().int().nonnegative()
+
+// An id this build doesn't know fails the parse, which skips the item.
+const chainIdSchema = z.enum(CHAIN_IDS)
 
 const customName = z
     .unknown()
@@ -97,6 +108,30 @@ export const quantumAddressPayloadSchema = z.object({
     customName,
     updatedAt,
 })
+export const hdChainAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdChain),
+    chain: chainIdSchema,
+    address,
+    seedFirstDerivedAddress: address,
+    account: nonNegativeInt,
+    keyIndex: nonNegativeInt,
+    customName,
+    updatedAt,
+})
+export const standaloneKeyAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.standaloneKey),
+    chain: chainIdSchema,
+    address,
+    customName,
+    updatedAt,
+})
+export const watchChainAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.watchChain),
+    chain: chainIdSchema,
+    address,
+    customName,
+    updatedAt,
+})
 
 export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
     algo25AddressPayloadSchema,
@@ -106,6 +141,9 @@ export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
     watchAddressPayloadSchema,
     multisigAddressPayloadSchema,
     quantumAddressPayloadSchema,
+    hdChainAddressPayloadSchema,
+    standaloneKeyAddressPayloadSchema,
+    watchChainAddressPayloadSchema,
 ])
 
 export type Algo25AddressPayload = z.infer<typeof algo25AddressPayloadSchema>
@@ -121,6 +159,13 @@ export type MultisigAddressPayload = z.infer<
     typeof multisigAddressPayloadSchema
 >
 export type QuantumAddressPayload = z.infer<typeof quantumAddressPayloadSchema>
+export type HdChainAddressPayload = z.infer<typeof hdChainAddressPayloadSchema>
+export type StandaloneKeyAddressPayload = z.infer<
+    typeof standaloneKeyAddressPayloadSchema
+>
+export type WatchChainAddressPayload = z.infer<
+    typeof watchChainAddressPayloadSchema
+>
 export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
 
 export const algo25SecretsPayloadSchema = z.object({
@@ -143,17 +188,52 @@ export const quantumSecretsPayloadSchema = z.object({
     mnemonic: z.string(),
     address,
 })
+export const standaloneKeySecretsPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.standaloneKey),
+    chain: chainIdSchema,
+    address,
+    /** Lowercase hex of the raw key; the chain decides the length. */
+    privateKey: z.string().regex(/^(?:[0-9a-f]{2})+$/),
+})
 
 export const secretsBackupPayloadSchema = z.discriminatedUnion('type', [
     algo25SecretsPayloadSchema,
     hdSeedSecretsPayloadSchema,
     quantumSecretsPayloadSchema,
+    standaloneKeySecretsPayloadSchema,
 ])
 
 export type Algo25SecretsPayload = z.infer<typeof algo25SecretsPayloadSchema>
 export type HdSeedSecretsPayload = z.infer<typeof hdSeedSecretsPayloadSchema>
 export type QuantumSecretsPayload = z.infer<typeof quantumSecretsPayloadSchema>
+export type StandaloneKeySecretsPayload = z.infer<
+    typeof standaloneKeySecretsPayloadSchema
+>
 export type SecretsBackupPayload = z.infer<typeof secretsBackupPayloadSchema>
+
+/** Null for a legacy kind, whose chain is implicit. */
+export const payloadChain = (
+    payload: AddressBackupPayload | SecretsBackupPayload,
+): ChainId | null => ('chain' in payload ? payload.chain : null)
+
+export type HdBackupPosition = {
+    seedReference: string
+    account: number
+    keyIndex: number
+}
+
+/** Where an HD item sits in its seed; null for every other kind. */
+export const hdPositionOf = (
+    payload: AddressBackupPayload,
+): HdBackupPosition | null =>
+    payload.type === BackupAccountType.hdWallet ||
+    payload.type === BackupAccountType.hdChain
+        ? {
+              seedReference: payload.seedFirstDerivedAddress,
+              account: payload.account,
+              keyIndex: payload.keyIndex,
+          }
+        : null
 
 /** No discriminant: the `contacts/` prefix and the CONTACT item type already
  *  identify the shape. `image` is a device-local `file://` URI and `nfd` is

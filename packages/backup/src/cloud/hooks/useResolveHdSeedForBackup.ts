@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useRef } from 'react'
-import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type HDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     BACKUP_ACCESS_DOMAIN,
     indicesToEntropy,
@@ -21,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
+import { legacyHdDetailsOf } from '../sync/serializeAccountItems'
 import type { SerializeHdResolver } from '../sync/types'
 
 type KMS = ReturnType<typeof useKMS>
@@ -61,7 +66,9 @@ const cached = async (
 }
 
 /** Resolves null when the seed is unavailable, which skips that account.
- *  `seedHex`/`entropyHex` are hex; `seedFirstDerivedAddress` is the chain's seed reference. */
+ *  `seedHex`/`entropyHex` are hex; `seedFirstDerivedAddress` is the chain's seed
+ *  reference. `publicKeyHex` is null for an account with no legacy-chain entry,
+ *  whose legacy item needs it and so isn't written. */
 export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
     const { seedIdOf, withExportedKey, executeWithMnemonic } = useKMS()
     // Both are public and fixed for a given key id, and deriving them is most
@@ -79,18 +86,27 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                     seedKeyId,
                     () => backupSeedReference(seedKeyId),
                 )
-                const publicKeyHex = await cached(
-                    publicKeys.current,
-                    account.keyPairId,
-                    async () => {
-                        const child = await backupAdapterFor().deriveHdAccount(
-                            kmsCore,
-                            seedKeyId,
-                            account.hdWalletDetails,
-                        )
-                        return bytesToHex(child.publicKey)
-                    },
-                )
+                const details = legacyHdDetailsOf(account)
+                const legacyKeyPairId = chainAccountOf(
+                    account,
+                    LEGACY_CHAIN_ID,
+                )?.keyPairId
+                const publicKeyHex =
+                    details && legacyKeyPairId
+                        ? await cached(
+                              publicKeys.current,
+                              legacyKeyPairId,
+                              async () => {
+                                  const child =
+                                      await backupAdapterFor().deriveHdAccount(
+                                          kmsCore,
+                                          seedKeyId,
+                                          details,
+                                      )
+                                  return bytesToHex(child.publicKey)
+                              },
+                          )
+                        : null
                 const entropyHex = await readEntropyHex(
                     executeWithMnemonic,
                     account.keyPairId,

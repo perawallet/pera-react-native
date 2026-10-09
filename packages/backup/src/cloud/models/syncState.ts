@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { BackupAccountType, BackupSettings } from './payloads'
 import type {
     BackupGlobalHash,
@@ -75,6 +76,9 @@ export type SyncState = {
     /** Epoch millis of the last completed sync; null until first sync. */
     lastSyncedAt: number | null
     lastSyncResult: BackupSyncResult | null
+    /** Sorted chains this client could read at its last sync. A change re-reads
+     *  the account items it skipped. Absent on state that predates it. */
+    readableChains?: ChainId[]
     items: Record<BackupItemKey, SyncItemState>
 }
 

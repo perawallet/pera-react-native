@@ -31,6 +31,12 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/credentials/buildAccount.ts',
             ),
+            // Test-only: the round-trip spec builds a real KMS core over an
+            // in-memory secp256k1 keystore.
+            '@perawallet/wallet-core-kms/create-kms-core': path.resolve(
+                __dirname,
+                '../kms/src/core/createKmsCore.ts',
+            ),
             // Resolve to source, not dist: the browser dist externalizes
             // node `crypto`, which the mnemonic index codecs rely on.
             '@perawallet/wallet-core-kms/constants': path.resolve(

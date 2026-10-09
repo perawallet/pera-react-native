@@ -89,4 +89,5 @@ export type {
     SettingsImportFn,
     SerializeHdResolver,
     SerializeMnemonicResolver,
+    SerializePrivateKeyResolver,
 } from './types'

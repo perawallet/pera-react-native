@@ -29,6 +29,7 @@ const {
     importContactsMock,
     resolveHdMock,
     resolveMnemonicMock,
+    resolvePrivateKeyMock,
     listPasskeysMock,
     importPasskeysMock,
     resolveSeedEntropyMock,
@@ -46,6 +47,7 @@ const {
     importContactsMock: vi.fn(),
     resolveHdMock: vi.fn(),
     resolveMnemonicMock: vi.fn(),
+    resolvePrivateKeyMock: vi.fn(),
     listPasskeysMock: vi.fn(async () => []),
     importPasskeysMock: vi.fn(async () => ({
         imported: 0,
@@ -74,6 +76,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         select({ backupId: backupIdRef.current }),
     useResolveHdSeedForBackup: () => resolveHdMock,
     useResolveMnemonicForBackup: () => resolveMnemonicMock,
+    useResolvePrivateKeyForBackup: () => resolvePrivateKeyMock,
     useResolveSeedEntropyForBackup: () => resolveSeedEntropyMock,
     useCloudBackupPasskeyImport: () => ({
         importPasskeys: importPasskeysMock,
@@ -240,6 +243,18 @@ describe('useBackupSyncLifecycle', () => {
         act(() => useSecurityStore.getState().setAppLockActive(true))
 
         expect(deps.isLocked()).toBe(true)
+    })
+
+    it('delegates the manager private-key reads to the hook resolver', async () => {
+        const key = new Uint8Array([1, 2, 3])
+        resolvePrivateKeyMock.mockResolvedValue(key)
+        renderHook(() => useBackupSyncLifecycle())
+        const deps = (initializeMock as Mock).mock.calls[0][0]
+
+        const resolved = await deps.resolvePrivateKey('ethereum', 'key-1')
+
+        expect(resolvePrivateKeyMock).toHaveBeenCalledWith('ethereum', 'key-1')
+        expect(resolved).toBe(key)
     })
 
     it('waits for the foreground when the app cold-starts in the background', () => {

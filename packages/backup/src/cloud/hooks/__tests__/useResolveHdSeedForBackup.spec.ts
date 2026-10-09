@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    logger: { warn: loggerWarnMock },
+    logger: { warn: loggerWarnMock, debug: vi.fn() },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -137,6 +137,24 @@ describe('useResolveHdSeedForBackup', () => {
             seedFirstDerivedAddress: 'ADDR-1',
             publicKeyHex: '02',
         })
+    })
+
+    it('resolves a null public key without deriving for an account with no legacy-chain entry', async () => {
+        const ethereumOnly = {
+            ...account,
+            address: '0xeth',
+            chains: { ethereum: { address: '0xeth', keyPairId: 'child-1' } },
+        } as unknown as HDWalletAccount
+        const { result } = renderHook(() => useResolveHdSeedForBackup())
+
+        const resolved = await result.current(ethereumOnly)
+
+        expect(resolved).toMatchObject({
+            seedFirstDerivedAddress: 'ADDR-1',
+            publicKeyHex: null,
+            seedHex: 'beef',
+        })
+        expect(deriveHdAccountMock).not.toHaveBeenCalled()
     })
 
     it('does not cache a derivation that failed', async () => {

@@ -51,6 +51,41 @@ describe('accountFingerprint', () => {
         )
     })
 
+    it('changes when a chain entry is added to an account', () => {
+        const algorandOnly = account({
+            chains: { algorand: { address: 'A' } },
+        })
+        const withEthereum = account({
+            chains: {
+                algorand: { address: 'A' },
+                ethereum: { address: '0xe' },
+            },
+        })
+
+        expect(accountFingerprint([withEthereum])).not.toBe(
+            accountFingerprint([algorandOnly]),
+        )
+    })
+
+    it('ignores the order of an account chain entries', () => {
+        const ordered = account({
+            chains: {
+                algorand: { address: 'A' },
+                ethereum: { address: '0xe' },
+            },
+        })
+        const reversed = account({
+            chains: {
+                ethereum: { address: '0xe' },
+                algorand: { address: 'A' },
+            },
+        })
+
+        expect(accountFingerprint([ordered])).toBe(
+            accountFingerprint([reversed]),
+        )
+    })
+
     it('does not collide when a name contains the field separator', () => {
         expect(
             accountFingerprint([account({ address: 'A', name: 'x B' })]),
