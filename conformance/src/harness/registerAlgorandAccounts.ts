@@ -18,10 +18,14 @@ import {
     algorandCapabilityRestrictions,
 } from '@perawallet/wallet-core-chain-algorand/capability-defaults'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { algorandNodeBackends } from '@perawallet/wallet-core-chain-algorand/blockchain/node-backends'
+import { nodeBackendAdapters } from '@perawallet/wallet-core-shared/api/node-backends'
 
 // Signer resolution routes through the adapter registered for the chain being
 // signed on, so suites that resolve a signer need Algorand's registered.
 accountsChainAdapters.register(algorandAccountsAdapter)
+// queryClient's algod and indexer clients come from the chain's registered nodes.
+nodeBackendAdapters.register(algorandNodeBackends)
 
 /** Registers Algorand as the app's composition root does; signer dispatch reads its schemes. */
 export const registerAlgorandChain = (chains: ChainRegistry): void =>
