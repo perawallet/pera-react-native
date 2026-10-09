@@ -22,6 +22,7 @@ import {
     msgpackRawEncode,
 } from 'algosdk'
 import { generateKey } from 'falcon-1024'
+import '../../__tests__/registerAlgorandAccounts'
 import {
     accountsChainAdapters,
     useAccountChainStateStore,
@@ -60,10 +61,6 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
         if (!state.isKeystoreOpen) throw new Error('keystore cannot open')
         return { schemeId: 'falcon1024', publicKey: state.pqPublicKey }
     },
-}))
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => ({ state: { keys: [] } }),
 }))
 
 // Signer resolution reads the selected network through the provider, which
@@ -164,6 +161,7 @@ describe('algorandEmptySignaturesFor', () => {
                 ...quantum(PQ_ADDRESS),
                 chains: {
                     algorand: {
+                        ...quantum(PQ_ADDRESS).chains.algorand,
                         address: PQ_ADDRESS,
                         native: {
                             family: 'algorand',

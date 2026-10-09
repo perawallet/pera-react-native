@@ -15,8 +15,10 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isQuantumAccount } from '../accounts/vocabulary'
+import {
+    usesNonPrimaryScheme,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
@@ -85,17 +87,15 @@ export class QuantumSwapBlockedError extends Error {
  *
  * Callers MUST pass the resolved EFFECTIVE signer (e.g. via `useSignerFor`),
  * not the raw selected/sender account: a standard or multisig account rekeyed
- * to a quantum auth account still has its own nominal `type` (e.g. `algo25`),
- * but Falcon-signs via the resolved auth account. Checking the raw account's
- * `type` alone would let a rekeyed-to-quantum sender sail past this guard —
- * see `useTransactionConfirmationScreen`'s `isQuantumFee` for the same
- * resolve-then-check pattern.
+ * to a quantum auth account keeps its own custody but Falcon-signs via the
+ * resolved auth account, so checking the raw account would let it past this
+ * guard. The fee path asks the same question of the same resolved signer.
  */
 const rejectIfQuantumAccount = (
     signer: Nullable<WalletAccount>,
     translationKey: string,
 ): Optional<Promise<never>> => {
-    if (signer && isQuantumAccount(signer)) {
+    if (signer && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)) {
         return Promise.reject(new QuantumSwapBlockedError(translationKey))
     }
     return undefined

@@ -11,16 +11,14 @@
  */
 
 import { modelsv2, SignedTransaction } from 'algosdk'
-import {
-    LEGACY_CHAIN_ID,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandAddressOf } from '../accounts/vocabulary'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
     bytesToHex,
     logger,
@@ -142,7 +140,7 @@ export const findFundedIndices = async ({
                 ? undefined
                 : signerOverrides?.get(subsetIndex)) ??
             transactions[index].sender.toString()
-        return getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
+        return getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
     }
 
     // A co-signed partition is never bumped, so it needs no check.
@@ -153,7 +151,7 @@ export const findFundedIndices = async ({
                 const signer = signerAt(index)
                 return (
                     signer !== null &&
-                    usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
+                    usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
                 )
             }),
     )

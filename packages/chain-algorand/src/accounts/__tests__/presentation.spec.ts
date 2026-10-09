@@ -16,6 +16,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { BackupAccountType } from '@perawallet/wallet-core-backup'
+import { AlgorandBackupKinds } from '../../backup/serialize-account'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -291,11 +292,12 @@ describe('kindGlyph', () => {
     })
 
     // A backup-only row passes the item's wire kind as the kind id.
-    it.each(
-        Object.values(BackupAccountType).filter(
+    it.each([
+        ...Object.values(AlgorandBackupKinds),
+        ...Object.values(BackupAccountType).filter(
             type => type !== BackupAccountType.hdSeed,
         ),
-    )('names a glyph for the %s backup item kind', type => {
+    ])('names a glyph for the %s backup item kind', type => {
         expect(algorandAccountPresentation.kindGlyph(type)).toBeDefined()
     })
 

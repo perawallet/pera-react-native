@@ -23,13 +23,13 @@ import {
     type EncodedPQSig,
     type Transaction,
 } from 'algosdk'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     findAccountByAddressOn,
     getAuthAccount,
     isHardwareWalletAccount,
     isMultisigAccount,
     useAccountsStore,
+    usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
@@ -38,8 +38,8 @@ import {
     algorandKeyOf,
     isStandaloneAccount,
     isHDWalletAccount,
-    isQuantumAccount,
 } from '../accounts/vocabulary'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms'
 import {
     encodeToBase64,
@@ -97,7 +97,7 @@ export const encodeEmptySignature = (fields: EmptySignatureFields): string => {
 export const emptySignatureFieldsOf = (
     auth: WalletAccount,
 ): Nullable<Omit<EmptySignatureFields, 'sgnr'>> => {
-    if (isQuantumAccount(auth)) {
+    if (usesNonPrimaryScheme(auth, ALGORAND_CHAIN_ID)) {
         // The stored key first: the extension's offscreen document has no
         // keystore it can open. `pq.scheme` admits only Falcon-1024.
         const stored = storedQuantumPublicKey(auth)
@@ -156,11 +156,11 @@ export const algorandEmptySignaturesFor = (
     for (const address of addresses) {
         const account = findAccountByAddressOn(
             accounts,
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
             address,
         )
         if (!account) continue
-        const auth = getAuthAccount(account, accounts, LEGACY_CHAIN_ID)
+        const auth = getAuthAccount(account, accounts, ALGORAND_CHAIN_ID)
         const authAddress = auth ? algorandAddressOf(auth) : undefined
         if (!auth || !authAddress) continue
         try {

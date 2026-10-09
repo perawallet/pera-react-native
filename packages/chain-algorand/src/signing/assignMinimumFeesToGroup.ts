@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     usesNonPrimaryScheme,
@@ -35,6 +32,7 @@ import type {
 } from '@perawallet/wallet-core-signing'
 
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 export type AssignMinimumFeesToGroupParams = {
     /** Full atomic payload as received (groupContext), NOT the signable subset */
@@ -86,8 +84,10 @@ export const groupHasQuantumSigner = ({
             signerOverrides,
             subsetIndex,
         )
-        const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
-        return signer !== null && usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
+        const signer = getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
+        return (
+            signer !== null && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
+        )
     })
 
 /**
@@ -179,8 +179,8 @@ export const assignMinimumFeesToGroup = ({
             signerOverrides,
             i,
         )
-        const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
-        if (signer === null || !usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID))
+        const signer = getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
+        if (signer === null || !usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID))
             continue
         if (tx.group && coSignedGroupKeys.has(bytesToHex(tx.group))) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum

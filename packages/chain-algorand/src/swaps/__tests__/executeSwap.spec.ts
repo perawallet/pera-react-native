@@ -34,6 +34,7 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import '../../__tests__/registerAlgorandAccounts'
 
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefreshOptions = vi.fn()
