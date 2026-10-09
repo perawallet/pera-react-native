@@ -15,11 +15,19 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { backupChainAdapters, type BackupChainAdapter } from '../chain-adapter'
 import {
     BackupAccountType,
+    chainBackupKind,
     type AddressBackupPayload,
     type SecretsBackupPayload,
 } from '../cloud/models/payloads'
 
 const CHAIN = 'algorand'
+
+/** The fake chain's own item kinds, spelled as the Algorand adapter writes them. */
+export const FakeBackupKinds = {
+    standalone: chainBackupKind('algo25'),
+    quantum: chainBackupKind('quantum'),
+    hdAccount: chainBackupKind('hdWallet'),
+} as const
 // The derivation type every HD item the app writes records today.
 const HD_DERIVATION_TYPE = 9
 
@@ -78,8 +86,8 @@ export const fakeSerializeAccount: BackupChainAdapter['serializeAccount'] = (
                 return {
                     type:
                         custody.seed === 'quantum'
-                            ? BackupAccountType.quantum
-                            : BackupAccountType.algo25,
+                            ? FakeBackupKinds.quantum
+                            : FakeBackupKinds.standalone,
                     address,
                     customName,
                     updatedAt,
@@ -87,7 +95,7 @@ export const fakeSerializeAccount: BackupChainAdapter['serializeAccount'] = (
             }
             if (!hd) return null
             return {
-                type: BackupAccountType.hdAccount,
+                type: FakeBackupKinds.hdAccount,
                 address,
                 seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
                 publicKey: hd.publicKeyHex,
@@ -106,11 +114,11 @@ export const fakeSerializeAccount: BackupChainAdapter['serializeAccount'] = (
 
 export const fakeLocalKindOf: BackupChainAdapter['localKindOf'] = type => {
     switch (type) {
-        case BackupAccountType.algo25:
+        case FakeBackupKinds.standalone:
             return { seed: null, isHd: false }
-        case BackupAccountType.quantum:
+        case FakeBackupKinds.quantum:
             return { seed: 'quantum', isHd: false }
-        case BackupAccountType.hdAccount:
+        case FakeBackupKinds.hdAccount:
             return { seed: 'bip39', isHd: true }
         default:
             return undefined
@@ -131,8 +139,8 @@ export const fakeSerializeMnemonicSecret: BackupChainAdapter['serializeMnemonicS
         return {
             type:
                 custody.seed === 'quantum'
-                    ? BackupAccountType.quantum
-                    : BackupAccountType.algo25,
+                    ? FakeBackupKinds.quantum
+                    : FakeBackupKinds.standalone,
             mnemonic,
             address,
         }

@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { BackupItemKind } from '@perawallet/wallet-core-backup'
 import {
     standaloneAccount,
     hardwareAccount,
@@ -21,6 +22,7 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import {
+    AlgorandBackupKinds,
     algorandBackupLocalKindOf,
     algorandMnemonicBackupKeyId,
     serializeAlgorandAccount,
@@ -210,7 +212,9 @@ describe('algorandBackupLocalKindOf', () => {
         ['quantum', { seed: 'quantum', isHd: false }],
         ['hdWallet', { seed: 'bip39', isHd: true }],
     ] as const)('decodes a %s item', (type, expected) => {
-        expect(algorandBackupLocalKindOf(type)).toEqual(expected)
+        expect(algorandBackupLocalKindOf(type as BackupItemKind)).toEqual(
+            expected,
+        )
     })
 
     it.each(['watch', 'hardware', 'multisig', 'hdSeed'] as const)(
@@ -219,4 +223,24 @@ describe('algorandBackupLocalKindOf', () => {
             expect(algorandBackupLocalKindOf(type)).toBeUndefined()
         },
     )
+
+    // A wire type is untrusted, so a prototype key must not read as a kind.
+    it.each(['fixtureChainAccount', 'constructor', 'toString'])(
+        'decodes no local key for a %s item',
+        type => {
+            expect(
+                algorandBackupLocalKindOf(type as BackupItemKind),
+            ).toBeUndefined()
+        },
+    )
+})
+
+describe('AlgorandBackupKinds', () => {
+    it('keeps the persisted wire values', () => {
+        expect(AlgorandBackupKinds).toEqual({
+            standalone: 'algo25',
+            quantum: 'quantum',
+            hdAccount: 'hdWallet',
+        })
+    })
 })

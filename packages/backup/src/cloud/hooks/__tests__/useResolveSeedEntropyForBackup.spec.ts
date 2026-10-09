@@ -100,7 +100,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(7))
         seedReferenceMock.mockResolvedValue('ADDR-9')
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
         const resolved = await result.current('ADDR-9')
 
         expect(seedReferenceMock).toHaveBeenCalledWith(
@@ -122,7 +124,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         ])
         seedReferenceMock.mockResolvedValue('ADDR-1')
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
         const resolved = await result.current('ADDR-NOT-FOUND')
 
         expect(resolved).toBeNull()
@@ -135,7 +139,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         ])
         seedReferenceMock.mockResolvedValue('ADDR-9')
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
         const resolved = await result.current('ADDR-9')
 
         expect(resolved).toBeNull()
@@ -154,7 +160,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(3))
         seedReferenceMock.mockResolvedValue('ADDR-9')
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
         const resolved = await result.current('ADDR-9')
 
         expect(resolved?.entropy).toEqual(new Uint8Array(32).fill(3))
@@ -175,7 +183,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(5))
         seedReferenceMock.mockResolvedValue('ADDR-9')
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
 
         expect((await result.current('ADDR-9'))?.seedKeyId).toBe(
             'local-seed-id',
@@ -195,7 +205,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         seedReferenceMock.mockResolvedValue('ADDR-9')
         canAccessMock.mockReturnValue(false)
 
-        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+        const { result } = renderHook(() =>
+            useResolveSeedEntropyForBackup('algorand'),
+        )
 
         expect(await result.current('ADDR-9')).toBeNull()
         expect(withSecretMock).not.toHaveBeenCalled()

@@ -88,7 +88,12 @@ const deps = () => ({
     listContacts: () => [],
     isAborted: () => false,
     serializeAccount: async (a: WalletAccount) =>
-        serializeAccountItems(a, { updatedAt: 1, secrets: null, hashAddress }),
+        serializeAccountItems(a, {
+            chainId: 'algorand',
+            updatedAt: 1,
+            secrets: null,
+            hashAddress,
+        }),
     importAccounts: vi.fn(async () => ({
         imported: 0,
         skippedDuplicate: 0,
@@ -371,6 +376,7 @@ describe('syncBackup', () => {
         const serializeAccount = vi.fn(async (a: WalletAccount) => {
             stopped = true
             return serializeAccountItems(a, {
+                chainId: 'algorand',
                 updatedAt: 1,
                 secrets: null,
                 hashAddress,
@@ -408,6 +414,7 @@ describe('syncBackup', () => {
                     serializeAccount: async (a: WalletAccount) => {
                         stopped = true
                         return serializeAccountItems(a, {
+                            chainId: 'algorand',
                             updatedAt: 1,
                             secrets: null,
                             hashAddress,
@@ -433,6 +440,7 @@ describe('syncBackup', () => {
                     serializeAccount: async (a: WalletAccount) => {
                         stopped = true
                         return serializeAccountItems(a, {
+                            chainId: 'algorand',
                             updatedAt: 1,
                             secrets: null,
                             hashAddress,

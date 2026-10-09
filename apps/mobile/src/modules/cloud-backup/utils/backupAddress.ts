@@ -14,8 +14,8 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { BACKUP_CHAIN_ID } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-/** Backup items are keyed by the account's address on the backup chain, the same on every network. */
+/** Backup items are keyed by the account's address on the chain the backup carries, the same on every network. */
 export const backupAddressOf = (account: WalletAccount): string =>
-    chainAccountOf(account, BACKUP_CHAIN_ID)?.address ?? ''
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''

@@ -17,6 +17,7 @@ import {
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import {
     secretsItemKey,
@@ -34,6 +35,8 @@ import type {
 } from './types'
 
 type Deps = {
+    /** The chain whose entry on the account is backed up. */
+    chainId: ChainId
     updatedAt: number
     hashAddress: ItemKeyHasher
     /** Omitted/null => the account is skipped rather than backed up without
@@ -48,10 +51,15 @@ type Deps = {
  *  the KMS; secret-less types => address-only. */
 export const serializeAccountForBackup = async (
     account: WalletAccount,
-    { updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
+    { chainId, updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
 ): Promise<SerializedAccount | null> => {
     if (hasCustody(account, 'local') && hdIndexOf(account)) {
-        return serializeHdAccount(account, updatedAt, hashAddress, resolveHd)
+        return serializeHdAccount(account, {
+            chainId,
+            updatedAt,
+            hashAddress,
+            resolveHd,
+        })
     }
 
     let secrets: SecretsBackupPayload | null = null
@@ -62,25 +70,37 @@ export const serializeAccountForBackup = async (
         }
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = backupAdapterFor().serializeMnemonicSecret(account, mnemonic)
+        secrets = backupAdapterFor(chainId).serializeMnemonicSecret(
+            account,
+            mnemonic,
+        )
         if (!secrets) return null
     }
-    return serializeAccountItems(account, { updatedAt, secrets, hashAddress })
+    return serializeAccountItems(account, {
+        chainId,
+        updatedAt,
+        secrets,
+        hashAddress,
+    })
 }
 
 /** HD child -> HD address item; the seed rides as a shared hdSeed secret
  *  at secrets/<hash of seedFirstDerivedAddress> (deduped by buildLocalItems). */
 const serializeHdAccount = async (
     account: LocalAccount,
-    updatedAt: number,
-    hashAddress: ItemKeyHasher,
-    resolveHd?: SerializeHdResolver,
+    {
+        chainId,
+        updatedAt,
+        hashAddress,
+        resolveHd,
+    }: Omit<Deps, 'resolveMnemonic'>,
 ): Promise<SerializedAccount | null> => {
     if (!resolveHd) return null
     const resolved = await resolveHd(account)
     if (!resolved) return null
 
     const base = serializeAccountItems(account, {
+        chainId,
         updatedAt,
         secrets: null,
         hashAddress,

@@ -149,11 +149,11 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
-    const resolveHd = useResolveHdSeedForBackup()
-    const resolveMnemonic = useResolveMnemonicForBackup()
-    const listPasskeys = useListPasskeysForBackup()
+    const resolveHd = useResolveHdSeedForBackup(scope.chainId)
+    const resolveMnemonic = useResolveMnemonicForBackup(scope.chainId)
+    const listPasskeys = useListPasskeysForBackup(scope.chainId)
     const { importPasskeys } = useCloudBackupPasskeyImport(
-        useResolveSeedEntropyForBackup(),
+        useResolveSeedEntropyForBackup(scope.chainId),
     )
 
     const latest = useRef<BackupSyncCallbacks>({
@@ -200,7 +200,8 @@ const useBackupSyncManagerSetup = () => {
 
     useEffect(() => {
         initializeBackupSyncManager({
-            sources: createBackupSyncStoreSources(),
+            chainId: LEGACY_CHAIN_ID,
+            sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
             importAccounts: accounts => latest.current.importAccounts(accounts),
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),

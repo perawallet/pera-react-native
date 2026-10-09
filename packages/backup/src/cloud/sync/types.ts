@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     LocalAccount,
@@ -17,7 +18,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import type {
     AddressBackupPayload,
-    BackupAccountType,
+    BackupItemKind,
     BackupId,
     BackupItemKey,
     BackupItemType,
@@ -33,9 +34,16 @@ import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
+/** An account item of a chain kind the restoring chain's backup adapter
+ *  doesn't define; the restore reports it as that item's failure. */
 export class UnsupportedBackupAccountTypeError extends Error {
-    constructor(public readonly type: string) {
-        super(`Backup sync does not support account type: ${type}`)
+    constructor(
+        public readonly type: string,
+        public readonly chainId: ChainId,
+    ) {
+        super(
+            `The ${chainId} backup adapter does not decode item type: ${type}`,
+        )
         this.name = 'UnsupportedBackupAccountTypeError'
     }
 }
@@ -146,7 +154,7 @@ export type SerializeHdResolver = (account: LocalAccount) => Promise<{
 export type LocalItem = SerializedItem & {
     contentHash: string
     address: string
-    accountType: BackupAccountType | null
+    accountType: BackupItemKind | null
 }
 
 export type LocalSnapshot = {

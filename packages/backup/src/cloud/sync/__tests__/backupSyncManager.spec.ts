@@ -252,6 +252,7 @@ const makeSources = (): BackupSyncSources => ({
 })
 
 const makeDeps = () => ({
+    chainId: 'algorand' as const,
     sources: makeSources(),
     importAccounts: vi.fn(async () => ({
         imported: 0,

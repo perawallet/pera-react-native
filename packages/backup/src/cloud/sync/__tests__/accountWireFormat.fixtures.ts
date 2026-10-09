@@ -154,6 +154,7 @@ export const wireItemsOf = (
 
 /** What the golden items were serialized with. */
 export const GOLDEN_SERIALIZE_DEPS = {
+    chainId: 'algorand' as const,
     updatedAt: GOLDEN_UPDATED_AT,
     hashAddress,
     resolveMnemonic: async () => GOLDEN_MNEMONIC,

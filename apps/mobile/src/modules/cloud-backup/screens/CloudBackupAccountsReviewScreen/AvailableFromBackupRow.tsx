@@ -11,7 +11,7 @@
  */
 
 import { memo, useCallback } from 'react'
-import type { BackupAccountType } from '@perawallet/wallet-core-backup'
+import type { BackupItemKind } from '@perawallet/wallet-core-backup'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 
 type AvailableFromBackupRowProps = {
     address: string
-    type: BackupAccountType | null
+    type: BackupItemKind | null
     isBusy: boolean
     onAdd: (address: string) => void
     onDelete: (address: string) => Promise<void>

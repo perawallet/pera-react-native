@@ -32,16 +32,18 @@ describe('backupChainAdapters', () => {
         backupChainAdapters.reset()
     })
 
-    it("resolves the legacy chain's adapter", () => {
+    it("resolves the named chain's adapter", () => {
         const adapter = fakeBackupAdapter()
         backupChainAdapters.register(adapter)
 
-        expect(backupAdapterFor()).toBe(adapter)
+        expect(backupAdapterFor('algorand')).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => backupAdapterFor()).toThrow(ChainAdapterNotRegisteredError)
-        expect(() => backupAdapterFor()).toThrow(
+        expect(() => backupAdapterFor('algorand')).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(() => backupAdapterFor('algorand')).toThrow(
             'No backup adapter is registered for chain "algorand"',
         )
     })
@@ -58,7 +60,9 @@ describe('backupChainAdapters', () => {
         const adapter = fakeBackupAdapter()
         backupChainAdapters.register(adapter)
 
-        expect(await backupSeedReference('seed-1')).toBe('REF-seed-1')
+        expect(await backupSeedReference('seed-1', 'algorand')).toBe(
+            'REF-seed-1',
+        )
         expect(adapter.seedReference).toHaveBeenCalledWith(kmsCore, 'seed-1')
     })
 
@@ -77,9 +81,9 @@ describe('backupChainAdapters', () => {
         const indices = new Uint16Array(25)
         const envelope = { version: 1 } as never
 
-        parseBackupEnvelope('raw')
-        decryptBackupPayload(envelope, indices)
-        partitionImportableAccounts([], [])
+        parseBackupEnvelope('raw', 'algorand')
+        decryptBackupPayload(envelope, indices, 'algorand')
+        partitionImportableAccounts([], [], 'algorand')
 
         expect(adapter.secureBackup.parseEnvelope).toHaveBeenCalledWith('raw')
         expect(adapter.secureBackup.decryptPayload).toHaveBeenCalledWith(

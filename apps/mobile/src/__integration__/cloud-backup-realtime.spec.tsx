@@ -127,14 +127,15 @@ describe('Flow: Cloud backup → real-time manager', () => {
             useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
         )
         const mnemonicHook = renderQueryHook(() =>
-            useResolveMnemonicForBackup(),
+            useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
         )
         const contactImportHook = renderQueryHook(() =>
             useCloudBackupContactImport(),
         )
 
         manager = initializeBackupSyncManager({
-            sources: createBackupSyncStoreSources(),
+            chainId: LEGACY_CHAIN_ID,
+            sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
             importAccounts: importHook.current.importAccounts,
             importContacts: contactImportHook.current.importContacts,
             resolveMnemonic: mnemonicHook.current,

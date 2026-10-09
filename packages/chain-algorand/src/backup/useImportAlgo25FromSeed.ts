@@ -75,7 +75,7 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const importAlgo25 = useImportAccount(scope)
     const updateAccount = useUpdateAccount()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete(ALGORAND_CHAIN_ID)
 
     const importFromSeed = useCallback(
         async (params: {

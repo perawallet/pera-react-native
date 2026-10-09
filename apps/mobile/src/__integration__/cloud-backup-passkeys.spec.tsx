@@ -139,15 +139,24 @@ const startRealSyncManager = () => {
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const hdHook = renderQueryHook(() => useResolveHdSeedForBackup())
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
-    const listHook = renderQueryHook(() => useListPasskeysForBackup())
+    const hdHook = renderQueryHook(() =>
+        useResolveHdSeedForBackup(LEGACY_CHAIN_ID),
+    )
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
+    const listHook = renderQueryHook(() =>
+        useListPasskeysForBackup(LEGACY_CHAIN_ID),
+    )
     const passkeyImportHook = renderQueryHook(() =>
-        useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+        useCloudBackupPasskeyImport(
+            useResolveSeedEntropyForBackup(LEGACY_CHAIN_ID),
+        ),
     )
 
     return initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveHd: hdHook.current,

@@ -97,13 +97,16 @@ const setupSyncedBackup = async ({
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
     const hdHook = withHdResolver
-        ? renderQueryHook(() => useResolveHdSeedForBackup())
+        ? renderQueryHook(() => useResolveHdSeedForBackup(LEGACY_CHAIN_ID))
         : null
 
     const manager = initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
@@ -166,7 +169,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             key: secretKey,
         })
         expect(JSON.parse(plaintext)).toMatchObject({
-            type: BackupAccountType.algo25,
+            type: 'algo25',
             mnemonic: ALGO25_TEST_MNEMONIC,
         })
 
@@ -230,7 +233,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             key: accountKey(addressOf(first)),
         })
         expect(JSON.parse(addrPlain)).toMatchObject({
-            type: BackupAccountType.hdAccount,
+            type: 'hdWallet',
             seedFirstDerivedAddress: addressOf(first),
         })
     })

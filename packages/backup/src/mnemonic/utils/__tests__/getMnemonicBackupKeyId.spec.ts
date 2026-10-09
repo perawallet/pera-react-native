@@ -32,7 +32,7 @@ describe('getMnemonicBackupKeyId', () => {
             chains: { algorand: { address: 'ADDR' } },
         }
 
-        expect(getMnemonicBackupKeyId(account)).toBe('chain-id')
+        expect(getMnemonicBackupKeyId(account, 'algorand')).toBe('chain-id')
         expect(mnemonicBackupKeyId).toHaveBeenCalledWith(account)
     })
 
@@ -46,7 +46,7 @@ describe('getMnemonicBackupKeyId', () => {
             },
             chains: { algorand: { address: 'ADDR_HD', keyPairId: 'kp-1' } },
         }
-        expect(getMnemonicBackupKeyId(account)).toBe('kp-1')
+        expect(getMnemonicBackupKeyId(account, 'algorand')).toBe('kp-1')
     })
 
     test('returns keyPairId for Algo25 accounts', () => {
@@ -55,7 +55,7 @@ describe('getMnemonicBackupKeyId', () => {
             custody: { kind: 'local', seed: null },
             chains: { algorand: { address: 'ADDR_25', keyPairId: 'kp-2' } },
         }
-        expect(getMnemonicBackupKeyId(account)).toBe('kp-2')
+        expect(getMnemonicBackupKeyId(account, 'algorand')).toBe('kp-2')
     })
 
     test('returns keyPairId for Quantum accounts (25-word recovery phrase, algo25 wire format)', () => {
@@ -66,7 +66,7 @@ describe('getMnemonicBackupKeyId', () => {
                 algorand: { address: 'ADDR_Q', keyPairId: 'kp-quantum' },
             },
         }
-        expect(getMnemonicBackupKeyId(account)).toBe('kp-quantum')
+        expect(getMnemonicBackupKeyId(account, 'algorand')).toBe('kp-quantum')
     })
 
     test('returns null for multisig, hardware, watch', () => {
@@ -94,8 +94,8 @@ describe('getMnemonicBackupKeyId', () => {
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR_WATCH' } },
         }
-        expect(getMnemonicBackupKeyId(multisig)).toBeNull()
-        expect(getMnemonicBackupKeyId(hardware)).toBeNull()
-        expect(getMnemonicBackupKeyId(watch)).toBeNull()
+        expect(getMnemonicBackupKeyId(multisig, 'algorand')).toBeNull()
+        expect(getMnemonicBackupKeyId(hardware, 'algorand')).toBeNull()
+        expect(getMnemonicBackupKeyId(watch, 'algorand')).toBeNull()
     })
 })

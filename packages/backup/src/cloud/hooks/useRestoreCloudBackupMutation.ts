@@ -60,7 +60,7 @@ export const useRestoreCloudBackupMutation = (
     const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
     const { importPasskeys } = useCloudBackupPasskeyImport(
-        useResolveSeedEntropyForBackup(),
+        useResolveSeedEntropyForBackup(scope.chainId),
     )
 
     return useMutation({
@@ -89,7 +89,8 @@ export const useRestoreCloudBackupMutation = (
                     importAccounts,
                     importContacts,
                     importPasskeys,
-                    importSettings: applyBackupSettings,
+                    importSettings: settings =>
+                        applyBackupSettings(settings, scope.chainId),
                     onProgress: setProgress,
                 })
             } finally {

@@ -54,7 +54,7 @@ describe('backupSettingsStores', () => {
             launchAccountId: HELD_ID,
         })
 
-        expect(readBackupSettings()).toEqual({
+        expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
             language: 'tr',
             confirmationMode: 'tap',
@@ -63,14 +63,17 @@ describe('backupSettingsStores', () => {
     })
 
     it('applies every present setting', () => {
-        applyBackupSettings({
-            currency: { preferred: 'EUR', fallback: 'ALGO' },
-            language: 'de',
-            confirmationMode: 'tap',
-            launchAccount: { mode: 'specific', address: 'HELD' },
-        })
+        applyBackupSettings(
+            {
+                currency: { preferred: 'EUR', fallback: 'ALGO' },
+                language: 'de',
+                confirmationMode: 'tap',
+                launchAccount: { mode: 'specific', address: 'HELD' },
+            },
+            'algorand',
+        )
 
-        expect(readBackupSettings()).toEqual({
+        expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
             language: 'de',
             confirmationMode: 'tap',
@@ -79,14 +82,17 @@ describe('backupSettingsStores', () => {
     })
 
     it('skips values this device does not recognise or cannot honour', () => {
-        const before = readBackupSettings()
+        const before = readBackupSettings('algorand')
 
-        applyBackupSettings({
-            confirmationMode: 'hold',
-            launchAccount: { mode: 'specific', address: 'NOT_HELD' },
-        })
+        applyBackupSettings(
+            {
+                confirmationMode: 'hold',
+                launchAccount: { mode: 'specific', address: 'NOT_HELD' },
+            },
+            'algorand',
+        )
 
-        expect(readBackupSettings()).toEqual(before)
+        expect(readBackupSettings('algorand')).toEqual(before)
     })
 
     it('notifies on a write to any of the three stores until unsubscribed', () => {

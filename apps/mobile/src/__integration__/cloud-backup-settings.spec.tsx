@@ -80,10 +80,13 @@ const setupSyncedBackup = async () => {
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
 
     const manager = initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

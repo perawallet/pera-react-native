@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { BackupItemKind } from '@perawallet/wallet-core-backup'
 import { createFakeChainKeyStore } from '@perawallet/wallet-core-chain-contract/testing'
 import { encodeAlgorandAddress } from '../../blockchain'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
@@ -125,7 +126,7 @@ describe('algorandBackupAdapter.kindIdOf', () => {
         ['multisig', 'accounts/glyph/multisig-account'],
         ['quantum', 'accounts/glyph/quantum-account'],
     ] as const)('decodes a %s item to the kind showing %s', (type, glyph) => {
-        const kindId = algorandBackupAdapter.kindIdOf(type)
+        const kindId = algorandBackupAdapter.kindIdOf(type as BackupItemKind)
 
         expect(kindId && algorandAccountPresentation.kindGlyph(kindId)).toBe(
             glyph,
@@ -135,4 +136,14 @@ describe('algorandBackupAdapter.kindIdOf', () => {
     it('has no kind for a bare seed item', () => {
         expect(algorandBackupAdapter.kindIdOf('hdSeed')).toBeUndefined()
     })
+
+    // A wire type is untrusted, so a prototype key must not read as a kind.
+    it.each(['fixtureChainAccount', 'constructor', 'toString'])(
+        'has no kind for a %s item',
+        type => {
+            expect(
+                algorandBackupAdapter.kindIdOf(type as BackupItemKind),
+            ).toBeUndefined()
+        },
+    )
 })

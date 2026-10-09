@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import type { AsbBackupAccount } from '../models'
 
@@ -18,6 +19,8 @@ export type UseAsbAccountImportResult = {
     importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
 }
 
-export const useAsbAccountImport = (): UseAsbAccountImportResult => ({
-    importAccount: backupAdapterFor().secureBackup.useImportAccount(),
+export const useAsbAccountImport = (
+    chainId: ChainId,
+): UseAsbAccountImportResult => ({
+    importAccount: backupAdapterFor(chainId).secureBackup.useImportAccount(),
 })

@@ -65,7 +65,9 @@ describe('useResolveMnemonicForBackup', () => {
             ) => handler(new Uint16Array([1, 2, 3])),
         )
 
-        const { result } = renderHook(() => useResolveMnemonicForBackup())
+        const { result } = renderHook(() =>
+            useResolveMnemonicForBackup('algorand'),
+        )
 
         await expect(result.current(ACCOUNT)).resolves.toBe('word1 word2 word3')
         expect(executeWithMnemonicMock).toHaveBeenCalledWith(
@@ -78,13 +80,17 @@ describe('useResolveMnemonicForBackup', () => {
     it('resolves null when the key is unreadable, so the account is skipped rather than backed up without its secret', async () => {
         executeWithMnemonicMock.mockRejectedValue(new Error('no access'))
 
-        const { result } = renderHook(() => useResolveMnemonicForBackup())
+        const { result } = renderHook(() =>
+            useResolveMnemonicForBackup('algorand'),
+        )
 
         await expect(result.current(ACCOUNT)).resolves.toBeNull()
         expect(loggerWarnMock).toHaveBeenCalled()
     })
     it('resolves null without opening a session when the account holds no key on the backup chain', async () => {
-        const { result } = renderHook(() => useResolveMnemonicForBackup())
+        const { result } = renderHook(() =>
+            useResolveMnemonicForBackup('algorand'),
+        )
 
         await expect(
             result.current({

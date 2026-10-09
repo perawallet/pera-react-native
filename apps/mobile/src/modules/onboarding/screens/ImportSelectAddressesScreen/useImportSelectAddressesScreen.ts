@@ -84,7 +84,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         [scope.chainId],
     )
     const { commitImport, cancelImport } = useHDImportSession(scope)
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
 

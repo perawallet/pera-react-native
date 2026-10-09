@@ -12,18 +12,45 @@
 
 import { z } from 'zod'
 
+/**
+ * The item kinds the backup format itself defines. Every other `type` an
+ * account or secrets item carries is a chain's own kind, which only that
+ * chain's backup adapter decodes.
+ */
 export const BackupAccountType = {
-    algo25: 'algo25',
     hdSeed: 'hdSeed',
-    // A persisted wire value: every existing cloud backup carries it.
-    hdAccount: 'hdWallet',
     hardware: 'hardware',
     watch: 'watch',
     multisig: 'multisig',
-    quantum: 'quantum',
 } as const
 export type BackupAccountType =
     (typeof BackupAccountType)[keyof typeof BackupAccountType]
+
+const BACKUP_FORMAT_KINDS: ReadonlySet<string> = new Set(
+    Object.values(BackupAccountType),
+)
+
+// Branded so that ruling out the chain kinds narrows a payload union to the
+// format's own literal kinds; a bare `string` member would survive every
+// `type === 'watch'` check.
+export const chainBackupKindSchema = z
+    .string()
+    .min(1)
+    .refine(type => !BACKUP_FORMAT_KINDS.has(type), {
+        message: 'A chain backup kind cannot reuse a backup format kind',
+    })
+    .brand<'ChainBackupKind'>()
+export type ChainBackupKind = z.infer<typeof chainBackupKindSchema>
+
+/** Mints a chain's wire kind; throws for a name the backup format owns. */
+export const chainBackupKind = (wire: string): ChainBackupKind =>
+    chainBackupKindSchema.parse(wire)
+
+export const isChainBackupKind = (type: string): type is ChainBackupKind =>
+    type.length > 0 && !BACKUP_FORMAT_KINDS.has(type)
+
+/** Any `type` an account or secrets item carries. */
+export type BackupItemKind = BackupAccountType | ChainBackupKind
 
 export const backupHardwareTransportTypeSchema = z.enum(['ble', 'usb'])
 export type BackupHardwareTransportType = z.infer<
@@ -44,27 +71,9 @@ const updatedAt = nonNegativeInt.optional()
  *  collide all such items onto a single entry. */
 const address = z.string().min(1)
 
-export const algo25AddressPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.algo25),
-    address,
-    customName,
-    updatedAt,
-})
 export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
     address,
-})
-export const hdAccountAddressPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.hdAccount),
-    address,
-    seedFirstDerivedAddress: address,
-    publicKey: z.string(),
-    account: nonNegativeInt,
-    change: nonNegativeInt,
-    keyIndex: nonNegativeInt,
-    derivationType: nonNegativeInt,
-    customName,
-    updatedAt,
 })
 export const hardwareAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hardware),
@@ -92,28 +101,42 @@ export const multisigAddressPayloadSchema = z.object({
     customName,
     updatedAt,
 })
-export const quantumAddressPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.quantum),
+/** A chain account holding its own key; its recovery phrase is its `secrets/` item. */
+export const chainKeyAddressPayloadSchema = z.object({
+    type: chainBackupKindSchema,
     address,
+    customName,
+    updatedAt,
+    // An item naming a parent seed is an HD item; one missing the rest of the
+    // HD fields must fail to parse rather than restore as a single key.
+    seedFirstDerivedAddress: z.never().optional(),
+})
+/** A chain account derived from a backed-up HD seed, filed under the seed's first derived address. */
+export const chainHdAddressPayloadSchema = z.object({
+    type: chainBackupKindSchema,
+    address,
+    seedFirstDerivedAddress: address,
+    publicKey: z.string(),
+    account: nonNegativeInt,
+    change: nonNegativeInt,
+    keyIndex: nonNegativeInt,
+    derivationType: nonNegativeInt,
     customName,
     updatedAt,
 })
 
-export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
-    algo25AddressPayloadSchema,
-    hdSeedAddressPayloadSchema,
-    hdAccountAddressPayloadSchema,
-    hardwareAddressPayloadSchema,
-    watchAddressPayloadSchema,
-    multisigAddressPayloadSchema,
-    quantumAddressPayloadSchema,
+export const addressBackupPayloadSchema = z.union([
+    z.discriminatedUnion('type', [
+        hdSeedAddressPayloadSchema,
+        hardwareAddressPayloadSchema,
+        watchAddressPayloadSchema,
+        multisigAddressPayloadSchema,
+    ]),
+    chainHdAddressPayloadSchema,
+    chainKeyAddressPayloadSchema,
 ])
 
-export type Algo25AddressPayload = z.infer<typeof algo25AddressPayloadSchema>
 export type HdSeedAddressPayload = z.infer<typeof hdSeedAddressPayloadSchema>
-export type HdAccountAddressPayload = z.infer<
-    typeof hdAccountAddressPayloadSchema
->
 export type HardwareAddressPayload = z.infer<
     typeof hardwareAddressPayloadSchema
 >
@@ -121,14 +144,28 @@ export type WatchAddressPayload = z.infer<typeof watchAddressPayloadSchema>
 export type MultisigAddressPayload = z.infer<
     typeof multisigAddressPayloadSchema
 >
-export type QuantumAddressPayload = z.infer<typeof quantumAddressPayloadSchema>
-export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
+export type ChainKeyAddressPayload = Omit<
+    z.infer<typeof chainKeyAddressPayloadSchema>,
+    'seedFirstDerivedAddress'
+>
+export type ChainHdAddressPayload = z.infer<typeof chainHdAddressPayloadSchema>
+export type ChainAddressPayload = ChainKeyAddressPayload | ChainHdAddressPayload
+export type AddressBackupPayload =
+    | HdSeedAddressPayload
+    | HardwareAddressPayload
+    | WatchAddressPayload
+    | MultisigAddressPayload
+    | ChainAddressPayload
 
-export const algo25SecretsPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.algo25),
-    mnemonic: z.string(),
-    address,
-})
+export const isChainAddressPayload = (
+    payload: AddressBackupPayload,
+): payload is ChainAddressPayload => isChainBackupKind(payload.type)
+
+export const isChainHdAddressPayload = (
+    payload: AddressBackupPayload,
+): payload is ChainHdAddressPayload =>
+    isChainAddressPayload(payload) && 'seedFirstDerivedAddress' in payload
+
 export const hdSeedSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
     // Hex-encoded XHD seed.
@@ -139,22 +176,29 @@ export const hdSeedSecretsPayloadSchema = z.object({
      *  under and a restoring device's only way to place it. */
     address,
 })
-export const quantumSecretsPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.quantum),
+/** A single-key chain account's recovery phrase. */
+export const chainMnemonicSecretsPayloadSchema = z.object({
+    type: chainBackupKindSchema,
     mnemonic: z.string(),
     address,
 })
 
-export const secretsBackupPayloadSchema = z.discriminatedUnion('type', [
-    algo25SecretsPayloadSchema,
+export const secretsBackupPayloadSchema = z.union([
     hdSeedSecretsPayloadSchema,
-    quantumSecretsPayloadSchema,
+    chainMnemonicSecretsPayloadSchema,
 ])
 
-export type Algo25SecretsPayload = z.infer<typeof algo25SecretsPayloadSchema>
 export type HdSeedSecretsPayload = z.infer<typeof hdSeedSecretsPayloadSchema>
-export type QuantumSecretsPayload = z.infer<typeof quantumSecretsPayloadSchema>
-export type SecretsBackupPayload = z.infer<typeof secretsBackupPayloadSchema>
+export type ChainMnemonicSecretsPayload = z.infer<
+    typeof chainMnemonicSecretsPayloadSchema
+>
+export type SecretsBackupPayload =
+    | HdSeedSecretsPayload
+    | ChainMnemonicSecretsPayload
+
+export const isHdSeedSecretsPayload = (
+    payload: SecretsBackupPayload,
+): payload is HdSeedSecretsPayload => payload.type === BackupAccountType.hdSeed
 
 /** No discriminant: the `contacts/` prefix and the CONTACT item type already
  *  identify the shape. `image` is a device-local `file://` URI and `nfd` is

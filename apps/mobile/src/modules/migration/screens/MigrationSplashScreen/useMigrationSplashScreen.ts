@@ -44,7 +44,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     const importAccount = useImportAccount(scope)
     const { createHdWalletAccountForSeed } = useCreateAccount(scope)
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
-    const markAccountBackedUp = useMarkMnemonicBackupComplete()
+    const markAccountBackedUp = useMarkMnemonicBackupComplete(scope.chainId)
     const { dismiss, setSkipped } = useNeedsMigration()
     const requestLock = useSecurityStore(state => state.requestLock)
 

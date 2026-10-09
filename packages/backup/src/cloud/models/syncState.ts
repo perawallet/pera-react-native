@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BackupAccountType, BackupSettings } from './payloads'
+import type { BackupItemKind, BackupSettings } from './payloads'
 import type {
     BackupGlobalHash,
     BackupId,
@@ -59,7 +59,7 @@ export type SyncItemState = {
     label?: string | null
     /** Null means never decrypted — unknown, never "not ours". */
     address?: string | null
-    accountType?: BackupAccountType | null
+    accountType?: BackupItemKind | null
     /** SETTINGS only. Unlike every other type, a settings push is built from
      *  this document rather than from the device's current values, so a
      *  remote value this device could not apply is not overwritten by it. */

@@ -16,7 +16,6 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     createChainAdapterRegistry,
     type ChainId,
     type ChainKeyStore,
@@ -31,6 +30,7 @@ import type {
 } from './asb/models'
 import type {
     AddressBackupPayload,
+    BackupItemKind,
     SecretsBackupPayload,
 } from './cloud/models/payloads'
 
@@ -89,15 +89,15 @@ export interface BackupChainAdapter {
     /**
      * Decodes an address item's wire `type` into the local key it restores;
      * `undefined` for an item that holds no local key (watch, hardware,
-     * multisig, a bare seed).
+     * multisig, a bare seed) and for a chain kind this chain doesn't define.
      */
-    localKindOf(type: AddressBackupPayload['type']): BackupLocalKind | undefined
+    localKindOf(type: BackupItemKind): BackupLocalKind | undefined
     /**
      * Decodes an address item's wire `type` into the kind id the chain's
      * account presentation describes; `undefined` for an item that isn't an
      * account (a bare seed).
      */
-    kindIdOf(type: AddressBackupPayload['type']): string | undefined
+    kindIdOf(type: BackupItemKind): string | undefined
     /** The secrets item a single-key local account's recovery phrase is stored as; `null` for any other account. */
     serializeMnemonicSecret(
         account: WalletAccount,
@@ -129,17 +129,19 @@ export interface BackupChainAdapter {
 export const backupChainAdapters =
     createChainAdapterRegistry<BackupChainAdapter>('backup')
 
-// Every backup item kind and every legacy account belongs to the legacy chain.
-export const BACKUP_CHAIN_ID: ChainId = LEGACY_CHAIN_ID
+// The backup format records no chain, so every caller names the chain whose
+// accounts it is backing up or restoring.
+export const backupAdapterFor = (chainId: ChainId): BackupChainAdapter =>
+    backupChainAdapters.get(chainId)
 
-export const backupAdapterFor = (): BackupChainAdapter =>
-    backupChainAdapters.get(BACKUP_CHAIN_ID)
-
-export const backupSeedReference = (seedKeyId: string): Promise<string> =>
-    backupAdapterFor().seedReference(kmsCore, seedKeyId)
+export const backupSeedReference = (
+    seedKeyId: string,
+    chainId: ChainId,
+): Promise<string> =>
+    backupAdapterFor(chainId).seedReference(kmsCore, seedKeyId)
 
 /** The presentation kind id for a backup item shown without a local account. */
 export const backupItemKindId = (
-    type: AddressBackupPayload['type'],
+    type: BackupItemKind,
     chainId: ChainId,
-): string | undefined => backupChainAdapters.get(chainId).kindIdOf(type)
+): string | undefined => backupAdapterFor(chainId).kindIdOf(type)

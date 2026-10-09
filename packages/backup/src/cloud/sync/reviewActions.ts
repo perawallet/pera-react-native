@@ -24,6 +24,7 @@ import { decryptItemPayload } from '../crypto/itemPayload'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     isAccountItemKey,
+    isChainHdAddressPayload,
     passkeyPartnerKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
@@ -41,7 +42,6 @@ import {
     type SyncState,
 } from '../models'
 import { buildPulledAccounts } from '../restore'
-import { backupAdapterFor } from '../../chain-adapter'
 import { deleteItemIfPresent } from './pushDirty'
 import type {
     ContactImportFn,
@@ -283,10 +283,11 @@ export const importFromBackup = async ({
     return { state: { ...state, items }, summary }
 }
 
-/** The seed an HD child's item derives from, filed under its first derived address. */
+/** The seed an HD child's item derives from, filed under its first derived
+ *  address. Read off the item's shape rather than its chain's kind, so an
+ *  item of a kind no registered adapter decodes still keeps its seed. */
 const parentSeedOf = (payload: AddressBackupPayload): string | undefined =>
-    backupAdapterFor().localKindOf(payload.type)?.isHd &&
-    'seedFirstDerivedAddress' in payload
+    isChainHdAddressPayload(payload)
         ? payload.seedFirstDerivedAddress
         : undefined
 

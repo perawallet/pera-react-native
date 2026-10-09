@@ -77,7 +77,7 @@ export const useBackupVerificationScreen =
             VERIFICATION_WORD_COUNT,
         )
 
-        const markBackupComplete = useMarkMnemonicBackupComplete()
+        const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
         const { t } = useLanguage()
         const { showToast } = useToast()
 

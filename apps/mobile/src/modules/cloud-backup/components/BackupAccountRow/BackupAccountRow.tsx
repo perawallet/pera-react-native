@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     backupItemKindId,
-    type BackupAccountType,
+    type BackupItemKind,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -34,7 +34,7 @@ export type BackupAccountRowProps = {
     account?: WalletAccount
     /** Picks the glyph for an address held only in the backup; ignored once
      *  `account` is present. */
-    accountType?: BackupAccountType | null
+    accountType?: BackupItemKind | null
     isBackedUp: boolean
     trailing?: ReactNode
     /** Renders under the text column, so a wide control can't squeeze the name. */

@@ -14,16 +14,18 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
-    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     accountItemKey,
+    chainBackupKind,
     secretsItemKey,
     type BackupItemKey,
     type FetchedItem,
     type SyncItemState,
 } from '../../models'
 import { collectAccountPayloads } from '../collectAccountPayloads'
+
+const STANDALONE_KIND = chainBackupKind('algo25')
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(3))
 const ADDRESS = 'ALICE_ADDRESS'
@@ -50,13 +52,13 @@ const deps = (plaintextByKey: Record<BackupItemKey, string>) => ({
 })
 
 const addressPlaintext = JSON.stringify({
-    type: BackupAccountType.algo25,
+    type: STANDALONE_KIND,
     address: ADDRESS,
     customName: 'Alice',
     updatedAt: 10,
 })
 const secretsPlaintext = JSON.stringify({
-    type: BackupAccountType.algo25,
+    type: STANDALONE_KIND,
     mnemonic: 'word '.repeat(24).concat('final'),
     address: ADDRESS,
 })
@@ -87,7 +89,7 @@ describe('collectAccountPayloads', () => {
 
         expect(items[ADDRESS_KEY]).toMatchObject({
             address: ADDRESS,
-            accountType: BackupAccountType.algo25,
+            accountType: STANDALONE_KIND,
         })
     })
 
@@ -113,11 +115,11 @@ describe('collectAccountPayloads', () => {
         expect(accounts[0]).toMatchObject({
             address: ADDRESS,
             addressPayload: {
-                type: BackupAccountType.algo25,
+                type: STANDALONE_KIND,
                 address: ADDRESS,
             },
             secretsPayload: {
-                type: BackupAccountType.algo25,
+                type: STANDALONE_KIND,
                 address: ADDRESS,
             },
         })
@@ -135,7 +137,7 @@ describe('collectAccountPayloads', () => {
             items,
             deps: deps({
                 [ADDRESS_KEY]: JSON.stringify({
-                    type: BackupAccountType.algo25,
+                    type: STANDALONE_KIND,
                     address: '',
                     customName: null,
                 }),

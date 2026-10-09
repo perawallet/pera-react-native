@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import type { PeraWebBackupAccount } from '../models'
 
@@ -27,8 +28,10 @@ export type UsePeraWebAccountImportResult = {
  * `DuplicateAccountError` from the underlying import path is re-thrown so the
  * loading screen can bucket duplicates separately from real failures.
  */
-export const usePeraWebAccountImport = (): UsePeraWebAccountImportResult => {
-    const importFromSeed = backupAdapterFor().useImportFromSeed()
+export const usePeraWebAccountImport = (
+    chainId: ChainId,
+): UsePeraWebAccountImportResult => {
+    const importFromSeed = backupAdapterFor(chainId).useImportFromSeed()
 
     const importAccount = useCallback(
         async (account: PeraWebBackupAccount): Promise<WalletAccount> => {

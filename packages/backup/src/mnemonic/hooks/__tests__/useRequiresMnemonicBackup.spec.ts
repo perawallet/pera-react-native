@@ -62,7 +62,9 @@ describe('useRequiresMnemonicBackup', () => {
             useMnemonicBackupStore.getState().markBackedUp('kp-backed')
         })
 
-        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(account, 'algorand'),
+        )
         expect(result.current).toBe(false)
     })
 
@@ -76,7 +78,9 @@ describe('useRequiresMnemonicBackup', () => {
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp-unbacked' } },
         }
 
-        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(account, 'algorand'),
+        )
         expect(result.current).toBe(true)
     })
 
@@ -92,7 +96,9 @@ describe('useRequiresMnemonicBackup', () => {
             },
         }
 
-        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(account, 'algorand'),
+        )
         expect(result.current).toBe(true)
     })
 
@@ -106,7 +112,9 @@ describe('useRequiresMnemonicBackup', () => {
             chains: { algorand: { address: 'ADDR' } },
         }
 
-        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(account, 'algorand'),
+        )
         expect(result.current).toBe(false)
     })
 
@@ -114,7 +122,9 @@ describe('useRequiresMnemonicBackup', () => {
         const { useRequiresMnemonicBackup } =
             await import('../useRequiresMnemonicBackup')
 
-        const { result } = renderHook(() => useRequiresMnemonicBackup(null))
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(null, 'algorand'),
+        )
         expect(result.current).toBe(false)
     })
 })

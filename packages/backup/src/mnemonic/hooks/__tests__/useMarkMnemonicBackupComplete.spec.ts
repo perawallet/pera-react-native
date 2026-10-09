@@ -75,7 +75,9 @@ describe('useMarkMnemonicBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(account)
         })
@@ -119,7 +121,9 @@ describe('useMarkMnemonicBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([a1, a2, a3])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(a1)
         })
@@ -142,7 +146,9 @@ describe('useMarkMnemonicBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(account)
         })

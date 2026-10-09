@@ -127,7 +127,9 @@ describe('useResolveHdSeedForBackup', () => {
     })
 
     it('derives the public values once but reads the secrets on every run', async () => {
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         await result.current(account)
         const second = await result.current(account)
@@ -144,7 +146,9 @@ describe('useResolveHdSeedForBackup', () => {
 
     it('does not cache a derivation that failed', async () => {
         seedReferenceMock.mockRejectedValueOnce(new Error('locked'))
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         expect(await result.current(account)).toBeNull()
         expect(await result.current(account)).toMatchObject({
@@ -153,7 +157,9 @@ describe('useResolveHdSeedForBackup', () => {
     })
 
     it('resolves the seed root plus the entropy the mnemonic session hands over', async () => {
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 
@@ -182,7 +188,9 @@ describe('useResolveHdSeedForBackup', () => {
 
     it('reads no entropy when the seed ACL does not grant the backup domain', async () => {
         grantedDomain = 'pera.accounts'
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 
@@ -194,7 +202,9 @@ describe('useResolveHdSeedForBackup', () => {
         executeWithMnemonicMock.mockRejectedValue(
             new Error('HD seed is missing its entropy secret'),
         )
-        const { result } = renderHook(() => useResolveHdSeedForBackup())
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
 
         const resolved = await result.current(account)
 

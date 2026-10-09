@@ -26,7 +26,7 @@ export const useShouldPromptMnemonicBackup = (
     account: WalletAccount | null | undefined,
     scope: ChainScope,
 ): boolean => {
-    const requiresBackup = useRequiresMnemonicBackup(account)
+    const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
     // Funding on ANY network counts, not just the one currently selected: the
     // passphrase is the same secret whichever chain the balance sits on, and a
     // warning that disappears on a network switch teaches the wrong lesson.

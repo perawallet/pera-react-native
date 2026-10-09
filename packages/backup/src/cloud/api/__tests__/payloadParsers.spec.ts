@@ -19,6 +19,7 @@ import {
     parseSecretsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
+import { isChainAddressPayload, isChainHdAddressPayload } from '../../models'
 
 describe('parseAddressPayload', () => {
     it('parses an algo25 address payload', () => {
@@ -112,9 +113,45 @@ describe('parseAddressPayload', () => {
         })
     })
 
-    it('throws on an unknown type', () => {
+    // The format holds no chain's kind names; the restoring chain's adapter
+    // decides whether it knows this one.
+    it("passes a kind the format doesn't define through as a chain item", () => {
+        const payload = parseAddressPayload(
+            JSON.stringify({ type: 'Nope', address: 'A' }),
+        )
+
+        expect(payload).toEqual({
+            type: 'Nope',
+            address: 'A',
+            customName: null,
+        })
+        expect(isChainAddressPayload(payload)).toBe(true)
+        expect(isChainHdAddressPayload(payload)).toBe(false)
+    })
+
+    it('throws on an empty type', () => {
         expect(() =>
-            parseAddressPayload(JSON.stringify({ type: 'Nope', address: 'A' })),
+            parseAddressPayload(JSON.stringify({ type: '', address: 'A' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it("throws on a format kind missing its own fields rather than reading it as a chain's kind", () => {
+        expect(() =>
+            parseAddressPayload(
+                JSON.stringify({ type: 'hardware', address: 'A' }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it('throws on an item naming a parent seed without the rest of the HD fields', () => {
+        expect(() =>
+            parseAddressPayload(
+                JSON.stringify({
+                    type: 'hdWallet',
+                    address: 'A',
+                    seedFirstDerivedAddress: 'S',
+                }),
+            ),
         ).toThrow(BackupPayloadParseError)
     })
 

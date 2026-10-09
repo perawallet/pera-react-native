@@ -25,7 +25,10 @@ import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { canonicalJson } from '../canonicalize'
 import { backupChainAdapters } from '../../../chain-adapter'
-import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import {
+    FakeBackupKinds,
+    fakeBackupAdapter,
+} from '../../../__tests__/fakeBackupAdapter'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
@@ -44,9 +47,10 @@ describe('serializeAccountItems', () => {
 
     it('serializes an algo25 account to address + secrets items that round-trip', () => {
         const result = serializeAccountItems(algo25, {
+            chainId: 'algorand',
             updatedAt: 1719300000000,
             secrets: {
-                type: 'algo25',
+                type: FakeBackupKinds.standalone,
                 mnemonic: 'word1 word2',
                 address: 'ADDR',
             },
@@ -80,6 +84,7 @@ describe('serializeAccountItems', () => {
             name: 'Watcher',
         }
         const result = serializeAccountItems(watch, {
+            chainId: 'algorand',
             updatedAt: 1,
             secrets: null,
             hashAddress,
@@ -107,6 +112,7 @@ describe('serializeAccountItems', () => {
         }
         expect(
             serializeAccountItems(hd, {
+                chainId: 'algorand',
                 updatedAt: 1,
                 secrets: null,
                 hashAddress,
@@ -131,6 +137,7 @@ describe('serializeAccountItems', () => {
             name: 'Child 1',
         }
         const result = serializeAccountItems(hd, {
+            chainId: 'algorand',
             updatedAt: 1719300000000,
             secrets: null,
             hashAddress,
@@ -171,6 +178,7 @@ describe('serializeAccountItems', () => {
 
         expect(
             serializeAccountItems(imported, {
+                chainId: 'algorand',
                 updatedAt: 1,
                 secrets: null,
                 hashAddress,

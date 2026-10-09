@@ -14,6 +14,7 @@ import {
     standaloneSecretOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor, type BackupHdContext } from '../../chain-adapter'
 import {
     accountItemKey,
@@ -25,6 +26,8 @@ import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { SerializedAccount } from './types'
 
 type SerializeParams = {
+    /** The chain whose entry on the account the items record. */
+    chainId: ChainId
     /** Epoch millis to stamp on the address payload (LWW). */
     updatedAt: number
     /** Secrets payload from KMS, or null for secret-less account types. */
@@ -37,11 +40,11 @@ type SerializeParams = {
 
 export const serializeAccountItems = (
     account: WalletAccount,
-    { updatedAt, secrets, hd, hashAddress }: SerializeParams,
+    { chainId, updatedAt, secrets, hd, hashAddress }: SerializeParams,
 ): SerializedAccount | null => {
     // A standalone key stored as a raw private key has no backup item.
     if (standaloneSecretOf(account) === 'privateKey') return null
-    const addressPayload = backupAdapterFor().serializeAccount(account, {
+    const addressPayload = backupAdapterFor(chainId).serializeAccount(account, {
         updatedAt,
         hd,
     })

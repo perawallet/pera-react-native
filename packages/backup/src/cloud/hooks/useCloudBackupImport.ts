@@ -41,18 +41,22 @@ import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, type BackupChainAdapter } from '../../chain-adapter'
 import {
     BackupAccountType,
-    type AddressBackupPayload,
+    isChainAddressPayload,
+    isChainHdAddressPayload,
+    isHdSeedSecretsPayload,
+    type ChainAddressPayload,
+    type ChainHdAddressPayload,
     type HardwareAddressPayload,
-    type HdAccountAddressPayload,
     type MultisigAddressPayload,
     type SecretsBackupPayload,
     type WatchAddressPayload,
 } from '../models'
 import type { PulledAccount } from '../restore/pullBackupItems'
-import type {
-    ImportProgressFn,
-    ImportSummary,
-    SyncImportFn,
+import {
+    UnsupportedBackupAccountTypeError,
+    type ImportProgressFn,
+    type ImportSummary,
+    type SyncImportFn,
 } from '../sync/types'
 
 type ImportFailure = ImportSummary['failed'][number]
@@ -163,7 +167,7 @@ const buildHdWalletAccount = async (
     { adapter }: ImportContext,
     seed: HdSeed,
     seedKeyId: string,
-    payload: HdAccountAddressPayload,
+    payload: ChainHdAddressPayload,
 ): Promise<LocalAccount> => {
     // Derivation also commits the child key to the keystore, so no separate
     // `generateDerivedKey` call is needed here.
@@ -203,14 +207,14 @@ const buildHdWalletAccount = async (
 const importFromMnemonic = async (
     { importAccount, updateAccount, scope }: ImportContext,
     seed: LocalKeySeed,
-    addressPayload: AddressBackupPayload,
+    addressPayload: ChainAddressPayload,
     secretsPayload: SecretsBackupPayload | null,
 ): Promise<WalletAccount[]> => {
     const { type } = addressPayload
     if (
         !secretsPayload ||
-        secretsPayload.type !== type ||
-        !('mnemonic' in secretsPayload)
+        isHdSeedSecretsPayload(secretsPayload) ||
+        secretsPayload.type !== type
     ) {
         throw new Error(`${type} account missing mnemonic secret`)
     }
@@ -233,7 +237,7 @@ const importFromMnemonic = async (
         throw new Error(`Unexpected non-account result for ${type} import`)
     }
     const imported = returned as WalletAccount[]
-    if ('customName' in addressPayload && addressPayload.customName) {
+    if (addressPayload.customName) {
         const match = findAddressHolder(imported, scope, addressPayload.address)
         if (match) {
             updateAccount({ ...match, name: addressPayload.customName })
@@ -316,7 +320,8 @@ const importSeeds = async (
     const failures: ImportFailure[] = []
 
     const hasSeedToImport = accounts.some(
-        account => account.secretsPayload?.type === BackupAccountType.hdSeed,
+        ({ secretsPayload }) =>
+            !!secretsPayload && isHdSeedSecretsPayload(secretsPayload),
     )
     if (!hasSeedToImport) {
         return { seedKeyIdByFirstDerivedAddress, failures }
@@ -325,7 +330,7 @@ const importSeeds = async (
     const heldSeedKeyIdByFirstDerivedAddress = await resolveHeldSeeds(context)
 
     for (const { address, secretsPayload } of accounts) {
-        if (secretsPayload?.type !== BackupAccountType.hdSeed) continue
+        if (!secretsPayload || !isHdSeedSecretsPayload(secretsPayload)) continue
         try {
             // The serializer always sets the seed payload's `address` to the
             // first-derived address.
@@ -354,7 +359,7 @@ const importSeeds = async (
 const importHdWalletAccount = async (
     context: ImportContext,
     seed: HdSeed,
-    payload: HdAccountAddressPayload,
+    payload: ChainHdAddressPayload,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<void> => {
     const seedKeyId = seedKeyIdByFirstDerivedAddress.get(
@@ -389,32 +394,13 @@ const importOneAccount = async (
         throw new DuplicateAccountError(address)
     }
 
-    const local = context.adapter.localKindOf(addressPayload.type)
-    if (local?.isHd) {
-        if (!('seedFirstDerivedAddress' in addressPayload)) {
-            throw new Error(
-                `${addressPayload.type} item records no parent seed`,
-            )
-        }
-        if (local.seed !== 'bip39') {
-            throw new Error(`${addressPayload.type} item names no HD seed`)
-        }
-        await importHdWalletAccount(
+    if (isChainAddressPayload(addressPayload)) {
+        return importChainAccount(
             context,
-            local.seed,
-            addressPayload,
-            seedKeyIdByFirstDerivedAddress,
-        )
-        return 1
-    }
-    if (local) {
-        const imported = await importFromMnemonic(
-            context,
-            local.seed,
             addressPayload,
             secretsPayload,
+            seedKeyIdByFirstDerivedAddress,
         )
-        return imported.length
     }
 
     switch (addressPayload.type) {
@@ -442,11 +428,56 @@ const importOneAccount = async (
         }
 
         default: {
+            const unhandled: never = addressPayload
             throw new Error(
-                `Unsupported backup account type: ${addressPayload.type}`,
+                `Unhandled backup item: ${JSON.stringify(unhandled)}`,
             )
         }
     }
+}
+
+/** Decoded by the chain's adapter alone: a kind it doesn't define fails here
+ *  rather than restoring as some other kind. */
+const importChainAccount = async (
+    context: ImportContext,
+    addressPayload: ChainAddressPayload,
+    secretsPayload: SecretsBackupPayload | null,
+    seedKeyIdByFirstDerivedAddress: Map<string, string>,
+): Promise<number> => {
+    const local = context.adapter.localKindOf(addressPayload.type)
+    if (!local) {
+        throw new UnsupportedBackupAccountTypeError(
+            addressPayload.type,
+            context.adapter.chainId,
+        )
+    }
+    if (!local.isHd) {
+        if (isChainHdAddressPayload(addressPayload)) {
+            throw new Error(
+                `${addressPayload.type} item names a parent seed for a single key`,
+            )
+        }
+        const imported = await importFromMnemonic(
+            context,
+            local.seed,
+            addressPayload,
+            secretsPayload,
+        )
+        return imported.length
+    }
+    if (!isChainHdAddressPayload(addressPayload)) {
+        throw new Error(`${addressPayload.type} item records no parent seed`)
+    }
+    if (local.seed !== 'bip39') {
+        throw new Error(`${addressPayload.type} item names no HD seed`)
+    }
+    await importHdWalletAccount(
+        context,
+        local.seed,
+        addressPayload,
+        seedKeyIdByFirstDerivedAddress,
+    )
+    return 1
 }
 
 /**
@@ -554,7 +585,10 @@ export const useCloudBackupImport = (
     const importAccounts = useCallback(
         async (accounts: PulledAccount[], onProgress?: ImportProgressFn) =>
             importBatch(
-                { ...context, adapter: backupAdapterFor() },
+                {
+                    ...context,
+                    adapter: backupAdapterFor(context.scope.chainId),
+                },
                 accounts,
                 onProgress,
             ),

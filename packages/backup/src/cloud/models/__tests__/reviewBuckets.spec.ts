@@ -393,6 +393,7 @@ const backedUpAfterSync = async (
 ) => {
     const local = await buildLocalItems(accounts, account =>
         serializeAccountForBackup(account, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic: async () => 'w1 w2',

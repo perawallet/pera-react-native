@@ -19,7 +19,6 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    BackupAccountType,
     buildBackupCredentialsFile,
     deriveBackupKeys,
     persistBackupKeys,
@@ -135,7 +134,7 @@ const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     {
         key: accountItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
         plaintext: JSON.stringify({
-            type: BackupAccountType.algo25,
+            type: 'algo25',
             address: ALGO25_TEST_ADDRESS,
             customName: 'Restored',
         }),
@@ -143,7 +142,7 @@ const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     {
         key: secretsItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
         plaintext: JSON.stringify({
-            type: BackupAccountType.algo25,
+            type: 'algo25',
             mnemonic: ALGO25_TEST_MNEMONIC,
             address: ALGO25_TEST_ADDRESS,
         }),
@@ -250,15 +249,18 @@ describe('Flow: Cloud backup → Restore', () => {
         const importHook = renderQueryHook(() =>
             useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
         )
-        const hdHook = renderQueryHook(() => useResolveHdSeedForBackup())
+        const hdHook = renderQueryHook(() =>
+            useResolveHdSeedForBackup(LEGACY_CHAIN_ID),
+        )
         const contactImportHook = renderQueryHook(() =>
             useCloudBackupContactImport(),
         )
         const mnemonicHook = renderQueryHook(() =>
-            useResolveMnemonicForBackup(),
+            useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
         )
         await initializeBackupSyncManager({
-            sources: createBackupSyncStoreSources(),
+            chainId: LEGACY_CHAIN_ID,
+            sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
             importAccounts: importHook.current.importAccounts,
             importContacts: contactImportHook.current.importContacts,
             resolveMnemonic: mnemonicHook.current,

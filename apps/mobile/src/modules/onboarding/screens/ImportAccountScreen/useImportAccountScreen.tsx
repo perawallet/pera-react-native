@@ -67,7 +67,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         platform: 'quantum',
         anyChain: 'quantumAccounts',
     })
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
     const { showToast, errorToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()

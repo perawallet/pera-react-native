@@ -151,8 +151,13 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { backupChainAdapters } from '../../../chain-adapter'
-import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import {
+    FakeBackupKinds,
+    fakeBackupAdapter,
+} from '../../../__tests__/fakeBackupAdapter'
 import { useCloudBackupImport } from '../useCloudBackupImport'
+import { chainBackupKind } from '../../models'
+import { UnsupportedBackupAccountTypeError } from '../../sync/types'
 
 // --- helpers ---------------------------------------------------------------
 
@@ -278,12 +283,12 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: 'My Algo25',
                 },
                 secretsPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     mnemonic: 'abandon ability able',
                     address: 'ALGO25_ADDR',
                 },
@@ -323,12 +328,12 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'PQ_CANONICAL',
                 addressPayload: {
-                    type: 'quantum',
+                    type: FakeBackupKinds.quantum,
                     address: 'PQ_CANONICAL',
                     customName: 'My PQ',
                 },
                 secretsPayload: {
-                    type: 'quantum',
+                    type: FakeBackupKinds.quantum,
                     mnemonic: 'about above absent',
                     address: 'PQ_CANONICAL',
                 },
@@ -357,7 +362,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: null,
                 },
@@ -378,12 +383,12 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: null,
                 },
                 secretsPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     mnemonic: 'not a word',
                     address: 'ALGO25_ADDR',
                 },
@@ -558,6 +563,106 @@ describe('useCloudBackupImport', () => {
         ).toBe(true)
     })
 
+    test("records an item of a kind the chain's adapter doesn't decode as that item's typed failure, importing the rest", async () => {
+        const unknownKind = chainBackupKind('fixtureChainAccount')
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'FIX_ADDR',
+                addressPayload: {
+                    type: unknownKind,
+                    address: 'FIX_ADDR',
+                    customName: null,
+                },
+                secretsPayload: {
+                    type: unknownKind,
+                    mnemonic: 'abandon ability able',
+                    address: 'FIX_ADDR',
+                },
+            },
+            watchAccount('GOOD_ADDR'),
+        ])
+
+        expect(summary.imported).toBe(1)
+        expect(summary.failed).toEqual([
+            {
+                address: 'FIX_ADDR',
+                reason: new UnsupportedBackupAccountTypeError(
+                    'fixtureChainAccount',
+                    'algorand',
+                ).message,
+            },
+        ])
+        expect(importAccountMock).not.toHaveBeenCalled()
+    })
+
+    test('refuses an item naming a parent seed for a kind the adapter decodes as a single key', async () => {
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'ALGO25_ADDR',
+                addressPayload: {
+                    type: FakeBackupKinds.standalone,
+                    address: 'ALGO25_ADDR',
+                    seedFirstDerivedAddress: 'FIRST',
+                    publicKey: '00',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                    customName: null,
+                },
+                secretsPayload: {
+                    type: FakeBackupKinds.standalone,
+                    mnemonic: 'abandon ability able',
+                    address: 'ALGO25_ADDR',
+                },
+            },
+        ])
+
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toHaveLength(1)
+        expect(importAccountMock).not.toHaveBeenCalled()
+    })
+
+    test('never derives an HD-shaped item whose kind the adapter does not decode', async () => {
+        const unknownKind = chainBackupKind('fixtureHdAccount')
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'FIRST',
+                addressPayload: {
+                    type: unknownKind,
+                    address: 'FIRST',
+                    seedFirstDerivedAddress: 'FIRST',
+                    publicKey: '00',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                    customName: null,
+                },
+                secretsPayload: null,
+            },
+        ])
+
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toEqual([
+            {
+                address: 'FIRST',
+                reason: new UnsupportedBackupAccountTypeError(
+                    'fixtureHdAccount',
+                    'algorand',
+                ).message,
+            },
+        ])
+        expect(deriveHdAccountMock).not.toHaveBeenCalled()
+        expect(setAccountsMock).not.toHaveBeenCalled()
+    })
+
     test('reports progress per backup entry, counting duplicates and failures', async () => {
         storeState.accounts = [held('DUPE_ADDR')]
         isValidAddressMock.mockImplementation(
@@ -608,7 +713,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'HD_KEY_ADDR',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'HD_KEY_ADDR',
                     seedFirstDerivedAddress: 'SEED_FIRST_DERIVED',
                     publicKey: 'pk',
@@ -668,7 +773,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -688,7 +793,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ADDR-0-1',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'bb',
@@ -718,7 +823,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -738,7 +843,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ADDR-0-1',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'bb',
@@ -782,7 +887,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -837,7 +942,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',

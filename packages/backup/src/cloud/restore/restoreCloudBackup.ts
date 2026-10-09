@@ -23,7 +23,7 @@ import {
 } from '../models'
 import type {
     Argon2idConfig,
-    BackupAccountType,
+    BackupItemKind,
     BackupId,
     BackupItemKey,
     ContactBackupPayload,
@@ -160,8 +160,8 @@ const importContactsSafely = async (
 }
 
 type PulledAccountKinds = {
-    address: BackupAccountType
-    secrets: BackupAccountType | null
+    address: BackupItemKind
+    secrets: BackupItemKind | null
 }
 
 const accountTypesByAddress = (
@@ -181,7 +181,7 @@ const accountTypeOf = (
     key: BackupItemKey,
     address: string,
     types: Map<string, PulledAccountKinds>,
-): BackupAccountType | null => {
+): BackupItemKind | null => {
     if (isContactItemKey(key)) return null
     const pulled = types.get(address)
     if (pulled === undefined) return null

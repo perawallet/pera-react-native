@@ -35,7 +35,8 @@ export type UseAsbAccountImportResult = {
  *
  * - `single` (algo25): delegates to `useImportAlgo25FromSeed`, which
  *   rebuilds a 25-word mnemonic from the seed and feeds it through the
- *   standard import path. Shared with the Pera Web flow.
+ *   standard import path. Shared with the Pera Web flow. ARC-35 has no
+ *   post-quantum key representation, so no quantum account arrives here.
  * - `watch`: persist directly via the accounts store, mirroring
  *   `useWatchAccountScreen`.
  *

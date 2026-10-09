@@ -45,6 +45,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn(async () => 'word-a word-b')
 
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -63,6 +64,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn(async () => 'q1 q2')
 
         const result = await serializeAccountForBackup(quantum, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -80,6 +82,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn(async () => null)
 
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -90,6 +93,7 @@ describe('serializeAccountForBackup', () => {
 
     it('skips a secret-bearing account when no resolver is injected', async () => {
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
         })
@@ -107,6 +111,7 @@ describe('serializeAccountForBackup', () => {
         }
 
         const result = await serializeAccountForBackup(watch, {
+            chainId: 'algorand',
             updatedAt: 1,
             hashAddress,
             resolveMnemonic: resolveMnemonic as never,
@@ -135,6 +140,7 @@ describe('serializeAccountForBackup', () => {
         }
 
         const result = await serializeAccountForBackup(hd, {
+            chainId: 'algorand',
             updatedAt: 7,
             hashAddress,
             resolveHd: resolveHd as never,
@@ -166,6 +172,7 @@ describe('serializeAccountForBackup', () => {
         }
 
         const result = await serializeAccountForBackup(hd, {
+            chainId: 'algorand',
             updatedAt: 1,
             hashAddress,
         })

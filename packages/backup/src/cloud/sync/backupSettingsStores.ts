@@ -17,7 +17,7 @@ import {
     useAccountsStore,
     type LaunchAccountMode,
 } from '@perawallet/wallet-core-accounts'
-import { backupAdapterFor } from '../../chain-adapter'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import {
     useSettingsStore,
@@ -35,7 +35,7 @@ const CONFIRMATION_MODES: ReadonlySet<string> = new Set<ConfirmationMode>([
 const isLaunchAccountMode = (mode: string): mode is LaunchAccountMode =>
     (Object.values(LaunchAccountModes) as string[]).includes(mode)
 
-export const readBackupSettings = (): BackupSettings => {
+export const readBackupSettings = (chainId: ChainId): BackupSettings => {
     const { preferredCurrency, fallbackCurrency } =
         useCurrenciesStore.getState()
     const { language, confirmationMode } = useSettingsStore.getState()
@@ -45,8 +45,7 @@ export const readBackupSettings = (): BackupSettings => {
     // backup format always has.
     const launchAccount = accounts.find(a => a.id === launchAccountId)
     const launchAccountAddress = launchAccount
-        ? (chainAccountOf(launchAccount, backupAdapterFor().chainId)?.address ??
-          null)
+        ? (chainAccountOf(launchAccount, chainId)?.address ?? null)
         : null
     return {
         currency: { preferred: preferredCurrency, fallback: fallbackCurrency },
@@ -73,6 +72,7 @@ export const subscribeBackupSettings = (listener: () => void): (() => void) => {
  *  account this device does not hold is refused by the accounts store. */
 export const applyBackupSettings = (
     settings: Partial<BackupSettings>,
+    chainId: ChainId,
 ): void => {
     const { currency, language, confirmationMode, launchAccount } = settings
 
@@ -91,11 +91,7 @@ export const applyBackupSettings = (
         const { accounts, setLaunchAccountPreference } =
             useAccountsStore.getState()
         const pinned = launchAccount.address
-            ? findAccountByAddressOn(
-                  accounts,
-                  backupAdapterFor().chainId,
-                  launchAccount.address,
-              )
+            ? findAccountByAddressOn(accounts, chainId, launchAccount.address)
             : undefined
         setLaunchAccountPreference(launchAccount.mode, pinned?.id ?? null)
     }

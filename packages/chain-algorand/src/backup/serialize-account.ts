@@ -21,7 +21,9 @@ import {
     BackupAccountType,
     type AddressBackupPayload,
     type BackupChainAdapter,
+    type BackupItemKind,
     type BackupLocalKind,
+    type ChainBackupKind,
     type SecretsBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
@@ -40,6 +42,16 @@ import {
 // Algorand HD accounts all derive on the external chain.
 const HD_CHANGE = 0
 
+/**
+ * Algorand's own account-item kinds. Persisted wire values: every existing
+ * cloud backup carries them, whatever the local kinds are called now.
+ */
+export const AlgorandBackupKinds = {
+    standalone: 'algo25' as ChainBackupKind,
+    quantum: 'quantum' as ChainBackupKind,
+    hdAccount: 'hdWallet' as ChainBackupKind,
+} as const
+
 const nameValue = (account: WalletAccount): string | null =>
     account.name ?? null
 
@@ -50,7 +62,7 @@ export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
         const customName = nameValue(account)
         if (isStandaloneAccount(account)) {
             return {
-                type: BackupAccountType.algo25,
+                type: AlgorandBackupKinds.standalone,
                 address,
                 customName,
                 updatedAt,
@@ -58,7 +70,7 @@ export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
         }
         if (isQuantumAccount(account)) {
             return {
-                type: BackupAccountType.quantum,
+                type: AlgorandBackupKinds.quantum,
                 address,
                 customName,
                 updatedAt,
@@ -105,7 +117,7 @@ export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
         if (isHDWalletAccount(account) && index) {
             if (!hd) return null
             return {
-                type: BackupAccountType.hdAccount,
+                type: AlgorandBackupKinds.hdAccount,
                 address,
                 seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
                 publicKey: hd.publicKeyHex,
@@ -127,10 +139,10 @@ export const serializeAlgorandMnemonicSecret = (
     const address = algorandAddressOf(account)
     if (!address) return null
     if (isQuantumAccount(account)) {
-        return { type: BackupAccountType.quantum, mnemonic, address }
+        return { type: AlgorandBackupKinds.quantum, mnemonic, address }
     }
     if (isStandaloneAccount(account)) {
-        return { type: BackupAccountType.algo25, mnemonic, address }
+        return { type: AlgorandBackupKinds.standalone, mnemonic, address }
     }
     return null
 }
@@ -146,25 +158,32 @@ export const algorandMnemonicBackupKeyId = (
         ? (algorandKeyOf(account) ?? null)
         : null
 
-const LOCAL_KIND_BY_WIRE_TYPE: Partial<
-    Record<BackupAccountType, BackupLocalKind>
-> = {
-    [BackupAccountType.algo25]: { seed: null, isHd: false },
-    [BackupAccountType.quantum]: { seed: SeedScheme.Quantum, isHd: false },
-    [BackupAccountType.hdAccount]: { seed: SeedScheme.Bip39, isHd: true },
-}
+// Maps, not object literals: a wire `type` is untrusted input, and an object
+// lookup would answer for `constructor` and the other prototype keys.
+const LOCAL_KIND_BY_WIRE_TYPE: ReadonlyMap<BackupItemKind, BackupLocalKind> =
+    new Map<BackupItemKind, BackupLocalKind>([
+        [AlgorandBackupKinds.standalone, { seed: null, isHd: false }],
+        [
+            AlgorandBackupKinds.quantum,
+            { seed: SeedScheme.Quantum, isHd: false },
+        ],
+        [AlgorandBackupKinds.hdAccount, { seed: SeedScheme.Bip39, isHd: true }],
+    ])
 
 export const algorandBackupLocalKindOf: BackupChainAdapter['localKindOf'] =
-    type => LOCAL_KIND_BY_WIRE_TYPE[type]
+    type => LOCAL_KIND_BY_WIRE_TYPE.get(type)
 
-const KIND_ID_BY_WIRE_TYPE: Partial<Record<BackupAccountType, AccountType>> = {
-    [BackupAccountType.algo25]: AccountTypes.standalone,
-    [BackupAccountType.hdAccount]: AccountTypes.hdWallet,
-    [BackupAccountType.hardware]: AccountTypes.hardware,
-    [BackupAccountType.watch]: AccountTypes.watch,
-    [BackupAccountType.multisig]: AccountTypes.multisig,
-    [BackupAccountType.quantum]: AccountTypes.quantum,
-}
+const KIND_ID_BY_WIRE_TYPE: ReadonlyMap<BackupItemKind, AccountType> = new Map<
+    BackupItemKind,
+    AccountType
+>([
+    [AlgorandBackupKinds.standalone, AccountTypes.standalone],
+    [AlgorandBackupKinds.hdAccount, AccountTypes.hdWallet],
+    [BackupAccountType.hardware, AccountTypes.hardware],
+    [BackupAccountType.watch, AccountTypes.watch],
+    [BackupAccountType.multisig, AccountTypes.multisig],
+    [AlgorandBackupKinds.quantum, AccountTypes.quantum],
+])
 
 export const algorandBackupKindIdOf: BackupChainAdapter['kindIdOf'] = type =>
-    KIND_ID_BY_WIRE_TYPE[type]
+    KIND_ID_BY_WIRE_TYPE.get(type)

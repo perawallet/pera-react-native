@@ -69,7 +69,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
-        BACKUP_CHAIN_ID: 'algorand',
         deriveBackupAccountReview: () => reviewMock.current,
         backupBusyItemKey: (itemKind: string, id: string) =>
             `${itemKind}:${id}`,

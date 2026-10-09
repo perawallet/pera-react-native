@@ -38,7 +38,6 @@ vi.mock('@analytics', async () => ({
 // exercises what the screen actually renders.
 vi.mock('@perawallet/wallet-core-backup', async () => ({
     useCloudBackupStore: vi.fn(),
-    BACKUP_CHAIN_ID: 'algorand',
     useBackupSyncStateStore: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
     ...(await vi.importActual<
