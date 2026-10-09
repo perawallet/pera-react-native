@@ -14,8 +14,8 @@ import React, { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     detectImportKind,
-    importFormatsFor,
-    localKeyKindOf,
+    keyKindOptionsOf,
+    offeredLocalKeyKinds,
     setPendingImportMnemonic,
     type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
@@ -125,7 +125,7 @@ export const useImportAccountOptionsScreen =
             )
             if (result === undefined) return
             trackChainOnboardingEvent(
-                localKeyKindOf(LEGACY_CHAIN_ID, result)?.recoverOption
+                keyKindOptionsOf(LEGACY_CHAIN_ID, result)?.recover
                     ?.analyticsEvent,
             )
             navigation.push('ImportInfo', { accountType: result })
@@ -230,19 +230,19 @@ export const useImportAccountOptionsScreen =
 
         const kindImportOptions: AccountOption[] = useMemo(
             () =>
-                importFormatsFor(LEGACY_CHAIN_ID).flatMap(
-                    ({ seed, signingScheme, importOption }) =>
-                        importOption &&
-                        (!isPostQuantumScheme(signingScheme) ||
+                offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
+                    ({ kind, options: { import: entry } }) =>
+                        entry &&
+                        (!isPostQuantumScheme(kind.signingScheme) ||
                             isQuantumEnabled)
                             ? [
                                   {
-                                      testID: `import_account_${importOption.id}_button`,
-                                      titleKey: importOption.titleKey,
-                                      descriptionKey:
-                                          importOption.descriptionKey,
-                                      leftIcon: importOption.icon as IconName,
-                                      onPress: () => handleImportKind(seed),
+                                      testID: `import_account_${entry.id}_button`,
+                                      titleKey: entry.titleKey,
+                                      descriptionKey: entry.descriptionKey,
+                                      leftIcon: entry.icon as IconName,
+                                      onPress: () =>
+                                          handleImportKind(kind.seed),
                                   },
                               ]
                             : [],

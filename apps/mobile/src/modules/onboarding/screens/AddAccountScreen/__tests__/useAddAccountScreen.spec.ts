@@ -13,9 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
-import type {
-    LocalAccount,
-    WalletAccount,
+import {
+    accountPresentationChainAdapters,
+    type LocalAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
@@ -657,6 +658,20 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_create_quantum_button',
             ),
         ).toBeUndefined()
+    })
+
+    it('offers no key-kind create row on a chain with no account presentation', () => {
+        accountPresentationChainAdapters.reset()
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const testIDs = [
+            ...result.current.mainOptions,
+            ...result.current.otherOptions,
+        ].map(o => o.testID)
+        expect(testIDs).not.toContain('add_account_create_quantum_button')
+        expect(testIDs).not.toContain('add_account_create_algo25_button')
+        expect(testIDs).toContain('add_account_import_button')
     })
 
     it('places the quantum option directly after the first account option', () => {

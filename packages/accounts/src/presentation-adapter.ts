@@ -14,7 +14,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { AccountKindId } from './chain-adapter'
+import type { AccountKindId, LocalKeySeed } from './chain-adapter'
 
 /** How an account kind is shown. Keys are i18n keys; glyphs are ids the app maps to icons. */
 export type AccountKindPresentation = {
@@ -42,6 +42,49 @@ export type AuthorityTransitionLabel = {
     supportUrl?: string
 }
 
+/** A screen row that mints or imports one key kind; every `*Key` is an i18n key. */
+export type LocalKeyEntryOption = {
+    /** Stable slug the row's test id is built from. */
+    id: string
+    titleKey: string
+    descriptionKey: string
+    /** A name from the app's icon set. */
+    icon: string
+}
+
+/** How the add-account screen offers minting a key kind. */
+export type LocalKeyCreateOption = LocalKeyEntryOption & {
+    /** Listed among the screen's main options rather than under its other options. */
+    isFeatured: boolean
+    /** Replaces the screen's progress title while the key is generated. */
+    progressTitleKey?: string
+    badgeKey?: string
+    learnMore?: { labelKey: string; url: string }
+    /** Analytics event logged when the user picks the option. */
+    analyticsEvent?: string
+}
+
+/** How the recover-a-wallet chooser offers a key kind; every `*Key` is an i18n key. */
+export type LocalKeyRecoverOption = {
+    /** Stable slug the option's test id is built from. */
+    id: string
+    titleKey: string
+    chipKey: string
+    descriptionKey: string
+    mnemonicInfoKey: string
+    /** Gives the chip the emphasis of the chain's suggested kind. */
+    isSuggested: boolean
+    /** Analytics event logged when the user picks the option. */
+    analyticsEvent: string
+}
+
+/** How the onboarding screens offer one local key kind; an absent entry leaves that screen without a row for it. */
+export type LocalKeyKindOptions = {
+    recover?: LocalKeyRecoverOption
+    create?: LocalKeyCreateOption
+    import?: LocalKeyEntryOption
+}
+
 /**
  * The accounts feature's UI copy for a chain, keyed by the kind ids its
  * `AccountsChainAdapter.kindIdOf` gives. A chain without one shows the app's
@@ -63,6 +106,8 @@ export interface AccountPresentationChainAdapter {
         from: AccountKindId,
         to: AccountKindId,
     ): AuthorityTransitionLabel | undefined
+    /** Undefined for a key kind (`LocalKeyKind.seed`) the onboarding screens don't offer. */
+    keyKindOptions?(seed: LocalKeySeed): LocalKeyKindOptions | undefined
 }
 
 export const accountPresentationChainAdapters =

@@ -20,6 +20,10 @@ import {
     type LocalKeyKind,
     type LocalKeySeed,
 } from './chain-adapter'
+import {
+    accountPresentationChainAdapters,
+    type LocalKeyKindOptions,
+} from './presentation-adapter'
 
 /** The key kinds a mnemonic import on `chainId` can mint, in the chain's detection order. */
 export const importFormatsFor = (chainId: ChainId): readonly LocalKeyKind[] =>
@@ -67,3 +71,28 @@ export const postQuantumKeyKindOf = (
     importFormatsFor(chainId).find(kind =>
         isPostQuantumScheme(kind.signingScheme),
     )
+
+/**
+ * How `chainId`'s presentation offers the key kind stored under `seed` on the
+ * onboarding screens; `undefined` for a chain with no presentation or a kind
+ * it doesn't offer.
+ */
+export const keyKindOptionsOf = (
+    chainId: ChainId,
+    seed: LocalKeySeed,
+): LocalKeyKindOptions | undefined =>
+    accountPresentationChainAdapters.has(chainId)
+        ? accountPresentationChainAdapters.get(chainId).keyKindOptions?.(seed)
+        : undefined
+
+export type OfferedLocalKeyKind = {
+    kind: LocalKeyKind
+    options: LocalKeyKindOptions
+}
+
+/** The kinds of `importFormatsFor(chainId)` its presentation offers, in detection order. */
+export const offeredLocalKeyKinds = (chainId: ChainId): OfferedLocalKeyKind[] =>
+    importFormatsFor(chainId).flatMap(kind => {
+        const options = keyKindOptionsOf(chainId, kind.seed)
+        return options ? [{ kind, options }] : []
+    })

@@ -12,7 +12,7 @@
 
 import React, { useMemo } from 'react'
 import {
-    importFormatsFor,
+    offeredLocalKeyKinds,
     type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -42,15 +42,15 @@ export const ImportOptionsContent = () => {
     // a kind it shares a word count with.
     const options = useMemo(
         () =>
-            importFormatsFor(LEGACY_CHAIN_ID).flatMap(
-                ({ seed, recoverOption }) =>
-                    recoverOption
+            offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
+                ({ kind, options: { recover } }) =>
+                    recover
                         ? [
                               {
-                                  ...recoverOption,
-                                  seed,
-                                  testID: `import_options_${recoverOption.id}_button`,
-                                  chipVariant: recoverOption.isSuggested
+                                  ...recover,
+                                  seed: kind.seed,
+                                  testID: `import_options_${recover.id}_button`,
+                                  chipVariant: recover.isSuggested
                                       ? ('helper' as const)
                                       : undefined,
                               },

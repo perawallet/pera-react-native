@@ -12,11 +12,12 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    importFormatsFor,
+    offeredLocalKeyKinds,
     useCreateAccount,
     useCreateNextHDAccount,
     useHdSeedGroups,
-    type LocalKeyKind,
+    type LocalKeyCreateOption,
+    type LocalKeySeed,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -191,11 +192,11 @@ export const useAddAccountScreen = () => {
 
     // The account is built in memory; NameAccount persists it once named.
     const handleCreateKind = useCallback(
-        ({ seed, createOption }: LocalKeyKind) => {
-            trackChainOnboardingEvent(createOption?.analyticsEvent)
+        (seed: LocalKeySeed, option: LocalKeyCreateOption) => {
+            trackChainOnboardingEvent(option.analyticsEvent)
             runCreateAccount(
                 () => buildSingleKeyAccount({ seed }),
-                createOption?.progressTitleKey,
+                option.progressTitleKey,
             )
         },
         [buildSingleKeyAccount, runCreateAccount],
@@ -204,8 +205,8 @@ export const useAddAccountScreen = () => {
     const createOptions = useMemo(() => {
         const featured: AccountOption[] = []
         const other: AccountOption[] = []
-        for (const kind of importFormatsFor(scope.chainId)) {
-            const option = kind.createOption
+        for (const { kind, options } of offeredLocalKeyKinds(scope.chainId)) {
+            const option = options.create
             if (!option) continue
             if (isPostQuantumScheme(kind.signingScheme) && !isQuantumEnabled) {
                 continue
@@ -216,7 +217,7 @@ export const useAddAccountScreen = () => {
                 titleKey: option.titleKey,
                 descriptionKey: option.descriptionKey,
                 leftIcon: option.icon as IconName,
-                onPress: () => handleCreateKind(kind),
+                onPress: () => handleCreateKind(kind.seed, option),
                 isDisabled: isCreatingAccount,
                 badge: option.badgeKey
                     ? { labelKey: option.badgeKey, variant: 'new' }

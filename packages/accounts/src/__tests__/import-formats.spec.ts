@@ -14,9 +14,15 @@ import { describe, expect, it } from 'vitest'
 import {
     detectImportKind,
     importFormatsFor,
+    keyKindOptionsOf,
     localKeyKindOf,
+    offeredLocalKeyKinds,
     postQuantumKeyKindOf,
 } from '../import-formats'
+import {
+    accountPresentationChainAdapters,
+    type LocalKeyKindOptions,
+} from '../presentation-adapter'
 import {
     FAKE_CHAIN_ID,
     FAKE_EXPLICIT_SEED,
@@ -25,6 +31,42 @@ import {
     FAKE_SINGLE_SEED,
     registerFakeAccountsChain,
 } from './fakeAccountsChain'
+
+const HD_OPTIONS: LocalKeyKindOptions = {
+    recover: {
+        id: 'fake_hd',
+        titleKey: 'fake.recover.title',
+        chipKey: 'fake.recover.chip',
+        descriptionKey: 'fake.recover.description',
+        mnemonicInfoKey: 'fake.recover.info',
+        isSuggested: true,
+        analyticsEvent: 'fake_recover',
+    },
+}
+
+const EXPLICIT_OPTIONS: LocalKeyKindOptions = {
+    import: {
+        id: 'fake_explicit',
+        titleKey: 'fake.import.title',
+        descriptionKey: 'fake.import.description',
+        icon: 'wallet',
+    },
+}
+
+// Offers the HD and explicit kinds only, so the single kind has no rows.
+const registerOfferingPresentation = (): void => {
+    const presentation = accountPresentationChainAdapters.get(FAKE_CHAIN_ID)
+    accountPresentationChainAdapters.reset()
+    accountPresentationChainAdapters.register({
+        ...presentation,
+        keyKindOptions: seed =>
+            seed === FAKE_HD_SEED
+                ? HD_OPTIONS
+                : seed === FAKE_EXPLICIT_SEED
+                  ? EXPLICIT_OPTIONS
+                  : undefined,
+    })
+}
 
 const words = (count: number) =>
     Array.from({ length: count }, (_, i) => `w${i}`).join(' ')
@@ -101,5 +143,49 @@ describe('postQuantumKeyKindOf', () => {
             localKeyKinds: FAKE_LOCAL_KEY_KINDS.slice(0, 2),
         })
         expect(postQuantumKeyKindOf(FAKE_CHAIN_ID)).toBeUndefined()
+    })
+})
+
+describe('keyKindOptionsOf', () => {
+    it("returns the presentation's options for a kind it offers", () => {
+        registerFakeAccountsChain()
+        registerOfferingPresentation()
+
+        expect(keyKindOptionsOf(FAKE_CHAIN_ID, FAKE_HD_SEED)).toBe(HD_OPTIONS)
+        expect(
+            keyKindOptionsOf(FAKE_CHAIN_ID, FAKE_SINGLE_SEED),
+        ).toBeUndefined()
+    })
+
+    it('offers nothing on a chain whose presentation declares no options', () => {
+        registerFakeAccountsChain()
+
+        expect(keyKindOptionsOf(FAKE_CHAIN_ID, FAKE_HD_SEED)).toBeUndefined()
+    })
+
+    it('offers nothing on a chain with no presentation', () => {
+        registerFakeAccountsChain()
+        accountPresentationChainAdapters.reset()
+
+        expect(keyKindOptionsOf(FAKE_CHAIN_ID, FAKE_HD_SEED)).toBeUndefined()
+    })
+})
+
+describe('offeredLocalKeyKinds', () => {
+    it('pairs each offered kind with its options, in detection order', () => {
+        registerFakeAccountsChain()
+        registerOfferingPresentation()
+
+        expect(offeredLocalKeyKinds(FAKE_CHAIN_ID)).toEqual([
+            { kind: FAKE_LOCAL_KEY_KINDS[0], options: HD_OPTIONS },
+            { kind: FAKE_LOCAL_KEY_KINDS[2], options: EXPLICIT_OPTIONS },
+        ])
+    })
+
+    it('lists no kind for a chain with no presentation', () => {
+        registerFakeAccountsChain()
+        accountPresentationChainAdapters.reset()
+
+        expect(offeredLocalKeyKinds(FAKE_CHAIN_ID)).toEqual([])
     })
 })

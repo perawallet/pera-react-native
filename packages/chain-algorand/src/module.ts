@@ -15,7 +15,7 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from './capability-defaults'
-import { localKeyKindI18nKeys } from './accounts/local-key-kinds'
+import { keyKindOptionI18nKeys } from './accounts/key-kind-options'
 import { accountPresentationI18nKeys } from './accounts/presentation'
 import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
@@ -30,7 +30,7 @@ export const chainModule: ChainModule = {
     register: _ctx => registerChain(),
     i18nKeys: () => [
         ...accountPresentationI18nKeys(),
-        ...localKeyKindI18nKeys(),
+        ...keyKindOptionI18nKeys(),
     ],
     remoteConfigDefaults: algorandRemoteConfigDefaults,
     pinnedHosts: algorandPinnedHosts,

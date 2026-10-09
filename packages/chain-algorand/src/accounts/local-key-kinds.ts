@@ -14,7 +14,6 @@ import type {
     LocalKeyKind,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { config } from '@perawallet/wallet-core-config'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { accountType, AccountTypes, type AccountType } from './vocabulary'
 
@@ -28,15 +27,6 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isHd: true,
         mnemonicWordCounts: [24],
         isAutoDetected: true,
-        recoverOption: {
-            id: 'hd_wallet',
-            titleKey: 'onboarding.import_options.hd_wallet.title',
-            chipKey: 'onboarding.import_options.hd_wallet.chip',
-            descriptionKey: 'onboarding.import_options.hd_wallet.description',
-            mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
-            isSuggested: true,
-            analyticsEvent: 'onb_createacc_recover_24',
-        },
     },
     {
         seed: null,
@@ -44,23 +34,6 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isHd: false,
         mnemonicWordCounts: [25],
         isAutoDetected: true,
-        recoverOption: {
-            id: 'algo25',
-            titleKey: 'onboarding.import_options.algo25.title',
-            chipKey: 'onboarding.import_options.algo25.chip',
-            descriptionKey: 'onboarding.import_options.algo25.description',
-            mnemonicInfoKey: 'onboarding.import_options.algo25.mnemonic_info',
-            isSuggested: false,
-            analyticsEvent: 'onb_createacc_recover_25',
-        },
-        createOption: {
-            id: 'algo25',
-            titleKey: 'onboarding.add_account.create_algo25_option_title',
-            descriptionKey:
-                'onboarding.add_account.create_algo25_option_description',
-            icon: 'wallet',
-            isFeatured: false,
-        },
     },
     {
         seed: SeedScheme.Quantum,
@@ -68,62 +41,8 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isHd: false,
         mnemonicWordCounts: [25],
         isAutoDetected: false,
-        createOption: {
-            id: 'quantum',
-            titleKey: 'onboarding.add_account.quantum_account_option_title',
-            descriptionKey:
-                'onboarding.add_account.quantum_account_option_description',
-            icon: 'quantum',
-            isFeatured: true,
-            // Falcon keygen is heavier than Ed25519.
-            progressTitleKey: 'onboarding.add_account.quantum_creating_title',
-            badgeKey: 'onboarding.add_account.quantum_account_option_badge',
-            learnMore: {
-                labelKey:
-                    'onboarding.add_account.quantum_account_option_learn_more',
-                url: config.quantumAccountSupportUrl,
-            },
-            analyticsEvent: 'createacc_quantumAccount_press',
-        },
-        importOption: {
-            id: 'quantum',
-            titleKey: 'onboarding.import_account_options.quantum_title',
-            descriptionKey:
-                'onboarding.import_account_options.quantum_description',
-            icon: 'quantum',
-        },
     },
 ]
-
-export const localKeyKindI18nKeys = (): readonly string[] =>
-    algorandLocalKeyKinds.flatMap(
-        ({ recoverOption, createOption, importOption }) => [
-            ...(recoverOption
-                ? [
-                      recoverOption.titleKey,
-                      recoverOption.chipKey,
-                      recoverOption.descriptionKey,
-                      recoverOption.mnemonicInfoKey,
-                  ]
-                : []),
-            ...(createOption
-                ? [
-                      createOption.titleKey,
-                      createOption.descriptionKey,
-                      ...(createOption.progressTitleKey
-                          ? [createOption.progressTitleKey]
-                          : []),
-                      ...(createOption.badgeKey ? [createOption.badgeKey] : []),
-                      ...(createOption.learnMore
-                          ? [createOption.learnMore.labelKey]
-                          : []),
-                  ]
-                : []),
-            ...(importOption
-                ? [importOption.titleKey, importOption.descriptionKey]
-                : []),
-        ],
-    )
 
 /**
  * `quantum` ranks highest because misreporting it is the expensive failure —

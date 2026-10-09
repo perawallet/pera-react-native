@@ -18,6 +18,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandKeyKindOptions } from './key-kind-options'
 import { AccountTypes, type AccountType } from './vocabulary'
 
 const KIND_COPY: Record<AccountType, AccountKindPresentation> = {
@@ -136,6 +137,7 @@ export const algorandAccountPresentation: AccountPresentationChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     describe,
     transitionLabel,
+    keyKindOptions: algorandKeyKindOptions,
 }
 
 /** Every i18n key the presentation emits as data, for the literal-`t()` lint. */
