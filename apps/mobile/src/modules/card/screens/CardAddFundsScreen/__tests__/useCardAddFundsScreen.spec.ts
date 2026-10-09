@@ -143,11 +143,16 @@ vi.mock('react-i18next', async () => {
 })
 
 import { useCardAddFundsScreen } from '../useCardAddFundsScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const type = (
     result: { current: ReturnType<typeof useCardAddFundsScreen> },
     keys: string[],
 ) => keys.forEach(key => act(() => result.current.handleKey(key)))
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardAddFundsScreen', () => {
     beforeEach(() => {

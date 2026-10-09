@@ -24,6 +24,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     CannotSignError,
+    InvalidSignableDataError,
+    isUnsignedTransactionsData,
     SIGNING_ERROR_KEYS,
     SigningError,
     type AnalyzedSignableGroup,
@@ -88,6 +90,11 @@ export const createLocalKeyStrategy = (
             try {
                 switch (group.data.type) {
                     case 'transactions': {
+                        if (isUnsignedTransactionsData(group.data)) {
+                            throw new InvalidSignableDataError(
+                                'the Algorand signer signs Algorand transactions only',
+                            )
+                        }
                         const { transactions, indicesToSign } = group.data
                         callbacks?.onSigningStart?.()
                         callbacks?.onProgress?.(0, transactions.length)

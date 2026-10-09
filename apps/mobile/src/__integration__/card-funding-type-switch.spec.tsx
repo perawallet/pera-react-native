@@ -15,7 +15,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
 // The switch orchestration (LSig POST + on-chain Killswitch enable/kill) is
-// unit-tested in useAutoDrawSwitch.spec / useKillswitchAutoDraw.spec; here we
+// unit-tested in useAlgorandCardAutoDraw.spec / useAutoDrawSwitch.spec; here we
 // mock it at the hook boundary and keep the sheet → orchestration → store wire
 // real. The consent gate passes through (unit-tested separately).
 const { enableAutoDraw, disableAutoDraw } = vi.hoisted(() => ({

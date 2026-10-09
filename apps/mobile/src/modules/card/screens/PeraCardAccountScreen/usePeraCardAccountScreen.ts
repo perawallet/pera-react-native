@@ -23,6 +23,7 @@ import {
 import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { useCardScope } from '../../hooks/useCardScope'
 import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
 import { findCardAccount } from '../../utils/cardAccountAddress'
 
@@ -37,6 +38,7 @@ type UsePeraCardAccountScreenResult = {
 }
 
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
@@ -48,7 +50,7 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     // regardless of which tab is mounted or whether tabs become lazy. The
     // details tab mounts its own instance for display; the shared mutation
     // key keeps the two coordinated.
-    useCardIssuance()
+    useCardIssuance(scope)
     useCardSessionGuard()
 
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)

@@ -34,7 +34,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     canAutoFund,
@@ -49,6 +48,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
 import {
     cardAccountAddressOf,
@@ -146,6 +146,7 @@ export type UseCardOnboardingStatusScreenResult = {
 
 export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -160,7 +161,7 @@ export const useCardOnboardingStatusScreen =
             isLoading,
             hasPollTimedOut,
             restartPolling,
-        } = useOnboardingKycPoll()
+        } = useOnboardingKycPoll(scope)
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step — and as proof documents
@@ -202,8 +203,8 @@ export const useCardOnboardingStatusScreen =
 
         const accounts = useAllAccounts()
         const connectedAccount = useMemo<Optional<WalletAccount>>(
-            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // Funding type is chosen locally and committed by the creation of an lsig.
@@ -242,7 +243,7 @@ export const useCardOnboardingStatusScreen =
         const { setParams } = stackNavigation
         const selectedAccount = useSelectedAccount()
         const selectedAccountAddress = selectedAccount
-            ? cardAccountAddressOf(selectedAccount, LEGACY_CHAIN_ID)
+            ? cardAccountAddressOf(selectedAccount, scope.chainId)
             : undefined
 
         useEffect(() => {
@@ -299,12 +300,17 @@ export const useCardOnboardingStatusScreen =
             navigation.navigate('CardOnboardingPersonalDetails')
         }, [isKycSubmitted, handleVerifyIdentity, navigation])
 
-        // Creation always needs an ARC-60 signature, so only offer accounts
-        // that can produce one.
+        // Creation always needs the ownership-proof signature, so only offer
+        // accounts that can produce one.
+        const offerSigningCapable = useCallback(
+            (account: WalletAccount) =>
+                isSigningCapableFundingSource(account, scope),
+            [scope],
+        )
         const { pickFundingSource } = useCardFundingSourcePicker({
-            accountFilter: isSigningCapableFundingSource,
+            accountFilter: offerSigningCapable,
         })
-        const { checkFundingAddress } = useFundingAddressLinkMutation()
+        const { checkFundingAddress } = useFundingAddressLinkMutation(scope)
         // Same copy the post-signature failure shows, resolved from the same
         // error type rather than restating its keys here.
         const showCardError = useCardErrorToast()
@@ -318,7 +324,7 @@ export const useCardOnboardingStatusScreen =
                 void (async () => {
                     const account = await pickFundingSource()
                     const address = account
-                        ? cardAccountAddressOf(account, LEGACY_CHAIN_ID)
+                        ? cardAccountAddressOf(account, scope.chainId)
                         : undefined
                     if (address === undefined) return
                     // Ask before the ownership signature whether the backend
@@ -343,7 +349,12 @@ export const useCardOnboardingStatusScreen =
                         .setConnectedFundingSourceAddress(address)
                 })()
             },
-            [pickFundingSource, checkFundingAddress, showCardError],
+            [
+                pickFundingSource,
+                checkFundingAddress,
+                showCardError,
+                scope.chainId,
+            ],
         )
 
         // Only `canCreateCard` is needed here — the actual creation sequence
@@ -356,8 +367,7 @@ export const useCardOnboardingStatusScreen =
             connectedAccount != null && isLedgerAccount(connectedAccount)
         const isAutoFundingUnavailable =
             !isAutoFundingEnabled ||
-            (connectedAccount != null &&
-                !canAutoFund(connectedAccount, LEGACY_CHAIN_ID))
+            (connectedAccount != null && !canAutoFund(connectedAccount, scope))
 
         // A connected account that can't sign an LSig (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but

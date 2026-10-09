@@ -15,6 +15,7 @@ import { CardStatus, useCardStatusQuery } from '@perawallet/wallet-core-card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from './useCardScope'
 import type { CardFreezeOutcome } from './useCardFreezeAction'
 import { BeforeWeContinueSheet } from '../components/BeforeWeContinueSheet'
 import { ReportSuspiciousActivitySheet } from '../components/ReportSuspiciousActivitySheet'
@@ -34,10 +35,11 @@ type UseReportSuspiciousFlowResult = {
  * success toast fires only when the freeze step actually froze the card.
  */
 export const useReportSuspiciousFlow = (): UseReportSuspiciousFlowResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
     const { request } = useBottomSheet()
     const { successToast } = useToast()
-    const { data: card } = useCardStatusQuery()
+    const { data: card } = useCardStatusQuery(scope)
     const canFreeze = card?.status === CardStatus.Active
 
     const run = useCallback(async () => {

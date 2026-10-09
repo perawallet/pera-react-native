@@ -11,8 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type {
+    ChainScope,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
 import type { PendingWithdrawal } from '../models'
@@ -45,21 +47,21 @@ export type UseEscrowWithdrawalResult = {
     getWaitTimeSeconds: () => Promise<Nullable<number>>
 }
 
-export const useEscrowWithdrawal = (): UseEscrowWithdrawalResult => {
-    const { network } = useNetwork()
-
+export const useEscrowWithdrawal = (
+    scope: ChainScope,
+): UseEscrowWithdrawalResult => {
     return useMemo(() => {
-        const withdrawal = () => cardAdapterFor(network).withdrawal
+        const withdrawal = () => cardAdapterFor(scope).withdrawal
         return {
             buildRequest: params =>
-                withdrawal().buildRequest({ ...params, network }),
+                withdrawal().buildRequest({ ...params, scope }),
             buildWithdraw: params =>
-                withdrawal().buildWithdraw({ ...params, network }),
+                withdrawal().buildWithdraw({ ...params, scope }),
             buildCancel: params =>
-                withdrawal().buildCancel({ ...params, network }),
+                withdrawal().buildCancel({ ...params, scope }),
             getPendingWithdrawal: ownerAddress =>
-                withdrawal().getPending(network, ownerAddress),
-            getWaitTimeSeconds: () => withdrawal().getWaitTimeSeconds(network),
+                withdrawal().getPending(scope, ownerAddress),
+            getWaitTimeSeconds: () => withdrawal().getWaitTimeSeconds(scope),
         }
-    }, [network])
+    }, [scope])
 }

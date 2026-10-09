@@ -32,27 +32,25 @@ export type {
 
 export {
     cardChainAdapters,
-    type CardAutoDraw,
+    type CardAutoDrawOperations,
     type CardChainAdapter,
+    type CardChainErrorReason,
+    type CardDelegationRequest,
     type CardEscrowWithdrawals,
-    type EscrowChainConfig,
+    type CardFundingSourceEligibility,
+    type CardManualDepositBuildParams,
+    type DelegationApprovalParams,
+    type EscrowWithdrawalParams,
 } from './chain-adapter'
 
-// AutoDraw delegation helpers — the compile → sign → register leg, shared by
-// onboarding card creation and the post-onboarding funding-type switch.
 export {
-    compileAutoDrawProgram,
-    resolveEscrowChainConfig,
     // Thrown when the compiled program doesn't match the pin. Exported so the
     // funding-type flows can degrade to Manual with honest copy instead of a
     // generic "please try again".
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
 } from './api/escrow'
-export {
-    postDelegatorLsig,
-    type PostDelegatorLsigParams,
-} from './api/delegation'
+export { postCardDelegation } from './api/delegation'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {

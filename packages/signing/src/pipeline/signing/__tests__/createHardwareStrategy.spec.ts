@@ -37,8 +37,9 @@ import {
 } from '../../../__tests__/fakePlannerAdapter'
 import { plannerChainAdapters } from '../../../chain-adapter'
 import { messageSignerChainAdapters } from '../../../message-signer'
-import { CannotSignError } from '../../errors'
+import { CannotSignError, HardwareWalletError } from '../../errors'
 import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
+import { makeUnsignedTransaction } from '../../../__tests__/transactions'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type {
@@ -839,6 +840,33 @@ describe('createHardwareStrategy', () => {
             expect(onError).toHaveBeenCalledTimes(1)
             const passed = onError.mock.calls[0][0] as Error
             expect(passed.constructor.name).toBe('SigningError')
+        })
+
+        it("refuses chain-neutral transactions, which the device's Algorand app can't sign", async () => {
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+                getAllAccounts: () => [],
+                chainId: 'algorand',
+            })
+            const group = {
+                ...makeGroup([], []),
+                data: {
+                    type: 'transactions' as const,
+                    transactions: [makeUnsignedTransaction('0xFROM')],
+                    chainData: {},
+                },
+            } as unknown as AnalyzedSignableGroup
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toMatchObject({
+                reason: 'unsupported_data_type',
+                metadata: expect.objectContaining({ retryable: false }),
+            })
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toBeInstanceOf(HardwareWalletError)
         })
 
         it('throws SigningError for arbitrary-data (hardware not supported)', async () => {

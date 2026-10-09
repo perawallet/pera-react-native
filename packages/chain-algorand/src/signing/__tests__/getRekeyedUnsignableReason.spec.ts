@@ -18,8 +18,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
-import { getRekeyedUnsignableReason } from '../getRekeyedUnsignableReason'
+import {
+    getRekeyedUnsignableReason,
+    resolveAllSignerAddresses,
+} from '../getRekeyedUnsignableReason'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { makeUnsignedAlgorandTransaction } from './transactions'
 
 const OK_SENDER = 'OK_SENDER'
 const REKEYED_EXTERNAL = 'REKEYED_EXTERNAL'
@@ -177,5 +181,18 @@ describe('getRekeyedUnsignableReason', () => {
         expect(
             getRekeyedUnsignableReason(txRequest(['UNKNOWN']), accounts),
         ).toBeNull()
+    })
+})
+
+describe('resolveAllSignerAddresses', () => {
+    it("names no signers for a chain-neutral request, whose chain's planner names them", () => {
+        const request = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [makeUnsignedAlgorandTransaction()],
+        } as SignRequest
+
+        expect(resolveAllSignerAddresses(request)).toEqual([])
     })
 })

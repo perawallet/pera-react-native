@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { startRegisterVerification } from '../api/onboarding'
 import type { VeriffSession } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -27,19 +30,18 @@ export type UseStartVerificationMutationResult = CardMutationResult<
 >
 
 /** Starts onboarding KYC and returns the Veriff session URL for the caller to open. */
-export const useStartVerificationMutation =
-    (): UseStartVerificationMutationResult => {
-        const { network } = useNetwork()
+export const useStartVerificationMutation = (
+    scope: ChainScope,
+): UseStartVerificationMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            VeriffSession,
-            Error,
-            StartVerificationParams
-        >({
+    const mutation = useMutation<VeriffSession, Error, StartVerificationParams>(
+        {
             mutationFn: ({ onboardingId }) =>
                 startRegisterVerification({ onboardingId, network }),
             throwOnError: false,
-        })
+        },
+    )
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

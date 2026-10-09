@@ -10,13 +10,23 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
+    addressCodecs,
+    ScopeChangedError,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
+import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    SECOND_CHAIN_SCOPE,
     makeTestAddress,
     makeTestPaymentTx,
+    makeUnsignedTransaction,
+    planFromPayload,
 } from '../../__tests__/transactions'
+import { plannerChainAdapters } from '../../chain-adapter'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -463,4 +473,207 @@ describe('resolveInitialContext — signer account not found', () => {
             CannotSignError,
         )
     })
+})
+
+describe('resolveInitialContext: chain-neutral transaction requests', () => {
+    const OURS = '0xOURS'
+    const ALSO_OURS = '0xALSO_OURS'
+    const STRANGER = '0xSTRANGER'
+
+    const accountOnSecondChain = (address: string): WalletAccount =>
+        ({
+            ...userAccount,
+            address: `${address}-algorand`,
+            chains: { ethereum: { address, keyPairId: 'key-1' } },
+        }) as unknown as WalletAccount
+
+    const input = (
+        txs: ReturnType<typeof makeUnsignedTransaction>[],
+    ): SigningMachineInput => ({
+        ...baseInput({
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs,
+        }),
+        allAccounts: [
+            accountOnSecondChain(OURS),
+            accountOnSecondChain(ALSO_OURS),
+        ],
+        scope: SECOND_CHAIN_SCOPE,
+    })
+
+    beforeAll(() => {
+        registerAlgorandRulesAs(SECOND_CHAIN_SCOPE.chainId)
+        // Compares as Ethereum's codec does: case doesn't matter.
+        if (!addressCodecs.has(SECOND_CHAIN_SCOPE.chainId)) {
+            addressCodecs.register({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                areEqual: (a: string, b: string) =>
+                    a.toLowerCase() === b.toLowerCase(),
+            } as AddressCodec)
+        }
+    })
+
+    beforeEach(() => {
+        plannerChainAdapters.register(
+            fakePlannerAdapter({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                plan: planFromPayload,
+            }),
+        )
+    })
+
+    it("groups each transaction under the signer its chain's planner names, keeping its position", () => {
+        const txs = [
+            makeUnsignedTransaction(OURS),
+            makeUnsignedTransaction(ALSO_OURS),
+            makeUnsignedTransaction(OURS),
+        ]
+
+        const context = resolveInitialContext(input(txs))
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                data: {
+                    type: 'transactions',
+                    transactions: [txs[0], txs[2]],
+                    chainData: {},
+                },
+                signerAddress: OURS,
+                originalIndices: [0, 2],
+            }),
+            expect.objectContaining({
+                data: {
+                    type: 'transactions',
+                    transactions: [txs[1]],
+                    chainData: {},
+                },
+                signerAddress: ALSO_OURS,
+                originalIndices: [1],
+            }),
+        ])
+    })
+
+    it('leaves out a transaction no wallet account signs', () => {
+        const ours = makeUnsignedTransaction(OURS)
+
+        const context = resolveInitialContext(
+            input([makeUnsignedTransaction(STRANGER), ours]),
+        )
+
+        expect(context.signableGroups?.map(g => g.originalIndices)).toEqual([
+            [1],
+        ])
+    })
+
+    it("refuses a transaction built on a network other than the chain's selected one", () => {
+        const onTestnet = makeUnsignedTransaction(OURS, {
+            ...SECOND_CHAIN_SCOPE,
+            networkId: 'sepolia',
+        })
+
+        expect(() => resolveInitialContext(input([onTestnet]))).toThrow(
+            ScopeChangedError,
+        )
+    })
+
+    it("refuses a transaction for a chain other than the request's", () => {
+        const algorandTx = makeUnsignedTransaction(OURS, {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+
+        expect(() =>
+            resolveInitialContext(
+                input([makeUnsignedTransaction(OURS), algorandTx]),
+            ),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it("refuses when the chain's planner can't plan chain-neutral transactions", () => {
+        plannerChainAdapters.reset()
+        plannerChainAdapters.register(
+            fakePlannerAdapter({ chainId: SECOND_CHAIN_SCOPE.chainId }),
+        )
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it('refuses a transaction that needs more than one signer', () => {
+        plannerChainAdapters.reset()
+        plannerChainAdapters.register(
+            fakePlannerAdapter({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                plan: transaction => [
+                    ...planFromPayload(transaction),
+                    { ...planFromPayload(transaction)[0], signer: ALSO_OURS },
+                ],
+            }),
+        )
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it("groups under the wallet's spelling of a signer the planner spells differently", () => {
+        const txs = [
+            makeUnsignedTransaction(OURS.toLowerCase()),
+            makeUnsignedTransaction(OURS),
+        ]
+
+        const context = resolveInitialContext(input(txs))
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: OURS,
+                originalIndices: [0, 1],
+            }),
+        ])
+    })
+
+    it('refuses a request no wallet account signs', () => {
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(STRANGER)])),
+        ).toThrow(CannotSignError)
+    })
+
+    it("refuses a payload the chain's planner can't read, as untrusted data", () => {
+        plannerChainAdapters.reset()
+        plannerChainAdapters.register(
+            fakePlannerAdapter({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                plan: () => {
+                    throw new Error('The payload is malformed')
+                },
+            }),
+        )
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it.each([
+        ['chain-neutral', 'Algorand'],
+        ['Algorand', 'chain-neutral'],
+    ])(
+        'refuses a request that mixes %s then %s transactions',
+        (first, _second) => {
+            const neutral = makeUnsignedTransaction(OURS)
+            const algorand = makePayment(userAddr, 1n)
+            const mixed = (first === 'Algorand'
+                ? [algorand, neutral]
+                : [neutral, algorand]) as unknown as ReturnType<
+                typeof makeUnsignedTransaction
+            >[]
+
+            expect(() => resolveInitialContext(input(mixed))).toThrow(
+                InvalidSignableDataError,
+            )
+        },
+    )
 })

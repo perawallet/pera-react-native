@@ -27,6 +27,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingMailingAddressScreenResult = {
     control: Control<MailingAddressFormValues>
@@ -45,6 +46,7 @@ export type UseCardOnboardingMailingAddressScreenResult = {
  */
 export const useCardOnboardingMailingAddressScreen =
     (): UseCardOnboardingMailingAddressScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -54,7 +56,7 @@ export const useCardOnboardingMailingAddressScreen =
             bodyKey: 'peraCard.address.error_body',
         })
         const onboardingId = useCardStore(state => state.onboardingId)
-        const submitMailingAddress = useSubmitMailingAddressMutation()
+        const submitMailingAddress = useSubmitMailingAddressMutation(scope)
 
         const [selectedUsState, setSelectedUsState] =
             useState<Optional<SupportedUsState>>(undefined)

@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
     CardIntegrityAttestationRequiredError,
@@ -54,87 +57,84 @@ export type UseCreateAndApproveCardMutationResult = CardMutationResult<
  * both cases still require a Step-1 proof, since a retry's original signature
  * is never persisted.
  */
-export const useCreateAndApproveCardMutation =
-    (): UseCreateAndApproveCardMutationResult => {
-        const { network } = useNetwork()
+export const useCreateAndApproveCardMutation = (
+    scope: ChainScope,
+): UseCreateAndApproveCardMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            CreateAndApproveCardResult,
-            Error,
-            CreateAndApproveCardVariables
-        >({
-            mutationFn: async ({ address, proof }) => {
-                const currency = DEFAULT_CARD_CURRENCY.toLowerCase()
+    const mutation = useMutation<
+        CreateAndApproveCardResult,
+        Error,
+        CreateAndApproveCardVariables
+    >({
+        mutationFn: async ({ address, proof }) => {
+            const currency = DEFAULT_CARD_CURRENCY.toLowerCase()
 
-                // Reuse an already-created card ONLY for the same funding
-                // account on the same network. A card created for a
-                // different account — or on the other network — must never
-                // be reused: that would skip the ownership proof and bind a
-                // wrong card.
-                const store = useCardStore.getState()
-                const sameOwnerNetwork =
-                    store.escrowCardOwner === address &&
-                    store.escrowCardNetwork === network
-                let cardAddress = sameOwnerNetwork
-                    ? store.escrowCardAddress
-                    : null
-                let txId = sameOwnerNetwork ? store.escrowCardTxId : null
-                let approved = sameOwnerNetwork
-                    ? store.escrowCardApproved
-                    : false
+            // Reuse an already-created card ONLY for the same funding
+            // account on the same network. A card created for a
+            // different account — or on the other network — must never
+            // be reused: that would skip the ownership proof and bind a
+            // wrong card.
+            const store = useCardStore.getState()
+            const sameOwnerNetwork =
+                store.escrowCardOwner === address &&
+                store.escrowCardNetwork === network
+            let cardAddress = sameOwnerNetwork ? store.escrowCardAddress : null
+            let txId = sameOwnerNetwork ? store.escrowCardTxId : null
+            let approved = sameOwnerNetwork ? store.escrowCardApproved : false
 
-                if (!cardAddress || !txId) {
-                    if (!canCallIntegrityGuardedRoute()) {
-                        throw new CardIntegrityAttestationRequiredError()
-                    }
-
-                    // The backend links the funding address to this Baanx
-                    // user as part of the create call, so every attempt
-                    // self-heals a missing link instead of being stuck.
-                    const user = await fetchUser({ network })
-                    if (!user) {
-                        throw new CardUserUnavailableError()
-                    }
-
-                    const created = await createCard({
-                        network,
-                        address,
-                        baanxUserId: user.id,
-                        currency,
-                        signData: proof.signData,
-                        signature: proof.signature,
-                    })
-                    cardAddress = created.cardAddress
-                    txId = created.txId
-                    // Durable from here — the card exists on-chain, bound to
-                    // the account that proved ownership and to this network,
-                    // even if the approval call below fails.
-                    useCardStore.getState().setEscrowCard({
-                        cardAddress,
-                        ownerAddress: address,
-                        network,
-                        txId,
-                    })
-                    approved = false
+            if (!cardAddress || !txId) {
+                if (!canCallIntegrityGuardedRoute()) {
+                    throw new CardIntegrityAttestationRequiredError()
                 }
 
-                if (!approved) {
-                    await postDelegationApproval({
-                        network,
-                        address,
-                        currency,
-                        txId,
-                        signData: proof.signData,
-                        signature: proof.signature,
-                        token: proof.delegationToken,
-                    })
-                    useCardStore.getState().markEscrowCardApproved()
+                // The backend links the funding address to this Baanx
+                // user as part of the create call, so every attempt
+                // self-heals a missing link instead of being stuck.
+                const user = await fetchUser({ network })
+                if (!user) {
+                    throw new CardUserUnavailableError()
                 }
 
-                return { cardAddress }
-            },
-            throwOnError: false,
-        })
+                const created = await createCard({
+                    network,
+                    address,
+                    baanxUserId: user.id,
+                    currency,
+                    signData: proof.signData,
+                    signature: proof.signature,
+                })
+                cardAddress = created.cardAddress
+                txId = created.txId
+                // Durable from here — the card exists on-chain, bound to
+                // the account that proved ownership and to this network,
+                // even if the approval call below fails.
+                useCardStore.getState().setEscrowCard({
+                    cardAddress,
+                    ownerAddress: address,
+                    network,
+                    txId,
+                })
+                approved = false
+            }
 
-        return toCardMutationResult(mutation)
-    }
+            if (!approved) {
+                await postDelegationApproval({
+                    scope,
+                    address,
+                    currency,
+                    txId,
+                    signData: proof.signData,
+                    signature: proof.signature,
+                    token: proof.delegationToken,
+                })
+                useCardStore.getState().markEscrowCardApproved()
+            }
+
+            return { cardAddress }
+        },
+        throwOnError: false,
+    })
+
+    return toCardMutationResult(mutation)
+}

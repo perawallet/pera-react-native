@@ -13,7 +13,9 @@
 import {
     AnalysisError,
     GenesisHashMismatchError,
+    InvalidSignableDataError,
     isAuthDataOriginMismatch,
+    isUnsignedTransactionsData,
     TransactionRoundTripError,
     type AlgorandTransactionSummary,
     type AnalysisContext,
@@ -54,6 +56,15 @@ const decode = async (
     group: SignableGroup,
     context: AnalysisContext,
 ): Promise<DecodedGroup> => {
+    // Thrown outside the analysis wrapper so the refusal stays non-retryable.
+    if (
+        group.data.type === 'transactions' &&
+        isUnsignedTransactionsData(group.data)
+    ) {
+        throw new InvalidSignableDataError(
+            'Algorand reviews Algorand transactions only',
+        )
+    }
     try {
         if (group.data.type !== 'transactions') {
             return {
@@ -109,7 +120,8 @@ const detect = (
 ): AnalysisWarning[] => {
     try {
         if (group.data.type === 'transactions') {
-            return decoded.signableAddresses.length > 0
+            return decoded.signableAddresses.length > 0 &&
+                !isUnsignedTransactionsData(group.data)
                 ? detectWarnings(group.data.transactions)
                 : []
         }

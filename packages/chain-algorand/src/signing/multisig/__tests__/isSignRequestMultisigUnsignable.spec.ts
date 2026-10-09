@@ -18,6 +18,7 @@ import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { multisigAccount } from '../../../__tests__/algorandAccounts'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
 import { isSignRequestMultisigUnsignable } from '../isSignRequestMultisigUnsignable'
+import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
 
 // Only the account-capability predicate is mocked; the request-type guard and
 // signer resolution use their real implementations against the fixtures below.
@@ -77,6 +78,17 @@ describe('isSignRequestMultisigUnsignable', () => {
             ),
         ).toBe(false)
         expect(isMultisigUnsignable).not.toHaveBeenCalled()
+    })
+
+    it('returns false for a chain-neutral request, which no Algorand multisig signs', () => {
+        vi.mocked(isMultisigUnsignable).mockReturnValue(true)
+
+        expect(
+            isSignRequestMultisigUnsignable(
+                txRequest({ txs: [makeUnsignedAlgorandTransaction()] }),
+                accounts,
+            ),
+        ).toBe(false)
     })
 
     it('returns false for a non-transaction request', () => {

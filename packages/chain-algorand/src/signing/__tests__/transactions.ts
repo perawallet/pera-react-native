@@ -11,6 +11,7 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
 // hand-built literals with SDK-shaped fields are exactly what let
@@ -70,3 +71,16 @@ export const makeTestAssetTransferTx = (
         assetTransferParams: { amount: 0n, ...assetTransferParams },
         suggestedParams: TEST_SUGGESTED_PARAMS,
     })
+
+/** A chain-neutral transaction on Algorand's own scope, which Algorand's own paths refuse or skip. */
+export const makeUnsignedAlgorandTransaction = (): UnsignedTransaction => ({
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    payload: {},
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transfer' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'algorand' },
+})

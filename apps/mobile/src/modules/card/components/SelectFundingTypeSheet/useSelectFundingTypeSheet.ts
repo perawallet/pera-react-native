@@ -16,9 +16,8 @@ import {
     isLedgerAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { describeError, logger } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -31,6 +30,7 @@ import {
     useCardErrorToast,
 } from '../../hooks'
 import { findCardAccount } from '../../utils/cardAccountAddress'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseSelectFundingTypeSheetResult = {
     selectedType: FundingType
@@ -58,7 +58,8 @@ export const useSelectFundingTypeSheet =
         const { successToast } = useToast()
         const { resolve, dismiss } = useBottomSheetResult<'applied'>()
         const showError = useCardErrorToast()
-        const { network } = useNetwork()
+        const scope = useCardScope()
+        const network = legacyNetworkOf(scope)
 
         const storedType = useCardStore(state => state.selectedFundingType)
         const connectedAddress = useCardStore(
@@ -69,8 +70,8 @@ export const useSelectFundingTypeSheet =
         const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // The switch acts on the card created for THIS account on THIS network

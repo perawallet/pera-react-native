@@ -20,6 +20,8 @@ import {
     type PeraDisplayableTransaction,
     type PeraSignedTransaction,
     type PeraTransaction,
+    type SigningRequest,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -704,6 +706,12 @@ export type FetchSuggestedMinFee = (
  */
 export interface PlannerChainAdapter {
     chainId: ChainId
+
+    /**
+     * The signatures a chain-neutral transaction needs and who gives each, read
+     * from its payload. A chain without it can't sign chain-neutral transactions.
+     */
+    plan?(transaction: UnsignedTransaction): SigningRequest[]
 
     /** Synchronous: callers depend on a thrown error surfacing in the same tick. */
     resolveDappRequest(

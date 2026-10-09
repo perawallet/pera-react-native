@@ -24,7 +24,12 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { PipelineStage, TransactionSignRequest } from '../models'
+import {
+    isUnsignedTransactionRequest,
+    type PeraTransactionSignRequest,
+    type PipelineStage,
+    type TransactionSignRequest,
+} from '../models'
 import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
@@ -75,7 +80,7 @@ const addressesOn = (
  * warnings, structure). At 1000 transactions this is ~800ms of work.
  */
 const computeDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ) => {
     // Show the FULL atomic group when the source filtered down to a
@@ -83,7 +88,7 @@ const computeDisplayData = (
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
     const chainId = chainIdOfSignRequest(txRequest)
-    const source = txRequest.groupContext ?? txRequest.txs ?? []
+    const source = txRequest.groupContext ?? txRequest.txs
     const reviewer = reviewerChainAdapters.get(chainId)
     const allTransactions = source
         .map(tx => reviewer.toDisplayableTransaction(tx))
@@ -196,7 +201,7 @@ let displayDataCache: {
 } | null = null
 
 const getSharedDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ): DisplayData => {
     if (
@@ -259,9 +264,11 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
+    // A chain-neutral request is reviewed by its own chain, not this view,
+    // whose reviewer and planner read Algorand-shaped transactions.
     const displayData = useMemo(
         () =>
-            txRequest
+            txRequest && !isUnsignedTransactionRequest(txRequest)
                 ? getSharedDisplayData(txRequest, accounts)
                 : EMPTY_DISPLAY_DATA,
         [txRequest, accounts],

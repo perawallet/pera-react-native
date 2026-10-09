@@ -12,10 +12,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { orderCard, CardOrderNotVerifiedError } from '../api/card'
 import {
     getCardApiError,
@@ -37,8 +36,9 @@ export type UseOrderCardMutationResult = CardMutationResult<void>
  * Registered under `cardMutationKeys.order` so concurrent mounted callers
  * (dashboard shell + details tab) can observe one shared in-flight attempt.
  */
-export const useOrderCardMutation = (): UseOrderCardMutationResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useOrderCardMutation = (
+    scope: ChainScope,
+): UseOrderCardMutationResult => {
     const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 

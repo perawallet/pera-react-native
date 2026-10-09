@@ -90,6 +90,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingPhoneScreen } from '../useCardOnboardingPhoneScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const uk: SupportedCountry = {
     id: 'gb',
@@ -106,6 +107,10 @@ const france: SupportedCountry = {
     callingCode: '33',
     canSignUp: true,
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingPhoneScreen', () => {
     beforeEach(() => {

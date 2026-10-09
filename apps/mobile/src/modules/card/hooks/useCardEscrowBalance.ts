@@ -12,12 +12,14 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
 import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
 const ZERO_BALANCE = new Decimal(0)
@@ -35,9 +37,9 @@ export type UseCardEscrowBalanceResult = {
  * route to custodial platforms only, so the chain is the sole source Pera has.
  */
 export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useCardScope()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
 
     const { data: accountState, isPending } = useOnChainAccountStateQuery(
         escrowCardAddress ?? '',

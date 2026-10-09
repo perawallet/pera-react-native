@@ -202,6 +202,7 @@ import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 import { ReportSuspiciousActivitySheet } from '../../ReportSuspiciousActivitySheet'
 import { usePeraCardDetails } from '../usePeraCardDetails'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const walletAccount = (address: string): WalletAccount =>
     ({
@@ -211,6 +212,10 @@ const walletAccount = (address: string): WalletAccount =>
 
 // Shared secure-view response the reveal tests resolve the token request with.
 const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('usePeraCardDetails', () => {
     beforeEach(() => {

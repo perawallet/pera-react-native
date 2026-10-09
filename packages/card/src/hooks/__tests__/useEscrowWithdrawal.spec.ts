@@ -12,19 +12,12 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { CardChainAdapter } from '../../chain-adapter'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
-
-const { useNetwork } = vi.hoisted(() => ({ useNetwork: vi.fn() }))
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork,
-}))
-
 import { useEscrowWithdrawal } from '../useEscrowWithdrawal'
 
+const SCOPE = scopeForLegacyNetwork('testnet')
 const CARD = 'CARD'
 const OWNER = 'OWNER'
 
@@ -32,17 +25,16 @@ let adapter: CardChainAdapter
 
 beforeEach(() => {
     vi.clearAllMocks()
-    useNetwork.mockReturnValue({ network: 'testnet' })
     adapter = registerFakeCardAdapter()
 })
 
 describe('useEscrowWithdrawal', () => {
-    it("builds each withdrawal step through the network's chain adapter", async () => {
+    it("builds each withdrawal step through the scope's chain adapter", async () => {
         const txns = [{ id: 'txn-1' }]
         vi.mocked(adapter.withdrawal.buildRequest).mockResolvedValue(
             txns as never,
         )
-        const { result } = renderHook(() => useEscrowWithdrawal())
+        const { result } = renderHook(() => useEscrowWithdrawal(SCOPE))
 
         await expect(
             result.current.buildRequest({
@@ -59,7 +51,7 @@ describe('useEscrowWithdrawal', () => {
         await result.current.buildCancel({ sender: OWNER, cardAddress: CARD })
 
         const expected = {
-            network: 'testnet',
+            scope: SCOPE,
             sender: OWNER,
             cardAddress: CARD,
         }
@@ -74,7 +66,7 @@ describe('useEscrowWithdrawal', () => {
         expect(adapter.withdrawal.buildCancel).toHaveBeenCalledWith(expected)
     })
 
-    it('reads the pending request and wait time for the current network', async () => {
+    it('reads the pending request and wait time for the scope', async () => {
         const pending = {
             card: CARD,
             recipient: OWNER,
@@ -85,18 +77,15 @@ describe('useEscrowWithdrawal', () => {
         }
         vi.mocked(adapter.withdrawal.getPending).mockResolvedValue(pending)
         vi.mocked(adapter.withdrawal.getWaitTimeSeconds).mockResolvedValue(20)
-        const { result } = renderHook(() => useEscrowWithdrawal())
+        const { result } = renderHook(() => useEscrowWithdrawal(SCOPE))
 
         await expect(result.current.getPendingWithdrawal(OWNER)).resolves.toBe(
             pending,
         )
         await expect(result.current.getWaitTimeSeconds()).resolves.toBe(20)
-        expect(adapter.withdrawal.getPending).toHaveBeenCalledWith(
-            'testnet',
-            OWNER,
-        )
+        expect(adapter.withdrawal.getPending).toHaveBeenCalledWith(SCOPE, OWNER)
         expect(adapter.withdrawal.getWaitTimeSeconds).toHaveBeenCalledWith(
-            'testnet',
+            SCOPE,
         )
     })
 })

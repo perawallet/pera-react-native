@@ -20,7 +20,7 @@ import {
 /** The on-chain ids the escrow card flows need are missing from the build. */
 export class CardEscrowNotConfiguredError extends AppError {
     constructor() {
-        super('Pera Card chain config is incomplete (app ids / asset id)', {
+        super('Pera Card chain config is incomplete (contract or asset ids)', {
             category: ErrorCategory.BLOCKCHAIN,
             recoverable: false,
         })

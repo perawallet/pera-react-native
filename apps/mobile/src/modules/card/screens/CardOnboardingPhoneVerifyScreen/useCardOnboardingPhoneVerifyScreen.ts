@@ -23,6 +23,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the SMS code can be re-sent. */
@@ -50,6 +51,7 @@ export type UseCardOnboardingPhoneVerifyScreenResult = {
 
 export const useCardOnboardingPhoneVerifyScreen =
     (): UseCardOnboardingPhoneVerifyScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
@@ -69,8 +71,8 @@ export const useCardOnboardingPhoneVerifyScreen =
         const setCodeVerificationError = useCardStore(
             state => state.setCodeVerificationError,
         )
-        const sendPhoneVerification = useSendPhoneVerificationMutation()
-        const verifyPhone = useVerifyPhoneMutation()
+        const sendPhoneVerification = useSendPhoneVerificationMutation(scope)
+        const verifyPhone = useVerifyPhoneMutation(scope)
 
         const [code, setCode] = useState('')
         const { secondsRemaining, isActive, restart } = useCountdown(

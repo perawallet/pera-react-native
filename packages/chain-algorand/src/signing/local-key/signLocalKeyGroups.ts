@@ -39,6 +39,7 @@ export const signLocalKeyGroups = async (
     return signGroupsBySignerAccount(
         groups,
         allAccounts,
+        scope.chainId,
         (group, signerAccount) => {
             // Rekey vs. multisig-cosign handling lives in
             // {@link resolveSigningAccount}. This call is defense-in-depth:
@@ -55,6 +56,5 @@ export const signLocalKeyGroups = async (
             )
             return strategy.sign(group, accountForSigning)
         },
-        scope.chainId,
     )
 }

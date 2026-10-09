@@ -20,19 +20,17 @@ import {
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const api = vi.hoisted(() => ({
     fetchCardPinToken: vi.fn(),
     createSetPinSession: vi.fn(),
 }))
 vi.mock('../../api/card-sensitive', () => api)
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardPinViewMutation } from '../useCardPinViewMutation'
 import { useSetCardPinMutation } from '../useSetCardPinMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -47,7 +45,6 @@ describe('sensitive mutation hooks', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     afterEach(() => {
@@ -60,7 +57,7 @@ describe('sensitive mutation hooks', () => {
             imageUrl: 'https://host/pin-image?token=tok',
         })
 
-        const { result } = renderHook(() => useCardPinViewMutation(), {
+        const { result } = renderHook(() => useCardPinViewMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()
@@ -76,7 +73,7 @@ describe('sensitive mutation hooks', () => {
             imageUrl: 'https://host/pin-image?token=tok',
         })
 
-        const { result } = renderHook(() => useCardPinViewMutation(), {
+        const { result } = renderHook(() => useCardPinViewMutation(SCOPE), {
             wrapper,
         })
 
@@ -93,7 +90,7 @@ describe('sensitive mutation hooks', () => {
             hostedPageUrl: 'https://host/pin-direct/set?token=tok',
         })
 
-        const { result } = renderHook(() => useSetCardPinMutation(), {
+        const { result } = renderHook(() => useSetCardPinMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()
@@ -108,7 +105,7 @@ describe('sensitive mutation hooks', () => {
     it('useCardPinViewMutation surfaces the error when the secure-view request fails', async () => {
         api.fetchCardPinToken.mockRejectedValue(new Error('pin token denied'))
 
-        const { result } = renderHook(() => useCardPinViewMutation(), {
+        const { result } = renderHook(() => useCardPinViewMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()
@@ -123,7 +120,7 @@ describe('sensitive mutation hooks', () => {
             new Error('set-pin unavailable'),
         )
 
-        const { result } = renderHook(() => useSetCardPinMutation(), {
+        const { result } = renderHook(() => useSetCardPinMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()
@@ -147,7 +144,7 @@ describe('sensitive mutation hooks', () => {
             new Error('Network request failed'),
         )
 
-        const { result } = renderHook(() => useSetCardPinMutation(), {
+        const { result } = renderHook(() => useSetCardPinMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()

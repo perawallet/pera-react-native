@@ -11,202 +11,65 @@
  */
 
 import { useCallback, useState } from 'react'
-import {
-    DEFAULT_CARD_CURRENCY,
-    compileAutoDrawProgram,
-    postDelegatorLsig,
-    resolveEscrowChainConfig,
-    useKillswitchAutoDraw,
-    isKillswitchConfigured,
-} from '@perawallet/wallet-core-card'
+import { useCardAutoDraw } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    encodeProgramAccount,
-    useProgramSigner,
-    useSignAndSubmitGroup,
-} from '@perawallet/wallet-core-signing'
-import { useFeeDelegation } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { requireCardAccountAddress } from '../utils/cardAccountAddress'
 import { canAutoFund } from './useCardFundingSourcePicker'
+import { useCardScope } from './useCardScope'
 
 export type UseAutoDrawSwitchResult = {
     /**
      * Turns auto-funding ON for an already-created card: registers the signed
-     * AutoDraw LSig with AB, then submits the on-chain Killswitch
-     * `enable(card, asset)` via the Pera backend's fee-delegation endpoint.
-     * The sponsor covers the group's fees (inner call included) and tops the
-     * account up to min balance, so the funding account needs no ALGO of its
-     * own; the accounts-box MBR is funded by the Killswitch app itself.
-     * Skipped when the Killswitch app isn't configured yet (e.g. dev builds).
+     * delegation, then switches auto-draw on chain with the fees sponsored, so
+     * the funding account needs none of the chain's native asset.
      */
     enableAutoDraw: (
         account: WalletAccount,
         cardAddress: string,
     ) => Promise<void>
-    /** Turns auto-funding OFF: submits the on-chain Killswitch `kill()`. */
+    /** Turns auto-funding OFF on chain. */
     disableAutoDraw: (account: WalletAccount) => Promise<void>
-    /** Local-key only — Ledger/watch/rekeyed can't sign the delegated LSig. */
+    /** Local-key only — Ledger/watch/rekeyed can't sign the delegation. */
     canSwitchToAuto: (account: WalletAccount) => boolean
     isPending: boolean
 }
 
 /**
- * Orchestrates the post-onboarding funding-type switch against the real AB
- * flow: the AutoDraw LSig (compile → sign → POST, shared with onboarding) plus
- * the on-chain Killswitch enable/kill that actually activates/deactivates
- * auto-draw. Keeps the card package signing-agnostic — the program signer is
- * injected here.
+ * The post-onboarding funding-type switch. The chain's card adapter owns the
+ * delegation and the on-chain switch; this hook adds the pending state the
+ * sheet renders.
  */
 export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
-    const { signProgram } = useProgramSigner(scope)
-    const { buildEnable, buildKill, isAutoDrawEnabled } =
-        useKillswitchAutoDraw()
-    const { submit } = useSignAndSubmitGroup()
-    const { submitWithFeeDelegation } = useFeeDelegation()
+    const scope = useCardScope()
+    const autoDraw = useCardAutoDraw(scope)
     const [isPending, setIsPending] = useState(false)
 
     const canSwitchToAuto = useCallback(
-        (account: WalletAccount) => canAutoFund(account, scope.chainId),
-        [scope.chainId],
+        (account: WalletAccount) => canAutoFund(account, scope),
+        [scope],
     )
 
     const enableAutoDraw = useCallback(
         async (account: WalletAccount, cardAddress: string): Promise<void> => {
             setIsPending(true)
             try {
-                const address = requireCardAccountAddress(
-                    account,
-                    scope.chainId,
-                )
-                // 1. Register the signed LSig with AB (its own ownership
-                // proof): compile the pinned AutoDraw program, sign it with the
-                // funding account's key, then POST the delegated LogicSig —
-                // the same compile → sign → post the onboarding flow uses
-                // (useCreateEscrowCardMutation / useEscrowCardCreation).
-                const program = await compileAutoDrawProgram({ network })
-                const lsigBytes = encodeProgramAccount(
-                    scope.chainId,
-                    program,
-                    await signProgram(account, program),
-                    address,
-                )
-                await postDelegatorLsig({
-                    network,
-                    currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
-                    delegatorAddress: address,
-                    lsigBytes: encodeToBase64(lsigBytes),
-                    cardAddress,
-                })
-
-                // 2. Activate on-chain. Skipped until AB's Killswitch app is
-                // configured (dev builds) — the LSig POST still exercises AB.
-                if (!isKillswitchConfigured(network)) {
-                    logger.warn(
-                        'Killswitch not configured — skipping on-chain enable',
-                    )
-                    return
-                }
-                // Pre-check instead of tolerating ALREADY_ENABLED: the revert
-                // fires during the resource-population simulate as an opaque
-                // plain Error, so it can't be reliably detected after the
-                // fact. Already enabled == the retry/recovery case — done.
-                // (A concurrent enable between check and submit still reverts;
-                // that surfaces as a retryable error and the retry no-ops.)
-                const { assetId } = resolveEscrowChainConfig(network)
-                if (
-                    await isAutoDrawEnabled({
-                        sender: address,
-                        asset: assetId,
-                    })
-                ) {
-                    return
-                }
-                const txns = await buildEnable({
-                    sender: address,
-                    cardAddress,
-                    asset: assetId,
-                })
-                // Fee-delegated: the sponsor covers the group's fees (the
-                // backend simulates the group, so enable's inner getCardData
-                // call is priced in) and tops the account up to min balance,
-                // so the funding account needs no ALGO. The accounts-box MBR
-                // is funded by the Killswitch app account, not the sponsor.
-                await submitWithFeeDelegation({
-                    account: address,
-                    transactions: txns,
-                    includeAssetOptInMbr: true,
-                    sourceMetadata: {
-                        name: 'card-autodraw-enable',
-                        description: 'Enable auto funding',
-                    },
-                })
+                await autoDraw.enableAutoDraw(account, cardAddress)
             } finally {
                 setIsPending(false)
             }
         },
-        [
-            network,
-            signProgram,
-            isAutoDrawEnabled,
-            buildEnable,
-            submitWithFeeDelegation,
-            scope.chainId,
-        ],
+        [autoDraw],
     )
 
     const disableAutoDraw = useCallback(
         async (account: WalletAccount): Promise<void> => {
-            if (!isKillswitchConfigured(network)) {
-                logger.warn(
-                    'Killswitch not configured — skipping on-chain kill',
-                )
-                return
-            }
             setIsPending(true)
             try {
-                const address = requireCardAccountAddress(
-                    account,
-                    scope.chainId,
-                )
-                // Pre-check instead of tolerating ALREADY_DISABLED (same
-                // simulate-revert opacity as enable). No box == nothing to
-                // kill: covers the retry case AND a persisted-Auto state whose
-                // on-chain enable never happened (e.g. Auto chosen during
-                // onboarding, which only registers the LSig) — switching to
-                // Manual must succeed there, not dead-end on a revert.
-                const { assetId } = resolveEscrowChainConfig(network)
-                if (
-                    !(await isAutoDrawEnabled({
-                        sender: address,
-                        asset: assetId,
-                    }))
-                ) {
-                    return
-                }
-                const txns = await buildKill({
-                    sender: address,
-                    asset: assetId,
-                })
-                await submit({
-                    unsignedTxs: txns,
-                    source: {
-                        name: 'card-autodraw-disable',
-                        description: 'Turn off auto funding',
-                    },
-                })
+                await autoDraw.disableAutoDraw(account)
             } finally {
                 setIsPending(false)
             }
         },
-        [network, isAutoDrawEnabled, buildKill, submit, scope.chainId],
+        [autoDraw],
     )
 
     return { enableAutoDraw, disableAutoDraw, canSwitchToAuto, isPending }

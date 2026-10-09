@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { acquireCardSessionTokens, loginRequest } from '../api/auth'
 import { fetchOnboardingDetails } from '../api/onboarding'
@@ -44,8 +47,10 @@ export type UseCardLoginMutationResult = CardMutationResult<
     CardLoginData
 >
 
-export const useCardLoginMutation = (): UseCardLoginMutationResult => {
-    const { network } = useNetwork()
+export const useCardLoginMutation = (
+    scope: ChainScope,
+): UseCardLoginMutationResult => {
+    const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<CardLoginData, Error, CardLoginParams>({
         mutationFn: async params => {

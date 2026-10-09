@@ -10,22 +10,45 @@
  limitations under the License
  */
 
-import { waitForTransactionConfirmation } from '../blockchain'
-import type { CardChainAdapter } from '@perawallet/wallet-core-card'
+import { toAlgodError, waitForTransactionConfirmation } from '../blockchain'
+import {
+    canSignProgram,
+    isRekeyedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import {
+    CardEscrowNotConfiguredError,
+    type CardChainAdapter,
+} from '@perawallet/wallet-core-card'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { canSignArc60 } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../legacy-network'
 import { cardAlgorandClient } from './client'
-import { algorandDelegationRequests } from './delegation'
-import { algorandAutoDraw } from './escrow/killswitch'
-import { compileAutoDrawProgram, resolveEscrowChainConfig } from './escrow/lsig'
+import {
+    algorandDelegationRequests,
+    BAANX_ALGORAND_NETWORK,
+} from './delegation'
 import { algorandEscrowWithdrawals } from './escrow/withdrawal'
+import { buildAlgorandManualDeposit } from './manualDeposit'
+import { useAlgorandCardAutoDraw } from './useAlgorandCardAutoDraw'
+
+// Both mean the same thing to the user: the account can't cover the fee and
+// keep its minimum balance.
+const INSUFFICIENT_BALANCE_CODES: ReadonlySet<string> = new Set([
+    'below_min_balance',
+    'overspend',
+])
+
+const settlementAsset: CardChainAdapter['settlementAsset'] = scope =>
+    getKnownAssetId('USDC', scope)
 
 export const algorandCardAdapter: CardChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    resolveEscrowChainConfig,
-    compileAutoDrawProgram: network => compileAutoDrawProgram({ network }),
+    settlementAsset,
     ...algorandDelegationRequests,
-    getAssetBalance: async (network, address, assetId) => {
-        const info = await cardAlgorandClient(network)
+    getAssetBalance: async (scope, address, assetId) => {
+        const info = await cardAlgorandClient(algorandNetworkOf(scope))
             .client.algod.accountInformation(address)
             .do()
         const holding = info.assets?.find(
@@ -33,11 +56,68 @@ export const algorandCardAdapter: CardChainAdapter = {
         )
         return holding?.amount ?? 0n
     },
-    awaitConfirmation: (network, txId) =>
+    awaitConfirmation: (scope, txId) =>
         waitForTransactionConfirmation(
-            cardAlgorandClient(network).client.algod,
+            cardAlgorandClient(algorandNetworkOf(scope)).client.algod,
             txId,
         ),
-    withdrawal: algorandEscrowWithdrawals,
-    autoDraw: algorandAutoDraw,
+    buildManualDeposit: (params, scope) => {
+        const assetId = settlementAsset(scope)
+        if (assetId === null) {
+            return Promise.reject(new CardEscrowNotConfiguredError())
+        }
+        return buildAlgorandManualDeposit(
+            { ...params, assetId },
+            algorandNetworkOf(scope),
+        )
+    },
+    // A rekeyed account's authority sits elsewhere, so the card contract can't
+    // draw from it. Ledger signs the sign-in proof on-device but its firmware
+    // never signs a program.
+    fundingSourceEligibility: account => ({
+        canFund: !isRekeyedAccount(account, ALGORAND_CHAIN_ID),
+        canProveOwnership: canSignArc60(account),
+        canAutoDraw: canSignProgram(account, ALGORAND_CHAIN_ID),
+    }),
+    describeError: error =>
+        INSUFFICIENT_BALANCE_CODES.has(toAlgodError(error).code)
+            ? 'insufficient-native-balance'
+            : null,
+    // Baanx also settles from EVM networks (e.g. "linea" with 0x hashes),
+    // which the Algorand explorer can't resolve. `custom` has no explorer, and
+    // a bare `/tx/…` path would make Linking.openURL reject.
+    transactionUrl: (hash, legNetwork, scope) => {
+        if (legNetwork.trim().toLowerCase() !== BAANX_ALGORAND_NETWORK) {
+            return null
+        }
+        const { explorerUrl } = getAlgorandChainConfig(scope)
+        return explorerUrl ? `${explorerUrl}/tx/${hash}` : null
+    },
+    useAutoDraw: useAlgorandCardAutoDraw,
+    withdrawal: {
+        buildRequest: ({ scope, ...params }) =>
+            algorandEscrowWithdrawals.buildRequest({
+                ...params,
+                network: algorandNetworkOf(scope),
+            }),
+        buildWithdraw: ({ scope, ...params }) =>
+            algorandEscrowWithdrawals.buildWithdraw({
+                ...params,
+                network: algorandNetworkOf(scope),
+            }),
+        buildCancel: ({ scope, ...params }) =>
+            algorandEscrowWithdrawals.buildCancel({
+                ...params,
+                network: algorandNetworkOf(scope),
+            }),
+        getPending: (scope, ownerAddress) =>
+            algorandEscrowWithdrawals.getPending(
+                algorandNetworkOf(scope),
+                ownerAddress,
+            ),
+        getWaitTimeSeconds: scope =>
+            algorandEscrowWithdrawals.getWaitTimeSeconds(
+                algorandNetworkOf(scope),
+            ),
+    },
 }

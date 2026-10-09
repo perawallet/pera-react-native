@@ -26,6 +26,7 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     AnalysisError,
     GenesisHashMismatchError,
+    InvalidSignableDataError,
     reviewGroup,
     TransactionRoundTripError,
     type AnalysisContext,
@@ -52,6 +53,7 @@ import { algorandReviewerAdapter } from '../adapter'
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
 import {
     TEST_SUGGESTED_PARAMS,
+    makeUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestAssetTransferTx,
     makeTestPaymentTx,
@@ -431,6 +433,25 @@ describe('algorandReviewerAdapter review parts', () => {
         await expect(
             review(transactionsGroup([KINDS.payment])),
         ).rejects.toBeInstanceOf(GenesisHashMismatchError)
+    })
+
+    it("refuses chain-neutral transactions for good, since it can't explain them", async () => {
+        const group = {
+            signerAddress: WALLET.toString(),
+            source: { type: 'local' },
+            data: {
+                type: 'transactions',
+                transactions: [makeUnsignedAlgorandTransaction()],
+                chainData: {},
+            },
+        } as unknown as SignableGroup
+
+        const error = await review(group).catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(InvalidSignableDataError)
+        expect(error).toMatchObject({
+            metadata: expect.objectContaining({ retryable: false }),
+        })
     })
 
     it('reports any other failure as an analysis error', async () => {

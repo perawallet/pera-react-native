@@ -13,10 +13,9 @@
 import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchWalletHistory } from '../api/wallet-balance'
 import type { CardWalletHistoryEntry, CardWalletKind } from '../models'
@@ -38,10 +37,10 @@ export type UseCardWalletHistoryQueryResult = {
  * wallet Baanx has not created yet (404 on the balance) has none to show.
  */
 export const useCardWalletHistoryQuery = (
+    scope: ChainScope,
     kind: CardWalletKind,
     walletId: Nullable<string>,
 ): UseCardWalletHistoryQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 

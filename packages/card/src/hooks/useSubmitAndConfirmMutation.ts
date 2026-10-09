@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useSignAndSubmitGroup,
     type SignAndSubmitGroupParams,
@@ -24,8 +24,7 @@ import { cardAdapterFor } from '../chain-adapter'
  * balance, pending withdrawal box) right after submitting, and those reads
  * only change once the transaction has landed.
  */
-export const useSubmitAndConfirmMutation = () => {
-    const { network } = useNetwork()
+export const useSubmitAndConfirmMutation = (scope: ChainScope) => {
     const { submit } = useSignAndSubmitGroup()
 
     return useMutation<{ txIds: string[] }, Error, SignAndSubmitGroupParams>({
@@ -33,7 +32,7 @@ export const useSubmitAndConfirmMutation = () => {
             const result = await submit(params)
             const [txId] = result.txIds
             if (txId !== undefined) {
-                await cardAdapterFor(network).awaitConfirmation(network, txId)
+                await cardAdapterFor(scope).awaitConfirmation(scope, txId)
             }
             return result
         },

@@ -12,23 +12,21 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountBalancesQuery,
     type WalletAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
-    getKnownAssetId,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { getCardSettlementAssetId } from '@perawallet/wallet-core-card'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
@@ -37,6 +35,7 @@ import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useNumberPadAmount } from '@components/NumberPad'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
 import {
     useCardErrorToast,
@@ -70,7 +69,7 @@ type UseCardAddFundsScreenResult = {
 }
 
 export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useCardScope()
     const { t } = useTranslation()
     const { successToast } = useToast()
     const navigation =
@@ -81,7 +80,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     // currently has selected.
     const fundingAccount = useCardFundingAccount()
 
-    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const [pickedAssetId, setPickedAssetId] = useState<Nullable<string>>(null)
     const sourceAssetId = pickedAssetId ?? usdcAssetId
     // Both sides could independently be null; only call it USDC when there is

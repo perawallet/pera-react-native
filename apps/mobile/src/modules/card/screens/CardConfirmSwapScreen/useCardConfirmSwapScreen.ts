@@ -18,19 +18,19 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountBalancesInvalidator,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
-    getKnownAssetId,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
+import {
+    getCardSettlementAssetId,
+    useCardUsdcCreditQuery,
+} from '@perawallet/wallet-core-card'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -42,6 +42,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from '../../hooks/useCardScope'
 import {
     useCardErrorToast,
     useCardFundingAccount,
@@ -116,7 +117,7 @@ type UseCardConfirmSwapScreenResult = {
 }
 
 export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useCardScope()
     const { params } =
         useRoute<RouteProp<PeraCardFlowParamList, 'CardConfirmSwap'>>()
     const navigation =
@@ -125,7 +126,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const { deposit } = useCardManualDeposit()
-    const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCreditQuery()
+    const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCreditQuery(scope)
     const showDepositError = useCardErrorToast({
         titleKey: 'peraCard.add_funds.swap_deposit_failed_title',
         bodyKey: 'peraCard.add_funds.swap_deposit_failed_body',
@@ -143,7 +144,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         ? chainAccountOf(account, scope.chainId)?.address
         : undefined
 
-    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const assetIds = useMemo(
         () => [usdcAssetId, params.sourceAssetId].filter(id => id !== null),
         [usdcAssetId, params.sourceAssetId],

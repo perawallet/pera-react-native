@@ -25,13 +25,14 @@ import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
-    TransactionSignableData,
+    PeraTransactionsSignableData,
     AuthData,
     AuthDataMetadata,
     SigningResult,
     SigningCallbacks,
     SignerInfo,
 } from '../types'
+import { isUnsignedTransactionsData } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
     LEDGER_CONNECTION_TIMEOUT_MS,
@@ -101,7 +102,7 @@ const toHardwareSigner = (
  */
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
-): TransactionSignableData => {
+): PeraTransactionsSignableData => {
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
@@ -111,7 +112,11 @@ const validateAndExtract = (
         )
     }
 
-    if (group.data.type !== 'transactions') {
+    // The device's Algorand app signs Algorand transactions only.
+    if (
+        group.data.type !== 'transactions' ||
+        isUnsignedTransactionsData(group.data)
+    ) {
         throw new HardwareWalletError('unsupported_data_type')
     }
 
@@ -123,7 +128,7 @@ const validateAndExtract = (
  */
 const signTransactions = async (
     transport: HardwareWalletTransport,
-    data: TransactionSignableData,
+    data: PeraTransactionsSignableData,
     signer: HardwareSigner,
     encodeTransaction: EncodeTransactionFunction,
     planner: PlannerChainAdapter,

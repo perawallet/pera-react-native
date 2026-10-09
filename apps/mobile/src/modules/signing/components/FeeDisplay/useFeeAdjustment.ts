@@ -21,6 +21,7 @@ import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import {
     useSigningPipeline,
     type FeeAdjustment,
+    isUnsignedTransactionRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 
@@ -85,12 +86,15 @@ export const useFeeAdjustment = (
             }
         }
 
-        // Per-transaction mode: resolve the full group and match by slot.
-        const source =
+        // Per-transaction mode: resolve the full group and match by slot. Fee
+        // adjustments are Algorand's, so a chain-neutral request has none.
+        const request =
             currentRequest?.type === 'transactions' && 'txs' in currentRequest
-                ? ((currentRequest as TransactionSignRequest).groupContext ??
-                  (currentRequest as TransactionSignRequest).txs ??
-                  [])
+                ? (currentRequest as TransactionSignRequest)
+                : undefined
+        const source =
+            request && !isUnsignedTransactionRequest(request)
+                ? (request.groupContext ?? request.txs)
                 : []
 
         const match = feeAdjustments.find((adjustment: FeeAdjustment) =>

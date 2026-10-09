@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useIsCardPushProvisioningEnabled } from '@hooks/useIsCardPushProvisioningEnabled'
 import { isIOS } from '@utils/platform'
+import { useCardScope } from './useCardScope'
 import {
     fetchAppleProvisioningPayload,
     fetchGoogleProvisioningPayload,
@@ -67,6 +68,7 @@ const startGoogleAdd = async (
 }
 
 export const useAddCardToWallet = (): UseAddCardToWalletResult => {
+    const scope = useCardScope()
     const queryClient = useQueryClient()
     const isEnabled = useIsCardPushProvisioningEnabled()
     const panLast4 = useCardStore(state => state.lastKnownPanLast4)
@@ -83,7 +85,7 @@ export const useAddCardToWallet = (): UseAddCardToWalletResult => {
 
     // Gated so dormant builds never fire an extra user fetch from this hook —
     // the cardholder name is only needed once the native flow can actually run.
-    const cardUser = useCardUserQuery({ enabled: canPushProvision })
+    const cardUser = useCardUserQuery(scope, { enabled: canPushProvision })
     const cardHolderName = [cardUser.data?.firstName, cardUser.data?.lastName]
         .filter(Boolean)
         .join(' ')

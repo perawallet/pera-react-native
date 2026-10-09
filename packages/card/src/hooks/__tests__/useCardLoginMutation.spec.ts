@@ -16,11 +16,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { OnboardingStep } from '../../models'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const {
     loginRequest,
     acquireCardSessionTokens,
@@ -50,7 +45,10 @@ vi.mock('../../store', () => ({
     },
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardLoginMutation } from '../useCardLoginMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useCardLoginMutation', () => {
     let queryClient: QueryClient
@@ -63,7 +61,6 @@ describe('useCardLoginMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -87,7 +84,9 @@ describe('useCardLoginMutation', () => {
             refreshToken: 'oauth-refresh',
         })
 
-        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate({ email: 'e@x.com', password: 'pw' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -136,7 +135,9 @@ describe('useCardLoginMutation', () => {
             refreshToken: '',
         })
 
-        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate({ email: 'e@x.com', password: 'pw' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -156,7 +157,9 @@ describe('useCardLoginMutation', () => {
             isLinked: false,
         })
 
-        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate({ email: 'e@x.com', password: 'pw' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -181,7 +184,9 @@ describe('useCardLoginMutation', () => {
             verificationState: 'UNVERIFIED',
         })
 
-        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate({ email: 'e@x.com', password: 'pw' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -209,7 +214,9 @@ describe('useCardLoginMutation', () => {
         })
         fetchOnboardingDetails.mockRejectedValue(new Error('not found'))
 
-        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate({ email: 'e@x.com', password: 'pw' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))

@@ -12,10 +12,9 @@
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchCardStatus } from '../api/card'
@@ -40,8 +39,10 @@ export type UseCardStatusQueryOptions = {
 }
 
 /** `data` is `null` when no card has been ordered. */
-export const useCardStatusQuery = (options?: UseCardStatusQueryOptions) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useCardStatusQuery = (
+    scope: ChainScope,
+    options?: UseCardStatusQueryOptions,
+) => {
     const network = legacyNetworkOf(scope)
 
     return useQuery({

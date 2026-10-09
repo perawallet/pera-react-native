@@ -2264,6 +2264,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
       '@perawallet/wallet-core-app-integrity':
         specifier: workspace:*
         version: link:../app-integrity

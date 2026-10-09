@@ -15,6 +15,7 @@ import {
     useCardStatusQuery,
     useFreezeCardMutation,
 } from '@perawallet/wallet-core-card'
+import { useCardScope } from './useCardScope'
 import { useCardConfirmMutation } from './useCardConfirmMutation'
 
 /**
@@ -49,8 +50,9 @@ type UseCardFreezeActionResult = {
 export const useCardFreezeAction = (
     options?: UseCardFreezeActionOptions,
 ): UseCardFreezeActionResult => {
-    const { data: card } = useCardStatusQuery()
-    const freeze = useFreezeCardMutation()
+    const scope = useCardScope()
+    const { data: card } = useCardStatusQuery(scope)
+    const freeze = useFreezeCardMutation(scope)
     const canFreeze = card?.status === CardStatus.Active
 
     const { isPending, onConfirm, onClose } =

@@ -15,17 +15,15 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { startRegisterVerification } = vi.hoisted(() => ({
     startRegisterVerification: vi.fn(),
 }))
 vi.mock('../../api/onboarding', () => ({ startRegisterVerification }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useStartVerificationMutation } from '../useStartVerificationMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useStartVerificationMutation', () => {
     let queryClient: QueryClient
@@ -38,7 +36,6 @@ describe('useStartVerificationMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -53,9 +50,12 @@ describe('useStartVerificationMutation', () => {
             sessionUrl: 'https://veriff/session',
         })
 
-        const { result } = renderHook(() => useStartVerificationMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStartVerificationMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({ onboardingId: 'ob_1' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))

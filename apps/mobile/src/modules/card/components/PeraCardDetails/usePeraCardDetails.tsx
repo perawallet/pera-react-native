@@ -33,6 +33,7 @@ import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
 import { isIOS } from '@utils/platform'
+import { useCardScope } from '../../hooks/useCardScope'
 import {
     useAddCardToWallet,
     useCardErrorToast,
@@ -133,6 +134,7 @@ type UsePeraCardDetailsResult = {
 }
 
 export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
     const { errorToast, infoToast } = useToast()
     const { pushWebView } = useWebView()
@@ -156,7 +158,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         card,
         isStatusPaused,
         eligibilityReason,
-    } = useCardIssuance()
+    } = useCardIssuance(scope)
     const isFrozen = card?.status === CardStatus.Frozen
     // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
     const canToggleFreeze = card?.status !== CardStatus.Blocked
@@ -168,11 +170,11 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
     const walletPlatform = isIOS() ? 'apple' : 'google'
 
-    const cardDetails = useCardDetailsMutation()
+    const cardDetails = useCardDetailsMutation(scope)
     // Shared with the Card Frozen banner so the in-flight unfreeze state (driven
     // by the confirmation sheet) reflects on both entry points.
     const isUnfreezing = useIsCardUnfreezing()
-    const setPin = useSetCardPinMutation()
+    const setPin = useSetCardPinMutation(scope)
 
     // The secure image (URL + load state as one value so they can never drift)
     // is fetched once and cached in memory for the screen visit — never written

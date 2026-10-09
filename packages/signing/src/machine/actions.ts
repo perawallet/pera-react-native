@@ -15,7 +15,13 @@ import {
     findAccountByAddressOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    ScopeChangedError,
+    type ChainId,
+    type ChainScope,
+    type SigningRequest,
+    type UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     SignableGroup,
     SigningResult,
@@ -25,6 +31,7 @@ import type {
 import {
     CannotSignError,
     HardwareWalletError,
+    InvalidSignableDataError,
     SigningError,
 } from '../pipeline/errors'
 import { plannerAdapterForScope } from '../chain-adapter'
@@ -36,11 +43,13 @@ import type {
     SigningMachineDeps,
     SigningMachineInput,
 } from './context'
-import type { SignRequest } from '../models'
+import type { SignRequest, UnsignedTransactionSignRequest } from '../models'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from '../models'
 
 /**
@@ -198,6 +207,86 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     }
 }
 
+const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
+
+/**
+ * Groups chain-neutral transactions by the signer the chain's planner reads off
+ * each one. As on the Algorand path, a transaction no wallet account signs is
+ * left out.
+ */
+const buildUnsignedTransactionGroups = (
+    request: UnsignedTransactionSignRequest,
+    allAccounts: WalletAccount[],
+    scope: ChainScope,
+    source: SourceMetadata,
+): SignableGroup[] => {
+    const planner = plannerAdapterForScope(scope)
+    const plan = planner.plan?.bind(planner)
+    if (!plan) {
+        throw new InvalidSignableDataError(
+            `${scope.chainId} has no planner for chain-neutral transactions`,
+        )
+    }
+
+    const bySigner = new Map<
+        string,
+        { txs: UnsignedTransaction[]; indices: number[] }
+    >()
+    for (const [i, tx] of request.txs.entries()) {
+        if (!isUnsignedTransaction(tx)) {
+            throw new InvalidSignableDataError(MIXED_SHAPES)
+        }
+        // Planned first: a planner refuses another chain's transaction.
+        const signers = new Set(planSigners(plan, tx))
+        // Built for another network than the chain's selected one, by a dApp
+        // or before the user switched.
+        if (tx.scope.networkId !== scope.networkId) {
+            throw new ScopeChangedError(tx.scope, scope)
+        }
+        if (signers.size !== 1) {
+            throw new InvalidSignableDataError(
+                'a chain-neutral transaction must have exactly one signer',
+            )
+        }
+        const [signer] = signers
+        const account = findAccountByAddressOn(
+            allAccounts,
+            scope.chainId,
+            signer,
+        )
+        if (!account) continue
+        // The wallet's spelling, so the group key and every later lookup agree.
+        const signerAddress =
+            chainAccountOf(account, scope.chainId)?.address ?? signer
+
+        const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
+        entry.txs.push(tx)
+        entry.indices.push(i)
+        bySigner.set(signerAddress, entry)
+    }
+
+    return [...bySigner.entries()].map(([signerAddress, { txs, indices }]) => ({
+        data: { type: 'transactions', transactions: txs, chainData: {} },
+        source,
+        signerAddress,
+        originalIndices: indices,
+    }))
+}
+
+// A payload the chain can't read is untrusted data, not an internal fault.
+const planSigners = (
+    plan: (transaction: UnsignedTransaction) => SigningRequest[],
+    transaction: UnsignedTransaction,
+): string[] => {
+    try {
+        return plan(transaction).map(entry => entry.signer)
+    } catch (error) {
+        throw new InvalidSignableDataError(
+            error instanceof Error ? error.message : String(error),
+        )
+    }
+}
+
 /**
  * Groups transactions by sender so each can be signed by the right account,
  * preserving positions in `originalIndices` for reassembly afterwards.
@@ -213,7 +302,22 @@ const buildSignableGroups = (
 ): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
+    if (
+        isTransactionRequest(request) &&
+        isUnsignedTransactionRequest(request)
+    ) {
+        return buildUnsignedTransactionGroups(
+            request,
+            allAccounts,
+            scope,
+            source,
+        )
+    }
+
     if (isTransactionRequest(request)) {
+        if (request.txs.some(isUnsignedTransaction)) {
+            throw new InvalidSignableDataError(MIXED_SHAPES)
+        }
         // Group integrity is checked over the full payload: sources that filter
         // `txs` supply the original via `groupContext`, others fall back to
         // `txs`.

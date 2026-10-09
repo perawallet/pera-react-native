@@ -14,6 +14,8 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+    buildCardManualDeposit,
+    getCardSettlementAssetId,
     useCardStore,
     useSubmitAndConfirmMutation,
 } from '@perawallet/wallet-core-card'
@@ -23,16 +25,14 @@ import {
     invalidateAccountQueriesForAddresses,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import {
     assertOnline,
     toError,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
+import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
 /**
@@ -64,20 +64,17 @@ const SOURCE = {
 }
 
 /**
- * Manual funding, which on the escrow design is nothing more than a USDC
- * transfer to the card's own account: it is already opted in and rekeyed to the
- * card app, so the contract spends from it without any further authorization.
- * Baanx has no deposit endpoint for non-custodial platforms, and the balance
- * the app shows is read straight off that account.
+ * Manual funding is a transfer of the settlement asset to the card's own
+ * account. Baanx has no deposit endpoint for non-custodial platforms, and the
+ * balance the app shows is read straight off that account.
  */
 export const useCardManualDeposit = (): UseCardManualDepositResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const algokit = useAlgorandClient()
+    const scope = useCardScope()
     const queryClient = useQueryClient()
-    const { mutateAsync: submit } = useSubmitAndConfirmMutation()
+    const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
     const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const [isDepositing, setIsDepositing] = useState(false)
 
@@ -100,20 +97,22 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
 
                 const decimals =
                     assets.get(usdcAssetId)?.decimals ?? USDC_FALLBACK_DECIMALS
-                const composer = algokit.newGroup()
-                composer.addAssetTransfer({
-                    sender,
-                    receiver: escrowCardAddress,
-                    assetId: BigInt(usdcAssetId),
-                    amount: BigInt(
-                        displayUnitsToBaseUnits(amount, decimals).toFixed(0),
-                    ),
-                })
-                const { transactions } = await composer.build()
-                // Quantum senders need a fee sized for a Falcon envelope, which
-                // AlgoKit's Ed25519 estimate undercuts.
+                const transactions = await buildCardManualDeposit(
+                    {
+                        sender,
+                        cardAddress: escrowCardAddress,
+                        amount: BigInt(
+                            displayUnitsToBaseUnits(amount, decimals).toFixed(
+                                0,
+                            ),
+                        ),
+                    },
+                    scope,
+                )
+                // Quantum senders need a fee sized for their larger signature,
+                // which the builder's default estimate undercuts.
                 const { transactions: unsignedTxs } = await assignFeeToGroup({
-                    transactions: transactions.map(built => built.txn),
+                    transactions,
                 })
 
                 const result = await submit({ unsignedTxs, source: SOURCE })
@@ -134,7 +133,6 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
             }
         },
         [
-            algokit,
             assets,
             assignFeeToGroup,
             escrowCardAddress,

@@ -58,6 +58,8 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 }))
 
 import { useEscrowCardCreation } from '../useEscrowCardCreation'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localKeyAccount: WalletAccount = {
     id: 'a1',
@@ -99,6 +101,11 @@ beforeEach(() => {
         }
     })
     mockCreateAndApproveAsync.mockResolvedValue({ cardAddress: 'CARD1' })
+})
+
+beforeEach(() => {
+    registerAlgorandAccountsAdapter()
+    registerAlgorandCardAdapter()
 })
 
 describe('useEscrowCardCreation', () => {

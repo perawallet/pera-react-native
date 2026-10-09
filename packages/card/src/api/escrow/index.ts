@@ -10,26 +10,8 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-import { cardAdapterFor, type EscrowChainConfig } from '../../chain-adapter'
-
 export {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     CardEscrowNotConfiguredError,
 } from './errors'
-
-/** @throws CardEscrowNotConfiguredError when the build lacks an id. */
-export const resolveEscrowChainConfig = (network: Network): EscrowChainConfig =>
-    cardAdapterFor(network).resolveEscrowChainConfig(network)
-
-/**
- * The program the funding account signs to let the card draw from it, verified
- * against the build's pins before it is returned.
- */
-export const compileAutoDrawProgram = async ({
-    network,
-}: {
-    network: Network
-}): Promise<Uint8Array> =>
-    cardAdapterFor(network).compileAutoDrawProgram(network)

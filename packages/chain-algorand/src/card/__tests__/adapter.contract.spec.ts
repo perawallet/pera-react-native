@@ -11,29 +11,80 @@
  */
 
 import { vi } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardContractTests } from '@perawallet/wallet-core-card/testing'
 
-const { getAlgorandClient } = vi.hoisted(() => ({ getAlgorandClient: vi.fn() }))
+const { getAlgorandClient, submit, submitWithFeeDelegation } = vi.hoisted(
+    () => ({
+        getAlgorandClient: vi.fn(),
+        submit: vi.fn(async () => ({ txIds: [] })),
+        submitWithFeeDelegation: vi.fn(async () => undefined),
+    }),
+)
 vi.mock('../../blockchain', async () => ({
     ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
 }))
+// A deployed switch contract; the delegation leg before the on-chain check is
+// covered in useAlgorandCardAutoDraw.spec.
+vi.mock('../config', async () => ({
+    algorandCardConfig: () => ({
+        mainAppId: '111',
+        killswitchAppId: '222',
+        autoDrawProgramHash: '',
+        usdcAssetId: '10458941',
+    }),
+}))
+vi.mock('../escrow/lsig', async () => ({
+    ...(await vi.importActual<object>('../escrow/lsig')),
+    compileAutoDrawProgram: async () => new Uint8Array([6, 129, 1]),
+}))
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    postCardDelegation: async () => undefined,
+}))
+vi.mock('@perawallet/wallet-core-signing', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
+    useProgramSigner: () => ({ signProgram: async () => new Uint8Array(64) }),
+    encodeProgramAccount: () => new Uint8Array([9]),
+    useSignAndSubmitGroup: () => ({ submit }),
+}))
+vi.mock('../../fee-delegation', () => ({
+    useFeeDelegation: () => ({ submitWithFeeDelegation }),
+}))
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    isRekeyedAccount: (account: WalletAccount) =>
+        account.chains.algorand?.address === REKEYED_ADDRESS,
+    canSignProgram: () => true,
+}))
+vi.mock('../../accounts/vocabulary', async () => ({
+    ...(await vi.importActual<object>('../../accounts/vocabulary')),
+    canSignArc60: () => true,
+}))
 
+import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter } from '../adapter'
 
 const ADDRESS = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+const REKEYED_ADDRESS = 'REKEYED'
+const algorandAccount = (address: string) =>
+    ({
+        id: address,
+        chains: { algorand: { address } },
+    }) as unknown as WalletAccount
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
-const algod = (overrides: object) =>
+const arrangeClient = (client: object) =>
     getAlgorandClient.mockReturnValue({
         setDefaultValidityWindow: vi.fn(),
         setDefaultSigner: vi.fn(),
-        client: { algod: overrides },
+        ...client,
     })
 
 cardContractTests(() => algorandCardAdapter, {
-    network: 'testnet',
-    unconfiguredNetwork: 'betanet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
+    unconfiguredScope: { chainId: 'algorand', networkId: 'betanet' },
     delegationApproval: {
         address: ADDRESS,
         currency: 'usdc',
@@ -42,31 +93,60 @@ cardContractTests(() => algorandCardAdapter, {
         signature: 'c2ln',
         token: 'tok',
     },
-    delegatorProgram: {
-        currency: 'usdc',
-        delegatorAddress: ADDRESS,
-        lsigBytes: 'bHNpZw==',
-        cardAddress: ADDRESS,
-    },
     balance: {
         address: ADDRESS,
-        assetId: '31566704',
+        assetId: '10458941',
         arrangeNoHolding: () =>
-            algod({
-                accountInformation: () => ({
-                    do: async () => ({ assets: [] }),
+            arrangeClient({
+                client: {
+                    algod: {
+                        accountInformation: () => ({
+                            do: async () => ({ assets: [] }),
+                        }),
+                    },
+                },
+            }),
+    },
+    deposit: {
+        params: { sender: ADDRESS, cardAddress: ADDRESS, amount: 1n },
+        arrangeBuild: () =>
+            arrangeClient({
+                newGroup: () => ({
+                    addAssetTransfer: vi.fn(),
+                    build: async () => ({ transactions: [{ txn: {} }] }),
                 }),
             }),
     },
+    eligibility: {
+        account: algorandAccount(ADDRESS),
+        ineligibleAccount: algorandAccount(REKEYED_ADDRESS),
+    },
+    insufficientBalanceError: new AlgodError('overspend', {} as never),
+    ownLegNetwork: 'algorand',
+    foreignLegNetwork: 'linea',
     autoDraw: {
-        params: { network: 'testnet', sender: ADDRESS, asset: '31566704' },
-        arrangeUnknownState: () =>
-            algod({
-                getApplicationBoxByName: () => ({
-                    do: async () => {
-                        throw new Error('algod unreachable')
+        account: algorandAccount(ADDRESS),
+        cardAddress: ADDRESS,
+        // The switch's per-(account, asset) box exists exactly while it is on.
+        arrangeState: enabled =>
+            arrangeClient({
+                client: {
+                    algod: {
+                        getApplicationBoxByName: () => ({
+                            do: async () => {
+                                if (!enabled) {
+                                    throw Object.assign(new Error('box'), {
+                                        response: { status: 404 },
+                                    })
+                                }
+                                return { value: new Uint8Array() }
+                            },
+                        }),
                     },
-                }),
+                },
             }),
+        submissions: () =>
+            submit.mock.calls.length +
+            submitWithFeeDelegation.mock.calls.length,
     },
 })

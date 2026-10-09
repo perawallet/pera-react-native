@@ -12,11 +12,18 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedTransaction,
+} from '../../__tests__/transactions'
+import {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from '../guards'
-import type { SignRequest } from '../index'
+import type { SignRequest, TransactionSignRequest } from '../index'
 
 const base = { id: 'req-1', transport: 'algod' as const }
 
@@ -87,5 +94,25 @@ describe('isAuthDataRequest', () => {
         } as unknown as SignRequest
 
         expect(isAuthDataRequest(malformed)).toBe(false)
+    })
+})
+
+describe('isUnsignedTransactionRequest', () => {
+    const algorandTx = makeTestPaymentTx(makeTestAddress(1), {
+        receiver: makeTestAddress(2),
+    })
+    const neutralTx = makeUnsignedTransaction('0xFROM')
+    const withTxs = (txs: TransactionSignRequest['txs']) =>
+        ({ ...base, type: 'transactions', txs }) as TransactionSignRequest
+
+    it('tells a chain-neutral transaction from an Algorand one', () => {
+        expect(isUnsignedTransaction(neutralTx)).toBe(true)
+        expect(isUnsignedTransaction(algorandTx)).toBe(false)
+    })
+
+    it('holds only for a request carrying chain-neutral transactions', () => {
+        expect(isUnsignedTransactionRequest(withTxs([neutralTx]))).toBe(true)
+        expect(isUnsignedTransactionRequest(withTxs([algorandTx]))).toBe(false)
+        expect(isUnsignedTransactionRequest(withTxs([]))).toBe(false)
     })
 })

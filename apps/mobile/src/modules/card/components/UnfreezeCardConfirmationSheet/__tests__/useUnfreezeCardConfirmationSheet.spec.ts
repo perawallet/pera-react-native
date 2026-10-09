@@ -69,6 +69,11 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 import { useUnfreezeCardConfirmationSheet } from '../useUnfreezeCardConfirmationSheet'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useUnfreezeCardConfirmationSheet', () => {
     beforeEach(() => {

@@ -79,6 +79,7 @@ export const signMultisigGroups = async (
     return signGroupsBySignerAccount(
         groups,
         allAccounts,
+        scope.chainId,
         (group, signerAccount) => {
             if (shouldDeferPropose(signerAccount, allAccounts)) {
                 return buildDeferredProposeSigningResult(group)
@@ -86,6 +87,5 @@ export const signMultisigGroups = async (
             const strategy = selectStrategy(signerAccount, allAccounts)
             return strategy.sign(group, signerAccount, signingCallbacks)
         },
-        scope.chainId,
     )
 }

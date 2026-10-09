@@ -10,49 +10,74 @@
  limitations under the License
  */
 
-import { fakeCardAdapter } from './fakeCardAdapter'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { CardEscrowNotConfiguredError } from '../api/escrow/errors'
 import { cardContractTests } from './adapter-contract'
+import { fakeCardAdapter } from './fakeCardAdapter'
 
-let isStateReadable = true
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+const UNCONFIGURED: ChainScope = { chainId: 'algorand', networkId: 'betanet' }
+const isConfigured = (scope: ChainScope) => scope.networkId === SCOPE.networkId
+
+const account = { address: 'FUNDING' } as WalletAccount
+const rekeyed = { address: 'REKEYED' } as WalletAccount
+const insufficient = new Error('insufficient')
+
+let isAutoDrawOn = false
+let submissions = 0
 
 const adapter = fakeCardAdapter({
-    resolveEscrowChainConfig: network => {
-        if (network === 'betanet') throw new CardEscrowNotConfiguredError()
-        return { assetId: '1', killswitchAppId: '2', mainAppId: '3' }
-    },
     autoDraw: {
-        isEnabled: async () => {
-            if (!isStateReadable) throw new Error('algod unreachable')
-            return false
+        enableAutoDraw: async () => {
+            if (!isAutoDrawOn) submissions += 1
+        },
+        disableAutoDraw: async () => {
+            if (isAutoDrawOn) submissions += 1
         },
     },
+    settlementAsset: scope => (isConfigured(scope) ? '1' : null),
+    buildManualDeposit: async (_params, scope) => {
+        if (!isConfigured(scope)) throw new CardEscrowNotConfiguredError()
+        return [{} as never]
+    },
+    fundingSourceEligibility: candidate => ({
+        canFund: candidate !== rekeyed,
+        canProveOwnership: true,
+        canAutoDraw: true,
+    }),
+    describeError: error =>
+        error === insufficient ? 'insufficient-native-balance' : null,
+    transactionUrl: (hash, legNetwork) =>
+        legNetwork === 'chain' ? `https://explorer/tx/${hash}` : null,
 })
 
-const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
-
 cardContractTests(() => adapter, {
-    network: 'testnet',
-    unconfiguredNetwork: 'betanet',
+    scope: SCOPE,
+    unconfiguredScope: UNCONFIGURED,
     delegationApproval: {
         address: 'FUNDING',
         currency: 'usdc',
         txId: 'TX1',
-        signData,
+        signData: { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' },
         signature: 'c2ln',
         token: 'tok',
     },
-    delegatorProgram: {
-        currency: 'usdc',
-        delegatorAddress: 'FUNDING',
-        lsigBytes: 'bHNpZw==',
-        cardAddress: 'CARD',
-    },
     balance: { address: 'FUNDING', assetId: '1', arrangeNoHolding: () => {} },
+    deposit: {
+        params: { sender: 'FUNDING', cardAddress: 'CARD', amount: 1n },
+        arrangeBuild: () => {},
+    },
+    eligibility: { account, ineligibleAccount: rekeyed },
+    insufficientBalanceError: insufficient,
+    ownLegNetwork: 'chain',
+    foreignLegNetwork: 'other',
     autoDraw: {
-        params: { network: 'testnet', sender: 'FUNDING', asset: '1' },
-        arrangeUnknownState: () => {
-            isStateReadable = false
+        account,
+        cardAddress: 'CARD',
+        arrangeState: enabled => {
+            isAutoDrawOn = enabled
         },
+        submissions: () => submissions,
     },
 })

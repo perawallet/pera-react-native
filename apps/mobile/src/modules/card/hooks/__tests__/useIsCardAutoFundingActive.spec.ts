@@ -37,6 +37,7 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 }))
 
 import { useIsCardAutoFundingActive } from '../useIsCardAutoFundingActive'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localAccount = {
     chains: { algorand: { address: 'LOCAL', keyPairId: 'key-1' } },
@@ -57,6 +58,10 @@ const ledgerAccount = {
     },
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useIsCardAutoFundingActive', () => {
     beforeEach(() => {

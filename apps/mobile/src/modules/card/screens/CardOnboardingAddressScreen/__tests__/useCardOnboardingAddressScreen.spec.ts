@@ -184,6 +184,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingAddressScreen } from '../useCardOnboardingAddressScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const gb: SupportedCountry = {
     id: 'gb',
@@ -205,6 +206,10 @@ const california: SupportedUsState = {
     name: 'California',
     canSignUp: true,
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingAddressScreen', () => {
     beforeEach(() => {

@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { withdrawWalletBalance } = vi.hoisted(() => ({
     withdrawWalletBalance: vi.fn(),
 }))
@@ -29,6 +24,8 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useWithdrawWalletBalanceMutation } from '../useWithdrawWalletBalanceMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardWalletKind } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useWithdrawWalletBalanceMutation', () => {
     let queryClient: QueryClient
@@ -41,7 +38,6 @@ describe('useWithdrawWalletBalanceMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -62,7 +58,7 @@ describe('useWithdrawWalletBalanceMutation', () => {
             const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
             const { result } = renderHook(
-                () => useWithdrawWalletBalanceMutation(kind),
+                () => useWithdrawWalletBalanceMutation(SCOPE, kind),
                 { wrapper },
             )
             result.current.mutate({ amount: '10.5' })
@@ -74,16 +70,10 @@ describe('useWithdrawWalletBalanceMutation', () => {
                 network: 'mainnet',
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
-                queryKey: cardQueryKeys.walletBalance(
-                    scopeForLegacyNetwork('mainnet'),
-                    kind,
-                ),
+                queryKey: cardQueryKeys.walletBalance(SCOPE, kind),
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
-                queryKey: cardQueryKeys.walletHistoryByKind(
-                    scopeForLegacyNetwork('mainnet'),
-                    kind,
-                ),
+                queryKey: cardQueryKeys.walletHistoryByKind(SCOPE, kind),
             })
             expect(result.current.data?.txHash).toBe('0xabc')
         },
@@ -93,7 +83,8 @@ describe('useWithdrawWalletBalanceMutation', () => {
         withdrawWalletBalance.mockRejectedValue(new Error('nope'))
 
         const { result } = renderHook(
-            () => useWithdrawWalletBalanceMutation(CardWalletKind.Reward),
+            () =>
+                useWithdrawWalletBalanceMutation(SCOPE, CardWalletKind.Reward),
             { wrapper },
         )
         result.current.mutate({ amount: '1' })

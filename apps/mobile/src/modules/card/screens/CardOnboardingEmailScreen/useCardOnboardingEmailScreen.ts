@@ -25,7 +25,7 @@ import {
     type EmailSendFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -37,6 +37,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingEmailScreenResult = {
     control: Control<EmailSendFormValues>
@@ -54,6 +55,7 @@ export type UseCardOnboardingEmailScreenResult = {
 
 export const useCardOnboardingEmailScreen =
     (): UseCardOnboardingEmailScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -62,15 +64,15 @@ export const useCardOnboardingEmailScreen =
             bodyKey: 'peraCard.create_account.error_body',
         })
         const { request } = useBottomSheet()
-        const { network } = useNetwork()
+        const network = legacyNetworkOf(scope)
         const deviceId = useDeviceID(network)
         const setEmail = useCardStore(state => state.setEmail)
         const setCountryIso = useCardStore(state => state.setCountryIso)
-        const sendEmailVerification = useSendEmailVerificationMutation()
+        const sendEmailVerification = useSendEmailVerificationMutation(scope)
         const requestCountryAvailability =
-            useRequestCountryAvailabilityMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
-        const { data: currentRegion } = useCurrentRegionQuery()
+            useRequestCountryAvailabilityMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
+        const { data: currentRegion } = useCurrentRegionQuery(scope)
 
         const [selectedCountry, setSelectedCountry] =
             useState<Optional<SupportedCountry>>(undefined)

@@ -12,15 +12,13 @@
 
 import { useCallback } from 'react'
 import {
+    getCardFundingSourceEligibility,
     useCreateAndApproveCardMutation,
     useSignCardOwnershipMutation,
     type CardOwnershipProof,
     type CreateAndApproveCardResult,
 } from '@perawallet/wallet-core-card'
-import {
-    canSignDirectly,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     ProgramSigningUnsupportedError,
     UserRejectedSigningError,
@@ -30,8 +28,8 @@ import {
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { requireCardAccountAddress } from '../utils/cardAccountAddress'
+import { useCardScope } from './useCardScope'
 
 export type UseEscrowCardCreationResult = {
     /** Step 1: signs the ARC-60 SIWA ownership proof. No network call. */
@@ -58,16 +56,19 @@ export type UseEscrowCardCreationResult = {
  * funding-type switch.
  */
 export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
+    const scope = useCardScope()
     const { addSignRequest } = useSigningRequest()
-    const { mutateAsync: signOwnershipAsync } = useSignCardOwnershipMutation()
+    const { mutateAsync: signOwnershipAsync } =
+        useSignCardOwnershipMutation(scope)
     const { mutateAsync: createAndApproveAsync } =
-        useCreateAndApproveCardMutation()
+        useCreateAndApproveCardMutation(scope)
 
     // An ARC-60 signature verifies against the signer's own key, so rekey is
     // never followed; Ledger signs it on-device without a local key.
     const canCreateCard = useCallback(
-        (account: WalletAccount) => canSignDirectly(account),
-        [],
+        (account: WalletAccount) =>
+            getCardFundingSourceEligibility(account, scope).canProveOwnership,
+        [scope],
     )
 
     // Enqueues a first-party ARC-60 request with `sourceType: 'card'` (one
@@ -105,7 +106,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
     const signOwnership = useCallback(
         (account: WalletAccount) => {
             // Fail before any network call so nothing is half-applied.
-            const address = requireCardAccountAddress(account, LEGACY_CHAIN_ID)
+            const address = requireCardAccountAddress(account, scope.chainId)
             if (!canCreateCard(account)) {
                 throw new ProgramSigningUnsupportedError(address)
             }
@@ -115,16 +116,16 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                     requestArc60Approval(account, authData, metadata),
             })
         },
-        [canCreateCard, signOwnershipAsync, requestArc60Approval],
+        [canCreateCard, signOwnershipAsync, requestArc60Approval, scope],
     )
 
     const createAndApprove = useCallback(
         (account: WalletAccount, proof: CardOwnershipProof) =>
             createAndApproveAsync({
-                address: requireCardAccountAddress(account, LEGACY_CHAIN_ID),
+                address: requireCardAccountAddress(account, scope.chainId),
                 proof,
             }),
-        [createAndApproveAsync],
+        [createAndApproveAsync, scope],
     )
 
     return {

@@ -19,6 +19,7 @@ import {
     isArbitraryDataRequest,
     isAuthDataRequest,
     isTransactionRequest,
+    isUnsignedTransactionRequest,
     type DelegatedUnsignableReason,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
@@ -29,6 +30,13 @@ import { algorandAddressOf } from '../accounts/vocabulary'
 // slot). Unlike `resolveSignerAddress`, which serves the hardware overlay and
 // deliberately returns one representative signer.
 export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
+    // A chain-neutral request's signers are its own chain's planner's to name.
+    if (
+        isTransactionRequest(request) &&
+        isUnsignedTransactionRequest(request)
+    ) {
+        return []
+    }
     if (isTransactionRequest(request)) {
         return request.txs
             .map(

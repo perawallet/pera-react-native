@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { requestCountryAvailability } from '../api/waitlist'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -28,19 +31,20 @@ export type UseRequestCountryAvailabilityMutationResult =
  * supplies the device id (the card package doesn't depend on the device
  * package); the network is resolved here.
  */
-export const useRequestCountryAvailabilityMutation =
-    (): UseRequestCountryAvailabilityMutationResult => {
-        const { network } = useNetwork()
+export const useRequestCountryAvailabilityMutation = (
+    scope: ChainScope,
+): UseRequestCountryAvailabilityMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            void,
-            Error,
-            RequestCountryAvailabilityVariables
-        >({
-            mutationFn: ({ countryCode, deviceId }) =>
-                requestCountryAvailability({ countryCode, deviceId, network }),
-            throwOnError: false,
-        })
+    const mutation = useMutation<
+        void,
+        Error,
+        RequestCountryAvailabilityVariables
+    >({
+        mutationFn: ({ countryCode, deviceId }) =>
+            requestCountryAvailability({ countryCode, deviceId, network }),
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

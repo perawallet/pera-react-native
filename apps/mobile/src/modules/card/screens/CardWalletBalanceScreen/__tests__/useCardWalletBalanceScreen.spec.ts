@@ -41,6 +41,7 @@ vi.mock('@react-navigation/native', async () => ({
 }))
 
 import { useCardWalletBalanceScreen } from '../useCardWalletBalanceScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const wallet = {
     id: 'reward-1',
@@ -71,6 +72,10 @@ const history = {
     fetchNextPage: vi.fn(),
 }
 
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
+
 describe('useCardWalletBalanceScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -85,6 +90,7 @@ describe('useCardWalletBalanceScreen', () => {
         renderHook(useCardWalletBalanceScreen)
 
         expect(useCardWalletHistoryQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'algorand' }),
             CardWalletKind.Reward,
             'reward-1',
         )
@@ -140,7 +146,10 @@ describe('useCardWalletBalanceScreen', () => {
 
             const { result } = renderHook(useCardWalletBalanceScreen)
 
-            expect(useCardWalletBalanceQuery).toHaveBeenCalledWith(kind)
+            expect(useCardWalletBalanceQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: 'algorand' }),
+                kind,
+            )
             expect(result.current.kind).toBe(kind)
             expect(result.current.copy.navigationTitle).toBe(navigationTitle)
         },

@@ -20,6 +20,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@noble/hashes": "catalog:",
+    "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-chain-contract": "workspace:*",

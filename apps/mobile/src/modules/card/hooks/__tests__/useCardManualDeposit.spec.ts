@@ -18,8 +18,10 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 const mocks = vi.hoisted(() => ({
     escrowCardAddress: null as string | null,
 }))
-const mockAddAssetTransfer = vi.fn()
-const mockBuild = vi.fn()
+const { mockBuildDeposit, mockSettlementAsset } = vi.hoisted(() => ({
+    mockBuildDeposit: vi.fn(),
+    mockSettlementAsset: vi.fn(),
+}))
 const mockSubmit = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
 const mockInvalidateQueries = vi.fn()
@@ -30,6 +32,8 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
         selector: (state: { escrowCardAddress: string | null }) => unknown,
     ) => selector({ escrowCardAddress: mocks.escrowCardAddress }),
     useSubmitAndConfirmMutation: () => ({ mutateAsync: mockSubmit }),
+    buildCardManualDeposit: mockBuildDeposit,
+    getCardSettlementAssetId: mockSettlementAsset,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', async () => ({
@@ -39,25 +43,8 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
-    ...(await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/blockchain',
-    )),
-    useAlgorandClient: () => ({
-        newGroup: () => ({
-            addAssetTransfer: mockAddAssetTransfer,
-            build: mockBuild,
-        }),
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'testnet' }),
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
-}))
+const SCOPE = { chainId: 'algorand', networkId: 'testnet' }
+vi.mock('../useCardScope', () => ({ useCardScope: () => SCOPE }))
 
 vi.mock('@tanstack/react-query', async () => ({
     ...(await vi.importActual<object>('@tanstack/react-query')),
@@ -80,7 +67,8 @@ describe('useCardManualDeposit', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.escrowCardAddress = ESCROW
-        mockBuild.mockResolvedValue({ transactions: [{ txn: 'TXN' }] })
+        mockSettlementAsset.mockReturnValue('10458941')
+        mockBuildDeposit.mockResolvedValue(['TXN'])
         mockAssignFeeToGroup.mockResolvedValue({ transactions: ['FEED_TXN'] })
         mockSubmit.mockResolvedValue({ txIds: ['TX1'] })
     })
@@ -90,11 +78,13 @@ describe('useCardManualDeposit', () => {
 
         await result.current.deposit({ account, amount: new Decimal('0.4') })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledWith({
-            sender: 'FUNDINGADDR',
-            receiver: ESCROW,
-            assetId: 10_458_941n,
-            amount: 400_000n,
+        expect(mockSettlementAsset).toHaveBeenCalledWith(SCOPE)
+        expect(mockBuildDeposit).toHaveBeenCalledWith(
+            { sender: 'FUNDINGADDR', cardAddress: ESCROW, amount: 400_000n },
+            SCOPE,
+        )
+        expect(mockAssignFeeToGroup).toHaveBeenCalledWith({
+            transactions: ['TXN'],
         })
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: ['FEED_TXN'],
@@ -124,5 +114,30 @@ describe('useCardManualDeposit', () => {
             result.current.deposit({ account, amount: new Decimal('1') }),
         ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
         expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('refuses to deposit on a network with no settlement asset', async () => {
+        mockSettlementAsset.mockReturnValue(null)
+        const { result } = renderHook(() => useCardManualDeposit())
+
+        await expect(
+            result.current.deposit({ account, amount: new Decimal('1') }),
+        ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
+        expect(mockBuildDeposit).not.toHaveBeenCalled()
+    })
+
+    it('refuses to deposit from an account with no address on the card chain', async () => {
+        const { result } = renderHook(() => useCardManualDeposit())
+
+        await expect(
+            result.current.deposit({
+                account: {
+                    ...account,
+                    chains: { ethereum: { address: '0xF' } },
+                },
+                amount: new Decimal('1'),
+            }),
+        ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
+        expect(mockBuildDeposit).not.toHaveBeenCalled()
     })
 })

@@ -19,7 +19,8 @@ import type {
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useFeeAdjustment } from '../useFeeAdjustment'
 
-vi.mock('@perawallet/wallet-core-signing', () => ({
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<object>()),
     useSigningPipeline: vi.fn(),
 }))
 
@@ -112,5 +113,33 @@ describe('useFeeAdjustment', () => {
         expect(second.result.current.isAdjusted).toBe(true)
         expect(second.result.current.originalFee.toString()).toBe('0.001')
         expect(second.result.current.adjustedFee.toString()).toBe('0.003')
+    })
+
+    it('never reports an adjustment for a chain-neutral request, whose fees are not Algorand fees', () => {
+        const neutral = {
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            payload: {},
+            summary: {},
+            chainData: { family: 'evm' },
+        }
+        mockPipeline({
+            feeAdjustments: [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ],
+            currentRequest: { type: 'transactions', txs: [neutral] },
+        })
+
+        const { result } = renderHook(() =>
+            useFeeAdjustment(
+                buildDisplayable(neutral as unknown as PeraTransaction),
+            ),
+        )
+
+        expect(result.current.isAdjusted).toBe(false)
     })
 })

@@ -15,17 +15,15 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const api = vi.hoisted(() => ({
     requestCountryAvailability: vi.fn(),
 }))
 vi.mock('../../api/waitlist', () => api)
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRequestCountryAvailabilityMutation } from '../useRequestCountryAvailabilityMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -40,13 +38,12 @@ describe('useRequestCountryAvailabilityMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         api.requestCountryAvailability.mockResolvedValue(undefined)
     })
 
     it('joins the waitlist with the resolved network plus the supplied country and device', async () => {
         const { result } = renderHook(
-            () => useRequestCountryAvailabilityMutation(),
+            () => useRequestCountryAvailabilityMutation(SCOPE),
             { wrapper },
         )
 

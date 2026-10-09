@@ -42,7 +42,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useWithdrawWalletBalanceMutation: (kind: string) => {
+        useWithdrawWalletBalanceMutation: (_scope: unknown, kind: string) => {
             mocks.kinds.mutation.push(kind)
             return {
                 mutate: vi.fn(),
@@ -56,7 +56,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 reset: vi.fn(),
             }
         },
-        useCardWalletBalanceQuery: (kind: string) => {
+        useCardWalletBalanceQuery: (_scope: unknown, kind: string) => {
             mocks.kinds.balance.push(kind)
             return {
                 wallet: mocks.wallet,
@@ -86,6 +86,11 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 import { useWalletWithdrawConfirmationSheet } from '../useWalletWithdrawConfirmationSheet'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useWalletWithdrawConfirmationSheet', () => {
     beforeEach(() => {

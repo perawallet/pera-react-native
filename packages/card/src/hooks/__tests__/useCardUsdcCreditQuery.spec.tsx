@@ -15,38 +15,36 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-    getAssetBalance: vi.fn(),
-    knownUsdcId: '10458941' as string | null,
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
-}))
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: (_key: string, scope: { networkId: string }) =>
-        scope.networkId === 'testnet' ? mocks.knownUsdcId : null,
-}))
-
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useCardUsdcCreditQuery,
     UsdcCreditTimeoutError,
 } from '../useCardUsdcCreditQuery'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
+const SCOPE = scopeForLegacyNetwork('testnet')
+
+const mocks = {
+    getAssetBalance: vi.fn(),
+    settlementAsset: vi.fn(),
+}
+
 const renderCredit = () => {
     const client = new QueryClient()
     const wrapper = ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     )
-    return renderHook(() => useCardUsdcCreditQuery(), { wrapper })
+    return renderHook(() => useCardUsdcCreditQuery(SCOPE), { wrapper })
 }
 
 describe('useCardUsdcCreditQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.knownUsdcId = '10458941'
-        registerFakeCardAdapter({ getAssetBalance: mocks.getAssetBalance })
+        mocks.settlementAsset.mockReturnValue('10458941')
+        registerFakeCardAdapter({
+            getAssetBalance: mocks.getAssetBalance,
+            settlementAsset: mocks.settlementAsset,
+        })
         vi.useFakeTimers()
     })
     afterEach(() => {
@@ -63,14 +61,15 @@ describe('useCardUsdcCreditQuery', () => {
         )
         await expect(result.current.readUsdcBalance('ADDR')).resolves.toBe(0n)
         expect(mocks.getAssetBalance).toHaveBeenCalledWith(
-            'testnet',
+            SCOPE,
             'ADDR',
             '10458941',
         )
+        expect(mocks.settlementAsset).toHaveBeenCalledWith(SCOPE)
     })
 
     it('reads zero without asking the chain on a network with no known USDC', async () => {
-        mocks.knownUsdcId = null
+        mocks.settlementAsset.mockReturnValue(null)
         const { result } = renderCredit()
 
         await expect(result.current.readUsdcBalance('ADDR')).resolves.toBe(0n)

@@ -11,7 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     sendEmailVerification,
     type SendEmailVerificationResult,
@@ -27,27 +30,27 @@ export type UseSendEmailVerificationMutationResult = CardMutationResult<
     SendEmailVerificationResult
 >
 
-export const useSendEmailVerificationMutation =
-    (): UseSendEmailVerificationMutationResult => {
-        const { network } = useNetwork()
+export const useSendEmailVerificationMutation = (
+    scope: ChainScope,
+): UseSendEmailVerificationMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<
-            SendEmailVerificationResult,
-            Error,
-            SendEmailVerificationVariables
-        >({
-            mutationFn: ({ email }) =>
-                sendEmailVerification({ email, network }),
-            // Persist the server session id and advance the flow. Runs on every
-            // (re)send, so a resend always refreshes contactVerificationId.
-            onSuccess: ({ contactVerificationId }) => {
-                const { setContactVerificationId, setOnboardingStep } =
-                    useCardStore.getState()
-                setContactVerificationId(contactVerificationId)
-                setOnboardingStep(OnboardingStep.EmailVerify)
-            },
-            throwOnError: false,
-        })
+    const mutation = useMutation<
+        SendEmailVerificationResult,
+        Error,
+        SendEmailVerificationVariables
+    >({
+        mutationFn: ({ email }) => sendEmailVerification({ email, network }),
+        // Persist the server session id and advance the flow. Runs on every
+        // (re)send, so a resend always refreshes contactVerificationId.
+        onSuccess: ({ contactVerificationId }) => {
+            const { setContactVerificationId, setOnboardingStep } =
+                useCardStore.getState()
+            setContactVerificationId(contactVerificationId)
+            setOnboardingStep(OnboardingStep.EmailVerify)
+        },
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

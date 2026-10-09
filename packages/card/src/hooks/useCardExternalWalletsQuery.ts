@@ -13,10 +13,9 @@
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchExternalWallets } from '../api/delegation'
@@ -47,10 +46,10 @@ export type UseCardExternalWalletsQueryResult = {
  * persisted locally, so it survives re-installs and stays in sync with Baanx.
  */
 export const useCardExternalWalletsQuery = (
+    scope: ChainScope,
     params: UseCardExternalWalletsQueryParams,
 ): UseCardExternalWalletsQueryResult => {
     const { address, enabled = true } = params
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 

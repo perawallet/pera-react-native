@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 
 type UseCardFrozenBannerResult = {
@@ -29,7 +30,8 @@ type UseCardFrozenBannerResult = {
 }
 
 export const useCardFrozenBanner = (): UseCardFrozenBannerResult => {
-    const { data: card } = useCardStatusQuery()
+    const scope = useCardScope()
+    const { data: card } = useCardStatusQuery(scope)
     const isFrozen = card?.status === CardStatus.Frozen
 
     // Shared across the banner + the Card Details options row so the in-flight

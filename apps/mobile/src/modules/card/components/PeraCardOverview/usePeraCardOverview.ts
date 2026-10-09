@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    getCardSettlementAssetId,
     DEFAULT_CARD_CURRENCY,
     CardWalletKind,
     useCardWalletBalanceQuery,
@@ -22,14 +23,13 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId, useNativeAsset } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCapability } from '@hooks/useCapability'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
     useCardEscrowBalance,
@@ -81,7 +81,7 @@ type UsePeraCardOverviewResult = {
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useCardScope()
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
@@ -94,7 +94,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const onChangeFundingType = useOpenFundingTypeSheet()
     const canSwap = useCapability({ anyChain: 'swap' })
     const canBuy = useCapability({ anyChain: 'onramp' })
-    const { transactions, isLoading } = useCardTransactionsQuery()
+    const { transactions, isLoading } = useCardTransactionsQuery(scope)
 
     const transactionSections = useMemo(
         () => groupCardTransactionsByMonth(transactions),
@@ -108,7 +108,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // figure. Reading it from the chain also keeps it right on platforms Baanx
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
-    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(
             isAutoFunding ? (fundingAccount ?? undefined) : undefined,
@@ -131,9 +131,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     // Both live in their own Baanx wallets, null until something is credited.
     const { wallet: rewardWallet } = useCardWalletBalanceQuery(
+        scope,
         CardWalletKind.Reward,
     )
     const { wallet: creditWallet } = useCardWalletBalanceQuery(
+        scope,
         CardWalletKind.Credit,
     )
     const credits = useMemo<PeraCardCredits>(

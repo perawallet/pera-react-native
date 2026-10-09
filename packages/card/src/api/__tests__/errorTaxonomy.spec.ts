@@ -126,7 +126,7 @@ const cases: Case[] = [
     {
         error: new CardEscrowNotConfiguredError(),
         name: 'CardEscrowNotConfiguredError',
-        message: 'Pera Card chain config is incomplete (app ids / asset id)',
+        message: 'Pera Card chain config is incomplete (contract or asset ids)',
         category: ErrorCategory.BLOCKCHAIN,
         isRetryable: false,
     },

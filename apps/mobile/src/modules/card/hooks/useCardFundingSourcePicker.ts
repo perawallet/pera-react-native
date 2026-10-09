@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
 import { createElement, useCallback } from 'react'
-import { useCardStore } from '@perawallet/wallet-core-card'
 import {
-    canSignDirectly,
-    canSignProgram,
+    getCardFundingSourceEligibility,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     chainAccountOf,
     findAccountByAddressOn,
     hasCustody,
-    isRekeyedAccount,
     localKeyKindOf,
     useAllAccounts,
     type WalletAccount,
@@ -35,6 +35,7 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
+import { useCardScope } from './useCardScope'
 
 // The card's ownership proof and AutoDraw delegation are Ed25519 signatures,
 // so a local key of any other scheme can't back the card.
@@ -53,36 +54,42 @@ const holdsCardSigningKey = (
 
 /**
  * Accounts eligible as the card's funding source: local and hardware accounts
- * whose key signs Ed25519. Watch, multisig and rekeyed accounts can't act as
- * a funding source.
+ * whose key signs Ed25519 and that the card contract can draw from. Watch and
+ * multisig accounts, and any account the chain refuses, are excluded.
  */
 export const isEligibleFundingSource = (
     account: WalletAccount,
-    chainId: ChainId,
+    scope: ChainScope,
 ): boolean =>
-    holdsCardSigningKey(account, chainId) && !isRekeyedAccount(account, chainId)
+    holdsCardSigningKey(account, scope.chainId) &&
+    getCardFundingSourceEligibility(account, scope).canFund
 
 /**
- * Funding sources that can also sign the ARC-60 ownership proof card creation
- * needs — the stricter filter onboarding uses. Gates on `canSignDirectly`
- * rather than `canSignArbitraryData`: Ledger signs ARC-60 on-device, holding no
- * local key.
+ * Funding sources that can also sign the ownership proof card creation needs —
+ * the stricter filter onboarding uses. Ledger signs that proof on-device,
+ * holding no local key.
  */
 export const isSigningCapableFundingSource = (
     account: WalletAccount,
-    chainId: ChainId,
-): boolean =>
-    isEligibleFundingSource(account, chainId) && canSignDirectly(account)
+    scope: ChainScope,
+): boolean => {
+    if (!holdsCardSigningKey(account, scope.chainId)) return false
+    const { canFund, canProveOwnership } = getCardFundingSourceEligibility(
+        account,
+        scope,
+    )
+    return canFund && canProveOwnership
+}
 
 /**
- * Whether `account` can turn ON auto funding, i.e. sign the delegated AutoDraw
- * LSig. Stays narrower than {@link isSigningCapableFundingSource}: Ledger
- * creates cards but its firmware will never sign a program.
+ * Whether `account` can turn ON auto funding, i.e. sign the auto-draw
+ * delegation. Stays narrower than {@link isSigningCapableFundingSource}:
+ * Ledger creates cards but its firmware will never sign the delegation.
  */
 export const canAutoFund = (
     account: WalletAccount,
-    chainId: ChainId,
-): boolean => canSignProgram(account, chainId)
+    scope: ChainScope,
+): boolean => getCardFundingSourceEligibility(account, scope).canAutoDraw
 
 export type UseCardFundingSourcePickerResult = {
     /**
@@ -98,12 +105,20 @@ export type UseCardFundingSourcePickerParams = {
      * onboarding passes {@link isSigningCapableFundingSource}, which also
      * requires the account to be able to sign the creation proof.
      */
-    accountFilter?: (account: WalletAccount, chainId: ChainId) => boolean
+    accountFilter?: (account: WalletAccount) => boolean
 }
 
 export const useCardFundingSourcePicker = ({
-    accountFilter = isEligibleFundingSource,
+    accountFilter,
 }: UseCardFundingSourcePickerParams = {}): UseCardFundingSourcePickerResult => {
+    const scope = useCardScope()
+    const isOffered = useCallback(
+        (account: WalletAccount) =>
+            accountFilter
+                ? accountFilter(account)
+                : isEligibleFundingSource(account, scope),
+        [accountFilter, scope],
+    )
     const { request } = useBottomSheet()
     const { handleCreateAccount } = useCardAddAccount()
     const connectedAddress = useCardStore(
@@ -111,7 +126,7 @@ export const useCardFundingSourcePicker = ({
     )
     const accounts = useAllAccounts()
     const connectedAccountId = connectedAddress
-        ? (findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, connectedAddress)
+        ? (findAccountByAddressOn(accounts, scope.chainId, connectedAddress)
               ?.id ?? null)
         : null
 
@@ -126,8 +141,7 @@ export const useCardFundingSourcePicker = ({
             contents: createElement(AccountMenuContent, {
                 headerContent: createElement(ConnectAccountHeader),
                 hideDefaultHeader: true,
-                accountFilter: (account: WalletAccount) =>
-                    accountFilter(account, LEGACY_CHAIN_ID),
+                accountFilter: isOffered,
                 // Fresh on first connect (null → nothing highlighted);
                 // the connected source is highlighted on "Change".
                 selectedAccountId: connectedAccountId,
@@ -152,7 +166,7 @@ export const useCardFundingSourcePicker = ({
                 return null
             }
         }
-    }, [request, handleCreateAccount, connectedAccountId, accountFilter])
+    }, [request, handleCreateAccount, connectedAccountId, isOffered])
 
     return { pickFundingSource }
 }

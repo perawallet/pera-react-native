@@ -36,6 +36,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
 import { maskPhoneNumber } from '../../utils/phone'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
@@ -71,12 +72,13 @@ export type UseCardSignInScreenResult = {
 }
 
 export const useCardSignInScreen = (): UseCardSignInScreenResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
     const { errorToast, successToast } = useToast()
     const navigation = useAppNavigation()
-    const login = useCardLoginMutation()
-    const sendOtp = useSendLoginOtpMutation()
-    const restoreEscrowCard = useRestoreEscrowCardMutation()
+    const login = useCardLoginMutation(scope)
+    const sendOtp = useSendLoginOtpMutation(scope)
+    const restoreEscrowCard = useRestoreEscrowCardMutation(scope)
     const accounts = useAllAccounts()
 
     const {

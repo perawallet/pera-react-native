@@ -6,15 +6,18 @@ contract to stop behaviour being re-derived from the screens.
 
 ## Where the code lives
 
-| Path                                | Holds                                                    |
-| ----------------------------------- | -------------------------------------------------------- |
-| `packages/card/`                    | API clients, session, stores, models, `CardChainAdapter` |
-| `packages/chain-algorand/src/card/` | Escrow contracts, AutoDraw LogicSig, delegation bodies   |
-| `apps/mobile/src/modules/card/`     | Screens, onboarding routes, dashboard                    |
-| `modules/gift-card/`                | Gift cards: separate flow, same backend                  |
+| Path                                | Holds                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `packages/card/`                    | API clients, session, stores, models, `CardChainAdapter`                 |
+| `packages/chain-algorand/src/card/` | Card app ids, escrow contracts, AutoDraw LogicSig, deposits, delegations |
+| `apps/mobile/src/modules/card/`     | Screens, onboarding routes, dashboard                                    |
+| `modules/gift-card/`                | Gift cards: separate flow, same backend                                  |
 
-The card package reaches every chain-specific step through the adapter the
-chain package registers, so it never imports `chain-algorand`.
+The card package and the app's card module reach every chain-specific step
+through the adapter the chain package registers, so neither imports
+`chain-algorand`. Every card hook takes a `ChainScope`; the module gets its one
+scope from `useCardScope`, which pins Algorand because the card is issued there
+only.
 
 ## Ownership
 

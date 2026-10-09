@@ -33,6 +33,7 @@ export {
     type UseCardEscrowBalanceResult,
 } from './useCardEscrowBalance'
 export { useCardFundingAccount } from './useCardFundingAccount'
+export { useCardScope } from './useCardScope'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'
 export {

@@ -11,55 +11,60 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { cardChainAdapters, type CardChainAdapter } from '../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    cardChainAdapters,
+    type CardAutoDrawOperations,
+    type CardChainAdapter,
+} from '../chain-adapter'
 
 type FakeCardAdapterOverrides = Partial<
-    Omit<CardChainAdapter, 'withdrawal' | 'autoDraw'>
+    Omit<CardChainAdapter, 'withdrawal' | 'useAutoDraw'>
 > & {
     withdrawal?: Partial<CardChainAdapter['withdrawal']>
-    autoDraw?: Partial<CardChainAdapter['autoDraw']>
+    autoDraw?: Partial<CardAutoDrawOperations>
 }
 
 export const fakeCardAdapter = ({
     withdrawal,
     autoDraw,
     ...overrides
-}: FakeCardAdapterOverrides = {}): CardChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
-    resolveEscrowChainConfig: vi.fn(() => ({
-        assetId: '31566704',
-        killswitchAppId: '222',
-        mainAppId: '111',
-    })),
-    compileAutoDrawProgram: vi.fn(async () => new Uint8Array([1])),
-    delegationApprovalRequest: vi.fn(params => ({
-        path: '/v1/delegation/chain/post-approval',
-        data: { ...params },
-    })),
-    delegatorProgramRequest: vi.fn(params => ({
-        path: '/v1/delegation/chain/delegator-lsig',
-        data: { ...params },
-    })),
-    getAssetBalance: vi.fn(async () => 0n),
-    awaitConfirmation: vi.fn(async () => undefined),
-    ...overrides,
-    withdrawal: {
-        buildRequest: vi.fn(async () => []),
-        buildWithdraw: vi.fn(async () => []),
-        buildCancel: vi.fn(async () => []),
-        getPending: vi.fn(async () => null),
-        getWaitTimeSeconds: vi.fn(async () => null),
-        ...withdrawal,
-    },
-    autoDraw: {
-        isConfigured: vi.fn(() => true),
-        buildEnable: vi.fn(async () => []),
-        buildKill: vi.fn(async () => []),
-        isEnabled: vi.fn(async () => false),
+}: FakeCardAdapterOverrides = {}): CardChainAdapter => {
+    // One object for the adapter's lifetime, so hooks see stable operations.
+    const autoDrawOperations: CardAutoDrawOperations = {
+        enableAutoDraw: vi.fn(async () => undefined),
+        disableAutoDraw: vi.fn(async () => undefined),
         ...autoDraw,
-    },
-})
+    }
+    return {
+        chainId: LEGACY_CHAIN_ID,
+        settlementAsset: vi.fn(() => '31566704'),
+        delegationApprovalRequest: vi.fn(params => ({
+            path: '/v1/delegation/chain/post-approval',
+            data: { ...params },
+        })),
+        getAssetBalance: vi.fn(async () => 0n),
+        awaitConfirmation: vi.fn(async () => undefined),
+        buildManualDeposit: vi.fn(async () => []),
+        fundingSourceEligibility: vi.fn(() => ({
+            canFund: true,
+            canProveOwnership: true,
+            canAutoDraw: true,
+        })),
+        describeError: vi.fn(() => null),
+        transactionUrl: vi.fn(() => null),
+        useAutoDraw: () => autoDrawOperations,
+        ...overrides,
+        withdrawal: {
+            buildRequest: vi.fn(async () => []),
+            buildWithdraw: vi.fn(async () => []),
+            buildCancel: vi.fn(async () => []),
+            getPending: vi.fn(async () => null),
+            getWaitTimeSeconds: vi.fn(async () => null),
+            ...withdrawal,
+        },
+    }
+}
 
 export const registerFakeCardAdapter = (
     overrides: FakeCardAdapterOverrides = {},

@@ -13,11 +13,13 @@
 import {
     accountsChainAdapters,
     useAccountChainStateStore,
+    type AccountsChainAdapter,
 } from '@perawallet/wallet-core-accounts'
 import {
     CHAIN_CAPABILITIES,
     scopeForLegacyNetwork,
     type ChainCapabilities,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
@@ -27,13 +29,29 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 // Importing this file is the registration: specs that resolve signers need the
 // production Algorand rules registered under the chain the pipeline signs on,
 // and its descriptor for the signing schemes.
+const NO_CAPABILITIES = Object.fromEntries(
+    CHAIN_CAPABILITIES.map(capability => [capability, false]),
+) as ChainCapabilities
+
 accountsChainAdapters.register(algorandAccountsAdapter)
-getProvider().chains.register(
-    algorandDescriptor,
-    Object.fromEntries(
-        CHAIN_CAPABILITIES.map(capability => [capability, false]),
-    ) as ChainCapabilities,
-)
+getProvider().chains.register(algorandDescriptor, NO_CAPABILITIES)
+
+/**
+ * Algorand's account rules and schemes under another chain's id, so the
+ * pipeline resolves a signer there without that chain's package. A real id,
+ * since the stores' scope keys accept no other.
+ */
+export const registerAlgorandRulesAs = (chainId: ChainId): void => {
+    if (accountsChainAdapters.has(chainId)) return
+    accountsChainAdapters.register({
+        ...algorandAccountsAdapter,
+        chainId,
+    } as AccountsChainAdapter)
+    getProvider().chains.register(
+        { ...algorandDescriptor, id: chainId },
+        NO_CAPABILITIES,
+    )
+}
 
 /**
  * Records `authorityAddress` as `address`'s authority on `scope` the way the

@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isTransactionRequest,
+    isUnsignedTransactionRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { algorandAddressOf } from '../../accounts/vocabulary'
@@ -39,6 +40,7 @@ export const isSignRequestMultisigUnsignable = (
 ): boolean => {
     if (request.sourceType === 'multisig-cosign') return false
     if (!isTransactionRequest(request)) return false
+    if (isUnsignedTransactionRequest(request)) return false
 
     const signerAddresses = new Set<string>()
     request.txs.forEach((tx, index) => {

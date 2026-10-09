@@ -80,6 +80,10 @@ import {
     custodyForType,
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const account = (
     address: string,
@@ -93,6 +97,7 @@ const account = (
 
 beforeEach(() => {
     registerAlgorandAccountsAdapter()
+    registerAlgorandCardAdapter()
     useAccountChainStateStore.getState().resetState()
     vi.clearAllMocks()
     mockConnectedAddress = null
@@ -101,25 +106,25 @@ beforeEach(() => {
 
 describe('isEligibleFundingSource', () => {
     it('accepts standard / HD / Ledger and rejects watch, multisig, rekeyed', () => {
-        expect(
-            isEligibleFundingSource(account('A', 'standalone'), 'algorand'),
-        ).toBe(true)
-        expect(
-            isEligibleFundingSource(account('B', 'hdWallet'), 'algorand'),
-        ).toBe(true)
-        expect(
-            isEligibleFundingSource(account('C', 'hardware'), 'algorand'),
-        ).toBe(true)
-        expect(isEligibleFundingSource(account('D', 'watch'), 'algorand')).toBe(
+        expect(isEligibleFundingSource(account('A', 'standalone'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('B', 'hdWallet'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('C', 'hardware'), SCOPE)).toBe(
+            true,
+        )
+        expect(isEligibleFundingSource(account('D', 'watch'), SCOPE)).toBe(
             false,
         )
-        expect(
-            isEligibleFundingSource(account('E', 'multisig'), 'algorand'),
-        ).toBe(false)
+        expect(isEligibleFundingSource(account('E', 'multisig'), SCOPE)).toBe(
+            false,
+        )
         seedAuthority('F', 'X')
-        expect(
-            isEligibleFundingSource(account('F', 'standalone'), 'algorand'),
-        ).toBe(false)
+        expect(isEligibleFundingSource(account('F', 'standalone'), SCOPE)).toBe(
+            false,
+        )
     })
 
     it('rejects an account that holds no address on the card chain', () => {
@@ -128,7 +133,7 @@ describe('isEligibleFundingSource', () => {
             custody: custodyForType('standalone'),
             chains: { ethereum: { address: '0xG' } },
         }
-        expect(isEligibleFundingSource(elsewhere, 'algorand')).toBe(false)
+        expect(isEligibleFundingSource(elsewhere, SCOPE)).toBe(false)
     })
 })
 
@@ -137,49 +142,40 @@ describe('isSigningCapableFundingSource', () => {
         expect(
             isSigningCapableFundingSource(
                 account('A', 'standalone', { keyPairId: 'k1' }),
-                'algorand',
+                SCOPE,
             ),
         ).toBe(true)
         expect(
             isSigningCapableFundingSource(
                 account('B', 'hdWallet', { keyPairId: 'k2' }),
-                'algorand',
+                SCOPE,
             ),
         ).toBe(true)
         // Ledger signs the creation proof on-device; it carries no keyPairId.
         expect(
-            isSigningCapableFundingSource(account('C', 'hardware'), 'algorand'),
+            isSigningCapableFundingSource(account('C', 'hardware'), SCOPE),
         ).toBe(true)
         // A local-key type with no keyPairId can't sign at all.
         expect(
-            isSigningCapableFundingSource(
-                account('D', 'standalone'),
-                'algorand',
-            ),
+            isSigningCapableFundingSource(account('D', 'standalone'), SCOPE),
         ).toBe(false)
         expect(
-            isSigningCapableFundingSource(account('E', 'watch'), 'algorand'),
+            isSigningCapableFundingSource(account('E', 'watch'), SCOPE),
         ).toBe(false)
     })
 })
 
 describe('canAutoFund', () => {
-    it('allows local-key accounts and rejects Ledger (cannot sign the LSig)', () => {
+    it('allows local-key accounts and rejects Ledger (cannot sign the delegation)', () => {
         expect(
-            canAutoFund(
-                account('A', 'standalone', { keyPairId: 'k1' }),
-                'algorand',
-            ),
+            canAutoFund(account('A', 'standalone', { keyPairId: 'k1' }), SCOPE),
         ).toBe(true)
         expect(
-            canAutoFund(
-                account('B', 'hdWallet', { keyPairId: 'k2' }),
-                'algorand',
-            ),
+            canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }), SCOPE),
         ).toBe(true)
-        // Ledger creates cards but can never sign an LSig.
-        expect(canAutoFund(account('C', 'hardware'), 'algorand')).toBe(false)
-        expect(canAutoFund(account('D', 'standalone'), 'algorand')).toBe(false)
+        // Ledger creates cards but can never sign the delegation.
+        expect(canAutoFund(account('C', 'hardware'), SCOPE)).toBe(false)
+        expect(canAutoFund(account('D', 'standalone'), SCOPE)).toBe(false)
     })
 })
 
@@ -200,18 +196,17 @@ describe('useCardFundingSourcePicker', () => {
         // The card header supplies its own title row, so the shared one (with
         // its Sort button) must stay hidden.
         expect(props.hideDefaultHeader).toBe(true)
-        // Defaults to the eligible-funding-source rule on the selected chain.
         expect(props.accountFilter(account('A', 'standalone'))).toBe(true)
-        expect(props.accountFilter(account('W', 'watch'))).toBe(false)
+        expect(props.accountFilter(account('D', 'watch'))).toBe(false)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
         expect(props.selectedAccountId).toBeNull()
     })
 
     it('threads a custom account filter through to the menu', async () => {
         mockRequest.mockResolvedValue(undefined)
-        const customFilter = vi.fn(() => true)
+        const accountFilter = vi.fn(() => false)
         const { result } = renderHook(() =>
-            useCardFundingSourcePicker({ accountFilter: customFilter }),
+            useCardFundingSourcePicker({ accountFilter }),
         )
 
         await result.current.pickFundingSource()
@@ -220,8 +215,8 @@ describe('useCardFundingSourcePicker', () => {
             accountFilter: (account: WalletAccount) => boolean
         }
         const candidate = account('A', 'standalone')
-        expect(props.accountFilter(candidate)).toBe(true)
-        expect(customFilter).toHaveBeenCalledWith(candidate, 'algorand')
+        expect(props.accountFilter(candidate)).toBe(false)
+        expect(accountFilter).toHaveBeenCalledWith(candidate)
     })
 
     it('highlights the connected funding source when one exists', async () => {

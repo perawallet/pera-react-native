@@ -31,11 +31,11 @@ import { CannotSignError } from '../../../pipeline/errors'
 export const signGroupsBySignerAccount = (
     groups: AnalyzedSignableGroup[],
     allAccounts: WalletAccount[],
+    chainId: ChainId,
     signGroup: (
         group: AnalyzedSignableGroup,
         signerAccount: WalletAccount,
     ) => SigningResult | Promise<SigningResult>,
-    chainId: ChainId,
 ): Promise<SigningResult[]> =>
     Promise.all(
         groups.map(group => {

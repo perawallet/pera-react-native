@@ -79,6 +79,7 @@ vi.mock('../useCardOwnerAccount', () => ({
 
 import { useCardWithdraw } from '../useCardWithdraw'
 import { CardEscrowUnavailableError } from '../useCardManualDeposit'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const nowSeconds = () => Math.floor(Date.now() / 1000)
 const pendingCreatedAt = (createdAt: number) => ({
@@ -88,6 +89,10 @@ const pendingCreatedAt = (createdAt: number) => ({
     amount: 250_000n,
     createdAt,
     nonce: 0n,
+})
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
 })
 
 describe('useCardWithdraw', () => {

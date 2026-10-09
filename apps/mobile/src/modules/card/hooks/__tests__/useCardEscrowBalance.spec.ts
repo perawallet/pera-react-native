@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 import { useCardEscrowBalance } from '../useCardEscrowBalance'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 // Tests run on mainnet, so this is the mainnet USDC id.
 const USDC_ASSET_ID = '31566704'
@@ -46,6 +47,10 @@ const onChain = (
         data: { holdings },
         isPending,
     } as ReturnType<typeof useOnChainAccountStateQuery>)
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardEscrowBalance', () => {
     beforeEach(() => {
