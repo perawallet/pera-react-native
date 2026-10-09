@@ -20,7 +20,7 @@ import type { PropsWithChildren, ReactNode } from 'react'
 
 export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'
-    size?: 'sm' | 'lg'
+    size?: 'sm' | 'lg' | 'xl'
     count?: number
     isLoading?: boolean
     renderSkeleton?: (index: number) => ReactNode

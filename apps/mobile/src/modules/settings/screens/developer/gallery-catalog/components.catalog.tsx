@@ -990,6 +990,7 @@ registerPreview({
             items={[
                 { label: 'sm', node: <PWLoadingIndicator /> },
                 { label: 'lg', node: <PWLoadingIndicator size='lg' /> },
+                { label: 'xl', node: <PWLoadingIndicator size='xl' /> },
             ]}
         />
     ),
