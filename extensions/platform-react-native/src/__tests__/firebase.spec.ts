@@ -109,6 +109,10 @@ describe('RNFirebaseService', () => {
         service = new RNFirebaseService()
     })
 
+    afterEach(() => {
+        remoteConfigDefaultsRegistry.reset()
+    })
+
     describe('Remote Config', () => {
         describe('initializeRemoteConfig', () => {
             it('should initialize remote config successfully', async () => {
@@ -187,7 +191,6 @@ describe('RNFirebaseService', () => {
                         fixture_fee: 1000,
                     }),
                 )
-                remoteConfigDefaultsRegistry.reset()
             })
         })
 

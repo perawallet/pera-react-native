@@ -76,7 +76,11 @@ export type ChainRemoteConfigDefaults = Readonly<
     Record<string, ChainRemoteConfigValue>
 >
 
-/** Node hosts a chain wants SSL-pinned, under its own remote-config kill switch. */
+/**
+ * Node hosts a chain wants SSL-pinned, under its own remote-config kill switch.
+ * Every group shares one pin set (the CA roots behind Cloudflare), so a host
+ * served through another CA fails once its flag is on.
+ */
 export interface ChainPinnedHosts {
     /** Remote-config boolean key; pinning applies only once a fetched value is `true`. */
     flag: string

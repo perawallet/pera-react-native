@@ -86,6 +86,7 @@ describe('handleBackgroundMessage', () => {
 
     it.each([
         'algorand://ADDR?amount=1',
+        'algorand:ADDR?amount=1',
         'https://perawallet.app/qr/perawallet/home',
     ])('keeps an allowed deeplink: %s', async url => {
         await handleBackgroundMessage({ data: { url } } as never, options)

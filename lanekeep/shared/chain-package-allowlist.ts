@@ -32,7 +32,7 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
     },
     {
         glob: '**/apps/browser/src/background/index.ts',
-        reason: "extension service-worker composition root: registers each chain for the background context and hands the Algorand descriptor's URI schemes to the push handlers",
+        reason: "extension service-worker composition root: hands the Algorand descriptor's URI schemes to the push handlers",
     },
 ]
 

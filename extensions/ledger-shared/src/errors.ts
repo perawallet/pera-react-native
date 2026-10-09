@@ -201,7 +201,7 @@ export class LedgerUsbMultipleDevicesError extends LedgerError {
     }
 }
 
-/** APDU status 0x6985/0x6986. */
+/** APDU status 0x6985, or an app's own reject code via `LedgerAppProfile`. */
 export class LedgerUserRejectedError extends LedgerError {
     constructor(originalError?: Error) {
         super({
