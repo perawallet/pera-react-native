@@ -440,7 +440,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 kindOf(account) === 'hardware' &&
                 account?.custody?.device?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn(
+        isDelegatedAccount: vi.fn(
             (account: any) => !!account && !!authorityOf(account),
         ),
         isWatchAccount: vi.fn((account: any) => kindOf(account) === 'watch'),
@@ -466,7 +466,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),
         isAuthorityDowngrade: vi.fn(() => false),
-        getRekeyAccount: vi.fn(() => null),
+        getDelegatedAccount: vi.fn(() => null),
         getSignerFor: vi.fn(
             (address: string, accs: any[] = []) =>
                 findInAnyChain(accs, address) ?? null,

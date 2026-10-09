@@ -11,7 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    accountPresentationChainAdapters,
+    accountsChainAdapters,
+} from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import {
@@ -58,7 +61,10 @@ import { algorandBackupAdapter, algorandMigrationAdapter } from '../backup'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
+import { algorandDeviceAdapter } from '../device'
 import {
+    algorandAccountPresentation,
     algorandAccountsAdapter,
     algorandAddressCodec,
     algorandKeyDerivation,
@@ -84,8 +90,18 @@ describe('registerChain', () => {
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
+        accountPresentationChainAdapters.reset()
         backupChainAdapters.reset()
         migrationChainAdapters.reset()
+        deviceChainAdapters.reset()
+    })
+
+    it('registers the Algorand device adapter', () => {
+        registerChain()
+
+        expect(deviceChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandDeviceAdapter,
+        )
     })
 
     it('registers the Algorand accounts adapter, address codec and key derivation', () => {
@@ -97,6 +113,14 @@ describe('registerChain', () => {
         expect(addressCodecs.get(ALGORAND_CHAIN_ID)).toBe(algorandAddressCodec)
         expect(keyDerivations.get(ALGORAND_CHAIN_ID)).toBe(
             algorandKeyDerivation,
+        )
+    })
+
+    it('registers the Algorand account presentation', () => {
+        registerChain()
+
+        expect(accountPresentationChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandAccountPresentation,
         )
     })
 
