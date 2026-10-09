@@ -18,6 +18,7 @@ import type { SigningStore, SignRequest } from '../models'
 import { isUnsignedTransaction } from '../models/guards'
 import { isInteractiveSource, type SourceType } from '../pipeline/types'
 import {
+    gateWritesOnHydration,
     logger,
     generateOrderedUniqueId,
     registerStore,
@@ -26,7 +27,6 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { gateWritesOnHydration } from './hydrationGate'
 
 // Custom storage: round-trip safe serialization for bigint and Map, which
 // PeraTransaction fields (fee, amount, assetId, etc.) rely on.
@@ -203,7 +203,14 @@ export const useSigningStore: UseBoundStore<
             }),
             // Re-validate every rehydrated request before it can enter the
             // signing actor lifecycle. Subsumes the old deeplink strip.
-            onRehydrateStorage: () => state => {
+            onRehydrateStorage: () => (state, error) => {
+                if (error) {
+                    logger.error(
+                        'Signing store hydration failed; the persisted state is left untouched',
+                        { error },
+                    )
+                    return
+                }
                 if (state) {
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []

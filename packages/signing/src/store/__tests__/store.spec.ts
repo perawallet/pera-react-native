@@ -303,8 +303,10 @@ describe('SigningStore writes before hydration', () => {
         )
     })
 
-    test('leaves storage untouched, and keeps dropping writes, when the migration throws', async () => {
+    test('leaves storage untouched, keeps dropping writes and logs, when the migration throws', async () => {
         const store = await loadStore()
+        const { logger } = await import('@perawallet/wallet-core-shared')
+        const logError = vi.spyOn(logger, 'error').mockImplementation(() => {})
         mockStorage.getItem.mockReturnValueOnce(persisted)
         store.useSigningStore.persist.setOptions({
             migrate: () => {
@@ -318,6 +320,10 @@ describe('SigningStore writes before hydration', () => {
         expect(store.useSigningStore.persist.hasHydrated()).toBe(false)
         expect(mockStorage.setItem).not.toHaveBeenCalled()
         expect(mockStorage.removeItem).not.toHaveBeenCalled()
+        expect(logError).toHaveBeenCalledWith(
+            'Signing store hydration failed; the persisted state is left untouched',
+            { error: expect.any(Error) },
+        )
     })
 })
 
