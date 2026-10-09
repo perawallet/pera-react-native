@@ -25,8 +25,13 @@ import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
-import { algorandHistoryAdapter, algorandSendFlowAdapter } from './transactions'
+import {
+    algorandHistoryAdapter,
+    algorandSendFlowAdapter,
+    algorandTransferAdapter,
+} from './transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
@@ -77,6 +82,7 @@ export const registerChain = (): void => {
     dappRequestChainAdapters.register(algorandDappRequestAdapter)
     sendFlowChainAdapters.register(algorandSendFlowAdapter)
     historyChainAdapters.register(algorandHistoryAdapter)
+    transferChainAdapters.register(algorandTransferAdapter)
     nameServiceChainAdapters.register(algorandNameServiceAdapter)
     cardChainAdapters.register(algorandCardAdapter)
     rampChainAdapters.register(algorandRampAdapter)

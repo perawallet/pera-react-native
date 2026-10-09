@@ -15,6 +15,7 @@ import { algorandNetworkOf } from '../legacy-network'
 import type {
     HistoryChainAdapter,
     SendFlowChainAdapter,
+    TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { algorandAssetInbox } from '../asa-inbox/adapter'
 import { fetchIndexerCloseAmount } from './history/indexer/endpoints'
@@ -29,6 +30,8 @@ import {
     buildRekeyTx,
     buildTransferTxs,
 } from './builders'
+import { buildAlgorandTransfer } from './transfer-builder'
+import { estimateAlgorandTransferFee } from './transfer-fees'
 
 export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -38,6 +41,12 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     assetHolding: { buildOptInTxs, buildOptOutTxs },
     rekey: { buildTx: buildRekeyTx },
     keyRegistration: { buildTx: buildKeyRegistrationTx },
+}
+
+export const algorandTransferAdapter: TransferChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    build: buildAlgorandTransfer,
+    getFeeEstimate: estimateAlgorandTransferFee,
 }
 
 export const algorandHistoryAdapter: HistoryChainAdapter = {

@@ -157,14 +157,24 @@ export interface TransactionRecord {
     chainData: ChainTransactionData
 }
 
-export type TransactionIntent = {
+export type TransferIntent = {
     kind: 'transfer'
     from: string
     to: string
     assetRef: AssetRef
+    /** Base units. */
     amount: Decimal
     note?: string
 }
+
+/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+export type AssetOptInIntent = {
+    kind: 'asset-opt-in'
+    account: string
+    assetRef: AssetRef
+}
+
+export type TransactionIntent = TransferIntent | AssetOptInIntent
 
 export interface BuildContext {
     scope: ChainScope

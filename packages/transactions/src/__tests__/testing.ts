@@ -10,6 +10,11 @@
  limitations under the License
  */
 
-export * from './feeCalculator'
-export * from './getMinimumFeeConfig'
-export * from './useMinimumFeeConfig'
+export {
+    sendFlowContractTests,
+    type SendFlowContractFixtures,
+} from './adapter-contract'
+export {
+    transferContractTests,
+    type TransferContractFixtures,
+} from './transfer-contract'
