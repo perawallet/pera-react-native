@@ -26,11 +26,10 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
     populateAppCallResources: vi.fn(async (atc: unknown) => atc),
 }))
 
-const { getNetworkConfig } = vi.hoisted(() => ({ getNetworkConfig: vi.fn() }))
-vi.mock('@perawallet/wallet-core-config', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-config')),
-    getNetworkConfig,
+const { algorandCardConfig } = vi.hoisted(() => ({
+    algorandCardConfig: vi.fn(),
 }))
+vi.mock('../../config', () => ({ algorandCardConfig }))
 
 import { algorandAutoDraw as autoDraw } from '../killswitch'
 
@@ -45,7 +44,7 @@ let boxDo: Mock
 
 beforeEach(() => {
     vi.clearAllMocks()
-    getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '222' })
+    algorandCardConfig.mockReturnValue({ killswitchAppId: '222' })
 
     addPayment = vi.fn()
     paramsCall = vi
@@ -85,11 +84,11 @@ beforeEach(() => {
 
 describe('algorandAutoDraw.isConfigured', () => {
     it('is false for the empty / placeholder app id, true for a real one', () => {
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '' })
+        algorandCardConfig.mockReturnValue({ killswitchAppId: '' })
         expect(autoDraw.isConfigured('testnet')).toBe(false)
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '0' })
+        algorandCardConfig.mockReturnValue({ killswitchAppId: '0' })
         expect(autoDraw.isConfigured('testnet')).toBe(false)
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '222' })
+        algorandCardConfig.mockReturnValue({ killswitchAppId: '222' })
         expect(autoDraw.isConfigured('testnet')).toBe(true)
     })
 })

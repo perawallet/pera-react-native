@@ -11,65 +11,82 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
-import { compileAutoDrawProgram, resolveEscrowChainConfig } from '../api/escrow'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { cardAdapterFor, cardChainAdapters } from '../chain-adapter'
-import { isKillswitchConfigured } from '../hooks/useKillswitchAutoDraw'
+import {
+    buildCardManualDeposit,
+    describeCardChainError,
+    getCardFundingSourceEligibility,
+    getCardSettlementAssetId,
+    getCardTransactionUrl,
+} from '../hooks/cardChain'
 import { fakeCardAdapter, registerFakeCardAdapter } from './fakeCardAdapter'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 describe('cardAdapterFor', () => {
     beforeEach(() => {
         cardChainAdapters.reset()
     })
 
-    it("resolves a legacy network to its chain's adapter", () => {
+    it("resolves a scope to its chain's adapter", () => {
         const adapter = fakeCardAdapter()
         cardChainAdapters.register(adapter)
 
-        expect(cardAdapterFor('testnet')).toBe(adapter)
+        expect(cardAdapterFor(SCOPE)).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => cardAdapterFor('mainnet')).toThrow(
+        expect(() => cardAdapterFor(SCOPE)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => cardAdapterFor('mainnet')).toThrow(
+        expect(() => cardAdapterFor(SCOPE)).toThrow(
             'No card adapter is registered for chain "algorand"',
         )
     })
 })
 
 describe('chain-backed card helpers', () => {
-    it('fail closed when no adapter is registered', async () => {
+    it('fail closed when no adapter is registered', () => {
         cardChainAdapters.reset()
 
-        expect(() => resolveEscrowChainConfig('mainnet')).toThrow(
+        expect(() => getCardSettlementAssetId(SCOPE)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => isKillswitchConfigured('mainnet')).toThrow(
+        expect(() => describeCardChainError(new Error('x'), SCOPE)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        await expect(
-            compileAutoDrawProgram({ network: 'mainnet' }),
-        ).rejects.toThrow(ChainAdapterNotRegisteredError)
     })
 
-    it('ask the adapter for the given network', async () => {
-        const program = new Uint8Array([6, 129, 1])
+    it('ask the adapter for the given scope', async () => {
+        const account = { address: 'FUNDING' } as WalletAccount
+        const error = new Error('x')
+        const deposit = { sender: 'FUNDING', cardAddress: 'CARD', amount: 5n }
         const adapter = registerFakeCardAdapter({
-            compileAutoDrawProgram: async () => program,
-            autoDraw: { isConfigured: () => false },
+            describeError: () => 'insufficient-native-balance',
+            transactionUrl: () => 'https://explorer/tx/HASH',
         })
 
-        expect(resolveEscrowChainConfig('testnet')).toEqual({
-            assetId: '31566704',
-            killswitchAppId: '222',
-            mainAppId: '111',
-        })
-        expect(adapter.resolveEscrowChainConfig).toHaveBeenCalledWith('testnet')
-        expect(isKillswitchConfigured('testnet')).toBe(false)
-        await expect(
-            compileAutoDrawProgram({ network: 'testnet' }),
-        ).resolves.toBe(program)
+        expect(getCardSettlementAssetId(SCOPE)).toBe('31566704')
+        expect(adapter.settlementAsset).toHaveBeenCalledWith(SCOPE)
+        await buildCardManualDeposit(deposit, SCOPE)
+        expect(adapter.buildManualDeposit).toHaveBeenCalledWith(deposit, SCOPE)
+        expect(getCardFundingSourceEligibility(account, SCOPE).canFund).toBe(
+            true,
+        )
+        expect(adapter.fundingSourceEligibility).toHaveBeenCalledWith(
+            account,
+            SCOPE,
+        )
+        expect(describeCardChainError(error, SCOPE)).toBe(
+            'insufficient-native-balance',
+        )
+        expect(getCardTransactionUrl('HASH', 'algorand', SCOPE)).toBe(
+            'https://explorer/tx/HASH',
+        )
     })
 })

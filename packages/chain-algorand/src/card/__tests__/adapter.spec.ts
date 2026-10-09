@@ -11,20 +11,46 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { encodeUnsignedTransaction, type Algodv2 } from 'algosdk'
+import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
-const { getAlgorandClient, waitForTransactionConfirmation } = vi.hoisted(
-    () => ({
-        getAlgorandClient: vi.fn(),
-        waitForTransactionConfirmation: vi.fn(),
-    }),
-)
+const {
+    getAlgorandClient,
+    waitForTransactionConfirmation,
+    isRekeyedAccount,
+    canSignArc60,
+    canSignProgram,
+} = vi.hoisted(() => ({
+    getAlgorandClient: vi.fn(),
+    waitForTransactionConfirmation: vi.fn(),
+    isRekeyedAccount: vi.fn(),
+    canSignArc60: vi.fn(),
+    canSignProgram: vi.fn(),
+}))
 vi.mock('../../blockchain', async () => ({
     ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
     waitForTransactionConfirmation,
 }))
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    isRekeyedAccount,
+    canSignArc60,
+    canSignProgram,
+}))
 
+import { CardEscrowNotConfiguredError } from '@perawallet/wallet-core-card'
+import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter as adapter } from '../adapter'
+import { autoDrawDelegationRequest } from '../delegation'
+
+const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+const MAINNET: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const CUSTOM: ChainScope = { chainId: 'algorand', networkId: 'custom' }
+const SENDER = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+const CARD = 'PWJLR77JXPCJDWUCGB7MXGH2AFXAFU6UE7FNZLRLSEXJNP6MKJMIXGWT4I'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 const accountInformation = vi.fn()
@@ -67,7 +93,7 @@ describe('algorandCardAdapter delegation requests', () => {
 
     it('builds the delegator-lsig body with no fields Baanx would reject', () => {
         expect(
-            adapter.delegatorProgramRequest({
+            autoDrawDelegationRequest({
                 currency: 'usdc',
                 delegatorAddress: 'FUNDING_ADDR',
                 lsigBytes: 'bHNpZw==',
@@ -94,10 +120,10 @@ describe('algorandCardAdapter chain reads', () => {
         accountInformation.mockResolvedValueOnce({ assets: [] })
 
         await expect(
-            adapter.getAssetBalance('testnet', 'ADDR', '10458941'),
+            adapter.getAssetBalance(TESTNET, 'ADDR', '10458941'),
         ).resolves.toBe(2_500_000n)
         await expect(
-            adapter.getAssetBalance('testnet', 'ADDR', '10458941'),
+            adapter.getAssetBalance(TESTNET, 'ADDR', '10458941'),
         ).resolves.toBe(0n)
         expect(getAlgorandClient).toHaveBeenCalledWith('testnet')
     })
@@ -105,11 +131,141 @@ describe('algorandCardAdapter chain reads', () => {
     it('waits for the transaction on the network algod', async () => {
         waitForTransactionConfirmation.mockResolvedValue(undefined)
 
-        await adapter.awaitConfirmation('testnet', 'TX1')
+        await adapter.awaitConfirmation(TESTNET, 'TX1')
 
         expect(waitForTransactionConfirmation).toHaveBeenCalledWith(
             algod,
             'TX1',
         )
+    })
+
+    it('settles in the network USDC, and has none without a deployment', () => {
+        expect(adapter.settlementAsset(MAINNET)).toBe('31566704')
+        expect(adapter.settlementAsset(TESTNET)).toBe('10458941')
+        expect(
+            adapter.settlementAsset({ chainId: 'algorand', networkId: 'betanet' }),
+        ).toBeNull()
+    })
+})
+
+describe('algorandCardAdapter.buildManualDeposit', () => {
+    const suggestedParams = {
+        flatFee: false,
+        fee: 0n,
+        minFee: 1000n,
+        firstValid: 50_000n,
+        lastValid: 51_000n,
+        genesisID: 'testnet-v1.0',
+        genesisHash: new Uint8Array(32).fill(7),
+    }
+    const fakeAlgod = {
+        getTransactionParams: () => ({ do: async () => suggestedParams }),
+    } as unknown as Algodv2
+    const realClient = () => AlgorandClient.fromClients({ algod: fakeAlgod })
+
+    // The group the app built in place before the adapter owned it: the
+    // wallet's AlgorandClient (1000-round window, a never-called signer)
+    // composing one transfer.
+    const buildInPlace = async (amount: bigint) => {
+        const client = realClient()
+        client.setDefaultValidityWindow(1000)
+        client.setDefaultSigner(async () => {
+            throw new Error('building never signs')
+        })
+        const composer = client.newGroup()
+        composer.addAssetTransfer({
+            sender: SENDER,
+            receiver: CARD,
+            assetId: 10_458_941n,
+            amount,
+        })
+        const { transactions } = await composer.build()
+        return transactions.map(built => encodeUnsignedTransaction(built.txn))
+    }
+
+    it('builds the same bytes the app built in place', async () => {
+        getAlgorandClient.mockImplementation(realClient)
+
+        const group = await adapter.buildManualDeposit(
+            { sender: SENDER, cardAddress: CARD, amount: 400_000n },
+            TESTNET,
+        )
+
+        expect(group.map(txn => encodeUnsignedTransaction(txn))).toEqual(
+            await buildInPlace(400_000n),
+        )
+    })
+
+    it('refuses a network with no settlement asset', async () => {
+        await expect(
+            adapter.buildManualDeposit(
+                { sender: SENDER, cardAddress: CARD, amount: 1n },
+                { chainId: 'algorand', networkId: 'betanet' },
+            ),
+        ).rejects.toBeInstanceOf(CardEscrowNotConfiguredError)
+    })
+})
+
+describe('algorandCardAdapter.fundingSourceEligibility', () => {
+    const account = { address: SENDER } as WalletAccount
+
+    it('refuses a rekeyed account as a funding source', () => {
+        isRekeyedAccount.mockReturnValue(true)
+        canSignArc60.mockReturnValue(true)
+        canSignProgram.mockReturnValue(true)
+
+        expect(adapter.fundingSourceEligibility(account, TESTNET)).toEqual({
+            canFund: false,
+            canProveOwnership: true,
+            canAutoDraw: true,
+        })
+        expect(isRekeyedAccount).toHaveBeenCalledWith(account, 'algorand')
+    })
+
+    it('lets a Ledger prove ownership but not sign the auto-draw program', () => {
+        isRekeyedAccount.mockReturnValue(false)
+        canSignArc60.mockReturnValue(true)
+        canSignProgram.mockReturnValue(false)
+
+        expect(adapter.fundingSourceEligibility(account, TESTNET)).toEqual({
+            canFund: true,
+            canProveOwnership: true,
+            canAutoDraw: false,
+        })
+        expect(canSignProgram).toHaveBeenCalledWith(account, 'algorand')
+    })
+})
+
+describe('algorandCardAdapter.describeError', () => {
+    it.each(['below_min_balance', 'overspend'] as const)(
+        'reads %s as an insufficient native balance',
+        code => {
+            expect(adapter.describeError(new AlgodError(code, {} as never))).toBe(
+                'insufficient-native-balance',
+            )
+        },
+    )
+
+    it('leaves every other node error to the caller', () => {
+        expect(
+            adapter.describeError(new AlgodError('network_unavailable', {})),
+        ).toBeNull()
+        expect(adapter.describeError(new Error('logic eval error'))).toBeNull()
+    })
+})
+
+describe('algorandCardAdapter.transactionUrl', () => {
+    it('links an Algorand leg into the network explorer', () => {
+        expect(adapter.transactionUrl('HASH', ' Algorand ', TESTNET)).toMatch(
+            /^https:\/\/.+\/tx\/HASH$/,
+        )
+    })
+
+    it('has no link for an EVM leg', () => {
+        expect(adapter.transactionUrl('0xabc', 'linea', TESTNET)).toBeNull()
+    })
+
+    it('has no link on a network without an explorer', () => {
+        expect(adapter.transactionUrl('HASH', 'algorand', CUSTOM)).toBeNull()
     })
 })

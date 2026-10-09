@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardContractTests } from '@perawallet/wallet-core-card/testing'
 
 const { getAlgorandClient } = vi.hoisted(() => ({ getAlgorandClient: vi.fn() }))
@@ -18,22 +19,31 @@ vi.mock('../../blockchain', async () => ({
     ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
 }))
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    isRekeyedAccount: (account: WalletAccount) =>
+        account.address === REKEYED_ADDRESS,
+    canSignArc60: () => true,
+    canSignProgram: () => true,
+}))
 
+import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter } from '../adapter'
 
 const ADDRESS = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+const REKEYED_ADDRESS = 'REKEYED'
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
-const algod = (overrides: object) =>
+const arrangeClient = (client: object) =>
     getAlgorandClient.mockReturnValue({
         setDefaultValidityWindow: vi.fn(),
         setDefaultSigner: vi.fn(),
-        client: { algod: overrides },
+        ...client,
     })
 
 cardContractTests(() => algorandCardAdapter, {
-    network: 'testnet',
-    unconfiguredNetwork: 'betanet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
+    unconfiguredScope: { chainId: 'algorand', networkId: 'betanet' },
     delegationApproval: {
         address: ADDRESS,
         currency: 'usdc',
@@ -42,31 +52,35 @@ cardContractTests(() => algorandCardAdapter, {
         signature: 'c2ln',
         token: 'tok',
     },
-    delegatorProgram: {
-        currency: 'usdc',
-        delegatorAddress: ADDRESS,
-        lsigBytes: 'bHNpZw==',
-        cardAddress: ADDRESS,
-    },
     balance: {
         address: ADDRESS,
-        assetId: '31566704',
+        assetId: '10458941',
         arrangeNoHolding: () =>
-            algod({
-                accountInformation: () => ({
-                    do: async () => ({ assets: [] }),
-                }),
-            }),
-    },
-    autoDraw: {
-        params: { network: 'testnet', sender: ADDRESS, asset: '31566704' },
-        arrangeUnknownState: () =>
-            algod({
-                getApplicationBoxByName: () => ({
-                    do: async () => {
-                        throw new Error('algod unreachable')
+            arrangeClient({
+                client: {
+                    algod: {
+                        accountInformation: () => ({
+                            do: async () => ({ assets: [] }),
+                        }),
                     },
+                },
+            }),
+    },
+    deposit: {
+        params: { sender: ADDRESS, cardAddress: ADDRESS, amount: 1n },
+        arrangeBuild: () =>
+            arrangeClient({
+                newGroup: () => ({
+                    addAssetTransfer: vi.fn(),
+                    build: async () => ({ transactions: [{ txn: {} }] }),
                 }),
             }),
     },
+    eligibility: {
+        account: { address: ADDRESS } as WalletAccount,
+        ineligibleAccount: { address: REKEYED_ADDRESS } as WalletAccount,
+    },
+    insufficientBalanceError: new AlgodError('overspend', {} as never),
+    ownLegNetwork: 'algorand',
+    foreignLegNetwork: 'linea',
 })

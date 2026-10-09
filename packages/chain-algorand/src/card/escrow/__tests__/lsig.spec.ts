@@ -12,9 +12,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { getNetworkConfig, getAlgorandClient, appEnvironment, templateHash } =
-    vi.hoisted(() => ({
+const {
+    getNetworkConfig,
+    algorandCardConfig,
+    getAlgorandClient,
+    appEnvironment,
+    templateHash,
+} = vi.hoisted(() => ({
         getNetworkConfig: vi.fn(),
+        algorandCardConfig: vi.fn(),
         getAlgorandClient: vi.fn(),
         appEnvironment: { value: 'development' as string },
         templateHash: { value: '' as string },
@@ -30,6 +36,7 @@ vi.mock('@perawallet/wallet-core-config', async () => ({
     },
     getNetworkConfig,
 }))
+vi.mock('../../config', () => ({ algorandCardConfig }))
 vi.mock('../../../blockchain', async () => ({
     ...(await vi.importActual('../../../blockchain')),
     getAlgorandClient,
@@ -79,10 +86,10 @@ describe('resolveEscrowChainConfig', () => {
     })
 
     it('returns configured ids', () => {
-        getNetworkConfig.mockReturnValue({
-            cardW3CardAppId: '111',
-            cardKillswitchAppId: '222',
-            cardUsdcAssetId: '10458941',
+        algorandCardConfig.mockReturnValue({
+            mainAppId: '111',
+            killswitchAppId: '222',
+            usdcAssetId: '10458941',
         })
 
         expect(resolveEscrowChainConfig('testnet')).toEqual({
@@ -98,14 +105,14 @@ describe('resolveEscrowChainConfig', () => {
         // harmless placeholder. There is no environment where signing that is
         // acceptable, so a missing id fails loudly everywhere.
         for (const missing of [
-            'cardW3CardAppId',
-            'cardKillswitchAppId',
-            'cardUsdcAssetId',
+            'mainAppId',
+            'killswitchAppId',
+            'usdcAssetId',
         ]) {
-            getNetworkConfig.mockReturnValue({
-                cardW3CardAppId: '111',
-                cardKillswitchAppId: '222',
-                cardUsdcAssetId: '10458941',
+            algorandCardConfig.mockReturnValue({
+                mainAppId: '111',
+                killswitchAppId: '222',
+                usdcAssetId: '10458941',
                 [missing]: '',
             })
 
@@ -115,10 +122,10 @@ describe('resolveEscrowChainConfig', () => {
 
     it('throws in production when ids are unset', () => {
         appEnvironment.value = 'production'
-        getNetworkConfig.mockReturnValue({
-            cardW3CardAppId: '',
-            cardKillswitchAppId: '',
-            cardUsdcAssetId: '',
+        algorandCardConfig.mockReturnValue({
+            mainAppId: '',
+            killswitchAppId: '',
+            usdcAssetId: '',
         })
 
         expect(() => resolveEscrowChainConfig('mainnet')).toThrow()
@@ -136,11 +143,11 @@ describe('compileAutoDrawProgram', () => {
     // unpinned template never even gets compiled, let alone signed.
     it('rejects before compiling when the template pin does not match', async () => {
         templateHash.value = 'deadbeef'
-        getNetworkConfig.mockReturnValue({
-            genesisHash: TESTNET_GENESIS,
-            cardW3CardAppId: '111',
-            cardKillswitchAppId: '222',
-            cardUsdcAssetId: '10458941',
+        getNetworkConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
+        algorandCardConfig.mockReturnValue({
+            mainAppId: '111',
+            killswitchAppId: '222',
+            usdcAssetId: '10458941',
         })
         const compile = vi.fn()
         getAlgorandClient.mockReturnValue({ client: { algod: { compile } } })
@@ -155,11 +162,11 @@ describe('compileAutoDrawProgram', () => {
     // so an unpinned/attacker program ('BoEB' = `int 1`, approve-anything) must
     // be rejected even though the substituted TEAL is compiled correctly.
     it('compiles the substituted template but rejects an unpinned/int-1 program', async () => {
-        getNetworkConfig.mockReturnValue({
-            genesisHash: TESTNET_GENESIS,
-            cardW3CardAppId: '111',
-            cardKillswitchAppId: '222',
-            cardUsdcAssetId: '10458941',
+        getNetworkConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
+        algorandCardConfig.mockReturnValue({
+            mainAppId: '111',
+            killswitchAppId: '222',
+            usdcAssetId: '10458941',
         })
         const doFn = vi.fn().mockResolvedValue({ result: 'BoEB', hash: 'H' })
         const compile = vi.fn().mockReturnValue({ do: doFn })
@@ -187,13 +194,13 @@ describe('compileAutoDrawProgram', () => {
 describe('verifyAutoDrawProgram', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        getNetworkConfig.mockReturnValue({ cardAutoDrawProgramHash: '' })
+        algorandCardConfig.mockReturnValue({ autoDrawProgramHash: '' })
     })
 
-    it('reads the pin from the network config when none is passed', () => {
+    it('reads the pin from the card config when none is passed', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        getNetworkConfig.mockReturnValue({
-            cardAutoDrawProgramHash: pinFor(program),
+        algorandCardConfig.mockReturnValue({
+            autoDrawProgramHash: pinFor(program),
         })
 
         expect(() => verifyAutoDrawProgram(program, 'testnet')).not.toThrow()
@@ -239,8 +246,8 @@ describe('verifyAutoDrawProgram', () => {
 
     it('rejects an empty pin without falling back to the config (fail closed)', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        getNetworkConfig.mockReturnValue({
-            cardAutoDrawProgramHash: pinFor(program),
+        algorandCardConfig.mockReturnValue({
+            autoDrawProgramHash: pinFor(program),
         })
 
         expect(() => verifyAutoDrawProgram(program, 'testnet', '')).toThrow(
@@ -249,18 +256,18 @@ describe('verifyAutoDrawProgram', () => {
     })
 
     it.each(algorandDescriptor.networks.map(network => network.id))(
-        'reads the %s pin from that network config',
+        'reads the %s pin from its card config',
         networkId => {
             const program = new Uint8Array([1, 2, 3, 4])
-            getNetworkConfig.mockImplementation((network: string) => ({
-                cardAutoDrawProgramHash:
+            algorandCardConfig.mockImplementation((network: string) => ({
+                autoDrawProgramHash:
                     network === networkId ? pinFor(program) : '',
             }))
 
             expect(() =>
                 verifyAutoDrawProgram(program, networkId as Network),
             ).not.toThrow()
-            expect(getNetworkConfig).toHaveBeenCalledWith(networkId)
+            expect(algorandCardConfig).toHaveBeenCalledWith(networkId)
         },
     )
 })
