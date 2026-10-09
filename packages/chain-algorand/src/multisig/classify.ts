@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    ParticipantVerdicts,
+    type ParticipantVerdict,
+} from '@perawallet/wallet-core-multisig'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useAlgorandClient } from './useAlgorandClient'
-import { getAccountSigTypeQueryKey } from './querykeys'
+import { getAlgorandClient } from '../blockchain/utils/algorandClient'
 
 export const AccountSigTypes = {
     sig: 'sig',
@@ -37,14 +38,10 @@ const isNotFoundError = (error: unknown): boolean =>
     (error as { status: unknown }).status === 404
 
 /**
- * The signature scheme an address uses, as observed by the indexer — the only
- * source that can classify an address the wallet doesn't hold keys for (a
- * post-quantum address is a hash of the PQ key, indistinguishable from an
- * Ed25519 address offline).
- *
- * `null` means unknown, not Ed25519: the indexer derives sig-type from the
- * account's signing history, so an address that never appeared on chain (404)
- * or never signed a transaction cannot be classified.
+ * The signature scheme an address uses, as observed by the indexer. `null`
+ * means unknown, not Ed25519: the indexer derives sig-type from the account's
+ * signing history, so an address that never appeared on chain (404) or never
+ * signed cannot be classified.
  */
 export const fetchAccountSigType = async (
     algokit: AlgorandClient,
@@ -63,30 +60,15 @@ export const fetchAccountSigType = async (
     }
 }
 
-type UseAccountSigTypeQueryParams = {
-    address: string
-    enabled?: boolean
-}
-
-export type UseAccountSigTypeQueryResult = {
-    /** `null` while loading, on error, and for addresses the indexer cannot classify. */
-    sigType: Nullable<AccountSigType>
-    isFetching: boolean
-}
-
-export const useAccountSigTypeQuery = ({
-    address,
-    enabled = true,
-}: UseAccountSigTypeQueryParams): UseAccountSigTypeQueryResult => {
-    const algokit = useAlgorandClient()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-
-    const query = useQuery({
-        queryKey: getAccountSigTypeQueryKey(address, scope),
-        queryFn: () => fetchAccountSigType(algokit, address),
-        enabled: enabled && !!address,
-        retry: false,
-    })
-
-    return { sigType: query.data ?? null, isFetching: query.isFetching }
+// A post-quantum address is a hash of the PQ key, indistinguishable from an
+// Ed25519 address offline, so only the indexer's observed sig-type can tell.
+export const classifyAlgorandParticipant = async (
+    address: string,
+    scope: ChainScope,
+): Promise<ParticipantVerdict> => {
+    const sigType = await fetchAccountSigType(getAlgorandClient(scope), address)
+    if (sigType === null) return ParticipantVerdicts.unclassified
+    return sigType === AccountSigTypes.pqsig
+        ? ParticipantVerdicts.incompatibleScheme
+        : ParticipantVerdicts.eligible
 }

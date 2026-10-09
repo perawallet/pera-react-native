@@ -21,6 +21,13 @@ export const getMultisigAccountDetailQueryKey = (
     return [MODULE_PREFIX, 'account-detail', { scope, address }]
 }
 
+export const getParticipantVerdictQueryKey = (
+    scope: ChainScope,
+    address: string,
+) => {
+    return [MODULE_PREFIX, 'participant-verdict', { scope, address }]
+}
+
 export const getSignRequestDetailQueryKey = (
     scope: ChainScope,
     signRequestId: string,

@@ -16,17 +16,18 @@ import {
     isWatchAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import {
-    AccountSigTypes,
-    useAccountSigTypeQuery,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
     ParticipantIsQuantumError,
     ParticipantIsWatchError,
+    ParticipantVerdicts,
     useIsMultisigAddressQuery,
+    useParticipantVerdictQuery,
     type MultisigValidationError,
 } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -53,6 +54,7 @@ export type UseAddParticipantContentResult = {
 export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
     const [selectedAddress, setSelectedAddress] = useState('')
@@ -75,13 +77,11 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         enabled: !!selectedAddress && !isLocalAccount,
     })
 
-    // A post-quantum address is a hash of the PQ key — indistinguishable from
-    // an Ed25519 address offline — so external addresses (QR scans included)
-    // are classified by the indexer's observed sig-type. An account that never
-    // signed on chain stays unknown and passes; nothing client-visible can
-    // classify it.
-    const sigTypeCheck = useAccountSigTypeQuery({
+    // External addresses (QR scans included) hold no local key, so the chain
+    // classifies them; one it can't classify passes.
+    const verdictCheck = useParticipantVerdictQuery({
         address: selectedAddress,
+        scope,
         enabled: !!selectedAddress && !isLocalAccount,
     })
 
@@ -117,7 +117,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         if (
             !selectedAddress ||
             multisigCheck.isFetching ||
-            sigTypeCheck.isFetching
+            verdictCheck.isFetching
         )
             return
 
@@ -128,7 +128,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
             return
         }
 
-        if (sigTypeCheck.sigType === AccountSigTypes.pqsig) {
+        if (verdictCheck.verdict === ParticipantVerdicts.incompatibleScheme) {
             showValidationError(new ParticipantIsQuantumError())
             setSelectedAddress('')
             setSelectedNfdName(undefined)
@@ -143,8 +143,8 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         selectedNfdName,
         multisigCheck.data?.isMultisig,
         multisigCheck.isFetching,
-        sigTypeCheck.sigType,
-        sigTypeCheck.isFetching,
+        verdictCheck.verdict,
+        verdictCheck.isFetching,
         resolve,
         showValidationError,
     ])

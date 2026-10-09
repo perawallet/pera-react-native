@@ -77,6 +77,7 @@ beforeEach(() => {
         assembleSignedTransactions: vi.fn(),
         validateSignRequest: vi.fn(),
         acceptsParticipantScheme: vi.fn(),
+        classifyParticipant: vi.fn(),
     })
 })
 

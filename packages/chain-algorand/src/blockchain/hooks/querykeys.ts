@@ -29,11 +29,6 @@ export const getTransactionDetailQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'transaction-detail', { transactionId, scope }]
 
-export const getAccountSigTypeQueryKey = (
-    address: string,
-    scope: ChainScope,
-) => [MODULE_PREFIX, 'account-sig-type', { address, scope }]
-
 export const getGroupTransactionsQueryKey = (
     groupId: string,
     scope: ChainScope,

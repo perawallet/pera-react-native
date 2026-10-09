@@ -15,6 +15,7 @@ import { acceptsAlgorandParticipantScheme } from '../accounts/multisig-participa
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { generateMultisigAddress } from './address'
 import { assembleSignedMultisigTransactions } from './assemble'
+import { classifyAlgorandParticipant } from './classify'
 import { validateAlgorandSignRequest } from './validate'
 
 export const algorandMultisigAdapter: MultisigChainAdapter = {
@@ -24,4 +25,5 @@ export const algorandMultisigAdapter: MultisigChainAdapter = {
     assembleSignedTransactions: assembleSignedMultisigTransactions,
     validateSignRequest: validateAlgorandSignRequest,
     acceptsParticipantScheme: acceptsAlgorandParticipantScheme,
+    classifyParticipant: classifyAlgorandParticipant,
 }

@@ -14,6 +14,7 @@ import {
     createChainAdapterRegistry,
     scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
     type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
@@ -68,6 +69,18 @@ export type MultisigSignRequestValidation =
     | { kind: 'no-transactions' }
     | { kind: 'unauthorized-sender'; txIndex: number }
 
+/** What a chain can tell about an address it holds no key for, as a would-be participant. */
+export const ParticipantVerdicts = {
+    eligible: 'eligible',
+    /** The address signs with a scheme a participant slot can't verify. */
+    incompatibleScheme: 'incompatible-scheme',
+    /** Nothing the chain exposes classifies it, e.g. it has never signed; callers accept it. */
+    unclassified: 'unclassified',
+} as const
+
+export type ParticipantVerdict =
+    (typeof ParticipantVerdicts)[keyof typeof ParticipantVerdicts]
+
 /** The chain-specific legs of a multisig account; registered by the chain package. */
 export interface MultisigChainAdapter {
     chainId: ChainId
@@ -94,6 +107,14 @@ export interface MultisigChainAdapter {
      * be a participant.
      */
     acceptsParticipantScheme(scheme: SigningScheme): boolean
+    /**
+     * Classifies an external address (a contact, a scan, a typed address) the
+     * wallet holds no key for, so its scheme can't be read locally.
+     */
+    classifyParticipant(
+        address: string,
+        scope: ChainScope,
+    ): Promise<ParticipantVerdict>
 }
 
 export const multisigChainAdapters =

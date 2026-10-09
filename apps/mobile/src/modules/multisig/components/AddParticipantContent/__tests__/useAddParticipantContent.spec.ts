@@ -34,10 +34,10 @@ const multisigCheckState: {
     isFetching: boolean
 } = { data: undefined, isFetching: false }
 
-const sigTypeCheckState: {
-    sigType: string | null
+const verdictCheckState: {
+    verdict: string | null
     isFetching: boolean
-} = { sigType: null, isFetching: false }
+} = { verdict: null, isFetching: false }
 
 vi.mock('@hooks/useLanguage')
 
@@ -75,11 +75,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
-    useAccountSigTypeQuery: () => sigTypeCheckState,
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -90,6 +85,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'testnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -99,6 +95,7 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
     return {
         ...actual,
         useIsMultisigAddressQuery: () => multisigCheckState,
+        useParticipantVerdictQuery: () => verdictCheckState,
     }
 })
 
@@ -109,8 +106,8 @@ describe('useAddParticipantContent', () => {
         registerAlgorandMultisigAdapter()
         multisigCheckState.data = undefined
         multisigCheckState.isFetching = false
-        sigTypeCheckState.sigType = null
-        sigTypeCheckState.isFetching = false
+        verdictCheckState.verdict = null
+        verdictCheckState.isFetching = false
     })
 
     it('resolves immediately with the address when the user picks a local non-watch account', () => {
@@ -174,7 +171,7 @@ describe('useAddParticipantContent', () => {
 
     it('shows a quantum-account error toast and does not resolve when the contact address signs with a post-quantum key', async () => {
         multisigCheckState.data = { isMultisig: false }
-        sigTypeCheckState.sigType = 'pqsig'
+        verdictCheckState.verdict = 'incompatible-scheme'
         const { result } = renderHook(() => useAddParticipantContent())
 
         act(() => {
@@ -192,7 +189,7 @@ describe('useAddParticipantContent', () => {
 
     it('shows a quantum-account error toast and does not resolve when the external (QR-scanned) address signs with a post-quantum key', async () => {
         multisigCheckState.data = { isMultisig: false }
-        sigTypeCheckState.sigType = 'pqsig'
+        verdictCheckState.verdict = 'incompatible-scheme'
         const { result } = renderHook(() => useAddParticipantContent())
 
         act(() => {
@@ -208,9 +205,9 @@ describe('useAddParticipantContent', () => {
         expect(mockResolve).not.toHaveBeenCalled()
     })
 
-    it('waits for the sig-type check before resolving an external address', async () => {
+    it("waits for the chain's participant check before resolving an external address", async () => {
         multisigCheckState.data = { isMultisig: false }
-        sigTypeCheckState.isFetching = true
+        verdictCheckState.isFetching = true
         const { result } = renderHook(() => useAddParticipantContent())
 
         act(() => {
