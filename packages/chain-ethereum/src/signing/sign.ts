@@ -14,7 +14,7 @@ import { bytesToHex } from 'viem'
 import type { Signature } from 'viem'
 import type { ChainKeyStore } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
-import type { TaggedDigest } from './digests'
+import { openTaggedDigest, type TaggedDigest } from './digests'
 
 /** How the user authorised this signature; signing rides the app unlock today. */
 export type AuthContext = { method: 'app-unlock' }
@@ -53,11 +53,12 @@ export const signTagged = async (
     digest: TaggedDigest,
     _auth?: AuthContext,
 ): Promise<Signature> => {
+    const { tag, digest: bytes } = openTaggedDigest(digest)
     const { r, s, recovery } = decodeSignature(
-        await kms.sign(keyPairId, digest.digest, SIGNING_ACCESS_DOMAIN),
+        await kms.sign(keyPairId, bytes, SIGNING_ACCESS_DOMAIN),
     )
     const components = { r: bytesToHex(r), s: bytesToHex(s) }
-    return digest.tag === 'eip155-tx'
+    return tag === 'eip155-tx'
         ? { ...components, yParity: recovery }
         : { ...components, v: BigInt(27 + recovery) }
 }

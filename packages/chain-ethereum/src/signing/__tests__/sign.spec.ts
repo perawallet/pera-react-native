@@ -140,6 +140,39 @@ describe('signTagged', () => {
         ])
     })
 
+    it('refuses a spread copy whose digest was swapped for a raw hash, before the KMS', async () => {
+        const { kms, calls } = createVectorKeyStore()
+        const forged = {
+            ...personalMessageDigest('Pera'),
+            digest: new Uint8Array(32).fill(7),
+        } as TaggedDigest
+
+        await expect(signTagged(kms, KEY_PAIR_ID, forged)).rejects.toThrow()
+        expect(calls).toEqual([])
+    })
+
+    it('refuses a raw hash cast to a TaggedDigest, before the KMS', async () => {
+        const { kms, calls } = createVectorKeyStore()
+        const forged = {
+            tag: 'eip155-tx',
+            digest: new Uint8Array(32),
+        } as unknown as TaggedDigest
+
+        await expect(signTagged(kms, KEY_PAIR_ID, forged)).rejects.toThrow()
+        expect(calls).toEqual([])
+    })
+
+    it('signs the minted bytes even after the exposed digest is mutated', async () => {
+        const { kms, calls } = createVectorKeyStore()
+        const digest = personalMessageDigest('Pera')
+        const minted = digest.digest
+
+        digest.digest.fill(0)
+
+        await signTagged(kms, KEY_PAIR_ID, digest)
+        expect(calls[0].payload).toEqual(minted)
+    })
+
     it('signs identically when given an auth context', async () => {
         const auth: AuthContext = { method: 'app-unlock' }
         const plain = createVectorKeyStore()

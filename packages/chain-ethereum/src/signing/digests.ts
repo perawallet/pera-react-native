@@ -27,13 +27,42 @@ import type {
 /** Only this module's hashers mint one, so a raw hash (`eth_sign`'s payload) cannot reach the key. */
 export type TaggedDigest = {
     readonly tag: 'eip155-tx' | 'eip191-message' | 'eip712'
-    /** The 32-byte keccak256 the key signs. */
+    /** The 32-byte keccak256 the key signs; a copy, so mutating it changes nothing signed. */
     readonly digest: Uint8Array
     readonly __taggedDigest: unique symbol
 }
 
-const tagged = (tag: TaggedDigest['tag'], digest: Uint8Array): TaggedDigest =>
-    ({ tag, digest }) as TaggedDigest
+type MintedDigest = { tag: TaggedDigest['tag']; digest: Uint8Array }
+
+// The brand is erased at runtime, so the type alone can't stop a spread copy
+// with its digest swapped for a raw hash. Signing reads only what was minted here.
+const minted = new WeakMap<TaggedDigest, MintedDigest>()
+
+const DIGEST_LENGTH = 32
+
+const tagged = (tag: TaggedDigest['tag'], digest: Uint8Array): TaggedDigest => {
+    const bytes = Uint8Array.from(digest)
+    const handle = Object.freeze({
+        tag,
+        get digest() {
+            return Uint8Array.from(bytes)
+        },
+    }) as unknown as TaggedDigest
+    minted.set(handle, { tag, digest: bytes })
+    return handle
+}
+
+/**
+ * The tag and a copy of the bytes a hasher here minted.
+ * @throws when `digest` was not minted by this module, e.g. a spread copy or a cast raw hash.
+ */
+export const openTaggedDigest = (digest: TaggedDigest): MintedDigest => {
+    const held = minted.get(digest)
+    if (!held || held.digest.length !== DIGEST_LENGTH) {
+        throw new Error('Refusing to sign a digest no Ethereum hasher minted')
+    }
+    return { tag: held.tag, digest: Uint8Array.from(held.digest) }
+}
 
 /** Forcing `type` pins the typed (0x02) RLP form even when the caller left it off. */
 export const transactionDigest = (
