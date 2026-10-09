@@ -973,3 +973,159 @@ describe('passkey review actions', () => {
         })
     })
 })
+
+describe('an account held on two chains', () => {
+    const hdChainAddress = (
+        address: string,
+        seedFirstDerivedAddress: string,
+        keyIndex = 0,
+    ) => ({
+        type: 'hdChain',
+        chain: 'ethereum',
+        address,
+        seedFirstDerivedAddress,
+        account: 0,
+        keyIndex,
+    })
+
+    const serving = (
+        payloads: Record<string, unknown>,
+    ): Record<BackupItemKey, unknown> =>
+        Object.fromEntries(
+            Object.entries(payloads).map(([address, payload]) => [
+                accountKey(address),
+                payload,
+            ]),
+        )
+
+    describe('deleteFromBackup', () => {
+        const state = () => backupHolding(['CHILD', '0xeth'], ['SEED'])
+        const deps = () => ({
+            ...baseDeps(),
+            readItems: readsFor([accountKey('CHILD'), accountKey('0xeth')]),
+            decrypt: servingPlaintext(
+                serving({
+                    CHILD: hdWalletAddress('CHILD', 'SEED'),
+                    '0xeth': hdChainAddress('0xeth', 'SEED'),
+                }),
+            ),
+        })
+
+        it('keeps the seed when deleting the hdWallet item while an hdChain item shares it', async () => {
+            const { state: next } = await deleteFromBackup({
+                state: state(),
+                address: 'CHILD',
+                deps: deps(),
+            })
+
+            expect(next.items[accountKey('CHILD')]?.status).toBe(
+                BackupItemStatus.IGNORED,
+            )
+            expect(next.items[secretsKey('SEED')]?.status).toBe(
+                BackupItemStatus.ACTIVE,
+            )
+        })
+
+        it('deletes the seed with the last item that derives from it', async () => {
+            const first = await deleteFromBackup({
+                state: state(),
+                address: 'CHILD',
+                deps: deps(),
+            })
+
+            const { state: next, keys } = await deleteFromBackup({
+                state: first.state,
+                address: '0xeth',
+                deps: deps(),
+            })
+
+            expect(keys).toEqual([accountKey('0xeth'), secretsKey('SEED')])
+            expect(next.items[secretsKey('SEED')]?.status).toBe(
+                BackupItemStatus.IGNORED,
+            )
+        })
+    })
+
+    describe('importFromBackup', () => {
+        it('reads the parent seed for an hdChain item', async () => {
+            const deps = baseDeps()
+            const state = withReviewed('0xeth')
+            state.items[secretsKey('SEED')] = tracked('SEED')
+            deps.readItems.mockImplementation(
+                readsFor([accountKey('0xeth'), secretsKey('SEED')]),
+            )
+            deps.decrypt.mockImplementation(
+                servingPlaintext({
+                    ...serving({ '0xeth': hdChainAddress('0xeth', 'SEED') }),
+                    [secretsKey('SEED')]: hdSeedSecrets('SEED'),
+                }),
+            )
+
+            await importFromBackup({ state, address: '0xeth', deps })
+
+            expect(deps.readItems).toHaveBeenCalledWith(
+                'mainnet',
+                'did:pera:ADDR',
+                'dev',
+                [secretsKey('SEED')],
+            )
+            const [pulled] = deps.importAccounts.mock.calls[0]
+            expect(pulled.map(account => account.address).sort()).toEqual([
+                '0xeth',
+                'SEED',
+            ])
+        })
+
+        it('brings back the held item at the same seed position in one batch, and clears both', async () => {
+            const deps = baseDeps()
+            const state = createEmptySyncState('b')
+            for (const [address, accountType] of [
+                ['CHILD', 'hdWallet'],
+                ['0xeth', 'hdChain'],
+                ['0xother', 'hdChain'],
+            ] as const) {
+                state.items[accountKey(address)] = tracked(address, {
+                    pendingImport: true,
+                    accountType,
+                })
+            }
+            state.items[secretsKey('SEED')] = tracked('SEED')
+            deps.readItems.mockImplementation(
+                readsFor([
+                    accountKey('CHILD'),
+                    accountKey('0xeth'),
+                    accountKey('0xother'),
+                    secretsKey('SEED'),
+                ]),
+            )
+            deps.decrypt.mockImplementation(
+                servingPlaintext({
+                    ...serving({
+                        CHILD: hdWalletAddress('CHILD', 'SEED'),
+                        '0xeth': hdChainAddress('0xeth', 'SEED'),
+                        // Another position of the same seed: not this account.
+                        '0xother': hdChainAddress('0xother', 'SEED', 3),
+                    }),
+                    [secretsKey('SEED')]: hdSeedSecrets('SEED'),
+                }),
+            )
+
+            const { state: next } = await importFromBackup({
+                state,
+                address: 'CHILD',
+                deps,
+            })
+
+            expect(deps.importAccounts).toHaveBeenCalledTimes(1)
+            const [pulled] = deps.importAccounts.mock.calls[0]
+            expect(pulled.map(account => account.address).sort()).toEqual([
+                '0xeth',
+                'CHILD',
+                'SEED',
+            ])
+            expect(next.items[accountKey('CHILD')]?.pendingImport).toBe(false)
+            expect(next.items[accountKey('0xeth')]?.pendingImport).toBe(false)
+            expect(next.items[accountKey('0xother')]?.pendingImport).toBe(true)
+        })
+    })
+})

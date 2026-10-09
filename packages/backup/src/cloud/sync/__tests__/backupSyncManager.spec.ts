@@ -19,6 +19,8 @@ const {
     mockSyncBackup,
     mockPullBackupDeltas,
     mockDeleteFromBackup,
+    mockMarkAccountForBackup,
+    mockKeepAccountInBackup,
     mockHasBackupCredentials,
     mockWithBackupEncryptionKey,
     mockWithBackupItemKey,
@@ -45,6 +47,11 @@ const {
         state,
         keys: [],
     })),
+    mockMarkAccountForBackup: vi.fn((state: unknown) => state),
+    mockKeepAccountInBackup: vi.fn((state: object, address: string) => ({
+        ...state,
+        keptAddress: address,
+    })),
     mockHasBackupCredentials: vi.fn(() => true),
     mockWithBackupEncryptionKey: vi.fn(
         async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
@@ -66,7 +73,13 @@ const {
     mockResetSyncState: vi.fn(),
     storedSyncState: { current: null as unknown },
     storedDeviceId: { current: null as string | null },
-    accountsState: { current: [] as { address: string; name?: string }[] },
+    accountsState: {
+        current: [] as {
+            address: string
+            name?: string
+            chains?: Record<string, { address: string }>
+        }[],
+    },
     accountsListeners: {
         current: [] as ((accounts: unknown[]) => void)[],
     },
@@ -86,17 +99,14 @@ vi.mock('../pullBackupDeltas', () => ({
 // the item cipher, neither of which this spec stands up.
 vi.mock('../reviewActions', () => ({
     reviewActionDeps: (deps: unknown) => deps,
-    markAccountForBackup: (state: unknown) => state,
+    markAccountForBackup: mockMarkAccountForBackup,
     markPasskeyForBackup: (state: unknown) => state,
     importFromBackup: ({ state }: { state: unknown }) => ({
         state,
         summary: { imported: 1, skippedDuplicate: 0, failed: [] },
     }),
     deleteFromBackup: mockDeleteFromBackup,
-    keepAccountInBackup: (state: object, address: string) => ({
-        ...state,
-        keptAddress: address,
-    }),
+    keepAccountInBackup: mockKeepAccountInBackup,
 }))
 
 vi.mock('../../credentials/keyStorage', () => ({
@@ -990,6 +1000,97 @@ describe('BackupSyncManager', () => {
             const mgr = new BackupSyncManager(makeDeps())
 
             expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('queued')
+            mgr.stop()
+        })
+    })
+
+    describe('an account held on two chains', () => {
+        const heldOnTwoChains = {
+            address: 'ALGO',
+            chains: {
+                algorand: { address: 'ALGO' },
+                ethereum: { address: '0xeth' },
+            },
+        }
+        const calledWithAddresses = (mock: typeof mockMarkAccountForBackup) =>
+            mock.mock.calls.map(([, address]) => address)
+
+        beforeEach(() => {
+            accountsState.current = [heldOnTwoChains]
+            mockSetSyncState.mockImplementation((state: unknown) => {
+                storedSyncState.current = state
+            })
+        })
+
+        afterEach(() => {
+            mockDeleteFromBackup.mockImplementation(
+                ({ state }: { state: unknown }) => ({ state, keys: [] }),
+            )
+        })
+
+        it('keeps every chain address when one of them is kept', async () => {
+            const mgr = new BackupSyncManager(makeDeps())
+
+            await mgr.keepAccountInBackup('0xeth')
+
+            expect(
+                mockKeepAccountInBackup.mock.calls.map(
+                    ([, address]) => address,
+                ),
+            ).toEqual(['ALGO', '0xeth'])
+            mgr.stop()
+        })
+
+        it('backs every chain address up when one of them is', async () => {
+            mockSyncBackup.mockResolvedValue({
+                backupId: 'backup-123',
+                lastSyncResult: 'SUCCESS',
+                items: {
+                    [accountItemKey(hashAddress('0xeth'))]: {
+                        address: '0xeth',
+                        status: BackupItemStatus.ACTIVE,
+                        knownVer: 1,
+                    },
+                },
+            })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            await mgr.backUpAccount('0xeth')
+
+            expect(calledWithAddresses(mockMarkAccountForBackup)).toEqual([
+                'ALGO',
+                '0xeth',
+            ])
+            mgr.stop()
+        })
+
+        it('deletes every chain address one after the other, collecting their keys', async () => {
+            mockDeleteFromBackup.mockImplementation(
+                ({ address, state }: { address: string; state: object }) => ({
+                    state: { ...state, items: {} },
+                    keys: [accountItemKey(hashAddress(address))],
+                }),
+            )
+            const mgr = new BackupSyncManager(makeDeps())
+
+            await mgr.deleteAccountFromBackup('ALGO')
+
+            expect(
+                mockDeleteFromBackup.mock.calls.map(([{ address }]) => address),
+            ).toEqual(['ALGO', '0xeth'])
+            mgr.stop()
+        })
+
+        it('acts on the address alone when no local account holds it', async () => {
+            const mgr = new BackupSyncManager(makeDeps())
+
+            await mgr.keepAccountInBackup('0xunheld')
+
+            expect(
+                mockKeepAccountInBackup.mock.calls.map(
+                    ([, address]) => address,
+                ),
+            ).toEqual(['0xunheld'])
             mgr.stop()
         })
     })
