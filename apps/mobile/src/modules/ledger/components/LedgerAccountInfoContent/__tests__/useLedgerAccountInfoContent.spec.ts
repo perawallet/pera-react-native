@@ -139,17 +139,17 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        expect(rekeyAddressItems).toHaveLength(1)
-        expect(rekeyAddressItems[0]).toMatchObject({
-            kind: 'rekeyAddress',
+        expect(authorityItems).toHaveLength(1)
+        expect(authorityItems[0]).toMatchObject({
+            kind: 'authorityAccount',
         })
-        if (rekeyAddressItems[0].kind === 'rekeyAddress') {
-            expect(rekeyAddressItems[0].account.address).toBe('AUTH')
+        if (authorityItems[0].kind === 'authorityAccount') {
+            expect(authorityItems[0].account.address).toBe('AUTH')
             // synth is hardware → base icon is the Ledger icon, no override.
-            expect(rekeyAddressItems[0].displayStateOverride).toBeUndefined()
+            expect(authorityItems[0].displayStateOverride).toBeUndefined()
         }
     })
 
@@ -171,15 +171,15 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        const rekeyAddresses = rekeyAddressItems.map(i =>
-            i.kind === 'rekeyAddress' ? i.account.address : '',
+        const authorityAddresses = authorityItems.map(i =>
+            i.kind === 'authorityAccount' ? i.account.address : '',
         )
-        expect(rekeyAddresses).toEqual(['R1', 'R2'])
-        rekeyAddressItems.forEach(i => {
-            if (i.kind === 'rekeyAddress') {
+        expect(authorityAddresses).toEqual(['R1', 'R2'])
+        authorityItems.forEach(i => {
+            if (i.kind === 'authorityAccount') {
                 expect(i.displayStateOverride).toBe('rekeyedSignable')
             }
         })
@@ -410,7 +410,7 @@ describe('useLedgerAccountInfoContent', () => {
             'asset', // ALGO
             'asset', // USDC
             'sectionHeader', // can_sign_for
-            'rekeyAddress',
+            'authorityAccount',
         ])
 
         const headers = result.current.items

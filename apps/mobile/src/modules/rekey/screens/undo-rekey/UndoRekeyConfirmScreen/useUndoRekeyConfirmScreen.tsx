@@ -12,9 +12,12 @@
 
 import { useCallback, useRef } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountDisplayName,
     isWatchAccount,
+    useAuthorityOf,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -53,7 +56,11 @@ export const useUndoRekeyConfirmScreen =
         const { sourceAddress } = route.params
 
         const source = useFindAccountByAddress(sourceAddress)
-        const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+        const sourceAuthority = useAuthorityOf(
+            source,
+            useSelectedScope(LEGACY_CHAIN_ID),
+        )
+        const currentAuth = useFindAccountByAddress(sourceAuthority ?? '')
 
         const { t } = useLanguage()
         const handleRekeyError = useHandleRekeyError()

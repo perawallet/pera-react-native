@@ -11,10 +11,12 @@
  */
 
 import {
+    isRekeyedAccount,
     isWatchAccount,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
@@ -92,7 +94,7 @@ export const runMigrationLoop = async (
                 if (
                     existing !== undefined &&
                     isWatchAccount(existing) &&
-                    existing.rekeyAddress === undefined &&
+                    !isRekeyedAccount(existing, LEGACY_CHAIN_ID) &&
                     account.authAddress !== null
                 ) {
                     applyRekeyAddressToStoreAccount(
@@ -117,14 +119,14 @@ export const runMigrationLoop = async (
             })
             if (
                 account.authAddress !== null &&
-                created.rekeyAddress === undefined
+                !isRekeyedAccount(created, LEGACY_CHAIN_ID)
             ) {
-                // Only buildWatchAccount carries the legacy authAddress →
-                // rekeyAddress mirror; key-bearing imports (incl. the
-                // watch-reconcile reimport above) come back without it. Apply
-                // it here so a rekeyed account is never presented as
-                // directly-signable in the window before the first sync
-                // writes the authoritative per-network value.
+                // Only buildWatchAccount carries the legacy authAddress;
+                // key-bearing imports (incl. the watch-reconcile reimport
+                // above) come back without it. Apply it here so a rekeyed
+                // account is never presented as directly-signable in the
+                // window before the first sync writes the authoritative
+                // per-network value.
                 applyRekeyAddressToStoreAccount(
                     created.address,
                     account.authAddress,

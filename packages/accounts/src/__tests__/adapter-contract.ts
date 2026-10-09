@@ -58,7 +58,13 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
         authAddress: string
         rekeyedAddresses: readonly string[]
         handlers: readonly RequestHandler[]
-        /** `account` is rekeyed to `auth`, which is itself rekeyed on to `next`; `auth` and `next` hold their keys. */
+        /**
+         * Records `authAddress` as `address`'s authority on the fixtures'
+         * scope. The chain package supplies it because the contract's module
+         * graph holds its own copy of the accounts store.
+         */
+        seedAuthority(address: string, authAddress: string): void
+        /** The contract seeds the relation: `account` is rekeyed to `auth`, which is itself rekeyed on to `next`. `auth` and `next` hold their keys. */
         accounts: {
             account: WalletAccount
             auth: WalletAccount
@@ -201,12 +207,14 @@ export const accountsContractTests = (
             const { signing, watch } = fixtures.signers
             const accounts = [signing, watch]
 
-            expect(adapter.resolveSigner(signing, accounts)).toEqual({
+            expect(adapter.resolveSigner(signing, accounts, scope)).toEqual({
                 kind: 'ok',
                 signer: signing,
             })
-            expect(adapter.getAuthAccount(signing, accounts)).toBe(signing)
-            expect(adapter.resolveSigner(watch, accounts)).toEqual({
+            expect(adapter.getAuthAccount(signing, accounts, scope)).toBe(
+                signing,
+            )
+            expect(adapter.resolveSigner(watch, accounts, scope)).toEqual({
                 kind: 'watch',
                 account: watch,
             })
@@ -218,21 +226,26 @@ export const accountsContractTests = (
 
             expect(fixtures.rekeyed).toBeDefined()
             const { account, auth, next } = fixtures.rekeyed!.accounts
+            const { seedAuthority } = fixtures.rekeyed!
+            seedAuthority(account.address, auth.address)
+            seedAuthority(auth.address, next.address)
 
             expect(
-                adapter.resolveSigner(account, [account, auth, next]),
+                adapter.resolveSigner(account, [account, auth, next], scope),
             ).toEqual({
                 kind: 'ok',
                 signer: auth,
             })
-            expect(adapter.getAuthAccount(account, [account, auth, next])).toBe(
-                auth,
-            )
-            expect(adapter.resolveSigner(account, [account])).toMatchObject({
+            expect(
+                adapter.getAuthAccount(account, [account, auth, next], scope),
+            ).toBe(auth)
+            expect(
+                adapter.resolveSigner(account, [account], scope),
+            ).toMatchObject({
                 kind: 'authMissing',
                 authAddress: auth.address,
             })
-            expect(adapter.getAuthAccount(account, [account])).toBeNull()
+            expect(adapter.getAuthAccount(account, [account], scope)).toBeNull()
         })
 
         it('moves signing authority between accounts, or has none to move', () => {
@@ -245,9 +258,12 @@ export const accountsContractTests = (
             const { signing } = fixtures.signers
             const held = [account, auth, next, signing]
             const options = { isQuantumTargetEnabled: false }
+            const { seedAuthority } = fixtures.rekeyed!
+            seedAuthority(account.address, auth.address)
+            seedAuthority(auth.address, next.address)
 
-            expect(authority.isDelegated(account)).toBe(true)
-            expect(authority.isDelegated(signing)).toBe(false)
+            expect(authority.isDelegated(account, scope)).toBe(true)
+            expect(authority.isDelegated(signing, scope)).toBe(false)
             expect(authority.accountsDelegatedTo(auth.address, held)).toEqual([
                 account,
             ])
@@ -257,6 +273,7 @@ export const accountsContractTests = (
                     signing,
                     account,
                     held,
+                    scope,
                     options,
                 ),
             ).toBe(true)
@@ -267,6 +284,7 @@ export const accountsContractTests = (
                     auth,
                     account,
                     held,
+                    scope,
                     options,
                 ),
             ).toBe(false)
@@ -276,11 +294,12 @@ export const accountsContractTests = (
                     account,
                     account,
                     held,
+                    scope,
                     options,
                 ),
             ).toBe(false)
-            expect(authority.canSignProgram(signing)).toBe(true)
-            expect(authority.canSignProgram(account)).toBe(false)
+            expect(authority.canSignProgram(signing, scope)).toBe(true)
+            expect(authority.canSignProgram(account, scope)).toBe(false)
         })
 
         it('derives a quantum keygen seed without touching the entropy, or refuses', () => {

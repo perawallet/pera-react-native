@@ -13,11 +13,12 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAccountsRekeyedTo } from '../useAccountsRekeyedTo'
-import { useAccountsStore } from '../../store'
+import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
@@ -35,17 +36,20 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useAccountsRekeyedTo', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
         registerFakeAccountsChain()
     })
 
     it('returns an empty list when no address is provided', () => {
-        setAccounts([held('A', { rekeyAddress: 'PQ' })])
+        seedAuthority('A', 'PQ')
+        setAccounts([held('A')])
         const { result } = renderHook(() => useAccountsRekeyedTo(null))
         expect(result.current).toEqual([])
     })
 
     it('asks the chain which accounts are delegated to the address', () => {
-        const rekeyed = held('A', { rekeyAddress: 'PQ' })
+        const rekeyed = held('A')
+        seedAuthority('A', 'PQ')
         const target = held('PQ', { type: 'quantum' })
         setAccounts([rekeyed, target])
         const { authority } = fakeAccountsChain().adapter
@@ -62,7 +66,8 @@ describe('useAccountsRekeyedTo', () => {
 
     it('returns an empty list on a chain without an authority', () => {
         registerFakeAccountsChain({ authority: undefined })
-        setAccounts([held('A', { rekeyAddress: 'PQ' }), held('PQ')])
+        seedAuthority('A', 'PQ')
+        setAccounts([held('A'), held('PQ')])
         const { result } = renderHook(() => useAccountsRekeyedTo('PQ'))
         expect(result.current).toEqual([])
     })

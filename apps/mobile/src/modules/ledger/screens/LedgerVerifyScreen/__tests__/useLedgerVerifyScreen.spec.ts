@@ -15,10 +15,12 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     accountType,
     AccountTypes,
+    authorityOf,
     isHardwareWalletAccount,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -211,7 +213,7 @@ describe('useLedgerVerifyScreen', () => {
         ])
     })
 
-    it('handleAdd imports derived as hardware, rekeyed as watch+rekeyAddress, auto-includes auth, skips already-imported and invalid', async () => {
+    it('handleAdd imports derived as hardware, rekeyed as watch accounts under their Ledger authority, auto-includes auth, skips already-imported and invalid', async () => {
         const d0 = derived('LEDGER0', 0)
         useAccountsStore.getState().setAccounts([
             {
@@ -242,7 +244,9 @@ describe('useLedgerVerifyScreen', () => {
         const watch = accounts.find(a => a.address === 'REKEYED_A')
         expect(hw ? accountType(hw) : undefined).toBe(AccountTypes.hardware)
         expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
-        expect(watch?.rekeyAddress).toBe('LEDGER0')
+        expect(authorityOf(watch!, scopeForLegacyNetwork('mainnet'))).toBe(
+            'LEDGER0',
+        )
         expect(accounts.filter(a => a.address === 'ALREADY')).toHaveLength(1)
         expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
@@ -525,7 +529,9 @@ describe('useLedgerVerifyScreen', () => {
             expect(rekeyed ? accountType(rekeyed) : undefined).toBe(
                 AccountTypes.watch,
             )
-            expect(rekeyed?.rekeyAddress).toBe('LEDGER0')
+            expect(
+                authorityOf(rekeyed!, scopeForLegacyNetwork('mainnet')),
+            ).toBe('LEDGER0')
         })
 
         it('does not add the rekeyed pair when upgrading its watch auth is declined', async () => {

@@ -13,6 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    useAccountChainStateStore,
     type WalletAccount,
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
@@ -70,7 +71,10 @@ import {
     isSigningCapableFundingSource,
     useCardFundingSourcePicker,
 } from '../useCardFundingSourcePicker'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { custodyForType } from '@test-utils/accountCustody'
 
 const account = (
@@ -82,6 +86,7 @@ const account = (
 
 beforeEach(() => {
     registerAlgorandAccountsAdapter()
+    useAccountChainStateStore.getState().resetState()
     vi.clearAllMocks()
     mockConnectedAddress = null
 })
@@ -93,11 +98,8 @@ describe('isEligibleFundingSource', () => {
         expect(isEligibleFundingSource(account('C', 'hardware'))).toBe(true)
         expect(isEligibleFundingSource(account('D', 'watch'))).toBe(false)
         expect(isEligibleFundingSource(account('E', 'multisig'))).toBe(false)
-        expect(
-            isEligibleFundingSource(
-                account('F', 'algo25', { rekeyAddress: 'X' }),
-            ),
-        ).toBe(false)
+        seedAuthority('F', 'X')
+        expect(isEligibleFundingSource(account('F', 'algo25'))).toBe(false)
     })
 })
 

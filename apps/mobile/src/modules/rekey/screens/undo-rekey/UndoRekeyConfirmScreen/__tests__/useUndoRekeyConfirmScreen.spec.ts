@@ -14,7 +14,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useUndoRekeyConfirmScreen } from '../useUndoRekeyConfirmScreen'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -62,8 +66,8 @@ const mockSourceAccount = {
     address: 'SRC',
     name: 'Source',
     custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
-    rekeyAddress: 'AUTH' as string | undefined,
 }
+let mockHasSource = true
 const mockAuthAccount = {
     address: 'AUTH',
     name: 'Auth',
@@ -78,7 +82,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useFindAccountByAddress: (address: string) => {
-            if (address === 'SRC') return mockSourceAccount
+            if (address === 'SRC') {
+                return mockHasSource ? mockSourceAccount : undefined
+            }
             if (address === 'AUTH') return mockAuthAccount
             return undefined
         },
@@ -130,12 +136,28 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 describe('useUndoRekeyConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        mockHasSource = true
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority('SRC', 'AUTH')
         mockSourceAccount.custody = { kind: 'local', seed: 'algo25' }
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         capturedSigningHandler = null
         mockIsUnderfunded = false
+    })
+
+    it('resolves the account holding the source authority', () => {
+        const { result } = renderHook(() => useUndoRekeyConfirmScreen())
+
+        expect(result.current.currentAuth).toBe(mockAuthAccount)
+    })
+
+    it('has no current auth when the source account is gone', () => {
+        mockHasSource = false
+
+        const { result } = renderHook(() => useUndoRekeyConfirmScreen())
+
+        expect(result.current.currentAuth).toBeNull()
     })
 
     it('returns feeAlgos from the rekey transaction fee query', () => {

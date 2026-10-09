@@ -46,7 +46,7 @@ describe('accountFingerprint', () => {
     })
 
     it('ignores fields the backup address payload does not carry', () => {
-        expect(accountFingerprint([account({ rekeyAddress: 'AUTH' })])).toBe(
+        expect(accountFingerprint([account({ keyPairId: 'kp' })])).toBe(
             accountFingerprint([account({})]),
         )
     })

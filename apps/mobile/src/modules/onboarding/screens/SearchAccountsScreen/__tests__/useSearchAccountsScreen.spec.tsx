@@ -261,7 +261,6 @@ describe('useSearchAccountsScreen', () => {
                 id: 'rekeyed-1',
                 address: 'REKEYED_ADDRESS',
                 custody: { kind: 'watch' },
-                rekeyAddress: 'MOCK_ADDRESS',
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
@@ -408,7 +407,6 @@ describe('useSearchAccountsScreen', () => {
                 id: 'rekeyed-1',
                 address: 'REKEYED_ADDRESS',
                 custody: { kind: 'watch' },
-                rekeyAddress: 'MOCK_ADDRESS',
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
@@ -602,7 +600,6 @@ describe('useSearchAccountsScreen', () => {
                 id: 'rekeyed-1',
                 address: 'REKEYED_1',
                 custody: { kind: 'local', seed: 'algo25' },
-                rekeyAddress: 'PARENT_ADDRESS',
             },
         ]
         mockRouteParams.current = {
@@ -660,7 +657,6 @@ describe('useSearchAccountsScreen', () => {
                 id: 'rekeyed-1',
                 address: 'REKEYED_1',
                 custody: { kind: 'local', seed: 'algo25' },
-                rekeyAddress: 'PARENT_ADDRESS',
             },
         ]
         mockRouteParams.current = {

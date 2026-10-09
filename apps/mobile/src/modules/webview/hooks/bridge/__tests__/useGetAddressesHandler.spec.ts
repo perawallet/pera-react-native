@@ -43,7 +43,7 @@ type MockAccount = {
     address: string
     name?: string
     custody: WalletAccount['custody']
-    rekeyAddress?: string
+    authority?: string
 }
 
 // useSigningAccounts owns the Watch/Unsignable filtering — the bridge just
@@ -81,7 +81,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.mocked(isRekeyedAccount).mockImplementation(
-            account => !!(account as MockAccount).rekeyAddress,
+            account => !!(account as MockAccount).authority,
         )
     })
 
@@ -184,7 +184,7 @@ describe('useGetAddressesHandler (Android parity)', () => {
                         seed: 'bip39',
                         hd: { account: 0, keyIndex: 0 },
                     },
-                    rekeyAddress: 'auth',
+                    authority: 'auth',
                 },
             ],
             new Set(['rekeyed']),

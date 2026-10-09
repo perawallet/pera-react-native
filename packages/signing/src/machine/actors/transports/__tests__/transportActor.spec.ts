@@ -11,15 +11,21 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import '../../../../__tests__/registerAlgorandAccounts'
+import { seedAuthority } from '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { transportActor, type TransportActorInput } from '../transportActor'
 import { createTransportSelector } from '../../../../pipeline/transports/getTransport'
 import type { SigningResult, SourceMetadata } from '../../../../pipeline/types'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     algodBackedTransport,
     registerFakeBroadcaster,
@@ -88,6 +94,7 @@ describe('transportActor', () => {
         vi.clearAllMocks()
         useNetworkStore.getState().resetState()
         useNetworkStore.getState().setNetwork('testnet')
+        useAccountChainStateStore.getState().resetState()
         registerFakeBroadcaster({
             createSubmitTransport: () =>
                 algodBackedTransport(mockAlgokit, mockEncodeSignedTransactions),
@@ -260,13 +267,13 @@ describe('transportActor', () => {
         const jointSender = {
             custody: { kind: 'multisig' },
             address: J1_ADDRESS,
-            rekeyAddress: J2_ADDRESS,
             multisigDetails: {
                 threshold: 2,
                 addresses: ['p1', 'p2'],
                 version: 1,
             },
         } as unknown as WalletAccount
+        seedAuthority(J1_ADDRESS, J2_ADDRESS, scopeForLegacyNetwork('testnet'))
         const authAccount = {
             custody: { kind: 'multisig' },
             address: J2_ADDRESS,
@@ -311,10 +318,12 @@ describe('transportActor', () => {
         // keyed on the sender's own (standard) type.
         const MSIG_AUTH_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
-        const rekeyedSender = {
-            ...mockAlgo25Account,
-            rekeyAddress: MSIG_AUTH_ADDRESS,
-        } as unknown as WalletAccount
+        const rekeyedSender = mockAlgo25Account as unknown as WalletAccount
+        seedAuthority(
+            rekeyedSender.address,
+            MSIG_AUTH_ADDRESS,
+            scopeForLegacyNetwork('testnet'),
+        )
         const msigAuth = {
             custody: { kind: 'multisig' },
             address: MSIG_AUTH_ADDRESS,
@@ -357,10 +366,12 @@ describe('transportActor', () => {
         // Multisig-cosign participants sign with their own key — the rekey
         // hop must not be followed for transport keying either.
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
-        const rekeyedParticipant = {
-            ...mockAlgo25Account,
-            rekeyAddress: 'SOMEOTHERAUTH',
-        } as unknown as WalletAccount
+        const rekeyedParticipant = mockAlgo25Account as unknown as WalletAccount
+        seedAuthority(
+            rekeyedParticipant.address,
+            'SOMEOTHERAUTH',
+            scopeForLegacyNetwork('testnet'),
+        )
         const source: SourceMetadata = {
             type: 'multisig-cosign',
             signRequestId: 'sign-req-2',

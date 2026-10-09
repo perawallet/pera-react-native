@@ -14,9 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     accountType,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useRekeyedAccountInfoContent } from '../useRekeyedAccountInfoContent'
 
 const mocks = vi.hoisted(() => ({
@@ -34,17 +38,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useIsNativeAssetId: () => (assetId: string) => assetId === '0',
 }))
 
-const rekeyed = (rekeyAddress?: string) =>
-    ({
+const rekeyed = (authority?: string) => {
+    if (authority) seedAuthority('REKEYED_ADDR', authority)
+    return {
         id: 'rekeyed',
         address: 'REKEYED_ADDR',
         custody: { kind: 'watch' },
-        rekeyAddress,
-    }) as WalletAccount
+    } as WalletAccount
+}
 
 describe('useRekeyedAccountInfoContent', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         mocks.useAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map(),
@@ -65,11 +71,20 @@ describe('useRekeyedAccountInfoContent', () => {
         expect(isEnabled).toBe(true)
     })
 
+    it("reports the account's authority as the auth address", () => {
+        const { result } = renderHook(() =>
+            useRekeyedAccountInfoContent({ account: rekeyed('AUTH_ADDR') }),
+        )
+
+        expect(result.current.authAddress).toBe('AUTH_ADDR')
+    })
+
     it('looks up no auth account when the account is not rekeyed', () => {
-        renderHook(() =>
+        const { result } = renderHook(() =>
             useRekeyedAccountInfoContent({ account: rekeyed(undefined) }),
         )
 
+        expect(result.current.authAddress).toBeUndefined()
         expect(mocks.useAccountBalancesQuery.mock.calls[1]).toEqual([[], false])
     })
 })

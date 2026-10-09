@@ -13,6 +13,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRescanRekeyedAccounts } from '../useRescanRekeyedAccounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { authorityOf } from '../../credentials'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import { RekeyUnsupportedError } from '../../errors'
@@ -43,6 +45,8 @@ vi.mock('../useIsRekeyAvailable', () => ({
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
+
+const mainnet = scopeForLegacyNetwork('mainnet')
 
 describe('useRescanRekeyedAccounts — scan', () => {
     beforeEach(() => {
@@ -245,7 +249,7 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
         expect(count).toBe(3)
         const persisted = useAccountsStore.getState().accounts
         const bySource = Object.fromEntries(
-            persisted.map(a => [a.address, a.rekeyAddress]),
+            persisted.map(a => [a.address, authorityOf(a, mainnet)]),
         )
         expect(bySource).toEqual({ C1: 'S1', C2: 'S2', C3: 'S1' })
         persisted.forEach(account => expect(accountType(account)).toBe('watch'))
@@ -309,7 +313,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
         ])
         persisted.forEach(account => {
             expect(accountType(account)).toBe('watch')
-            expect(account.rekeyAddress).toBe('SOURCE')
+            expect(authorityOf(account, mainnet)).toBe('SOURCE')
         })
     })
 })

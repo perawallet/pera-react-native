@@ -57,7 +57,6 @@ describe('useIsQuantumDataSigningBlocked', () => {
             {
                 address: REKEYED_TO_QUANTUM_ADDRESS,
                 custody: { kind: 'local', seed: 'algo25' },
-                rekeyAddress: QUANTUM_ADDRESS,
             },
         ])
     })

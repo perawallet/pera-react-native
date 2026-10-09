@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import '../../../__tests__/registerAlgorandAccounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
+import {
+    DelegationTargetNotFoundError,
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import type { SourceMetadata } from '../../../pipeline/types'
 import { resolveSigningAccount } from '../resolveSigningAccount'
@@ -26,7 +29,6 @@ const rekeyedSigner: WalletAccount = {
     custody: { kind: 'local', seed: 'algo25' },
     address: PARTICIPANT,
     keyPairId: 'key-participant',
-    rekeyAddress: AUTH,
 } as unknown as WalletAccount
 
 const authAccount: WalletAccount = {
@@ -39,7 +41,6 @@ const authAccount: WalletAccount = {
 const keylessRekeyedSigner: WalletAccount = {
     custody: { kind: 'watch' },
     address: PARTICIPANT,
-    rekeyAddress: AUTH,
 } as unknown as WalletAccount
 
 const plainSigner: WalletAccount = {
@@ -56,7 +57,12 @@ const cosignSource: SourceMetadata = {
 const localSource: SourceMetadata = { type: 'local' }
 
 describe('resolveSigningAccount', () => {
+    beforeEach(() => {
+        useAccountChainStateStore.getState().resetState()
+    })
+
     it('returns the signer itself for multisig-cosign even when the signer is rekeyed', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             cosignSource,
@@ -68,6 +74,7 @@ describe('resolveSigningAccount', () => {
     })
 
     it('follows rekey to the auth account for transaction signing on non-cosign sources', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
@@ -89,7 +96,8 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('throws RekeyTargetNotFoundError on transactions when the rekey target is missing', () => {
+    it('throws DelegationTargetNotFoundError on transactions when the rekey target is missing', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         expect(() =>
             resolveSigningAccount(
                 rekeyedSigner,
@@ -98,10 +106,11 @@ describe('resolveSigningAccount', () => {
                 [rekeyedSigner],
                 'algorand',
             ),
-        ).toThrow(RekeyTargetNotFoundError)
+        ).toThrow(DelegationTargetNotFoundError)
     })
 
     it('returns the signer itself for arbitrary-data even when rekeyed', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         // ARC-1 verifies against the requested account's own pubkey; the
         // rekey hop must NOT be followed for off-chain data.
         const result = resolveSigningAccount(
@@ -115,6 +124,7 @@ describe('resolveSigningAccount', () => {
     })
 
     it('returns the keyless signer itself for auth-data even when its auth account holds a key', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         // An ARC-60 signature verifies against `signer`'s own pubkey, so a
         // signature from the auth key would fail every verifier. The signer
         // is returned as-is and the leaf signer refuses it (no key).
@@ -129,6 +139,7 @@ describe('resolveSigningAccount', () => {
     })
 
     it('returns the rekeyed signer itself for auth-data when it holds its own key', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
@@ -140,6 +151,7 @@ describe('resolveSigningAccount', () => {
     })
 
     it('never consults the rekey target for auth-data, so a missing target does not throw', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,

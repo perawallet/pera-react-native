@@ -35,7 +35,10 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
 })
 
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    authorityOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
@@ -75,6 +78,7 @@ const buildSignRequest = (
 
 describe('buildMultisigCosignRequest', () => {
     beforeEach(() => {
+        vi.mocked(authorityOf).mockReset()
         mocks.validateSignRequest.mockReset()
         mocks.validateSignRequest.mockReturnValue({ kind: 'valid' })
         mocks.multisigAdapterFor.mockReturnValue({
@@ -194,11 +198,14 @@ describe('buildMultisigCosignRequest', () => {
         ).toThrow(/no transaction lists/)
     })
 
-    const authorizedSendersFor = (localAccounts: WalletAccount[]) => {
+    const authorizedSendersFor = (
+        localAccounts: WalletAccount[],
+        network: 'mainnet' | 'testnet' = 'testnet',
+    ) => {
         buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            network,
             decodeTransaction: vi.fn(() => txFrom()),
             localAccounts,
         })
@@ -227,8 +234,11 @@ describe('buildMultisigCosignRequest', () => {
         // Requiring sender === joint account would reject the supported flow
         // where a watch account is rekeyed to a shared multisig (see the
         // sign-multisig-rekeyed integration test).
+        vi.mocked(authorityOf).mockImplementation(account =>
+            account.address === 'REKEYED_SENDER' ? 'MULTISIG' : null,
+        )
         const senders = authorizedSendersFor([
-            { address: 'REKEYED_SENDER', rekeyAddress: 'MULTISIG' },
+            { address: 'REKEYED_SENDER' },
         ] as WalletAccount[])
 
         expect(senders).toEqual(new Set(['MULTISIG', 'REKEYED_SENDER']))
@@ -237,23 +247,34 @@ describe('buildMultisigCosignRequest', () => {
     // `sgnr` is not covered by the signature, so a subsig from participant key S
     // stands alone for any sender whose auth-addr is S — not only sender === S.
     it("does not authorize an account the co-signer's own key authorizes", () => {
+        vi.mocked(authorityOf).mockImplementation(account =>
+            account.address === 'REKEYED_TO_SIGNER' ? 'A' : null,
+        )
         const senders = authorizedSendersFor([
-            { address: 'REKEYED_TO_SIGNER', rekeyAddress: 'A' },
+            { address: 'REKEYED_TO_SIGNER' },
         ] as WalletAccount[])
 
         expect(senders).toEqual(new Set(['MULTISIG']))
     })
 
-    it('ignores a rekey to the joint account recorded on another network', () => {
-        const senders = authorizedSendersFor([
-            {
-                address: 'REKEYED_ELSEWHERE',
-                rekeyAddress: 'A',
-                rekeyAddressByNetwork: { mainnet: 'A', testnet: 'MULTISIG' },
-            },
-        ] as unknown as WalletAccount[])
+    it("reads the sender's rekey on the request's own network", () => {
+        vi.mocked(authorityOf).mockImplementation((account, scope) =>
+            account.address === 'REKEYED_ELSEWHERE' &&
+            scope?.networkId === 'testnet'
+                ? 'MULTISIG'
+                : null,
+        )
+        const accounts = [
+            { address: 'REKEYED_ELSEWHERE' },
+        ] as unknown as WalletAccount[]
 
-        expect(senders).toEqual(new Set(['MULTISIG']))
+        expect(authorizedSendersFor(accounts, 'testnet')).toEqual(
+            new Set(['MULTISIG', 'REKEYED_ELSEWHERE']),
+        )
+        mocks.validateSignRequest.mockClear()
+        expect(authorizedSendersFor(accounts, 'mainnet')).toEqual(
+            new Set(['MULTISIG']),
+        )
     })
 
     it('does not authorize a local sender the joint account does not authorize', () => {

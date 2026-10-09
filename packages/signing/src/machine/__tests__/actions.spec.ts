@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SignableGroup } from '../../pipeline/types'
 import { buildGroupSignerMap, resolveInitialContext } from '../actions'
@@ -31,43 +34,61 @@ const FALCON = { custody: 'local', scheme: 'falcon-1024' }
 const HARDWARE = { custody: 'hardware', scheme: 'ed25519' }
 const MULTISIG = { custody: 'multisig', scheme: 'ed25519' }
 
-const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: `kp-${address}`,
-        rekeyAddress,
-    }) as unknown as WalletAccount
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
 
-const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        custody: {
-            kind: 'hardware',
-            device: {
+const withAuthority = (
+    account: WalletAccount,
+    authority?: string,
+): WalletAccount => {
+    if (authority) seedAuthority(account.address as string, authority)
+    return account
+}
+
+const algo25 = (address: string, authority?: string): WalletAccount =>
+    withAuthority(
+        {
+            custody: { kind: 'local', seed: 'algo25' },
+            address,
+            keyPairId: `kp-${address}`,
+        } as unknown as WalletAccount,
+        authority,
+    )
+
+const hardware = (address: string, authority?: string): WalletAccount =>
+    withAuthority(
+        {
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+            address,
+            hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'dev-1',
                 deviceName: 'Ledger Nano X',
+                accountIndex: 0,
                 transportType: 'ble',
             },
-            accountIndex: 0,
-        },
-        address,
-        rekeyAddress,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'dev-1',
-            deviceName: 'Ledger Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
-    }) as unknown as WalletAccount
+        } as unknown as WalletAccount,
+        authority,
+    )
 
-const watch = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        custody: { kind: 'watch' },
-        address,
-        rekeyAddress,
-    }) as unknown as WalletAccount
+const watch = (address: string, authority?: string): WalletAccount =>
+    withAuthority(
+        {
+            custody: { kind: 'watch' },
+            address,
+        } as unknown as WalletAccount,
+        authority,
+    )
 
 const multisig = (address: string, addresses: string[] = []): WalletAccount =>
     ({
@@ -76,13 +97,15 @@ const multisig = (address: string, addresses: string[] = []): WalletAccount =>
         multisigDetails: { threshold: 1, addresses, version: 1 },
     }) as unknown as WalletAccount
 
-const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: 'quantum' },
-        address,
-        keyPairId: `kp-${address}`,
-        rekeyAddress,
-    }) as unknown as WalletAccount
+const quantum = (address: string, authority?: string): WalletAccount =>
+    withAuthority(
+        {
+            custody: { kind: 'local', seed: 'quantum' },
+            address,
+            keyPairId: `kp-${address}`,
+        } as unknown as WalletAccount,
+        authority,
+    )
 
 const buildGroup = (
     overrides: Partial<SignableGroup> & Pick<SignableGroup, 'source'>,
@@ -203,7 +226,7 @@ describe('buildGroupSignerMap', () => {
 
         it('classifies a multisig sender rekeyed to another multisig as multisig', () => {
             const sender = multisig(PARTICIPANT, ['P1', 'P2'])
-            sender.rekeyAddress = AUTH
+            seedAuthority(PARTICIPANT, AUTH)
             const auth = multisig(AUTH, ['P1', 'P2'])
             const group = buildGroup({ source: { type: 'local' } })
 
@@ -240,7 +263,7 @@ describe('buildGroupSignerMap', () => {
             // can exist on-chain — the auth key signs, so route to it instead
             // of failing with NoLocalParticipantsError.
             const sender = multisig(PARTICIPANT, ['P1', 'P2'])
-            sender.rekeyAddress = AUTH
+            seedAuthority(PARTICIPANT, AUTH)
             const auth = algo25(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 

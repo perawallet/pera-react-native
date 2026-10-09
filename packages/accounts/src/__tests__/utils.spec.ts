@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, test, expect } from 'vitest'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     accountType,
     canSignArbitraryData,
@@ -37,12 +38,16 @@ import {
     type AccountType,
     type WalletAccount,
 } from '../models'
+import { useAccountChainStateStore } from '../store'
 import { MNEMONIC_WORD_COUNT } from '../constants'
 import { buildTestAccount } from './accountFactory'
 import {
     FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from './fakeAccountsChain'
 
 vi.mock('tweetnacl', () => ({
@@ -458,22 +463,22 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
     // matter what its auth account could do, and a rekeyed signer that still
     // holds its key signs with that key.
     describe('canSignArc60 - rekeyed signers', () => {
+        beforeEach(() => {
+            registerFakeAccountsChain()
+            useAccountChainStateStore.getState().resetState()
+        })
+
         test('rejects a keyless rekeyed account even when its auth account could sign', () => {
-            const rekeyedToLocalKey = {
-                ...watch,
-                rekeyAddress: localKey.address,
-            } as any
-            const rekeyedToHardware = {
-                ...watch,
-                rekeyAddress: hardware.address,
-            } as any
-            expect(canSignArc60(rekeyedToLocalKey)).toBe(false)
-            expect(canSignArc60(rekeyedToHardware)).toBe(false)
+            seedAuthority(watch.address, localKey.address)
+            expect(canSignArc60(watch)).toBe(false)
+
+            seedAuthority(watch.address, hardware.address)
+            expect(canSignArc60(watch)).toBe(false)
         })
 
         test('accepts a rekeyed account that still holds its own key', () => {
-            const rekeyed = { ...localKey, rekeyAddress: watch.address } as any
-            expect(canSignArc60(rekeyed)).toBe(true)
+            seedAuthority(localKey.address, watch.address)
+            expect(canSignArc60(localKey)).toBe(true)
         })
     })
 })
@@ -680,6 +685,7 @@ describe('services/accounts/utils - authority wrappers', () => {
     } as WalletAccount
 
     beforeEach(() => {
+        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain({
             authority: {
                 isDelegated: vi.fn(() => true),
@@ -695,8 +701,31 @@ describe('services/accounts/utils - authority wrappers', () => {
 
         expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(true)
         expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(true)
-        expect(authority?.isDelegated).toHaveBeenCalledWith(account)
-        expect(authority?.canSignProgram).toHaveBeenCalledWith(account)
+        expect(authority?.isDelegated).toHaveBeenCalledWith(
+            account,
+            MAINNET_SCOPE,
+        )
+        expect(authority?.canSignProgram).toHaveBeenCalledWith(
+            account,
+            MAINNET_SCOPE,
+        )
+    })
+
+    test('ask the chain on the selected network', () => {
+        const { authority } = fakeAccountsChain().adapter
+        useNetworkStore.getState().setNetwork('testnet')
+
+        isRekeyedAccount(account, FAKE_CHAIN_ID)
+        canSignProgram(account, FAKE_CHAIN_ID)
+
+        expect(authority?.isDelegated).toHaveBeenCalledWith(
+            account,
+            TESTNET_SCOPE,
+        )
+        expect(authority?.canSignProgram).toHaveBeenCalledWith(
+            account,
+            TESTNET_SCOPE,
+        )
     })
 
     test('fail closed on a chain without an authority', () => {
@@ -792,12 +821,6 @@ describe('services/accounts/utils - accountType', () => {
             accounts.map(account => [account.id, account, kind] as const),
     )
 
-    const rekeyed = (account: WalletAccount): WalletAccount => ({
-        ...account,
-        rekeyAddress: 'AUTH-ADDR',
-        rekeyAddressByNetwork: { mainnet: 'AUTH-ADDR', testnet: 'OTHER-AUTH' },
-    })
-
     test.each(fixtureCases)(
         'the %s fixture reads as its kind',
         (_, account, kind) => {
@@ -813,7 +836,9 @@ describe('services/accounts/utils - accountType', () => {
     })
 
     test.each(allTypes)('a rekeyed %s account keeps its own type', type => {
-        const account = rekeyed(buildTestAccount(type))
+        registerFakeAccountsChain()
+        const account = buildTestAccount(type)
+        seedAuthority(account.address, 'AUTH-ADDR')
 
         expect(accountType(account)).toBe(type)
     })

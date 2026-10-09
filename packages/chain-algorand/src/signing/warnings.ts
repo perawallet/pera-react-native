@@ -69,11 +69,11 @@ export const aggregateTransactionWarnings = (
         // multisig-with-local-participant). Watch-only accounts and dApp
         // escrow/contract accounts (Folks Finance, Tinyman) are excluded.
         if (signableAddresses.has(authorizer) && tx.rekeyTo?.publicKey) {
-            const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
+            const rekeyTarget = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
                 type: 'rekey',
                 senderAddress: tx.sender,
-                targetAddress: rekeyAddress,
+                targetAddress: rekeyTarget,
             })
         }
     }

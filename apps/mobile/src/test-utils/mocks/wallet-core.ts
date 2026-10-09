@@ -319,7 +319,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         if (custody.kind !== 'local') return custody.kind
         return custody.seed === 'bip39' ? 'hdWallet' : custody.seed
     }
+    // The one source every rekey answer below derives from; a spec seeds a
+    // rekeyed account with `vi.mocked(authorityOf).mockImplementation(...)`.
+    const authorityOf = vi.fn(
+        (_account: any, _scope?: any): string | null => null,
+    )
     return {
+        authorityOf,
+        useAuthorityOf: vi.fn((account: any, scope?: any) =>
+            account ? authorityOf(account, scope) : null,
+        ),
         accountType: vi.fn(kindOf),
         useAllAccounts: vi.fn(() => []),
         useAccountDiscovery: vi.fn(() => ({
@@ -356,7 +365,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 kindOf(account) === 'hardware' &&
                 account?.hardwareDetails?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
+        isRekeyedAccount: vi.fn(
+            (account: any) => !!account && !!authorityOf(account),
+        ),
         isHDWalletAccount: vi.fn(
             (account: any) => kindOf(account) === 'hdWallet',
         ),
@@ -385,7 +396,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         canSignProgram: vi.fn(
             (account: any) =>
                 kindOf(account) !== 'hardware' &&
-                !account?.rekeyAddress &&
+                !authorityOf(account) &&
                 !!account?.keyPairId,
         ),
         isRekeyedUnsignable: vi.fn(() => false),

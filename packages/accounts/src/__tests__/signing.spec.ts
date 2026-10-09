@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { canSignArbitraryData } from '../utils'
+import { useAccountChainStateStore } from '../store'
+import { registerFakeAccountsChain, seedAuthority } from './fakeAccountsChain'
 import {
     type Algo25Account,
     type HDWalletAccount,
@@ -83,10 +85,14 @@ const multisig = (
     ...extra,
 })
 
-const watch = (address: string, rekeyAddress?: string): WatchAccount => ({
+const watch = (address: string): WatchAccount => ({
     custody: { kind: 'watch' },
     address,
-    rekeyAddress,
+})
+
+beforeEach(() => {
+    registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
 })
 
 describe('canSignArbitraryData', () => {
@@ -119,14 +125,16 @@ describe('canSignArbitraryData', () => {
         // The dApp verifies the signature against the requested address's
         // own pubkey; the on-chain auth-addr is irrelevant for off-chain
         // data. Holding the account's own keypair is sufficient.
-        const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'S' }
+        const a: WalletAccount = algo25('A')
+        seedAuthority('A', 'S')
         expect(canSignArbitraryData(a)).toBe(true)
     })
 
     it('returns false for a watch-rekeyed account regardless of auth', () => {
         // We hold the auth account, but the dApp expects a signature from
         // the watch address's pubkey — which we never had.
-        const a = watch('A', 'S')
+        const a = watch('A')
+        seedAuthority('A', 'S')
         expect(canSignArbitraryData(a)).toBe(false)
     })
 })

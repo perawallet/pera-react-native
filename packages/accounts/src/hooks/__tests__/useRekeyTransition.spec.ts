@@ -13,11 +13,12 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRekeyTransition } from '../useRekeyTransition'
-import { useAccountsStore } from '../../store'
+import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
@@ -35,6 +36,7 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useRekeyTransition', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
         registerFakeAccountsChain()
     })
 
@@ -57,11 +59,11 @@ describe('useRekeyTransition', () => {
 
     it("returns the from/to types from the chain's signer for a rekeyed account", () => {
         const signer = held('S')
+        seedAuthority('A', 'S')
         setAccounts([
             held('A', {
                 custody: { kind: 'watch' },
                 keyPairId: undefined,
-                rekeyAddress: 'S',
             }),
             signer,
         ])

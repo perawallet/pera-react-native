@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeAll, describe, test, expect } from 'vitest'
+import { beforeAll, beforeEach, describe, test, expect } from 'vitest'
 import {
     accountsChainAdapters,
     canSignWith,
@@ -19,92 +19,144 @@ import {
     isQuantumDowngrade,
     rekeyTransitionFor,
     resolveAuthAccount,
-    RekeyTargetNotFoundError,
+    useAccountChainStateStore,
+    DelegationTargetNotFoundError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { seedAuthority } from './seedAuthority'
 
 beforeAll(() => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
 })
 
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'a',
-        address: overrides.address ?? 'A',
-        custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp',
-        ...overrides,
-    }) as WalletAccount
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
 
-const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'h',
-        address: overrides.address ?? 'H',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        keyPairId: 'kp-hd',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: 9,
-        },
-        ...overrides,
-    }) as WalletAccount
+type BuilderOverrides = Partial<WalletAccount> & { authority?: string }
 
-const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'l',
-        address: overrides.address ?? 'L',
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'dev',
-                deviceName: 'Nano X',
-                transportType: 'ble',
+const withAuthority = (
+    account: WalletAccount,
+    authority?: string,
+): WalletAccount => {
+    if (authority) seedAuthority(account.address as string, authority)
+    return account
+}
+
+const algo25 = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'a',
+            address: overrides.address ?? 'A',
+            custody: { kind: 'local', seed: 'algo25' },
+            keyPairId: 'kp',
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
+
+const hd = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'h',
+            address: overrides.address ?? 'H',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
             },
-            accountIndex: 0,
-        },
-        hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
-        ...overrides,
-    }) as WalletAccount
+            keyPairId: 'kp-hd',
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
 
-const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'w',
-        address: overrides.address ?? 'W',
-        custody: { kind: 'watch' },
-        ...overrides,
-    }) as WalletAccount
+const ledger = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'l',
+            address: overrides.address ?? 'L',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+            hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
 
-const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'm',
-        address: overrides.address ?? 'M',
-        custody: { kind: 'multisig' },
-        multisigDetails: {
-            threshold: 2,
-            addresses: ['P1', 'P2', 'P3'],
-            version: 1,
-        },
-        ...overrides,
-    }) as WalletAccount
+const watch = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'w',
+            address: overrides.address ?? 'W',
+            custody: { kind: 'watch' },
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
 
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'f',
-        address: overrides.address ?? 'F',
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
+const multisig = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'm',
+            address: overrides.address ?? 'M',
+            custody: { kind: 'multisig' },
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
+
+const quantum = ({
+    authority,
+    ...overrides
+}: BuilderOverrides = {}): WalletAccount =>
+    withAuthority(
+        {
+            id: overrides.id ?? 'f',
+            address: overrides.address ?? 'F',
+            custody: { kind: 'local', seed: 'quantum' },
+            keyPairId: 'kp-quantum',
+            ...overrides,
+        } as WalletAccount,
+        authority,
+    )
 
 describe('services/accounts/utils - account type checks', () => {
     const baseAccount = {
@@ -144,8 +196,8 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
+        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
 
         expect(
             canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
@@ -163,8 +215,8 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
+        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
 
         expect(
             canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
@@ -176,8 +228,8 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             custody: { kind: 'watch' },
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
+        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
 
         expect(canSignWith(rekeyedAccount, [], ALGORAND_CHAIN_ID)).toBe(false)
     })
@@ -194,15 +246,15 @@ describe('services/accounts/utils - account type checks', () => {
             id: '2',
             custody: { kind: 'watch' },
             address: 'MIDDLE_ADDR',
-            rekeyAddress: 'ROOT_ADDR',
         } as any
+        seedAuthority('MIDDLE_ADDR', 'ROOT_ADDR')
 
         const leafAccount = {
             id: '3',
             custody: { kind: 'watch' },
             address: 'LEAF_ADDR',
-            rekeyAddress: 'MIDDLE_ADDR',
         } as any
+        seedAuthority('LEAF_ADDR', 'MIDDLE_ADDR')
 
         const accounts = [rootAccount, middleAccount, leafAccount]
         // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
@@ -221,14 +273,14 @@ describe('services/accounts/utils - account type checks', () => {
             id: '1',
             custody: { kind: 'watch' },
             address: 'A',
-            rekeyAddress: 'B',
         } as any
+        seedAuthority('A', 'B')
         const b = {
             id: '2',
             custody: { kind: 'watch' },
             address: 'B',
-            rekeyAddress: 'A',
         } as any
+        seedAuthority('B', 'A')
 
         // Single-hop: A's immediate auth B holds no key — false, no infinite
         // recursion.
@@ -285,8 +337,8 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
         const account = {
             custody: { kind: 'watch' },
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
         } as any
+        seedAuthority('ADDR', 'AUTH')
         expect(
             canSignWith(account, [account, authAccount], ALGORAND_CHAIN_ID),
         ).toBe(true)
@@ -337,8 +389,8 @@ describe('services/accounts/utils - getRekeyAccount', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk2',
-            rekeyAddress: 'AUTH',
         } as any
+        seedAuthority('A', 'AUTH')
         expect(getRekeyAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
             auth,
         )
@@ -357,8 +409,8 @@ describe('services/accounts/utils - getRekeyAccount', () => {
         const rekeyed = {
             custody: { kind: 'watch' },
             address: 'A',
-            rekeyAddress: 'MISSING',
         } as any
+        seedAuthority('A', 'MISSING')
         expect(getRekeyAccount('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
@@ -387,8 +439,8 @@ describe('services/accounts/utils - getSignerFor', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk2',
-            rekeyAddress: 'AUTH',
         } as any
+        seedAuthority('A', 'AUTH')
         expect(getSignerFor('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(auth)
     })
 
@@ -396,8 +448,8 @@ describe('services/accounts/utils - getSignerFor', () => {
         const rekeyed = {
             custody: { kind: 'watch' },
             address: 'A',
-            rekeyAddress: 'MISSING',
         } as any
+        seedAuthority('A', 'MISSING')
         expect(getSignerFor('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
@@ -448,8 +500,8 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
-            rekeyAddress: 'MISSING',
         } as any
+        seedAuthority('A', 'MISSING')
         expect(
             rekeyTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
         ).toBeNull()
@@ -480,8 +532,8 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: 'A',
             keyPairId: 'pk1',
-            rekeyAddress: 'AUTH',
         } as any
+        seedAuthority('A', 'AUTH')
         expect(
             rekeyTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
         ).toEqual({
@@ -499,7 +551,7 @@ describe('services/accounts/utils - quantum accounts', () => {
 
     test('canSignWith resolves a quantum auth account for a rekeyed account', () => {
         const auth = quantum({ address: 'FAUTH' })
-        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
+        const rekeyed = watch({ address: 'A', authority: 'FAUTH' })
         expect(canSignWith(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
             true,
         )
@@ -572,7 +624,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         // signing authority resolves to quantum via resolveAuthAccount.
         const source = quantum({ address: 'F1' })
         const quantumAuth = quantum({ address: 'FAUTH' })
-        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
+        const target = watch({ address: 'T', authority: 'FAUTH' })
         expect(
             isQuantumDowngrade(
                 source,
@@ -600,7 +652,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         // The flagship migration path: the account's own type stays algo25,
         // but its effective signer is quantum — rekeying to Ed25519 strips it.
         const quantumAuth = quantum({ address: 'FAUTH' })
-        const source = algo25({ address: 'A', rekeyAddress: 'FAUTH' })
+        const source = algo25({ address: 'A', authority: 'FAUTH' })
         const target = algo25({ address: 'B' })
         expect(
             isQuantumDowngrade(
@@ -616,7 +668,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
         // Its effective signer is already Ed25519 — there is no quantum
         // protection left to remove, so the warning would be untrue.
         const ed25519Auth = algo25({ address: 'EAUTH' })
-        const source = quantum({ address: 'F', rekeyAddress: 'EAUTH' })
+        const source = quantum({ address: 'F', authority: 'EAUTH' })
         const target = algo25({ address: 'B' })
         expect(
             isQuantumDowngrade(
@@ -631,7 +683,7 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
     test('source whose auth is not held locally (broken chain) is not a downgrade', () => {
         // resolveAuthAccount throws when the auth is unheld; we cannot assert
         // quantum protection we cannot resolve.
-        const source = quantum({ address: 'F', rekeyAddress: 'MISSING' })
+        const source = quantum({ address: 'F', authority: 'MISSING' })
         const target = algo25({ address: 'B' })
         expect(
             isQuantumDowngrade(
@@ -651,23 +703,23 @@ describe('services/accounts/utils - resolveAuthAccount', () => {
     })
 
     test('walks a single rekey hop', () => {
-        const a = algo25({ address: 'A', rekeyAddress: 'B' })
+        const a = algo25({ address: 'A', authority: 'B' })
         const b = algo25({ address: 'B' })
         expect(resolveAuthAccount(a, [a, b], ALGORAND_CHAIN_ID)).toBe(b)
     })
 
     test('resolves a single hop only — not the terminal of the chain', () => {
         // A -> B -> C. B signs for A; rekey indirection is not transitive.
-        const a = ledger({ address: 'A', rekeyAddress: 'B' })
-        const b = ledger({ address: 'B', rekeyAddress: 'C' })
+        const a = ledger({ address: 'A', authority: 'B' })
+        const b = ledger({ address: 'B', authority: 'C' })
         const c = ledger({ address: 'C' })
         expect(resolveAuthAccount(a, [a, b, c], ALGORAND_CHAIN_ID)).toBe(b)
     })
 
-    test('throws RekeyTargetNotFoundError when the auth account is not held', () => {
-        const a = algo25({ address: 'A', rekeyAddress: 'MISSING' })
+    test('throws DelegationTargetNotFoundError when the auth account is not held', () => {
+        const a = algo25({ address: 'A', authority: 'MISSING' })
         expect(() => resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toThrow(
-            RekeyTargetNotFoundError,
+            DelegationTargetNotFoundError,
         )
     })
 })

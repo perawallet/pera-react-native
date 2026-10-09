@@ -37,6 +37,15 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: { keys: [] } }),
 }))
 
+// Signer resolution reads the selected network through the provider, which
+// this node environment can't load.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
 const { publicKey: PQ_PUBLIC_KEY } = generateKey(new Uint8Array(48).fill(5))
 const quantumAddress = makeTestAddress(1)
 const algoAddress = makeTestAddress(2)

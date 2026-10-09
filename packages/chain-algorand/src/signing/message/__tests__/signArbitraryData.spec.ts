@@ -12,7 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 import { signArbitraryData } from '../signArbitraryData'
 
 const signPayloads = vi.fn()
@@ -41,6 +45,7 @@ const b64 = (text: string) => encodeToBase64(new TextEncoder().encode(text))
 describe('signArbitraryData', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
         signPayloads.mockResolvedValue([new Uint8Array([9, 8, 7])])
     })
 
@@ -93,8 +98,8 @@ describe('signArbitraryData', () => {
         const original = {
             ...algo25Account,
             address: 'ORIGINAL_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
+        seedAuthority('ORIGINAL_ADDR', 'AUTH_ADDR')
 
         await signArbitraryData(deps, original, [b64('hello')])
 
@@ -104,7 +109,8 @@ describe('signArbitraryData', () => {
     test.each([
         [
             'a watch-rekeyed account',
-            { address: 'W', custody: { kind: 'watch' }, rekeyAddress: 'A' },
+            { address: 'W', custody: { kind: 'watch' } },
+            'A',
         ],
         ['a watch account', { address: 'W', custody: { kind: 'watch' } }],
         [
@@ -130,7 +136,8 @@ describe('signArbitraryData', () => {
                 },
             },
         ],
-    ])('rejects %s without signing', async (_name, account) => {
+    ])('rejects %s without signing', async (_name, account, authority) => {
+        if (authority) seedAuthority(account.address, authority)
         await expect(
             signArbitraryData(deps, account as unknown as WalletAccount, [
                 b64('hello'),

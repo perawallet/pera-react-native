@@ -207,11 +207,11 @@ const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {
 
         // Check for rekey
         if ('rekeyTo' in tx && tx.rekeyTo) {
-            const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
+            const rekeyTarget = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
                 type: 'rekey',
                 severity: 'danger',
-                message: `This transaction will rekey the account to ${rekeyAddress}`,
+                message: `This transaction will rekey the account to ${rekeyTarget}`,
             })
         }
     }

@@ -11,7 +11,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
+    authorityOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -324,7 +326,7 @@ describe('removeAccountFromStore', () => {
 })
 
 describe('applyRekeyAddressToStoreAccount', () => {
-    it('sets the rekeyAddress mirror on the matching account', () => {
+    it('records the authority on the matching account', () => {
         useAccountsStore.getState().setAccounts([
             buildWalletAccount({
                 custody: { kind: 'watch' },
@@ -334,9 +336,12 @@ describe('applyRekeyAddressToStoreAccount', () => {
 
         applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
 
-        expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
-            'AUTH',
-        )
+        expect(
+            authorityOf(
+                useAccountsStore.getState().accounts[0],
+                scopeForLegacyNetwork('mainnet'),
+            ),
+        ).toBe('AUTH')
     })
 
     it('leaves other accounts untouched', () => {
@@ -353,10 +358,11 @@ describe('applyRekeyAddressToStoreAccount', () => {
 
         applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
 
+        const untouched = useAccountsStore
+            .getState()
+            .accounts.find(a => a.address === 'ADDR_B')!
         expect(
-            useAccountsStore
-                .getState()
-                .accounts.find(a => a.address === 'ADDR_B')?.rekeyAddress,
-        ).toBeUndefined()
+            authorityOf(untouched, scopeForLegacyNetwork('mainnet')),
+        ).toBeNull()
     })
 })

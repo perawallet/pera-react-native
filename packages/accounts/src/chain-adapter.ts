@@ -50,8 +50,8 @@ export type AuthorityTargetKind = 'standard' | 'quantum' | 'hardware' | 'shared'
 
 /** Moving an account's signing authority to another account. */
 export type AccountAuthorityOps = {
-    isDelegated(account: WalletAccount): boolean
-    /** Held accounts whose authority is `address`; never `address` itself. */
+    isDelegated(account: WalletAccount, scope: ChainScope): boolean
+    /** Held accounts whose authority is `address` on any of the chain's scopes; never `address` itself. */
     accountsDelegatedTo(
         address: string,
         accounts: WalletAccount[],
@@ -61,10 +61,11 @@ export type AccountAuthorityOps = {
         target: WalletAccount,
         source: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
         options: { isQuantumTargetEnabled: boolean },
     ): boolean
     /** Whether the account can produce a usable delegated program signature. */
-    canSignProgram(account: WalletAccount): boolean
+    canSignProgram(account: WalletAccount, scope: ChainScope): boolean
 }
 
 export type AccountHoldingSnapshot = {
@@ -269,6 +270,7 @@ export interface AccountsChainAdapter {
     resolveSigner(
         account: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
     ): SignerResolution
     /**
      * The account whose key authorises `account` (itself when nothing is
@@ -278,6 +280,7 @@ export interface AccountsChainAdapter {
     getAuthAccount(
         account: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
     ): WalletAccount | null
     /**
      * Fills in record data this chain needs that older records lack, or

@@ -64,7 +64,7 @@ export type UseSubmitRekeyMutationResult = {
  *    can surface when the source's auth chain ends at a hardware account.
  * 3. Submit via `submitAndAutoRefresh` so the source account's balance and
  *    auth state are refreshed once algod accepts — otherwise the success
- *    screen would render against a stale `rekeyAddress` until periodic sync.
+ *    screen would render against a stale authority until periodic sync.
  *    Return the resulting tx IDs.
  *
  * Every failure propagates as a {@link RekeyError} tagged with the stage

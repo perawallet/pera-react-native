@@ -11,9 +11,12 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
+import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
 import { renderHook, act } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     useProgramSigner,
@@ -51,6 +54,7 @@ const programPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
         mockSignDataWithKey.mockResolvedValue([SIG])
         registerFakePlannerAdapter({ programPayload })
     })
@@ -90,10 +94,8 @@ describe('useProgramSigner', () => {
     // A rekeyed account's own key would produce a signature the chain checks
     // against the auth-addr and rejects at draw time — refuse it up front.
     test('rejects rekeyed accounts with the typed error', async () => {
-        const rekeyedAccount = {
-            ...hdAccount,
-            rekeyAddress: 'AUTH_ADDR',
-        } as unknown as WalletAccount
+        const rekeyedAccount = hdAccount
+        seedAuthority(hdAccount.address, 'AUTH_ADDR')
 
         const { result } = renderHook(() => useProgramSigner())
 

@@ -30,6 +30,7 @@ import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { seedAuthority } from './seedAuthority'
 import { algorandAddressCodec } from '../address-codec'
 
 const FUNDED = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
@@ -53,14 +54,10 @@ const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
     ...extra,
 })
 
-const rekeyedWatch = (
-    address: string,
-    rekeyAddress: string,
-): WalletAccount => ({
+const delegatedWatch = (address: string): WalletAccount => ({
     id: 'rekeyed',
     address,
     custody: { kind: 'watch' },
-    rekeyAddress,
 })
 
 accountsContractTests(() => algorandAccountsAdapter, {
@@ -139,10 +136,12 @@ accountsContractTests(() => algorandAccountsAdapter, {
     },
     rekeyed: {
         accounts: {
-            account: rekeyedWatch(REKEYED, FUNDED),
-            auth: keyed('auth', FUNDED, { rekeyAddress: EMPTY }),
+            account: delegatedWatch(REKEYED),
+            auth: keyed('auth', FUNDED),
             next: keyed('next', EMPTY),
         },
+        seedAuthority: (address, authAddress) =>
+            seedAuthority(address, authAddress),
         authAddress: FUNDED,
         rekeyedAddresses: [REKEYED],
         handlers: [

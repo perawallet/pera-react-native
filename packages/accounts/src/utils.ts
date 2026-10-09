@@ -18,6 +18,7 @@ import {
     addressCodecs,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AccountTypes,
     type AccountCustody,
@@ -111,13 +112,15 @@ export const isLedgerAccount = (
     )
 }
 
-/** False on a chain whose signing authority can't be delegated. */
+/** Answers on the chain's selected network. False on a chain whose signing authority can't be delegated. */
 export const isRekeyedAccount = (
     account: Nullable<WalletAccount>,
     chainId: ChainId,
 ): boolean =>
     !!account &&
-    (accountsChainAdapters.get(chainId).authority?.isDelegated(account) ??
+    (accountsChainAdapters
+        .get(chainId)
+        .authority?.isDelegated(account, getSelectedScope(chainId)) ??
         false)
 
 export const isAlgo25Account = (
@@ -195,13 +198,14 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
 export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignDirectly(account)
 
-/** False on a chain that can't sign programs. */
+/** Answers on the chain's selected network. False on a chain that can't sign programs. */
 export const canSignProgram = (
     account: WalletAccount,
     chainId: ChainId,
 ): boolean =>
-    accountsChainAdapters.get(chainId).authority?.canSignProgram(account) ??
-    false
+    accountsChainAdapters
+        .get(chainId)
+        .authority?.canSignProgram(account, getSelectedScope(chainId)) ?? false
 
 /** An on-chain address, an internal account id, or both. */
 export type AccountKey = {

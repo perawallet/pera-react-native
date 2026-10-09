@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
 import type {
     AnalyzedSignableGroup,
     LocalKeySignerInput,
 } from '@perawallet/wallet-core-signing'
 import { signLocalKeyGroups } from '../signLocalKeyGroups'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -140,8 +144,12 @@ describe('signLocalKeyGroups', () => {
             custody: { kind: 'local', seed: 'algo25' },
             address: PARTICIPANT,
             keyPairId: 'key-participant',
-            rekeyAddress: AUTH,
         } as unknown as WalletAccount
+
+        beforeEach(() => {
+            useAccountChainStateStore.getState().resetState()
+            seedAuthority(PARTICIPANT, AUTH)
+        })
 
         const authAccount: WalletAccount = {
             custody: { kind: 'local', seed: 'algo25' },

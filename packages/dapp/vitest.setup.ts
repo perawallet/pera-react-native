@@ -45,3 +45,8 @@ vi.mock(
     '@perawallet/wallet-core-accounts',
     async () => await import('../accounts/src/utils'),
 )
+// `accounts/src/utils` reads the selected network through the chain-shared
+// barrel, which is the mmkv wall again; no spec here resolves a signer.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))

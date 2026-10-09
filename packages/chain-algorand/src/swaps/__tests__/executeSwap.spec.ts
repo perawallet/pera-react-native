@@ -238,7 +238,6 @@ const standardAccountRekeyedToQuantum: WalletAccount = {
     address: 'STANDARD_ADDR',
     custody: { kind: 'local', seed: 'algo25' },
     keyPairId: 'standard-keypair-1',
-    rekeyAddress: quantumAccount.address,
 }
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>

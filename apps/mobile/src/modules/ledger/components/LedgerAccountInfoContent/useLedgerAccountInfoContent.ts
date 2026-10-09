@@ -45,7 +45,7 @@ export type LedgerInfoListItem =
           hasKnownDecimals: boolean
       }
     | {
-          kind: 'rekeyAddress'
+          kind: 'authorityAccount'
           key: string
           account: WalletAccount
           displayStateOverride?: AccountDisplayState
@@ -179,7 +179,7 @@ export const useLedgerAccountInfoContent = (
                     title: t('ledger.account_info.can_be_signed_by'),
                 },
                 {
-                    kind: 'rekeyAddress',
+                    kind: 'authorityAccount',
                     key: `rekey-${preview.rekey.authAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
@@ -195,7 +195,7 @@ export const useLedgerAccountInfoContent = (
                 // These rekeyed addresses are watch accounts (no key on this device).
                 const watchSynth = watchDisplayAccount(addr)
                 list.push({
-                    kind: 'rekeyAddress',
+                    kind: 'authorityAccount',
                     key: `rekey-${addr}`,
                     account: watchSynth,
                     // Address is rekeyed to this Ledger — display as

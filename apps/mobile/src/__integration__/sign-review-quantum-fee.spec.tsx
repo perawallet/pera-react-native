@@ -28,6 +28,7 @@ import {
 } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -47,6 +48,7 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type QuantumAccount,
     type WatchAccount,
@@ -95,8 +97,8 @@ const seedQuantumRekeyedToStandard = async (): Promise<void> => {
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'unused-once-rekeyed',
         name: 'Rekeyed Quantum',
-        rekeyAddress: signer.address,
     }
+    seedAuthority(rekeyedQuantum.address, signer.address)
     useAccountsStore.getState().setAccounts([signer, rekeyedQuantum])
     useAccountsStore
         .getState()
@@ -115,8 +117,8 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
         custody: { kind: 'watch' },
         address: REVIEW_RECEIVER_ADDRESS,
         name: 'Rekeyed Watch',
-        rekeyAddress: REVIEW_SIGNER_ADDRESS,
     }
+    seedAuthority(rekeyedWatch.address, REVIEW_SIGNER_ADDRESS)
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, rekeyedWatch])
     store.setSelectedAccountAddress(rekeyedWatch.address)
@@ -129,6 +131,7 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     afterEach(() => {
         // Feature-flag override must not leak into other tests/files.
         useRemoteConfigStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
     })
     afterAll(async () => {
         await teardownTestDatabase()

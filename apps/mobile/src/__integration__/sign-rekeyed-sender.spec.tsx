@@ -26,6 +26,7 @@ import {
 } from 'vitest'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -45,6 +46,7 @@ import {
 } from '@test-utils/signing-review'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
+    useAccountChainStateStore,
     useAccountsStore,
     type HardwareWalletAccount,
     type WalletAccount,
@@ -123,6 +125,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
     })
 
     it('Given a WC request whose sender is rekeyed to a held local key, when the user confirms, then the auth account signs and sgnr is stamped on the signed transaction', async () => {
@@ -131,9 +134,9 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
             id: 'rekeyed-sender',
             custody: { kind: 'watch' },
             address: REKEYED_SENDER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',
         }
+        seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
 
         const { request, approve, error } = buildTransactionSignRequest({
@@ -233,9 +236,9 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
             id: 'rekeyed-sender',
             custody: { kind: 'watch' },
             address: REKEYED_SENDER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',
         }
+        seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender])
 
         const { request } = buildTransactionSignRequest({

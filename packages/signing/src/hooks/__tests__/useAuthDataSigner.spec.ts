@@ -103,7 +103,7 @@ describe('useAuthDataSigner', () => {
         mockAccounts = [account]
         const { result, rerender } = renderHook(() => useAuthDataSigner())
 
-        const revoked = { ...account, rekeyAddress: undefined }
+        const revoked = { ...account, name: 'Renamed' }
         mockAccounts = [revoked]
         rerender()
         await result.current.signAuthData(account, authData, metadata)

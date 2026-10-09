@@ -11,9 +11,11 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
+    authorityOf,
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
@@ -21,6 +23,7 @@ import {
     isQuantumAccount,
     isRekeyedAccount,
     useAllAccounts,
+    useAuthorityOf,
     useCanSignWith,
     useFindAccountByAddress,
     useMultisigDetailsBackfill,
@@ -129,6 +132,7 @@ export const useAccountOptions = ({
         platform: 'sharedAccounts',
         anyChain: 'multisig',
     })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
     const showPassphrase =
         !isRekeyed &&
@@ -142,7 +146,8 @@ export const useAccountOptions = ({
         ? (account.multisigDetails?.addresses.length ?? 0)
         : 0
 
-    const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
+    const authority = useAuthorityOf(account, scope)
+    const authAccount = useFindAccountByAddress(authority ?? '')
 
     const handleCopyAddress = useCallback(() => {
         trackEvent(AccountOptionsEvent.CopyAddress)
@@ -331,7 +336,7 @@ export const useAccountOptions = ({
     const blockedByRekeyedDependents = useCallback((): boolean => {
         const rekeyedToThisAccount = accounts.filter(
             a =>
-                a.rekeyAddress === account.address &&
+                authorityOf(a, scope) === account.address &&
                 a.address !== account.address,
         )
         if (rekeyedToThisAccount.length === 0) return false
@@ -344,7 +349,7 @@ export const useAccountOptions = ({
             type: 'error',
         })
         return true
-    }, [accounts, account.address, showToast, t])
+    }, [accounts, scope, account.address, showToast, t])
 
     const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
@@ -612,7 +617,7 @@ export const useAccountOptions = ({
         isRekeyed,
         canUndoRekey,
         authAccount: authAccount ?? undefined,
-        authAddress: account.rekeyAddress,
+        authAddress: authority ?? undefined,
         handleUndoRekey,
         removeConfirmView,
         handleConfirmBackupWarning,

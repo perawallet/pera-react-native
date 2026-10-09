@@ -12,18 +12,23 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getAuthAccount,
     getRekeyAccount,
     resolveAuthAccount,
     resolveSignerForAccount,
 } from '../signer-resolution'
-import { RekeyTargetNotFoundError } from '../errors'
+import { DelegationTargetNotFoundError } from '../errors'
 import { type WalletAccount } from '../models'
+import { useAccountChainStateStore } from '../store'
 import {
     FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from './fakeAccountsChain'
 
 const account = (
@@ -40,6 +45,8 @@ const account = (
 
 beforeEach(() => {
     registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('mainnet')
 })
 
 describe('signer resolution', () => {
@@ -56,12 +63,37 @@ describe('signer resolution', () => {
             kind: 'watch',
             account: a,
         })
-        expect(adapter.resolveSigner).toHaveBeenCalledWith(a, accounts)
+        expect(adapter.resolveSigner).toHaveBeenCalledWith(
+            a,
+            accounts,
+            MAINNET_SCOPE,
+        )
+    })
+
+    it('asks the adapter on the selected network', () => {
+        const a = account('A')
+        const { adapter } = fakeAccountsChain()
+        useNetworkStore.getState().setNetwork('testnet')
+
+        getAuthAccount(a, [a], FAKE_CHAIN_ID)
+        resolveSignerForAccount(a, [a], FAKE_CHAIN_ID)
+
+        expect(adapter.getAuthAccount).toHaveBeenCalledWith(
+            a,
+            [a],
+            TESTNET_SCOPE,
+        )
+        expect(adapter.resolveSigner).toHaveBeenCalledWith(
+            a,
+            [a],
+            TESTNET_SCOPE,
+        )
     })
 
     it("returns the chain's auth account, and derives the rest from it", () => {
         const auth = account('S')
-        const a = account('A', { rekeyAddress: 'S' })
+        const a = account('A')
+        seedAuthority('A', 'S')
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
@@ -70,14 +102,22 @@ describe('signer resolution', () => {
         expect(getRekeyAccount('A', [a, auth], FAKE_CHAIN_ID)).toBe(auth)
     })
 
-    it('throws RekeyTargetNotFoundError when the chain finds no auth account', () => {
-        const a = account('A', { rekeyAddress: 'GONE' })
+    it('throws DelegationTargetNotFoundError when the chain finds no auth account', () => {
+        const a = account('A')
+        seedAuthority('A', 'GONE')
         vi.mocked(fakeAccountsChain().adapter.getAuthAccount).mockReturnValue(
             null,
         )
 
         expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
-            RekeyTargetNotFoundError,
+            expect.objectContaining({
+                metadata: expect.objectContaining({
+                    params: { authAddress: 'GONE' },
+                }),
+            }),
+        )
+        expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
+            DelegationTargetNotFoundError,
         )
     })
 
