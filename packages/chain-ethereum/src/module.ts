@@ -12,12 +12,14 @@
 
 import {
     addressCodecs,
+    keyDerivations,
     type ChainModule,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumAddressCodec } from './addresses'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
 import { EVM_ERROR_I18N_KEYS } from './errors/translate'
+import { ethereumKeyDerivation } from './keys/derivation'
 
 export const ethereumModule: ChainModule = {
     descriptor: ethereumDescriptor,
@@ -25,6 +27,7 @@ export const ethereumModule: ChainModule = {
     // registerChainSetup registers the descriptor; each Ethereum adapter registers here.
     register: _ctx => {
         addressCodecs.register(ethereumAddressCodec)
+        keyDerivations.register(ethereumKeyDerivation)
     },
     i18nKeys: () => EVM_ERROR_I18N_KEYS,
 }

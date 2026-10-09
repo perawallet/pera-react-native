@@ -2528,6 +2528,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

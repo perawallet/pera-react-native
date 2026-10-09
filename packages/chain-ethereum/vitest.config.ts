@@ -37,6 +37,10 @@ export default defineConfig({
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',
             ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
         },
     },
 })
