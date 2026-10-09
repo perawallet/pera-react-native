@@ -20,6 +20,10 @@ Run the `Release / Stable` workflow from the Actions tab. It tags the most recen
 
 It tags the rc's _commit_, not `main`: that commit is what was built and put in front of QA. No version bump is needed afterwards: `create-prerelease-tag.sh` sees the new stable tag and rolls subsequent prereleases to the next patch.
 
+### Moving to a new minor or major version
+
+Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m v7.2.0-rc.1 && git push origin v7.2.0-rc.1`). `create-prerelease-tag.sh` follows the highest prerelease base it finds, so the nightlies and the biweekly rc continue as `v7.2.0-alpha.N` and `v7.2.0-rc.N` with no `package.json` bump. The marketing version comes from the tag, not `package.json`. A mistyped higher tag captures every channel until it is deleted from origin.
+
 ### iOS
 
 - Builds the `Pera7Production` scheme and uploads to TestFlight (`fastlane ios deploy_testflight`).
