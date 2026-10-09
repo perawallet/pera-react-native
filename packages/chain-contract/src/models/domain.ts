@@ -41,6 +41,9 @@ export const isNativeAsset = (
 
 export type SigningScheme = 'ed25519' | 'falcon-1024' | 'secp256k1'
 
+export const isPostQuantumScheme = (scheme: SigningScheme): boolean =>
+    scheme === 'falcon-1024'
+
 /**
  * Account data only its own chain reads, persisted on the account's chain
  * entry. A chain package adds its member, discriminated by `family`.
@@ -78,6 +81,13 @@ export interface AccountState {
     address: string
     scope: ChainScope
     nativeBalance: Decimal
+    /**
+     * Native asset the chain holds back from spending (Algorand's minimum
+     * balance); zero on a chain with no reserve.
+     */
+    reserveBalance: Decimal
+    /** Non-native assets the account holds or has opted in to. */
+    heldTokenCount: number
     chainState: AccountChainState
 }
 

@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ChainDescriptor } from '../descriptor'
-import { assetRefKey, isNativeAsset } from '../domain'
+import { assetRefKey, isNativeAsset, isPostQuantumScheme } from '../domain'
 import type { ChainId } from '../identity'
 
 // ChainId has one member today; a second chain is simulated with a cast.
@@ -66,5 +66,13 @@ describe('isNativeAsset', () => {
                 algorandDescriptor,
             ),
         ).toBe(false)
+    })
+})
+
+describe('isPostQuantumScheme', () => {
+    it('classes Falcon as post-quantum and the elliptic-curve schemes as not', () => {
+        expect(isPostQuantumScheme('falcon-1024')).toBe(true)
+        expect(isPostQuantumScheme('ed25519')).toBe(false)
+        expect(isPostQuantumScheme('secp256k1')).toBe(false)
     })
 })
