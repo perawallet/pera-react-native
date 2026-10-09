@@ -13,6 +13,8 @@
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchDelta, isFromSeqTooOldError } from '../api'
 import {
+    BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     DeltaOperation,
     type DeltaEntry,
@@ -61,6 +63,39 @@ export const rebuildDeltasFromManifest = (
             hash: null,
         })),
 ]
+
+/**
+ * Replays the account items this device tracks but never read, so
+ * `applyDeltas` downloads them again. For when this client can read a chain it
+ * could not before: those items were skipped, and no delta will mention them
+ * again.
+ *
+ * Held items are left alone: a `pendingImport` item waits for the user, and a
+ * dirty or pending-delete one carries a local decision.
+ */
+export const unreadAccountDeltas = (state: SyncState): DeltaEntry[] =>
+    Object.entries(state.items)
+        .filter(
+            ([key, item]) =>
+                (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_SECRETS_KEY_PREFIX)) &&
+                item.status === BackupItemStatus.ACTIVE &&
+                item.pendingImport !== true &&
+                item.pendingDelete !== true &&
+                !item.isDirty &&
+                item.knownVer > 0 &&
+                item.lastRemoteHash !== null &&
+                item.localContentHash == null,
+        )
+        .map(([key, item]) => ({
+            seq: state.lastSyncedSeq,
+            key,
+            type: item.type,
+            ver: item.knownVer,
+            status: item.status,
+            op: DeltaOperation.UPSERT,
+            hash: item.lastRemoteHash,
+        }))
 
 /**
  * Deltas from the cursor, or — when retention has pruned past that cursor — the

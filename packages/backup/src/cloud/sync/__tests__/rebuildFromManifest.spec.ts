@@ -33,6 +33,7 @@ import {
 import {
     fetchDeltaOrRebuild,
     rebuildDeltasFromManifest,
+    unreadAccountDeltas,
 } from '../rebuildFromManifest'
 
 const deps = { network: 'mainnet' as const, backupId: 'b', deviceId: 'dev' }
@@ -193,5 +194,63 @@ describe('fetchDeltaOrRebuild', () => {
             fetchDeltaOrRebuild(deps, createEmptySyncState('b'), getManifest),
         ).rejects.toMatchObject({ status: 500 })
         expect(getManifest).not.toHaveBeenCalled()
+    })
+})
+
+describe('unreadAccountDeltas', () => {
+    const unread = (over: Partial<SyncItemState> = {}) =>
+        tracked({ localContentHash: null, ...over })
+
+    it('replays an active account or secrets item that was never read, at the cursor and its tracked version', () => {
+        const state = {
+            ...stateWith({
+                'accounts/A': unread({ knownVer: 4, lastRemoteHash: 'ha' }),
+                'secrets/A': unread({ knownVer: 2, lastRemoteHash: 'hs' }),
+            }),
+            lastSyncedSeq: 40,
+        }
+
+        expect(unreadAccountDeltas(state)).toEqual([
+            {
+                seq: 40,
+                key: 'accounts/A',
+                type: BackupItemType.ACCOUNT,
+                ver: 4,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'ha',
+            },
+            {
+                seq: 40,
+                key: 'secrets/A',
+                type: BackupItemType.ACCOUNT,
+                ver: 2,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'hs',
+            },
+        ])
+    })
+
+    it.each([
+        ['already read', { localContentHash: 'c' }],
+        ['held for review', { pendingImport: true }],
+        ['marked for deletion', { pendingDelete: true }],
+        ['carrying a local edit', { isDirty: true }],
+        ['not yet on the server', { knownVer: 0 }],
+        ['without a server hash', { lastRemoteHash: null }],
+        ['deleted', { status: BackupItemStatus.IGNORED }],
+    ])('leaves out an item %s', (_label, over) => {
+        const state = stateWith({ 'accounts/A': unread(over) })
+
+        expect(unreadAccountDeltas(state)).toEqual([])
+    })
+
+    it('leaves out an unread item that is not an account item', () => {
+        const state = stateWith({
+            'contacts/C': unread({ type: BackupItemType.CONTACT }),
+        })
+
+        expect(unreadAccountDeltas(state)).toEqual([])
     })
 })
