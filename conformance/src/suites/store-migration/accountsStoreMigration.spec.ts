@@ -33,6 +33,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
     migrations,
@@ -98,12 +99,19 @@ type PersistedState = {
 const addressOf = (account: WalletAccount): string | undefined =>
     chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
-// The store's own persist storage: the platform key-value store, JSON-encoded
-// the way every version wrote it.
+// The platform key-value store under the accounts store, JSON-encoded the way
+// every version wrote it. Seeded and read directly: the store's own persist
+// storage drops every write until the store has hydrated.
 const storage = () => {
-    const persistStorage = useAccountsStore.persist.getOptions().storage
-    if (!persistStorage) throw new Error('the accounts store is not persisted')
-    return persistStorage
+    const keyValue = getProvider().keyValueStorage
+    return {
+        getItem: (key: string): unknown => {
+            const raw = keyValue.getItem(key)
+            return typeof raw === 'string' ? JSON.parse(raw) : null
+        },
+        setItem: (key: string, value: unknown) =>
+            keyValue.setItem(key, JSON.stringify(value)),
+    }
 }
 
 const readPersisted = (): PersistedState =>
