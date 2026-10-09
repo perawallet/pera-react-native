@@ -24,8 +24,8 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * Blocks a data-signing request up front when a requester couldn't verify the
- * signature (a post-quantum key under an Ed25519-only message format), instead
+ * Blocks a data-signing request up front when the requester couldn't verify
+ * the signature (a key of a scheme the message format doesn't carry), instead
  * of letting the user sign into a guaranteed failure.
  */
 export const useIsQuantumDataSigningBlocked = (
@@ -36,11 +36,10 @@ export const useIsQuantumDataSigningBlocked = (
 
     // Block on the request's `signer` field (authData.signer / data[].signer),
     // not the sign-in message address. Data signing uses the named signer's own
-    // key and never follows a rekey, so that is the only key in play: a request
-    // naming a quantum account as `signer` is caught here. An ed25519 account
-    // rekeyed to a quantum auth cannot do SIWA at all: naming itself is refused
-    // by validateArc60AuthRequest (control moved to the auth), and naming the
-    // quantum auth lands here.
+    // key and never follows a rekey, so that is the only key in play. An
+    // account rekeyed to an unverifiable auth can't sign in at all: naming
+    // itself is refused by the chain's auth-data validation (control moved to
+    // the auth), and naming the auth lands here.
     const signer = messageSignerChainAdapters.get(LEGACY_CHAIN_ID)
     const kind = isAuthDataRequest(request) ? 'authData' : 'arbitraryData'
     return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
