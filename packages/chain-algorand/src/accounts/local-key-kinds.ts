@@ -27,6 +27,15 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isHd: true,
         mnemonicWordCounts: [24],
         isAutoDetected: true,
+        recoverOption: {
+            id: 'hd_wallet',
+            titleKey: 'onboarding.import_options.hd_wallet.title',
+            chipKey: 'onboarding.import_options.hd_wallet.chip',
+            descriptionKey: 'onboarding.import_options.hd_wallet.description',
+            mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
+            isSuggested: true,
+            analyticsEvent: 'onb_createacc_recover_24',
+        },
     },
     {
         seed: null,
@@ -34,6 +43,15 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isHd: false,
         mnemonicWordCounts: [25],
         isAutoDetected: true,
+        recoverOption: {
+            id: 'algo25',
+            titleKey: 'onboarding.import_options.algo25.title',
+            chipKey: 'onboarding.import_options.algo25.chip',
+            descriptionKey: 'onboarding.import_options.algo25.description',
+            mnemonicInfoKey: 'onboarding.import_options.algo25.mnemonic_info',
+            isSuggested: false,
+            analyticsEvent: 'onb_createacc_recover_25',
+        },
     },
     {
         seed: SeedScheme.Quantum,
@@ -43,6 +61,18 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         isAutoDetected: false,
     },
 ]
+
+export const localKeyKindI18nKeys = (): readonly string[] =>
+    algorandLocalKeyKinds.flatMap(({ recoverOption }) =>
+        recoverOption
+            ? [
+                  recoverOption.titleKey,
+                  recoverOption.chipKey,
+                  recoverOption.descriptionKey,
+                  recoverOption.mnemonicInfoKey,
+              ]
+            : [],
+    )
 
 /**
  * `quantum` ranks highest because misreporting it is the expensive failure —

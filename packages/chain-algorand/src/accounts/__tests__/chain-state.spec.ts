@@ -12,7 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { toAlgorandChainState } from '../chain-state'
+import {
+    summarizeAlgorandChainState,
+    toAlgorandChainState,
+} from '../chain-state'
 
 describe('toAlgorandChainState', () => {
     it('converts display-unit minBalance to microAlgos and carries the rest', () => {
@@ -61,5 +64,29 @@ describe('toAlgorandChainState', () => {
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
         })
+    })
+})
+
+describe('summarizeAlgorandChainState', () => {
+    it('reads the minimum balance as the reserve and the opted-in assets as held tokens', () => {
+        const state = toAlgorandChainState({
+            minBalance: new Decimal('0.2'),
+            authorityAddress: null,
+            totalAssetsOptedIn: 2,
+        })
+
+        expect(summarizeAlgorandChainState(state)).toEqual({
+            reserveBalance: new Decimal(200000),
+            heldTokenCount: 2,
+        })
+    })
+
+    it('reads another family as no reserve and no tokens', () => {
+        expect(
+            summarizeAlgorandChainState({
+                family: 'evm',
+                nonce: { latest: 0, pending: 0 },
+            }),
+        ).toEqual({ reserveBalance: new Decimal(0), heldTokenCount: 0 })
     })
 })

@@ -23,6 +23,7 @@ import {
 import {
     algorandDuplicateRank,
     algorandLocalKeyKinds,
+    localKeyKindI18nKeys,
 } from '../local-key-kinds'
 
 describe('algorandLocalKeyKinds', () => {
@@ -34,7 +35,7 @@ describe('algorandLocalKeyKinds', () => {
         ])
     })
 
-    it("declares each kind's scheme, word counts and detection", () => {
+    it("declares each kind's scheme, word counts, detection and recover option", () => {
         expect(algorandLocalKeyKinds).toEqual([
             {
                 seed: SeedScheme.Bip39,
@@ -42,6 +43,16 @@ describe('algorandLocalKeyKinds', () => {
                 isHd: true,
                 mnemonicWordCounts: [24],
                 isAutoDetected: true,
+                recoverOption: {
+                    id: 'hd_wallet',
+                    titleKey: 'onboarding.import_options.hd_wallet.title',
+                    chipKey: 'onboarding.import_options.hd_wallet.chip',
+                    descriptionKey:
+                        'onboarding.import_options.hd_wallet.description',
+                    mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
+                    isSuggested: true,
+                    analyticsEvent: 'onb_createacc_recover_24',
+                },
             },
             {
                 seed: null,
@@ -49,6 +60,17 @@ describe('algorandLocalKeyKinds', () => {
                 isHd: false,
                 mnemonicWordCounts: [25],
                 isAutoDetected: true,
+                recoverOption: {
+                    id: 'algo25',
+                    titleKey: 'onboarding.import_options.algo25.title',
+                    chipKey: 'onboarding.import_options.algo25.chip',
+                    descriptionKey:
+                        'onboarding.import_options.algo25.description',
+                    mnemonicInfoKey:
+                        'onboarding.import_options.algo25.mnemonic_info',
+                    isSuggested: false,
+                    analyticsEvent: 'onb_createacc_recover_25',
+                },
             },
             {
                 seed: SeedScheme.Quantum,
@@ -57,6 +79,21 @@ describe('algorandLocalKeyKinds', () => {
                 mnemonicWordCounts: [25],
                 isAutoDetected: false,
             },
+        ])
+    })
+})
+
+describe('localKeyKindI18nKeys', () => {
+    it('lists every recover option key, and none for quantum, which the chooser omits', () => {
+        expect(localKeyKindI18nKeys()).toEqual([
+            'onboarding.import_options.hd_wallet.title',
+            'onboarding.import_options.hd_wallet.chip',
+            'onboarding.import_options.hd_wallet.description',
+            'onboarding.import_options.mnemonic_info',
+            'onboarding.import_options.algo25.title',
+            'onboarding.import_options.algo25.chip',
+            'onboarding.import_options.algo25.description',
+            'onboarding.import_options.algo25.mnemonic_info',
         ])
     })
 })
