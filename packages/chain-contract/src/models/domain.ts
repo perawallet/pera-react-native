@@ -80,10 +80,12 @@ export type AccountChainState =
 export interface AccountState {
     address: string
     scope: ChainScope
+    /** Display units of the native asset. */
     nativeBalance: Decimal
     /**
-     * Native asset the chain holds back from spending (Algorand's minimum
-     * balance); zero on a chain with no reserve.
+     * Base units of the native asset (microAlgos on Algorand), unlike
+     * `nativeBalance`: what the chain holds back from spending (Algorand's
+     * minimum balance); zero on a chain with no reserve.
      */
     reserveBalance: Decimal
     /** Non-native assets the account holds or has opted in to. */
