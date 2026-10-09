@@ -539,6 +539,19 @@ jobs:
         if: steps.changes.outputs.affected == 'true'
         run: test -d node_modules || pnpm install --frozen-lockfile
 
+      # Only fonts on this image today, but apt's mirror is the slowest and most
+      # variable thing in the job, so it runs behind the bundle instead of
+      # after it. `Install Playwright Chromium` waits for it.
+      - name: Start Playwright system dependencies
+        if: steps.changes.outputs.affected == 'true'
+        # Every descriptor redirected: the runner waits for a step's output pipe
+        # to close, so a background job still holding it would block the step.
+        run: |
+          (
+            pnpm --filter browser exec playwright install-deps chromium
+            echo $? > "$RUNNER_TEMP/playwright-deps.exit"
+          ) < /dev/null > "$RUNNER_TEMP/playwright-deps.log" 2>&1 &
+
       # Metro's transform cache is keyed by file content, so any older cache is
       # safe and most of it still hits. ci-cache-warm.yml saves one from main
       # nightly, which is what a PR's first run restores.
@@ -591,7 +604,16 @@ jobs:
 
       - name: Install Playwright Chromium
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter browser exec playwright install --with-deps chromium
+        run: |
+          set -euo pipefail
+          while [ ! -f "$RUNNER_TEMP/playwright-deps.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/playwright-deps.log"
+          exit_code=$(cat "$RUNNER_TEMP/playwright-deps.exit")
+          if [ "$exit_code" -ne 0 ]; then
+            echo "::error::playwright install-deps exited $exit_code"
+            exit "$exit_code"
+          fi
+          pnpm --filter browser exec playwright install chromium
 
       - name: Run extension e2e
         if: steps.changes.outputs.affected == 'true'
