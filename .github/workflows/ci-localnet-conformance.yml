@@ -40,6 +40,9 @@ on:
             - 'packages/chain-shared/**'
             # ChainScope, which every builder and fetcher takes.
             - 'packages/chain-contract/**'
+            # The schema and migrations the store-migration suite hydrates
+            # account chain state from.
+            - 'packages/database/**'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:

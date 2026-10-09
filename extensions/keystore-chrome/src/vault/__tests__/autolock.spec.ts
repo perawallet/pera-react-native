@@ -24,6 +24,12 @@ import {
     setAutoLockMinutes,
 } from '../autolock'
 
+vi.mock('../argon2', async importOriginal =>
+    (await import('../../test-utils/argon2')).fastArgon2(
+        await importOriginal(),
+    ),
+)
+
 describe('auto-lock', () => {
     let fake: ChromeFake
 

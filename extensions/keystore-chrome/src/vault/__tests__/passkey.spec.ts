@@ -41,6 +41,12 @@ const recordFailedAttempt = (): Promise<void> =>
     ).catch(() => {})
 import { AUTO_LOCK_ALARM } from '../autolock'
 
+vi.mock('../argon2', async importOriginal =>
+    (await import('../../test-utils/argon2')).fastArgon2(
+        await importOriginal(),
+    ),
+)
+
 // 32 deterministic bytes used as the fake PRF output.
 const FAKE_PRF_BYTES = new Uint8Array(32).fill(0xab)
 // Deterministic rawId bytes — distinct from the base64url `id` string to
