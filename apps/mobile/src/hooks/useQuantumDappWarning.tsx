@@ -50,14 +50,14 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             // The same predicate as the fee resolver: the scheme premium and the
             // non-primary signature follow the effective signer, so a rekey to a
             // quantum auth counts too.
-            const hasQuantumAccount = addresses.some(address => {
+            const hasNonPrimarySigner = addresses.some(address => {
                 const signer = getSignerFor(address, accounts, LEGACY_CHAIN_ID)
                 return (
                     signer !== null &&
                     usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
                 )
             })
-            if (!hasQuantumAccount) return 'continue'
+            if (!hasNonPrimarySigner) return 'continue'
 
             const result = await request<QuantumDappWarningDecision>({
                 contents: <QuantumDappWarningSheet />,

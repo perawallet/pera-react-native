@@ -34,7 +34,10 @@ export const useShouldPromptMnemonicBackup = (
         ? chainAccountOf(account, scope.chainId)?.address
         : undefined
     const { isFunded } = useAccountFundedNetworksQuery(address, scope)
-    const rekeyedToThisAccount = useAccountsDelegatedTo(address, scope.chainId)
+    const delegatedToThisAccount = useAccountsDelegatedTo(
+        address,
+        scope.chainId,
+    )
     const canBackUpMnemonic = useChainCapability(
         scope.chainId,
         'mnemonicBackup',
@@ -46,6 +49,6 @@ export const useShouldPromptMnemonicBackup = (
     return (
         canBackUpMnemonic &&
         requiresBackup &&
-        (isFunded || rekeyedToThisAccount.length > 0)
+        (isFunded || delegatedToThisAccount.length > 0)
     )
 }
