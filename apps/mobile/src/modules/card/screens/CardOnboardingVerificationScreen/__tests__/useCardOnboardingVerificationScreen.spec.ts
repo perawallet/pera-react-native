@@ -51,7 +51,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         // The poll mechanics (give-up limits) are unit-tested in the card
         // package's useOnboardingKycPoll.spec — here we drive its output to
         // exercise the screen's handoff/give-up wiring.
-        useOnboardingKycPoll: (options: { enabled?: boolean }) => {
+        useOnboardingKycPoll: (
+            _scope: unknown,
+            options: { enabled?: boolean },
+        ) => {
             mockPollOptions = options
             return {
                 verificationState: mockVerificationState,
@@ -120,6 +123,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingVerificationScreen } from '../useCardOnboardingVerificationScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const SESSION_URL = 'https://veriff.example/session'
 
@@ -157,6 +161,10 @@ const startVerification = async (result: {
         expect(Linking.openURL).toHaveBeenCalledWith(SESSION_URL),
     )
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingVerificationScreen', () => {
     it('starts pre-auth KYC with the onboarding id and opens the session URL', async () => {

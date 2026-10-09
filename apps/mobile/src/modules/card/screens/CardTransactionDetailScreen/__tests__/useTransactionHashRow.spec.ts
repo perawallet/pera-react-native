@@ -16,26 +16,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockPushWebView = vi.fn()
 const mockCopyToClipboard = vi.fn()
 
-// Mutable, for the same reason as `mockCapabilities` below: `custom` has an
-// empty explorerUrl by design, and that case needs to be reachable per-test.
-const { mockNetworkConfig } = vi.hoisted(() => ({
-    mockNetworkConfig: { explorerUrl: 'https://explorer.test' },
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
+const { getCardTransactionUrl } = vi.hoisted(() => ({
+    getCardTransactionUrl: vi.fn(),
 }))
-
-vi.mock(
-    '@perawallet/wallet-core-chain-algorand/blockchain',
-    async importOriginal => ({
-        ...(await importOriginal<
-            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-        >()),
-    }),
-)
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ networkConfig: mockNetworkConfig }),
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    getCardTransactionUrl,
+}))
+vi.mock('../../../hooks/useCardScope', () => ({
+    useCardScope: () => SCOPE,
 }))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
@@ -73,14 +63,13 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTransactionHashRow } from '../useTransactionHashRow'
 
 const TX_HASH = 'H2KQF3YLVJZP4W6XNBTAM5RUE7DCGS2IK4LMOQ6PYAWBVXCZE3TR'
+const TX_URL = `https://explorer.test/tx/${TX_HASH}`
 
 describe('useTransactionHashRow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
-        Object.assign(mockNetworkConfig, {
-            explorerUrl: 'https://explorer.test',
-        })
+        getCardTransactionUrl.mockReturnValue(TX_URL)
     })
 
     it('derives the display hash through the shared middle-truncation util', () => {
@@ -103,10 +92,13 @@ describe('useTransactionHashRow', () => {
 
         result.current.onOpenExplorer?.()
 
+        expect(getCardTransactionUrl).toHaveBeenCalledWith(
+            TX_HASH,
+            'algorand',
+            SCOPE,
+        )
         expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: `https://explorer.test/tx/${TX_HASH}`,
-            }),
+            expect.objectContaining({ url: TX_URL }),
         )
         expect(mockOpenURL).not.toHaveBeenCalled()
     })
@@ -119,28 +111,18 @@ describe('useTransactionHashRow', () => {
 
         result.current.onOpenExplorer?.()
 
-        expect(mockOpenURL).toHaveBeenCalledWith(
-            `https://explorer.test/tx/${TX_HASH}`,
-        )
+        expect(mockOpenURL).toHaveBeenCalledWith(TX_URL)
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    it('offers no explorer action for a non-Algorand funding leg', () => {
+    // On `custom` (no explorer) this is the worst of the explorer sites: with
+    // inAppWebView off it would reach Linking.openURL('/tx/…'), which rejects
+    // rather than no-opping.
+    it('offers no explorer action when the adapter has no link for the leg', () => {
+        getCardTransactionUrl.mockReturnValue(null)
+
         const { result } = renderHook(() =>
             useTransactionHashRow('0xb92de09d893e', 'linea'),
-        )
-
-        expect(result.current.onOpenExplorer).toBeUndefined()
-    })
-
-    it('offers no explorer action on a network with no explorer', () => {
-        // On `custom` this is the worst of the explorer sites: with
-        // inAppWebView off it reaches Linking.openURL('/tx/…'), which rejects
-        // rather than no-opping.
-        Object.assign(mockNetworkConfig, { explorerUrl: '' })
-
-        const { result } = renderHook(() =>
-            useTransactionHashRow(TX_HASH, 'algorand'),
         )
 
         expect(result.current.onOpenExplorer).toBeUndefined()

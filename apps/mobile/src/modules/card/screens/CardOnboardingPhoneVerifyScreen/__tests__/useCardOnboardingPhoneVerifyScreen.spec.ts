@@ -94,12 +94,17 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingPhoneVerifyScreen } from '../useCardOnboardingPhoneVerifyScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 /** A full-length (6-digit) code — the screen only checks the length now. */
 const VALID_CODE = '123456'
 
 const renderVerifyHook = () =>
     renderHook(() => useCardOnboardingPhoneVerifyScreen())
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingPhoneVerifyScreen', () => {
     beforeEach(() => {
