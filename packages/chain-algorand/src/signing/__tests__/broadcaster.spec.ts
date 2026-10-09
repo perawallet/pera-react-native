@@ -73,6 +73,11 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
     afterAll(() => server.close())
 
     test('posts the signed bytes unchanged, concatenated in order', async () => {
+        // Bytes no decoder accepts, so any re-encoding would fail or differ.
+        const opaque = [
+            new Uint8Array([0xc1, 0x01]),
+            new Uint8Array([0xc1, 0x02]),
+        ]
         let posted: Uint8Array | undefined
         server.use(
             http.post('*/v2/transactions', async ({ request }) => {
@@ -81,9 +86,9 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
             }),
         )
 
-        await algorandBroadcasterAdapter.submit(scope, signed)
+        await algorandBroadcasterAdapter.submit(scope, opaque)
 
-        expect(posted).toEqual(concatBytes(...signed))
+        expect(posted).toEqual(concatBytes(...opaque))
     })
 
     test('rejects the wait when the node drops the transaction from its pool', async () => {

@@ -49,7 +49,12 @@ export const broadcasterContractTests = (
     // signing's build while this suite loads it from source.
     const submissionFailure = (
         classification: SubmissionErrorClassification,
-    ) => ({ classification, txIds: [...fixtures.txIds] })
+    ) => ({
+        classification,
+        txIds: [...fixtures.txIds],
+        // A refused group can't land on resend; one with no answer might.
+        metadata: { retryable: classification !== 'rejected-by-node' },
+    })
 
     describe(`BroadcasterChainAdapter contract: ${makeAdapter().chainId}`, () => {
         it("broadcasts to its own chain's nodes", () => {

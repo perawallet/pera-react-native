@@ -38,7 +38,7 @@ import {
 
 export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    submit: (scope, signedTransactions) =>
+    submit: async (scope, signedTransactions) =>
         submitRawSignedTransactionGroup(getAlgorandClient(scope), [
             ...signedTransactions,
         ]),

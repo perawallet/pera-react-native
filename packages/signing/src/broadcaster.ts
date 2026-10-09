@@ -75,7 +75,7 @@ export interface BroadcasterChainAdapter {
      * Sends one group's wire-encoded signed transactions to the scope's node,
      * in order and unchanged. Resolves with the submitted ids once the node
      * accepts them, including when it already holds them. Rejects with a
-     * `SubmissionError`: `rejected-by-node` when the node refused them, or
+     * `SubmissionError`: `rejected-by-node`, not retryable, when the node refused them, or
      * `unknown-outcome` with the locally derived ids when no answer arrived,
      * since the group may still land. Records nothing and waits for nothing.
      */

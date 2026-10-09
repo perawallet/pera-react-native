@@ -39,23 +39,21 @@ const fixtureBroadcaster: BroadcasterChainAdapter = {
     chainId: FIXTURE_CHAIN_ID,
     submit: async (_scope, signedTransactions) => {
         const ids = signedTransactions.map(idOf)
-        switch (node.mode) {
-            case 'accepts':
-            case 'knows':
-                return ids
-            case 'rejects':
-                throw new SubmissionError(
-                    ids,
-                    'rejected-by-node',
-                    nodeError('rejected'),
-                )
-            case 'silent':
-                throw new SubmissionError(
-                    ids,
-                    'unknown-outcome',
-                    nodeError('no_answer'),
-                )
+        if (node.mode === 'rejects') {
+            throw new SubmissionError(
+                ids,
+                'rejected-by-node',
+                nodeError('rejected'),
+            )
         }
+        if (node.mode === 'silent') {
+            throw new SubmissionError(
+                ids,
+                'unknown-outcome',
+                nodeError('no_answer'),
+            )
+        }
+        return ids
     },
     waitForConfirmation: async (_scope, txIds) => {
         if (txIds.length === 0 || node.confirms) return

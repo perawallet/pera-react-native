@@ -11,9 +11,9 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { waitForConfirmation } from 'algosdk'
+import { waitForTransactionConfirmation } from '../../blockchain'
 
-export const CONFIRMATION_ROUNDS_TO_WAIT = 10
+export { CONFIRMATION_ROUNDS_TO_WAIT } from '../../blockchain'
 
 /**
  * Post-error verification window. Kept deliberately smaller than the main
@@ -28,5 +28,9 @@ export const waitForAlgodConfirmation = async (
     txId: string,
     waitRounds: number,
 ): Promise<void> => {
-    await waitForConfirmation(algorand.client.algod, txId, waitRounds)
+    await waitForTransactionConfirmation(
+        algorand.client.algod,
+        txId,
+        waitRounds,
+    )
 }
