@@ -17,11 +17,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getAlgorandChainConfig,
-    getChainConfig,
-    Networks,
     type Network,
 } from '@perawallet/wallet-core-config'
-import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
+import { resetNodeClients } from '@perawallet/wallet-core-shared'
 // Side-effect import: registers the saved-node reader getChainConfig uses for `custom`.
 import '../store/custom-network'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
@@ -44,35 +42,9 @@ export const getAlgorandClient = (target?: ChainScope | Network) => {
     return createTimeoutBoundedAlgorandClient(getAlgorandChainConfig(scope))
 }
 
-const pushResolvedEndpointsForAllNetworks = (): void => {
-    for (const network of Object.values(Networks)) {
-        const { algodUrl, indexerUrl, algodToken, indexerToken } =
-            getChainConfig(scopeForLegacyNetwork(network))
-        updateNodeEndpoints(network, {
-            algodUrl,
-            indexerUrl,
-            algodToken,
-            indexerToken,
-        })
-    }
-}
-
-// Deferred past module evaluation on purpose: updateNodeEndpoints calls
-// ensureClientsBuilt -> config's getters, and doing that at import time breaks
-// every test that mocks them as bare vi.fn()s (it took down a whole package's
-// suite once already). The try/catch keeps a hostile environment from turning
-// a best-effort sync into a crash.
-void Promise.resolve().then(() => {
-    try {
-        pushResolvedEndpointsForAllNetworks()
-    } catch {
-        // Clients will be built on first request regardless.
-    }
-})
-
 // Only a custom-network edit changes endpoints; a plain switch must not rebuild every client.
 useNetworkStore.subscribe((state, previous) => {
     if (state.customNetworksByChain !== previous.customNetworksByChain) {
-        pushResolvedEndpointsForAllNetworks()
+        resetNodeClients()
     }
 })

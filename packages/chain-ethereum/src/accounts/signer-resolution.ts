@@ -10,21 +10,20 @@
  limitations under the License
  */
 
-export {
-    createEthereumAccountStateOps,
-    InvalidPrivateKeyError,
-    parseEthereumPrivateKey,
-    revealEthereumPrivateKey,
-    type EthereumAccountStateOps,
-} from './accounts'
-export {
-    createEvmClient,
-    EvmError,
-    EvmErrorCode,
-    evmHttpTransport,
-    isEvmError,
-    toEvmError,
-    UnconfiguredEvmRpcError,
-    type EvmErrorParams,
-} from './blockchain'
-export { ethereumModule } from './module'
+import {
+    canSignDirectly,
+    type SignerResolution,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+
+// Ethereum has no rekey and no native multisig, so an account signs for
+// itself or not at all.
+export const resolveEthereumSigner = (
+    account: WalletAccount,
+): SignerResolution =>
+    canSignDirectly(account)
+        ? { kind: 'ok', signer: account }
+        : { kind: 'watch', account }
+
+export const getEthereumAuthAccount = (account: WalletAccount): WalletAccount =>
+    account

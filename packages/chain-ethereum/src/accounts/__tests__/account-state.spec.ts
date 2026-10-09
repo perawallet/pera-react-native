@@ -10,20 +10,34 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { setupServer } from 'msw/node'
 import type { Hex } from 'viem'
 import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
-import { BlockFollowingRequestError } from '../endpoints'
 import { peraEvmHandlers, type ShouldRefreshRequest } from '../msw-handlers'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import { PERA_URL } from '../../__tests__/pera-backend'
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal =>
+    (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
+        importOriginal,
+    ),
+)
 
 const RPC_URL = 'https://mainnet.rpc.test/'
-const PERA_URL = 'https://pera.test/'
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ADDRESS: Hex = '0x00000000000000000000000000000000000000aa'
 
@@ -32,12 +46,6 @@ const contextWith = (services: readonly string[] = []): ChainContext => ({
     getEndpoints: () => ({ mainnet: RPC_URL }),
     getPeraBackend: () => ({ baseUrl: PERA_URL, services: new Set(services) }),
     timeouts: { readMs: 1_000, submitMs: 1_000 },
-    http: {
-        request: async ({ url, method, headers, body }) => {
-            const response = await fetch(url, { method, headers, body })
-            return { status: response.status, body: await response.text() }
-        },
-    },
     kms: {} as ChainContext['kms'],
 })
 
@@ -156,7 +164,7 @@ describe('createEthereumAccountStateOps', () => {
             const requests: ShouldRefreshRequest[] = []
             server.use(
                 ...peraEvmHandlers({
-                    baseUrl: 'https://pera.test',
+                    baseUrl: PERA_URL,
                     blockFollowing: request => {
                         requests.push(request)
                         return { refresh: true, block: 42 }
@@ -174,21 +182,24 @@ describe('createEthereumAccountStateOps', () => {
         })
 
         it('rejects with the status when the backend fails', async () => {
-            server.use(...peraEvmHandlers({ blockFollowing: 503 }))
+            server.use(
+                ...peraEvmHandlers({ baseUrl: PERA_URL, blockFollowing: 503 }),
+            )
 
             await expect(
                 createEthereumAccountStateOps(
                     contextWith(['blockFollowing']),
                 ).fetchChangeSignal([ADDRESS], SCOPE, 40),
-            ).rejects.toMatchObject({
-                name: BlockFollowingRequestError.name,
-                status: 503,
-            })
+            ).rejects.toSatisfy(
+                error =>
+                    error instanceof PeraNetworkError && error.status === 503,
+            )
         })
 
         it('rejects a response that does not match the schema', async () => {
             server.use(
                 ...peraEvmHandlers({
+                    baseUrl: PERA_URL,
                     blockFollowing: () =>
                         ({ refresh: 'yes' }) as unknown as {
                             refresh: boolean

@@ -22,6 +22,8 @@ import {
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import {
+    requireAccountInformation,
+    requirePublicKeyGetter,
     requireQuantum,
     requireRekey,
     requireSingleKeyAccounts,
@@ -38,7 +40,8 @@ import {
 } from './account-state-contract'
 
 export interface AccountsContractFixtures extends AccountStateContractFixtures {
-    rootKey: Uint8Array
+    /** Required when the adapter derives public keys from the XHD root. */
+    rootKey?: Uint8Array
     hdPath: {
         details: HDWalletDetails
         matching: string
@@ -132,9 +135,19 @@ export const accountsContractTests = (
 
         accountStateCases(makeAdapter, fixtures, server)
 
-        it('derives public keys per coordinate that its codec encodes as valid addresses', async () => {
+        it('derives public keys per coordinate that its codec encodes as valid addresses, or refuses', async () => {
             const adapter = makeAdapter()
-            const getPublicKey = adapter.createPublicKeyGetter(fixtures.rootKey)
+            if (!adapter.createPublicKeyGetter) {
+                expect(() => requirePublicKeyGetter(adapter)).toThrow(
+                    expect.objectContaining({ chainId: adapter.chainId }),
+                )
+                return
+            }
+
+            expect(fixtures.rootKey).toBeDefined()
+            const getPublicKey = requirePublicKeyGetter(adapter)(
+                fixtures.rootKey!,
+            )
             const at = (account: number, keyIndex: number) =>
                 getPublicKey({ account, keyIndex })
 
@@ -151,6 +164,21 @@ export const accountsContractTests = (
                 networkId: scope.networkId,
             })
             expect(codec.isValid(address, scope.networkId)).toBe(true)
+        })
+
+        it('reads account information only as a pair, or refuses', () => {
+            const adapter = makeAdapter()
+            if (
+                !adapter.toAccountInformationAddress &&
+                !adapter.fetchAccountInformation
+            ) {
+                expect(() => requireAccountInformation(adapter)).toThrow(
+                    expect.objectContaining({ chainId: adapter.chainId }),
+                )
+                return
+            }
+
+            expect(() => requireAccountInformation(adapter)).not.toThrow()
         })
 
         it('names the HD child key id deterministically per coordinate', () => {

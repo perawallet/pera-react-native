@@ -51,7 +51,6 @@ const contextWith = ({
     getEndpoints: () => endpoints,
     getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
     timeouts,
-    http: { request: vi.fn() },
     kms: {} as ChainContext['kms'],
 })
 

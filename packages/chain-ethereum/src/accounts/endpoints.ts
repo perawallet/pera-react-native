@@ -11,10 +11,8 @@
  */
 
 import { z } from 'zod'
-import type {
-    ChainContext,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 
 export const BLOCK_FOLLOWING_SERVICE = 'blockFollowing'
 
@@ -29,39 +27,22 @@ export const shouldRefreshResponseSchema = z.object({
 
 export type ShouldRefreshResponse = z.infer<typeof shouldRefreshResponseSchema>
 
-export class BlockFollowingRequestError extends Error {
-    readonly scope: ChainScope
-    readonly status: number
-
-    constructor(scope: ChainScope, status: number) {
-        super(
-            `Block following for ${scope.chainId}/${scope.networkId} answered ${status}`,
-        )
-        this.name = 'BlockFollowingRequestError'
-        this.scope = scope
-        this.status = status
-    }
-}
-
-/** `lastBlock` is null when the scope has never synced. */
+/** `lastBlock` is null when the scope has never synced. Rejects with a `PeraNetworkError` on a failed request. */
 export const fetchShouldRefresh = async (
-    ctx: Pick<ChainContext, 'http'>,
-    baseUrl: string,
     scope: ChainScope,
     addresses: string[],
     lastBlock: number | null,
 ): Promise<ShouldRefreshResponse> => {
-    const response = await ctx.http.request({
-        url: `${baseUrl.replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: BLOCK_FOLLOWING_SERVICE,
+        scope,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        url: SHOULD_REFRESH_PATH,
+        data: {
             account_addresses: addresses,
             last_refreshed_block: lastBlock,
-        }),
+        },
     })
-    if (response.status < 200 || response.status >= 300) {
-        throw new BlockFollowingRequestError(scope, response.status)
-    }
-    return shouldRefreshResponseSchema.parse(JSON.parse(response.body))
+    return shouldRefreshResponseSchema.parse(data)
 }

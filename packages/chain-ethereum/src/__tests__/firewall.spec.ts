@@ -52,7 +52,9 @@ describe('chain-ethereum secp256k1 firewall', () => {
 
     it('scans the key derivation and its tests', () => {
         expect(files).toContain(join('accounts', 'key-derivation.ts'))
-        expect(files).toContain(join('accounts', '__tests__', 'key-derivation.spec.ts'))
+        expect(files).toContain(
+            join('accounts', '__tests__', 'key-derivation.spec.ts'),
+        )
     })
 
     it('imports no secp256k1 library anywhere in the package', () => {

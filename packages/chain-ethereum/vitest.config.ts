@@ -24,6 +24,7 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'node',
+        setupFiles: ['./vitest.setup.ts'],
         typecheck: {
             enabled: true,
             include: ['src/**/*.test-d.ts'],
@@ -38,6 +39,10 @@ export default defineConfig({
                     __dirname,
                     '../accounts/src/__tests__/account-state-contract.ts',
                 ),
+            '@perawallet/wallet-core-accounts/testing': path.resolve(
+                __dirname,
+                '../accounts/src/__tests__/adapter-contract.ts',
+            ),
             '@perawallet/wallet-core-chain-contract/testing': path.resolve(
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',

@@ -350,9 +350,8 @@ export const registerCustomNetworkSource = (
     }
 }
 
-// Algorand only: its one consumer builds algod and indexer clients per scope.
 export const configuredScopes = (): readonly ChainScope[] =>
-    ALGORAND_SCOPE_CONFIGS.map(row => row.scope)
+    SCOPE_CONFIGS.map(row => row.scope)
 
 /**
  * Throws for a scope no row configures, rather than handing back empty

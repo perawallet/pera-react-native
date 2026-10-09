@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import type { Hex } from 'viem'
@@ -17,17 +18,29 @@ import {
     accountStateContractTests,
     type AccountStateContractFixtures,
 } from '@perawallet/wallet-core-accounts/testing/account-state'
+import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
+import {
+    DerivationTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { createEthereumAccountStateOps } from '../account-state'
+import { createEthereumAccountsAdapter } from '../adapter'
 import { ethereumAddressCodec } from '../address-codec'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { peraEvmHandlers } from '../msw-handlers'
+import { PERA_URL } from '../../__tests__/pera-backend'
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal =>
+    (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
+        importOriginal,
+    ),
+)
 
 const RPC_URL = 'https://mainnet.rpc.test/'
-const PERA_URL = 'https://pera.test'
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 const FUNDED: Hex = '0x00000000000000000000000000000000000000aa'
@@ -44,12 +57,6 @@ const contextWith = (services: readonly string[]): ChainContext => ({
         services: new Set(services),
     }),
     timeouts: { readMs: 1_000, submitMs: 1_000 },
-    http: {
-        request: async ({ url, method, headers, body }) => {
-            const response = await fetch(url, { method, headers, body })
-            return { status: response.status, body: await response.text() }
-        },
-    },
     kms: {} as ChainContext['kms'],
 })
 
@@ -113,10 +120,35 @@ accountStateContractTests(
     'JSON-RPC block number',
 )
 
-accountStateContractTests(
-    () => createEthereumAccountStateOps(contextWith(['blockFollowing'])),
+const signing: WalletAccount = {
+    id: 'signing',
+    address: FUNDED,
+    custody: { kind: 'local', seed: null },
+    keyPairId: 'signing-key',
+}
+
+const watch: WalletAccount = {
+    id: 'watch',
+    address: EMPTY,
+    custody: { kind: 'watch' },
+}
+
+accountsContractTests(
+    () => createEthereumAccountsAdapter(contextWith(['blockFollowing'])),
     {
         ...sharedFixtures,
+        hdPath: {
+            details: {
+                account: 1,
+                change: 0,
+                keyIndex: 3,
+                derivationType: DerivationTypes.Peikert,
+            },
+            matching: "m/44'/60'/1'/0/3",
+            mismatched: "m/44'/60'/1'/0/4",
+            malformed: "m/44'/283'/1'/0/3",
+        },
+        signers: { signing, watch },
         changeSignal: {
             addresses: [FUNDED],
             cursor: CURSOR,
@@ -136,5 +168,4 @@ accountStateContractTests(
             },
         },
     },
-    'Pera block following',
 )

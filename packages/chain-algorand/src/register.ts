@@ -53,6 +53,8 @@ import { algorandBackupAdapter, algorandMigrationAdapter } from './backup'
 import { algorandCardAdapter } from './card'
 import { algorandMultisigAdapter } from './multisig'
 import { algorandRampAdapter } from './onramp'
+import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
+import { algorandNodeBackends } from './blockchain/node-backends'
 import {
     algorandAccountsAdapter,
     algorandAddressCodec,
@@ -71,6 +73,7 @@ export const registerChain = (): void => {
     addressCodecs.register(algorandAddressCodec)
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
+    nodeBackendAdapters.register(algorandNodeBackends)
     assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)

@@ -10,21 +10,9 @@
  limitations under the License
  */
 
-export {
-    createEthereumAccountStateOps,
-    InvalidPrivateKeyError,
-    parseEthereumPrivateKey,
-    revealEthereumPrivateKey,
-    type EthereumAccountStateOps,
-} from './accounts'
-export {
-    createEvmClient,
-    EvmError,
-    EvmErrorCode,
-    evmHttpTransport,
-    isEvmError,
-    toEvmError,
-    UnconfiguredEvmRpcError,
-    type EvmErrorParams,
-} from './blockchain'
-export { ethereumModule } from './module'
+import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
+
+// account_balances has no nonce column, so a stored row reads as a fresh
+// account until the next sync's snapshot carries the real nonce.
+export const toEthereumChainState: AccountsChainAdapter['toChainState'] =
+    () => ({ family: 'evm', nonce: { latest: 0, pending: 0 } })

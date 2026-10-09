@@ -31,8 +31,10 @@ import {
 } from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
+    AccountInformationUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
+    RootKeyDiscoveryUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
@@ -210,10 +212,12 @@ export interface AccountsChainAdapter {
     toChainState(observed: ObservedChainState): AccountChainState
     /**
      * The `address` an `AccountInformation` carries for `address`; throws when
-     * `address` isn't valid on this chain.
+     * `address` isn't valid on this chain. Absent, with
+     * `fetchAccountInformation`, on a chain whose accounts don't fit
+     * `AccountInformation`'s Algorand shape.
      */
-    toAccountInformationAddress(address: string): AccountInformation['address']
-    fetchAccountInformation(
+    toAccountInformationAddress?(address: string): AccountInformation['address']
+    fetchAccountInformation?(
         address: string,
         scope: ChainScope,
     ): Promise<AccountInformation>
@@ -242,8 +246,12 @@ export interface AccountsChainAdapter {
         addresses: string[],
         scope: ChainScope,
     ): Promise<Map<string, boolean>>
-    /** Public keys from an in-memory root key, for discovery before the seed is persisted. */
-    createPublicKeyGetter(rootKey: Uint8Array): GetPublicKey
+    /**
+     * Public keys from the in-memory XHD root key `prepareHDMasterKey`
+     * returns, for discovery before the seed is persisted. Absent on a chain
+     * whose keys don't derive from that root.
+     */
+    createPublicKeyGetter?(rootKey: Uint8Array): GetPublicKey
     /**
      * Keystore id of the HD child at these coordinates, computed without
      * deriving. Stored accounts reference this id, so its format never changes,
@@ -369,6 +377,35 @@ export const requireSingleKeyAccounts = (
     return adapter.singleKeyAccounts
 }
 
+/** Throws {@link RootKeyDiscoveryUnsupportedError} on a chain whose keys don't derive from the XHD root. */
+export const requirePublicKeyGetter = (
+    adapter: AccountsChainAdapter,
+): NonNullable<AccountsChainAdapter['createPublicKeyGetter']> => {
+    if (!adapter.createPublicKeyGetter) {
+        throw new RootKeyDiscoveryUnsupportedError(adapter.chainId)
+    }
+    return adapter.createPublicKeyGetter.bind(adapter)
+}
+
+/** Throws {@link AccountInformationUnsupportedError} on a chain without `AccountInformation`. */
+export const requireAccountInformation = (
+    adapter: AccountsChainAdapter,
+): Required<
+    Pick<
+        AccountsChainAdapter,
+        'toAccountInformationAddress' | 'fetchAccountInformation'
+    >
+> => {
+    const { toAccountInformationAddress, fetchAccountInformation } = adapter
+    if (!toAccountInformationAddress || !fetchAccountInformation) {
+        throw new AccountInformationUnsupportedError(adapter.chainId)
+    }
+    return {
+        toAccountInformationAddress: toAccountInformationAddress.bind(adapter),
+        fetchAccountInformation: fetchAccountInformation.bind(adapter),
+    }
+}
+
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
 export const fetchRekeyedAddresses = async (
     authorityAddress: string,
@@ -398,7 +435,6 @@ export const fetchAccountInformation = (
     address: string,
     network: Network,
 ): Promise<AccountInformation> =>
-    accountsAdapterFor(network).fetchAccountInformation(
-        address,
-        scopeForLegacyNetwork(network),
-    )
+    requireAccountInformation(
+        accountsAdapterFor(network),
+    ).fetchAccountInformation(address, scopeForLegacyNetwork(network))
