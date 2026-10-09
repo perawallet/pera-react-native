@@ -52,7 +52,9 @@ const signerOf = (intent: TransactionIntent): string =>
     intent.kind === 'transfer' ? intent.from : intent.account
 
 /** The node's suggested minimum fee, in µAlgo. */
-export const fetchSuggestedMinFee = async (scope: ChainScope): Promise<bigint> =>
+export const fetchSuggestedMinFee = async (
+    scope: ChainScope,
+): Promise<bigint> =>
     BigInt(
         (
             await createWalletAlgorandClient(

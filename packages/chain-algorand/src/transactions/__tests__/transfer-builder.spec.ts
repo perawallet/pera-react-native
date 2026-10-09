@@ -103,7 +103,10 @@ describe('buildAlgorandTransfer', () => {
     })
 
     it('builds an ALGO payment summarised as an outgoing transfer', async () => {
-        const [built] = await buildAlgorandTransfer(send({ note: 'hi' }), context)
+        const [built] = await buildAlgorandTransfer(
+            send({ note: 'hi' }),
+            context,
+        )
 
         expect(built.scope).toEqual(context.scope)
         expect(built.summary).toEqual({
@@ -151,7 +154,11 @@ describe('buildAlgorandTransfer', () => {
 
     it('builds an asset opt-in that moves nothing', async () => {
         const [built] = await buildAlgorandTransfer(
-            { kind: 'asset-opt-in', account: SENDER.toString(), assetRef: USDC },
+            {
+                kind: 'asset-opt-in',
+                account: SENDER.toString(),
+                assetRef: USDC,
+            },
             context,
         )
 
@@ -163,9 +170,7 @@ describe('buildAlgorandTransfer', () => {
         })
         const optIn = payloadOf(built)
         expect(optIn.assetTransfer?.assetIndex).toBe(31566704n)
-        expect(optIn.assetTransfer?.receiver.toString()).toBe(
-            SENDER.toString(),
-        )
+        expect(optIn.assetTransfer?.receiver.toString()).toBe(SENDER.toString())
     })
 
     it('refuses a scope that is not Algorand', async () => {
@@ -177,8 +182,14 @@ describe('buildAlgorandTransfer', () => {
     })
 
     it.each([
-        ['an asset from another chain', send({ assetRef: { ...USDC, chainId: 'ethereum' } })],
-        ['a fractional amount of base units', send({ amount: new Decimal('0.5') })],
+        [
+            'an asset from another chain',
+            send({ assetRef: { ...USDC, chainId: 'ethereum' } }),
+        ],
+        [
+            'a fractional amount of base units',
+            send({ amount: new Decimal('0.5') }),
+        ],
         ['a negative amount', send({ amount: new Decimal(-1) })],
     ])('refuses %s', async (_, intent) => {
         await expect(buildAlgorandTransfer(intent, context)).rejects.toThrow(
@@ -189,7 +200,11 @@ describe('buildAlgorandTransfer', () => {
     it('refuses an opt-in to ALGO itself', async () => {
         await expect(
             buildAlgorandTransfer(
-                { kind: 'asset-opt-in', account: SENDER.toString(), assetRef: ALGO },
+                {
+                    kind: 'asset-opt-in',
+                    account: SENDER.toString(),
+                    assetRef: ALGO,
+                },
                 context,
             ),
         ).rejects.toThrow(InvalidSendParamsError)
@@ -218,7 +233,11 @@ describe('buildAlgorandTransfer', () => {
         mocks.buildOptInTxs.mockResolvedValueOnce(draft)
 
         const built = await buildAlgorandTransfer(
-            { kind: 'asset-opt-in', account: QUANTUM.toString(), assetRef: USDC },
+            {
+                kind: 'asset-opt-in',
+                account: QUANTUM.toString(),
+                assetRef: USDC,
+            },
             context,
         )
 
@@ -247,12 +266,19 @@ describe('buildAlgorandTransfer', () => {
             http.get('*/v2/transactions/params', () => HttpResponse.error()),
         )
         const draft = [
-            makeTestAssetTransferTx(QUANTUM, { assetIndex: 1n, receiver: QUANTUM }),
+            makeTestAssetTransferTx(QUANTUM, {
+                assetIndex: 1n,
+                receiver: QUANTUM,
+            }),
         ]
         mocks.buildOptInTxs.mockResolvedValueOnce(draft)
 
         const [built] = await buildAlgorandTransfer(
-            { kind: 'asset-opt-in', account: QUANTUM.toString(), assetRef: USDC },
+            {
+                kind: 'asset-opt-in',
+                account: QUANTUM.toString(),
+                assetRef: USDC,
+            },
             context,
         )
 

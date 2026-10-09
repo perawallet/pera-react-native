@@ -42,8 +42,9 @@ import { getMinimumFeeConfig } from '../getMinimumFeeConfig'
 describe('getMinimumFeeConfig', () => {
     beforeEach(() => {
         useRemoteConfigStore.setState({ configOverrides: {} })
-        getNumberValueMock.mockImplementation((key: string, fallback: number) =>
-            key === 'fee_min_txn_fee' ? 2000 : fallback,
+        getNumberValueMock.mockImplementation(
+            (key: string, fallback: number) =>
+                key === 'fee_min_txn_fee' ? 2000 : fallback,
         )
     })
 

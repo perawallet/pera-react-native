@@ -11,7 +11,16 @@
  */
 
 // @vitest-environment node
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
@@ -111,7 +120,9 @@ describe('estimateAlgorandTransferFee', () => {
     })
 
     it('multiplies the congested suggested fee once, not the configured base', async () => {
-        server.use(mockAlgodTransactionParams({ response: { 'min-fee': 2000 } }))
+        server.use(
+            mockAlgodTransactionParams({ response: { 'min-fee': 2000 } }),
+        )
 
         const estimate = await estimateAlgorandTransferFee(
             sendFrom(QUANTUM),

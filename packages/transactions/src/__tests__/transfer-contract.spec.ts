@@ -18,7 +18,10 @@ import type {
     TransactionIntent,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { InvalidSendParamsError, UnsupportedTransactionIntentError } from '../errors'
+import {
+    InvalidSendParamsError,
+    UnsupportedTransactionIntentError,
+} from '../errors'
 import type { TransferChainAdapter } from '../transfer-adapter'
 import { transferContractTests } from './transfer-contract'
 

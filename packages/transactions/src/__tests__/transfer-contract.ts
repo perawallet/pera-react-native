@@ -51,7 +51,9 @@ export const transferContractTests = (
     const summaryOf = async (intent: TransferIntent | AssetOptInIntent) => {
         const built = await makeAdapter().build(intent, context)
         expect(built.length).toBeGreaterThan(0)
-        return built.map((transaction: UnsignedTransaction) => transaction.summary)
+        return built.map(
+            (transaction: UnsignedTransaction) => transaction.summary,
+        )
     }
 
     describe(`TransferChainAdapter contract: ${makeAdapter().chainId}`, () => {
@@ -78,9 +80,9 @@ export const transferContractTests = (
                 counterparty: nativeTransfer.to,
                 amount: { assetRef: nativeTransfer.assetRef },
             })
-            expect(
-                transfer?.amount?.value.equals(nativeTransfer.amount),
-            ).toBe(true)
+            expect(transfer?.amount?.value.equals(nativeTransfer.amount)).toBe(
+                true,
+            )
         })
 
         if (fixtures.tokenTransfer) {

@@ -74,7 +74,7 @@ describe('registerChain', () => {
         dappRequestChainAdapters.reset()
         sendFlowChainAdapters.reset()
         historyChainAdapters.reset()
-    transferChainAdapters.reset()
+        transferChainAdapters.reset()
         transferChainAdapters.reset()
         nameServiceChainAdapters.reset()
         cardChainAdapters.reset()

@@ -187,9 +187,9 @@ describe('buildAlgorandTransfer golden bytes', () => {
             const built = await buildAlgorandTransfer(intent, { scope })
             const expected = await today()
 
-            expect(built.map(entry => (entry.payload as PeraTransaction).fee)).toEqual(
-                expected.map(() => fee),
-            )
+            expect(
+                built.map(entry => (entry.payload as PeraTransaction).fee),
+            ).toEqual(expected.map(() => fee))
             expect(
                 built.map(entry =>
                     encodeToBase64(
