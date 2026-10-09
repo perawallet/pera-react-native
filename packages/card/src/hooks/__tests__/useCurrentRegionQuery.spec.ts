@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchCurrentRegion } = vi.hoisted(() => ({
     fetchCurrentRegion: vi.fn(),
 }))
@@ -27,6 +22,8 @@ vi.mock('../../api/region', () => ({ fetchCurrentRegion }))
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCurrentRegionQuery } from '../useCurrentRegionQuery'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useCurrentRegionQuery', () => {
     let queryClient: QueryClient
@@ -36,7 +33,6 @@ describe('useCurrentRegionQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -52,7 +48,7 @@ describe('useCurrentRegionQuery', () => {
             name: 'United Kingdom',
         })
 
-        const { result } = renderHook(() => useCurrentRegionQuery(), {
+        const { result } = renderHook(() => useCurrentRegionQuery(SCOPE), {
             wrapper,
         })
 

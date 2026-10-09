@@ -15,14 +15,6 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: mockUseNetwork,
-}))
-
 const { fetchDelegationToken } = vi.hoisted(() => ({
     fetchDelegationToken: vi.fn(),
 }))
@@ -31,11 +23,14 @@ vi.mock('../../api/delegation', async () => ({
     fetchDelegationToken,
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     messageSignerChainAdapters,
     type MessageSignerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { useSignCardOwnershipMutation } from '../useSignCardOwnershipMutation'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -59,7 +54,6 @@ describe('useSignCardOwnershipMutation', () => {
             defaultOptions: { mutations: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
         fetchDelegationToken.mockResolvedValue({
             token: 'ABC_tok',
             nonce: 'n0nce',
@@ -78,9 +72,12 @@ describe('useSignCardOwnershipMutation', () => {
 
     it('signs the chain-built sign-in request, base64-encoding the result', async () => {
         const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
-        const { result } = renderHook(() => useSignCardOwnershipMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSignCardOwnershipMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const proof = await result.current.mutateAsync({
             address: 'FUNDINGADDR',
@@ -103,9 +100,12 @@ describe('useSignCardOwnershipMutation', () => {
 
     it('fetches a delegation token first and builds the sign-in request around its nonce', async () => {
         const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
-        const { result } = renderHook(() => useSignCardOwnershipMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSignCardOwnershipMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const proof = await result.current.mutateAsync({
             address: 'FUNDINGADDR',
@@ -128,9 +128,12 @@ describe('useSignCardOwnershipMutation', () => {
     it('does not sign when the token fetch fails', async () => {
         fetchDelegationToken.mockRejectedValue(new Error('delegation down'))
         const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
-        const { result } = renderHook(() => useSignCardOwnershipMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSignCardOwnershipMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({

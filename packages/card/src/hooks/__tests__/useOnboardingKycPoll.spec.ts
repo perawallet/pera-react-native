@@ -12,6 +12,10 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 type MockQuery = {
     state: { data?: { verificationState: string | null } }
@@ -27,6 +31,7 @@ let mockVerificationState: string | null | undefined
 let mockIsLoading = false
 let mockDataUpdatedAt = 0
 let mockErrorUpdatedAt = 0
+let mockQueryScope: ChainScope | undefined
 let mockQueryOptions: MockQueryOptions | undefined
 let mockOnboardingStep = 'VERIFICATION'
 
@@ -40,7 +45,11 @@ const queryData = () =>
 // `VerificationState` from ../models stays real, so the hook's state
 // comparisons match the strings driven below.
 vi.mock('../useOnboardingDetailsQuery', () => ({
-    useOnboardingDetailsQuery: (options: MockQueryOptions) => {
+    useOnboardingDetailsQuery: (
+        scope: ChainScope,
+        options: MockQueryOptions,
+    ) => {
+        mockQueryScope = scope
         mockQueryOptions = options
         return {
             data: queryData(),
@@ -67,6 +76,8 @@ vi.mock('../../store', () => ({
 
 import { useOnboardingKycPoll } from '../useOnboardingKycPoll'
 
+const SCOPE = scopeForLegacyNetwork('mainnet')
+
 /** Evaluates the interval the hook would schedule for the current data. */
 const scheduledInterval = () => {
     const interval = mockQueryOptions?.refetchInterval
@@ -81,6 +92,7 @@ beforeEach(() => {
     mockIsLoading = false
     mockDataUpdatedAt = 0
     mockErrorUpdatedAt = 0
+    mockQueryScope = undefined
     mockQueryOptions = undefined
     mockOnboardingStep = 'VERIFICATION'
 })
@@ -88,7 +100,7 @@ beforeEach(() => {
 describe('useOnboardingKycPoll', () => {
     it('exposes the polled state and keeps polling while a decision is pending', () => {
         mockVerificationState = 'PENDING'
-        const { result } = renderHook(() => useOnboardingKycPoll())
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
 
         expect(result.current.verificationState).toBe('PENDING')
         expect(result.current.hasPollTimedOut).toBe(false)
@@ -98,15 +110,16 @@ describe('useOnboardingKycPoll', () => {
 
     it('stops polling once the decision lands', () => {
         mockVerificationState = 'VERIFIED'
-        renderHook(() => useOnboardingKycPoll())
+        renderHook(() => useOnboardingKycPoll(SCOPE))
 
         expect(scheduledInterval()).toBe(false)
     })
 
-    it('passes the enabled gate through to the query', () => {
-        renderHook(() => useOnboardingKycPoll({ enabled: false }))
+    it('passes the scope and enabled gate through to the query', () => {
+        renderHook(() => useOnboardingKycPoll(SCOPE, { enabled: false }))
 
         expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockQueryScope).toBe(SCOPE)
     })
 
     // The final address step consumes the onboarding session server-side, so
@@ -115,13 +128,15 @@ describe('useOnboardingKycPoll', () => {
     // a bogus timed-out error.
     it('self-disables once registration completes, even when the caller enables it', () => {
         mockOnboardingStep = 'COMPLETED'
-        renderHook(() => useOnboardingKycPoll({ enabled: true }))
+        renderHook(() => useOnboardingKycPoll(SCOPE, { enabled: true }))
 
         expect(mockQueryOptions?.enabled).toBe(false)
     })
 
     it('gives up after consecutive poll failures', () => {
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
 
         // Three consecutive failed polls (retry: 0 surfaces each error).
         for (const timestamp of [1, 2, 3]) {
@@ -135,7 +150,9 @@ describe('useOnboardingKycPoll', () => {
 
     it('resets the failure streak when a poll succeeds in between', () => {
         mockVerificationState = 'PENDING'
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
 
         for (const timestamp of [1, 2]) {
             mockErrorUpdatedAt = timestamp
@@ -153,7 +170,9 @@ describe('useOnboardingKycPoll', () => {
 
     it('gives up after the record stays UNVERIFIED for the whole poll budget', () => {
         mockVerificationState = 'UNVERIFIED'
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
 
         for (let poll = 1; poll <= 15; poll += 1) {
             mockDataUpdatedAt = poll
@@ -168,7 +187,9 @@ describe('useOnboardingKycPoll', () => {
         // unknown state is "not reported back", so it must give up like
         // UNVERIFIED rather than poll forever.
         mockVerificationState = null
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
 
         for (let poll = 1; poll <= 15; poll += 1) {
             mockDataUpdatedAt = poll
@@ -182,7 +203,9 @@ describe('useOnboardingKycPoll', () => {
 
     it('clears a stale give-up when the state transitions to a reported-back one', () => {
         mockVerificationState = 'UNVERIFIED'
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
         for (let poll = 1; poll <= 15; poll += 1) {
             mockDataUpdatedAt = poll
             act(() => rerender())
@@ -205,7 +228,9 @@ describe('useOnboardingKycPoll', () => {
         // (no data, but not fetching) reports false — consumers then fall
         // through to an actionable row instead of a stuck neutral one.
         mockIsLoading = true
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
         expect(result.current.isLoading).toBe(true)
 
         mockIsLoading = false
@@ -217,14 +242,16 @@ describe('useOnboardingKycPoll', () => {
     })
 
     it('does not report an unknown state before any data arrives', () => {
-        const { result } = renderHook(() => useOnboardingKycPoll())
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
 
         expect(result.current.verificationState).toBeNull()
         expect(result.current.isStateUnknown).toBe(false)
     })
 
     it('restartPolling clears the give-up state and refetches', () => {
-        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
         for (const timestamp of [1, 2, 3]) {
             mockErrorUpdatedAt = timestamp
             act(() => rerender())

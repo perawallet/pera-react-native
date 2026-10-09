@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const mocks = vi.hoisted(() => ({
     escrowCardOwner: null as string | null,
     getPendingWithdrawal: vi.fn(),
@@ -40,6 +35,8 @@ vi.mock('../useEscrowWithdrawal', () => ({
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardPendingWithdrawalQuery } from '../useCardPendingWithdrawalQuery'
 import { CardEscrowNotConfiguredError } from '../../api/escrow'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 const PENDING = {
     card: 'CARD',
@@ -64,16 +61,18 @@ describe('useCardPendingWithdrawalQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         mocks.escrowCardOwner = 'OWNER'
         mocks.getPendingWithdrawal.mockResolvedValue(PENDING)
         mocks.getWaitTimeSeconds.mockResolvedValue(20)
     })
 
     it('reads the pending request and the wait time for the stored owner', async () => {
-        const { result } = renderHook(() => useCardPendingWithdrawalQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCardPendingWithdrawalQuery(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.pending).not.toBeNull())
         expect(result.current.pending).toEqual(PENDING)
@@ -84,9 +83,12 @@ describe('useCardPendingWithdrawalQuery', () => {
     it('stays idle with no owner to look up', async () => {
         mocks.escrowCardOwner = null
 
-        const { result } = renderHook(() => useCardPendingWithdrawalQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCardPendingWithdrawalQuery(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await new Promise(resolve => setTimeout(resolve, 10))
         expect(mocks.getPendingWithdrawal).not.toHaveBeenCalled()
@@ -101,9 +103,12 @@ describe('useCardPendingWithdrawalQuery', () => {
             new CardEscrowNotConfiguredError(),
         )
 
-        const { result } = renderHook(() => useCardPendingWithdrawalQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCardPendingWithdrawalQuery(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.pending).toBeNull()

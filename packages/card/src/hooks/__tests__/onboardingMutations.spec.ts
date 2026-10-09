@@ -15,13 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const api = vi.hoisted(() => ({
     sendEmailVerification: vi.fn(),
     verifyEmail: vi.fn(),
@@ -53,6 +46,8 @@ import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
 
+const SCOPE = scopeForLegacyNetwork('mainnet')
+
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
@@ -66,8 +61,6 @@ describe('onboarding mutation hooks', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
         // The address step returns a token-bearing body the mutation reads.
         api.submitAddress.mockResolvedValue({
@@ -91,7 +84,7 @@ describe('onboarding mutation hooks', () => {
             contactVerificationId: 'cv_new',
         })
         const { result } = renderHook(
-            () => useSendEmailVerificationMutation(),
+            () => useSendEmailVerificationMutation(SCOPE),
             {
                 wrapper,
             },
@@ -111,7 +104,7 @@ describe('onboarding mutation hooks', () => {
 
     it('useVerifyEmailMutation forwards the payload and stores the onboarding id', async () => {
         api.verifyEmail.mockResolvedValue({ onboardingId: 'ob_new' })
-        const { result } = renderHook(() => useVerifyEmailMutation(), {
+        const { result } = renderHook(() => useVerifyEmailMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({
@@ -144,7 +137,7 @@ describe('onboarding mutation hooks', () => {
 
     it('useSendPhoneVerificationMutation forwards phone fields', async () => {
         const { result } = renderHook(
-            () => useSendPhoneVerificationMutation(),
+            () => useSendPhoneVerificationMutation(SCOPE),
             {
                 wrapper,
             },
@@ -168,7 +161,7 @@ describe('onboarding mutation hooks', () => {
     })
 
     it('useVerifyPhoneMutation forwards the code and advances to verification', async () => {
-        const { result } = renderHook(() => useVerifyPhoneMutation(), {
+        const { result } = renderHook(() => useVerifyPhoneMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({
@@ -203,7 +196,7 @@ describe('onboarding mutation hooks', () => {
             countryOfBirth: 'GB',
         }
         const { result } = renderHook(
-            () => useSubmitPersonalDetailsMutation(),
+            () => useSubmitPersonalDetailsMutation(SCOPE),
             {
                 wrapper,
             },
@@ -233,7 +226,7 @@ describe('onboarding mutation hooks', () => {
         api.submitPersonalDetails.mockRejectedValue(NOT_VERIFIED_FAILURE)
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
         const { result } = renderHook(
-            () => useSubmitPersonalDetailsMutation(),
+            () => useSubmitPersonalDetailsMutation(SCOPE),
             { wrapper },
         )
 
@@ -270,7 +263,7 @@ describe('onboarding mutation hooks', () => {
     it('useSubmitAddressMutation types a not-verified refusal and refreshes the onboarding record', async () => {
         api.submitAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useSubmitAddressMutation(), {
+        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
             wrapper,
         })
 
@@ -291,7 +284,7 @@ describe('onboarding mutation hooks', () => {
             accessToken: 'tok',
             onboardingId: 'ob_1',
         })
-        const { result } = renderHook(() => useSubmitAddressMutation(), {
+        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate(address)
@@ -328,7 +321,7 @@ describe('onboarding mutation hooks', () => {
             accessToken: 'tok',
             refreshToken: '',
         })
-        const { result } = renderHook(() => useSubmitAddressMutation(), {
+        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate(address)
@@ -350,7 +343,7 @@ describe('onboarding mutation hooks', () => {
             accessToken: null,
             onboardingId: 'ob_1',
         })
-        const { result } = renderHook(() => useSubmitAddressMutation(), {
+        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate(address)
@@ -365,7 +358,7 @@ describe('onboarding mutation hooks', () => {
 
     it('useSubmitConsentMutation forwards the payload, stashes the consentSetId, and does not advance the step', async () => {
         const stepBefore = useCardStore.getState().onboardingStep
-        const { result } = renderHook(() => useSubmitConsentMutation(), {
+        const { result } = renderHook(() => useSubmitConsentMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({
@@ -399,7 +392,7 @@ describe('onboarding mutation hooks', () => {
         // stashed on the first create must survive for the link step.
         useCardStore.getState().setConsentSetId('cs_first')
         api.submitOnboardingConsent.mockResolvedValue({ consentSetId: null })
-        const { result } = renderHook(() => useSubmitConsentMutation(), {
+        const { result } = renderHook(() => useSubmitConsentMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({
@@ -414,7 +407,7 @@ describe('onboarding mutation hooks', () => {
     })
 
     it('useLinkConsentMutation forwards the consentSetId and userId', async () => {
-        const { result } = renderHook(() => useLinkConsentMutation(), {
+        const { result } = renderHook(() => useLinkConsentMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({ consentSetId: 'cs_1', userId: 'user_1' })

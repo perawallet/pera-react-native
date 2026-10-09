@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { requestPasswordReset, verifyPasswordReset, confirmPasswordReset } =
     vi.hoisted(() => ({
         requestPasswordReset: vi.fn(),
@@ -32,9 +27,12 @@ vi.mock('../../api/auth', () => ({
     confirmPasswordReset,
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRequestPasswordResetMutation } from '../useRequestPasswordResetMutation'
 import { useVerifyPasswordResetMutation } from '../useVerifyPasswordResetMutation'
 import { useConfirmPasswordResetMutation } from '../useConfirmPasswordResetMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('password reset mutations', () => {
     let queryClient: QueryClient
@@ -47,7 +45,6 @@ describe('password reset mutations', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -60,9 +57,12 @@ describe('password reset mutations', () => {
     it('requests the reset code on the active network', async () => {
         requestPasswordReset.mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useRequestPasswordResetMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRequestPasswordResetMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({ email: 'e@x.com' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -74,9 +74,12 @@ describe('password reset mutations', () => {
     it('surfaces a request failure as a mutation error', async () => {
         requestPasswordReset.mockRejectedValue(new Error('boom'))
 
-        const { result } = renderHook(() => useRequestPasswordResetMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRequestPasswordResetMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({ email: 'e@x.com' })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
@@ -85,9 +88,12 @@ describe('password reset mutations', () => {
     it('verifies the code and exposes the reset token as data', async () => {
         verifyPasswordReset.mockResolvedValue('reset-token-1')
 
-        const { result } = renderHook(() => useVerifyPasswordResetMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useVerifyPasswordResetMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({ email: 'e@x.com', code: '123456' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -104,9 +110,12 @@ describe('password reset mutations', () => {
     it('confirms the reset on the active network', async () => {
         confirmPasswordReset.mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useConfirmPasswordResetMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useConfirmPasswordResetMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({
             token: 'reset-token-1',
             password: 'aA1!aA1!aA1!aA1',

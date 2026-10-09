@@ -15,11 +15,6 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { fetchFundingAddressLink } = vi.hoisted(() => ({
     fetchFundingAddressLink: vi.fn(),
 }))
@@ -40,8 +35,11 @@ vi.mock('../../store', () => ({
     },
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useRestoreEscrowCardMutation } from '../useRestoreEscrowCardMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useRestoreEscrowCardMutation', () => {
     let queryClient: QueryClient
@@ -54,7 +52,6 @@ describe('useRestoreEscrowCardMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         fetchUser.mockResolvedValue({ id: 'baanx-user-1' })
     })
 
@@ -75,9 +72,12 @@ describe('useRestoreEscrowCardMutation', () => {
                 return { state: 'unlinked', cardAddress: null }
             },
         )
-        const { result } = renderHook(() => useRestoreEscrowCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync(['OTHER', 'BROKEN', 'OWNER']),
@@ -101,9 +101,12 @@ describe('useRestoreEscrowCardMutation', () => {
                     ? { state: 'linked_to_caller', cardAddress: null }
                     : { state: 'linked_to_other', cardAddress: null },
         )
-        const { result } = renderHook(() => useRestoreEscrowCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync(['LINKED_NO_CARD', 'SOMEONE_ELSE']),
@@ -112,9 +115,12 @@ describe('useRestoreEscrowCardMutation', () => {
     })
 
     it('skips the backend entirely when there are no addresses to check', async () => {
-        const { result } = renderHook(() => useRestoreEscrowCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(result.current.mutateAsync([])).resolves.toBeNull()
         expect(fetchUser).not.toHaveBeenCalled()
@@ -122,9 +128,12 @@ describe('useRestoreEscrowCardMutation', () => {
 
     it('rejects without asking when there is no Baanx user', async () => {
         fetchUser.mockResolvedValue(null)
-        const { result } = renderHook(() => useRestoreEscrowCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync(['OWNER']),

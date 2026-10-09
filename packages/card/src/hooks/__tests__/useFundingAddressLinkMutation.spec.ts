@@ -15,11 +15,6 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { fetchFundingAddressLink } = vi.hoisted(() => ({
     fetchFundingAddressLink: vi.fn(),
 }))
@@ -31,8 +26,11 @@ vi.mock('../../api/card-creation', async importOriginal => ({
 const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useFundingAddressLinkMutation } from '../useFundingAddressLinkMutation'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('useFundingAddressLinkMutation', () => {
     let queryClient: QueryClient
@@ -45,7 +43,6 @@ describe('useFundingAddressLinkMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
         fetchUser.mockResolvedValue({ id: 'baanx-user-1' })
     })
 
@@ -61,9 +58,12 @@ describe('useFundingAddressLinkMutation', () => {
             state: 'linked_to_other',
             cardAddress: null,
         })
-        const { result } = renderHook(() => useFundingAddressLinkMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useFundingAddressLinkMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.checkFundingAddress('FUNDING_ADDR'),
@@ -77,9 +77,12 @@ describe('useFundingAddressLinkMutation', () => {
 
     it('rejects without asking when there is no Baanx user', async () => {
         fetchUser.mockResolvedValue(null)
-        const { result } = renderHook(() => useFundingAddressLinkMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useFundingAddressLinkMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.checkFundingAddress('FUNDING_ADDR'),

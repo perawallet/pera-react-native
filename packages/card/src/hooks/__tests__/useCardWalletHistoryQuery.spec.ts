@@ -16,11 +16,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchWalletHistory } = vi.hoisted(() => ({
     fetchWalletHistory: vi.fn(),
 }))
@@ -34,6 +29,8 @@ vi.mock('../useCardSession', () => ({
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardWalletHistoryQuery } from '../useCardWalletHistoryQuery'
 import { CardWalletKind, TransactionSign } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const entry = (name: string) => ({
     name,
@@ -51,7 +48,6 @@ describe('useCardWalletHistoryQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         mockSession.isAuthenticated = true
     })
 
@@ -72,7 +68,7 @@ describe('useCardWalletHistoryQuery', () => {
             })
 
             const { result } = renderHook(
-                () => useCardWalletHistoryQuery(kind, 'w_1'),
+                () => useCardWalletHistoryQuery(SCOPE, kind, 'w_1'),
                 { wrapper },
             )
 
@@ -103,7 +99,8 @@ describe('useCardWalletHistoryQuery', () => {
             })
 
         const { result } = renderHook(
-            () => useCardWalletHistoryQuery(CardWalletKind.Reward, 'w_1'),
+            () =>
+                useCardWalletHistoryQuery(SCOPE, CardWalletKind.Reward, 'w_1'),
             { wrapper },
         )
 
@@ -121,7 +118,7 @@ describe('useCardWalletHistoryQuery', () => {
     // would only produce a request that cannot succeed.
     it('stays idle without a wallet id', () => {
         renderHook(
-            () => useCardWalletHistoryQuery(CardWalletKind.Credit, null),
+            () => useCardWalletHistoryQuery(SCOPE, CardWalletKind.Credit, null),
             { wrapper },
         )
 
@@ -132,7 +129,8 @@ describe('useCardWalletHistoryQuery', () => {
         mockSession.isAuthenticated = false
 
         renderHook(
-            () => useCardWalletHistoryQuery(CardWalletKind.Reward, 'w_1'),
+            () =>
+                useCardWalletHistoryQuery(SCOPE, CardWalletKind.Reward, 'w_1'),
             { wrapper },
         )
 

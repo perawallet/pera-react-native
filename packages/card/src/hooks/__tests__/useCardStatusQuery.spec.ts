@@ -15,17 +15,14 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchCardStatus } = vi.hoisted(() => ({ fetchCardStatus: vi.fn() }))
 vi.mock('../../api/card', () => ({ fetchCardStatus }))
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardStatusQuery } from '../useCardStatusQuery'
 import { CardStatus, CardType, type Card } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const card: Card = {
     id: 'card_1',
@@ -45,7 +42,6 @@ describe('useCardStatusQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -58,7 +54,9 @@ describe('useCardStatusQuery', () => {
     it('exposes the fetched card', async () => {
         fetchCardStatus.mockResolvedValue(card)
 
-        const { result } = renderHook(() => useCardStatusQuery(), { wrapper })
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data).toEqual(card)
@@ -67,7 +65,9 @@ describe('useCardStatusQuery', () => {
     it('exposes null when the user has no card', async () => {
         fetchCardStatus.mockResolvedValue(null)
 
-        const { result } = renderHook(() => useCardStatusQuery(), { wrapper })
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data).toBeNull()

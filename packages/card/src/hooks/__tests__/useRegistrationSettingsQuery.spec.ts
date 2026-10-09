@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchRegistrationSettings } = vi.hoisted(() => ({
     fetchRegistrationSettings: vi.fn(),
 }))
@@ -27,6 +22,8 @@ vi.mock('../../api/onboarding', () => ({ fetchRegistrationSettings }))
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRegistrationSettingsQuery } from '../useRegistrationSettingsQuery'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useRegistrationSettingsQuery', () => {
     let queryClient: QueryClient
@@ -36,7 +33,6 @@ describe('useRegistrationSettingsQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -60,9 +56,12 @@ describe('useRegistrationSettingsQuery', () => {
             usStates: [],
         })
 
-        const { result } = renderHook(() => useRegistrationSettingsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useRegistrationSettingsQuery(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data?.countries[0].iso3166alpha2).toBe('GB')

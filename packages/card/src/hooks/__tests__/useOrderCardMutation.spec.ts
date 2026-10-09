@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { orderCard } = vi.hoisted(() => ({ orderCard: vi.fn() }))
 vi.mock('../../api/card', async () => ({
     ...(await vi.importActual('../../api/card')),
@@ -30,6 +25,8 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useOrderCardMutation } from '../useOrderCardMutation'
 import { CardOrderNotVerifiedError } from '../../api/card'
 import { cardMutationKeys } from '../querykeys'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 /** A ky-shaped rejection whose body getCardApiError can read. */
 const baanxError = (status: number, body: Record<string, unknown>) => ({
@@ -48,7 +45,6 @@ describe('useOrderCardMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -62,7 +58,9 @@ describe('useOrderCardMutation', () => {
         orderCard.mockResolvedValue(undefined)
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-        const { result } = renderHook(() => useOrderCardMutation(), { wrapper })
+        const { result } = renderHook(() => useOrderCardMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -83,7 +81,9 @@ describe('useOrderCardMutation', () => {
                 }),
         )
 
-        const { result } = renderHook(() => useOrderCardMutation(), { wrapper })
+        const { result } = renderHook(() => useOrderCardMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate()
 
         await waitFor(() =>
@@ -106,7 +106,9 @@ describe('useOrderCardMutation', () => {
         )
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-        const { result } = renderHook(() => useOrderCardMutation(), { wrapper })
+        const { result } = renderHook(() => useOrderCardMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -123,7 +125,9 @@ describe('useOrderCardMutation', () => {
         )
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-        const { result } = renderHook(() => useOrderCardMutation(), { wrapper })
+        const { result } = renderHook(() => useOrderCardMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isError).toBe(true))
@@ -139,7 +143,9 @@ describe('useOrderCardMutation', () => {
         const failure = baanxError(500, { message: 'Internal error' })
         orderCard.mockRejectedValue(failure)
 
-        const { result } = renderHook(() => useOrderCardMutation(), { wrapper })
+        const { result } = renderHook(() => useOrderCardMutation(SCOPE), {
+            wrapper,
+        })
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isError).toBe(true))

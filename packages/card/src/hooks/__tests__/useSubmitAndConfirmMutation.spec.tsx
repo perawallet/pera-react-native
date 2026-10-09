@@ -24,12 +24,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mocks.submit }),
 }))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSubmitAndConfirmMutation } from '../useSubmitAndConfirmMutation'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 const PARAMS = {
     unsignedTxs: [],
@@ -43,7 +43,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 const renderMutation = () =>
-    renderHook(() => useSubmitAndConfirmMutation(), { wrapper })
+    renderHook(() => useSubmitAndConfirmMutation(SCOPE), { wrapper })
 
 describe('useSubmitAndConfirmMutation', () => {
     beforeEach(() => {
@@ -72,7 +72,7 @@ describe('useSubmitAndConfirmMutation', () => {
 
         expect(mocks.submit).toHaveBeenCalledWith(PARAMS)
         expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith(
-            'testnet',
+            SCOPE,
             'TX1',
         )
         expect(order).toEqual(['submit', 'confirm'])
