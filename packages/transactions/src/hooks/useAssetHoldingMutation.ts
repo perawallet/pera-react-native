@@ -11,11 +11,9 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-    type PeraTransaction,
+import type {
+    ChainScope,
+    PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
@@ -25,14 +23,12 @@ import {
 import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
 import {
     mutationDefaults,
-    type Network,
     type Nullable,
     toError,
 } from '@perawallet/wallet-core-shared'
 
 export type AssetHoldingMutationContext = {
     scope: ChainScope
-    network: Network
     /** Returns the built group with the sender's minimum fee applied. */
     assignFees: (unsignedTxs: PeraTransaction[]) => Promise<PeraTransaction[]>
     submit: (unsignedTxs: PeraTransaction[]) => Promise<{ txIds: string[] }>
@@ -45,6 +41,7 @@ export type AssetHoldingMutationOutcome = {
 }
 
 type UseAssetHoldingMutationOptions<TParams> = {
+    scope: ChainScope
     source: SignAndSubmitGroupParams['source']
     run: (
         params: TParams,
@@ -65,14 +62,12 @@ export type UseAssetHoldingMutationResult<TParams> = {
  * DB; this hook then invalidates the sender's account reads.
  */
 export const useAssetHoldingMutation = <TParams>({
+    scope,
     source,
     run,
 }: UseAssetHoldingMutationOptions<TParams>): UseAssetHoldingMutationResult<TParams> => {
     const { submit } = useSignAndSubmitGroup()
-    const { network } = useNetwork()
-    const { assignFeeToGroup } = useMinimumFeeCalculator(
-        scopeForLegacyNetwork(network).chainId,
-    )
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<{ txIds: string[] }, Error, TParams>({
@@ -84,8 +79,7 @@ export const useAssetHoldingMutation = <TParams>({
         mutationFn: async params => {
             try {
                 const { txIds, sender } = await run(params, {
-                    scope: scopeForLegacyNetwork(network),
-                    network,
+                    scope,
                     // A Falcon signer needs the PQ minimum or algod rejects
                     // the whole group (`txgroup with 1mA fees is less than
                     // 3mA`). Non-quantum senders pass through untouched.
@@ -94,7 +88,7 @@ export const useAssetHoldingMutation = <TParams>({
                             .transactions,
                     submit: unsignedTxs =>
                         submit({
-                            chainId: scopeForLegacyNetwork(network).chainId,
+                            chainId: scope.chainId,
                             unsignedTxs,
                             source,
                         }),

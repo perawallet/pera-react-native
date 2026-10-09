@@ -75,7 +75,7 @@ export const useAddAssetView = (
         selectedAccount ? [selectedAccount] : [],
         scope,
     )
-    const { optIn } = useAssetOptInMutation()
+    const { optIn } = useAssetOptInMutation(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const { requestByType } = useBottomSheet()

@@ -81,7 +81,7 @@ const OptInHost = ({
     sender: WalletAccount
     assetId: string
 }) => {
-    const { optIn } = useAssetOptInMutation()
+    const { optIn } = useAssetOptInMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
     useEffect(() => {
         void request<'confirm'>({
@@ -129,7 +129,7 @@ const OptOutHost = ({
     onResolved?: (result: { txIds: string[] }) => void
     onRejected?: (error: unknown) => void
 }) => {
-    const { optOut } = useAssetOptOutMutation()
+    const { optOut } = useAssetOptOutMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
     useEffect(() => {
         void request<'confirm'>({

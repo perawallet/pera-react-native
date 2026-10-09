@@ -11,20 +11,17 @@
  */
 
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { getAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
 
 import type { Decimal } from 'decimal.js'
-import { transactionQueryKeys } from './querykeys'
 
 export type UseRekeyFeePreflightResult = {
     /**
      * True when the source's spendable balance (balance − min-balance
      * reserve) cannot cover the rekey fee. Stays false while the fee or the
-     * balance row is still loading — missing data never blocks the flow;
-     * algod remains the final authority.
+     * account state is still loading — missing data never blocks the flow;
+     * the chain remains the final authority.
      */
     isUnderfunded: boolean
 }
@@ -32,33 +29,27 @@ export type UseRekeyFeePreflightResult = {
 /**
  * Preflight for the rekey confirm screens: the source account pays the rekey
  * fee, and after paying it its balance must stay at or above the min-balance
- * reserve. Reads the per-network balance row account sync keeps fresh and
- * compares against the fee the screen already displays
- * (`useRekeyTransactionFeeQuery`'s ALGO `Decimal`), so the gate and the
- * displayed fee can never diverge.
+ * reserve. Reads the account's live on-chain state, not the synced balance
+ * row, so an account funded since the last sync isn't held back, and compares
+ * against the fee the screen already displays (`useRekeyTransactionFeeQuery`'s
+ * display-unit `Decimal`), so the gate and the displayed fee can never diverge.
  */
 export const useRekeyFeePreflight = (
     sourceAddress: string,
     feeAlgos: Decimal | undefined,
+    scope: ChainScope,
 ): UseRekeyFeePreflightResult => {
-    const { network } = useNetwork()
-    const scope = scopeForLegacyNetwork(network)
-
-    const { data: balance } = useQuery({
-        queryKey: transactionQueryKeys.sourceBalance(sourceAddress, scope),
-        queryFn: async () =>
-            (await getAccountBalance({
-                accountAddress: sourceAddress,
-                scope,
-            })) ?? null,
-        enabled: !!sourceAddress,
-        staleTime: Infinity,
-    })
+    const { data: accountState } = useOnChainAccountStateQuery(
+        sourceAddress,
+        scope,
+    )
 
     const isUnderfunded = useMemo(() => {
-        if (!feeAlgos || !balance) return false
-        return balance.algoBalance.minus(balance.minBalance).lessThan(feeAlgos)
-    }, [feeAlgos, balance])
+        if (!feeAlgos || !accountState) return false
+        return accountState.nativeBalance
+            .minus(accountState.minBalance)
+            .lessThan(feeAlgos)
+    }, [feeAlgos, accountState])
 
     return { isUnderfunded }
 }

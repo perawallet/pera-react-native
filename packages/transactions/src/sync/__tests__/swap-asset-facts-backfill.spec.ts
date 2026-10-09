@@ -132,7 +132,7 @@ describe('backfillSwapAssetFacts', () => {
     const run = (fetchHistory: unknown) =>
         backfillSwapAssetFacts({
             db,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             accountAddress: ACCOUNT,
             fetchHistory: fetchHistory as never,
         })
@@ -158,7 +158,7 @@ describe('backfillSwapAssetFacts', () => {
 
         expect(fetchHistory).toHaveBeenCalledWith({
             accountAddress: ACCOUNT,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             afterTime: WINDOW_START,
             beforeTime: WINDOW_END,
             limit: 200,
@@ -266,7 +266,7 @@ describe('backfillSwapAssetFacts', () => {
         await expect(
             backfillSwapAssetFacts({
                 db: { select: () => throwingBuilder() } as never,
-                network: NETWORK,
+                scope: scopeForLegacyNetwork(NETWORK),
                 accountAddress: ACCOUNT,
                 fetchHistory: fetchHistory as never,
             }),

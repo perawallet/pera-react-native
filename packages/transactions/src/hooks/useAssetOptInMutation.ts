@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useFeeConfig } from '@perawallet/wallet-core-signing'
 import {
     fetchOnChainAccountState,
@@ -62,11 +62,14 @@ const formatAlgoShortfall = (microAlgos: bigint): string =>
         0,
     )
 
-export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
-    const { assetOptInMinBalance } = useFeeConfig(LEGACY_CHAIN_ID)
+export const useAssetOptInMutation = (
+    scope: ChainScope,
+): UseAssetOptInMutationResult => {
+    const { assetOptInMinBalance } = useFeeConfig(scope.chainId)
 
     const { mutateAsync, isLoading, isError, error } =
         useAssetHoldingMutation<AssetOptInParams>({
+            scope,
             source: SOURCE,
             run: async ({ sender, assetId }, { scope, assignFees, submit }) => {
                 assertOnline()

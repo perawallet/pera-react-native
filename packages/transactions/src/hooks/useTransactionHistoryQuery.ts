@@ -13,11 +13,8 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, onlineManager, hashKey } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
     type SubmissionAttempt,
@@ -108,8 +105,7 @@ const findOldestLoaded = (
 export type UseTransactionHistoryQueryParams = {
     /** The Algorand account address to fetch transactions for */
     accountAddress: string
-    /** The network to fetch transactions from */
-    network: Network
+    scope: ChainScope
     /** Optional: Filter transactions to only show those involving a specific asset */
     assetId?: string
     /** Optional: Only return transactions confirmed after this time (ISO 8601) */
@@ -226,14 +222,13 @@ export const useTransactionHistoryQuery = (
 ): UseTransactionHistoryQueryResult => {
     const {
         accountAddress,
-        network,
+        scope,
         assetId,
         afterTime,
         beforeTime,
         limit = HISTORY_PAGE_SIZE,
         isEnabled = true,
     } = params
-    const scope = scopeForLegacyNetwork(network)
 
     const queryKey = transactionQueryKeys.historyWithFilters(
         accountAddress,
@@ -348,7 +343,7 @@ export const useTransactionHistoryQuery = (
             if (pageParam.url !== API_CURSOR) {
                 const result = await fetchMoreTransactions({
                     url: pageParam.url,
-                    network,
+                    scope,
                     // Only meaningful on indexer-backed networks (see
                     // `isPeraBackedNetwork`), which have no replayable
                     // pagination URL and need the address alongside the
@@ -392,7 +387,7 @@ export const useTransactionHistoryQuery = (
 
             const result = await fetchTransactionHistory({
                 accountAddress,
-                network,
+                scope,
                 assetId,
                 afterTime,
                 beforeTime: beforeTimeForApi,

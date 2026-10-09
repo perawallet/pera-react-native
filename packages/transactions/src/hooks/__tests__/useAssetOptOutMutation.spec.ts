@@ -21,6 +21,9 @@ import {
     CreatorCannotOptOutError,
 } from '../useAssetOptOutMutation'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
@@ -96,7 +99,7 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('opts out of a single asset via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -137,7 +140,7 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('looks the creator up on chain when the caller does not pass one', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -170,7 +173,7 @@ describe('useAssetOptOutMutation', () => {
             holdings: [holding(12345n, 0n), holding(67890n, 0n)],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -218,7 +221,7 @@ describe('useAssetOptOutMutation', () => {
             ],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -243,7 +246,7 @@ describe('useAssetOptOutMutation', () => {
             holdings: [holding(12345n, 5n)],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -261,7 +264,7 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('throws CreatorCannotOptOutError when sender == creator', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -283,7 +286,7 @@ describe('useAssetOptOutMutation', () => {
             holdings: [],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -313,7 +316,7 @@ describe('useAssetOptOutMutation', () => {
         mockBuild.mockResolvedValueOnce([{ sender: 'SENDER' }])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -339,7 +342,7 @@ describe('useAssetOptOutMutation', () => {
 
     it('does not call deleteAssetHoldings when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -360,7 +363,7 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('resolves an empty selection without touching the chain or the local DB', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 

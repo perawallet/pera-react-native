@@ -17,7 +17,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getDebitedAddress,
     isOutgoingFor,
@@ -152,10 +152,10 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
-    const { network } = useNetwork()
-    const { openTxIds } = useOpenSubmissionTxIdsQuery({ network })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { openTxIds } = useOpenSubmissionTxIdsQuery({ scope })
     const userAddress = account
-        ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
+        ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
     const isPendingVerifying = openTxIds.has(transaction.id)
 

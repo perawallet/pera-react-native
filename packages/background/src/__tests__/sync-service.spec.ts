@@ -1047,14 +1047,14 @@ describe('SyncService', () => {
                 networkId: 'testnet',
             })
             expect(fetchAndPersistTransactions).toHaveBeenCalledTimes(2)
-            expect(fetchAndPersistTransactions).toHaveBeenCalledWith(
-                'ADDR1',
-                'testnet',
-            )
-            expect(fetchAndPersistTransactions).toHaveBeenCalledWith(
-                'ADDR2',
-                'testnet',
-            )
+            expect(fetchAndPersistTransactions).toHaveBeenCalledWith('ADDR1', {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
+            expect(fetchAndPersistTransactions).toHaveBeenCalledWith('ADDR2', {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             // Default mock reports holdingsChanged, so the accounts pass is
             // broad; transactions are always scoped to the given addresses.
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)

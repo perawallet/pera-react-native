@@ -94,7 +94,11 @@ const renderHistoryQuery = (accountAddress: string) => {
         </QueryClientProvider>
     )
     return renderHook(
-        () => useTransactionHistoryQuery({ accountAddress, network: NETWORK }),
+        () =>
+            useTransactionHistoryQuery({
+                accountAddress,
+                scope: scopeForLegacyNetwork(NETWORK),
+            }),
         { wrapper },
     )
 }
@@ -289,7 +293,10 @@ describe('Flow: offline submission reconnect', () => {
             }),
         )
 
-        await fetchAndPersistTransactions(addressOf(account), NETWORK)
+        await fetchAndPersistTransactions(
+            addressOf(account),
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         const syncedHistory = renderHistoryQuery(addressOf(account))
         await waitFor(() => {

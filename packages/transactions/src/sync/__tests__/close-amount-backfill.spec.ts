@@ -73,11 +73,14 @@ describe('backfillMissingCloseAmounts', () => {
 
         await backfillMissingCloseAmounts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             fetchCloseAmount,
         })
 
-        expect(fetchCloseAmount).toHaveBeenCalledWith('TXSTALE', 'mainnet')
+        expect(fetchCloseAmount).toHaveBeenCalledWith(
+            'TXSTALE',
+            scopeForLegacyNetwork('mainnet'),
+        )
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
@@ -98,7 +101,7 @@ describe('backfillMissingCloseAmounts', () => {
         await expect(
             backfillMissingCloseAmounts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 fetchCloseAmount,
             }),
         ).resolves.toBeUndefined()
@@ -129,7 +132,7 @@ describe('backfillMissingCloseAmounts', () => {
 
         await backfillMissingCloseAmounts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             fetchCloseAmount,
         })
 
@@ -151,7 +154,10 @@ describe('backfillMissingCloseAmounts', () => {
             toDisplayable: vi.fn(),
         })
 
-        await backfillMissingCloseAmounts({ db, network: 'mainnet' })
+        await backfillMissingCloseAmounts({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
 
         const [row] = await getTransactionHistory({
             db,

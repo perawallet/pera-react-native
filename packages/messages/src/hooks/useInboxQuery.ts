@@ -13,14 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
     useAllAccounts,
@@ -56,8 +52,7 @@ const addressesOn = (
  * `getInboxQueryKey` must spread `queryOptions` rather than redeclare them —
  * per-observer `select` is the only thing a consumer should add.
  */
-export const useInboxQueryOptions = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useInboxQueryOptions = (scope: ChainScope) => {
     const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network) ?? ''
     const signingAccounts = useSigningAccounts(scope.chainId)
@@ -123,10 +118,9 @@ export type UseInboxQueryResult = {
     refetch: () => Promise<InboxItem[]>
 }
 
-export const useInboxQuery = (): UseInboxQueryResult => {
+export const useInboxQuery = (scope: ChainScope): UseInboxQueryResult => {
     const { queryOptions: inboxQueryOptions, isUnavailableOnNetwork } =
-        useInboxQueryOptions()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        useInboxQueryOptions(scope)
     const signingAccounts = useSigningAccounts(scope.chainId)
     const allAccounts = useAllAccounts()
 

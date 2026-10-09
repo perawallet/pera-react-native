@@ -19,7 +19,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockUseSelectedScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
+const mockCallerScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockUseSuggestedMinFeeQuery = vi.fn()
@@ -32,10 +32,6 @@ const mockResolveMinFeeForSender = vi.fn()
 // packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => mockUseSelectedScope(),
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
@@ -87,7 +83,7 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+    mockCallerScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
@@ -116,7 +112,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -137,7 +133,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -157,7 +153,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -178,7 +174,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -196,7 +192,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -218,7 +214,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -229,7 +225,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('does not run the query when sourceAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('', 'TGT'),
+            () => useRekeyTransactionFeeQuery('', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -241,7 +237,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('does not run the query when rekeyToAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', ''),
+            () => useRekeyTransactionFeeQuery('SRC', '', mockCallerScope()),
             { wrapper },
         )
 
@@ -258,15 +254,15 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result: mainnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
+        mockCallerScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         const { result: testnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
         await waitFor(() => expect(testnet.current.isPending).toBe(false))
@@ -283,7 +279,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -308,7 +304,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
@@ -328,7 +324,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },
         )
 

@@ -12,9 +12,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveMinFeeForSender,
     useFeeConfig,
@@ -46,16 +45,16 @@ export type UseRekeyTransactionFeeQueryResult = {
 export const useRekeyTransactionFeeQuery = (
     sourceAddress: string,
     rekeyToAddress: string,
+    scope: ChainScope,
 ): UseRekeyTransactionFeeQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
+    const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
     // Shared cached query instead of a private getSuggestedParams() fetch —
     // the send flow has usually populated it already.
     const {
         suggestedMinFee: loadedSuggestedMinFee,
         isError: isSuggestedMinFeeError,
-    } = useSuggestedMinFeeQuery(LEGACY_CHAIN_ID)
+    } = useSuggestedMinFeeQuery(scope.chainId)
     // Fall back to the config floor when the shared query errors (offline /
     // algod down — it fails fast, networkMode 'always'): staying disabled
     // would leave this query pending forever and the confirm CTA dead.

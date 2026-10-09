@@ -23,24 +23,22 @@ import {
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
+const scopeState = vi.hoisted(() => ({
+    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
-                'mainnet',
-        ),
+        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
-    useSelectedScope: vi
-        .fn()
-        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/inbox', () => ({
@@ -82,9 +80,7 @@ beforeEach(() => {
         account('ADDR1'),
         account('ADDR2'),
     ])
-    vi.mocked(useSelectedScope).mockReturnValue(
-        scopeForLegacyNetwork('mainnet'),
-    )
+    scopeState.current = scopeForLegacyNetwork('mainnet')
 })
 
 describe('useInboxQuery', () => {
@@ -129,7 +125,7 @@ describe('useInboxQuery', () => {
         }
         vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useInboxQuery(), {
+        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
             wrapper: createWrapper(),
         })
 
@@ -167,7 +163,7 @@ describe('useInboxQuery', () => {
         }
         vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useInboxQuery(), {
+        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
             wrapper: createWrapper(),
         })
 
@@ -197,7 +193,7 @@ describe('useInboxQuery', () => {
         }
         vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useInboxQuery(), {
+        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
             wrapper: createWrapper(),
         })
 
@@ -257,7 +253,7 @@ describe('useInboxQuery', () => {
         }
         vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useInboxQuery(), {
+        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
             wrapper: createWrapper(),
         })
 
@@ -296,7 +292,7 @@ describe('useInboxQuery', () => {
         }
         vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
 
-        const { result } = renderHook(() => useInboxQuery(), {
+        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
             wrapper: createWrapper(),
         })
 
@@ -356,7 +352,9 @@ describe('useInboxQuery', () => {
                     buildResponse([buildSignRequest(status)]),
                 )
 
-                renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+                renderHook(() => useInboxQuery(scopeState.current), {
+                    wrapper: createWrapper(),
+                })
 
                 await waitFor(() => {
                     expect(fetchInbox).toHaveBeenCalledTimes(1)
@@ -379,7 +377,9 @@ describe('useInboxQuery', () => {
                     buildResponse([buildSignRequest('confirmed')]),
                 )
 
-            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+            renderHook(() => useInboxQuery(scopeState.current), {
+                wrapper: createWrapper(),
+            })
 
             await waitFor(() => {
                 expect(fetchInbox).toHaveBeenCalledTimes(1)
@@ -401,7 +401,9 @@ describe('useInboxQuery', () => {
                 buildResponse([buildSignRequest('confirmed')]),
             )
 
-            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+            renderHook(() => useInboxQuery(scopeState.current), {
+                wrapper: createWrapper(),
+            })
 
             await waitFor(() => {
                 expect(fetchInbox).toHaveBeenCalledTimes(1)
@@ -414,7 +416,9 @@ describe('useInboxQuery', () => {
         it('does not poll when the inbox response is empty', async () => {
             vi.mocked(fetchInbox).mockResolvedValue(buildResponse([]))
 
-            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+            renderHook(() => useInboxQuery(scopeState.current), {
+                wrapper: createWrapper(),
+            })
 
             await waitFor(() => {
                 expect(fetchInbox).toHaveBeenCalledTimes(1)
@@ -432,9 +436,12 @@ describe('useInboxQuery', () => {
             asa_inboxes: [],
         } as unknown as InboxResponse)
 
-        const { result, rerender } = renderHook(() => useInboxQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result, rerender } = renderHook(
+            () => useInboxQuery(scopeState.current),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         const { refetch } = result.current
@@ -458,9 +465,12 @@ describe('useInboxQuery', () => {
         it('reports isPaused — not isPending — when offline pauses an uncached query', async () => {
             onlineManager.setOnline(false)
 
-            const { result } = renderHook(() => useInboxQuery(), {
-                wrapper: createWrapper(),
-            })
+            const { result } = renderHook(
+                () => useInboxQuery(scopeState.current),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPaused).toBe(true))
             // A paused query keeps `status: 'pending'`; surfacing that as
@@ -478,13 +488,14 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
-                const { result } = renderHook(() => useInboxQuery(), {
-                    wrapper: createWrapper(),
-                })
+                const { result } = renderHook(
+                    () => useInboxQuery(scopeState.current),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
                 expect(useChainCapability).toHaveBeenCalledWith(
@@ -498,13 +509,14 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'reports isPending false while unavailable on %s',
             network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
-                const { result } = renderHook(() => useInboxQuery(), {
-                    wrapper: createWrapper(),
-                })
+                const { result } = renderHook(
+                    () => useInboxQuery(scopeState.current),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
 
                 expect(result.current.isPending).toBe(false)
                 expect(result.current.data).toEqual([])
@@ -514,13 +526,14 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'does not invoke fetchInbox when refetch is called on %s',
             async network => {
-                vi.mocked(useSelectedScope).mockReturnValue(
-                    scopeForLegacyNetwork(network),
-                )
+                scopeState.current = scopeForLegacyNetwork(network)
 
-                const { result } = renderHook(() => useInboxQuery(), {
-                    wrapper: createWrapper(),
-                })
+                const { result } = renderHook(
+                    () => useInboxQuery(scopeState.current),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
 
                 await expect(result.current.refetch()).resolves.toEqual([])
 

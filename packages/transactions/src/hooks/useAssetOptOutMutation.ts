@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -22,11 +22,7 @@ import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
-import type {
-    Network,
-    Nullable,
-    Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
     sender: string
@@ -57,15 +53,12 @@ const SOURCE = {
 
 const resolveCreator = async (
     params: AssetOptOutParams,
-    network: Network,
+    scope: ChainScope,
 ): Promise<ResolvedOptOutParams> => {
     if (params.creator) {
         return params as ResolvedOptOutParams
     }
-    const asset = await fetchOnChainAsset(
-        String(params.assetId),
-        scopeForLegacyNetwork(network),
-    )
+    const asset = await fetchOnChainAsset(String(params.assetId), scope)
     return {
         ...params,
         creator: asset.creator.address,
@@ -89,14 +82,17 @@ const assertCanOptOut = (
     }
 }
 
-export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
+export const useAssetOptOutMutation = (
+    scope: ChainScope,
+): UseAssetOptOutMutationResult => {
     const { mutateAsync, isLoading, isError, error } = useAssetHoldingMutation<
         AssetOptOutParams[]
     >({
+        scope,
         source: SOURCE,
-        run: async (rawList, { scope, network, assignFees, submit }) => {
+        run: async (rawList, { assignFees, submit }) => {
             const paramsList = await Promise.all(
-                rawList.map(p => resolveCreator(p, network)),
+                rawList.map(p => resolveCreator(p, scope)),
             )
 
             const sender = paramsList[0].sender

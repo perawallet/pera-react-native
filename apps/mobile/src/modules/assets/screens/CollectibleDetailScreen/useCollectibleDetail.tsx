@@ -114,7 +114,7 @@ export const useCollectibleDetail = (
     const modelViewerModal = useModalState()
     const { request: requestBottomSheet } = useBottomSheet()
     const [modelViewerUrl, setModelViewerUrl] = useState<Nullable<string>>(null)
-    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const navigation = useNavigation()
 
     const collectible = asset?.peraMetadata?.collectible

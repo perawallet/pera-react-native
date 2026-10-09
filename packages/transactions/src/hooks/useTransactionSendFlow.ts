@@ -13,17 +13,14 @@
 import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-    type ChainScope,
-    type PeraTransaction,
+import type {
+    ChainScope,
+    PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchAndPersistAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveMinFeeForSender,
     useFeeConfig,
@@ -106,14 +103,16 @@ type UseTransactionSendFlowResult = {
     execute: (args: UseTransactionSendFlowParams) => Promise<string>
 }
 
-export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
+export const useTransactionSendFlow = (
+    scope: ChainScope,
+): UseTransactionSendFlowResult => {
     const { submit } = useSignAndSubmitGroup()
-    const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier, assetOptInMinBalance } =
-        useFeeConfig(LEGACY_CHAIN_ID)
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee(LEGACY_CHAIN_ID)
+    const { minTxnFee, pqMultiplier, assetOptInMinBalance } = useFeeConfig(
+        scope.chainId,
+    )
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
 
     /**
      * Express send has two signers with independent PQ-aware rates: the sender
@@ -131,7 +130,6 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             amount: bigint
         }): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount } = params
-            const scope = scopeForLegacyNetwork(network)
 
             // Look up receiver's current balance to determine funding needed
             const receiverState = await fetchOnChainAccountState(
@@ -144,26 +142,20 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const currentMbr = algosToMicroAlgosBigInt(receiverState.minBalance)
 
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const senderFee = resolveMinFeeForSender(
-                scopeForLegacyNetwork(network).chainId,
-                {
-                    senderAddress: sender,
-                    accounts,
-                    suggestedMinFee,
-                    configMinTxnFee: minTxnFee,
-                    pqMultiplier,
-                },
-            )
-            const receiverFee = resolveMinFeeForSender(
-                scopeForLegacyNetwork(network).chainId,
-                {
-                    senderAddress: receiver,
-                    accounts,
-                    suggestedMinFee,
-                    configMinTxnFee: minTxnFee,
-                    pqMultiplier,
-                },
-            )
+            const senderFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress: sender,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
+            const receiverFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress: receiver,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
 
             // After opt-in the receiver's MBR increases by assetOptInMinBalance. The
             // opt-in tx fee is paid from the receiver's balance at the
@@ -194,7 +186,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             minTxnFee,
             pqMultiplier,
             assetOptInMinBalance,
-            network,
+            scope,
         ],
     )
 
@@ -224,19 +216,15 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 ).toString(),
             )
 
-            const scope = scopeForLegacyNetwork(network)
             const senderAddress = senderAddressOn(params.sender, scope)
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const resolvedFee = resolveMinFeeForSender(
-                scopeForLegacyNetwork(network).chainId,
-                {
-                    senderAddress,
-                    accounts,
-                    suggestedMinFee,
-                    configMinTxnFee: minTxnFee,
-                    pqMultiplier,
-                },
-            )
+            const resolvedFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
             return sendFlowChainAdapters.get(scope.chainId).buildTransferTxs({
                 scope,
                 sender: senderAddress,
@@ -248,7 +236,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 fee: resolvedFee > suggestedMinFee ? resolvedFee : undefined,
             })
         },
-        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, network],
+        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, scope],
     )
 
     const executeSend = useCallback(
@@ -263,7 +251,6 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
-            const scope = scopeForLegacyNetwork(network)
             const senderAddress = senderAddressOn(params.sender, scope)
 
             // Read at submit time rather than taking the caller's word: a
@@ -307,23 +294,17 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
-                    const assetInbox = sendFlowFeatureFor(
-                        scopeForLegacyNetwork(network),
-                        'assetInbox',
-                    )
+                    const assetInbox = sendFlowFeatureFor(scope, 'assetInbox')
                     const suggestedMinFee = await fetchSuggestedMinFee()
-                    const senderMinFee = resolveMinFeeForSender(
-                        scopeForLegacyNetwork(network).chainId,
-                        {
-                            senderAddress: senderAddress,
-                            accounts,
-                            suggestedMinFee,
-                            configMinTxnFee: minTxnFee,
-                            pqMultiplier,
-                        },
-                    )
+                    const senderMinFee = resolveMinFeeForSender(scope.chainId, {
+                        senderAddress: senderAddress,
+                        accounts,
+                        suggestedMinFee,
+                        configMinTxnFee: minTxnFee,
+                        pqMultiplier,
+                    })
                     const unsignedTxs = await assetInbox.buildSendTxs({
-                        scope: scopeForLegacyNetwork(network),
+                        scope: scope,
                         sender: senderAddress,
                         receiver: params.receiver,
                         assetId,
@@ -361,7 +342,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
-            network,
+            scope,
         ],
     )
 
@@ -370,30 +351,21 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             if (!params.asset || !params.sender) {
                 throw new InvalidSendParamsError()
             }
-            const senderAddress = senderAddressOn(
-                params.sender,
-                scopeForLegacyNetwork(network),
-            )
+            const senderAddress = senderAddressOn(params.sender, scope)
 
-            const assetInbox = sendFlowFeatureFor(
-                scopeForLegacyNetwork(network),
-                'assetInbox',
-            )
+            const assetInbox = sendFlowFeatureFor(scope, 'assetInbox')
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const senderMinFee = resolveMinFeeForSender(
-                scopeForLegacyNetwork(network).chainId,
-                {
-                    senderAddress: senderAddress,
-                    accounts,
-                    suggestedMinFee,
-                    configMinTxnFee: minTxnFee,
-                    pqMultiplier,
-                },
-            )
+            const senderMinFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress: senderAddress,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
 
             if (params.sendMode === 'claimArc59') {
                 const unsignedTxs = await assetInbox.buildClaimTxs({
-                    scope: scopeForLegacyNetwork(network),
+                    scope: scope,
                     sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -401,7 +373,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     senderMinFee,
                 })
                 const result = await submit({
-                    chainId: scopeForLegacyNetwork(network).chainId,
+                    chainId: scope.chainId,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
@@ -414,12 +386,12 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         await addToAssetHolding({
                             accountAddress: senderAddress,
                             assetId: String(params.asset.assetId),
-                            scope: scopeForLegacyNetwork(network),
+                            scope: scope,
                             amount: params.amount,
                         })
                         await fetchAndPersistAssets(
                             [String(params.asset.assetId)],
-                            scopeForLegacyNetwork(network),
+                            scope,
                         )
                     } catch (error) {
                         // Cosmetic-only failure — the post-confirmation
@@ -434,7 +406,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 return result.txIds[result.txIds.length - 1]
             } else {
                 const unsignedTxs = await assetInbox.buildRejectTxs({
-                    scope: scopeForLegacyNetwork(network),
+                    scope: scope,
                     sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -443,7 +415,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     senderMinFee,
                 })
                 const result = await submit({
-                    chainId: scopeForLegacyNetwork(network).chainId,
+                    chainId: scope.chainId,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
@@ -452,7 +424,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
         },
         [
             submit,
-            network,
+            scope,
             invalidateBalances,
             accounts,
             fetchSuggestedMinFee,

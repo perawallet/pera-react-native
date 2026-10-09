@@ -97,7 +97,7 @@ const GalleryOptInHost = ({
     assetId: string
 }) => {
     const { collectibles, isPending, sortMode, setSortMode } = useAccountNfts()
-    const { optIn } = useAssetOptInMutation()
+    const { optIn } = useAssetOptInMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
 
     useEffect(() => {

@@ -49,7 +49,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         ])
 
         const { result } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'mainnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('mainnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 
@@ -69,7 +72,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         const { result } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'testnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('testnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 
@@ -84,7 +90,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         mockGetOpenSubmissionAttempts.mockReturnValue(new Promise(() => {}))
 
         const { result, rerender } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'mainnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('mainnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 

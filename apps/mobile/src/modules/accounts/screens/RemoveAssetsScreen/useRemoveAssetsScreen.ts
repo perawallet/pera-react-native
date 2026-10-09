@@ -73,7 +73,7 @@ export const useRemoveAssetsScreen = ({
         selectedAccount ? [selectedAccount] : [],
         scope,
     )
-    const { optOut, isLoading: isRemoving } = useAssetOptOutMutation()
+    const { optOut, isLoading: isRemoving } = useAssetOptOutMutation(scope)
 
     const balanceData = useMemo(
         () =>

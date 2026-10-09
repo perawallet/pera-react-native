@@ -134,7 +134,11 @@ export const syncTransactionsPhase = async (
     const results = await mapWithConcurrency(
         addresses,
         ACCOUNT_FETCH_CONCURRENCY,
-        address => fetchAndPersistTransactions(address, network),
+        address =>
+            fetchAndPersistTransactions(
+                address,
+                scopeForLegacyNetwork(network),
+            ),
     )
     logPhaseFailures(phase, results, network, i => addresses[i])
     return summarize(results)

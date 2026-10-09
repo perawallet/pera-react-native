@@ -91,7 +91,7 @@ export const useTransactionProcessingScreen =
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
-        const { execute } = useTransactionSendFlow()
+        const { execute } = useTransactionSendFlow(scope)
 
         // Multisig propose returns via the `proposed` transport result instead
         // of resolving the algod submission Promise — `execute()` never settles

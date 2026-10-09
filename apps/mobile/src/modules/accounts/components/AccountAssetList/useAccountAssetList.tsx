@@ -137,7 +137,7 @@ export const useAccountAssetList = ({
     // per-row render observer-free without precomputing all N holdings.
     const convertFiat = useAssetListFiatConverter()
 
-    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

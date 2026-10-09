@@ -43,13 +43,13 @@ describe('history adapter wrappers', () => {
         historyChainAdapters.reset()
     })
 
-    it('maps the network to a scope for the first page', async () => {
+    it("routes the first page to the scope's chain adapter", async () => {
         const adapter = makeAdapter()
         historyChainAdapters.register(adapter)
 
         const result = await fetchTransactionHistory({
             accountAddress: 'ADDR',
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
             afterTime: '2026-01-01',
         })
 
@@ -61,11 +61,14 @@ describe('history adapter wrappers', () => {
         })
     })
 
-    it('maps the network to a scope for a later page', async () => {
+    it("routes a later page to the scope's chain adapter", async () => {
         const adapter = makeAdapter()
         historyChainAdapters.register(adapter)
 
-        await fetchMoreTransactions({ url: 'NEXT', network: 'mainnet' })
+        await fetchMoreTransactions({
+            url: 'NEXT',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
 
         expect(adapter.fetchMoreHistory).toHaveBeenCalledWith({
             url: 'NEXT',
@@ -81,7 +84,7 @@ describe('history adapter wrappers', () => {
         historyChainAdapters.register(adapter)
         const item = { id: 'TX' } as TransactionHistoryItem
 
-        expect(mapHistoryItemToDisplayableTransaction(item, 'mainnet')).toBe(
+        expect(mapHistoryItemToDisplayableTransaction(item, 'algorand')).toBe(
             displayable,
         )
         expect(adapter.toDisplayable).toHaveBeenCalledWith(item)
@@ -91,7 +94,9 @@ describe('history adapter wrappers', () => {
         const lookup = vi.fn().mockResolvedValue('500')
         historyChainAdapters.register(makeAdapter({ fetchCloseAmount: lookup }))
 
-        await expect(fetchCloseAmount('TX', 'testnet')).resolves.toBe('500')
+        await expect(
+            fetchCloseAmount('TX', scopeForLegacyNetwork('testnet')),
+        ).resolves.toBe('500')
         expect(lookup).toHaveBeenCalledWith(
             'TX',
             scopeForLegacyNetwork('testnet'),
@@ -101,20 +106,22 @@ describe('history adapter wrappers', () => {
     it('reports no close amount when the adapter has no lookup', async () => {
         historyChainAdapters.register(makeAdapter())
 
-        await expect(fetchCloseAmount('TX', 'mainnet')).resolves.toBeNull()
+        await expect(
+            fetchCloseAmount('TX', scopeForLegacyNetwork('mainnet')),
+        ).resolves.toBeNull()
     })
 
     it('names the missing registry when no adapter is registered', async () => {
         await expect(
             fetchTransactionHistory({
                 accountAddress: 'A',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             }),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         expect(() =>
             mapHistoryItemToDisplayableTransaction(
                 { id: 'TX' } as TransactionHistoryItem,
-                'mainnet',
+                'algorand',
             ),
         ).toThrow('No transaction history adapter is registered')
     })

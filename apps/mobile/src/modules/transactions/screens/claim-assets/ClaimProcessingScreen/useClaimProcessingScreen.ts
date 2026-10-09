@@ -53,7 +53,7 @@ export const useClaimProcessingScreen = () => {
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
-    const { execute } = useTransactionSendFlow()
+    const { execute } = useTransactionSendFlow(scope)
 
     const asset = assetRequests[assetIndex]
 

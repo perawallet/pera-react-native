@@ -178,7 +178,7 @@ describe('useAssetTransactionList', () => {
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith({
                 accountAddress: ACCOUNT_ADDRESS,
                 assetId: '12345',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 isEnabled: true,
                 afterTime: undefined,
                 beforeTime: undefined,

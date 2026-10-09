@@ -23,9 +23,9 @@ import { fetchInbox } from '../../api/inbox'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() => true),
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
+
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
@@ -113,7 +113,7 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
             asa_inboxes: [],
         })
 
-        renderHook(() => useCleanupDuplicateMultisigInvitations(), {
+        renderHook(() => useCleanupDuplicateMultisigInvitations(MAINNET), {
             wrapper: createWrapper(),
         })
 
@@ -149,7 +149,7 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
         })
 
         const { result } = renderHook(
-            () => useCleanupDuplicateMultisigInvitations(),
+            () => useCleanupDuplicateMultisigInvitations(MAINNET),
             { wrapper: createWrapper() },
         )
 
@@ -181,7 +181,7 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
         })
 
         const { rerender } = renderHook(
-            () => useCleanupDuplicateMultisigInvitations(),
+            () => useCleanupDuplicateMultisigInvitations(MAINNET),
             { wrapper: createWrapper() },
         )
 

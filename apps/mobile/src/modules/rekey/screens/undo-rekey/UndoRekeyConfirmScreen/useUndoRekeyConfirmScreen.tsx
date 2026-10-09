@@ -69,6 +69,7 @@ export const useUndoRekeyConfirmScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation(
             {
+                scope,
                 signingMetadata: {
                     name: t('rekey.signing.source_name'),
                     description: t('rekey.signing.source_description'),
@@ -80,10 +81,15 @@ export const useUndoRekeyConfirmScreen =
         const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
             sourceAddress,
             sourceAddress,
+            scope,
         )
         // The source pays the undo fee — block before any sign request is
         // created (and before the Ledger device prompt for hardware auths).
-        const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
+        const { isUnderfunded } = useRekeyFeePreflight(
+            sourceAddress,
+            feeAlgos,
+            scope,
+        )
 
         // Undoing the rekey of a shared account is a multisig propose whose
         // signing Promise never resolves — hand off to the pending-signatures

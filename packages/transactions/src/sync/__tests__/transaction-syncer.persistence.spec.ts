@@ -45,6 +45,7 @@ vi.mock('../swap-asset-facts-backfill', () => ({
     backfillSwapAssetFacts: vi.fn().mockResolvedValue(undefined),
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fetchAndPersistTransactions } from '../transaction-syncer'
 
 const ADDRESS = 'ACCT1'
@@ -186,7 +187,10 @@ describe('fetchAndPersistTransactions storage', () => {
         teardown = result.teardown
         await runMigrations(mocks.db, migrations)
         mocks.fetchTransactionHistory.mockResolvedValue({ transactions: page })
-        await fetchAndPersistTransactions(ADDRESS, 'mainnet')
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork('mainnet'),
+        )
     })
 
     afterEach(() => {

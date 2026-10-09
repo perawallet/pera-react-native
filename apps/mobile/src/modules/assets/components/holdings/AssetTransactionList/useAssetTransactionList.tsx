@@ -17,7 +17,10 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     CSV_MIME_TYPE,
     useTransactionHistoryQuery,
@@ -83,8 +86,8 @@ export const useAssetTransactionList = ({
     account,
     asset,
 }: UseAssetTransactionListParams): UseAssetTransactionListResult => {
-    const accountAddress =
-        chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountAddress = chainAccountOf(account, scope.chainId)?.address ?? ''
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
@@ -114,7 +117,7 @@ export const useAssetTransactionList = ({
         fetchNextPage,
     } = useTransactionHistoryQuery({
         accountAddress,
-        network,
+        scope,
         isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
@@ -145,7 +148,7 @@ export const useAssetTransactionList = ({
         isLoading: isExportingCsv,
         isUnavailableOnNetwork,
     } = useCsvExportMutation({
-        network,
+        scope,
         onSuccess: result => {
             void (async () => {
                 try {

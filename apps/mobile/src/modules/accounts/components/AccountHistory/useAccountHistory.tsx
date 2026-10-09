@@ -154,7 +154,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         fetchNextPage,
     } = useTransactionHistoryQuery({
         accountAddress: accountAddress ?? '',
-        network,
+        scope,
         isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
@@ -187,7 +187,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoading: isExportingCsv,
         isUnavailableOnNetwork,
     } = useCsvExportMutation({
-        network,
+        scope,
         onSuccess: result => {
             void (async () => {
                 try {

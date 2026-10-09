@@ -29,6 +29,9 @@ import {
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
@@ -109,7 +112,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('builds an opt-in through the chain adapter and submits via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -153,7 +156,7 @@ describe('useAssetOptInMutation', () => {
             accountState(1000000n, 100000n, [12345n]),
         )
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -172,7 +175,7 @@ describe('useAssetOptInMutation', () => {
     it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {
         mockAccountState.mockResolvedValueOnce(accountState(1n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -190,7 +193,7 @@ describe('useAssetOptInMutation', () => {
         // 100000 held leaves 101000 microAlgos short.
         mockAccountState.mockResolvedValueOnce(accountState(100000n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -214,7 +217,7 @@ describe('useAssetOptInMutation', () => {
         })
         mockAccountState.mockResolvedValueOnce(accountState(250000n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -245,7 +248,7 @@ describe('useAssetOptInMutation', () => {
             ],
         })
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -278,7 +281,7 @@ describe('useAssetOptInMutation', () => {
         })
         mockAccountState.mockResolvedValueOnce(accountState(202000n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -293,7 +296,7 @@ describe('useAssetOptInMutation', () => {
 
     it('does not run post-submit work when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
         await act(async () => {
@@ -311,7 +314,7 @@ describe('useAssetOptInMutation', () => {
 
         it('throws NoConnectionError before any algod call when offline', async () => {
             onlineManager.setOnline(false)
-            const { result } = renderHook(() => useAssetOptInMutation(), {
+            const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
                 wrapper,
             })
 
