@@ -303,13 +303,6 @@ export interface AnalyzedSignableGroup extends SignableGroup {
     analysis: SignableAnalysis
 }
 
-export interface DataAnalyzer {
-    analyze(
-        group: SignableGroup,
-        context: AnalysisContext,
-    ): Promise<SignableAnalysis>
-}
-
 /** The UI layer maps these to i18n keys and appropriate UI treatment. */
 export type SigningPhase =
     | 'connecting'

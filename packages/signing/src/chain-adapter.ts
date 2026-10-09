@@ -92,7 +92,8 @@ export type ArbitraryDataDisplay =
 
 /**
  * Explains a group without guessing: what the chain can't identify comes back
- * unrecognised, never as an error. A transaction for another network throws.
+ * unrecognised, never as an error. Data it can't trust throws: a transaction
+ * for another network, or bytes that don't match what was decoded.
  */
 export interface TransactionDecoder {
     decode(
@@ -105,6 +106,7 @@ export interface WarningDetector {
     /**
      * Reads the decoder's result, so warnings follow what it recognised.
      * Transactions carry warnings only when a wallet account signs them.
+     * Synchronous: whatever it needs from the network, the decoder fetches.
      */
     detect(
         group: SignableGroup,
@@ -114,7 +116,10 @@ export interface WarningDetector {
 }
 
 export interface ReviewPolicy {
-    /** Whether a request the app built itself may sign without the review screen. */
+    /**
+     * Whether a request the app built itself may sign without a review screen.
+     * One it may not is refused, since a local request has no review screen.
+     */
     autoApproveLocal(analysis: SignableAnalysis): boolean
 }
 
@@ -124,10 +129,6 @@ export interface ReviewerChainAdapter {
     decoder: TransactionDecoder
     warnings: WarningDetector
     policy: ReviewPolicy
-    analyze(
-        group: SignableGroup,
-        context: AnalysisContext,
-    ): Promise<SignableAnalysis>
     createTransactionListItems(
         transactions: PeraDisplayableTransaction[],
         signableIndices?: ReadonlySet<number>,

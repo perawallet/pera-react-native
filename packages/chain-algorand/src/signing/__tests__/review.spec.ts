@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import {
     OnApplicationComplete,
     Transaction,
@@ -24,7 +24,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
-    composeAnalysis,
+    AnalysisError,
+    GenesisHashMismatchError,
+    reviewGroup,
     TransactionRoundTripError,
     type AnalysisContext,
     type AnalysisWarning,
@@ -38,8 +40,16 @@ vi.mock('../assertTransactionsMatchNetwork', () => ({
     assertTransactionsMatchNetwork: vi.fn(),
 }))
 
-import { encodeTransactionRaw } from '../../blockchain'
+// A custom network's genesis lives only in its saved config, so the check must
+// use the resolved hash; mainnet can't tell the two sources apart.
+vi.mock('../../blockchain', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../blockchain')>()),
+    getExpectedGenesisHash: vi.fn(() => 'RESOLVED_GENESIS'),
+}))
+
+import { encodeTransactionRaw, getExpectedGenesisHash } from '../../blockchain'
 import { algorandReviewerAdapter } from '../adapter'
+import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
 import {
     TEST_SUGGESTED_PARAMS,
     makeTestAddress,
@@ -77,7 +87,10 @@ const transactionsGroup = (
         },
     }) as unknown as SignableGroup
 
-const authDataGroup = (domain: string, verifiedOrigin: string): SignableGroup =>
+const authDataGroup = (
+    domain: string,
+    verifiedOrigin?: string,
+): SignableGroup =>
     ({
         signerAddress: WALLET.toString(),
         source: { type: 'webview', verifiedOrigin },
@@ -151,6 +164,10 @@ const KINDS = {
         suggestedParams: TEST_SUGGESTED_PARAMS,
     }),
     rekey: makeTestPaymentTx(WALLET, { receiver: OTHER, rekeyTo: TARGET }),
+    foreignSenderRekey: makeTestPaymentTx(OTHER, {
+        receiver: OTHER,
+        rekeyTo: TARGET,
+    }),
     accountClose: makeTestPaymentTx(WALLET, {
         receiver: OTHER,
         closeRemainderTo: TARGET,
@@ -225,6 +242,11 @@ const CASES: [string, SignableGroup, Expected][] = [
     ],
     ['a rekey', transactionsGroup([KINDS.rekey]), signed('payment', ['rekey'])],
     [
+        'a rekey a wallet account authorises for another sender',
+        transactionsGroup([KINDS.foreignSenderRekey]),
+        signed('payment', ['rekey']),
+    ],
+    [
         'an account close-out',
         transactionsGroup([KINDS.accountClose]),
         signed('payment', ['close-account']),
@@ -279,6 +301,17 @@ const CASES: [string, SignableGroup, Expected][] = [
         },
     ],
     [
+        'a sign-in with no origin to check, as over WalletConnect',
+        authDataGroup('pera.app'),
+        {
+            summaryTypes: [],
+            isCharged: false,
+            warningTypes: [],
+            riskLevel: 'low',
+            signableAddresses: EVERY_ACCOUNT,
+        },
+    ],
+    [
         'a sign-in relayed from another site',
         authDataGroup('pera.app', 'https://evil.example'),
         {
@@ -291,13 +324,14 @@ const CASES: [string, SignableGroup, Expected][] = [
     ],
 ]
 
-const review = async (group: SignableGroup): Promise<SignableAnalysis> => {
-    const { decoder, warnings } = algorandReviewerAdapter
-    const decoded = await decoder.decode(group, context)
-    return composeAnalysis(decoded, warnings.detect(group, decoded, context))
-}
+const review = (group: SignableGroup): Promise<SignableAnalysis> =>
+    reviewGroup(algorandReviewerAdapter, group, context)
 
 describe('algorandReviewerAdapter review parts', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
     it.each(CASES)('reviews %s', async (_kind, group, expected) => {
         const analysis = await review(group)
 
@@ -312,21 +346,6 @@ describe('algorandReviewerAdapter review parts', () => {
         expect(analysis.signableAddresses).toEqual(expected.signableAddresses)
     })
 
-    it('summarises a transfer with its receiver and amount', async () => {
-        const analysis = await review(transactionsGroup([KINDS.assetTransfer]))
-
-        expect(analysis.transactionSummaries).toEqual([
-            {
-                type: 'asset-transfer',
-                sender: WALLET.toString(),
-                receiver: OTHER.toString(),
-                amount: 5n,
-                assetId: 42n,
-                note: '',
-            },
-        ])
-    })
-
     it("refuses bytes that don't round-trip to the decoded group", async () => {
         const group = transactionsGroup([KINDS.payment], {
             rawTransactionsBase64: [rawOf(KINDS.assetTransfer)],
@@ -335,6 +354,95 @@ describe('algorandReviewerAdapter review parts', () => {
         await expect(
             algorandReviewerAdapter.decoder.decode(group, context),
         ).rejects.toBeInstanceOf(TransactionRoundTripError)
+    })
+
+    it('summarises each transaction from its own payload, guessing nothing for a contract call', async () => {
+        const note = new Uint8Array(new TextEncoder().encode('hello'))
+        const withNote = makeTestPaymentTx(WALLET, {
+            receiver: OTHER,
+            amount: 5n,
+            note,
+        })
+        const group = transactionsGroup([
+            withNote,
+            KINDS.assetTransfer,
+            KINDS.appCall,
+        ])
+
+        const analysis = await review(group)
+
+        expect(analysis.transactionSummaries).toEqual([
+            {
+                type: 'payment',
+                sender: WALLET.toString(),
+                receiver: OTHER.toString(),
+                amount: 5n,
+                note: 'hello',
+            },
+            {
+                type: 'asset-transfer',
+                sender: WALLET.toString(),
+                receiver: OTHER.toString(),
+                amount: 5n,
+                assetId: 42n,
+                note: '',
+            },
+            { type: 'app-call', sender: WALLET.toString(), note: '' },
+        ])
+        expect(analysis.totalFees).toBe(feesOf(group))
+    })
+
+    it("leaves out a note that isn't valid UTF-8", async () => {
+        vi.stubGlobal(
+            'TextDecoder',
+            class {
+                decode(): never {
+                    throw new TypeError('invalid UTF-8')
+                }
+            },
+        )
+
+        const analysis = await review(transactionsGroup([KINDS.payment]))
+
+        expect(analysis.transactionSummaries[0]).not.toHaveProperty('note')
+    })
+
+    it("checks the transactions against the selected network's resolved genesis", async () => {
+        await review(transactionsGroup([KINDS.payment]))
+
+        expect(getExpectedGenesisHash).toHaveBeenCalledWith('mainnet')
+        expect(assertTransactionsMatchNetwork).toHaveBeenCalledWith(
+            [KINDS.payment],
+            'mainnet',
+            'RESOLVED_GENESIS',
+        )
+    })
+
+    it("refuses another network's transaction with the network error itself", async () => {
+        vi.mocked(assertTransactionsMatchNetwork).mockImplementationOnce(() => {
+            throw new GenesisHashMismatchError(
+                'mainnet',
+                0,
+                'EXPECTED',
+                'ACTUAL',
+            )
+        })
+
+        await expect(
+            review(transactionsGroup([KINDS.payment])),
+        ).rejects.toBeInstanceOf(GenesisHashMismatchError)
+    })
+
+    it('reports any other failure as an analysis error', async () => {
+        const unreadable = {
+            get sender(): never {
+                throw new Error('unreadable transaction')
+            },
+        } as unknown as Transaction
+
+        await expect(
+            review(transactionsGroup([unreadable])),
+        ).rejects.toBeInstanceOf(AnalysisError)
     })
 
     it('lets a request the app built sign without review, even a rekey', async () => {

@@ -17,22 +17,37 @@ import type {
     AnalysisContext,
 } from '../../pipeline/types'
 import { reviewerChainAdapters } from '../../chain-adapter'
+import { reviewGroup } from '../../pipeline/composeAnalysis'
+import { ReviewRequiredError } from '../../pipeline/errors'
 
 export type AnalyzerActorInput = {
     groups: SignableGroup[]
     context: AnalysisContext
+    /** No review screen will show this request, so the chain's policy decides. */
+    isHeadless: boolean
 }
 
 /**
- * XState actor that analyzes all signable groups in a request.
- * Returns one SignableAnalysis per group, in the same order.
+ * Reviews every group with the reviewer of the request's chain, one analysis
+ * per group in the same order. A chain with no reviewer throws, so its
+ * requests are refused rather than signed unreviewed.
  */
 export const analyzerActor = fromPromise<
     SignableAnalysis[],
     AnalyzerActorInput
 >(async ({ input }) => {
-    const adapter = reviewerChainAdapters.get(input.context.scope.chainId)
-    return Promise.all(
-        input.groups.map(group => adapter.analyze(group, input.context)),
+    const reviewer = reviewerChainAdapters.get(input.context.scope.chainId)
+    const analyses = await Promise.all(
+        input.groups.map(group => reviewGroup(reviewer, group, input.context)),
     )
+    if (!input.isHeadless) return analyses
+    const refused = analyses.filter(
+        analysis => !reviewer.policy.autoApproveLocal(analysis),
+    )
+    if (refused.length > 0) {
+        throw new ReviewRequiredError(
+            refused.flatMap(analysis => analysis.warnings.map(w => w.type)),
+        )
+    }
+    return analyses
 })

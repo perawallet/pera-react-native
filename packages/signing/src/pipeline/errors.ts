@@ -306,3 +306,18 @@ export class GenesisHashMismatchError extends PipelineError {
         )
     }
 }
+
+/**
+ * A request with no review screen that its chain's policy won't sign
+ * unreviewed. Refused rather than signed, since nothing could show it to the
+ * user. Non-retryable: the same request gets the same verdict.
+ */
+export class ReviewRequiredError extends PipelineError {
+    constructor(warningTypes: string[]) {
+        super(
+            "This request can't be signed without a review, and its source has no review screen.",
+            undefined,
+            { params: { warningTypes } },
+        )
+    }
+}

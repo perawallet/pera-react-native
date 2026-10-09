@@ -24,11 +24,12 @@ import type {
     SigningMachineInput,
 } from './context'
 import type { SignerCustody } from './utils/resolveSignerCredential'
-import type {
-    AnalyzedSignableGroup,
-    SignableAnalysis,
-    SigningResult,
-    TransportResult,
+import {
+    isInteractiveSource,
+    type AnalyzedSignableGroup,
+    type SignableAnalysis,
+    type SigningResult,
+    type TransportResult,
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
 import { transportActor } from './actors/transports/transportActor'
@@ -277,10 +278,10 @@ export const signingMachine = setup({
         },
 
         /**
-         * Analyzes the signable group: calculates fees, detects warnings,
-         * extracts signable addresses. Always transitions to `awaiting_user`
-         * on success — the machine has no UI knowledge and treats that
-         * state as a generic external sync point.
+         * Reviews every group with the reviewer of the request's chain. A
+         * request no review screen will show fails here when that chain's
+         * policy won't sign it unreviewed; otherwise the machine pauses at
+         * `awaiting_user`, a generic external sync point.
          */
         validating: {
             invoke: {
@@ -294,6 +295,9 @@ export const signingMachine = setup({
                         scope: context.deps.scope,
                         accounts: context.allAccounts,
                     },
+                    isHeadless: !isInteractiveSource(
+                        context.request.sourceType,
+                    ),
                 }),
                 onDone: {
                     target: 'awaiting_user',

@@ -107,6 +107,7 @@ reviewerContractTests(() => fixtureReviewer, {
     riskyGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n, isRisky: true }]),
     foreignGroup: groupOf('fx02', [{ sender: 'fx02', fee: 3n, isRisky: true }]),
     opaqueGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n, isOpaque: true }]),
+    opaqueAutoApproves: false,
     wrongNetworkGroup: groupOf(WALLET, [
         { sender: WALLET, fee: 3n, networkId: 'mainnet' },
     ]),

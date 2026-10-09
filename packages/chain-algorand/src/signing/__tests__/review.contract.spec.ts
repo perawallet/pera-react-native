@@ -80,6 +80,7 @@ reviewerContractTests(() => algorandReviewerAdapter, {
     riskyGroup: groupOf(WALLET, [payment(WALLET, { rekeyTo: REKEY_TARGET })]),
     foreignGroup: groupOf(OTHER, [payment(OTHER, { rekeyTo: REKEY_TARGET })]),
     opaqueGroup: groupOf(WALLET, [appCall]),
+    opaqueAutoApproves: true,
     wrongNetworkGroup: groupOf(WALLET, [
         payment(WALLET, { genesisHash: TEST_SUGGESTED_PARAMS.genesisHash }),
     ]),

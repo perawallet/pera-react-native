@@ -174,7 +174,7 @@ export {
     type TransactionListItem,
     type WarningDetector,
 } from './chain-adapter'
-export { composeAnalysis } from './pipeline/composeAnalysis'
+export { composeAnalysis, reviewGroup } from './pipeline/composeAnalysis'
 
 export {
     isExternalCallbackSource,
@@ -187,7 +187,6 @@ export {
     type AuthDataPayload,
     type AuthDataSignableData,
     type AuthData,
-    type DataAnalyzer,
     type DecodedGroup,
     type RejectReason,
     type DataTransport,
@@ -208,6 +207,7 @@ export {
     GenesisHashMismatchError,
     InvalidSignableDataError,
     NoLocalParticipantsError,
+    ReviewRequiredError,
     SigningError,
     SourceError,
     SubmissionError,
