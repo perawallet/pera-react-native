@@ -43,10 +43,10 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -104,16 +104,12 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         useAccountsStore.getState().setSelectedAccountAddress(HOLDER.address)
         vi.mocked(Notifier.showNotification).mockClear()
 
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: HOLDER.address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         // Account holds 1 NFT + 50 USDC. Both have non-zero balances so

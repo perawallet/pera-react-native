@@ -49,11 +49,11 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     authorityOf,
     fetchAndPersistAccount,
-    upsertAccountBalance,
     useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
@@ -119,17 +119,13 @@ const seedRekeyedSource = async (): Promise<{
     useAccountsStore.getState().setAccounts([source, authAccount])
     useAccountsStore.getState().setSelectedAccountAddress(source.address)
     // The source pays the undo fee — the confirm screen's fee preflight
-    // reads this balance row and disables the CTA without it.
-    await upsertAccountBalance({
+    // reads this chain-state row and disables the CTA without it.
+    await seedAlgorandAccountState({
         accountAddress: source.address,
         scope: MAINNET_SCOPE,
-        algoBalance: new Decimal(5),
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
-        minBalance: new Decimal(0.1),
-        status: 'Offline',
-        authorityAddress: authAccount.address,
+        nativeBalance: new Decimal(5_000_000),
+        minBalance: new Decimal(100_000),
+        authAddress: authAccount.address,
     })
     return { source, authAccount }
 }

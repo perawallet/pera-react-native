@@ -77,7 +77,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ],
         nativeAssetId: '0',
-        nativeBalance: new Decimal('2.5'),
+        nativeBalanceBaseUnits: new Decimal(2_500_000),
         heldAssetId: '31566704',
     },
     empty: {

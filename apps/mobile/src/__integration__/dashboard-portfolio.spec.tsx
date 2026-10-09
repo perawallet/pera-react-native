@@ -32,10 +32,10 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
     useAccountValueTotalsQuery,
@@ -111,33 +111,25 @@ describe('Flow: Dashboard portfolio aggregation', () => {
 
         // ALGO balances (in micro-ALGO base units, matching what the
         // sync service writes after fetching from algod).
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: ACCOUNT_A.address,
             scope: scopeForLegacyNetwork(NETWORK),
-            algoBalance: new Decimal(10_000_000), // 10 ALGO
+            nativeBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: ACCOUNT_B.address,
             scope: scopeForLegacyNetwork(NETWORK),
-            algoBalance: new Decimal(4_000_000), // 4 ALGO
+            nativeBalance: new Decimal(4_000_000), // 4 ALGO
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         // ALGO holdings — ALGO is a regular holding row now (base units /
         // microalgos, 6 decimals), written by the sync the same way ASAs
         // are. The home-screen reads pull it from the holdings table, so it
-        // must be seeded here rather than only on the account_balances row.
+        // must be seeded here rather than only on the account_chain_state row.
         await insertAssetHolding({
             accountAddress: ACCOUNT_A.address,
             assetId: '0',

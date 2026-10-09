@@ -18,13 +18,9 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import {
-    algosToMicroAlgos,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-shared'
 import { fetchAndPersistAccount } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
-import { getAccountBalance, getAccountChainStateRow } from '../../db'
+import { getAccountChainStateRow } from '../../db'
 import {
     getAccountChainState,
     useAccountChainStateStore,
@@ -51,14 +47,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 const snapshot = (
     overrides: Partial<AccountStateSnapshot> = {},
 ): AccountStateSnapshot => ({
-    nativeBalance: new Decimal('1.5'),
     nativeBalanceBaseUnits: new Decimal(1_500_000),
-    minBalance: new Decimal('0.2'),
-    totalAssetsOptedIn: 2,
-    totalCreatedAssets: 1,
-    totalAppsOptedIn: 1,
-    status: 'Online',
-    authorityAddress: 'REKEY_ADDR',
     chainState: {
         family: 'algorand',
         authAddress: 'REKEY_ADDR',
@@ -75,23 +64,16 @@ const snapshot = (
     ...overrides,
 })
 
-const readBothTables = async () => {
-    const balance = await getAccountBalance({
+const readRow = async () => {
+    const row = await getAccountChainStateRow({
         accountAddress: 'ADDR1',
         scope: MAINNET_SCOPE,
     })
-    const chainState = await getAccountChainStateRow({
-        accountAddress: 'ADDR1',
-        scope: MAINNET_SCOPE,
-    })
-    if (!balance || !chainState) throw new Error('missing row')
-    if (chainState.chainData.family !== 'algorand') {
-        throw new Error('expected the algorand variant')
-    }
-    return { balance, chainState, chainData: chainState.chainData }
+    if (!row) throw new Error('missing row')
+    return row
 }
 
-describe('fetchAndPersistAccount dual-write', () => {
+describe('fetchAndPersistAccount chain-state row', () => {
     let teardown: () => void
 
     beforeEach(async () => {
@@ -110,43 +92,29 @@ describe('fetchAndPersistAccount dual-write', () => {
         testDb.current = null
     })
 
-    it('writes the same account state to account_balances and account_chain_state', async () => {
+    it('persists nativeBalanceBaseUnits and chainState as the row', async () => {
         await fetchAndPersistAccount('ADDR1', 'mainnet')
 
-        const { balance, chainState, chainData } = await readBothTables()
-        expect(microAlgosToAlgos(chainState.nativeBalance)).toEqual(
-            balance.algoBalance,
-        )
-        expect(microAlgosToAlgos(chainData.minBalance)).toEqual(
-            balance.minBalance,
-        )
-        expect(chainData).toMatchObject({
-            authAddress: balance.authorityAddress,
-            status: balance.status,
-            totalAssetsOptedIn: balance.totalAssetsOptedIn,
-            totalCreatedAssets: balance.totalCreatedAssets,
-            totalAppsOptedIn: balance.totalAppsOptedIn,
-        })
+        const row = await readRow()
+        expect(row.nativeBalance).toEqual(new Decimal(1_500_000))
+        expect(row.chainData).toEqual(snapshot().chainState)
     })
 
     it('hands the chain-state slice the same variant it persists', async () => {
         await fetchAndPersistAccount('ADDR1', 'mainnet')
 
-        const { chainData } = await readBothTables()
+        const { chainData } = await readRow()
         expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toEqual(chainData)
         expect(fakeAccountsChain().adapter.toChainState).not.toHaveBeenCalled()
     })
 
-    it('keeps both tables in step when a later sync changes the account', async () => {
+    it('replaces the row when a later sync changes the account', async () => {
         await fetchAndPersistAccount('ADDR1', 'mainnet')
         vi.mocked(
             fakeAccountsChain().adapter.fetchAccountState,
         ).mockResolvedValue(
             snapshot({
-                nativeBalance: new Decimal('3'),
-                nativeBalanceBaseUnits: algosToMicroAlgos(new Decimal('3')),
-                authorityAddress: null,
-                status: 'Offline',
+                nativeBalanceBaseUnits: new Decimal(3_000_000),
                 chainState: {
                     family: 'algorand',
                     minBalance: new Decimal(200_000),
@@ -160,11 +128,17 @@ describe('fetchAndPersistAccount dual-write', () => {
 
         await fetchAndPersistAccount('ADDR1', 'mainnet')
 
-        const { balance, chainState, chainData } = await readBothTables()
-        expect(balance.algoBalance).toEqual(new Decimal('3'))
-        expect(chainState.nativeBalance).toEqual(new Decimal(3_000_000))
-        expect(balance.authorityAddress).toBeNull()
-        expect(chainData.authAddress).toBeUndefined()
-        expect(chainData.status).toBe(balance.status)
+        const row = await readRow()
+        expect(row.nativeBalance).toEqual(new Decimal(3_000_000))
+        expect(row.chainData).not.toHaveProperty('authAddress')
+        expect(row.chainData).toMatchObject({ status: 'Offline' })
+    })
+
+    it('reports no change for a repeat sync, across the JSON round-trip', async () => {
+        await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        const second = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(second.changed).toBe(false)
     })
 })

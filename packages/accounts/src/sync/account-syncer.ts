@@ -16,10 +16,9 @@ import {
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
 import {
-    upsertAccountBalance,
     upsertAccountChainState,
     refreshAccountHoldings,
-    getAccountBalance,
+    getAccountChainStateRow,
     getAccountHoldings,
 } from '../db'
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
@@ -27,7 +26,10 @@ import {
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { accountsAdapterFor } from '../chain-adapter'
-import { useAccountChainStateStore } from '../store/accountChainState'
+import {
+    isEqualAccountChainState,
+    useAccountChainStateStore,
+} from '../store/accountChainState'
 import {
     logger,
     type Network,
@@ -35,7 +37,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 export type AccountSyncResult = {
-    /** True if the balance row or holdings changed — drives query invalidation. */
+    /** True if the chain-state row or holdings changed — drives query invalidation. */
     changed: boolean
     /** True if the holding set/amounts changed — drives asset/price re-sync. */
     holdingsChanged: boolean
@@ -48,7 +50,7 @@ export type AccountSyncResult = {
 }
 
 // On a fresh import the background sync and every balance/summary query call
-// this with no balance row yet, firing N parallel account and holdings fetches
+// this with no chain-state row yet, firing N parallel account and holdings fetches
 // that all contend on the single SQLite connection. One shared in-flight promise
 // collapses them to a single pass.
 const inFlight = new Map<string, Promise<AccountSyncResult>>()
@@ -71,18 +73,18 @@ export function fetchAndPersistAccount(
 /**
  * The home-screen reads rely on the background sync, but a freshly imported
  * account may not be picked up by the next gated tick — so fetch once when there
- * is no balance row yet. Deduped via `fetchAndPersistAccount`'s in-flight map,
+ * is no chain-state row yet. Deduped via `fetchAndPersistAccount`'s in-flight map,
  * so the summary and first holdings page collapse to one fetch.
  */
 export async function ensureAccountFetched(
     address: string,
     network: Network,
 ): Promise<void> {
-    const balance = await getAccountBalance({
+    const row = await getAccountChainStateRow({
         accountAddress: address,
         scope: scopeForLegacyNetwork(network),
     })
-    if (balance) return
+    if (row) return
     try {
         await fetchAndPersistAccount(address, network)
     } catch (error) {
@@ -105,7 +107,7 @@ export async function ensureAccountFetched(
  * contribute nothing to the portfolio. So enrich metadata and prices here too,
  * invalidating after each phase so the UI fills in as data lands.
  *
- * Always fetches, with no balance-row short-circuit, so a re-imported account
+ * Always fetches, with no chain-state-row short-circuit, so a re-imported account
  * starts from fresh chain state. Failures are logged, never thrown.
  */
 export async function syncAndEnrichNewAccount(
@@ -147,79 +149,34 @@ async function doFetchAndPersistAccount(
     address: string,
     network: Network,
 ): Promise<AccountSyncResult> {
-    // The prior balance row both tells the chain how large the account was at
-    // its last sync (which can decide its read strategy) and feeds the
-    // changed-account diff below.
+    // The prior row tells the chain how large the account was at its last sync
+    // (which can decide its read strategy) and feeds the changed-account diff.
     const scope = scopeForLegacyNetwork(network)
     const adapter = accountsAdapterFor(network)
-    const prior = await getAccountBalance({ accountAddress: address, scope })
-    const priorResourceCount = prior
-        ? prior.totalAssetsOptedIn +
-          prior.totalCreatedAssets +
-          prior.totalAppsOptedIn
-        : 0
-
-    // The Algorand-only fields fall back to the balance row's column defaults.
-    const {
-        nativeBalance: algoBalance,
-        minBalance,
-        totalAssetsOptedIn = 0,
-        totalCreatedAssets = 0,
-        totalAppsOptedIn = 0,
-        status = 'Offline',
-        authorityAddress,
-        nativeBalanceBaseUnits,
-        chainState,
-        holdings,
-        observedRound,
-    } = await adapter.fetchAccountState(address, scope, {
-        priorResourceCount,
-    })
-
-    // Diff against the persisted balance row so the sync service can tell
-    // whether the account changed at all this tick. ASA amount changes are
-    // caught by refreshAccountHoldings below; this covers algo balance /
-    // opt-in counts / status / rekey.
-    const balanceChanged =
-        !prior ||
-        prior.algoBalance.toString() !== algoBalance.toString() ||
-        prior.totalAssetsOptedIn !== totalAssetsOptedIn ||
-        prior.totalCreatedAssets !== totalCreatedAssets ||
-        prior.totalAppsOptedIn !== totalAppsOptedIn ||
-        prior.minBalance.toString() !== minBalance.toString() ||
-        prior.status !== status ||
-        (prior.authorityAddress ?? null) !== authorityAddress
-
-    await upsertAccountBalance({
+    const prior = await getAccountChainStateRow({
         accountAddress: address,
         scope,
-        algoBalance,
-        totalAssetsOptedIn,
-        totalCreatedAssets,
-        totalAppsOptedIn,
-        minBalance,
-        status,
-        authorityAddress,
     })
-    // A failed chain-state write must not skip the holdings refresh below;
-    // the next sync rewrites the row.
-    try {
-        await upsertAccountChainState({
-            accountAddress: address,
-            scope,
-            nativeBalance: nativeBalanceBaseUnits,
-            chainData: chainState,
+
+    const { nativeBalanceBaseUnits, chainState, holdings, observedRound } =
+        await adapter.fetchAccountState(address, scope, {
+            priorChainState: prior?.chainData,
         })
-    } catch (error) {
-        logger.warn('Account chain-state write failed', {
-            address,
-            network,
-            error:
-                error instanceof Error
-                    ? { message: error.message, stack: error.stack }
-                    : error,
-        })
-    }
+
+    // ASA amount changes are caught by refreshAccountHoldings below; this
+    // covers the native balance and everything in chainState (opt-in counts,
+    // status, rekey).
+    const isStateChanged =
+        !prior ||
+        !prior.nativeBalance.eq(nativeBalanceBaseUnits) ||
+        !isEqualAccountChainState(prior.chainData, chainState)
+
+    await upsertAccountChainState({
+        accountAddress: address,
+        scope,
+        nativeBalance: nativeBalanceBaseUnits,
+        chainData: chainState,
+    })
 
     useAccountChainStateStore
         .getState()
@@ -232,7 +189,7 @@ async function doFetchAndPersistAccount(
     })
 
     return {
-        changed: balanceChanged || holdingsChanged,
+        changed: isStateChanged || holdingsChanged,
         holdingsChanged,
         observedRound,
     }

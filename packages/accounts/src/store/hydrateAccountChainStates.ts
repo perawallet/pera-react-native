@@ -24,7 +24,7 @@ import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
-import { getAllAccountBalances } from '../db'
+import { getAllAccountChainStateRows } from '../db'
 import type { RecordedAuthorities, WalletAccount } from '../models'
 import {
     useAccountChainStateStore,
@@ -56,7 +56,7 @@ const heldAddresses = (accounts: readonly WalletAccount[]): Set<string> => {
 }
 
 /**
- * Fills the chain-state slice from the `account_balances` rows, then from the
+ * Fills the chain-state slice from the `account_chain_state` rows, then from the
  * authorities the accounts store persisted for scopes with no row. Entries
  * already held win: an in-session write is newer than the read. A recorded
  * authority is dropped only once a row carries that scope's observed state or
@@ -69,24 +69,21 @@ export async function hydrateAccountChainStates({
     try {
         const built: Built = {}
 
-        for (const row of await getAllAccountBalances({ db })) {
+        for (const row of await getAllAccountChainStateRows({ db })) {
             let scope: ChainScope
             try {
                 scope = scopeFromNetworkColumn(row.network)
             } catch (error) {
                 if (!(error instanceof InvalidScopeKeyError)) throw error
-                logger.warn('Skipping a balance row with an unknown network', {
-                    network: row.network,
-                })
+                logger.warn(
+                    'Skipping a chain-state row with an unknown network',
+                    {
+                        network: row.network,
+                    },
+                )
                 continue
             }
-            if (!accountsChainAdapters.has(scope.chainId)) continue
-            put(
-                built,
-                scope,
-                row.accountAddress,
-                accountsChainAdapters.get(scope.chainId).toChainState(row),
-            )
+            put(built, scope, row.accountAddress, row.chainData)
         }
 
         const accountsState = useAccountsStore.getState()

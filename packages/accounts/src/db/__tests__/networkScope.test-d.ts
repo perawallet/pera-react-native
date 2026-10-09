@@ -15,7 +15,10 @@ import type {
     ChainScope,
     ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { getAccountBalance, upsertAccountBalance } from '../balancesRepository'
+import {
+    getAccountChainStateRow,
+    upsertAccountChainState,
+} from '../chainStateRepository'
 import {
     getAccountCollectiblesLite,
     getAccountHoldingsLite,
@@ -32,7 +35,7 @@ import {
     refreshAccountHoldings,
 } from '../holdingsRepository'
 import { getAccountPortfolioTotals } from '../portfolioQueries'
-import { AccountAssetHoldingsSchema, AccountBalancesSchema } from '../schema'
+import { AccountAssetHoldingsSchema, AccountChainStateSchema } from '../schema'
 
 type ScopeOf<F extends (params: never) => unknown> = Parameters<F>[0] extends {
     scope: infer S
@@ -43,10 +46,10 @@ type ScopeOf<F extends (params: never) => unknown> = Parameters<F>[0] extends {
 describe('accounts repositories take a ChainScope', () => {
     it('types every network parameter as a ChainScope', () => {
         expectTypeOf<
-            ScopeOf<typeof upsertAccountBalance>
+            ScopeOf<typeof upsertAccountChainState>
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
-            ScopeOf<typeof getAccountBalance>
+            ScopeOf<typeof getAccountChainStateRow>
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
             ScopeOf<typeof refreshAccountHoldings>
@@ -90,9 +93,12 @@ describe('accounts repositories take a ChainScope', () => {
         expectTypeOf<'mainnet'>().not.toExtend<ChainScope>()
         expectTypeOf<string>().not.toExtend<ChainScope>()
         // @ts-expect-error a network name is not a scope
-        void getAccountBalance({ accountAddress: 'A', scope: 'mainnet' })
-        // @ts-expect-error a network key is not accepted
-        void getAccountBalance({ accountAddress: 'A', network: 'mainnet' })
+        void getAccountChainStateRow({ accountAddress: 'A', scope: 'mainnet' })
+        void getAccountChainStateRow({
+            accountAddress: 'A',
+            // @ts-expect-error a network key is not accepted
+            network: 'mainnet',
+        })
         // @ts-expect-error a network name is not a scope
         void getAllHeldAssetIdsForNetwork({ scope: 'mainnet' })
         // @ts-expect-error a network key is not accepted
@@ -104,7 +110,7 @@ describe('accounts repositories take a ChainScope', () => {
             AccountAssetHoldingsSchema.network._.data,
         ).toEqualTypeOf<ChainScopeKey>()
         expectTypeOf(
-            AccountBalancesSchema.network._.data,
+            AccountChainStateSchema.network._.data,
         ).toEqualTypeOf<ChainScopeKey>()
     })
 })

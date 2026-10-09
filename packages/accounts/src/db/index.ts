@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-export {
-    AccountAssetHoldingsSchema,
-    AccountBalancesSchema,
-    AccountChainStateSchema,
-} from './schema'
+export { AccountAssetHoldingsSchema, AccountChainStateSchema } from './schema'
 export {
     refreshAccountHoldings,
     getAccountHoldings,
@@ -48,16 +44,10 @@ export {
     type AccountPortfolioTotals,
 } from './portfolioQueries'
 export {
-    upsertAccountBalance,
-    getAccountBalance,
-    getAllAccountBalances,
-    deleteAccountBalance,
-    type AccountBalanceRow,
-    type StoredAccountBalanceRow,
-} from './balancesRepository'
-export {
     upsertAccountChainState,
     getAccountChainStateRow,
+    getAllAccountChainStateRows,
     deleteAccountChainState,
     type AccountChainStateRow,
+    type StoredAccountChainStateRow,
 } from './chainStateRepository'

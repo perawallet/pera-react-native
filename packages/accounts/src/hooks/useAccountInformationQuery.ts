@@ -15,11 +15,7 @@ import {
     scopeForLegacyNetwork,
     type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    type Optional,
-    algosToMicroAlgosBigInt,
-    toBigInt,
-} from '@perawallet/wallet-core-shared'
+import { type Optional, toBigInt } from '@perawallet/wallet-core-shared'
 import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
@@ -27,7 +23,7 @@ import {
     accountsChainAdapters,
     requireAccountInformation,
 } from '../chain-adapter'
-import { getAccountBalance, getAccountHoldings } from '../db'
+import { getAccountChainStateRow, getAccountHoldings } from '../db'
 
 const getAccountInformationQueryKey = (address: string, network: string) => [
     'accounts',
@@ -52,7 +48,7 @@ export const useAccountInformationQuery = (
         queryKey: getAccountInformationQueryKey(address, network),
         queryFn: async (): Promise<AccountInformation> => {
             const scope = scopeForLegacyNetwork(network)
-            const balance = await getAccountBalance({
+            const row = await getAccountChainStateRow({
                 accountAddress: address,
                 scope,
             })
@@ -61,17 +57,21 @@ export const useAccountInformationQuery = (
                 scope,
             })
 
+            const chainData = row?.chainData
+
             return {
-                minBalance: balance
-                    ? algosToMicroAlgosBigInt(balance.minBalance)
-                    : 0n,
-                amount: balance
-                    ? algosToMicroAlgosBigInt(balance.algoBalance)
-                    : 0n,
+                minBalance:
+                    chainData && 'minBalance' in chainData
+                        ? toBigInt(chainData.minBalance)
+                        : 0n,
+                amount: row ? toBigInt(row.nativeBalance) : 0n,
                 address: requireAccountInformation(
                     accountsChainAdapters.get(scope.chainId),
                 ).toAccountInformationAddress(address),
-                status: balance?.status ?? 'Offline',
+                status:
+                    chainData && 'status' in chainData
+                        ? chainData.status
+                        : 'Offline',
                 rewards: 0n,
                 // ALGO is persisted as a holding row for the home-screen reads,
                 // but AccountInformation.assets is ASAs-only — the algo balance

@@ -19,6 +19,7 @@ import {
 import {
     authorityAddressOf,
     getAccountChainState,
+    isEqualAccountChainState,
     useAccountChainStateStore,
 } from '../accountChainState'
 import { recordAuthority } from '../recordAuthority'
@@ -158,5 +159,38 @@ describe('account chain-state slice', () => {
                 useAccountsStore.getState().authorities[toScopeKey(MAINNET)],
             ).toEqual({ A: 'AUTH' })
         })
+    })
+})
+
+describe('isEqualAccountChainState', () => {
+    const evmState = (pending: number): AccountChainState => ({
+        family: 'evm',
+        nonce: { latest: 3, pending },
+    })
+
+    it('compares Decimals by value', () => {
+        expect(
+            isEqualAccountChainState(
+                algorandState({ minBalance: new Decimal('100000') }),
+                algorandState({ minBalance: new Decimal(100000) }),
+            ),
+        ).toBe(true)
+    })
+
+    it('compares nested objects by value, as a JSON round-trip returns them', () => {
+        expect(isEqualAccountChainState(evmState(4), evmState(4))).toBe(true)
+    })
+
+    it('reports a changed nested field', () => {
+        expect(isEqualAccountChainState(evmState(4), evmState(5))).toBe(false)
+    })
+
+    it('reports an authority that is present against absent', () => {
+        expect(
+            isEqualAccountChainState(
+                algorandState({ authAddress: 'AUTH' }),
+                algorandState(),
+            ),
+        ).toBe(false)
     })
 })

@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { formatEther, type Address } from 'viem'
+import type { Address } from 'viem'
 import type {
     ChainContext,
     ChainScope,
@@ -69,12 +69,8 @@ const fetchAccountState =
         ])
         const baseUnits = new Decimal(wei.toString())
         return {
-            // formatEther is string-exact, unlike a Number division.
-            nativeBalance: new Decimal(formatEther(wei)),
             nativeBalanceBaseUnits: baseUnits,
             chainState: { family: 'evm', nonce: { latest, pending } },
-            minBalance: new Decimal(0),
-            authorityAddress: null,
             // Token holdings come from the assets adapter; native only here.
             holdings: [
                 {

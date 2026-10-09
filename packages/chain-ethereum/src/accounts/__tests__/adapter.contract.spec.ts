@@ -85,7 +85,7 @@ const sharedFixtures: Omit<AccountStateContractFixtures, 'changeSignal'> = {
         address: FUNDED,
         handlers: accountsRpc(),
         nativeAssetId: 'native',
-        nativeBalance: new Decimal('2.5'),
+        nativeBalanceBaseUnits: new Decimal('2500000000000000000'),
     },
     empty: { address: EMPTY, handlers: accountsRpc() },
     activity: { active: FUNDED, inactive: EMPTY, handlers: accountsRpc() },
