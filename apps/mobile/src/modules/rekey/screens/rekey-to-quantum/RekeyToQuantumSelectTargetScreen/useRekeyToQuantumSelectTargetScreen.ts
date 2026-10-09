@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
+    AuthorityTargetCategories,
     useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
@@ -21,7 +22,6 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCapability } from '@hooks/useCapability'
 
 import type { RekeyToQuantumStackParamList } from '../../../routes/rekey-to-quantum/types'
 
@@ -44,14 +44,11 @@ export const useRekeyToQuantumSelectTargetScreen =
         const sourceAddress = route.params.sourceAddress
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const source = useFindAccountByAddress(sourceAddress, scope)
-        const isQuantumTargetEnabled = useCapability({
-            platform: 'quantum',
-            anyChain: 'quantumAccounts',
-        })
-
-        const targets = useAuthorityTargets(source, 'quantum', scope, {
-            isQuantumTargetEnabled,
-        })
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.quantum,
+            scope,
+        )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {

@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
+    AuthorityTargetCategories,
     useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
@@ -44,7 +45,11 @@ export const useRekeyToSharedSelectTargetScreen =
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const source = useFindAccountByAddress(sourceAddress, scope)
 
-        const targets = useAuthorityTargets(source, 'shared', scope)
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.shared,
+            scope,
+        )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {

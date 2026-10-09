@@ -22,7 +22,8 @@ export {
     type ParsedAlgorandBip44Path,
 } from './bip44'
 export * from './vocabulary'
-export { AuthorityTargetKinds, QUANTUM_TARGET_OPTION } from './authority'
+export { AlgorandAuthorityTargetKinds } from './authority'
+export { algorandAccountPresentation } from './presentation'
 export {
     algorandMultisigOf,
     canSignViaParticipants,

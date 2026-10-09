@@ -29,11 +29,13 @@ import {
     type AlgorandAccountOptions,
 } from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../adapter'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    algorandAuthority,
-    AuthorityTargetKinds,
-    QUANTUM_TARGET_OPTION,
-} from '../authority'
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '../../capability-defaults'
+import { algorandDescriptor } from '../../descriptor'
+import { algorandAuthority, AlgorandAuthorityTargetKinds } from '../authority'
 import { seedAuthority } from './seedAuthority'
 
 const mainnet = scopeForLegacyNetwork('mainnet')
@@ -46,11 +48,21 @@ beforeAll(() => {
 
 beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
+    registerAlgorandChain(true)
 })
 
 type Options = AlgorandAccountOptions & { address?: string }
 
-const noQuantum = { [QUANTUM_TARGET_OPTION]: false }
+// The chain reads its own `quantumAccounts` capability.
+const registerAlgorandChain = (quantumAccounts: boolean) => {
+    const { chains } = getProvider()
+    chains.reset()
+    chains.register(
+        algorandDescriptor,
+        { ...algorandCapabilityDefaults, quantumAccounts },
+        algorandCapabilityRestrictions,
+    )
+}
 
 const algo25 = ({ address = 'A', ...options }: Options = {}) =>
     standaloneAccount(address, { id: 'a', keyPairId: 'kp', ...options })
@@ -77,37 +89,36 @@ const isEligibleRekeyTarget = (
     scope = mainnet,
 ) =>
     algorandAuthority.isEligibleTarget(
-        AuthorityTargetKinds.standard,
+        AlgorandAuthorityTargetKinds.standard,
         target,
         from,
         [],
         scope,
-        noQuantum,
     )
 const isEligibleQuantumRekeyTarget = (
     target: WalletAccount,
     from: WalletAccount,
     isQuantumTargetEnabled: boolean,
-) =>
-    algorandAuthority.isEligibleTarget(
-        AuthorityTargetKinds.quantum,
+) => {
+    registerAlgorandChain(isQuantumTargetEnabled)
+    return algorandAuthority.isEligibleTarget(
+        AlgorandAuthorityTargetKinds.quantum,
         target,
         from,
         [],
         mainnet,
-        { [QUANTUM_TARGET_OPTION]: isQuantumTargetEnabled },
     )
+}
 const isEligibleLedgerRekeyTarget = (
     target: WalletAccount,
     from: WalletAccount,
 ) =>
     algorandAuthority.isEligibleTarget(
-        AuthorityTargetKinds.hardware,
+        AlgorandAuthorityTargetKinds.hardware,
         target,
         from,
         [],
         mainnet,
-        noQuantum,
     )
 const isEligibleSharedRekeyTarget = (
     target: WalletAccount,
@@ -115,24 +126,23 @@ const isEligibleSharedRekeyTarget = (
     accounts: WalletAccount[],
 ) =>
     algorandAuthority.isEligibleTarget(
-        AuthorityTargetKinds.shared,
+        AlgorandAuthorityTargetKinds.shared,
         target,
         from,
         accounts,
         mainnet,
-        noQuantum,
     )
 const getAccountsRekeyedTo = algorandAuthority.accountsDelegatedTo
 const canSignProgram = (account: WalletAccount, scope = mainnet) =>
     algorandAuthority.canSignProgram(account, scope)
 
 describe('algorandAuthority.targetKinds', () => {
-    test('lists every rekey target kind the flows offer', () => {
+    test('files each rekey target kind under the flow that offers it', () => {
         expect(algorandAuthority.targetKinds).toEqual([
-            'standard',
-            'quantum',
-            'hardware',
-            'shared',
+            { id: 'standard', category: 'standard' },
+            { id: 'quantum', category: 'quantum' },
+            { id: 'hardware', category: 'hardware' },
+            { id: 'shared', category: 'shared' },
         ])
     })
 
@@ -144,20 +154,20 @@ describe('algorandAuthority.targetKinds', () => {
                 source('SRC'),
                 [],
                 mainnet,
-                noQuantum,
             ),
         ).toBe(false)
     })
 
-    test('treats a missing quantum option as disabled', () => {
+    test('treats quantum targets as disabled while the chain is not registered', () => {
+        getProvider().chains.reset()
+
         expect(
             algorandAuthority.isEligibleTarget(
-                AuthorityTargetKinds.quantum,
+                AlgorandAuthorityTargetKinds.quantum,
                 quantum(),
                 source('SRC'),
                 [],
                 mainnet,
-                {},
             ),
         ).toBe(false)
     })

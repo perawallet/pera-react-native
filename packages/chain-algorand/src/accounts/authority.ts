@@ -12,18 +12,20 @@
 
 import {
     authorityOf,
+    AuthorityTargetCategories,
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
     type AccountAuthorityOps,
     type AuthorityTargetKind,
-    type AuthorityTargetOptions,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_SCOPES,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { hasLocalCoSigner } from './multisig-participants'
 import { getAlgorandAuthAccount } from './signer-resolution'
 import {
@@ -33,15 +35,12 @@ import {
     isQuantumAccount,
 } from './vocabulary'
 
-export const AuthorityTargetKinds = {
+export const AlgorandAuthorityTargetKinds = {
     standard: 'standard',
     quantum: 'quantum',
     hardware: 'hardware',
     shared: 'shared',
 } as const
-
-/** The `AuthorityTargetOptions` switch that lists quantum targets. */
-export const QUANTUM_TARGET_OPTION = 'isQuantumTargetEnabled'
 
 const isDelegated = (account: WalletAccount, scope: ChainScope): boolean =>
     !!authorityOf(account, scope)
@@ -82,19 +81,26 @@ const isEligibleStandardTarget = (
 }
 
 /**
- * `isQuantumTargetEnabled` is a hard functional limit rather than a rollout
- * toggle. Signing works locally, but mainnet and testnet algod still reject
- * the `pqsig` field, so on those networks the rekey is a one-way door that
- * strands the funds: every later transaction needs a `pqsig`, *including the
- * rekey-back that would undo it*.
+ * The `quantumAccounts` capability is a hard functional limit rather than a
+ * rollout toggle. Signing works locally, but an algod that rejects the
+ * `pqsig` field makes the rekey a one-way door that strands the funds: every
+ * later transaction needs a `pqsig`, *including the rekey-back that would
+ * undo it*.
  */
+const isQuantumTargetEnabled = (): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(ALGORAND_CHAIN_ID) &&
+        chains.capabilities(ALGORAND_CHAIN_ID).quantumAccounts
+    )
+}
+
 const isEligibleQuantumTarget = (
     target: WalletAccount,
     source: WalletAccount,
     scope: ChainScope,
-    isQuantumTargetEnabled: boolean,
 ): boolean => {
-    if (!isQuantumTargetEnabled) return false
+    if (!isQuantumTargetEnabled()) return false
     if (isCurrentOrSelf(target, source, scope)) return false
     if (!isQuantumAccount(target)) return false
     if (!hasSigningKeys(target)) return false
@@ -172,29 +178,23 @@ const accountsDelegatedTo = (
     )
 
 const isEligibleTarget = (
-    kind: AuthorityTargetKind,
+    kindId: string,
     target: WalletAccount,
     source: WalletAccount,
     accounts: WalletAccount[],
     scope: ChainScope,
-    options: AuthorityTargetOptions,
 ): boolean => {
-    switch (kind) {
-        case AuthorityTargetKinds.standard: {
+    switch (kindId) {
+        case AlgorandAuthorityTargetKinds.standard: {
             return isEligibleStandardTarget(target, source, scope)
         }
-        case AuthorityTargetKinds.quantum: {
-            return isEligibleQuantumTarget(
-                target,
-                source,
-                scope,
-                options[QUANTUM_TARGET_OPTION] === true,
-            )
+        case AlgorandAuthorityTargetKinds.quantum: {
+            return isEligibleQuantumTarget(target, source, scope)
         }
-        case AuthorityTargetKinds.hardware: {
+        case AlgorandAuthorityTargetKinds.hardware: {
             return isEligibleHardwareTarget(target, source, scope)
         }
-        case AuthorityTargetKinds.shared: {
+        case AlgorandAuthorityTargetKinds.shared: {
             return isEligibleSharedTarget(target, source, accounts, scope)
         }
         default: {
@@ -233,8 +233,27 @@ const isAuthorityDowngrade = (
     hasQuantumAuthority(source, accounts, scope) &&
     !hasQuantumAuthority(target, accounts, scope)
 
+const TARGET_KINDS: readonly AuthorityTargetKind[] = [
+    {
+        id: AlgorandAuthorityTargetKinds.standard,
+        category: AuthorityTargetCategories.standard,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.quantum,
+        category: AuthorityTargetCategories.quantum,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.hardware,
+        category: AuthorityTargetCategories.hardware,
+    },
+    {
+        id: AlgorandAuthorityTargetKinds.shared,
+        category: AuthorityTargetCategories.shared,
+    },
+]
+
 export const algorandAuthority: AccountAuthorityOps = {
-    targetKinds: Object.values(AuthorityTargetKinds),
+    targetKinds: TARGET_KINDS,
     isDelegated,
     accountsDelegatedTo,
     isEligibleTarget,

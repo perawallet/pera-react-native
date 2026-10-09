@@ -24,12 +24,26 @@ import {
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 import { testAccount } from '../../__tests__/accountFactory'
+import {
+    AuthorityTargetCategories,
+    type AuthorityTargetCategory,
+} from '../../chain-adapter'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
+
+// A fresh fake whose authority lists `targetKinds` instead of its own.
+const withTargetKinds = (
+    targetKinds: { id: string; category: AuthorityTargetCategory }[],
+) => {
+    const { authority } = registerFakeAccountsChain().adapter
+    return registerFakeAccountsChain({
+        authority: { ...authority!, targetKinds },
+    })
+}
 
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
@@ -38,20 +52,22 @@ describe('useAuthorityTargets', () => {
         registerFakeAccountsChain()
     })
 
-    it("passes the kind, source, accounts and the chain's options through and keeps the accepted targets", () => {
+    it("asks the chain about each of the category's kinds and keeps the accepted targets", () => {
         const source = held('SRC')
         const good = held('GOOD')
         const bad = held('BAD')
         setAccounts([source, good, bad])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.isEligibleTarget).mockImplementation(
-            (_kind, target) => target.id === 'GOOD',
+            (_kindId, target) => target.id === 'GOOD',
         )
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE, {
-                someChainSwitch: true,
-            }),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
 
         expect(result.current).toEqual([good])
@@ -61,8 +77,80 @@ describe('useAuthorityTargets', () => {
             source,
             [source, good, bad],
             MAINNET_SCOPE,
-            { someChainSwitch: true },
         )
+        expect(authority!.isEligibleTarget).not.toHaveBeenCalledWith(
+            'fake-target-hardware',
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+        )
+    })
+
+    it('follows a kind the chain renames', () => {
+        const source = held('SRC')
+        const target = held('A')
+        setAccounts([source, target])
+        const { adapter } = withTargetKinds([
+            { id: 'renamed-local', category: 'standard' },
+        ])
+        vi.mocked(adapter.authority!.isEligibleTarget).mockImplementation(
+            kindId => kindId === 'renamed-local',
+        )
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([source, target])
+    })
+
+    it("lists the targets of every kind the chain adds to a category, in the wallet's order", () => {
+        const source = held('SRC')
+        const first = held('FIRST')
+        const second = held('SECOND')
+        setAccounts([source, first, second])
+        const { adapter } = withTargetKinds([
+            { id: 'ledger-like', category: 'hardware' },
+            { id: 'card-like', category: 'hardware' },
+        ])
+        vi.mocked(adapter.authority!.isEligibleTarget).mockImplementation(
+            (kindId, target) =>
+                (kindId === 'card-like' && target.id === 'FIRST') ||
+                (kindId === 'ledger-like' && target.id === 'SECOND'),
+        )
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.hardware,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([first, second])
+    })
+
+    it('lists nothing for a category the chain files no kind under', () => {
+        const source = held('SRC')
+        setAccounts([source, held('A')])
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.isEligibleTarget,
+        ).mockReturnValue(true)
+
+        const { result } = renderHook(() =>
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.quantum,
+                MAINNET_SCOPE,
+            ),
+        )
+
+        expect(result.current).toEqual([])
     })
 
     it('asks the chain on the scope it is given', () => {
@@ -71,7 +159,11 @@ describe('useAuthorityTargets', () => {
         const { authority } = fakeAccountsChain().adapter
 
         renderHook(() =>
-            useAuthorityTargets(source, 'fake-target-local', TESTNET_SCOPE),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                TESTNET_SCOPE,
+            ),
         )
 
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
@@ -80,7 +172,6 @@ describe('useAuthorityTargets', () => {
             source,
             expect.any(Array),
             TESTNET_SCOPE,
-            {},
         )
     })
 
@@ -91,11 +182,15 @@ describe('useAuthorityTargets', () => {
         vi.mocked(
             fakeAccountsChain().adapter.authority!.isEligibleTarget,
         ).mockImplementation(
-            (_kind, _target, from, _accounts, scope) =>
+            (_kindId, _target, from, _accounts, scope) =>
                 authorityOf(from, scope) !== null,
         )
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
         expect(result.current).toEqual([])
 
@@ -111,7 +206,11 @@ describe('useAuthorityTargets', () => {
         ).mockReturnValue(true)
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(null, 'fake-target-local', MAINNET_SCOPE),
+            useAuthorityTargets(
+                null,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
 
         expect(result.current).toEqual([])
@@ -123,7 +222,11 @@ describe('useAuthorityTargets', () => {
         setAccounts([source, held('A')])
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE),
+            useAuthorityTargets(
+                source,
+                AuthorityTargetCategories.standard,
+                MAINNET_SCOPE,
+            ),
         )
 
         expect(result.current).toEqual([])
