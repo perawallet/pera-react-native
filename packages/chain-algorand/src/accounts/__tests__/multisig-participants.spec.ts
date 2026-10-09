@@ -15,9 +15,12 @@ import {
     hardwareAccount,
     hdAccount,
     quantumAccount,
+    standaloneAccount,
     watchAccount,
 } from '../../__tests__/algorandAccounts'
+import { algorandLocalKeyKinds } from '../local-key-kinds'
 import {
+    acceptsAlgorandParticipantScheme,
     canSignViaParticipants,
     signableParticipantAt,
 } from '../multisig-participants'
@@ -44,6 +47,23 @@ describe('signableParticipantAt', () => {
         expect(
             signableParticipantAt('Q', [quantumAccount('Q')]),
         ).toBeUndefined()
+    })
+
+    it('admits a local key exactly when its kind signs a scheme a slot accepts', () => {
+        const accountOfSeed = {
+            bip39: hdAccount('K'),
+            quantum: quantumAccount('K'),
+        } as const
+        for (const kind of algorandLocalKeyKinds) {
+            const account =
+                kind.seed === null
+                    ? standaloneAccount('K')
+                    : accountOfSeed[kind.seed]
+
+            expect(signableParticipantAt('K', [account]) === account).toBe(
+                acceptsAlgorandParticipantScheme(kind.signingScheme),
+            )
+        }
     })
 
     it('returns nothing for an address the wallet does not hold', () => {

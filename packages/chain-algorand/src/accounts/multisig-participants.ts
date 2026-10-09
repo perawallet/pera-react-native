@@ -18,8 +18,9 @@ import {
 import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandLocalKeyKinds } from './local-key-kinds'
 import { algorandMultisigNative } from './multisig-native'
-import { algorandAddressOf, isQuantumAccount } from './vocabulary'
+import { algorandAddressOf } from './vocabulary'
 
 /** The multisig parameters an account carries on Algorand; `undefined` when a legacy record lacks them. */
 export const algorandMultisigOf = (
@@ -37,11 +38,20 @@ export const acceptsAlgorandParticipantScheme = (
     scheme: SigningScheme,
 ): boolean => scheme === 'ed25519'
 
+// Only a local key kind can sign a scheme other than Ed25519; every other
+// custody that signs at all (a hardware key) signs Ed25519.
+const ownSchemeOf = (account: WalletAccount): SigningScheme => {
+    const { custody } = account
+    if (custody.kind !== 'local') return 'ed25519'
+    const kind = algorandLocalKeyKinds.find(({ seed }) => seed === custody.seed)
+    return kind?.signingScheme ?? 'ed25519'
+}
+
 /**
  * The held account at `address` when it can contribute its own subsignature.
  * Slots bind to the participant's own pubkey, so rekey indirection is not
- * followed, and a quantum key never counts: see
- * {@link acceptsAlgorandParticipantScheme}.
+ * followed, and its key must sign a scheme
+ * {@link acceptsAlgorandParticipantScheme} takes.
  */
 export const signableParticipantAt = (
     address: string,
@@ -51,7 +61,7 @@ export const signableParticipantAt = (
         account => algorandAddressOf(account) === address,
     )
     return participant &&
-        !isQuantumAccount(participant) &&
+        acceptsAlgorandParticipantScheme(ownSchemeOf(participant)) &&
         canSignDirectly(participant)
         ? participant
         : undefined
