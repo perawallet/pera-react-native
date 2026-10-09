@@ -15,7 +15,11 @@ import type {
     ChainScope,
     SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { SeedScheme, seedSchemeOf } from '@perawallet/wallet-core-kms'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../models'
 import { isSameAddress } from '../utils'
 import {
@@ -42,8 +46,9 @@ export const seedMintableScheme = (
 
 /**
  * Whether the wallet `walletId` (a seed's KMS id, as `seedOf` returns) can mint
- * an account for `chainId`. Adapter presence is left to the capability parity
- * test, as in `useChainCapability`.
+ * an account for `chainId`. The keystore holding the seed is enough: a restore
+ * can persist a seed before any account of it exists on this device. Adapter
+ * presence is left to the capability parity test, as in `useChainCapability`.
  */
 export const canDerive = (
     accounts: readonly WalletAccount[],
@@ -52,11 +57,20 @@ export const canDerive = (
     keys?: KeystoreSnapshot,
 ): boolean => {
     if (seedMintableScheme(chainId) === undefined) return false
+    const held = keys ?? getKeystoreStore().state.keys
+    if (
+        held.some(
+            key =>
+                key.id === walletId && seedSchemeOf(key) === SeedScheme.Bip39,
+        )
+    ) {
+        return true
+    }
     return accounts.some(
         account =>
             hasCustody(account, 'local') &&
             account.custody.seed === 'bip39' &&
-            seedOf(account, keys) === walletId,
+            seedOf(account, held) === walletId,
     )
 }
 

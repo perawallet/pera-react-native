@@ -148,8 +148,13 @@ describe('wallet eligibility and holder lookups', () => {
             expect(canDerive(accounts, 'missing', ALGORAND, keys)).toBe(false)
         })
 
-        test('is false for a seed with no account behind it', () => {
-            expect(canDerive([algo25], 'hd-seed', ALGORAND, keys)).toBe(false)
+        test('is true for a held bip39 seed with no account behind it', () => {
+            expect(canDerive([algo25], 'hd-seed', ALGORAND, keys)).toBe(true)
+        })
+
+        test('is false for a held raw or Falcon seed with no account behind it', () => {
+            expect(canDerive([], 'algo25-seed', ALGORAND, keys)).toBe(false)
+            expect(canDerive([], 'quantum-seed', ALGORAND, keys)).toBe(false)
         })
     })
 
