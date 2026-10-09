@@ -19,7 +19,10 @@ import { useIsQuantumSwapEnabled } from '../useIsQuantumSwapEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfig: vi.fn(),
-    RemoteConfigKeys: { enable_quantum_swap: 'enable_quantum_swap' },
+}))
+
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    AlgorandRemoteConfigKeys: { enable_quantum_swap: 'enable_quantum_swap' },
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({

@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    RemoteConfigKeys,
-    useRemoteConfig,
-} from '@perawallet/wallet-core-remote-config'
+import { AlgorandRemoteConfigKeys } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useCapability } from './useCapability'
 
 // Defaults ON so it can be switched *off* once dApps support PQ.
@@ -25,7 +23,7 @@ export const useIsQuantumDappWarningEnabled = (): boolean => {
     return (
         isQuantumEnabled &&
         remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_quantum_dapp_warning,
+            AlgorandRemoteConfigKeys.enable_quantum_dapp_warning,
             true,
         )
     )

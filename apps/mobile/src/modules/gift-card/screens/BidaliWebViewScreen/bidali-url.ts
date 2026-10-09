@@ -18,6 +18,9 @@ export type BuildBidaliUrlParams = {
     // into the injected provider JS instead (buildBidaliProviderJS in
     // useBidaliTransport.ts).
     balances?: Record<string, string>
+    // Same parity: the web content script reads it from the URL, native
+    // embeds it in the provider JS.
+    paymentCurrencies?: readonly string[]
 }
 
 export const buildBidaliUrl = ({

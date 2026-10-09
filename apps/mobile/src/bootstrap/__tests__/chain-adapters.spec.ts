@@ -66,6 +66,14 @@ const PRODUCTION_ALGORAND_CAPABILITIES = {
     peraWebImport: true,
 }
 
+const { FIXTURE_PINNED_HOSTS } = vi.hoisted(() => ({
+    FIXTURE_PINNED_HOSTS: {
+        flag: 'enable_ssl_pinning_fixture',
+        urls: ['https://node.fixture.example'],
+        domains: ['fixture.example'],
+    },
+}))
+
 const mocks = vi.hoisted(() => ({
     // The network store resolves its shim through the registry as it loads,
     // before beforeEach installs the real one.
@@ -102,8 +110,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     peraServicesFor: mocks.peraServicesFor,
 }))
 
-vi.mock('@perawallet/wallet-core-remote-config', () => ({
+vi.mock('@perawallet/wallet-core-remote-config', async () => ({
     readCapabilityOverrides: mocks.readCapabilityOverrides,
+    chainOverridesKey: (chainId: string) => `chain_${chainId}_overrides`,
+    remoteConfigDefaultsRegistry: (
+        await import('@perawallet/wallet-extension-platform')
+    ).remoteConfigDefaultsRegistry,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -127,6 +139,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
                 descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
             i18nKeys: () => [],
+            remoteConfigDefaults: { fixture_fee: 1000 },
+            pinnedHosts: () => FIXTURE_PINNED_HOSTS,
         },
     }
 })
@@ -138,7 +152,14 @@ vi.mock('../ethereum-chain-module', () => ({
     },
 }))
 
-import { registerChainAdapters } from '../chain-adapters'
+import {
+    pinnedHostRegistry,
+    remoteConfigDefaultsRegistry,
+} from '@perawallet/wallet-extension-platform'
+import {
+    declareChainPlatformInputs,
+    registerChainAdapters,
+} from '../chain-adapters'
 
 const contextGivenToModule = (): ChainContext =>
     mocks.registerModule.mock.calls[0]?.[0] as ChainContext
@@ -158,6 +179,8 @@ const contextGivenToEthereum = (): ChainContext => {
 
 describe('registerChainAdapters', () => {
     beforeEach(() => {
+        remoteConfigDefaultsRegistry.reset()
+        pinnedHostRegistry.reset()
         mocks.provider.chains = createChainRegistry()
         mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
         mocks.ethereumChainModule = ethereumModule
@@ -276,6 +299,46 @@ describe('registerChainAdapters', () => {
         expect(capabilities.swap).toBe(false)
         expect(capabilities.card).toBe(false)
         expect(capabilities.send).toBe(true)
+    })
+
+    describe('platform inputs', () => {
+        it("declares an enabled chain's remote-config defaults and pinned hosts", () => {
+            registerChainAdapters()
+
+            expect(remoteConfigDefaultsRegistry.all()).toEqual(
+                expect.objectContaining({ fixture_fee: 1000 }),
+            )
+            expect(pinnedHostRegistry.all()).toEqual([FIXTURE_PINNED_HOSTS])
+        })
+
+        it('declares nothing for a chain the build leaves out', () => {
+            mocks.config.chains = { enabled: [], capabilities: {} }
+
+            registerChainAdapters()
+
+            expect(remoteConfigDefaultsRegistry.all()).not.toHaveProperty(
+                'fixture_fee',
+            )
+            expect(pinnedHostRegistry.all()).toEqual([])
+        })
+
+        it("declares every chain's overrides key, enabled or not", () => {
+            declareChainPlatformInputs([])
+
+            expect(remoteConfigDefaultsRegistry.all()).toEqual(
+                expect.objectContaining({
+                    chain_algorand_overrides: '',
+                    chain_ethereum_overrides: '',
+                }),
+            )
+        })
+
+        it('declares again without throwing when it runs twice', () => {
+            registerChainAdapters()
+
+            expect(() => registerChainAdapters()).not.toThrow()
+            expect(pinnedHostRegistry.all()).toEqual([FIXTURE_PINNED_HOSTS])
+        })
     })
 
     describe('mode restrictions', () => {
