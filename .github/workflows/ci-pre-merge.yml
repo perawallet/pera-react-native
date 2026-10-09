@@ -22,11 +22,13 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
 
+      # No `cache: pnpm`: setup-node keys the store on the exact lockfile with no
+      # fallback, so it can only hit when node_modules below does too, and it
+      # was a second 1 GB copy per PR in a repo cache that is already full.
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: ".tool-versions"
-          cache: "pnpm"
 
       # Fail fast if pnpm-lock.yaml drifted from package.json. Without this
       # step, a stale lockfile can silently install wrong versions on dev
@@ -39,10 +41,28 @@ jobs:
             exit 1
           fi
 
+      # ci-cache-warm.yml saves this on main for every lockfile, and a PR reads
+      # main's caches, so a PR that leaves the lockfile alone neither installs
+      # nor saves its own copy. Per-PR copies of this cache are what evicted
+      # every other cache within the hour.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+            conformance/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Cache node_modules
+        if: steps.node-modules.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -68,13 +88,11 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
 
-      # No `cache: pnpm` on any job below `setup`. setup-node's post-step saves
-      # the pnpm store, and a job that never runs `pnpm install` never creates
-      # it — saving a path that doesn't exist fails the job with "Path
-      # Validation Error", *after* the real work has already passed. This job
-      # never installs; the others restore node_modules from the cache `setup`
-      # saved and so skip the install. Only `setup` installs unconditionally,
-      # so only `setup` may cache the store.
+      # No `cache: pnpm` on any job (see Setup). Here it would also break the
+      # job: setup-node's post-step saves the pnpm store, and a job that never
+      # runs `pnpm install` never creates it — saving a path that doesn't
+      # exist fails the job with "Path Validation Error", *after* the real
+      # work has already passed.
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
