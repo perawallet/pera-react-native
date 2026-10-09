@@ -121,7 +121,7 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
-        // The review sheet renders the sender's balance; with no balance row in
+        // The review sheet renders the sender's balance; with no chain-state row in
         // the fresh DB, useAccountBalancesQuery self-heals with a background
         // algod account read. Unhandled, that request escapes to the live node
         // and its logging races vitest's worker teardown ("Closing rpc while

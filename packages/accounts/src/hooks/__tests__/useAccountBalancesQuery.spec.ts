@@ -29,12 +29,13 @@ import type { WalletAccount } from '../../models/accounts'
 // metadata + USD price per row) via getAccountHoldingsPage, and ALGO is itself
 // a holding row (base units / microalgos, 6 decimals) — no separate IN-list
 // metadata/price queries and no client-side ALGO append.
-const mockGetAccountBalance = vi.fn()
+const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldingsPage = vi.fn()
 const mockFetchAndPersistAccount = vi.fn()
 
 vi.mock('../../db', () => ({
-    getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountChainStateRow: (...args: unknown[]) =>
+        mockGetAccountChainStateRow(...args),
     getAccountHoldingsPage: (...args: unknown[]) =>
         mockGetAccountHoldingsPage(...args),
 }))
@@ -127,7 +128,9 @@ afterEach(() => {
 describe('useAccountBalances', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
         mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
@@ -362,9 +365,9 @@ describe('useAccountBalances', () => {
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
     })
 
-    it('falls back to fetchAndPersistAccount when the balance row is missing', async () => {
+    it('falls back to fetchAndPersistAccount when the chain-state row is missing', async () => {
         const newAccount = { ...account, address: 'NEW_ADDR' } as WalletAccount
-        mockGetAccountBalance.mockReturnValueOnce(undefined)
+        mockGetAccountChainStateRow.mockReturnValueOnce(undefined)
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_656_000, 1)])
 
         const { result } = renderHook(
@@ -384,8 +387,10 @@ describe('useAccountBalances', () => {
         expect(algo?.amount).toEqual(new Decimal('1.656'))
     })
 
-    it('does not call fetchAndPersistAccount when the balance row is present', async () => {
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+    it('does not call fetchAndPersistAccount when the chain-state row is present', async () => {
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -400,7 +405,9 @@ describe('useAccountBalances', () => {
 describe('useAccountAssetBalanceQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
         mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })

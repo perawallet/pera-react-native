@@ -29,7 +29,11 @@ import {
     type QuantumChainDerivation,
     type useKMS,
 } from '@perawallet/wallet-core-kms'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    Network,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     AccountInformationUnsupportedError,
     QuantumAccountsUnsupportedError,
@@ -79,22 +83,10 @@ export type AccountHoldingSnapshot = {
 
 /** One read of an account's balance, holdings and signer, as the syncer persists it. */
 export type AccountStateSnapshot = {
-    /** Display units of the chain's native asset. */
-    nativeBalance: Decimal
     /** Base units of the chain's native asset. */
     nativeBalanceBaseUnits: Decimal
     /** Persisted to `account_chain_state`; amounts inside are in base units. */
     chainState: AccountChainState
-    /** Display units of the chain's native asset; zero on a chain with no reserve. */
-    minBalance: Decimal
-    // Algorand's resource counts and participation status. A chain without
-    // the concept omits them and the balance row keeps its column defaults.
-    totalAssetsOptedIn?: number
-    totalCreatedAssets?: number
-    totalAppsOptedIn?: number
-    status?: string
-    /** The account's signer when it isn't the account's own key. */
-    authorityAddress: Nullable<string>
     /** Includes the native asset, so reads sort and page it like any holding. */
     holdings: AccountHoldingSnapshot[]
     /**
@@ -104,21 +96,8 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
-/** An `account_balances` row, or a legacy authority with no row. */
-export type ObservedChainState = Pick<
-    AccountStateSnapshot,
-    'authorityAddress'
-> &
-    Partial<
-        Pick<
-            AccountStateSnapshot,
-            | 'minBalance'
-            | 'status'
-            | 'totalAssetsOptedIn'
-            | 'totalCreatedAssets'
-            | 'totalAppsOptedIn'
-        >
-    >
+/** An authority recorded outside a sync, with no `account_chain_state` row behind it. */
+export type ObservedChainState = { authorityAddress: Nullable<string> }
 
 export type AccountChangeSignal = {
     /** Whether any of the addresses changed after the cursor. */
@@ -128,8 +107,8 @@ export type AccountChangeSignal = {
 }
 
 export type AccountStateReadHint = {
-    /** Resources the account held at its last sync; 0 when never synced. */
-    priorResourceCount: number
+    /** What the last sync on this scope persisted; undefined when it never synced. */
+    priorChainState: Optional<AccountChainState>
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
@@ -204,10 +183,8 @@ export interface AccountsChainAdapter {
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
     /**
-     * The chain's `AccountChainState` for state read back from storage; a sync
-     * already carries it as `AccountStateSnapshot.chainState`. A field left out
-     * takes its `account_balances` column default. `minBalance` arrives in
-     * display units.
+     * The chain's `AccountChainState` for an account known only by its
+     * authority; every other field takes the chain's never-synced default.
      */
     toChainState(observed: ObservedChainState): AccountChainState
     /**

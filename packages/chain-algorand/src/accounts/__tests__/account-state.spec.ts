@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
 import { fetchAlgorandAccountState } from '../account-state'
 import { HOLDINGS_PAGE_LIMIT } from '../constants'
 
@@ -68,8 +69,17 @@ vi.mock('../../blockchain', async importOriginal => ({
     getAlgorandClient: (...args: unknown[]) => mockGetAlgorandClient(...args),
 }))
 
-const SMALL = { priorResourceCount: 0 }
-const OVER_CAP = { priorResourceCount: 1500 }
+const algorandState = (totalAssetsOptedIn: number): AccountChainState => ({
+    family: 'algorand',
+    minBalance: new Decimal(0),
+    status: 'Offline',
+    totalAssetsOptedIn,
+    totalCreatedAssets: 0,
+    totalAppsOptedIn: 0,
+})
+
+const SMALL = { priorChainState: undefined }
+const OVER_CAP = { priorChainState: algorandState(1500) }
 
 describe('fetchAlgorandAccountState', () => {
     beforeEach(() => {
@@ -102,14 +112,7 @@ describe('fetchAlgorandAccountState', () => {
         expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
         expect(mockLookupAccountAssets).not.toHaveBeenCalled()
         expect(state).toEqual({
-            nativeBalance: new Decimal('1.5'),
             nativeBalanceBaseUnits: new Decimal(1_500_000),
-            minBalance: new Decimal('0.1'),
-            totalAssetsOptedIn: 2,
-            totalCreatedAssets: 1,
-            totalAppsOptedIn: 0,
-            status: 'Online',
-            authorityAddress: 'REKEY_ADDR',
             chainState: {
                 family: 'algorand',
                 authAddress: 'REKEY_ADDR',
@@ -156,11 +159,6 @@ describe('fetchAlgorandAccountState', () => {
         const state = await fetchAlgorandAccountState('ADDR1', 'testnet', SMALL)
 
         expect(state).toMatchObject({
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            status: 'Offline',
-            authorityAddress: null,
             chainState: {
                 family: 'algorand',
                 minBalance: new Decimal(0),
@@ -244,6 +242,40 @@ describe('fetchAlgorandAccountState', () => {
             { assetId: '1', amount: new Decimal(1), isFrozen: true },
             { assetId: '2', amount: new Decimal(2), isFrozen: false },
         ])
+    })
+
+    it('sums assets, created assets and apps against the cap', async () => {
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+        })
+
+        await fetchAlgorandAccountState('ADDR1', 'mainnet', {
+            priorChainState: {
+                ...algorandState(998),
+                totalCreatedAssets: 1,
+                totalAppsOptedIn: 1,
+            },
+        })
+
+        expect(mockAccountInformation.lastExclude).toBe('all')
+    })
+
+    it('treats a non-Algorand prior state as never synced', async () => {
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+        })
+
+        await fetchAlgorandAccountState('ADDR1', 'mainnet', {
+            priorChainState: {
+                family: 'evm',
+                nonce: { latest: 0, pending: 0 },
+            },
+        })
+
+        expect(mockAccountInformation.lastExclude).toBeUndefined()
+        expect(mockLookupAccountAssets).not.toHaveBeenCalled()
     })
 
     it('reports the minimum round across algod and indexer on the split path', async () => {

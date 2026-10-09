@@ -32,18 +32,16 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistPrices(...args),
 }))
 
-const mockUpsertAccountBalance = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
-const mockGetAccountBalance = vi.fn()
+const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldings = vi.fn()
 
 vi.mock('../../db', () => ({
-    upsertAccountBalance: (...args: unknown[]) =>
-        mockUpsertAccountBalance(...args),
     upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
-    getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountChainStateRow: (...args: unknown[]) =>
+        mockGetAccountChainStateRow(...args),
     getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
 }))
 
@@ -58,18 +56,10 @@ const makeQueryClient = () => {
 describe('syncAndEnrichNewAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
-        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
         fetchAccountState().mockResolvedValue({
-            nativeBalance: new Decimal(1),
             nativeBalanceBaseUnits: new Decimal(1_000_000),
-            minBalance: new Decimal('0.1'),
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            status: 'Offline',
-            authorityAddress: null,
             chainState: {
                 family: 'algorand',
                 minBalance: new Decimal(100_000),
@@ -102,9 +92,7 @@ describe('syncAndEnrichNewAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            {
-                priorResourceCount: 0,
-            },
+            { priorChainState: undefined },
         )
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
             chainId: 'algorand',

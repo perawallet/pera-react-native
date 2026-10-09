@@ -23,7 +23,6 @@ import {
     type Network,
     type Nullable,
     type Optional,
-    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '../descriptor'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
@@ -38,6 +37,13 @@ const isResourceLimitError = (error: unknown): boolean =>
     error instanceof Error &&
     'status' in error &&
     (error as { status: unknown }).status === 400
+
+const priorResourceCountOf = (state: Optional<AccountChainState>): number =>
+    state?.family === 'algorand'
+        ? state.totalAssetsOptedIn +
+          state.totalCreatedAssets +
+          state.totalAppsOptedIn
+        : 0
 
 const toRound = (round: Optional<bigint>): Nullable<number> =>
     round === undefined ? null : Number(round)
@@ -122,12 +128,12 @@ async function fetchAllHoldings(
 export async function fetchAlgorandAccountState(
     address: string,
     network: Network,
-    { priorResourceCount }: AccountStateReadHint,
+    { priorChainState }: AccountStateReadHint,
 ): Promise<AccountStateSnapshot> {
     const { info, holdings, observedRound } = await fetchAccountSnapshot(
         getAlgorandClient(network),
         address,
-        priorResourceCount,
+        priorResourceCountOf(priorChainState),
     )
 
     // ALGO is persisted as a regular holding in base units, so the home-screen
@@ -146,14 +152,7 @@ export async function fetchAlgorandAccountState(
     const authorityAddress = info.authAddr?.toString() ?? null
 
     return {
-        nativeBalance: microAlgosToAlgos(info.amount),
         nativeBalanceBaseUnits: new Decimal(info.amount.toString()),
-        minBalance: microAlgosToAlgos(info.minBalance),
-        totalAssetsOptedIn,
-        totalCreatedAssets,
-        totalAppsOptedIn,
-        status: info.status ?? 'Offline',
-        authorityAddress,
         chainState: {
             family: 'algorand',
             ...(authorityAddress === null
@@ -175,8 +174,7 @@ type ParticipationStatus = Extract<
     { family: 'algorand' }
 >['status']
 
-// algod types status as a bare string; anything unrecognised reads as Offline,
-// the same default the balance row uses.
+// algod types status as a bare string; anything unrecognised reads as Offline.
 const toParticipationStatus = (
     status: Optional<string>,
 ): ParticipationStatus =>

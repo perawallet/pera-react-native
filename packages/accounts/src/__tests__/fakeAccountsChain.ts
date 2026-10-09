@@ -81,7 +81,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     fetchAccountState: vi.fn(),
     toChainState: vi.fn(observed => ({
         family: 'algorand' as const,
-        minBalance: observed.minBalance ?? new Decimal(0),
+        minBalance: new Decimal(0),
         status: 'Offline' as const,
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,

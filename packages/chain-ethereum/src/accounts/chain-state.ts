@@ -12,7 +12,7 @@
 
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 
-// account_balances has no nonce column, so a stored row reads as a fresh
-// account until the next sync's snapshot carries the real nonce.
+// Ethereum has no delegated authority, so an account known only by one reads
+// as never synced; the next sync's snapshot carries the real nonce.
 export const toEthereumChainState: AccountsChainAdapter['toChainState'] =
     () => ({ family: 'evm', nonce: { latest: 0, pending: 0 } })

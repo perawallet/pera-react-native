@@ -38,8 +38,6 @@ import {
 import {
     AccountAssetHoldingsSchema,
     refreshAccountHoldings,
-    upsertAccountBalance,
-    getAccountBalance,
     upsertAccountChainState,
     getAccountChainStateRow,
     getHeldAssetIdsByAccount,
@@ -60,23 +58,6 @@ const makeAsset = (assetId: string): PeraAsset => ({
     totalSupply: new Decimal('1000000'),
     name: `Asset ${assetId}`,
     unitName: 'AST',
-})
-
-const balanceArgs = (
-    db: Database,
-    accountAddress: string,
-    scope: ChainScope,
-) => ({
-    db,
-    accountAddress,
-    scope,
-    algoBalance: new Decimal('1'),
-    totalAssetsOptedIn: 0,
-    totalCreatedAssets: 0,
-    totalAppsOptedIn: 0,
-    minBalance: new Decimal('0.1'),
-    status: 'Offline',
-    authorityAddress: null,
 })
 
 describe('cleanupRemovedAccountData', () => {
@@ -161,14 +142,13 @@ describe('cleanupRemovedAccountData', () => {
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
-    it('removes the account holdings, balance and chain-state rows', async () => {
+    it('removes the account holdings and chain-state rows', async () => {
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '100', amount: 5n }],
             scope: MAINNET_SCOPE,
         })
-        await upsertAccountBalance(balanceArgs(db, 'ADDR1', MAINNET_SCOPE))
         await upsertAccountChainState({
             db,
             accountAddress: 'ADDR1',
@@ -182,13 +162,6 @@ describe('cleanupRemovedAccountData', () => {
         expect(
             await getHeldAssetIdsByAccount({ db, accountAddress: 'ADDR1' }),
         ).toEqual([])
-        expect(
-            await getAccountBalance({
-                db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
-            }),
-        ).toBeUndefined()
         expect(
             await getAccountChainStateRow({
                 db,

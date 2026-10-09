@@ -45,7 +45,6 @@ const CUSTOM_SCOPE: ChainScope = {
 // compares this list against the migrated schema, so a new table fails a test.
 export const NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
-    'account_balances',
     'account_chain_state',
     'assets_node',
     'assets_pera',

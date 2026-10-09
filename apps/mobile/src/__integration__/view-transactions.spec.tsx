@@ -43,9 +43,9 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -166,16 +166,11 @@ describe('Flow: View transactions → tap into details', () => {
 
         // Account balance row so the history hook has something to
         // anchor its query against.
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: ACCOUNT.address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
+            nativeBalance: new Decimal(5_000_000),
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         // Seed two transactions for the observer account. The history

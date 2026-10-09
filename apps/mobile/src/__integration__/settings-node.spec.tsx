@@ -27,10 +27,10 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
     type WalletAccount,
@@ -118,27 +118,17 @@ describe('Flow: Settings → Network selection', () => {
         // after a sync against mainnet vs testnet algod. The
         // assertion is "switching network changes which row the
         // hook reads".
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(100_000_000), // 100 ALGO mainnet
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
+            nativeBalance: new Decimal(100_000_000), // 100 ALGO mainnet
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
             scope: TESTNET_SCOPE,
-            algoBalance: new Decimal(7_000_000), // 7 ALGO testnet
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
+            nativeBalance: new Decimal(7_000_000), // 7 ALGO testnet
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         // ALGO is a regular holding row now; the balance hook reads it from

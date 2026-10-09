@@ -48,10 +48,10 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountSummaryQuery,
     useAccountValueTotalsQuery,
@@ -119,16 +119,11 @@ const wrapperWithClient = () => {
 
 /** Everything the sync service would have written on a previous online run. */
 const seedPreviouslySyncedAccount = async () => {
-    await upsertAccountBalance({
+    await seedAlgorandAccountState({
         accountAddress: ACCOUNT.address,
         scope: scopeForLegacyNetwork(NETWORK),
-        algoBalance: new Decimal(10_000_000), // 10 ALGO
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
+        nativeBalance: new Decimal(10_000_000), // 10 ALGO
         minBalance: new Decimal(100_000),
-        status: 'Offline',
-        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: ACCOUNT.address,
@@ -248,16 +243,11 @@ describe('Flow: Cold start with no connectivity', () => {
         // the one that can't lean on an unresolved *rate* to stay honest:
         // the rate is the identity, and it's the missing *price* that makes
         // the total unknown.
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: ACCOUNT.address,
             scope: scopeForLegacyNetwork(NETWORK),
-            algoBalance: new Decimal(10_000_000), // 10 ALGO
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
+            nativeBalance: new Decimal(10_000_000), // 10 ALGO
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: ACCOUNT.address,
@@ -340,16 +330,11 @@ describe('Flow: Cold start with no connectivity', () => {
 
     it('Given a never-synced install with no connectivity, when the History tab renders, then it says the device is offline instead of claiming there are no transactions', async () => {
         // Balance row only — no transactions were ever synced.
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: ACCOUNT.address,
             scope: scopeForLegacyNetwork(NETWORK),
-            algoBalance: new Decimal(0),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
+            nativeBalance: new Decimal(0),
             minBalance: new Decimal(100_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         onlineManager.setOnline(false)

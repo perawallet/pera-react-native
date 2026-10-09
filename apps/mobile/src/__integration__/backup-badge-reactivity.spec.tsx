@@ -23,12 +23,12 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
     invalidateAccountQueriesForAddresses,
     refreshAccountHoldings,
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -69,16 +69,11 @@ const seedUnfunded = async (
     address: string,
     network: LegacyNetwork = NETWORK,
 ) => {
-    await upsertAccountBalance({
+    await seedAlgorandAccountState({
         accountAddress: address,
         scope: scopeForLegacyNetwork(network),
-        algoBalance: new Decimal(0),
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
+        nativeBalance: new Decimal(0),
         minBalance: new Decimal(100_000),
-        status: 'Offline',
-        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: address,

@@ -25,33 +25,24 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))
 
-const mockUpsertAccountBalance = vi.fn()
 const mockUpsertAccountChainState = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
-const mockGetAccountBalance = vi.fn()
+const mockGetAccountChainStateRow = vi.fn()
 
 vi.mock('../../db', () => ({
-    upsertAccountBalance: (...args: unknown[]) =>
-        mockUpsertAccountBalance(...args),
     upsertAccountChainState: (...args: unknown[]) =>
         mockUpsertAccountChainState(...args),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
-    getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountChainStateRow: (...args: unknown[]) =>
+        mockGetAccountChainStateRow(...args),
     getAccountHoldings: vi.fn().mockResolvedValue([]),
 }))
 
 const snapshot = (
     overrides: Partial<AccountStateSnapshot> = {},
 ): AccountStateSnapshot => ({
-    nativeBalance: new Decimal('1.5'),
     nativeBalanceBaseUnits: new Decimal(1_500_000),
-    minBalance: new Decimal('0.1'),
-    totalAssetsOptedIn: 2,
-    totalCreatedAssets: 1,
-    totalAppsOptedIn: 0,
-    status: 'Online',
-    authorityAddress: 'REKEY_ADDR',
     chainState: {
         family: 'algorand',
         authAddress: 'REKEY_ADDR',
@@ -75,34 +66,20 @@ const fetchAccountState = () =>
 describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
-        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
         fetchAccountState().mockResolvedValue(snapshot())
     })
 
-    it("persists the chain's account state as the balance row and holdings", async () => {
+    it("persists the chain's account state as the chain-state row and holdings", async () => {
         const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            {
-                priorResourceCount: 0,
-            },
+            { priorChainState: undefined },
         )
-        expect(mockUpsertAccountBalance).toHaveBeenCalledWith({
-            accountAddress: 'ADDR1',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            algoBalance: new Decimal('1.5'),
-            totalAssetsOptedIn: 2,
-            totalCreatedAssets: 1,
-            totalAppsOptedIn: 0,
-            minBalance: new Decimal('0.1'),
-            status: 'Online',
-            authorityAddress: 'REKEY_ADDR',
-        })
         expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
             scope: { chainId: 'algorand', networkId: 'mainnet' },
@@ -125,15 +102,19 @@ describe('fetchAndPersistAccount', () => {
         })
     })
 
-    it("hands the chain the prior row's resource count", async () => {
-        mockGetAccountBalance.mockResolvedValue({
-            algoBalance: new Decimal(0),
+    it("hands the chain the prior row's chain state", async () => {
+        const priorChainState = {
+            family: 'algorand' as const,
+            minBalance: new Decimal(0),
+            status: 'Offline' as const,
             totalAssetsOptedIn: 1500,
             totalCreatedAssets: 3,
             totalAppsOptedIn: 2,
-            minBalance: new Decimal(0),
-            status: 'Offline',
-            authorityAddress: null,
+        }
+        mockGetAccountChainStateRow.mockResolvedValue({
+            accountAddress: 'ADDR1',
+            nativeBalance: new Decimal(0),
+            chainData: priorChainState,
         })
 
         await fetchAndPersistAccount('ADDR1', 'mainnet')
@@ -141,9 +122,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            {
-                priorResourceCount: 1505,
-            },
+            { priorChainState },
         )
     })
 
@@ -154,48 +133,77 @@ describe('fetchAndPersistAccount', () => {
             fetchAndPersistAccount('ADDR1', 'mainnet'),
         ).rejects.toThrow('429')
 
-        expect(mockUpsertAccountBalance).not.toHaveBeenCalled()
         expect(mockUpsertAccountChainState).not.toHaveBeenCalled()
         expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
     })
 
-    it('still refreshes holdings when the chain-state write fails', async () => {
+    it('rejects when the chain-state write fails and refreshes no holdings', async () => {
         mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
 
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await expect(
+            fetchAndPersistAccount('ADDR1', 'mainnet'),
+        ).rejects.toThrow('db locked')
 
-        expect(mockRefreshAccountHoldings).toHaveBeenCalled()
-        expect(result.changed).toBe(true)
+        expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
     })
 
-    it('reports no change when balance and holdings are unchanged', async () => {
-        fetchAccountState().mockResolvedValue(
-            snapshot({
-                nativeBalance: new Decimal('1'),
-                totalAssetsOptedIn: 0,
-                totalCreatedAssets: 0,
-                status: 'Offline',
-                authorityAddress: null,
-                observedRound: null,
-            }),
-        )
-        mockGetAccountBalance.mockResolvedValue({
-            algoBalance: new Decimal('1'),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            minBalance: new Decimal('0.1'),
-            status: 'Offline',
-            authorityAddress: null,
+    describe('with a prior row', () => {
+        const priorRow = (
+            overrides: Partial<{
+                nativeBalance: Decimal
+                chainData: AccountStateSnapshot['chainState']
+            }> = {},
+        ) => ({
+            accountAddress: 'ADDR1',
+            nativeBalance: snapshot().nativeBalanceBaseUnits,
+            chainData: snapshot().chainState,
+            ...overrides,
         })
-        mockRefreshAccountHoldings.mockResolvedValue(false)
 
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        it('reports no change when state and holdings are unchanged', async () => {
+            mockGetAccountChainStateRow.mockResolvedValue(priorRow())
+            mockRefreshAccountHoldings.mockResolvedValue(false)
 
-        expect(result).toEqual({
-            changed: false,
-            holdingsChanged: false,
-            observedRound: null,
+            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+            expect(result).toEqual({
+                changed: false,
+                holdingsChanged: false,
+                observedRound: 1234,
+            })
+        })
+
+        it('reports a change when only the authority was removed', async () => {
+            mockGetAccountChainStateRow.mockResolvedValue(priorRow())
+            mockRefreshAccountHoldings.mockResolvedValue(false)
+            fetchAccountState().mockResolvedValue(
+                snapshot({
+                    chainState: {
+                        family: 'algorand',
+                        minBalance: new Decimal(100_000),
+                        status: 'Online',
+                        totalAssetsOptedIn: 2,
+                        totalCreatedAssets: 1,
+                        totalAppsOptedIn: 0,
+                    },
+                }),
+            )
+
+            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+            expect(result.changed).toBe(true)
+            expect(result.holdingsChanged).toBe(false)
+        })
+
+        it('reports a change when only the native balance moved', async () => {
+            mockGetAccountChainStateRow.mockResolvedValue(
+                priorRow({ nativeBalance: new Decimal(1_499_000) }),
+            )
+            mockRefreshAccountHoldings.mockResolvedValue(false)
+
+            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+            expect(result.changed).toBe(true)
         })
     })
 
@@ -213,35 +221,36 @@ describe('fetchAndPersistAccount', () => {
 describe('ensureAccountFetched', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         fetchAccountState().mockResolvedValue(snapshot())
     })
 
-    it('skips the fetch when a balance row already exists', async () => {
-        mockGetAccountBalance.mockResolvedValue({ algoBalance: new Decimal(1) })
+    it('skips the fetch when a chain-state row already exists', async () => {
+        mockGetAccountChainStateRow.mockResolvedValue({
+            accountAddress: 'ADDR1',
+            nativeBalance: new Decimal(1),
+            chainData: snapshot().chainState,
+        })
 
         await ensureAccountFetched('ADDR1', 'mainnet')
 
         expect(fetchAccountState()).not.toHaveBeenCalled()
     })
 
-    it('fetches when there is no balance row yet', async () => {
-        mockGetAccountBalance.mockResolvedValue(undefined)
+    it('fetches when there is no chain-state row yet', async () => {
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
 
         await ensureAccountFetched('ADDR1', 'mainnet')
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            {
-                priorResourceCount: 0,
-            },
+            { priorChainState: undefined },
         )
     })
 
     it('swallows fetch errors (never throws to the caller)', async () => {
-        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
         fetchAccountState().mockRejectedValue(new Error('algod down'))
 
         await expect(

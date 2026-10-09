@@ -33,9 +33,9 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -95,16 +95,11 @@ const seedRekeyAccounts = async (): Promise<{
     useAccountsStore.getState().setAccounts([source, target])
     useAccountsStore.getState().setSelectedAccountAddress(source.address)
 
-    await upsertAccountBalance({
+    await seedAlgorandAccountState({
         accountAddress: source.address,
         scope: MAINNET_SCOPE,
-        algoBalance: new Decimal(5_000_000),
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
+        nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
-        status: 'Offline',
-        authorityAddress: null,
     })
 
     return { source, target }

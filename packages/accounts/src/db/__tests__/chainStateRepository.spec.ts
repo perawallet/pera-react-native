@@ -20,11 +20,13 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     scopeForLegacyNetwork,
+    toScopeKey,
     type AccountChainState,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     upsertAccountChainState,
     getAccountChainStateRow,
+    getAllAccountChainStateRows,
     deleteAccountChainState,
 } from '../chainStateRepository'
 
@@ -130,6 +132,51 @@ describe('account chain state repository', () => {
         })
         expect(row?.nativeBalance).toEqual(new Decimal(9_000_000))
         expect(row?.chainData).toEqual(rekeyedBack)
+    })
+
+    it('returns undefined for an unknown account', async () => {
+        expect(
+            await getAccountChainStateRow({
+                db,
+                accountAddress: 'NOBODY',
+                scope: MAINNET_SCOPE,
+            }),
+        ).toBeUndefined()
+    })
+
+    it('reads every row with its network', async () => {
+        for (const [address, scope, balance] of [
+            ['ADDR1', MAINNET_SCOPE, 1],
+            ['ADDR1', TESTNET_SCOPE, 2],
+            ['ADDR2', MAINNET_SCOPE, 3],
+            ['ADDR2', TESTNET_SCOPE, 4],
+        ] as const) {
+            await upsertAccountChainState({
+                db,
+                accountAddress: address,
+                scope,
+                nativeBalance: new Decimal(balance),
+                chainData: algorandState(),
+            })
+        }
+
+        const rows = await getAllAccountChainStateRows({ db })
+
+        expect(
+            rows
+                .map(r => [
+                    r.accountAddress,
+                    r.network,
+                    r.nativeBalance.toString(),
+                ])
+                .sort(),
+        ).toEqual([
+            ['ADDR1', toScopeKey(MAINNET_SCOPE), '1'],
+            ['ADDR1', toScopeKey(TESTNET_SCOPE), '2'],
+            ['ADDR2', toScopeKey(MAINNET_SCOPE), '3'],
+            ['ADDR2', toScopeKey(TESTNET_SCOPE), '4'],
+        ])
+        expect(rows[0].chainData).toEqual(algorandState())
     })
 
     it('keeps one row per network', async () => {

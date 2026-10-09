@@ -47,7 +47,7 @@ describe('createEthereumAccountsAdapter', () => {
         },
     )
 
-    it('reads a stored row as a fresh EVM state until a sync carries the nonce', () => {
+    it('reads an account known only by its authority as never synced', () => {
         expect(adapter.toChainState({ authorityAddress: null })).toEqual({
             family: 'evm',
             nonce: { latest: 0, pending: 0 },
