@@ -101,7 +101,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                     },
                 })
             }),
-        [addSignRequest],
+        [addSignRequest, scope.chainId],
     )
 
     const signOwnership = useCallback(
