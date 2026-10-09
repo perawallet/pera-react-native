@@ -236,17 +236,13 @@ const buildUnsignedTransactionGroups = (
         if (!isUnsignedTransaction(tx)) {
             throw new InvalidSignableDataError(MIXED_SHAPES)
         }
-        if (tx.scope.chainId !== scope.chainId) {
-            throw new InvalidSignableDataError(
-                'the transactions belong to more than one chain',
-            )
-        }
+        // Planned first: a planner refuses another chain's transaction.
+        const signers = new Set(planSigners(plan, tx))
         // Built for another network than the chain's selected one, by a dApp
         // or before the user switched.
         if (tx.scope.networkId !== scope.networkId) {
             throw new ScopeChangedError(tx.scope, scope)
         }
-        const signers = new Set(planSigners(plan, tx))
         if (signers.size !== 1) {
             throw new InvalidSignableDataError(
                 'a chain-neutral transaction must have exactly one signer',

@@ -100,11 +100,17 @@ export const makeUnsignedTransaction = (
 /** Names the payload's `from` as the one signer, as a single-signature chain plans. */
 export const planFromPayload = (
     transaction: UnsignedTransaction,
-): SigningRequest[] => [
-    {
-        requestIndex: 0,
-        signer: (transaction.payload as { from: string }).from,
-        scheme: 'secp256k1',
-        payload: new Uint8Array(32),
-    },
-]
+): SigningRequest[] => {
+    // As every planner must, it refuses another chain's transaction.
+    if (transaction.scope.chainId !== SECOND_CHAIN_SCOPE.chainId) {
+        throw new Error(`Not a ${SECOND_CHAIN_SCOPE.chainId} transaction`)
+    }
+    return [
+        {
+            requestIndex: 0,
+            signer: (transaction.payload as { from: string }).from,
+            scheme: 'secp256k1',
+            payload: new Uint8Array(32),
+        },
+    ]
+}
