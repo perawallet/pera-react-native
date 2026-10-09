@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { useAllAccounts } from '../useAllAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -39,20 +40,8 @@ describe('useAllAccounts', () => {
         expect(result.current).toEqual([])
 
         const accounts: WalletAccount[] = [
-            {
-                id: '1',
-                address: 'A',
-                custody: { kind: 'local', seed: 'algo25' },
-                canSign: true,
-                name: 'A',
-            },
-            {
-                id: '2',
-                address: 'B',
-                custody: { kind: 'local', seed: 'algo25' },
-                canSign: true,
-                name: 'B',
-            },
+            testAccount('local', 'A', { id: '1', name: 'A' }),
+            testAccount('local', 'B', { id: '2', name: 'B' }),
         ]
         useAccountsStore.setState({ accounts })
 

@@ -24,15 +24,17 @@ import type {
     PeraTransaction,
     PeraTransactionGroup,
 } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
     accountType,
+    algorandAddressOf,
+    algorandKeyOf,
     isAlgo25Account,
     isHDWalletAccount,
     isQuantumAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
+} from '../../accounts/vocabulary'
 
 /**
  * How many transactions to encode + sign per chunk before yielding back to
@@ -69,14 +71,19 @@ const signSingleAccountTransactions = async (
     account: WalletAccount,
     txns: PeraTransactionGroup,
 ): Promise<PeraSignedTransaction[]> => {
+    const address = algorandAddressOf(account)
     if (
         !isAlgo25Account(account) &&
         !isHDWalletAccount(account) &&
         !isQuantumAccount(account)
     ) {
         return Promise.reject(
-            `Unsupported account type ${accountType(account)} for ${account.address}`,
+            `Unsupported account type ${accountType(account)} for ${address}`,
         )
+    }
+    const keyPairId = algorandKeyOf(account)
+    if (!keyPairId || !address) {
+        return Promise.reject(`No Algorand signing key for ${address}`)
     }
 
     // The only scheme-dependent decision here: what bytes to sign, and which
@@ -84,7 +91,7 @@ const signSingleAccountTransactions = async (
     // `sgnr`, ordering — is shared. This is the same altitude as the
     // algo25-vs-HD difference, which the keystore resolves internally by
     // child type.
-    const pqInfo = deps.getPQSigningInfo(account.keyPairId)
+    const pqInfo = deps.getPQSigningInfo(keyPairId)
     const yieldBetweenBatches = deps.yieldBetweenBatches ?? deferToNextCycle
 
     const signed: PeraSignedTransaction[] = []
@@ -101,7 +108,7 @@ const signSingleAccountTransactions = async (
         const payloads = pqInfo
             ? batch.map(txn => pqSigningDigest(txn))
             : batch.map(txn => encodeTransaction(txn))
-        const signatures = await deps.signPayloads(account.keyPairId, payloads)
+        const signatures = await deps.signPayloads(keyPairId, payloads)
 
         batch.forEach((txn, idx) => {
             if (pqInfo) {
@@ -121,7 +128,7 @@ const signSingleAccountTransactions = async (
             signed.push(
                 assembleSignedTransaction(txn, {
                     sig: signatures[idx],
-                    signerAddress: account.address,
+                    signerAddress: address,
                 }),
             )
         })

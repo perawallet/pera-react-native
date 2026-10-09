@@ -13,14 +13,16 @@
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useFeeConfig } from '@perawallet/wallet-core-signing'
 import {
-    fetchAccountInformation,
+    fetchOnChainAccountState,
     insertAssetHolding,
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import {
+    algosToMicroAlgosBigInt,
     assertOnline,
     formatCurrency,
     microAlgosToAlgos,
+    toBigInt,
 } from '@perawallet/wallet-core-shared'
 import {
     AlreadyOptedInError,
@@ -66,18 +68,16 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { mutateAsync, isLoading, isError, error } =
         useAssetHoldingMutation<AssetOptInParams>({
             source: SOURCE,
-            run: async (
-                { sender, assetId },
-                { scope, network, assignFees, submit },
-            ) => {
+            run: async ({ sender, assetId }, { scope, assignFees, submit }) => {
                 assertOnline()
 
-                const accountInfo = await fetchAccountInformation(
+                const accountState = await fetchOnChainAccountState(
                     sender,
-                    network,
+                    scope,
                 )
-                const isOptedIn = accountInfo.assets.some(
-                    a => a.assetId === assetId,
+                const assetIdString = String(assetId)
+                const isOptedIn = accountState.holdings.some(
+                    holding => holding.assetId === assetIdString,
                 )
                 if (isOptedIn) {
                     throw new AlreadyOptedInError()
@@ -97,11 +97,14 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     (total, txn) => total + txn.fee,
                     0n,
                 )
+                const balance = toBigInt(accountState.nativeBalanceBaseUnits)
                 const balanceNeeded =
-                    accountInfo.minBalance + assetOptInMinBalance + feeTotal
-                if (accountInfo.amount < balanceNeeded) {
+                    algosToMicroAlgosBigInt(accountState.minBalance) +
+                    assetOptInMinBalance +
+                    feeTotal
+                if (balance < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError(
-                        formatAlgoShortfall(balanceNeeded - accountInfo.amount),
+                        formatAlgoShortfall(balanceNeeded - balance),
                     )
                 }
 
@@ -110,7 +113,6 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 // Persist the holding and the asset's metadata before the
                 // invalidation, so the UI resolves the asset on its next
                 // render instead of waiting for the next sync poll.
-                const assetIdString = String(assetId)
                 await insertAssetHolding({
                     accountAddress: sender,
                     assetId: assetIdString,

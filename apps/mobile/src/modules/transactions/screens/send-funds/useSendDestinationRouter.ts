@@ -15,15 +15,19 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
+    findAccountByAddressOn,
     useAccountBalancesQuery,
     useAllAccounts,
-    useOnChainAccountInformationQuery,
+    useOnChainAccountStateQuery,
 } from '@perawallet/wallet-core-accounts'
 import {
     useIsNativeAssetId,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -46,11 +50,12 @@ import { useToast } from '@hooks/useToast'
  * picker.
  */
 export const useSendDestinationRouter = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const isNativeAssetId = useIsNativeAssetId()
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
-        useAccountBalancesQuery(accounts)
+        useAccountBalancesQuery(accounts, scope)
     const [pendingExternalAddress, setPendingExternalAddress] = useState<
         string | null
     >(null)
@@ -73,11 +78,14 @@ export const useSendDestinationRouter = () => {
         isFetching: isCheckingExternalOptIn,
         isSuccess: isExternalQuerySuccess,
         isError: isExternalQueryError,
-    } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
+    } = useOnChainAccountStateQuery(
+        pendingExternalAddress ?? '',
+        useSelectedScope(LEGACY_CHAIN_ID),
+    )
 
     const { network } = useNetwork()
     const canUseAssetInbox = useCapability({
-        chain: { chainId: LEGACY_CHAIN_ID, capability: 'assetInbox' },
+        chain: { chainId: scope.chainId, capability: 'assetInbox' },
     })
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -103,8 +111,8 @@ export const useSendDestinationRouter = () => {
 
         if (!isExternalQuerySuccess && !isExternalQueryError) return
 
-        const isReceiverOptedIn = externalAccountInfo?.assets.some(
-            a => a.assetId === BigInt(selectedAsset.assetId),
+        const isReceiverOptedIn = externalAccountInfo?.holdings.some(
+            holding => holding.assetId === selectedAsset.assetId,
         )
 
         if (isReceiverOptedIn) {
@@ -154,9 +162,13 @@ export const useSendDestinationRouter = () => {
             }
 
             // Check if receiver is a local account we can sign for
-            const receiver = accounts.find(a => a.address === address)
+            const receiver = findAccountByAddressOn(
+                accounts,
+                scope.chainId,
+                address,
+            )
             const isLocalSignable =
-                !!receiver && canSignWith(receiver, accounts, LEGACY_CHAIN_ID)
+                !!receiver && canSignWith(receiver, accounts, scope.chainId)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer
@@ -181,6 +193,7 @@ export const useSendDestinationRouter = () => {
             setDestination,
             navigation,
             routeToInbox,
+            scope.chainId,
         ],
     )
 

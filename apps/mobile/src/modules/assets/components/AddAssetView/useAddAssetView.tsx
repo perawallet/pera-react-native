@@ -14,11 +14,13 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useAccountsStore,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -27,6 +29,7 @@ import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
@@ -52,6 +55,7 @@ type UseAddAssetViewResult = {
 export const useAddAssetView = (
     options?: UseAddAssetViewOptions,
 ): UseAddAssetViewResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
     const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
@@ -64,8 +68,12 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    const selectedAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const { optIn } = useAssetOptInMutation()
     const { showToast } = useToast()
@@ -83,7 +91,7 @@ export const useAddAssetView = (
         hasNextRemotePage: hasNextPage,
         isFetchingNextRemotePage: isFetchingNextPage,
         fetchNextRemotePage: fetchNextPage,
-    } = useGlobalSearch({
+    } = useGlobalSearch(scope, {
         debounceMs: SEARCH_DEBOUNCE_TIME,
         scopes: ['assets'],
         remoteAssets: { hasCollectible, showOnEmptyQuery: true },
@@ -95,8 +103,8 @@ export const useAddAssetView = (
 
     const optedInAssetIds = useMemo(() => {
         const ids = new Set<string>()
-        if (selectedAccount) {
-            const balances = accountBalances.get(selectedAccount.address)
+        if (selectedAddress) {
+            const balances = accountBalances.get(selectedAddress)
             if (balances) {
                 for (const balance of balances.assetBalances) {
                     ids.add(balance.assetId)
@@ -107,7 +115,7 @@ export const useAddAssetView = (
             ids.add(id)
         }
         return ids
-    }, [accountBalances, selectedAccount, recentlyOptedIn])
+    }, [accountBalances, selectedAddress, recentlyOptedIn])
 
     const handleSearchChange = useCallback(
         (text: string) => {
@@ -118,13 +126,13 @@ export const useAddAssetView = (
 
     const handleRequestAdd = useCallback(
         async (assetId: string) => {
-            if (!selectedAccount || optingInAssetIds.has(assetId)) {
+            if (!selectedAddress || optingInAssetIds.has(assetId)) {
                 return
             }
 
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: selectedAccount.address },
+                { assetId, accountAddress: selectedAddress },
                 {
                     size: 'auto',
                     enablePanDownToClose: true,
@@ -144,7 +152,7 @@ export const useAddAssetView = (
 
             try {
                 await optIn({
-                    sender: selectedAccount.address,
+                    sender: selectedAddress,
                     assetId: BigInt(assetId),
                 })
                 setRecentlyOptedIn(prev => new Set([...prev, assetId]))
@@ -171,7 +179,7 @@ export const useAddAssetView = (
             }
         },
         [
-            selectedAccount,
+            selectedAddress,
             optingInAssetIds,
             requestByType,
             results,

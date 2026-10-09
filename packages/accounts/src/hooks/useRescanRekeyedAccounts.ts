@@ -12,9 +12,13 @@
 
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { addressCodecFor, fetchRekeyedAddresses } from '../chain-adapter'
+import {
+    addressCodecs,
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { fetchRekeyedAddresses } from '../chain-adapter'
+import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
 import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 
@@ -74,28 +78,30 @@ export type UseRescanRekeyedAccountsResult = {
     importFromSweep: (candidates: RekeyedSweepCandidate[]) => Promise<number>
 }
 
-export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
+export const useRescanRekeyedAccounts = (
+    scope: ChainScope,
+): UseRescanRekeyedAccountsResult => {
     const addRekeyedWatchAccounts = useAccountsStore(
         state => state.addRekeyedWatchAccounts,
     )
-    const { network } = useNetwork()
-    const isRekeyAvailable = useIsRekeyAvailable(LEGACY_CHAIN_ID)
+    const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
 
     const scan = useCallback(
         async (sourceAddress: string): Promise<RekeyedScanResult> => {
             if (!isRekeyAvailable) {
                 return { importedAddresses: [], notImportedAddresses: [] }
             }
-            const addresses = await fetchRekeyedAddresses(
-                sourceAddress,
-                network,
-            )
+            const addresses = await fetchRekeyedAddresses(sourceAddress, scope)
             // Read the wallet's account set fresh, after the indexer call —
             // a scan can outlive an import/add that lands while the request
             // is in flight, so classification must reflect the latest store
             // rather than a render-time snapshot.
             const localAddresses = new Set(
-                useAccountsStore.getState().accounts.map(a => a.address),
+                useAccountsStore
+                    .getState()
+                    .accounts.flatMap(
+                        a => chainAccountOf(a, scope.chainId)?.address ?? [],
+                    ),
             )
             const imported: string[] = []
             const notImported: string[] = []
@@ -111,7 +117,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                 notImportedAddresses: notImported,
             }
         },
-        [network, isRekeyAvailable],
+        [scope, isRekeyAvailable],
     )
 
     const scanAll = useCallback(
@@ -141,7 +147,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                         try {
                             foundBySource.set(
                                 source,
-                                await fetchRekeyedAddresses(source, network),
+                                await fetchRekeyedAddresses(source, scope),
                             )
                         } catch (error) {
                             // One key's indexer failure must not void the
@@ -162,7 +168,11 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             // Same rationale as `scan`: classify against the store as it is
             // AFTER the last indexer call, not a render-time snapshot.
             const localAddresses = new Set(
-                useAccountsStore.getState().accounts.map(a => a.address),
+                useAccountsStore
+                    .getState()
+                    .accounts.flatMap(
+                        a => chainAccountOf(a, scope.chainId)?.address ?? [],
+                    ),
             )
             const imported = new Set<string>()
             const candidateSource = new Map<string, string>()
@@ -191,7 +201,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                 failedSources,
             }
         },
-        [network, isRekeyAvailable],
+        [scope, isRekeyAvailable],
     )
 
     const importSelected = useCallback(
@@ -206,13 +216,17 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             // that doesn't actually sign through `sourceAddress`. The next
             // sync corrects classification, but the address stays imported.
             // Acceptable trade-off for now; revisit if indexer trust changes.
-            const codec = addressCodecFor(network)
+            const codec = addressCodecs.get(scope.chainId)
             const valid = addresses.filter(address => codec.isValid(address))
             if (valid.length === 0) return 0
 
-            return addRekeyedWatchAccounts(sourceAddress, valid, network)
+            return addRekeyedWatchAccounts(
+                sourceAddress,
+                valid,
+                legacyNetworkOf(scope),
+            )
         },
-        [addRekeyedWatchAccounts, network],
+        [addRekeyedWatchAccounts, scope],
     )
 
     const importFromSweep = useCallback(

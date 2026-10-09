@@ -13,11 +13,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     pow10,
@@ -31,7 +27,6 @@ import type {
     WalletAccount,
 } from '../models'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,
@@ -39,6 +34,7 @@ import {
     type AccountHoldingsFilters,
     type AccountHoldingsPageRow,
 } from '../db'
+import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 
@@ -59,13 +55,12 @@ async function readAccountFromDb(
         scope,
     })
     if (!balance) {
-        const network = legacyNetworkOf(scope)
         try {
-            await fetchAndPersistAccount(address, network)
+            await fetchAndPersistAccount(address, scope)
         } catch (error) {
             logger.warn('On-demand account fetch failed', {
                 address,
-                network,
+                scope,
                 error:
                     error instanceof Error
                         ? { message: error.message, stack: error.stack }
@@ -88,10 +83,10 @@ async function readAccountFromDb(
 
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
+    scope: ChainScope,
     enabled?: boolean,
     filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const hasAccounts = !!accounts?.length
 
@@ -99,7 +94,11 @@ export const useAccountBalancesQuery = (
     // render. Only addresses are read below, so key the memos on this stable
     // list instead of array identity — otherwise every render of every such
     // call site re-walks all holdings, a Decimal per field per asset.
-    const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
+    const addresses = useStableIdList(
+        accounts?.flatMap(
+            a => chainAccountOf(a, scope.chainId)?.address ?? [],
+        ) ?? [],
+    )
 
     const queries = useMemo(() => {
         return addresses.map(address => {
@@ -281,8 +280,9 @@ export const useAccountBalancesQuery = (
 }
 
 export const useAccountAssetBalanceQuery = (
-    account?: WalletAccount,
-    assetId?: string,
+    account: WalletAccount | undefined,
+    assetId: string | undefined,
+    scope: ChainScope,
 ) => {
     const {
         accountBalances,
@@ -293,18 +293,22 @@ export const useAccountAssetBalanceQuery = (
         isPaused,
     } = useAccountBalancesQuery(
         account ? [account] : [],
+        scope,
         !!account && assetId !== null && assetId !== undefined,
     )
+    const address = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
 
     const assetBalance = useMemo<Nullable<AssetWithAccountBalance>>(() => {
         return (
             accountBalances
-                ?.get(account?.address ?? '')
+                ?.get(address ?? '')
                 ?.assetBalances?.find(
                     (b: AssetWithAccountBalance) => b.assetId === assetId,
                 ) ?? null
         )
-    }, [accountBalances, account?.address, assetId])
+    }, [accountBalances, address, assetId])
 
     return {
         data: assetBalance,

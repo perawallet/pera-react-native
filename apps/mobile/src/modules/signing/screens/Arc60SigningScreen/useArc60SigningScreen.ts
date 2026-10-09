@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type AuthDataSignRequest,
     type ParsedAuthData,
@@ -75,7 +76,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const request =
         (pipeline.currentRequest as Optional<AuthDataSignRequest>) ?? null
 
-    const account = useFindAccountByAddress(request?.authData.signer ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(
+        request?.authData.signer ?? '',
+        scope,
+    )
     const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
     const parsed =
         pipeline.resolved?.kind.type === 'auth-data'
@@ -115,7 +120,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
             // in SigningActionButtons never runs for ARC-60.
             if (request && isExternalCallbackSource(request.sourceType)) {
                 const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(LEGACY_CHAIN_ID, request),
+                    resolveAllSignerAddresses(scope.chainId, request),
                 )
                 if (decision === 'cancel') {
                     pipeline.fail()
@@ -132,6 +137,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         confirmQuantumDappUsage,
         isQuantumBlocked,
         hasOriginMismatch,
+        scope.chainId,
     ])
 
     const handleReject = useCallback(() => {

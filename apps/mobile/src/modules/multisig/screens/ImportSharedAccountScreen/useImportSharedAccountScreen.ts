@@ -14,9 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
-    canSignViaParticipants,
+    chainAccountOf,
+    findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
@@ -25,6 +27,7 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useExitAccountFlow } from '@modules/onboarding'
 import type { MultisigStackParamList } from '../../routes/types'
+import { canSignAsParticipant } from '../../utils/participantEligibility'
 
 type UseImportSharedAccountScreenResult = {
     address: string
@@ -71,18 +74,32 @@ export const useImportSharedAccountScreen =
 
         const isUserIncluded = useMemo(() => {
             const participantSet = new Set(participantAddresses)
-            return accounts.some(a => participantSet.has(a.address))
+            return accounts.some(a => {
+                const held = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+                return held !== undefined && participantSet.has(held)
+            })
         }, [accounts, participantAddresses])
 
         // Stricter than `isUserIncluded`: a watch-only participant is included
         // but can't co-sign, so the screen warns when this is false.
         const canUserSign = useMemo(
-            () => canSignViaParticipants(participantAddresses, accounts),
+            () =>
+                participantAddresses.some(participantAddress => {
+                    const participant = findAccountByAddressOn(
+                        accounts,
+                        LEGACY_CHAIN_ID,
+                        participantAddress,
+                    )
+                    return (
+                        !!participant &&
+                        canSignAsParticipant(participant, LEGACY_CHAIN_ID)
+                    )
+                }),
             [accounts, participantAddresses],
         )
 
         const isAlreadyImported = useMemo(
-            () => accounts.some(a => a.address === address),
+            () => !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address),
             [accounts, address],
         )
 

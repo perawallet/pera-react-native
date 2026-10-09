@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
+import type {
+    Arc0001ResolveResult,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import type { TransactionSignRequest } from '../../models'
@@ -21,6 +24,8 @@ import {
     useEnqueueArc0001SignRequest,
     type ExternalSignTxnTransport,
 } from '../useEnqueueArc0001SignRequest'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
@@ -49,7 +54,7 @@ describe('useEnqueueArc0001SignRequest', () => {
     })
 
     it('hands the planner the resolved group, the transport and the signing-request bindings', async () => {
-        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest(SCOPE))
         const resolved = {
             allDecoded: [],
             toSign: [],

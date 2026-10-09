@@ -23,22 +23,28 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(),
-    useSortedAccounts: vi.fn((accounts: unknown[]) => ({
-        sortedAccounts: accounts,
-    })),
-    useAccountValueTotalsQuery: vi.fn(() => ({
-        accountValueTotals: new Map(),
-    })),
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    type TestAccount = { chains?: Record<string, { address?: string }> }
+    const addressOn = (account: TestAccount) =>
+        account.chains?.algorand?.address
+    return {
+        addressOn,
+        chainAccountOf: (account: TestAccount, chainId: string) =>
+            account.chains?.[chainId],
+        findAddressHolder: (
+            accounts: TestAccount[],
+            _scope: unknown,
+            address: string,
+        ) => accounts.find(a => addressOn(a) === address),
+        useAllAccounts: vi.fn(),
+        useSortedAccounts: vi.fn((accounts: unknown[]) => ({
+            sortedAccounts: accounts,
+        })),
+        useAccountValueTotalsQuery: vi.fn(() => ({
+            accountValueTotals: new Map(),
+        })),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
@@ -115,7 +121,10 @@ describe('AddressSearchView', () => {
     })
 
     it('shows matching accounts when searching', () => {
-        const mockAccount = { address: 'ABC123456789', name: 'Test Account' }
+        const mockAccount = {
+            chains: { algorand: { address: 'ABC123456789' } },
+            name: 'Test Account',
+        }
         vi.mocked(useAllAccounts).mockReturnValue([
             mockAccount,
         ] as unknown as ReturnType<typeof useAllAccounts>)
@@ -131,7 +140,7 @@ describe('AddressSearchView', () => {
         expect(screen.getByText('Test Account')).toBeTruthy()
 
         fireEvent.click(screen.getByText('Test Account'))
-        expect(mockOnSelected).toHaveBeenCalledWith(mockAccount.address)
+        expect(mockOnSelected).toHaveBeenCalledWith('ABC123456789')
     })
 
     it('shows matching contacts when searching', () => {
@@ -170,11 +179,11 @@ describe('AddressSearchView', () => {
 
     it('excludes account matching excludeAddress', () => {
         const senderAccount = {
-            address: 'SENDER_ADDRESS_123',
+            chains: { algorand: { address: 'SENDER_ADDRESS_123' } },
             name: 'Sender',
         }
         const otherAccount = {
-            address: 'OTHER_ADDRESS_456',
+            chains: { algorand: { address: 'OTHER_ADDRESS_456' } },
             name: 'Other Account',
         }
         vi.mocked(useAllAccounts).mockReturnValue([
@@ -260,7 +269,10 @@ describe('AddressSearchView', () => {
     })
 
     it('hides accounts and contacts when address is valid', () => {
-        const mockAccount = { address: 'ABC123456789', name: 'Test Account' }
+        const mockAccount = {
+            chains: { algorand: { address: 'ABC123456789' } },
+            name: 'Test Account',
+        }
         vi.mocked(useAllAccounts).mockReturnValue([
             mockAccount,
         ] as unknown as ReturnType<typeof useAllAccounts>)

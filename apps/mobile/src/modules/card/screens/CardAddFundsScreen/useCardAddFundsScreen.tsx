@@ -12,17 +12,18 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountBalancesQuery,
     type WalletAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
     getKnownAssetId,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Maybe,
@@ -69,7 +70,7 @@ type UseCardAddFundsScreenResult = {
 }
 
 export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useTranslation()
     const { successToast } = useToast()
     const navigation =
@@ -80,10 +81,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     // currently has selected.
     const fundingAccount = useCardFundingAccount()
 
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
     const [pickedAssetId, setPickedAssetId] = useState<Nullable<string>>(null)
     const sourceAssetId = pickedAssetId ?? usdcAssetId
     // Both sides could independently be null; only call it USDC when there is
@@ -109,16 +107,20 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
 
     const { accountBalances } = useAccountBalancesQuery(
         fundingAccount ? [fundingAccount] : [],
+        scope,
     )
     const sourceBalance = useMemo(() => {
-        if (!fundingAccount) return new Decimal(0)
+        const fundingAddress = fundingAccount
+            ? chainAccountOf(fundingAccount, scope.chainId)?.address
+            : undefined
+        if (!fundingAddress) return new Decimal(0)
         const balance = accountBalances
-            ?.get(fundingAccount.address)
+            ?.get(fundingAddress)
             ?.assetBalances?.find(
                 asset => asset.assetId === sourceAssetId,
             )?.amount
         return balance ?? new Decimal(0)
-    }, [accountBalances, fundingAccount, sourceAssetId])
+    }, [accountBalances, fundingAccount, sourceAssetId, scope.chainId])
 
     const {
         amount: value,

@@ -41,6 +41,7 @@ import { SearchScreen } from '@modules/search/screens/SearchScreen'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -51,8 +52,12 @@ const SHARED_QUERY = 'orbit'
 const SEARCH_ACCOUNT: WalletAccount = {
     id: 'search-account-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'search-account-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'search-account-key',
+        },
+    },
     name: `${SHARED_QUERY} account`,
 }
 
@@ -85,9 +90,7 @@ describe('Flow: Global search', () => {
         await resetTestDatabase()
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SEARCH_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
         resetTestContacts()
     })
 
@@ -105,7 +108,7 @@ describe('Flow: Global search', () => {
         await waitFor(() => {
             expect(
                 screen.getByTestId(
-                    `search_result_account_${SEARCH_ACCOUNT.address}`,
+                    `search_result_account_${addressOf(SEARCH_ACCOUNT)}`,
                 ),
             ).toBeTruthy()
         })
@@ -120,26 +123,24 @@ describe('Flow: Global search', () => {
         const otherAccount: WalletAccount = {
             id: 'other-account-1',
             custody: { kind: 'watch' },
-            address: HD_TEST_ADDRESS,
+            chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'unrelated',
         }
         useAccountsStore.getState().setAccounts([otherAccount, SEARCH_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(otherAccount.address)
+        useAccountsStore.getState().setSelectedAccountId(otherAccount.id)
 
         renderWithNavigation(SearchScreen, 'Search')
 
         typeQuery(SHARED_QUERY)
 
         const accountRow = await screen.findByTestId(
-            `search_result_account_${SEARCH_ACCOUNT.address}`,
+            `search_result_account_${addressOf(SEARCH_ACCOUNT)}`,
         )
         fireEvent.click(accountRow)
 
         await waitFor(() => {
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                SEARCH_ACCOUNT.address,
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                SEARCH_ACCOUNT.id,
             )
         })
     })
@@ -172,17 +173,15 @@ describe('Flow: Global search', () => {
         const nftHolder: WalletAccount = {
             id: 'nft-holder-1',
             custody: { kind: 'watch' },
-            address: HD_TEST_ADDRESS,
+            chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'nft holder',
         }
         useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT, nftHolder])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SEARCH_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
         await seedAlgoAsset()
         await seedAssets([NFT_TEST_ASSET])
         await insertAssetHolding({
-            accountAddress: nftHolder.address,
+            accountAddress: addressOf(nftHolder),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '1',
@@ -198,8 +197,8 @@ describe('Flow: Global search', () => {
         fireEvent.click(assetRow)
 
         await waitFor(() => {
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                nftHolder.address,
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                nftHolder.id,
             )
         })
     })
@@ -214,7 +213,7 @@ describe('Flow: Global search', () => {
         await waitFor(() => {
             expect(
                 screen.queryByTestId(
-                    `search_result_account_${SEARCH_ACCOUNT.address}`,
+                    `search_result_account_${addressOf(SEARCH_ACCOUNT)}`,
                 ),
             ).toBeNull()
         })

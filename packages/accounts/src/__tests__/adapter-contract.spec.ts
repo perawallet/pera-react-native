@@ -13,18 +13,29 @@
 // @vitest-environment node
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     FIXTURE_CHAIN_ID,
     fixtureCodec,
 } from '@perawallet/wallet-core-chain-contract/testing'
-import type { AccountsChainAdapter } from '../chain-adapter'
+import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
+import type {
+    AccountsChainAdapter,
+    MintedAccount,
+    SingleKeyAccountOps,
+} from '../chain-adapter'
+import { buildAccount } from '../credentials'
 import { InvalidBip44PathError } from '../errors'
-import { DerivationTypes, type WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 import { canSignDirectly } from '../utils'
-import { accountsContractTests } from './adapter-contract'
+import {
+    accountsContractTests,
+    type AccountsContractFixtures,
+} from './adapter-contract'
 
-// A second chain with no rekey, quantum or single-key accounts, so the
-// contract's refusal branches run in this package rather than only in a chain's.
+// A second chain with no rekey or single-key accounts, so the contract's
+// refusal branches run in this package rather than only in a chain's. Its key
+// kind, copy and wire values are its own.
 const ORIGIN = 'https://fixturehex.test'
 const NATIVE_ASSET_ID = 'fx'
 const HELD_ASSET_ID = 'token-1'
@@ -69,11 +80,7 @@ const fixtureAdapter: AccountsChainAdapter = {
             observedRound: null,
         }
     },
-    toAccountInformationAddress: () => {
-        throw new Error('read deferred with the chain state model')
-    },
-    fetchAccountInformation: () =>
-        Promise.reject(new Error('read deferred with the chain state model')),
+    toChainState: () => ({ family: 'evm', nonce: { latest: 0, pending: 0 } }),
     accountExists: async address => (await getAccount(address)) !== null,
     checkActivity: async addresses =>
         new Map(
@@ -96,6 +103,45 @@ const fixtureAdapter: AccountsChainAdapter = {
             Uint8Array.from([account, keyIndex, ...rootKey.subarray(0, 30)]),
     hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
         `${seedKeyId}-fx-${account}-${keyIndex}`,
+    localKeyKinds: [
+        {
+            seed: 'bip39',
+            signingScheme: 'secp256k1',
+            isHd: true,
+            mnemonicWordCounts: [12, 24],
+            isAutoDetected: true,
+        },
+    ],
+    duplicateRank: account => (account.custody.kind === 'watch' ? 0 : 1),
+    presentation: {
+        describe: account => ({
+            kindId: `fx-${account.custody.kind}`,
+            labelKey: `fixturehex.${account.custody.kind}`,
+            infoTitleKey: `fixturehex.${account.custody.kind}.title`,
+            infoBodyKey: `fixturehex.${account.custody.kind}.body`,
+            glyph: `fx/${account.custody.kind}`,
+            analyticsKind: `fx_${account.custody.kind}`,
+        }),
+        kindGlyph: kindId =>
+            kindId.startsWith('fx-') ? `fx/${kindId.slice(3)}` : undefined,
+        transitionLabel: () => ({
+            labelKey: 'fixturehex.transition',
+            signerKey: 'fixturehex.transition.signer',
+            descriptionKey: 'fixturehex.transition.body',
+        }),
+    },
+    deviceAccountType: account =>
+        account.custody.kind === 'watch' ? null : 'fx-account',
+    decodeLegacyRecord: raw => {
+        if (typeof raw !== 'object' || raw === null) return undefined
+        const { fxAddress } = raw as { fxAddress?: unknown }
+        return typeof fxAddress === 'string'
+            ? {
+                  custody: { kind: 'watch' },
+                  chains: { [FIXTURE_CHAIN_ID]: { address: fxAddress } },
+              }
+            : undefined
+    },
     resolveSigner: (account, _accounts) =>
         canSignDirectly(account)
             ? { kind: 'ok', signer: account }
@@ -126,15 +172,24 @@ const fixtureAdapter: AccountsChainAdapter = {
 const walletAccount = (
     id: string,
     address: string,
-    type: 'algo25' | 'watch',
+    custody: 'local' | 'watch',
 ): WalletAccount =>
-    type === 'watch'
-        ? { id, address, custody: { kind: 'watch' } }
+    custody === 'watch'
+        ? {
+              id,
+              custody: { kind: 'watch' },
+              chains: { [FIXTURE_CHAIN_ID]: { address } },
+          }
         : {
               id,
-              address,
-              custody: { kind: 'local', seed: 'algo25' },
-              keyPairId: `${id}-key`,
+              custody: {
+                  kind: 'local',
+                  seed: 'bip39',
+                  hd: { account: 0, keyIndex: 0 },
+              },
+              chains: {
+                  [FIXTURE_CHAIN_ID]: { address, keyPairId: `${id}-key` },
+              },
           }
 
 const account = (address: string, body: FixtureAccount) =>
@@ -144,7 +199,7 @@ const missing = (address: string) =>
         HttpResponse.json({}, { status: 404 }),
     )
 
-accountsContractTests(() => fixtureAdapter, {
+const fixtures: AccountsContractFixtures = {
     scope: { chainId: FIXTURE_CHAIN_ID, networkId: 'mainnet' },
     codec: fixtureCodec,
     funded: {
@@ -174,19 +229,83 @@ accountsContractTests(() => fixtureAdapter, {
         ),
     ],
     signers: {
-        signing: walletAccount('signing', FUNDED, 'algo25'),
+        signing: walletAccount('signing', FUNDED, 'local'),
         watch: walletAccount('watch', EMPTY, 'watch'),
     },
     rootKey: new Uint8Array(64).fill(1),
     hdPath: {
-        details: {
-            account: 1,
-            change: 0,
-            keyIndex: 3,
-            derivationType: DerivationTypes.Peikert,
-        },
+        details: { account: 1, keyIndex: 3 },
         matching: "m/44'/9999'/1'/0/3",
         mismatched: "m/44'/9999'/1'/0/4",
         malformed: "m/44'/60'/1'/0/3",
     },
+}
+
+accountsContractTests(() => fixtureAdapter, fixtures)
+
+// The same chain with a single-key kind, so the contract's creation and import
+// cases run here too. Keys come from `kmsCore`, which the suite stubs.
+const SINGLE_KEY_CHAIN_ID = 'fixturesk' as ChainId
+
+const mintSingleKey = async (
+    request: { seed: SeedScheme; id?: string; mnemonicIndices?: Uint16Array },
+    networkId: string,
+): Promise<MintedAccount> => {
+    const minted = await kmsCore.createAlgo25Key({
+        id: request.id,
+        mnemonicIndices: request.mnemonicIndices,
+    })
+    const address = fixtureCodec.fromPublicKey(minted.publicKey, {
+        scheme: 'ed25519',
+        networkId,
+    })
+    return {
+        account: buildAccount({
+            custody: { kind: 'local', seed: SeedScheme.Algo25 },
+            chainId: SINGLE_KEY_CHAIN_ID,
+            chains: {
+                [SINGLE_KEY_CHAIN_ID]: {
+                    address,
+                    keyPairId: minted.signKeyId,
+                },
+            },
+        }),
+        seedKeyId: minted.seedKey.id,
+        isNewSeed: true,
+    }
+}
+
+const singleKeyAccounts: SingleKeyAccountOps = {
+    create: (request, scope) => mintSingleKey(request, scope.networkId),
+    importMnemonic: async ({ seed, mnemonicIndices }, scope, save) => {
+        const minted = await mintSingleKey(
+            { seed, mnemonicIndices },
+            scope.networkId,
+        )
+        await save(minted)
+        return minted.account
+    },
+    findAlternateImportKinds: async () => [],
+}
+
+const singleKeyFixtureAdapter: AccountsChainAdapter = {
+    ...fixtureAdapter,
+    chainId: SINGLE_KEY_CHAIN_ID,
+    localKeyKinds: [
+        ...fixtureAdapter.localKeyKinds,
+        {
+            seed: SeedScheme.Algo25,
+            signingScheme: 'ed25519',
+            isHd: false,
+            mnemonicWordCounts: [25],
+            isAutoDetected: true,
+        },
+    ],
+    singleKeyAccounts,
+}
+
+accountsContractTests(() => singleKeyFixtureAdapter, {
+    ...fixtures,
+    scope: { chainId: SINGLE_KEY_CHAIN_ID, networkId: 'mainnet' },
+    singleKey: { mnemonicIndices: new Uint16Array(25), handlers: [] },
 })

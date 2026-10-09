@@ -12,7 +12,6 @@
 
 // @vitest-environment node
 // XHD's noble checks reject jsdom's Uint8Array realm.
-import { describe, expect, test } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
@@ -22,12 +21,9 @@ import {
 } from '../../test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
-import {
-    DerivationTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
+import { algo25Account, watchAccount } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
 import { seedAuthority } from './seedAuthority'
@@ -46,19 +42,12 @@ const QUANTUM_CANONICAL =
 const QUANTUM_LEGACY =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
 
-const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
-    id,
-    address,
-    custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: `${id}-key`,
-    ...extra,
-})
-
-const delegatedWatch = (address: string): WalletAccount => ({
-    id: 'rekeyed',
-    address,
-    custody: { kind: 'watch' },
-})
+const keyed = (id: string, address: string, rekeyAddress?: string) =>
+    algo25Account(address, {
+        id,
+        keyPairId: `${id}-key`,
+        ...(rekeyAddress ? { rekeyAddress } : {}),
+    })
 
 accountsContractTests(() => algorandAccountsAdapter, {
     scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
@@ -107,12 +96,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
     ],
     rootKey: fromSeed(new Uint8Array(64).fill(1)),
     hdPath: {
-        details: {
-            account: 1,
-            change: 0,
-            keyIndex: 3,
-            derivationType: DerivationTypes.Peikert,
-        },
+        details: { account: 1, keyIndex: 3 },
         matching: "m/44'/283'/1'/0/3",
         mismatched: "m/44'/283'/1'/0/4",
         malformed: "m/44'/60'/1'/0/3",
@@ -128,16 +112,15 @@ accountsContractTests(() => algorandAccountsAdapter, {
     },
     signers: {
         signing: keyed('signing', SIGNER),
-        watch: {
-            id: 'watch',
-            address: EMPTY,
-            custody: { kind: 'watch' },
-        },
+        watch: watchAccount(EMPTY, { id: 'watch' }),
     },
     rekeyed: {
         accounts: {
-            account: delegatedWatch(REKEYED),
-            auth: keyed('auth', FUNDED),
+            account: watchAccount(REKEYED, {
+                id: 'rekeyed',
+                rekeyAddress: FUNDED,
+            }),
+            auth: keyed('auth', FUNDED, EMPTY),
             next: keyed('next', EMPTY),
         },
         seedAuthority: (address, authAddress) =>
@@ -150,22 +133,4 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ],
     },
-})
-
-describe('algorandAccountsAdapter.toAccountInformationAddress', () => {
-    test('builds the address an AccountInformation carries', () => {
-        const address =
-            algorandAccountsAdapter.toAccountInformationAddress(FUNDED)
-
-        expect(address.toString()).toBe(FUNDED)
-        expect(address.publicKey).toHaveLength(32)
-    })
-
-    test('throws for an address that is not valid', () => {
-        expect(() =>
-            algorandAccountsAdapter.toAccountInformationAddress(
-                'not-an-address',
-            ),
-        ).toThrow()
-    })
 })

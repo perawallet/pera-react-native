@@ -33,7 +33,7 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 import { useCardFundingAccount } from '../useCardFundingAccount'
 
 const localAccount = {
-    address: 'LOCAL',
+    chains: { algorand: { address: 'LOCAL' } },
     custody: { kind: 'local', seed: 'algo25' },
 } as WalletAccount
 
@@ -41,7 +41,10 @@ describe('useCardFundingAccount', () => {
     beforeEach(() => {
         mocks.connectedAddress = 'LOCAL'
         vi.mocked(useFindAccountByAddress).mockImplementation(
-            address => [localAccount].find(a => a.address === address) ?? null,
+            address =>
+                [localAccount].find(
+                    a => a.chains.algorand?.address === address,
+                ) ?? null,
         )
     })
 

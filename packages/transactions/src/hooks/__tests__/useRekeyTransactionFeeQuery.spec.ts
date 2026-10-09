@@ -50,23 +50,25 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
 
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'q1',
-        address: 'QADDR',
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
+const quantum = (
+    address = 'QADDR',
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => ({
+    id: 'q1',
+    custody: { kind: 'local', seed: 'quantum' },
+    chains: { algorand: { address, keyPairId: 'kp-quantum' } },
+    ...overrides,
+})
 
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'a1',
-        address: 'SRC',
-        custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-algo25',
-        ...overrides,
-    }) as WalletAccount
+const algo25 = (
+    address = 'SRC',
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => ({
+    id: 'a1',
+    custody: { kind: 'local', seed: 'algo25' },
+    chains: { algorand: { address, keyPairId: 'kp-algo25' } },
+    ...overrides,
+})
 
 const buildWrapper = () => {
     const queryClient = new QueryClient({
@@ -141,6 +143,7 @@ describe('useRekeyTransactionFeeQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
     })
@@ -182,6 +185,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.feeAlgos?.toString()).toBe('0.002')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
     })
@@ -271,7 +275,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     })
 
     it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
-        const accounts = [quantum({ address: 'SRC' })]
+        const accounts = [quantum('SRC')]
         mockUseAllAccounts.mockReturnValue(accounts)
         // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
@@ -288,7 +292,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         expect(mockBuildRekeyTx).toHaveBeenCalledWith(
             expect.objectContaining({ minFee: 3000n }),
         )
-        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
             senderAddress: 'SRC',
             accounts,
             suggestedMinFee: 1000n,
@@ -318,8 +322,8 @@ describe('useRekeyTransactionFeeQuery', () => {
         // itself performs the auth-chain walk (getSignerFor); here we assert
         // the hook forwards the full accounts array and applies the guard.
         const accounts = [
-            algo25({ address: 'SRC' }),
-            quantum({ address: 'QADDR' }),
+            algo25('SRC', { rekeyAddress: 'QADDR' }),
+            quantum('QADDR'),
         ]
         mockUseAllAccounts.mockReturnValue(accounts)
         mockResolveMinFeeForSender.mockReturnValue(3000n)
@@ -334,6 +338,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.feeAlgos?.toString()).toBe('0.003')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            'algorand',
             expect.objectContaining({ senderAddress: 'SRC', accounts }),
         )
     })

@@ -30,16 +30,23 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: navigateMock }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: (
-        selector: (state: { accounts: { address: string }[] }) => unknown,
-    ) => selector({ accounts: [{ address: 'A' }, { address: 'B' }] }),
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const account = (address: string) => ({
+        id: address,
+        custody: { kind: 'watch' },
+        chains: { algorand: { address } },
+    })
+    return {
+        useAccountsStore: (
+            selector: (state: { accounts: unknown[] }) => unknown,
+        ) => selector({ accounts: [account('A'), account('B')] }),
+    }
+})
 
 vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
         isBackedUp: isBackedUpMock,
-        notBackedUpAccounts: [{ address: 'B' }],
+        notBackedUpAccounts: [{ id: 'B' }],
         availableFromBackup: ['GONE', 'ALSO_GONE'],
         isBusy: (address: string) => address === 'B',
         backUpAccount: backUpAccountMock,
@@ -54,7 +61,9 @@ describe('useCloudBackupAccounts', () => {
     it('lists the device accounts alongside the counts awaiting review', () => {
         const { result } = renderHook(() => useCloudBackupAccounts())
 
-        expect(result.current.accounts.map(a => a.address)).toEqual(['A', 'B'])
+        expect(
+            result.current.accounts.map(a => a.chains.algorand?.address),
+        ).toEqual(['A', 'B'])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
         expect(result.current.notBackedUpCount).toBe(1)

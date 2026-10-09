@@ -97,7 +97,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useSelectedAccount: vi.fn(() => ({
-            address: 'test-address',
+            chains: { algorand: { address: 'test-address' } },
             name: 'Test',
             custody: { kind: 'local', seed: 'algo25' },
         })),
@@ -319,12 +319,12 @@ describe('useTransactionProcessingScreen', () => {
         // processing copy must match the machine-driven overlay.
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
-            address: 'SRC',
+            chains: { algorand: { address: 'SRC' } },
             custody: { kind: 'watch' },
         }
         seedAuthority('SRC', 'LEDGER_AUTH')
         const ledgerAuth = {
-            address: 'LEDGER_AUTH',
+            chains: { algorand: { address: 'LEDGER_AUTH' } },
             custody: {
                 kind: 'hardware',
                 device: {
@@ -334,13 +334,6 @@ describe('useTransactionProcessingScreen', () => {
                     transportType: 'ble',
                 },
                 accountIndex: 0,
-            },
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
             },
         }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
@@ -355,9 +348,8 @@ describe('useTransactionProcessingScreen', () => {
     it('keeps non-hardware copy for a plain local-key sender', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
-            address: 'SRC',
+            chains: { algorand: { address: 'SRC', keyPairId: 'kp' } },
             custody: { kind: 'local', seed: 'algo25' },
-            keyPairId: 'kp',
         }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
         vi.mocked(useAllAccounts).mockReturnValue([sender] as never)

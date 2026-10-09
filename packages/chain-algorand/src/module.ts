@@ -15,6 +15,7 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from './capability-defaults'
+import { accountPresentationI18nKeys } from './accounts/presentation'
 import { algorandDescriptor } from './descriptor'
 import { registerChain } from './register'
 
@@ -24,5 +25,5 @@ export const chainModule: ChainModule = {
     capabilityRestrictions: algorandCapabilityRestrictions,
     // The adapters are module-level instances that don't read the context yet.
     register: _ctx => registerChain(),
-    i18nKeys: () => [],
+    i18nKeys: accountPresentationI18nKeys,
 }

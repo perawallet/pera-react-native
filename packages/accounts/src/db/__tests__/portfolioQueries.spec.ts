@@ -197,6 +197,7 @@ describe('account portfolio queries', () => {
             const funded = await getAccountFundedNetworks({
                 db,
                 accountAddress: 'ADDR1',
+                chainId: 'algorand',
             })
 
             expect(funded).toEqual(['algorand/testnet'])
@@ -222,6 +223,7 @@ describe('account portfolio queries', () => {
             const funded = await getAccountFundedNetworks({
                 db,
                 accountAddress: 'ADDR1',
+                chainId: 'algorand',
             })
 
             expect(funded).toEqual([])

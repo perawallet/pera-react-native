@@ -53,10 +53,9 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({
-        address: 'SENDERADDR',
-    })),
-    useAccountInformationQuery: vi.fn(() => ({
-        data: { amount: 10_000_000n, minBalance: 100_000n },
+        id: 'sender',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'SENDERADDR' } },
     })),
 }))
 
@@ -84,6 +83,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         data: null,
         isLoading: false,
     })),
+}))
+
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -135,6 +141,11 @@ vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSenderBalances: vi.fn(() => ({
+        amount: 10_000_000n,
+        minBalance: 100_000n,
+        hasOptedInAssets: false,
+    })),
 }))
 
 const mockSummary = {
@@ -166,14 +177,16 @@ describe('useARC59SendSummaryScreen', () => {
         // call history but not return values set via `mockReturnValue`
         const { useArc59SendSummaryQuery } =
             await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
-        const { useAccountInformationQuery } =
-            await import('@perawallet/wallet-core-accounts')
+        const { useSenderBalances } =
+            await import('@modules/transactions/hooks')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: null,
             isLoading: true,
         })
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 10_000_000n, minBalance: 100_000n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 10_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
     })
 
@@ -280,14 +293,16 @@ describe('useARC59SendSummaryScreen', () => {
     it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
         const { useArc59SendSummaryQuery } =
             await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
-        const { useAccountInformationQuery } =
-            await import('@perawallet/wallet-core-accounts')
+        const { useSenderBalances } =
+            await import('@modules/transactions/hooks')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: mockSummary,
             isLoading: false,
         })
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 250_000n, minBalance: 100_000n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 250_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
 
         renderHook(() => useARC59SendSummaryScreen())

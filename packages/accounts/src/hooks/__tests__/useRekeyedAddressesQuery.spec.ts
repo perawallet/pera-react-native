@@ -28,10 +28,6 @@ const mocks = {
     },
 }
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
-
 const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
@@ -60,9 +56,12 @@ describe('useRekeyedAddressesQuery', () => {
     it('returns the addresses rekeyed to the given address', async () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue(['REKEYED1', 'REKEYED2'])
 
-        const { result } = renderHook(() => useRekeyedAddressesQuery('ADDR'), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRekeyedAddressesQuery('ADDR', MAINNET_SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() =>
             expect(result.current.rekeyedAddresses).toEqual([
@@ -78,9 +77,12 @@ describe('useRekeyedAddressesQuery', () => {
     })
 
     it('is disabled when address is empty', () => {
-        const { result } = renderHook(() => useRekeyedAddressesQuery(''), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRekeyedAddressesQuery('', MAINNET_SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         expect(result.current.rekeyedAddresses).toBeUndefined()
         expect(result.current.isLoading).toBe(false)

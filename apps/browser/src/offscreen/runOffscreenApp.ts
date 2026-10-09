@@ -34,7 +34,11 @@ import {
     initializeSyncService,
     useSyncCursorStore,
 } from '@perawallet/wallet-core-background'
-import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    canSignWith,
+    chainAccountOf,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
@@ -59,8 +63,9 @@ import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
-// zustand persist hydrates once at import and this context is long-lived, so
-// writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
+// Each store hydrates once (the accounts store when registerChainAdapters has
+// registered the chains, the others at import) and this context is long-lived,
+// so writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
@@ -150,17 +155,16 @@ export const runOffscreenApp = async ({
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => {
                 const { accounts } = useAccountsStore.getState()
-                return accounts.flatMap(account =>
-                    account.address &&
-                    canSignWith(account, accounts, ALGORAND_CHAIN_ID)
-                        ? [
-                              {
-                                  address: account.address,
-                                  name: account.name ?? account.address,
-                              },
-                          ]
-                        : [],
-                )
+                return accounts.flatMap(account => {
+                    const address = chainAccountOf(
+                        account,
+                        ALGORAND_CHAIN_ID,
+                    )?.address
+                    return address &&
+                        canSignWith(account, accounts, ALGORAND_CHAIN_ID)
+                        ? [{ address, name: account.name ?? address }]
+                        : []
+                })
             },
         }),
     )
@@ -168,9 +172,13 @@ export const runOffscreenApp = async ({
         registry,
         network: () => useNetworkStore.getState().network,
         knownAddresses: () =>
-            useAccountsStore
-                .getState()
-                .accounts.map(account => account.address),
+            useAccountsStore.getState().accounts.flatMap(account => {
+                const address = chainAccountOf(
+                    account,
+                    ALGORAND_CHAIN_ID,
+                )?.address
+                return address ? [address] : []
+            }),
         requestApproval: sendConnectionApprovalRequest,
         broadcastEvent: broadcastConnectionsEvent,
     })

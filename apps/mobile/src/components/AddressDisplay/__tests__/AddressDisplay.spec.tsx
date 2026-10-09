@@ -23,23 +23,20 @@ const mockUseAllAccounts = vi.fn(() => [] as unknown[])
 const mockFindContacts = vi.fn(() => [] as unknown[])
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    accountType: ({ custody }: { custody: { kind: string; seed?: string } }) =>
-        custody.kind !== 'local'
-            ? custody.kind
-            : custody.seed === 'bip39'
-              ? 'hdWallet'
-              : custody.seed,
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
+    useAccountPresentation: () => null,
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
     useRekeyAccount: () => null,
     useSignerFor: () => null,
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
     isMultisigAccount: () => false,
     isRekeyedAccount: () => false,
 }))
@@ -275,7 +272,7 @@ describe('AddressDisplay', () => {
             mockUseAllAccounts.mockReturnValue([
                 {
                     name: 'My Wallet',
-                    address,
+                    chains: { algorand: { address } },
                     custody: { kind: 'watch' },
                 },
             ])
@@ -317,7 +314,7 @@ describe('AddressDisplay', () => {
             mockUseAllAccounts.mockReturnValue([
                 {
                     name: 'My Wallet',
-                    address,
+                    chains: { algorand: { address } },
                     custody: { kind: 'watch' },
                 },
             ])

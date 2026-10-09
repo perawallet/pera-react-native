@@ -20,7 +20,7 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockErrorToast = vi.fn()
@@ -60,9 +60,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        useSelectedAccountAddress: () => ({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        useSelectedAccountId: () => ({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         }),
         useAccountsStore: (selector: (state: unknown) => unknown) =>
             selector({ setAccounts: mockSetAccounts }),
@@ -84,6 +84,7 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
             threshold: number
             addresses: string[]
         }) => mockDeriveMultisigAddress(version, threshold, addresses),
+        toNative: (multisig: unknown) => ({ family: 'algorand', multisig }),
     }),
 }))
 
@@ -189,14 +190,21 @@ describe('useNameMultisigScreen', () => {
     it('increments default name based on existing multisig account count', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'M1',
+                chains: {
+                    algorand: {
+                        address: 'M1',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['A', 'B'],
+                                version: 1,
+                            },
+                        },
+                    },
+                },
                 name: 'Coffee fund',
                 custody: { kind: 'multisig' },
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['A', 'B'],
-                    version: 1,
-                },
             } as WalletAccount,
         ])
 
@@ -208,7 +216,7 @@ describe('useNameMultisigScreen', () => {
     it('skips taken "#N" slots regardless of account type', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'W1',
+                chains: { algorand: { address: 'W1' } },
                 name: 'Shared Account #1',
                 custody: { kind: 'watch' },
             } as WalletAccount,
@@ -232,7 +240,7 @@ describe('useNameMultisigScreen', () => {
     it('allows a name already used by another account (names need not be unique)', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'A',
+                chains: { algorand: { address: 'A' } },
                 name: 'my account',
                 custody: { kind: 'watch' },
             } as WalletAccount,
@@ -260,7 +268,7 @@ describe('useNameMultisigScreen', () => {
     it('handleFinish calls mutation, updates accounts, selects address, plays confetti, exits', async () => {
         const existing = [
             {
-                address: 'X',
+                chains: { algorand: { address: 'X' } },
                 name: 'Other',
                 custody: { kind: 'watch' },
             } as WalletAccount,
@@ -287,13 +295,7 @@ describe('useNameMultisigScreen', () => {
             ...existing,
             expect.objectContaining({
                 custody: { kind: 'multisig' },
-                address: 'MULTISIG_ADDR',
                 name: 'Shared Account #1',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['ADDR1', 'ADDR2'],
-                    version: 1,
-                },
                 chains: {
                     algorand: {
                         address: 'MULTISIG_ADDR',
@@ -309,8 +311,8 @@ describe('useNameMultisigScreen', () => {
                 },
             }),
         ])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'MULTISIG_ADDR',
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+            mockSetAccounts.mock.calls[0][0].at(-1).id,
         )
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
@@ -324,14 +326,21 @@ describe('useNameMultisigScreen', () => {
         // of the algo25/HD duplicate-prevention behavior.)
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'MULTISIG_ADDR',
+                chains: {
+                    algorand: {
+                        address: 'MULTISIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR1', 'ADDR2'],
+                                version: 1,
+                            },
+                        },
+                    },
+                },
                 name: 'Existing Shared',
                 custody: { kind: 'multisig' },
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['ADDR1', 'ADDR2'],
-                    version: 1,
-                },
             } as WalletAccount,
         ])
 
@@ -349,7 +358,7 @@ describe('useNameMultisigScreen', () => {
         // for an existing address.
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
         // Loading flag is reset (the `finally` block runs after the early
         // return) so the user can correct their input and try again.
@@ -471,7 +480,7 @@ describe('useNameMultisigScreen', () => {
         it('handleFinish verifies the derived address, then saves the imported account', async () => {
             const existing = [
                 {
-                    address: 'X',
+                    chains: { algorand: { address: 'X' } },
                     name: 'Other',
                     custody: { kind: 'watch' },
                 } as WalletAccount,
@@ -501,16 +510,23 @@ describe('useNameMultisigScreen', () => {
                 ...existing,
                 expect.objectContaining({
                     custody: { kind: 'multisig' },
-                    address: 'IMPORTED_SHARED_ADDR',
-                    multisigDetails: {
-                        threshold: 3,
-                        addresses: ['IMP1', 'IMP2', 'IMP3'],
-                        version: 1,
+                    chains: {
+                        algorand: {
+                            address: 'IMPORTED_SHARED_ADDR',
+                            native: {
+                                family: 'algorand',
+                                multisig: {
+                                    threshold: 3,
+                                    addresses: ['IMP1', 'IMP2', 'IMP3'],
+                                    version: 1,
+                                },
+                            },
+                        },
                     },
                 }),
             ])
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'IMPORTED_SHARED_ADDR',
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+                mockSetAccounts.mock.calls[0][0].at(-1).id,
             )
             expect(mockExitAccountFlow).toHaveBeenCalled()
         })
@@ -518,14 +534,21 @@ describe('useNameMultisigScreen', () => {
         it('handleFinish blocks when the imported address is already in the wallet', async () => {
             mockUseAllAccounts.mockReturnValue([
                 {
-                    address: 'IMPORTED_SHARED_ADDR',
+                    chains: {
+                        algorand: {
+                            address: 'IMPORTED_SHARED_ADDR',
+                            native: {
+                                family: 'algorand',
+                                multisig: {
+                                    threshold: 3,
+                                    addresses: ['IMP1', 'IMP2', 'IMP3'],
+                                    version: 1,
+                                },
+                            },
+                        },
+                    },
                     name: 'Existing Shared',
                     custody: { kind: 'multisig' },
-                    multisigDetails: {
-                        threshold: 3,
-                        addresses: ['IMP1', 'IMP2', 'IMP3'],
-                        version: 1,
-                    },
                 } as WalletAccount,
             ])
 
@@ -563,7 +586,7 @@ describe('useNameMultisigScreen', () => {
             )
             expect(mockMutateAsync).not.toHaveBeenCalled()
             expect(mockSetAccounts).not.toHaveBeenCalled()
-            expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
             expect(mockExitAccountFlow).not.toHaveBeenCalled()
             expect(result.current.isCreating).toBe(false)
         })

@@ -88,14 +88,7 @@ const ledgerAccount: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: LEDGER_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'test-device-id',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 // Captured from the host so the test can enqueue requests at controlled times.

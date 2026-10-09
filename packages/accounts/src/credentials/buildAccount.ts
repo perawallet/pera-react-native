@@ -11,23 +11,12 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
-import {
-    generateOrderedUniqueId,
-    type Network,
-} from '@perawallet/wallet-core-shared'
-import { accountsChainAdapters } from '../chain-adapter'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { AccountError } from '../errors'
-import {
-    type AccountChains,
-    type AccountCustody,
-    type Algo25Account,
-    type HardwareWalletAccount,
-    type HDWalletAccount,
-    type MultiSigAccount,
-    type QuantumAccount,
-    type WalletAccount,
-    type WatchAccount,
+import type {
+    AccountChains,
+    AccountCustody,
+    AccountWithCustody,
 } from '../models'
 
 export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
@@ -35,47 +24,16 @@ export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
     id?: string
     name?: string
     custody: C
-    /** The chain the account is created on: its adapter writes the legacy details, and its entry sets the top-level `address`. */
+    /** The chain the account is created on: it must have an entry there, with a key when the custody is local. */
     chainId: ChainId
     chains: AccountChains
-    rekeyAddress?: string
-    rekeyAddressByNetwork?: Partial<Record<Network, string>>
 }
 
-/** The legacy account variant a custody maps onto. */
-export type AccountForCustody<C extends AccountCustody> = C extends {
-    kind: 'hardware'
-}
-    ? HardwareWalletAccount
-    : C extends { kind: 'multisig' }
-      ? MultiSigAccount
-      : C extends { kind: 'watch' }
-        ? WatchAccount
-        : C extends { seed: typeof SeedScheme.Bip39 }
-          ? HDWalletAccount
-          : C extends { seed: typeof SeedScheme.Quantum }
-            ? QuantumAccount
-            : C extends { seed: typeof SeedScheme.Algo25 }
-              ? Algo25Account
-              : WalletAccount
-
-/**
- * Builds a {@link WalletAccount} from its custody and per-chain entries. The
- * top-level `address` and legacy details objects are derived from them, so
- * they can't disagree.
- */
+/** Builds a `WalletAccount` from its custody and per-chain entries. */
 export const buildAccount = <C extends AccountCustody>(
     input: BuildAccountInput<C>,
-): AccountForCustody<C> => {
-    const {
-        id,
-        name,
-        custody,
-        chainId,
-        chains,
-        rekeyAddress,
-        rekeyAddressByNetwork,
-    } = input
+): AccountWithCustody<C['kind']> => {
+    const { id, name, custody, chainId, chains } = input
     const entry = chains[chainId]
     if (!entry) {
         throw new AccountError(`The account has no entry on ${chainId}`)
@@ -86,22 +44,7 @@ export const buildAccount = <C extends AccountCustody>(
     return {
         id: id ?? generateOrderedUniqueId(),
         ...(name !== undefined ? { name } : {}),
-        address: entry.address,
-        ...(custody.kind === 'local' ? { keyPairId: entry.keyPairId } : {}),
-        ...(custody.kind === 'hardware'
-            ? {
-                  hardwareDetails: {
-                      ...custody.device,
-                      accountIndex: custody.accountIndex,
-                  },
-              }
-            : {}),
-        ...accountsChainAdapters.get(chainId).legacyDetails(custody, entry),
-        ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
-        ...(rekeyAddressByNetwork !== undefined
-            ? { rekeyAddressByNetwork }
-            : {}),
         custody,
         chains,
-    } as unknown as AccountForCustody<C>
+    } as unknown as AccountWithCustody<C['kind']>
 }

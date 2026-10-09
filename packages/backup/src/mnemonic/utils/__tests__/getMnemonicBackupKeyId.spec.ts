@@ -10,35 +10,50 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { beforeEach, describe, test, expect, vi } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { getMnemonicBackupKeyId } from '../getMnemonicBackupKeyId'
 
 describe('getMnemonicBackupKeyId', () => {
+    beforeEach(() => {
+        backupChainAdapters.reset()
+        backupChainAdapters.register(fakeBackupAdapter())
+    })
+
+    test('asks the chain adapter for the id', () => {
+        const mnemonicBackupKeyId = vi.fn(() => 'chain-id')
+        backupChainAdapters.reset()
+        backupChainAdapters.register(fakeBackupAdapter({ mnemonicBackupKeyId }))
+        const account: WalletAccount = {
+            id: 'acc',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'ADDR' } },
+        }
+
+        expect(getMnemonicBackupKeyId(account)).toBe('chain-id')
+        expect(mnemonicBackupKeyId).toHaveBeenCalledWith(account)
+    })
+
     test('returns keyPairId for HDWallet accounts (siblings share one backup state)', () => {
         const account: WalletAccount = {
+            id: 'acc-1',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'ADDR_HD',
-            keyPairId: 'kp-1',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
+            chains: { algorand: { address: 'ADDR_HD', keyPairId: 'kp-1' } },
         }
         expect(getMnemonicBackupKeyId(account)).toBe('kp-1')
     })
 
     test('returns keyPairId for Algo25 accounts', () => {
         const account: WalletAccount = {
+            id: 'acc-2',
             custody: { kind: 'local', seed: 'algo25' },
-            address: 'ADDR_25',
-            keyPairId: 'kp-2',
+            chains: { algorand: { address: 'ADDR_25', keyPairId: 'kp-2' } },
         }
         expect(getMnemonicBackupKeyId(account)).toBe('kp-2')
     })
@@ -47,19 +62,21 @@ describe('getMnemonicBackupKeyId', () => {
         const account: WalletAccount = {
             id: 'acc-quantum',
             custody: { kind: 'local', seed: 'quantum' },
-            address: 'ADDR_Q',
-            keyPairId: 'kp-quantum',
+            chains: {
+                algorand: { address: 'ADDR_Q', keyPairId: 'kp-quantum' },
+            },
         }
         expect(getMnemonicBackupKeyId(account)).toBe('kp-quantum')
     })
 
     test('returns null for multisig, hardware, watch', () => {
         const multisig: WalletAccount = {
+            id: 'acc-3',
             custody: { kind: 'multisig' },
-            address: 'ADDR_MS',
-            multisigDetails: { threshold: 2, addresses: [], version: 1 },
+            chains: { algorand: { address: 'ADDR_MS' } },
         }
         const hardware: WalletAccount = {
+            id: 'acc-4',
             custody: {
                 kind: 'hardware',
                 device: {
@@ -70,18 +87,12 @@ describe('getMnemonicBackupKeyId', () => {
                 },
                 accountIndex: 0,
             },
-            address: 'ADDR_HW',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'd1',
-                deviceName: 'Ledger',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
+            chains: { algorand: { address: 'ADDR_HW' } },
         }
         const watch: WalletAccount = {
+            id: 'acc-5',
             custody: { kind: 'watch' },
-            address: 'ADDR_WATCH',
+            chains: { algorand: { address: 'ADDR_WATCH' } },
         }
         expect(getMnemonicBackupKeyId(multisig)).toBeNull()
         expect(getMnemonicBackupKeyId(hardware)).toBeNull()

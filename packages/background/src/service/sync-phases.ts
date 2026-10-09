@@ -111,7 +111,8 @@ export const syncAccountsPhase = async (
     const results = await mapWithConcurrency(
         addresses,
         ACCOUNT_FETCH_CONCURRENCY,
-        address => fetchAndPersistAccount(address, network),
+        address =>
+            fetchAndPersistAccount(address, scopeForLegacyNetwork(network)),
     )
     logPhaseFailures(phase, results, network, i => addresses[i])
 

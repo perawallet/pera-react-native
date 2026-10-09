@@ -54,7 +54,11 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -129,7 +133,9 @@ const runRestoreFlow = async () => {
  *  gap between the engine and the mobile hooks fails here rather than on a
  *  device. */
 const startRealSyncManager = () => {
-    const importHook = renderQueryHook(() => useCloudBackupImport())
+    const importHook = renderQueryHook(() =>
+        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+    )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )

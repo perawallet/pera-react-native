@@ -20,7 +20,7 @@ import type {
 import { addressOn } from '../../credentials'
 import { useAccountChainStateStore } from '../../store'
 import type { WalletAccount } from '../../models'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import { testAccount } from '../../__tests__/accountFactory'
 import { useAuthorityOf } from '../useAuthorityOf'
 
 const mainnet: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -61,7 +61,7 @@ describe('useAuthorityOf', () => {
 
     beforeEach(() => {
         useAccountChainStateStore.getState().resetState()
-        account = buildTestAccount('watch')
+        account = testAccount('watch')
         address = addressOn(account, mainnet)!
     })
 

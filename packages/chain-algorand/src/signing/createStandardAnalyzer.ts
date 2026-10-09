@@ -32,6 +32,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { algorandNetworkOf } from '../legacy-network'
+import { algorandAddressOf } from '../accounts/vocabulary'
 
 // The round-trip and genesis errors are user-facing as they are; anything else
 // is an analysis fault.
@@ -54,7 +55,9 @@ export const decodeStandardGroup = async (
             return {
                 totalFees: 0n,
                 transactionSummaries: [],
-                signableAddresses: context.accounts.map(a => a.address),
+                signableAddresses: context.accounts.flatMap(
+                    a => algorandAddressOf(a) ?? [],
+                ),
             }
         }
 
@@ -75,7 +78,7 @@ export const decodeStandardGroup = async (
         // so gate on `group.signerAddress`; `tx.sender` misses ARC-0001
         // `signers` / `authAddr` overrides.
         const signedByUs = context.accounts.some(
-            a => a.address === group.signerAddress,
+            a => algorandAddressOf(a) === group.signerAddress,
         )
         return {
             totalFees: signedByUs

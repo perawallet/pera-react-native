@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useRef } from 'react'
-import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    hdIndexOf,
+    signingKeyOn,
+    type LocalAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     BACKUP_ACCESS_DOMAIN,
     indicesToEntropy,
@@ -70,9 +74,12 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
     const publicKeys = useRef(new Map<string, string>())
 
     return useCallback<SerializeHdResolver>(
-        async (account: HDWalletAccount) => {
-            const seedKeyId = seedIdOf(account.keyPairId)
-            if (!seedKeyId) return null
+        async (account: LocalAccount) => {
+            const adapter = backupAdapterFor()
+            const keyPairId = signingKeyOn(account, adapter.chainId)
+            const index = hdIndexOf(account)
+            const seedKeyId = seedIdOf(keyPairId)
+            if (!keyPairId || !index || !seedKeyId) return null
             try {
                 const seedFirstDerivedAddress = await cached(
                     seedReferences.current,
@@ -81,19 +88,19 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                 )
                 const publicKeyHex = await cached(
                     publicKeys.current,
-                    account.keyPairId,
+                    keyPairId,
                     async () => {
-                        const child = await backupAdapterFor().deriveHdAccount(
+                        const child = await adapter.deriveHdAccount(
                             kmsCore,
                             seedKeyId,
-                            account.hdWalletDetails,
+                            index,
                         )
                         return bytesToHex(child.publicKey)
                     },
                 )
                 const entropyHex = await readEntropyHex(
                     executeWithMnemonic,
-                    account.keyPairId,
+                    keyPairId,
                 )
 
                 const seedHex = await readSeedHex(withExportedKey, seedKeyId)

@@ -27,10 +27,9 @@ import {
     encodeProgramAccount,
     getRekeyedUnsignableReason,
     isSignRequestMultisigUnsignable,
-    legacyPlannerAdapter,
     localKeySignerAdapterFor,
     localKeySignerChainAdapters,
-    plannerAdapterFor,
+    plannerAdapterForScope,
     plannerChainAdapters,
     resolveAllSignerAddresses,
     resolveMinFeeForSender,
@@ -112,21 +111,30 @@ describe('planner chain adapters', () => {
         plannerChainAdapters.reset()
     })
 
-    it('resolves the registered adapter for a legacy network', () => {
+    it("resolves the registered adapter for a scope's chain", () => {
         const adapter = registerFakePlannerAdapter()
 
-        expect(plannerAdapterFor('mainnet')).toBe(adapter)
-        expect(plannerAdapterFor('testnet')).toBe(adapter)
-        expect(legacyPlannerAdapter()).toBe(adapter)
+        expect(
+            plannerAdapterForScope({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBe(adapter)
+        expect(
+            plannerAdapterForScope({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(adapter)
     })
 
     it('throws ChainAdapterNotRegisteredError when no planner is registered', () => {
-        expect(() => plannerAdapterFor('mainnet')).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
-        expect(() => legacyPlannerAdapter()).toThrow(
-            'No planner adapter is registered for chain "algorand"',
-        )
+        expect(() =>
+            plannerAdapterForScope({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toThrow('No planner adapter is registered for chain "algorand"')
     })
 
     it('refuses a second adapter for the same chain', () => {
@@ -137,7 +145,7 @@ describe('planner chain adapters', () => {
         ).toThrow(DuplicateChainAdapterError)
     })
 
-    it('delegates the network-less exports to the registered adapter', () => {
+    it("delegates the chain-keyed exports to that chain's adapter", () => {
         const impact = {
             deltas: [],
             totalFeeMicroAlgos: 7n,
@@ -161,9 +169,9 @@ describe('planner chain adapters', () => {
         const program = new Uint8Array([1])
         const sig = new Uint8Array([2])
 
-        expect(resolveMinFeeForSender(feeParams)).toBe(4000n)
-        expect(computeBalanceImpact([], signable)).toBe(impact)
-        expect(encodeProgramAccount(program, sig, 'A')).toEqual(
+        expect(resolveMinFeeForSender('algorand', feeParams)).toBe(4000n)
+        expect(computeBalanceImpact('algorand', [], signable)).toBe(impact)
+        expect(encodeProgramAccount('algorand', program, sig, 'A')).toEqual(
             new Uint8Array([5]),
         )
 
@@ -205,7 +213,7 @@ describe('multisig members of the planner', () => {
         )
     })
 
-    it('delegates the network-less completion and unsignable checks to the registered planner', async () => {
+    it("delegates completion to the named chain and the unsignable check to the request's chain", async () => {
         const adapter = registerFakePlannerAdapter({
             completeMultisigHandoff: vi.fn().mockResolvedValue(undefined),
             isSignRequestMultisigUnsignable: vi.fn(() => true),
@@ -213,9 +221,9 @@ describe('multisig members of the planner', () => {
         const args = {
             outcome: { kind: 'soft-reject', reason: 'declined' },
             deps: {},
-        } as unknown as Parameters<typeof completeMultisigHandoff>[0]
+        } as unknown as Parameters<typeof completeMultisigHandoff>[1]
 
-        await completeMultisigHandoff(args)
+        await completeMultisigHandoff('algorand', args)
 
         expect(adapter.completeMultisigHandoff).toHaveBeenCalledWith(args)
         expect(isSignRequestMultisigUnsignable({} as never, [])).toBe(true)

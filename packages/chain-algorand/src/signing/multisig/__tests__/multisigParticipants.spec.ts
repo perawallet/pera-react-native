@@ -13,12 +13,12 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const mocks = vi.hoisted(() => ({
     isMultisigAccount: vi.fn(),
     hasSigningKeys: vi.fn(),
     isHardwareWalletAccount: vi.fn(),
-    isQuantumAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -31,7 +31,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         isMultisigAccount: mocks.isMultisigAccount,
         hasSigningKeys: mocks.hasSigningKeys,
         isHardwareWalletAccount: mocks.isHardwareWalletAccount,
-        isQuantumAccount: mocks.isQuantumAccount,
     }
 })
 
@@ -39,27 +38,42 @@ import {
     getLocalParticipants,
     getProposeParticipants,
 } from '../multisigParticipants'
-import { accountType } from '@perawallet/wallet-core-accounts'
+import { algorandAddressOf } from '../../../accounts/vocabulary'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     ({
         custody: { kind: 'multisig' },
-        address: 'MSIG',
-        multisigDetails: { version: 1, threshold, addresses },
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'MSIG',
+                native: {
+                    family: 'algorand',
+                    multisig: { version: 1, threshold, addresses },
+                },
+            },
+        },
     }) as unknown as WalletAccount
 
 const makeAccount = (address: string): WalletAccount =>
     ({
         custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: `key-${address}`,
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address,
+                keyPairId: `key-${address}`,
+            },
+        },
     }) as unknown as WalletAccount
 
 const makeQuantumAccount = (address: string): WalletAccount =>
     ({
         custody: { kind: 'local', seed: 'quantum' },
-        address,
-        keyPairId: `key-${address}`,
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address,
+                keyPairId: `key-${address}`,
+            },
+        },
     }) as unknown as WalletAccount
 
 const accountA = makeAccount('A')
@@ -70,11 +84,6 @@ beforeEach(() => {
     mocks.isMultisigAccount.mockReset()
     mocks.hasSigningKeys.mockReset().mockReturnValue(true)
     mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
-    mocks.isQuantumAccount
-        .mockReset()
-        .mockImplementation(
-            (acc: WalletAccount) => accountType(acc) === 'quantum',
-        )
 })
 
 describe('getLocalParticipants', () => {
@@ -102,7 +111,7 @@ describe('getLocalParticipants', () => {
         // local-key account — that does NOT make B able to sign for the
         // multisig slot, because the slot is keyed by B's original pubkey.
         mocks.hasSigningKeys.mockImplementation(
-            (acc: WalletAccount) => acc.address === 'A',
+            (acc: WalletAccount) => algorandAddressOf(acc) === 'A',
         )
         const multisig = makeMultisig(2, ['A', 'B'])
 
@@ -120,10 +129,10 @@ describe('getLocalParticipants', () => {
         // them. The util must keep them anyway via the isHardwareWalletAccount
         // branch so the propose flow can route them to hardwareStrategy.
         mocks.hasSigningKeys.mockImplementation(
-            (acc: WalletAccount) => acc.address !== 'B',
+            (acc: WalletAccount) => algorandAddressOf(acc) !== 'B',
         )
         mocks.isHardwareWalletAccount.mockImplementation(
-            (acc: WalletAccount) => acc.address === 'B',
+            (acc: WalletAccount) => algorandAddressOf(acc) === 'B',
         )
         const multisig = makeMultisig(2, ['A', 'B'])
 
@@ -139,7 +148,7 @@ describe('getLocalParticipants', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
         // B has no keys (watch) AND is not hardware — must be dropped.
         mocks.hasSigningKeys.mockImplementation(
-            (acc: WalletAccount) => acc.address === 'A',
+            (acc: WalletAccount) => algorandAddressOf(acc) === 'A',
         )
         mocks.isHardwareWalletAccount.mockReturnValue(false)
         const multisig = makeMultisig(2, ['A', 'B'])
@@ -157,7 +166,7 @@ describe('getLocalParticipants', () => {
         // Quantum has a keyPairId (hasSigningKeys would say yes), but multisig
         // slots verify Ed25519 only and algosdk's PQ signer refuses multisig
         // signing outright — so it must still be excluded here, agreeing with
-        // canSignViaParticipants in packages/accounts/src/utils.ts.
+        // canSignViaParticipants in accounts/multisig-participants.ts.
         const quantumAccount = makeQuantumAccount('Q')
         const multisig = makeMultisig(2, ['Q', 'A'])
 
@@ -166,7 +175,7 @@ describe('getLocalParticipants', () => {
             accountA,
         ])
 
-        expect(participants.map(p => p.address)).toEqual([accountA.address])
+        expect(participants.map(algorandAddressOf)).toEqual(['A'])
     })
 
     test('returns participants in participant-list order, not wallet order', () => {
@@ -189,10 +198,10 @@ describe('getProposeParticipants', () => {
     test('returns only local-key participants when local-key and hardware are both present (Ledger deferred to per-row Sign)', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
         mocks.hasSigningKeys.mockImplementation(
-            (acc: WalletAccount) => acc.address === 'A',
+            (acc: WalletAccount) => algorandAddressOf(acc) === 'A',
         )
         mocks.isHardwareWalletAccount.mockImplementation(
-            (acc: WalletAccount) => acc.address === 'B',
+            (acc: WalletAccount) => algorandAddressOf(acc) === 'B',
         )
         const multisig = makeMultisig(2, ['A', 'B'])
 

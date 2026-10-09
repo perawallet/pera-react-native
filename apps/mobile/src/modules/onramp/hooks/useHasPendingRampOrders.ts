@@ -11,9 +11,13 @@
  */
 
 import { useIsFocused } from '@react-navigation/native'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     hasPendingRampOrder,
     useRampHistoryInfiniteQuery,
@@ -32,7 +36,11 @@ import {
 export const useHasPendingRampOrders = (): boolean => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const isFocused = useIsFocused()
 
     const { items } = useRampHistoryInfiniteQuery({

@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import type { HdSeedGroup } from '@perawallet/wallet-core-accounts'
 import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSelectHDWalletScreen } from '../useSelectHDWalletScreen'
-import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 // Mutable so individual tests can switch between one and many wallet groups.
-const groupsState = vi.hoisted(() => ({ groups: [] as HDWalletGroup[] }))
+const groupsState = vi.hoisted(() => ({ groups: [] as HdSeedGroup[] }))
 
 const mockPush = vi.fn()
 const mockReplace = vi.fn()
@@ -55,44 +55,40 @@ vi.mock('@hooks/useToast', () => ({
 
 const mockBuildHdWalletAccount = vi.fn()
 
-const mockHDWalletGroups: HDWalletGroup[] = [
+const mockHdSeedGroups: HdSeedGroup[] = [
     {
         seedKeyId: 'wallet-1',
         accounts: [
             {
                 id: 'hd-1',
-                address: 'HD_ADDRESS_1',
+                chains: {
+                    algorand: {
+                        address: 'HD_ADDRESS_1',
+                        keyPairId: 'wallet-1-acc0-idx0-dt9',
+                    },
+                },
                 name: 'My Main Wallet',
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
                 },
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9 as const,
-                },
-                keyPairId: 'wallet-1-acc0-idx0-dt9',
             },
         ],
         firstAccount: {
             id: 'hd-1',
-            address: 'HD_ADDRESS_1',
+            chains: {
+                algorand: {
+                    address: 'HD_ADDRESS_1',
+                    keyPairId: 'wallet-1-acc0-idx0-dt9',
+                },
+            },
             name: 'My Main Wallet',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9 as const,
-            },
-            keyPairId: 'wallet-1-acc0-idx0-dt9',
         },
         accountCount: 1,
     },
@@ -101,36 +97,32 @@ const mockHDWalletGroups: HDWalletGroup[] = [
         accounts: [
             {
                 id: 'hd-2',
-                address: 'HD_ADDRESS_2',
+                chains: {
+                    algorand: {
+                        address: 'HD_ADDRESS_2',
+                        keyPairId: 'wallet-2-acc0-idx0-dt9',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
                 },
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9 as const,
-                },
-                keyPairId: 'wallet-2-acc0-idx0-dt9',
             },
         ],
         firstAccount: {
             id: 'hd-2',
-            address: 'HD_ADDRESS_2',
+            chains: {
+                algorand: {
+                    address: 'HD_ADDRESS_2',
+                    keyPairId: 'wallet-2-acc0-idx0-dt9',
+                },
+            },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9 as const,
-            },
-            keyPairId: 'wallet-2-acc0-idx0-dt9',
         },
         accountCount: 1,
     },
@@ -142,9 +134,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        useHDWalletGroups: () => ({
-            hdWalletGroups: groupsState.groups,
-            hasMultipleHDWallets: groupsState.groups.length > 1,
+        useHdSeedGroups: () => ({
+            hdSeedGroups: groupsState.groups,
+            hasMultipleHdSeeds: groupsState.groups.length > 1,
         }),
         useAllAccounts: () => [],
         useCreateAccount: () => ({
@@ -176,14 +168,14 @@ describe('useSelectHDWalletScreen', () => {
         vi.clearAllMocks()
         mockRouteParams = undefined
         // Default to the two-wallet picker; auto-skip tests override this.
-        groupsState.groups = mockHDWalletGroups
+        groupsState.groups = mockHdSeedGroups
     })
 
     it('returns HD wallet groups', () => {
         const { result } = renderHook(() => useSelectHDWalletScreen())
-        expect(result.current.hdWalletGroups).toHaveLength(2)
-        expect(result.current.hdWalletGroups[0].seedKeyId).toBe('wallet-1')
-        expect(result.current.hdWalletGroups[1].seedKeyId).toBe('wallet-2')
+        expect(result.current.hdSeedGroups).toHaveLength(2)
+        expect(result.current.hdSeedGroups[0].seedKeyId).toBe('wallet-1')
+        expect(result.current.hdSeedGroups[1].seedKeyId).toBe('wallet-2')
     })
 
     it('returns account balances', () => {
@@ -199,7 +191,7 @@ describe('useSelectHDWalletScreen', () => {
     it('navigates to SearchAccounts when selecting a wallet', async () => {
         const mockNewAccount = {
             id: 'hd-new',
-            address: 'HD_NEW',
+            chains: { algorand: { address: 'HD_NEW' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -211,7 +203,7 @@ describe('useSelectHDWalletScreen', () => {
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
         await act(async () => {
-            result.current.handleSelectWallet(mockHDWalletGroups[0])
+            result.current.handleSelectWallet(mockHdSeedGroups[0])
         })
 
         expect(mockReplace).toHaveBeenCalledWith(
@@ -231,7 +223,7 @@ describe('useSelectHDWalletScreen', () => {
         mockRouteParams = { returnTo }
         const newAccount = {
             id: 'hd-new',
-            address: 'HD_NEW',
+            chains: { algorand: { address: 'HD_NEW' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -243,7 +235,7 @@ describe('useSelectHDWalletScreen', () => {
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
         await act(async () => {
-            result.current.handleSelectWallet(mockHDWalletGroups[0])
+            result.current.handleSelectWallet(mockHdSeedGroups[0])
         })
 
         expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
@@ -281,7 +273,7 @@ describe('useSelectHDWalletScreen', () => {
         await act(async () => {
             resolveCreate({
                 id: 'new',
-                address: 'NEW',
+                chains: { algorand: { address: 'NEW' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
@@ -296,7 +288,7 @@ describe('useSelectHDWalletScreen', () => {
     it('creates a new wallet with account 0 and keyIndex 0', async () => {
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -320,7 +312,7 @@ describe('useSelectHDWalletScreen', () => {
     it('navigates to NameAccount after successful wallet creation', async () => {
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -352,7 +344,7 @@ describe('useSelectHDWalletScreen', () => {
         mockRouteParams = { returnTo }
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -414,10 +406,10 @@ describe('useSelectHDWalletScreen', () => {
 
     describe('single-wallet auto-select', () => {
         it('auto-selects the only wallet and skips the picker', async () => {
-            groupsState.groups = [mockHDWalletGroups[0]]
+            groupsState.groups = [mockHdSeedGroups[0]]
             const newAccount = {
                 id: 'x',
-                address: 'X',
+                chains: { algorand: { address: 'X' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
@@ -444,7 +436,7 @@ describe('useSelectHDWalletScreen', () => {
         })
 
         it('forwards the returnTo target through the auto-select path', async () => {
-            groupsState.groups = [mockHDWalletGroups[0]]
+            groupsState.groups = [mockHdSeedGroups[0]]
             const returnTo = {
                 name: 'PeraCard',
                 params: {
@@ -455,7 +447,7 @@ describe('useSelectHDWalletScreen', () => {
             mockRouteParams = { returnTo }
             const newAccount = {
                 id: 'x',
-                address: 'X',
+                chains: { algorand: { address: 'X' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
@@ -475,7 +467,7 @@ describe('useSelectHDWalletScreen', () => {
         })
 
         it('does not auto-select when multiple wallets exist', async () => {
-            groupsState.groups = mockHDWalletGroups
+            groupsState.groups = mockHdSeedGroups
 
             const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -485,7 +477,7 @@ describe('useSelectHDWalletScreen', () => {
         })
 
         it('reveals the picker (and toasts) when auto-select fails', async () => {
-            groupsState.groups = [mockHDWalletGroups[0]]
+            groupsState.groups = [mockHdSeedGroups[0]]
             mockBuildHdWalletAccount.mockRejectedValue(new Error('boom'))
 
             const { result } = renderHook(() => useSelectHDWalletScreen())

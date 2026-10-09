@@ -12,7 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -22,6 +25,7 @@ import {
     pickBestByAmountOut,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSwapExecution, useSwapQuotes } from '@modules/swap'
 
 const SWAPPING_STATUSES = new Set([
@@ -91,7 +95,9 @@ export const useCardAddFundsSwap = ({
         refresh: refreshQuote,
     } = useSwapQuotes({
         enabled,
-        swapperAddress: account?.address ?? null,
+        swapperAddress:
+            (account && chainAccountOf(account, LEGACY_CHAIN_ID)?.address) ??
+            null,
         fromAssetId: sourceAssetId,
         toAssetId: usdcAssetId,
         payAmount: amount,

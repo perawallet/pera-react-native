@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useLedgerDeviceGroups } from '../useLedgerDeviceGroups'
 import type { WalletAccount } from '../../models'
+import { TEST_CUSTODY, testAccount } from '../../__tests__/accountFactory'
 
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
@@ -21,152 +22,62 @@ vi.mock('../useAllAccounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
 
-const ledgerDevice1Account0: WalletAccount = {
-    id: 'ledger-1-0',
-    address: 'LEDGER_DEV1_ADDR_0',
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Cold Wallet',
-            transportType: 'ble',
+const hardware = (
+    id: string,
+    deviceId: string,
+    deviceName: string,
+    accountIndex: number,
+    manufacturer = 'ledger',
+): WalletAccount =>
+    testAccount('hardware', `${id}-ADDR`, {
+        id,
+        custody: {
+            kind: 'hardware',
+            device: {
+                ...TEST_CUSTODY.hardware.device,
+                manufacturer,
+                deviceId,
+                deviceName,
+            },
+            accountIndex,
         },
-        accountIndex: 0,
-    },
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-1',
-        deviceName: 'Cold Wallet',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-}
+    } as Partial<WalletAccount>)
 
-const ledgerDevice1Account2: WalletAccount = {
-    id: 'ledger-1-2',
-    address: 'LEDGER_DEV1_ADDR_2',
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Cold Wallet',
-            transportType: 'ble',
-        },
-        accountIndex: 2,
-    },
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-1',
-        deviceName: 'Cold Wallet',
-        accountIndex: 2,
-        transportType: 'ble',
-    },
-}
-
-const ledgerDevice1Account1: WalletAccount = {
-    id: 'ledger-1-1',
-    address: 'LEDGER_DEV1_ADDR_1',
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Cold Wallet',
-            transportType: 'ble',
-        },
-        accountIndex: 1,
-    },
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-1',
-        deviceName: 'Cold Wallet',
-        accountIndex: 1,
-        transportType: 'ble',
-    },
-}
-
-const ledgerDevice2Account0: WalletAccount = {
-    id: 'ledger-2-0',
-    address: 'LEDGER_DEV2_ADDR_0',
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-2',
-            deviceName: 'Backup Ledger',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-2',
-        deviceName: 'Backup Ledger',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-}
-
-const otherHardware: WalletAccount = {
-    id: 'other-1',
-    address: 'OTHER_HARDWARE_ADDR',
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'other',
-            deviceId: 'other-device',
-            deviceName: 'Other Device',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    hardwareDetails: {
-        manufacturer: 'other',
-        deviceId: 'other-device',
-        deviceName: 'Other Device',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-}
-
-const hdAccount: WalletAccount = {
-    id: 'hd-1',
-    address: 'HD_ADDRESS',
-    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9,
-    },
-    keyPairId: 'wallet-1',
-}
-
-const watchAccount: WalletAccount = {
-    id: 'watch-1',
-    address: 'WATCH_ADDRESS',
-    custody: { kind: 'watch' },
-}
-
-const algo25Account: WalletAccount = {
-    id: 'algo25-1',
-    address: 'ALGO25_ADDRESS',
-    custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: 'algo25-key-1',
-}
-
-const multisigAccount: WalletAccount = {
-    id: 'multisig-1',
-    address: 'MULTISIG_ADDRESS',
-    custody: { kind: 'multisig' },
-    multisigDetails: {
-        threshold: 2,
-        addresses: ['A', 'B', 'C'],
-        version: 1,
-    },
-}
+const ledgerDevice1Account0 = hardware(
+    'ledger-1-0',
+    'device-1',
+    'Cold Wallet',
+    0,
+)
+const ledgerDevice1Account1 = hardware(
+    'ledger-1-1',
+    'device-1',
+    'Cold Wallet',
+    1,
+)
+const ledgerDevice1Account2 = hardware(
+    'ledger-1-2',
+    'device-1',
+    'Cold Wallet',
+    2,
+)
+const ledgerDevice2Account0 = hardware(
+    'ledger-2-0',
+    'device-2',
+    'Backup Ledger',
+    0,
+)
+const otherHardware = hardware(
+    'other-1',
+    'other-device',
+    'Other Device',
+    0,
+    'other',
+)
+const hdAccount = testAccount('hd', 'HD_ADDRESS')
+const watchAccount = testAccount('watch', 'WATCH_ADDRESS')
+const singleKeyAccount = testAccount('local', 'SINGLE_ADDRESS')
+const multisigAccount = testAccount('multisig', 'MULTISIG_ADDRESS')
 
 describe('useLedgerDeviceGroups', () => {
     beforeEach(() => {
@@ -200,9 +111,9 @@ describe('useLedgerDeviceGroups', () => {
         expect(group.deviceId).toBe('device-1')
         expect(group.deviceName).toBe('Cold Wallet')
         expect(group.accountCount).toBe(3)
-        expect(group.accounts.map(a => a.hardwareDetails.accountIndex)).toEqual(
-            [0, 1, 2],
-        )
+        expect(group.accounts.map(a => a.custody.accountIndex)).toEqual([
+            0, 1, 2,
+        ])
         expect(group.firstAccount).toBe(ledgerDevice1Account0)
         expect(result.current.hasMultipleLedgerDevices).toBe(false)
     })
@@ -241,12 +152,12 @@ describe('useLedgerDeviceGroups', () => {
         expect(result.current.ledgerDeviceGroups[0].deviceId).toBe('device-1')
     })
 
-    test('excludes HD, watch, algo25, multisig accounts', () => {
+    test('excludes HD, single-key, watch and multisig accounts', () => {
         mockUseAllAccounts.mockReturnValue([
             ledgerDevice1Account0,
             hdAccount,
             watchAccount,
-            algo25Account,
+            singleKeyAccount,
             multisigAccount,
         ])
         const { result } = renderHook(() => useLedgerDeviceGroups())

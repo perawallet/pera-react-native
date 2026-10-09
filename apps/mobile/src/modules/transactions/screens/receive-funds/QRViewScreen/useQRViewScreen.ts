@@ -12,6 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 
+import {
+    chainAccountOf,
+    getAccountDisplayName,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
@@ -19,15 +26,11 @@ import { useDeepLink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { bottomSheetNotifier } from '@components/core'
-import {
-    getAccountDisplayName,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 type UseQRViewScreenResult = {
     account: Optional<WalletAccount>
+    address: string
     deeplink: string
     /**
      * True when the user reached this screen via AccountSelection — the
@@ -47,17 +50,20 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
     const { buildAccountDeeplink } = useDeepLink()
+    const address = selectedAccount
+        ? (chainAccountOf(selectedAccount, LEGACY_CHAIN_ID)?.address ?? '')
+        : ''
 
     const deeplink = useMemo(() => {
         if (!selectedAccount) {
             return ''
         }
-        return buildAccountDeeplink(selectedAccount)
+        return buildAccountDeeplink(selectedAccount, LEGACY_CHAIN_ID)
     }, [selectedAccount, buildAccountDeeplink])
 
     const handleCopyAddress = useCallback(() => {
-        void copyToClipboard(selectedAccount?.address ?? '')
-    }, [copyToClipboard, selectedAccount?.address])
+        void copyToClipboard(address)
+    }, [copyToClipboard, address])
 
     const handleShareAddress = useCallback(async () => {
         try {
@@ -65,15 +71,15 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
                 return
             }
             await shareText({
-                title: getAccountDisplayName(selectedAccount),
-                message: selectedAccount.address,
+                title: getAccountDisplayName(selectedAccount, LEGACY_CHAIN_ID),
+                message: address,
             })
         } catch (error) {
             showError(error, t('errors.general.title'), {
                 notifier: bottomSheetNotifier.current ?? undefined,
             })
         }
-    }, [selectedAccount, showError, t])
+    }, [selectedAccount, address, showError, t])
 
     const handleBack = useCallback(() => {
         if (canSelectAccount) {
@@ -85,6 +91,7 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
 
     return {
         account: selectedAccount,
+        address,
         deeplink,
         canSelectAccount,
         handleBack,

@@ -10,71 +10,82 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { buildAccount } from '../credentials'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-    buildDeviceAccountRegistrations,
-    toDeviceAccountType,
-} from '../device-accounts'
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { accountsChainAdapters } from '../chain-adapter'
+import { buildDeviceAccountRegistrations } from '../device-accounts'
+import type { WalletAccount } from '../models'
+import { buildTestAccount, TEST_CUSTODY, testAccount } from './accountFactory'
 import {
-    AccountTypes,
-    DerivationTypes,
-    type AccountChains,
-    type AccountType,
-    type WalletAccount,
-} from '../models'
-import { buildTestAccount } from './accountFactory'
+    FAKE_CHAIN_ID,
+    FAKE_DUPLICATE_RANK,
+    fakeAccountsChain,
+    fakeDeviceAccountType,
+} from './fakeAccountsChain'
 
-const account = (address: string, type: AccountType): WalletAccount => ({
-    ...buildTestAccount(type),
-    id: address,
-    address,
-})
+const capabilities = (notifications: boolean): ChainCapabilities =>
+    Object.fromEntries(
+        CHAIN_CAPABILITIES.map(capability => [
+            capability,
+            capability === 'notifications' && notifications,
+        ]),
+    ) as ChainCapabilities
 
-describe('toDeviceAccountType', () => {
-    it('maps every account type onto its wire value', () => {
-        expect(Object.values(AccountTypes).map(toDeviceAccountType)).toEqual([
-            'algo25',
-            'hdWallet',
-            'hardware',
-            'multisig',
-            'watch',
-            'quantum',
-        ])
+const registerChain = (id: ChainId, notifications: boolean) =>
+    getProvider().chains.register(
+        { id } as unknown as ChainDescriptor,
+        capabilities(notifications),
+    )
+
+// A second chain that registers devices, with wire values of its own.
+const OTHER_CHAIN_ID = 'ethereum' as ChainId
+
+const registerOtherChain = () => {
+    accountsChainAdapters.register({
+        ...fakeAccountsChain().adapter,
+        chainId: OTHER_CHAIN_ID,
+        deviceAccountType: account =>
+            account.custody.kind === 'watch' ? null : 'other-signing',
+        duplicateRank: () => 7,
     })
-})
+    registerChain(OTHER_CHAIN_ID, true)
+}
 
 describe('buildDeviceAccountRegistrations', () => {
-    it('reports a quantum account with the quantum wire type', () => {
-        const result = buildDeviceAccountRegistrations(
-            [account('QADDR', AccountTypes.quantum)],
-            [],
-        )
-
-        expect(result).toEqual([
-            {
-                address: 'QADDR',
-                accountType: 'quantum',
-                receiveNotifications: true,
-            },
-        ])
+    beforeEach(() => {
+        registerChain(FAKE_CHAIN_ID, true)
     })
 
-    it('reports a watched address as watch, not as a boolean flag', () => {
-        const result = buildDeviceAccountRegistrations(
-            [account('WADDR', AccountTypes.watch)],
-            [],
-        )
+    it('registers each account under the type and rank its chain gives it', () => {
+        const accounts = [
+            testAccount('local', 'LOCAL'),
+            testAccount('hd', 'HD'),
+            testAccount('hardware', 'LEDGER'),
+            testAccount('multisig', 'MSIG'),
+            testAccount('watch', 'WATCH'),
+        ]
 
-        expect(result[0].accountType).toBe('watch')
+        const result = buildDeviceAccountRegistrations(accounts, [])
+
+        expect(result).toEqual(
+            accounts.map((account, index) => ({
+                address: ['LOCAL', 'HD', 'LEDGER', 'MSIG', 'WATCH'][index],
+                accountType: fakeDeviceAccountType(account),
+                rank: FAKE_DUPLICATE_RANK[account.custody.kind],
+                receiveNotifications: true,
+            })),
+        )
     })
 
     it('marks muted addresses as not receiving notifications', () => {
         const result = buildDeviceAccountRegistrations(
-            [
-                account('ADDR_A', AccountTypes.algo25),
-                account('ADDR_B', AccountTypes.algo25),
-            ],
+            [testAccount('local', 'ADDR_A'), testAccount('local', 'ADDR_B')],
             ['ADDR_B'],
         )
 
@@ -88,172 +99,57 @@ describe('buildDeviceAccountRegistrations', () => {
         expect(buildDeviceAccountRegistrations([], ['ADDR_A'])).toEqual([])
     })
 
-    it('registers accounts with an extra chain entry exactly as their address-only twins', () => {
-        // An entry a later chain adds must not change what the devices API is
-        // told. It isn't a `ChainId` member, hence the widening cast.
-        const withOtherChain = (
-            address: string,
-            keyPairId?: string,
-        ): AccountChains =>
-            ({
-                'fixture-chain': {
-                    address: `fixture-${address}`,
-                    ...(keyPairId ? { keyPairId: `fixture-${keyPairId}` } : {}),
-                },
-            }) as unknown as AccountChains
-        const hd = { account: 0, keyIndex: 1 }
-        const ledger = {
-            manufacturer: 'ledger',
-            deviceId: 'ble-1',
-            deviceName: 'Ledger Nano X',
-            transportType: 'ble',
-        } as const
-        const credentialBearing: WalletAccount[] = [
-            buildAccount({
-                custody: { kind: 'local', seed: 'algo25' },
-                chainId: 'algorand',
-                chains: {
-                    ...withOtherChain('ALGO25ADDR', 'algo25-key'),
-                    algorand: {
-                        address: 'ALGO25ADDR',
-                        keyPairId: 'algo25-key',
-                    },
-                },
-            }),
-            buildAccount({
-                custody: { kind: 'local', seed: 'bip39', hd },
-                chainId: 'algorand',
-                chains: {
-                    ...withOtherChain('HDADDR', 'hd-key'),
-                    algorand: { address: 'HDADDR', keyPairId: 'hd-key' },
-                },
-            }),
-            buildAccount({
-                custody: {
-                    kind: 'hardware',
-                    device: ledger,
-                    accountIndex: 0,
-                },
-                chainId: 'algorand',
-                chains: { algorand: { address: 'LEDGERADDR' } },
-            }),
-            buildAccount({
-                custody: { kind: 'multisig' },
-                chainId: 'algorand',
-                chains: {
-                    algorand: {
-                        address: 'MSIGADDR',
-                        native: {
-                            family: 'algorand',
-                            multisig: {
-                                version: 1,
-                                threshold: 1,
-                                addresses: ['MEMBERA', 'MEMBERB'],
-                            },
-                        },
-                    },
-                },
-            }),
-            buildAccount({
-                custody: { kind: 'watch' },
-                chainId: 'algorand',
-                chains: {
-                    ...withOtherChain('WATCHADDR'),
-                    algorand: { address: 'WATCHADDR' },
-                },
-            }),
-            buildAccount({
-                custody: { kind: 'local', seed: 'quantum' },
-                chainId: 'algorand',
-                chains: {
-                    ...withOtherChain('QUANTUMADDR', 'quantum-key'),
-                    algorand: {
-                        address: 'QUANTUMADDR',
-                        keyPairId: 'quantum-key',
-                    },
-                },
-            }),
-        ]
-        const addressOnly: WalletAccount[] = [
-            account('ALGO25ADDR', AccountTypes.algo25),
-            {
-                ...account('HDADDR', AccountTypes.hdWallet),
-                hdWalletDetails: {
-                    ...hd,
-                    change: 0,
-                    derivationType: DerivationTypes.Peikert,
-                },
-            } as WalletAccount,
-            {
-                id: 'LEDGERADDR',
-                address: 'LEDGERADDR',
-                custody: {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: 'device-1',
-                        deviceName: 'Nano X',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
-                },
-                hardwareDetails: { ...ledger, accountIndex: 0 },
-            },
-            {
-                id: 'MSIGADDR',
-                address: 'MSIGADDR',
-                custody: { kind: 'multisig' },
-                multisigDetails: {
-                    threshold: 1,
-                    addresses: ['MEMBERA', 'MEMBERB'],
-                    version: 1,
-                },
-            },
-            {
-                id: 'WATCHADDR',
-                address: 'WATCHADDR',
-                custody: { kind: 'watch' },
-            },
-            account('QUANTUMADDR', AccountTypes.quantum),
-        ]
+    it('registers nothing on a chain whose notifications capability is off', () => {
+        getProvider().chains.reset()
+        registerChain(FAKE_CHAIN_ID, false)
 
-        const result = buildDeviceAccountRegistrations(credentialBearing, [
-            'WATCHADDR',
-        ])
+        expect(
+            buildDeviceAccountRegistrations([testAccount('local', 'A')], []),
+        ).toEqual([])
+    })
 
-        expect(result).toEqual(
-            buildDeviceAccountRegistrations(addressOnly, ['WATCHADDR']),
-        )
+    it('registers nothing on a chain without a device account type', () => {
+        accountsChainAdapters.reset()
+        accountsChainAdapters.register({
+            ...fakeAccountsChain().adapter,
+            deviceAccountType: undefined,
+        })
+
+        expect(
+            buildDeviceAccountRegistrations([testAccount('local', 'A')], []),
+        ).toEqual([])
+    })
+
+    it('skips an account its chain declines to register', () => {
+        registerOtherChain()
+        const watch: WalletAccount = buildTestAccount(TEST_CUSTODY.watch, {
+            [OTHER_CHAIN_ID]: { address: 'fx-watch' },
+        })
+
+        expect(buildDeviceAccountRegistrations([watch], [])).toEqual([])
+    })
+
+    it('registers an account once per chain that registers devices, each in its own terms', () => {
+        registerOtherChain()
+        const account = buildTestAccount(TEST_CUSTODY.local, {
+            [FAKE_CHAIN_ID]: { address: 'FAKE-ADDR', keyPairId: 'k1' },
+            [OTHER_CHAIN_ID]: { address: 'fx-addr', keyPairId: 'k2' },
+        })
+
+        const result = buildDeviceAccountRegistrations([account], ['fx-addr'])
+
         expect(result).toEqual([
             {
-                address: 'ALGO25ADDR',
-                accountType: 'algo25',
+                address: 'FAKE-ADDR',
+                accountType: fakeDeviceAccountType(account),
+                rank: FAKE_DUPLICATE_RANK.local,
                 receiveNotifications: true,
             },
             {
-                address: 'HDADDR',
-                accountType: 'hdWallet',
-                receiveNotifications: true,
-            },
-            {
-                address: 'LEDGERADDR',
-                accountType: 'hardware',
-                receiveNotifications: true,
-            },
-            {
-                address: 'MSIGADDR',
-                accountType: 'multisig',
-                receiveNotifications: true,
-            },
-            {
-                address: 'WATCHADDR',
-                accountType: 'watch',
+                address: 'fx-addr',
+                accountType: 'other-signing',
+                rank: 7,
                 receiveNotifications: false,
-            },
-            {
-                address: 'QUANTUMADDR',
-                accountType: 'quantum',
-                receiveNotifications: true,
             },
         ])
     })

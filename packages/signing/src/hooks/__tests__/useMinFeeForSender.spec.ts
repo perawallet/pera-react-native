@@ -24,7 +24,9 @@ describe('useMinFeeForSender', () => {
     })
 
     it('returns what the planner hook returns, with the sender passed through', () => {
-        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
+        const { result } = renderHook(() =>
+            useMinFeeForSender('QADDR', 'algorand'),
+        )
 
         expect(chainHook).toHaveBeenCalledWith('QADDR')
         expect(result.current).toEqual({ minFee: 3000n, isPending: false })
@@ -32,7 +34,9 @@ describe('useMinFeeForSender', () => {
 
     it('passes an undefined sender through', () => {
         chainHook.mockReturnValue({ minFee: undefined, isPending: false })
-        const { result } = renderHook(() => useMinFeeForSender(undefined))
+        const { result } = renderHook(() =>
+            useMinFeeForSender(undefined, 'algorand'),
+        )
 
         expect(chainHook).toHaveBeenCalledWith(undefined)
         expect(result.current.minFee).toBeUndefined()

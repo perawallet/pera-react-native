@@ -20,12 +20,13 @@ import {
     type PendingWithdrawal,
 } from '@perawallet/wallet-core-card'
 import {
-    getOnChainAccountInformationQueryKey,
+    addressOn,
+    getOnChainAccountStateQueryKey,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import {
     assertOnline,
@@ -85,10 +86,10 @@ export type UseCardWithdrawResult = {
  * has no part in it, and there is one pending request per card at a time.
  */
 export const useCardWithdraw = (): UseCardWithdrawResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const { buildRequest, buildWithdraw, buildCancel } = useEscrowWithdrawal()
     const {
         pending,
@@ -99,10 +100,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const owner = useCardOwnerAccount()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const decimals =
         (usdcAssetId === null
@@ -143,11 +141,13 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const [isCancelling, setIsCancelling] = useState(false)
 
     const requireCard = useCallback(() => {
-        if (owner === null || escrowCardAddress === null) {
+        const ownerAddress =
+            owner === null ? undefined : addressOn(owner, scope)
+        if (ownerAddress === undefined || escrowCardAddress === null) {
             throw new CardEscrowUnavailableError()
         }
-        return { owner, escrowCardAddress }
-    }, [owner, escrowCardAddress])
+        return { ownerAddress, escrowCardAddress }
+    }, [owner, escrowCardAddress, scope])
 
     const request = useCallback<UseCardWithdrawResult['request']>(
         async amount => {
@@ -156,7 +156,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             try {
                 assertOnline()
                 const transactions = await buildRequest({
-                    sender: card.owner.address,
+                    sender: card.ownerAddress,
                     cardAddress: card.escrowCardAddress,
                     amount: BigInt(
                         displayUnitsToBaseUnits(amount, decimals).toFixed(0),
@@ -192,7 +192,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         try {
             assertOnline()
             const transactions = await buildWithdraw({
-                sender: card.owner.address,
+                sender: card.ownerAddress,
                 cardAddress: card.escrowCardAddress,
                 amount: pending.amount,
             })
@@ -203,14 +203,14 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             await Promise.all([
                 invalidatePending(),
                 queryClient.invalidateQueries({
-                    queryKey: getOnChainAccountInformationQueryKey(
+                    queryKey: getOnChainAccountStateQueryKey(
                         card.escrowCardAddress,
-                        scopeForLegacyNetwork(network),
+                        scope,
                     ),
                 }),
             ])
             invalidateAccountQueriesForAddresses(queryClient, [
-                card.owner.address,
+                card.ownerAddress,
             ])
         } catch (error) {
             throw toError(error)
@@ -225,7 +225,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         submit,
         invalidatePending,
         queryClient,
-        network,
+        scope,
     ])
 
     const cancel = useCallback<UseCardWithdrawResult['cancel']>(async () => {
@@ -234,7 +234,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         try {
             assertOnline()
             const transactions = await buildCancel({
-                sender: card.owner.address,
+                sender: card.ownerAddress,
                 cardAddress: card.escrowCardAddress,
             })
             const { transactions: unsignedTxs } = await assignFeeToGroup({

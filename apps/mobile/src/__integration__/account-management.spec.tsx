@@ -94,19 +94,19 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const ACCOUNT_A: WalletAccount = {
     id: 'a-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'a-key',
+    chains: { algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' } },
     name: 'Trading',
 }
 
 const ACCOUNT_B: WalletAccount = {
     id: 'b-1',
     custody: { kind: 'watch' },
-    address: HD_TEST_ADDRESS,
+    chains: { algorand: { address: HD_TEST_ADDRESS } },
     name: 'Cold backup',
 }
 
@@ -174,7 +174,7 @@ describe('Flow: Account management', () => {
 
     it('Given two accounts with the first selected, when the user taps the second in the account menu, then the selected address switches', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         const handleSelected = vi.fn()
         const noop = () => {}
@@ -192,20 +192,20 @@ describe('Flow: Account management', () => {
         tapAccountRow(ACCOUNT_B.name as string)
 
         await waitFor(() => {
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                ACCOUNT_B.address,
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                ACCOUNT_B.id,
             )
         })
         // The host also fires the onSelected callback so callers (e.g.
         // bottom-sheet host) can dismiss themselves.
         expect(handleSelected).toHaveBeenCalledWith(
-            expect.objectContaining({ address: ACCOUNT_B.address }),
+            expect.objectContaining({ id: ACCOUNT_B.id }),
         )
     })
 
     it('Given two accounts in the account menu, when the user long-presses a row, then its address is copied and the selection is untouched', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         const noop = () => {}
         renderWithNavigation(
@@ -220,22 +220,20 @@ describe('Flow: Account management', () => {
         )
 
         await longPress(
-            screen.getByTestId(`account_switcher_row_${ACCOUNT_B.address}`),
+            screen.getByTestId(`account_switcher_row_${addressOf(ACCOUNT_B)}`),
         )
 
         await waitFor(() => {
             expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
-                ACCOUNT_B.address,
+                addressOf(ACCOUNT_B),
             )
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            ACCOUNT_A.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(ACCOUNT_A.id)
     })
 
     it('Given the account header trigger, when the user long-presses it, then the selected account address is copied', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
 
@@ -243,14 +241,14 @@ describe('Flow: Account management', () => {
 
         await waitFor(() => {
             expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
-                ACCOUNT_A.address,
+                addressOf(ACCOUNT_A),
             )
         })
     })
 
     it('Given two accounts and the watch account selected, when the user removes it via the options sheet, then it is gone from the store and the other account is selected', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_B.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_B.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ACCOUNT_B} />,
@@ -271,9 +269,7 @@ describe('Flow: Account management', () => {
         expect(useAccountsStore.getState().accounts[0].id).toBe(ACCOUNT_A.id)
         // setAccounts re-points selectedAccountAddress to the first
         // remaining account when the previously selected one is gone.
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            ACCOUNT_A.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(ACCOUNT_A.id)
     })
 
     it('Given a Ledger account imported without an id, when the user removes it via the options sheet, then it is gone from the store and sibling accounts from the same device stay', async () => {
@@ -296,20 +292,13 @@ describe('Flow: Account management', () => {
                 },
                 accountIndex: accountIndex,
             },
-            address,
+            chains: { algorand: { address } },
             name,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'nano-x-1',
-                deviceName: 'Ledger Nano X',
-                accountIndex,
-                transportType: 'ble',
-            },
         })
         const ledgerA = ledgerAccount(ALGO25_TEST_ADDRESS, 0, 'Ledger 1')
         const ledgerB = ledgerAccount(HD_TEST_ADDRESS, 1, 'Ledger 2')
         useAccountsStore.getState().setAccounts([ledgerA, ledgerB])
-        useAccountsStore.getState().setSelectedAccountAddress(ledgerA.address)
+        useAccountsStore.getState().setSelectedAccountId(ledgerA.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ledgerA} />,
@@ -327,8 +316,8 @@ describe('Flow: Account management', () => {
         })
         // The sibling from the same device (same deviceId, different
         // address) must survive the removal.
-        expect(useAccountsStore.getState().accounts[0].address).toBe(
-            ledgerB.address,
+        expect(addressOf(useAccountsStore.getState().accounts[0])).toBe(
+            addressOf(ledgerB),
         )
     })
 
@@ -358,17 +347,19 @@ describe('Flow: Account management', () => {
         const algo25Account: WalletAccount = {
             id: 'signer-1',
             custody: { kind: 'local', seed: 'algo25' },
-            address: ALGO25_TEST_ADDRESS,
-            keyPairId: childKeyId,
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: childKeyId,
+                },
+            },
             name: 'Signing account',
         }
         // Watch account stays in the list so the post-removal
         // "select fallback" branch fires and we can sanity-check
         // it.
         useAccountsStore.getState().setAccounts([algo25Account, ACCOUNT_B])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(algo25Account.address)
+        useAccountsStore.getState().setSelectedAccountId(algo25Account.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={algo25Account} />,
@@ -393,9 +384,7 @@ describe('Flow: Account management', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
         expect(useAccountsStore.getState().accounts[0].id).toBe(ACCOUNT_B.id)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            ACCOUNT_B.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(ACCOUNT_B.id)
 
         // Both the seed and its ed25519 signing child are gone — the
         // removal path follows the child up to its parent seed and
@@ -412,7 +401,7 @@ describe('Flow: Account management', () => {
             .getState()
             .setConfigOverride('enable_cloud_backup', true)
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ACCOUNT_A} />,
@@ -432,7 +421,7 @@ describe('Flow: Account management', () => {
 
     it('Given cloud backup is disabled, when the removal backup-warning gate appears, then the copy stays on the passphrase-and-Ledger wording', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ACCOUNT_A} />,
@@ -450,7 +439,7 @@ describe('Flow: Account management', () => {
 
     it('Given an account whose notifications are enabled, when the user taps "mute notifications" in the options sheet, then the address is added to the notification-disabled list', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
         // v3 has no per-account route: `useAccountNotificationToggle`
         // re-registers the whole device via `useDevice().registerDevice`
         // instead. Seed a known device id (both networks, since the test
@@ -494,13 +483,13 @@ describe('Flow: Account management', () => {
             useNotificationPreferences(),
         )
         await waitFor(() => {
-            expect(notifAfter.current.isAccountEnabled(ACCOUNT_A.address)).toBe(
-                false,
-            )
+            expect(
+                notifAfter.current.isAccountEnabled(addressOf(ACCOUNT_A)),
+            ).toBe(false)
         })
         // The non-selected account is unaffected — confirms we
         // didn't accidentally globally mute.
-        expect(notifAfter.current.isAccountEnabled(ACCOUNT_B.address)).toBe(
+        expect(notifAfter.current.isAccountEnabled(addressOf(ACCOUNT_B))).toBe(
             true,
         )
 
@@ -525,11 +514,11 @@ describe('Flow: Account management', () => {
         expect(deviceBody?.accounts).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    address: ACCOUNT_A.address,
+                    address: addressOf(ACCOUNT_A),
                     receive_notifications: false,
                 }),
                 expect.objectContaining({
-                    address: ACCOUNT_B.address,
+                    address: addressOf(ACCOUNT_B),
                     receive_notifications: true,
                 }),
             ]),
@@ -538,7 +527,7 @@ describe('Flow: Account management', () => {
 
     it('Given an account in the options sheet, when the user taps "Copy address", then the address is written to the clipboard', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ACCOUNT_A} />,
@@ -555,14 +544,14 @@ describe('Flow: Account management', () => {
         // asserting synchronously.
         await waitFor(() => {
             expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
-                ACCOUNT_A.address,
+                addressOf(ACCOUNT_A),
             )
         })
     })
 
     it('Given an account in the options sheet, when the user renames it, then the new name is persisted', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
         renderWithNavigation(
             () => <AccountOptionsHost account={ACCOUNT_A} />,
@@ -587,7 +576,7 @@ describe('Flow: Account management', () => {
 
     it('Given showPeraCardActivation, when the Pera Card Activate button is tapped, then the row renders and the activate intent fires', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
         const handlePeraCardActivate = vi.fn()
 
         renderWithNavigation(
@@ -618,7 +607,7 @@ describe('Flow: Account management', () => {
 
     it('Given an activated card session, when the connected Pera Card row is tapped, then the open intent fires', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
         // An authenticated card session renders the connected (tappable)
         // row instead of the dashed Activate CTA.
         useCardSessionStore.getState().setAuthenticated(true)

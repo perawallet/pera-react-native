@@ -11,12 +11,8 @@
  */
 
 import { getKnownAssetId, nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    type Network,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 
 export type ResolvedSwapRouteAssets = {
@@ -28,11 +24,10 @@ export type ResolvedSwapRouteAssets = {
 // missing or the same as the input. Returns null when no params are present.
 export const resolveSwapRouteAssets = (
     params: Optional<SwapScreenParams>,
-    network: Network,
+    scope: ChainScope,
 ): Nullable<ResolvedSwapRouteAssets> => {
     if (!params?.assetInId && !params?.assetOutId) return null
 
-    const scope = scopeForLegacyNetwork(network)
     const assetInId = params.assetInId || nativeAssetFor(scope.chainId).assetId
     const assetOutId =
         params.assetOutId && params.assetOutId !== assetInId

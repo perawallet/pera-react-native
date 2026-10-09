@@ -13,10 +13,10 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useCardStore } from '@perawallet/wallet-core-card'
-import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
+import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
@@ -35,28 +35,27 @@ export type UseCardEscrowBalanceResult = {
  * route to custodial platforms only, so the chain is the sole source Pera has.
  */
 export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
 
-    const { data: accountInformation, isPending } =
-        useOnChainAccountInformationQuery(escrowCardAddress ?? '')
+    const { data: accountState, isPending } = useOnChainAccountStateQuery(
+        escrowCardAddress ?? '',
+        scope,
+    )
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
 
     const balance = useMemo(() => {
         if (usdcAssetId === null) return ZERO_BALANCE
-        const holding = accountInformation?.assets.find(
-            asset => String(asset.assetId) === usdcAssetId,
+        const holding = accountState?.holdings.find(
+            asset => asset.assetId === usdcAssetId,
         )
         if (holding === undefined) return ZERO_BALANCE
         return baseUnitsToDisplayUnits(
             holding.amount,
             assets.get(usdcAssetId)?.decimals ?? USDC_FALLBACK_DECIMALS,
         )
-    }, [accountInformation, assets, usdcAssetId])
+    }, [accountState, assets, usdcAssetId])
 
     return {
         balance,

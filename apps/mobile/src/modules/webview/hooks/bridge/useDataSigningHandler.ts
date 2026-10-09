@@ -15,7 +15,7 @@ import type WebView from 'react-native-webview'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignArbitraryData,
-    canSignArc60,
+    findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -29,6 +29,7 @@ import {
     type SignRequestSource,
     isAuthDataWirePayload,
     legacyArbitraryDataWireSchema,
+    messageSignerChainAdapters,
     parseAuthDataWireRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -111,10 +112,17 @@ export const useDataSigningHandler = (
                         LEGACY_CHAIN_ID,
                         message.params,
                     )
-                    const account = allAccounts.find(
-                        a => a.address === authData.signer,
+                    const account = findAccountByAddressOn(
+                        allAccounts,
+                        LEGACY_CHAIN_ID,
+                        authData.signer,
                     )
-                    if (!account || !canSignArc60(account)) {
+                    if (
+                        !account ||
+                        !messageSignerChainAdapters
+                            .get(LEGACY_CHAIN_ID)
+                            .canSign(account, 'authData')
+                    ) {
                         sendInvalidSigner(message.id)
                         return
                     }
@@ -158,8 +166,10 @@ export const useDataSigningHandler = (
             // Preflight parity with the WC transport: a signer that can't sign
             // raw bytes (Ledger, watch) must be rejected before the review
             // sheet, not after the user slides.
-            const signerAccount = allAccounts.find(
-                account => account.address === signer,
+            const signerAccount = findAccountByAddressOn(
+                allAccounts,
+                LEGACY_CHAIN_ID,
+                signer,
             )
             if (!signerAccount || !canSignArbitraryData(signerAccount)) {
                 sendErrorToWebview(

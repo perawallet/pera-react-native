@@ -38,6 +38,7 @@ vi.mock('../../blockchain', async importOriginal => {
     }
 })
 
+import { watchAccount } from '../../__tests__/algorandAccounts'
 import { createStandardAnalyzer } from '../createStandardAnalyzer'
 import {
     AnalysisError,
@@ -53,7 +54,7 @@ const EXTERNAL_ADDR = 'EXTERNAL_ADDR'
 const makeContext = (accounts: string[] = [ACCOUNT_A]): AnalysisContext =>
     ({
         scope: { chainId: 'algorand', networkId: 'mainnet' },
-        accounts: accounts.map(address => ({ address }) as never),
+        accounts: accounts.map(address => watchAccount(address)),
     }) as AnalysisContext
 
 const makeTx = (overrides: {

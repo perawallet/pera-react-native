@@ -17,7 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWrapper } from '@test-utils'
 import { useRegisterDeviceMutation } from '../useRegisterDeviceMutation'
 import { registerDevice } from '../endpoints'
-import { DeviceAccountTypes, type DeviceRegistration } from '../../models'
+import type { DeviceRegistration } from '../../models'
 
 vi.mock('../endpoints', () => ({
     registerDevice: vi.fn(),
@@ -33,7 +33,8 @@ const registration: DeviceRegistration = {
     accounts: [
         {
             address: 'ADDR_A',
-            accountType: DeviceAccountTypes.quantum,
+            accountType: 'signing-kind',
+            rank: 2,
             receiveNotifications: true,
         },
     ],

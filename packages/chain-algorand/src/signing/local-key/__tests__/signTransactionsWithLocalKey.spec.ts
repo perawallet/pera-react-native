@@ -19,6 +19,7 @@ import {
     SIGN_BATCH_SIZE,
     signTransactionsWithLocalKey,
 } from '../signTransactionsWithLocalKey'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
 const OTHER = 'SMYOGL34R6IPDMI6TGHYDDWIGH6Z3EDGTNDKLWYVHPGDTW5D5XAYGKY25U'
@@ -30,11 +31,18 @@ const txn = (id: number): PeraTransaction =>
         bytesToSign: () => new Uint8Array([2, id]),
     }) as unknown as PeraTransaction
 
-const algo25Account = (address = SENDER): WalletAccount => ({
+const algo25Account = (
+    address = SENDER,
+    keyPairId = 'key-1',
+): WalletAccount => ({
     id: 'acct',
     custody: { kind: 'local', seed: 'algo25' },
-    address,
-    keyPairId: 'key-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address,
+            keyPairId,
+        },
+    },
 })
 
 const deps = (
@@ -163,7 +171,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ signPayloads }),
             [txn(0)],
             [0],
-            { ...algo25Account(), keyPairId: 'key-for-this-account' },
+            algo25Account(SENDER, 'key-for-this-account'),
         )
 
         expect(signPayloads).toHaveBeenCalledWith('key-for-this-account', [

@@ -20,11 +20,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { WalletAccount } from '../models'
+import { chainAccountOf } from '../credentials/accessors'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'
 
@@ -76,19 +76,22 @@ const EMPTY_RESULT_BASE = {
  */
 export const useAccountValueTotalsQuery = (
     accounts: WalletAccount[],
+    scope: ChainScope,
     enabled?: boolean,
 ): UseAccountValueTotalsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     // See the usdValue derivation: only a Pera-backed network can be missing a
     // price it ought to have.
-    const isPricedNetwork = isPeraBackedNetwork(network)
+    const isPricedNetwork = isPeraBackedNetwork(legacyNetworkOf(scope))
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass fresh array literals per render; only
     // addresses are read below, so the memos key on this stable list instead
     // of array identity (see useAccountBalancesQuery for the long version).
-    const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
+    const addresses = useStableIdList(
+        accounts?.flatMap(
+            a => chainAccountOf(a, scope.chainId)?.address ?? [],
+        ) ?? [],
+    )
 
     const queries = useMemo(() => {
         return addresses.map(address => {
@@ -104,10 +107,10 @@ export const useAccountValueTotalsQuery = (
                 // See useAccountBalancesQuery: works around a QueriesObserver
                 // race under Proxy-based property tracking.
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () => readAccountSummary(address, network),
+                queryFn: () => readAccountSummary(address, scope),
             }
         })
-    }, [addresses, enabled, scope, network])
+    }, [addresses, enabled, scope])
 
     const results = useQueries({ queries })
     const nativeAssetId = useNativeAsset().assetId

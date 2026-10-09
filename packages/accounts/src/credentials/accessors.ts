@@ -20,8 +20,10 @@ import { resolveSeedKeyFrom } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type {
     AccountCustody,
+    AccountWithCustody,
     ChainAccount,
     HardwareRef,
+    HardwareWalletDetails,
     HdIndex,
     WalletAccount,
 } from '../models'
@@ -34,27 +36,12 @@ export const custodyOf = (account: WalletAccount): AccountCustody =>
 export const hasCustody = <K extends AccountCustody['kind']>(
     account: WalletAccount,
     kind: K,
-): account is WalletAccount & {
-    custody: Extract<AccountCustody, { kind: K }>
-} => account.custody.kind === kind
+): account is AccountWithCustody<K> => account.custody.kind === kind
 
-// `chains` is optional, so the top-level address and key answer for the legacy chain.
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
-): ChainAccount | undefined => {
-    const entry = account.chains?.[chainId]
-    if (entry) return entry
-    if (chainId !== LEGACY_CHAIN_ID || account.address === undefined) {
-        return undefined
-    }
-    return {
-        address: account.address,
-        ...(account.keyPairId !== undefined
-            ? { keyPairId: account.keyPairId }
-            : {}),
-    }
-}
+): ChainAccount | undefined => account.chains[chainId]
 
 /** Takes a scope so a chain whose encoding varies by network can answer per network. */
 export const addressOn = (
@@ -83,6 +70,20 @@ export const hardwareDeviceOf = (
         : undefined
 }
 
+/** The device record a hardware account was paired with, flattened as the store and Ledger flows keep it. */
+export const hardwareDetailsOf = (
+    account: WalletAccount,
+): HardwareWalletDetails | undefined => {
+    const held = hardwareDeviceOf(account)
+    return held
+        ? { ...held.device, accountIndex: held.accountIndex }
+        : undefined
+}
+
+/** Every local seed scheme is mnemonic-backed, so a local account has a phrase to back up or reveal. */
+export const hasRecoverySeed = (account: WalletAccount): boolean =>
+    account.custody.kind === 'local'
+
 /**
  * The KMS id of the seed behind the account's local keys, or `undefined` for
  * non-local custody or a key the snapshot lacks.
@@ -93,9 +94,9 @@ export const seedOf = (
 ): string | undefined => {
     const { custody } = account
     if (custody.kind !== 'local') return undefined
-    const keyPairId =
-        Object.values(account.chains ?? {}).find(entry => entry?.keyPairId)
-            ?.keyPairId ?? account.keyPairId
+    const keyPairId = Object.values(account.chains).find(
+        entry => entry?.keyPairId,
+    )?.keyPairId
     if (!keyPairId) return undefined
     try {
         return resolveSeedKeyFrom(keys, keyPairId).id

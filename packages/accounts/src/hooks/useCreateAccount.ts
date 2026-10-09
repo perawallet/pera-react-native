@@ -10,30 +10,26 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '../store'
-import { AccountTypes, type WalletAccount } from '../models'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useKMS } from '@perawallet/wallet-core-kms'
-import { NoHDWalletError } from '../errors'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useKMS, type SeedScheme } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useAccountsStore } from '../store'
+import type { WalletAccount } from '../models'
+import { NoHDWalletError } from '../errors'
 import { buildAccount } from '../credentials'
 import {
-    accountsAdapterFor,
+    accountsChainAdapters,
     deriveHdAccount,
     requireSingleKeyAccounts,
-    type SingleKeyAccountKind,
 } from '../chain-adapter'
 import {
     setPendingAccountRollback,
     clearPendingAccountRollback,
 } from '../store/pendingAccountCreation'
 
-export const useCreateAccount = () => {
+export const useCreateAccount = (scope: ChainScope) => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const { network } = useNetwork()
-    const kms = useKMS()
-    const { getKey, createHDWalletKey, removeKeyAndChildren } = kms
+    const { getKey, createHDWalletKey, removeKeyAndChildren } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
         // We get the state fresh to avoid stale captures
@@ -57,13 +53,13 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }): Promise<WalletAccount> => {
-        const derived = await deriveHdAccount(network, seedKeyId, {
+        const derived = await deriveHdAccount(scope, seedKeyId, {
             account,
             keyIndex,
         })
         if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
 
-        const { chainId } = accountsAdapterFor(network)
+        const { chainId } = scope
         return buildAccount({
             custody: {
                 kind: 'local',
@@ -123,13 +119,17 @@ export const useCreateAccount = () => {
         }
     }
 
-    const buildSingleKeyAccount = async (
-        kind: SingleKeyAccountKind,
-        id?: string,
-    ): Promise<WalletAccount> => {
+    /** Mints an unsaved account of one of the chain's single-key kinds. */
+    const buildSingleKeyAccount = async ({
+        seed,
+        id,
+    }: {
+        seed: SeedScheme
+        id?: string
+    }): Promise<WalletAccount> => {
         const minted = await requireSingleKeyAccounts(
-            accountsAdapterFor(network),
-        ).create(kms, { kind, id }, scopeForLegacyNetwork(network))
+            accountsChainAdapters.get(scope.chainId),
+        ).create({ seed, id }, scope)
         if (minted.isNewSeed) {
             setPendingAccountRollback(() =>
                 removeKeyAndChildren(minted.seedKeyId),
@@ -137,12 +137,6 @@ export const useCreateAccount = () => {
         }
         return minted.account
     }
-
-    const buildAlgo25WalletAccount = ({ id }: { id?: string }) =>
-        buildSingleKeyAccount(AccountTypes.algo25, id)
-
-    const buildQuantumWalletAccount = ({ id }: { id?: string } = {}) =>
-        buildSingleKeyAccount(AccountTypes.quantum, id)
 
     const saveAccount = async (account: WalletAccount) => {
         await saveAndUpdateAccounts(account)
@@ -168,14 +162,11 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async (params: { id?: string }) => {
-        const newAccount = await buildAlgo25WalletAccount(params)
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
-    }
-
-    const createQuantumWalletAccount = async (params?: { id?: string }) => {
-        const newAccount = await buildQuantumWalletAccount(params)
+    const createSingleKeyAccount = async (params: {
+        seed: SeedScheme
+        id?: string
+    }) => {
+        const newAccount = await buildSingleKeyAccount(params)
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
@@ -183,12 +174,10 @@ export const useCreateAccount = () => {
     return {
         createHdWalletAccount,
         createHdWalletAccountForSeed,
-        createAlgo25WalletAccount,
-        createQuantumWalletAccount,
+        createSingleKeyAccount,
         buildHdWalletAccount,
         buildHdWalletAccountForSeed,
-        buildAlgo25WalletAccount,
-        buildQuantumWalletAccount,
+        buildSingleKeyAccount,
         saveAccount,
     }
 }

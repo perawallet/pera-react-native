@@ -15,6 +15,7 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
 import {
+    addressOn,
     useSelectedAccount,
     useAccountCollectiblesQuery,
     useAccountOptInRoundsQuery,
@@ -29,6 +30,7 @@ import {
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -66,9 +68,11 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const canSign = useCanSignWith(account)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const address = account ? addressOn(account, scope) : undefined
+    const canSign = useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
-        chain: { chainId: LEGACY_CHAIN_ID, capability: 'manageAssets' },
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
     })
     const canOptIn = canSign && canManageAssets
     const [searchFilter, setSearchFilter] = useState('')
@@ -151,13 +155,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     }, [requestBottomSheet, openSortSheet, openFilterSheet])
 
     const { optInRounds } = useAccountOptInRoundsQuery(
-        account?.address,
+        address,
+        scope,
         sortMode === 'recentlyAdded',
     )
 
     const refreshAddresses = useMemo(
-        () => (account?.address ? [account.address] : []),
-        [account?.address],
+        () => (address ? [address] : []),
+        [address],
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
@@ -165,7 +170,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     useEffect(() => {
         setSearchFilter('')
-    }, [account?.address])
+    }, [address])
 
     const debouncedSearchFilter = useDebouncedValue(
         searchFilter,
@@ -181,7 +186,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles: rows,
         isPending,
         isPlaceholderData,
-    } = useAccountCollectiblesQuery(account?.address, {
+    } = useAccountCollectiblesQuery(address, scope, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
         includeOptedInOnly: showOptedIn,
@@ -225,7 +230,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // skipped the reset exactly when it was needed, which is how sorting a
     // freshly imported account dropped the user mid-list.
     const viewRequestKey = [
-        account?.address ?? '',
+        address ?? '',
         sortMode,
         debouncedSearchFilter,
         showOptedIn,

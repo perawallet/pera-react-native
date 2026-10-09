@@ -13,7 +13,9 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { RootStackParamList } from '@routes/types'
 
 export type UseBackupFlowLauncherResult = (account: WalletAccount) => void
@@ -21,13 +23,14 @@ export type UseBackupFlowLauncherResult = (account: WalletAccount) => void
 export const useBackupFlowLauncher = (): UseBackupFlowLauncherResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     return useCallback(
         (account: WalletAccount) => {
             navigation.navigate('BackupWallet', {
                 screen: 'BackupInfo',
-                params: { address: account.address },
+                params: { address: addressOn(account, scope) ?? '' },
             })
         },
-        [navigation],
+        [navigation, scope],
     )
 }

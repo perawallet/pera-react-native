@@ -26,19 +26,21 @@ import {
 import {
     MAX_DATA_SIGN_REQUESTS,
     isFeeAdjustmentDeliveryError,
+    messageSignerChainAdapters,
     useSigningRequest,
     type AuthDataSignRequest,
     type AuthDataSignableData,
     type ArbitraryDataSignRequest,
+    type MessageSignKind,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
-    canSignArbitraryData,
     authorityOf,
-    canSignArc60,
+    chainAccountOf,
+    findAccountByAddressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -249,6 +251,15 @@ const enqueueDataSignRequest = (
     trackRequest(deps, message, () => removeSignRequest(signRequest))
 }
 
+// A chain with no message signer registered signs nothing, so it fails closed.
+const canSignMessage = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).canSign(account, kind)
+
 /**
  * use-wallet v5 dApps set the ARC-60 signer to the connected account's auth
  * address, which is never in `authorizedAccounts` itself, so the rekey hop is
@@ -261,11 +272,14 @@ const isArc60AuthorizedSigner = (
     scope: ChainScope,
 ): boolean =>
     authorizedAccounts.includes(signer) ||
-    accounts.some(
-        account =>
+    accounts.some(account => {
+        const address = chainAccountOf(account, scope.chainId)?.address
+        return (
             authorityOf(account, scope) === signer &&
-            authorizedAccounts.includes(account.address),
-    )
+            address !== undefined &&
+            authorizedAccounts.includes(address)
+        )
+    })
 
 // Auth-data deep validation (scope, domain binding, sign-in message) is not
 // repeated here; the signing pipeline runs it for every request regardless of
@@ -291,11 +305,11 @@ const enqueueArc60Request = (
         return
     }
 
-    const account = accounts.find(a => a.address === signer)
+    const account = findAccountByAddressOn(accounts, message.chainId, signer)
     // Account-local: an ARC-60 signature verifies against the signer's own
     // key, so a keyless rekeyed signer is refused rather than signed for by
     // its auth account. Watch and multisig accounts fail it too.
-    if (!account || !canSignArc60(account)) {
+    if (!account || !canSignMessage(message.chainId, account, 'authData')) {
         declineRequest(
             message,
             new Error('Signer cannot sign ARC-60 payloads'),
@@ -314,6 +328,7 @@ const enqueueArc60Request = (
 // Chain id is out of scope: a v1 wire concept only the legacy v1 hook path
 // checked per item, and nothing downstream of here reads `item.chainId`.
 const legacyDataItemViolation = (
+    chainId: ChainId,
     item: PeraArbitraryDataMessage,
     authorizedAccounts: string[],
     accounts: WalletAccount[],
@@ -321,8 +336,8 @@ const legacyDataItemViolation = (
     if (!authorizedAccounts.includes(item.signer)) {
         return new Error('Invalid signer')
     }
-    const account = accounts.find(a => a.address === item.signer)
-    if (!account || !canSignArbitraryData(account)) {
+    const account = findAccountByAddressOn(accounts, chainId, item.signer)
+    if (!account || !canSignMessage(chainId, account, 'arbitraryData')) {
         return new Error('Signer cannot sign arbitrary data')
     }
     if (!item.data) {
@@ -351,6 +366,7 @@ const enqueueLegacyDataRequest = (
     }
     for (const item of items) {
         const violation = legacyDataItemViolation(
+            message.chainId,
             item,
             message.authorizedAccounts,
             accounts,

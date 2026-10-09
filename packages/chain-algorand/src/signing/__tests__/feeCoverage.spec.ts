@@ -19,6 +19,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
+import { algo25Account, quantumAccount } from '../../__tests__/algorandAccounts'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { groupTransactions } from '../../blockchain'
 import { findFundedIndices, type SimulateSignedGroup } from '../feeCoverage'
@@ -52,19 +53,13 @@ const algoAddress = makeTestAddress(2)
 const externalAddress = makeTestAddress(3)
 
 const quantum = (): WalletAccount =>
-    ({
-        address: quantumAddress.toString(),
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-    }) as WalletAccount
+    quantumAccount(quantumAddress.toString(), { keyPairId: 'kp-quantum' })
 
 const algo25 = (rekeyAddress?: string): WalletAccount =>
-    ({
-        address: algoAddress.toString(),
-        custody: { kind: 'local', seed: 'algo25' },
+    algo25Account(algoAddress.toString(), {
         keyPairId: 'kp-algo25',
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
+        rekeyAddress,
+    })
 
 const payment = (sender: Address): PeraTransaction =>
     makeTestPaymentTx(sender, { receiver: makeTestAddress(9), amount: 1n })

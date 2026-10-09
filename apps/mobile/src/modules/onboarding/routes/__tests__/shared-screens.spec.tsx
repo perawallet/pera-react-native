@@ -85,7 +85,7 @@ describe('renderImportFlowScreens', () => {
     it('registers every screen named in IMPORT_FLOW_SCREEN_NAMES exactly once', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
-        const tree = renderImportFlowScreens(Stack, allowAll)
+        const tree = renderImportFlowScreens(Stack, allowAll, 'algorand')
         const names = collectScreenChildren(tree).map(child => child.props.name)
         const duplicates = names.filter(
             (name, index) => names.indexOf(name) !== index,
@@ -102,6 +102,7 @@ describe('renderImportFlowScreens', () => {
             renderImportFlowScreens(
                 Stack,
                 ({ anyChain }) => anyChain !== 'ledger',
+                'algorand',
             ),
         ).map(child => child.props.name)
 
@@ -117,6 +118,7 @@ describe('renderImportFlowScreens', () => {
             renderImportFlowScreens(
                 Stack,
                 ({ anyChain }) => anyChain !== 'secureBackup',
+                'algorand',
             ),
         ).map(child => child.props.name)
 
@@ -129,7 +131,7 @@ describe('renderImportFlowScreens', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
         const names = collectScreenChildren(
-            renderImportFlowScreens(Stack, ({ chain }) => !chain),
+            renderImportFlowScreens(Stack, ({ chain }) => !chain, 'algorand'),
         ).map(child => child.props.name)
 
         expect(names).not.toContain('ImportRekeyedAddresses')
@@ -139,7 +141,7 @@ describe('renderImportFlowScreens', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
         const screens = collectScreenChildren(
-            renderImportFlowScreens(Stack, allowAll),
+            renderImportFlowScreens(Stack, allowAll, 'algorand'),
         )
 
         for (const screen of screens) {
@@ -172,7 +174,7 @@ describe('cloud-backup restore screens registered in the import flow', () => {
     ] as const)('exits %s through the import flow exit', name => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
         const screens = collectScreenChildren(
-            renderImportFlowScreens(Stack, allowAll),
+            renderImportFlowScreens(Stack, allowAll, 'algorand'),
         )
         const Registered = screens.find(screen => screen.props.name === name)
             ?.props.component

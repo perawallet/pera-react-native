@@ -10,95 +10,109 @@
  limitations under the License
  */
 
+import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRekeyFeePreflight } from '../useRekeyFeePreflight'
 
-const mockUseAccountInformationQuery = vi.fn()
+const mockGetAccountBalance = vi.fn()
 
+// The real accounts module pulls in react-native-mmkv, which cannot load here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountInformationQuery: (address: string) =>
-        mockUseAccountInformationQuery(address),
+    getAccountBalance: (params: unknown) => mockGetAccountBalance(params),
 }))
 
-// Faithful reimplementation — the real module pulls in react-native-mmkv,
-// which cannot load in the node test environment.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({ network: 'testnet' }),
+}))
 
 const SOURCE_ADDRESS = 'SOURCE'.padEnd(58, 'A')
 const FEE_ALGOS = new Decimal('0.001')
 
-const accountInfo = (amount: bigint, minBalance: bigint) => ({
-    data: { amount, minBalance },
+/** Microalgo inputs; the stored row holds display units. */
+const balanceRow = (algoBalance: bigint, minBalance: bigint) => ({
+    algoBalance: new Decimal(algoBalance.toString()).div(1_000_000),
+    minBalance: new Decimal(minBalance.toString()).div(1_000_000),
 })
+
+const renderPreflight = (feeAlgos: Decimal | undefined) => {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client }, children)
+    const rendered = renderHook(
+        () => useRekeyFeePreflight(SOURCE_ADDRESS, feeAlgos),
+        { wrapper },
+    )
+    const settled = () =>
+        waitFor(() => {
+            expect(mockGetAccountBalance).toHaveBeenCalled()
+            expect(client.isFetching()).toBe(0)
+        })
+    return { ...rendered, settled }
+}
 
 describe('useRekeyFeePreflight', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAccountInformationQuery.mockReturnValue({ data: undefined })
+        mockGetAccountBalance.mockResolvedValue(undefined)
     })
 
-    it('passes when spendable balance exactly equals the fee', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(101_000n, 100_000n),
-        )
+    it('passes when spendable balance exactly equals the fee', async () => {
+        mockGetAccountBalance.mockResolvedValue(balanceRow(101_000n, 100_000n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result, settled } = renderPreflight(FEE_ALGOS)
 
+        await settled()
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('flags underfunded when spendable is one microalgo short of the fee', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(100_999n, 100_000n),
-        )
+    it('flags underfunded when spendable is one microalgo short of the fee', async () => {
+        mockGetAccountBalance.mockResolvedValue(balanceRow(100_999n, 100_000n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result } = renderPreflight(FEE_ALGOS)
 
-        expect(result.current.isUnderfunded).toBe(true)
+        await waitFor(() => expect(result.current.isUnderfunded).toBe(true))
     })
 
-    it('flags a zero-balance account', () => {
-        mockUseAccountInformationQuery.mockReturnValue(accountInfo(0n, 0n))
+    it('flags a zero-balance account', async () => {
+        mockGetAccountBalance.mockResolvedValue(balanceRow(0n, 0n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+        const { result } = renderPreflight(FEE_ALGOS)
 
-        expect(result.current.isUnderfunded).toBe(true)
+        await waitFor(() => expect(result.current.isUnderfunded).toBe(true))
     })
 
-    it('does not flag while the fee is still unresolved', () => {
-        mockUseAccountInformationQuery.mockReturnValue(accountInfo(0n, 0n))
+    it('does not flag while the fee is still unresolved', async () => {
+        mockGetAccountBalance.mockResolvedValue(balanceRow(0n, 0n))
 
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, undefined),
-        )
+        const { result, settled } = renderPreflight(undefined)
 
+        await settled()
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('does not flag while the balance row has not loaded', () => {
-        const { result } = renderHook(() =>
-            useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS),
-        )
+    it('does not flag when the account has no balance row', async () => {
+        const { result, settled } = renderPreflight(FEE_ALGOS)
 
+        await settled()
         expect(result.current.isUnderfunded).toBe(false)
     })
 
-    it('reads the balance of the source address', () => {
-        mockUseAccountInformationQuery.mockReturnValue(
-            accountInfo(101_000n, 100_000n),
-        )
+    it("reads the source address's row on the active network", async () => {
+        mockGetAccountBalance.mockResolvedValue(balanceRow(101_000n, 100_000n))
 
-        renderHook(() => useRekeyFeePreflight(SOURCE_ADDRESS, FEE_ALGOS))
+        renderPreflight(FEE_ALGOS)
 
-        expect(mockUseAccountInformationQuery).toHaveBeenCalledWith(
-            SOURCE_ADDRESS,
+        await waitFor(() =>
+            expect(mockGetAccountBalance).toHaveBeenCalledWith({
+                accountAddress: SOURCE_ADDRESS,
+                scope: scopeForLegacyNetwork('testnet'),
+            }),
         )
     })
 })

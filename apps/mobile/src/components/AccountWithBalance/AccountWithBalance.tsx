@@ -11,9 +11,12 @@
  */
 
 import {
+    addressOn,
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWView, type PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
@@ -32,9 +35,17 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const styles = useStyles({ isHighlighted })
-    const { accountValueTotals } = useAccountValueTotalsQuery([account], true)
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        [account],
+        scope,
+        true,
+    )
+    const algoValue = accountValueTotals.get(
+        addressOn(account, scope) ?? '',
+    )?.algoValue
 
     return (
         <PWView
@@ -49,7 +60,7 @@ export const AccountWithBalance = ({
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
                     asset={nativeAsset}
-                    value={accountValueTotals.get(account.address)?.algoValue}
+                    value={algoValue}
                     density='compact'
                     variant='bodyLarge'
                     weight={500}
@@ -57,9 +68,7 @@ export const AccountWithBalance = ({
 
                 <PreferredAmount
                     sourceAssetId={nativeAsset.assetId}
-                    sourceAmount={
-                        accountValueTotals.get(account.address)?.algoValue
-                    }
+                    sourceAmount={algoValue}
                     density='compact'
                     variant='footnoteMedium'
                     weight={400}

@@ -22,13 +22,25 @@ import {
     readBackupSettings,
     subscribeBackupSettings,
 } from '../backupSettingsStores'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+
+const HELD_ID = 'held-id'
 
 describe('backupSettingsStores', () => {
     beforeEach(() => {
         useCurrenciesStore.getState().resetState()
         useSettingsStore.getState().resetState()
         useAccountsStore.getState().resetState()
-        useAccountsStore.setState({ accounts: [{ address: 'HELD' }] as never })
+        useAccountsStore.setState({
+            accounts: [
+                {
+                    id: HELD_ID,
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'HELD' } },
+                },
+            ],
+        })
+        registerFakeBackupAdapter()
     })
 
     it('reads every synced setting from its store', () => {
@@ -39,7 +51,7 @@ describe('backupSettingsStores', () => {
         useSettingsStore.setState({ language: 'tr', confirmationMode: 'tap' })
         useAccountsStore.setState({
             launchAccountMode: LaunchAccountModes.specific,
-            launchAccountAddress: 'HELD',
+            launchAccountId: HELD_ID,
         })
 
         expect(readBackupSettings()).toEqual({
@@ -85,7 +97,7 @@ describe('backupSettingsStores', () => {
         useSettingsStore.getState().setLanguage('tr')
         useAccountsStore
             .getState()
-            .setLaunchAccountPreference(LaunchAccountModes.specific, 'HELD')
+            .setLaunchAccountPreference(LaunchAccountModes.specific, HELD_ID)
         unsubscribe()
         useSettingsStore.getState().setLanguage('de')
 

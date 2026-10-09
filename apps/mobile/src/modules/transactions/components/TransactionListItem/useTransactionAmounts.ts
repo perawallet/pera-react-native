@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useNativeAsset,
     useSingleAssetDetailsQuery,
@@ -25,7 +29,7 @@ import {
 import {
     type AmountDisplay,
     MAX_VISIBLE_AMOUNTS,
-    createAlgoAmount,
+    createNativeAmount,
     createAssetAmount,
     createBalanceImpactAmount,
     createSwapAmount,
@@ -74,8 +78,11 @@ export const useTransactionAmounts = (
     transaction: TransactionHistoryItem,
 ): UseTransactionAmountsResult => {
     const account = useSelectedAccount()
-    const userAddress = account?.address ?? ''
-    const nativeAssetId = useNativeAsset().assetId
+    const userAddress = account
+        ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
+        : ''
+    const { assetId: nativeAssetId, decimals: nativeDecimals } =
+        useNativeAsset()
     const assetId = transaction.asset?.assetId?.toString() ?? ''
     const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
     const isOutgoing = isOutgoingFor(transaction, userAddress)
@@ -108,10 +115,10 @@ export const useTransactionAmounts = (
             (transaction.amount || transaction.closeAmount)
         ) {
             result.push(
-                createAlgoAmount(
+                createNativeAmount(
                     netTransferAmount(transaction, userAddress, isOutgoing),
                     isOutgoing,
-                    nativeAssetId,
+                    { assetId: nativeAssetId, decimals: nativeDecimals },
                 ),
             )
         }
@@ -148,7 +155,14 @@ export const useTransactionAmounts = (
         }
 
         return result
-    }, [transaction, userAddress, isOutgoing, assetDetails, nativeAssetId])
+    }, [
+        transaction,
+        userAddress,
+        isOutgoing,
+        assetDetails,
+        nativeAssetId,
+        nativeDecimals,
+    ])
 
     const amounts = useMemo(
         () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),

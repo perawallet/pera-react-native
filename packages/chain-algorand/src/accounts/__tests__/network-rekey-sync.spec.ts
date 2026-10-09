@@ -12,6 +12,7 @@
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { algo25Account } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const network = vi.hoisted(() => {
@@ -50,12 +51,8 @@ type Modules = typeof import('@perawallet/wallet-core-accounts') &
 // time out under a loaded runner.
 let modules: Modules
 
-const account = (): WalletAccount => ({
-    id: 'a',
-    custody: { kind: 'local', seed: 'algo25' },
-    address: 'A',
-    keyPairId: 'k',
-})
+const account = (): WalletAccount =>
+    algo25Account('A', { id: 'a', keyPairId: 'k' })
 
 describe('startNetworkRekeySync', () => {
     beforeAll(async () => {

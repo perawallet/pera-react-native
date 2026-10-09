@@ -11,11 +11,14 @@
  */
 
 import {
-    isQuantumAccount,
+    hasCustody,
+    signingKeyOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     PQ_DERIVATION_CANONICAL,
+    SeedScheme,
     type PQDerivation,
     type useKMS,
 } from '@perawallet/wallet-core-kms'
@@ -44,9 +47,17 @@ type GetKey = ReturnType<typeof useKMS>['getKey']
 export const isLegacyQuantumChild = (
     getKey: GetKey,
     account: WalletAccount,
+    chainId: ChainId,
 ): boolean => {
-    if (!isQuantumAccount(account)) return false
-    const key = getKey(account.keyPairId)
+    if (
+        !hasCustody(account, 'local') ||
+        account.custody.seed !== SeedScheme.Quantum
+    ) {
+        return false
+    }
+    const keyPairId = signingKeyOn(account, chainId)
+    if (!keyPairId) return false
+    const key = getKey(keyPairId)
     if (!key) return false
     const pqDerivation = (
         key.metadata as { pqDerivation?: PQDerivation } | undefined

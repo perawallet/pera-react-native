@@ -39,8 +39,8 @@ import {
 import {
     useAccountsStore,
     type WalletAccount,
-    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
@@ -52,6 +52,7 @@ import {
     QUANTUM_TEST_MNEMONIC,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
+import { addressOf } from './__fixtures__/accounts'
 
 // Tiny host that drives the imperative `useViewPassphraseFlow` hook when the
 // trigger is tapped — mirrors the harness in `view-passphrase.spec.tsx`
@@ -86,7 +87,7 @@ const ViewPassphraseHost = ({
 // Mint a real quantum (Falcon) key from the pinned `QUANTUM_TEST_MNEMONIC` —
 // same 25-word format as algo25 — so the keystore can later resolve the
 // entropy back to the original phrase. `useMnemonicForAddress` already
-// supports `AccountTypes.quantum`: `executeWithMnemonic` walks from the
+// supports quantum custody: `executeWithMnemonic` walks from the
 // child signing key (`keyPairId`) up to its parent seed via
 // `resolveSeedKey`, then derives the algo25-format mnemonic from that seed's
 // private-key bytes, exactly as it does for algo25. Returns the
@@ -96,7 +97,7 @@ const seedQuantumAccount = async (): Promise<WalletAccount> => {
     let key: QuantumKeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
@@ -105,12 +106,13 @@ const seedQuantumAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'quantum-1',
         custody: { kind: 'local', seed: 'quantum' },
-        address: key!.address,
-        keyPairId: key!.signKeyId,
+        chains: {
+            algorand: { address: key!.address, keyPairId: key!.signKeyId },
+        },
         name: 'Quantum Test',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -181,7 +183,7 @@ describe('backup quantum account', () => {
     it('Given a quantum account, when the user opens the flow, acknowledges all warnings, and reveals the passphrase, then the original 25-word mnemonic is displayed', async () => {
         const account = await seedQuantumAccount()
 
-        render(<ViewPassphraseHost address={account.address} />)
+        render(<ViewPassphraseHost address={addressOf(account)} />)
 
         expect(
             screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),

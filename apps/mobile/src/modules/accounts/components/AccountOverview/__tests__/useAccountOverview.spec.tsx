@@ -72,7 +72,13 @@ vi.mock('@modules/transactions/routes', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
+    useSelectedAccount: vi.fn(() => ({
+        chains: { algorand: { address: 'selected-address' } },
+    })),
     useAccountSummaryQuery: vi.fn(() => ({
         isPending: mockBalancesPending.value,
         isPaused: mockBalancesPaused.value,
@@ -90,7 +96,11 @@ vi.mock('@modules/transactions', () => ({
     })),
 }))
 
-const mockAccount = { address: 'test-address' } as WalletAccount
+const mockAccount = {
+    id: 'test',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+} as WalletAccount
 
 const createDeferred = () => {
     let resolve: () => void = () => {}
@@ -172,7 +182,7 @@ describe('useAccountOverview', () => {
 
         expect(mockSetCanSelectAccount).toHaveBeenCalledWith(false)
         expect(mockSetSelectedAccount).toHaveBeenCalledWith({
-            address: 'selected-address',
+            chains: { algorand: { address: 'selected-address' } },
         })
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0]?.[0]

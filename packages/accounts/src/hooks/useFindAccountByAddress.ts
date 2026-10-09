@@ -10,9 +10,12 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { findAddressHolder } from '../credentials'
 import { useAccountsStore } from '../store'
 
-export const useFindAccountByAddress = (address: string) => {
+/** Matches on `(chain, address)`, so an equal address string on another chain never resolves. */
+export const useFindAccountByAddress = (address: string, scope: ChainScope) => {
     const accounts = useAccountsStore(state => state.accounts)
-    return accounts.find(a => a.address === address) ?? null
+    return findAddressHolder(accounts, scope, address) ?? null
 }

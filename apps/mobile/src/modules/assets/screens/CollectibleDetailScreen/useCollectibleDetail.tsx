@@ -11,6 +11,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -28,6 +32,7 @@ import {
     useCanSignWith,
     useAccountAssetBalanceQuery,
     type AssetWithAccountBalance,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
@@ -37,7 +42,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -90,20 +94,22 @@ type UseCollectibleDetailResult = {
 export const useCollectibleDetail = (
     assetId: string,
 ): UseCollectibleDetailResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset, isPending } = useSingleAssetDetailsQuery(
         assetId,
         false,
     )
     const account = useSelectedAccount()
     const { network } = useNetwork()
-    const isReadOnly = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
-        chain: { chainId: LEGACY_CHAIN_ID, capability: 'manageAssets' },
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
     })
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
         assetId,
+        scope,
     )
     const modelViewerModal = useModalState()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -135,7 +141,8 @@ export const useCollectibleDetail = (
         [rawMedia, collectible?.primaryImage],
     )
 
-    const accountAddress = account?.address ?? ''
+    const accountAddress =
+        (account && chainAccountOf(account, scope.chainId)?.address) ?? ''
     const accountName = account?.name ?? accountAddress
     const assetAmount = assetBalance?.amount ?? new Decimal(0)
     const isOptedIn = assetBalance != null
@@ -196,7 +203,7 @@ export const useCollectibleDetail = (
             contents: (
                 <OptOutConfirmationContent
                     assetId={assetBalance.assetId}
-                    accountAddress={account.address}
+                    accountAddress={accountAddress}
                 />
             ),
             options: {
@@ -209,7 +216,7 @@ export const useCollectibleDetail = (
 
         try {
             await optOut({
-                sender: account.address,
+                sender: accountAddress,
                 assetId: BigInt(assetId),
                 creator: asset.creator.address,
             })
@@ -229,6 +236,7 @@ export const useCollectibleDetail = (
         }
     }, [
         account,
+        accountAddress,
         asset,
         assetId,
         assetBalance,

@@ -52,6 +52,7 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { addressOf } from './__fixtures__/accounts'
 
 // Mirrors production's `DeviceRegistrar` in RootComponent.tsx: join the
 // accounts store + notification preferences into the registration payload
@@ -89,23 +90,25 @@ const resetNotificationPreferences = (): void => {
 const quantumAccount: WalletAccount = {
     id: 'quantum-1',
     custody: { kind: 'local', seed: 'quantum' },
-    address: QUANTUM_TEST_ADDRESS,
-    keyPairId: 'quantum-1-key',
+    chains: {
+        algorand: { address: QUANTUM_TEST_ADDRESS, keyPairId: 'quantum-1-key' },
+    },
     name: 'Quantum account',
 }
 
 const watchedAccount: WalletAccount = {
     id: 'watch-1',
     custody: { kind: 'watch' },
-    address: HD_TEST_ADDRESS,
+    chains: { algorand: { address: HD_TEST_ADDRESS } },
     name: 'Watched account',
 }
 
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'algo25-1-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'algo25-1-key' },
+    },
     name: 'Algo25 account',
 }
 
@@ -150,12 +153,12 @@ describe('Device registration v3', () => {
         expect(latest.accounts).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    address: quantumAccount.address,
+                    address: addressOf(quantumAccount),
                     account_type: 'quantum',
                     receive_notifications: true,
                 }),
                 expect.objectContaining({
-                    address: watchedAccount.address,
+                    address: addressOf(watchedAccount),
                     account_type: 'watch',
                 }),
             ]),
@@ -257,7 +260,7 @@ describe('Device registration v3', () => {
         const { result: notifications } = renderHook(() =>
             useNotificationPreferences(),
         )
-        notifications.current.setAccountEnabled(algo25Account.address, false)
+        notifications.current.setAccountEnabled(addressOf(algo25Account), false)
 
         seedAccounts([quantumAccount, algo25Account])
         renderApp()
@@ -270,11 +273,11 @@ describe('Device registration v3', () => {
         expect(latest.accounts).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    address: quantumAccount.address,
+                    address: addressOf(quantumAccount),
                     receive_notifications: true,
                 }),
                 expect.objectContaining({
-                    address: algo25Account.address,
+                    address: addressOf(algo25Account),
                     receive_notifications: false,
                 }),
             ]),

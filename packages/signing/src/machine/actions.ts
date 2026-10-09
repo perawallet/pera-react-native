@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     SignableGroup,
@@ -54,8 +58,10 @@ export const buildGroupSignerMap = (
     const map: GroupSignerMap = new Map()
     for (const group of groups) {
         if (map.has(group.signerAddress)) continue
-        const signerAccount = allAccounts.find(
-            a => a.address === group.signerAddress,
+        const signerAccount = findAccountByAddressOn(
+            allAccounts,
+            chainId,
+            group.signerAddress,
         )
         if (!signerAccount) {
             throw new CannotSignError(
@@ -222,7 +228,11 @@ const buildSignableGroups = (
             isCosigner: request.sourceType === 'multisig-cosign',
         })
 
-        const knownAddresses = new Set(allAccounts.map(a => a.address))
+        const knownAddresses = new Set(
+            allAccounts.flatMap(
+                a => chainAccountOf(a, scope.chainId)?.address ?? [],
+            ),
+        )
         const rawBytes = request.rawTransactionsBase64
 
         // Group transactions by sender, preserving original position

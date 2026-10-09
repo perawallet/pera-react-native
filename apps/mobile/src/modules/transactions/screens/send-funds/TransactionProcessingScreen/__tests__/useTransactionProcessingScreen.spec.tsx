@@ -46,18 +46,16 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    accountType: vi.fn(() => 'algo25'),
+    useAccountPresentation: vi.fn(() => ({ analyticsKind: 'algo25' })),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
     // The processing-screen hook derives Ledger-aware copy from these; the
     // existing tests focus on send-pipeline routing and don't care about
     // the copy branch, so a minimal stub keeps them green.
-    AccountTypes: {
-        algo25: 'algo25',
-        hardware: 'hardware',
-        watch: 'watch',
-        multisig: 'multisig',
-        hd: 'hd',
-    },
+    hardwareDetailsOf: vi.fn(() => undefined),
     isHardwareWalletAccount: vi.fn(() => false),
     useAllAccounts: vi.fn(() => []),
     resolveAuthAccount: vi.fn((account: unknown) => account),
@@ -90,8 +88,10 @@ describe('useTransactionProcessingScreen', () => {
     const mockExecute = vi.fn()
 
     const mockAccount = {
-        address: 'TEST_ADDRESS',
+        id: 'test-account',
         name: 'Test Account',
+        custody: { kind: 'local', seed: 'algo25' },
+        chains: { algorand: { address: 'TEST_ADDRESS' } },
     }
 
     const mockAsset = { id: '123', name: 'Test Asset' }

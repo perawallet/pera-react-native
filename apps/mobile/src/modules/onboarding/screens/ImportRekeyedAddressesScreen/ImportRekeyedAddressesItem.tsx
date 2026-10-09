@@ -13,7 +13,11 @@
 import { useCallback } from 'react'
 import { PWRoundIcon } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SelectableAccountCheckboxRow } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -34,6 +38,7 @@ export const ImportRekeyedAddressesItem = ({
 }: ImportRekeyedAddressesItemProps) => {
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
+    const address = chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
 
     const handleOpenInfo = useCallback(() => {
         void requestBottomSheet<void>({
@@ -47,14 +52,14 @@ export const ImportRekeyedAddressesItem = ({
     }, [requestBottomSheet, account])
 
     const handleToggle = useCallback(
-        () => onToggle(account.address),
-        [onToggle, account.address],
+        () => onToggle(address),
+        [onToggle, address],
     )
 
     return (
         <SelectableAccountCheckboxRow
-            title={truncateAlgorandAddress(account.address)}
-            titleCopyValue={account.address}
+            title={truncateAlgorandAddress(address)}
+            titleCopyValue={address}
             subtitle={t(
                 'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
             )}
@@ -72,9 +77,9 @@ export const ImportRekeyedAddressesItem = ({
             )}
             onToggle={handleToggle}
             onInfoPress={handleOpenInfo}
-            testID={`import_rekeyed_addresses_item_${account.address}`}
-            checkboxTestID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
-            infoTestID={`import_rekeyed_addresses_item_info_${account.address}`}
+            testID={`import_rekeyed_addresses_item_${address}`}
+            checkboxTestID={`import_rekeyed_addresses_item_checkbox_${address}`}
+            infoTestID={`import_rekeyed_addresses_item_info_${address}`}
         />
     )
 }

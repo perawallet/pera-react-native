@@ -30,8 +30,9 @@ export * from './ledger-selectable-account'
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
-    selectedAccountAddress: Nullable<string>
+    selectedAccountId: Nullable<string>
     sortMode: AccountSortMode
+    /** Account ids in the user's order. */
     manualAccountOrder: string[]
     /**
      * The network the `rekeyAddress` mirrors currently reflect. Session-only;
@@ -42,28 +43,28 @@ export type AccountsState = BaseStoreState & {
     /** Which account a cold start selects. See `applyLaunchAccountPreference`. */
     launchAccountMode: LaunchAccountMode
     /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
-    launchAccountAddress: Nullable<string>
+    launchAccountId: Nullable<string>
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
     /**
      * Appends one account, throwing `DuplicateAccountError` naming the
-     * existing account when its address is already taken. Unlike
-     * `setAccounts`, which resolves duplicates silently.
+     * existing account when one of its chain addresses is already taken.
+     * Unlike `setAccounts`, which resolves duplicates silently.
      */
     addAccount: (account: WalletAccount) => void
-    setSelectedAccountAddress: (address: Nullable<string>) => void
+    setSelectedAccountId: (id: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**
-     * Set both halves of the launch preference together, so mode and address
-     * can never disagree. `lastUsed` clears the address; `specific` refuses an
-     * address that is not a current account.
+     * Set both halves of the launch preference together, so mode and account
+     * can never disagree. `lastUsed` clears the account; `specific` refuses an
+     * id that is not a current account.
      */
     setLaunchAccountPreference: (
         mode: LaunchAccountMode,
-        address?: Nullable<string>,
+        id?: Nullable<string>,
     ) => void
     /**
-     * Apply the launch preference to `selectedAccountAddress`. Cold start only
+     * Apply the launch preference to `selectedAccountId`. Cold start only
      * — called from app bootstrap once the store has rehydrated, never on
      * foreground. No-ops under `lastUsed` or when the pin no longer resolves.
      */
@@ -98,23 +99,24 @@ export type AccountsState = BaseStoreState & {
         network: Network,
     ) => number
     /**
-     * Replace the watch account at `address` with a hardware account bound to
-     * `hardwareDetails`, preserving its id, name and rekey state. Returns
-     * whether an upgrade happened; refuses (false) when the address is
-     * missing or not a watch account. Callers own the user confirmation.
+     * Replace the watch account `id` with a hardware account bound to
+     * `hardwareDetails`, preserving its id, name, chain addresses and rekey
+     * state. Returns whether an upgrade happened; refuses (false) when the
+     * account is missing or not a watch account. Callers own the user
+     * confirmation.
      */
     upgradeWatchAccountToHardware: (
-        address: string,
+        id: string,
         hardwareDetails: HardwareWalletDetails,
     ) => boolean
     /**
-     * Re-bind the hardware account at `address` to `hardwareDetails` (e.g.
-     * after an OS forget/re-pair rotated the BLE device id — an address match
-     * proves it is the same key). Returns whether anything changed; refuses
-     * (false) for non-hardware accounts.
+     * Re-bind the hardware account `id` to `hardwareDetails` (e.g. after an
+     * OS forget/re-pair rotated the BLE device id — an address match proves it
+     * is the same key). Returns whether anything changed; refuses (false) for
+     * non-hardware accounts.
      */
     updateHardwareDetails: (
-        address: string,
+        id: string,
         hardwareDetails: HardwareWalletDetails,
     ) => boolean
 }

@@ -21,7 +21,10 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { SignedDataWarning } from '../SignedDataWarning'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
@@ -40,8 +43,10 @@ export const ArbitraryDataSigningDetailsView = ({
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const account = accounts.find(
-        account => account.address === dataMessage.signer,
+    const account = findAccountByAddressOn(
+        accounts,
+        LEGACY_CHAIN_ID,
+        dataMessage.signer,
     )
     const styles = useStyles()
 

@@ -10,23 +10,13 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
-import {
-    AccountTypes,
-    type AccountType,
-} from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddParticipantContent } from './useAddParticipantContent'
 import { useStyles } from './styles'
-
-// Quantum (Falcon) accounts are excluded because Algorand multisig is
-// Ed25519-only — a quantum key can never be a valid participant.
-const EXCLUDE_TYPES: AccountType[] = [
-    AccountTypes.multisig,
-    AccountTypes.watch,
-    AccountTypes.quantum,
-]
+import { canBeMultisigParticipant } from '../../utils/participantEligibility'
 
 export type AddParticipantContentProps = Record<string, never>
 
@@ -59,7 +49,9 @@ export const AddParticipantContent = () => {
             <AddressSearchView
                 onSelected={handleSelected}
                 chainFamily='algorand'
-                excludeTypes={EXCLUDE_TYPES}
+                accountFilter={account =>
+                    canBeMultisigParticipant(account, LEGACY_CHAIN_ID)
+                }
                 showAllContactsWhenEmpty
                 inBottomSheet
                 showAddIcon

@@ -30,10 +30,11 @@ import {
 import {
     isLedgerAccount,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     canAutoFund,
@@ -49,6 +50,10 @@ import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import {
+    cardAccountAddressOf,
+    findCardAccount,
+} from '../../utils/cardAccountAddress'
 
 /**
  * The "Submit Your Documents" checklist row's visual state.
@@ -197,8 +202,7 @@ export const useCardOnboardingStatusScreen =
 
         const accounts = useAllAccounts()
         const connectedAccount = useMemo<Optional<WalletAccount>>(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
+            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
             [accounts, connectedAddress],
         )
 
@@ -236,7 +240,10 @@ export const useCardOnboardingStatusScreen =
                 >
             >()
         const { setParams } = stackNavigation
-        const { selectedAccountAddress } = useSelectedAccountAddress()
+        const selectedAccount = useSelectedAccount()
+        const selectedAccountAddress = selectedAccount
+            ? cardAccountAddressOf(selectedAccount, LEGACY_CHAIN_ID)
+            : undefined
 
         useEffect(() => {
             if (
@@ -310,16 +317,19 @@ export const useCardOnboardingStatusScreen =
                 )
                 void (async () => {
                     const account = await pickFundingSource()
-                    if (!account) return
+                    const address = account
+                        ? cardAccountAddressOf(account, LEGACY_CHAIN_ID)
+                        : undefined
+                    if (address === undefined) return
                     // Ask before the ownership signature whether the backend
                     // would even accept this address: creation links it to the
                     // Baanx user and refuses one held by someone else, which
                     // the user would otherwise hit three prompts later. An
                     // unanswerable preflight is not a refusal, so only an
                     // explicit `linked_to_other` stops the connect.
-                    const link = await checkFundingAddress(
-                        account.address,
-                    ).catch(() => null)
+                    const link = await checkFundingAddress(address).catch(
+                        () => null,
+                    )
                     if (link?.state === 'linked_to_other') {
                         await showCardError(
                             new CardAccountLinkedElsewhereError(),
@@ -330,7 +340,7 @@ export const useCardOnboardingStatusScreen =
                     // Purely local, the card gets created and linked to this account by the Pera backend
                     useCardStore
                         .getState()
-                        .setConnectedFundingSourceAddress(account.address)
+                        .setConnectedFundingSourceAddress(address)
                 })()
             },
             [pickFundingSource, checkFundingAddress, showCardError],
@@ -346,7 +356,8 @@ export const useCardOnboardingStatusScreen =
             connectedAccount != null && isLedgerAccount(connectedAccount)
         const isAutoFundingUnavailable =
             !isAutoFundingEnabled ||
-            (connectedAccount != null && !canAutoFund(connectedAccount))
+            (connectedAccount != null &&
+                !canAutoFund(connectedAccount, LEGACY_CHAIN_ID))
 
         // A connected account that can't sign an LSig (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but

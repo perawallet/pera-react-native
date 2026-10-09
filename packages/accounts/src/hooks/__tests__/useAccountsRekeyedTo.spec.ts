@@ -20,15 +20,10 @@ import {
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -43,19 +38,22 @@ describe('useAccountsRekeyedTo', () => {
     it('returns an empty list when no address is provided', () => {
         seedAuthority('A', 'PQ')
         setAccounts([held('A')])
-        const { result } = renderHook(() => useAccountsRekeyedTo(null))
+        const { result } = renderHook(() =>
+            useAccountsRekeyedTo(null, 'algorand'),
+        )
         expect(result.current).toEqual([])
     })
 
     it('asks the chain which accounts are delegated to the address', () => {
-        const rekeyed = held('A')
-        seedAuthority('A', 'PQ')
-        const target = held('PQ', { type: 'quantum' })
+        const rekeyed = held('A', { rekeyAddress: 'PQ' })
+        const target = testAccount('explicit', 'PQ', { id: 'PQ' })
         setAccounts([rekeyed, target])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.accountsDelegatedTo).mockReturnValue([rekeyed])
 
-        const { result } = renderHook(() => useAccountsRekeyedTo('PQ'))
+        const { result } = renderHook(() =>
+            useAccountsRekeyedTo('PQ', 'algorand'),
+        )
 
         expect(result.current).toEqual([rekeyed])
         expect(authority!.accountsDelegatedTo).toHaveBeenCalledWith('PQ', [
@@ -68,7 +66,9 @@ describe('useAccountsRekeyedTo', () => {
         registerFakeAccountsChain({ authority: undefined })
         seedAuthority('A', 'PQ')
         setAccounts([held('A'), held('PQ')])
-        const { result } = renderHook(() => useAccountsRekeyedTo('PQ'))
+        const { result } = renderHook(() =>
+            useAccountsRekeyedTo('PQ', 'algorand'),
+        )
         expect(result.current).toEqual([])
     })
 })

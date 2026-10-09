@@ -23,7 +23,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useMinFeeForSender: (address: string) => mockUseMinFeeForSender(address),
+    useMinFeeForSender: (address: string, chainId: string) =>
+        mockUseMinFeeForSender(address, chainId),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({
@@ -68,7 +69,10 @@ describe('useOptInConfirmationContent', () => {
         const { result } = renderHook(() =>
             useOptInConfirmationContent('QUANTUM_SENDER'),
         )
-        expect(mockUseMinFeeForSender).toHaveBeenCalledWith('QUANTUM_SENDER')
+        expect(mockUseMinFeeForSender).toHaveBeenCalledWith(
+            'QUANTUM_SENDER',
+            'algorand',
+        )
         expect(result.current.resolvedFee.toString()).toBe('0.003')
     })
 

@@ -17,9 +17,24 @@ import { useRekeyToQuantumSelectTargetScreen } from '../useRekeyToQuantumSelectT
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { capabilityState } from '@test-utils/capability-mock'
 
-const sourceAccount = { address: 'SRC', name: 'Src' } as WalletAccount
-const targetA = { address: 'A', name: 'A' } as WalletAccount
-const targetB = { address: 'B', name: 'B' } as WalletAccount
+const sourceAccount = {
+    id: 'SRC',
+    name: 'Src',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'SRC' } },
+} as WalletAccount
+const targetA = {
+    id: 'A',
+    name: 'A',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'A' } },
+} as WalletAccount
+const targetB = {
+    id: 'B',
+    name: 'B',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'B' } },
+} as WalletAccount
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -39,19 +54,24 @@ vi.mock('@hooks/useCapability', async () =>
 )
 
 const mockUseAuthorityTargets = vi.fn(
-    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
-        targetA,
-        targetB,
-    ],
+    (
+        _source: WalletAccount | undefined,
+        _kind: string,
+        _scope: unknown,
+        _options?: object,
+    ) => [targetA, targetB],
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
+    addressOn: (account: WalletAccount, scope: { chainId: 'algorand' }) =>
+        account.chains[scope.chainId]?.address,
     useAuthorityTargets: (
         source: WalletAccount | undefined,
         kind: string,
+        scope: unknown,
         options?: object,
-    ) => mockUseAuthorityTargets(source, kind, options),
+    ) => mockUseAuthorityTargets(source, kind, scope, options),
 }))
 
 describe('useRekeyToQuantumSelectTargetScreen', () => {
@@ -69,6 +89,7 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
         expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
             'quantum',
+            expect.objectContaining({ chainId: 'algorand' }),
             { isQuantumTargetEnabled: true },
         )
     })
@@ -81,6 +102,7 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
         expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
             'quantum',
+            expect.objectContaining({ chainId: 'algorand' }),
             { isQuantumTargetEnabled: false },
         )
     })

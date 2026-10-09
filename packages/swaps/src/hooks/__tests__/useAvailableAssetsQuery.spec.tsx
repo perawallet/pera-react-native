@@ -14,12 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAvailableAssetsQuery } from '../useAvailableAssetsQuery'
 import { fetchAvailableAssets } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchAvailableAssets: vi.fn(),
@@ -52,7 +51,7 @@ describe('swaps/useAvailableAssetsQuery', () => {
     })
 
     test('returns available assets on success', async () => {
-        const { result } = renderHook(() => useAvailableAssetsQuery(0), {
+        const { result } = renderHook(() => useAvailableAssetsQuery(0, SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -65,7 +64,7 @@ describe('swaps/useAvailableAssetsQuery', () => {
     test('data is undefined while pending', () => {
         vi.mocked(fetchAvailableAssets).mockReturnValue(new Promise(() => {}))
 
-        const { result } = renderHook(() => useAvailableAssetsQuery(0), {
+        const { result } = renderHook(() => useAvailableAssetsQuery(0, SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -75,7 +74,7 @@ describe('swaps/useAvailableAssetsQuery', () => {
 
     test('is disabled when enabled=false', () => {
         const { result } = renderHook(
-            () => useAvailableAssetsQuery(0, undefined, false),
+            () => useAvailableAssetsQuery(0, SCOPE, undefined, false),
             { wrapper: createWrapper() },
         )
 
@@ -88,7 +87,7 @@ describe('swaps/useAvailableAssetsQuery', () => {
             new Error('Network error'),
         )
 
-        const { result } = renderHook(() => useAvailableAssetsQuery(0), {
+        const { result } = renderHook(() => useAvailableAssetsQuery(0, SCOPE), {
             wrapper: createWrapper(),
         })
 

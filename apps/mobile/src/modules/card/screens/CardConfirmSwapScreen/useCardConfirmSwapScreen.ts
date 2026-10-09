@@ -18,15 +18,18 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useAccountBalancesInvalidator } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useAccountBalancesInvalidator,
+    chainAccountOf,
+} from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
     getKnownAssetId,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
@@ -113,11 +116,11 @@ type UseCardConfirmSwapScreenResult = {
 }
 
 export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { params } =
         useRoute<RouteProp<PeraCardFlowParamList, 'CardConfirmSwap'>>()
     const navigation =
         useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
-    const { network } = useNetwork()
     const { t } = useLanguage()
     const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
@@ -136,11 +139,11 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
 
     // Same account the Add Funds screen swaps from: the one linked to the card.
     const account = useCardFundingAccount()
+    const accountAddress = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
 
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
     const assetIds = useMemo(
         () => [usdcAssetId, params.sourceAssetId].filter(id => id !== null),
         [usdcAssetId, params.sourceAssetId],
@@ -245,13 +248,13 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     // Moves the swapped USDC onto the card. The swap pays the linked account,
     // so wait for the credit to show on chain and deposit exactly that.
     const depositCredit = useCallback(async () => {
-        if (!account) return
+        if (!account || !accountAddress) return
         setStep('depositing')
         try {
             const credited =
                 creditedRef.current ??
                 (await waitForUsdcCredit({
-                    address: account.address,
+                    address: accountAddress,
                     before: balanceBeforeRef.current ?? 0n,
                     minimum: quote?.amountOutWithSlippage
                         ? BigInt(quote.amountOutWithSlippage.toFixed(0))
@@ -282,6 +285,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         }
     }, [
         account,
+        accountAddress,
         quote,
         usdcDecimals,
         waitForUsdcCredit,
@@ -302,10 +306,8 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         // Get-USDC flow isn't built — this screen is only reachable from Add Funds.
         trackEvent(CardEvent.AddFundsConfirm)
         const run = async () => {
-            if (account) {
-                balanceBeforeRef.current = await readUsdcBalance(
-                    account.address,
-                )
+            if (accountAddress) {
+                balanceBeforeRef.current = await readUsdcBalance(accountAddress)
             }
             creditedRef.current = null
             setStep('swapping')
@@ -348,7 +350,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         }
         void run()
     }, [
-        account,
+        accountAddress,
         readUsdcBalance,
         executeSwap,
         refreshQuote,

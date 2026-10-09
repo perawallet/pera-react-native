@@ -12,9 +12,11 @@
 
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import {
+    findAccountByAddressOn,
     getAccountDisplayName,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountIcon } from '@components/AccountIcon'
@@ -30,7 +32,11 @@ export type AsaInboxItemProps = {
 export const AsaInboxItem = ({ item, onPress }: AsaInboxItemProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const account = accounts.find(acc => acc.address === item.data.address)
+    const account = findAccountByAddressOn(
+        accounts,
+        LEGACY_CHAIN_ID,
+        item.data.address,
+    )
 
     const icon = account ? (
         <AccountIcon
@@ -54,7 +60,7 @@ export const AsaInboxItem = ({ item, onPress }: AsaInboxItemProps) => {
             title={t('messages.inbox.asa_requests', {
                 count: item.data.requestCount,
             })}
-            subtitle={getAccountDisplayName(account ?? null)}
+            subtitle={getAccountDisplayName(account ?? null, LEGACY_CHAIN_ID)}
         />
     )
 }

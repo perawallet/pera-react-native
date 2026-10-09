@@ -106,17 +106,10 @@ const seedLedgerSender = (): HardwareWalletAccount => {
             },
             accountIndex: 0,
         },
-        address: LEDGER_ADDRESS,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'test-device-id',
-            deviceName: 'Ledger Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
+        chains: { algorand: { address: LEDGER_ADDRESS } },
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 
@@ -276,9 +269,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
         expect(sendSpy).toHaveBeenCalled()
 
         // Selected account state survived the transitions.
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            sender.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
     })
 
     it('Given a Ledger sender, when the device rejects the transaction, then the signing sheet shows the user-rejected error, never POSTs to algod, and never reaches success', async () => {

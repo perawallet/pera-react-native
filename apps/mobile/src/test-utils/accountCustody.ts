@@ -12,10 +12,19 @@
 
 import type {
     AccountCustody,
-    AccountType,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-const CUSTODY_BY_TYPE: Record<AccountType, AccountCustody> = {
+/** The Algorand account kinds specs parameterise over; the app itself never names them. */
+export type AlgorandAccountKind =
+    | 'algo25'
+    | 'quantum'
+    | 'hdWallet'
+    | 'hardware'
+    | 'multisig'
+    | 'watch'
+
+const CUSTODY_BY_TYPE: Record<AlgorandAccountKind, AccountCustody> = {
     algo25: { kind: 'local', seed: 'algo25' },
     quantum: { kind: 'local', seed: 'quantum' },
     hdWallet: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
@@ -34,5 +43,30 @@ const CUSTODY_BY_TYPE: Record<AccountType, AccountCustody> = {
 }
 
 /** For a spec helper that takes the account kind as a parameter. */
-export const custodyForType = (type: AccountType): AccountCustody =>
+export const custodyForType = (type: AlgorandAccountKind): AccountCustody =>
     CUSTODY_BY_TYPE[type]
+
+/**
+ * An account of `type` holding `address` on Algorand; local kinds get a
+ * signing key so they sign directly.
+ */
+export const accountForType = (
+    type: AlgorandAccountKind,
+    address = `${type.toUpperCase()}_ADDR`,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => {
+    const custody = custodyForType(type)
+    return {
+        id: `${type}-account`,
+        custody,
+        chains: {
+            algorand: {
+                address,
+                ...(custody.kind === 'local'
+                    ? { keyPairId: `${type}-key` }
+                    : {}),
+            },
+        },
+        ...overrides,
+    }
+}

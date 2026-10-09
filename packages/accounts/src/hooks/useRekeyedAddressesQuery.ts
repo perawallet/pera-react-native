@@ -11,11 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'
 
@@ -29,13 +25,11 @@ type UseRekeyedAddressesQueryResult = {
 
 export const useRekeyedAddressesQuery = (
     address: string,
+    scope: ChainScope,
 ): UseRekeyedAddressesQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const query = useQuery({
         queryKey: getRekeyedAddressesQueryKey(address, scope),
-        queryFn: () => fetchRekeyedAddresses(address, network),
+        queryFn: () => fetchRekeyedAddresses(address, scope),
         enabled: !!address,
         // 30s lets `prefetchLedgerAccountPreview`'s warm-up actually pay off
         // for the short-lived Ledger import session without serving

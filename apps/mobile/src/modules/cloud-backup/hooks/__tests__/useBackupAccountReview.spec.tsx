@@ -26,7 +26,9 @@ const {
     kindMock,
     NoConnectionError,
 } = vi.hoisted(() => ({
-    accountsMock: { current: [] as { address: string }[] },
+    accountsMock: {
+        current: [] as { chains: { algorand: { address: string } } }[],
+    },
     reviewMock: {
         current: {
             backedUp: new Set<string>(),
@@ -53,6 +55,10 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountsStore: (selector: (s: unknown) => unknown) =>
         selector({ accounts: accountsMock.current }),
 }))
@@ -63,6 +69,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
+        BACKUP_CHAIN_ID: 'algorand',
         deriveBackupAccountReview: () => reviewMock.current,
         backupBusyItemKey: (itemKind: string, id: string) =>
             `${itemKind}:${id}`,
@@ -99,6 +106,10 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const heldAccount = (address: string) => ({
+    chains: { algorand: { address } },
+})
+
 const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: { mutations: { retry: false } },
@@ -116,7 +127,7 @@ const renderReview = () =>
 beforeEach(() => {
     vi.clearAllMocks()
     busyItemsMock.current = []
-    accountsMock.current = [{ address: 'A' }, { address: 'B' }]
+    accountsMock.current = [heldAccount('A'), heldAccount('B')]
     reviewMock.current = {
         backedUp: new Set(['A']),
         notBackedUp: ['B'],
@@ -128,8 +139,8 @@ describe('useBackupAccountReview', () => {
     test('resolves the buckets back to the wallet accounts they name', () => {
         const { result } = renderReview()
 
-        expect(result.current.backedUpAccounts).toEqual([{ address: 'A' }])
-        expect(result.current.notBackedUpAccounts).toEqual([{ address: 'B' }])
+        expect(result.current.backedUpAccounts).toEqual([heldAccount('A')])
+        expect(result.current.notBackedUpAccounts).toEqual([heldAccount('B')])
         expect(result.current.availableFromBackup).toEqual([
             { address: 'GONE', type: 'algo25' },
         ])

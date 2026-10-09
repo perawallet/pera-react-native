@@ -15,7 +15,8 @@ import { z } from 'zod'
 export const BackupAccountType = {
     algo25: 'algo25',
     hdSeed: 'hdSeed',
-    hdWallet: 'hdWallet',
+    // A persisted wire value: every existing cloud backup carries it.
+    hdAccount: 'hdWallet',
     hardware: 'hardware',
     watch: 'watch',
     multisig: 'multisig',
@@ -53,8 +54,8 @@ export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
     address,
 })
-export const hdWalletAddressPayloadSchema = z.object({
-    type: z.literal(BackupAccountType.hdWallet),
+export const hdAccountAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdAccount),
     address,
     seedFirstDerivedAddress: address,
     publicKey: z.string(),
@@ -101,7 +102,7 @@ export const quantumAddressPayloadSchema = z.object({
 export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
     algo25AddressPayloadSchema,
     hdSeedAddressPayloadSchema,
-    hdWalletAddressPayloadSchema,
+    hdAccountAddressPayloadSchema,
     hardwareAddressPayloadSchema,
     watchAddressPayloadSchema,
     multisigAddressPayloadSchema,
@@ -110,8 +111,8 @@ export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
 
 export type Algo25AddressPayload = z.infer<typeof algo25AddressPayloadSchema>
 export type HdSeedAddressPayload = z.infer<typeof hdSeedAddressPayloadSchema>
-export type HdWalletAddressPayload = z.infer<
-    typeof hdWalletAddressPayloadSchema
+export type HdAccountAddressPayload = z.infer<
+    typeof hdAccountAddressPayloadSchema
 >
 export type HardwareAddressPayload = z.infer<
     typeof hardwareAddressPayloadSchema

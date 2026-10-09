@@ -21,6 +21,8 @@ import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import { algorandAddressOf } from '../../../accounts/vocabulary'
 import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 
 const MOCK_ADDRESS =
@@ -28,8 +30,12 @@ const MOCK_ADDRESS =
 
 const mockAlgo25Account: WalletAccount = {
     custody: { kind: 'local', seed: 'algo25' },
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: MOCK_ADDRESS,
+            keyPairId: 'key-1',
+        },
+    },
 } as unknown as WalletAccount
 
 const mockTransaction = { txn: {} } as never
@@ -104,7 +110,11 @@ describe('signLocalKeyGroups', () => {
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
         const accountWithoutKeys: WalletAccount = {
             custody: { kind: 'multisig' },
-            address: multisigAddress,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: multisigAddress,
+                },
+            },
         } as unknown as WalletAccount
 
         const groupForMultisig: AnalyzedSignableGroup = {
@@ -142,8 +152,12 @@ describe('signLocalKeyGroups', () => {
 
         const participantAccount: WalletAccount = {
             custody: { kind: 'local', seed: 'algo25' },
-            address: PARTICIPANT,
-            keyPairId: 'key-participant',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: PARTICIPANT,
+                    keyPairId: 'key-participant',
+                },
+            },
         } as unknown as WalletAccount
 
         beforeEach(() => {
@@ -153,8 +167,12 @@ describe('signLocalKeyGroups', () => {
 
         const authAccount: WalletAccount = {
             custody: { kind: 'local', seed: 'algo25' },
-            address: AUTH,
-            keyPairId: 'key-auth',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: AUTH,
+                    keyPairId: 'key-auth',
+                },
+            },
         } as unknown as WalletAccount
 
         const buildGroup = (
@@ -184,7 +202,7 @@ describe('signLocalKeyGroups', () => {
 
             expect(signTransactions).toHaveBeenCalledTimes(1)
             const [, , accountUsed] = signTransactions.mock.calls[0]
-            expect(accountUsed.address).toBe(PARTICIPANT)
+            expect(algorandAddressOf(accountUsed)).toBe(PARTICIPANT)
             expect(results[0].signers[0].address).toBe(PARTICIPANT)
         })
 
@@ -200,7 +218,7 @@ describe('signLocalKeyGroups', () => {
 
             expect(signTransactions).toHaveBeenCalledTimes(1)
             const [, , accountUsed] = signTransactions.mock.calls[0]
-            expect(accountUsed.address).toBe(AUTH)
+            expect(algorandAddressOf(accountUsed)).toBe(AUTH)
             expect(results[0].signers[0].address).toBe(AUTH)
         })
     })

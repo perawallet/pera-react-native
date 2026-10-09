@@ -13,7 +13,16 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../../models'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    watchAccount,
+} from '../../__tests__/accounts'
 
 const mockSigningRequest = {
     currentRequest: undefined as unknown,
@@ -27,15 +36,14 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => mockSigningRequest,
 }))
 
-const mockAllAccounts = vi.fn<
-    () => Array<{ address: string; custody: { kind: string; seed?: string } }>
->(() => [
-    { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
-    { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, TEST_CHAIN_ID)?.address
+
+const mockAllAccounts = vi.fn<() => WalletAccount[]>(() => [
+    algo25Account('ADDR_A'),
+    algo25Account('ADDR_B'),
 ])
-const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
-    () => true,
-)
+const mockCanSignWith = vi.fn<(account: WalletAccount) => boolean>(() => true)
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -44,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockAllAccounts(),
-        canSignWith: (account: { address: string }) => mockCanSignWith(account),
+        canSignWith: (account: WalletAccount) => mockCanSignWith(account),
     }
 })
 
@@ -67,8 +75,8 @@ beforeEach(() => {
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
     mockAllAccounts.mockReturnValue([
-        { address: 'ADDR_A', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR_B', custody: { kind: 'local', seed: 'algo25' } },
+        algo25Account('ADDR_A'),
+        algo25Account('ADDR_B'),
     ])
     mockCanSignWith.mockReturnValue(true)
     mockMapToDisplayable.mockClear()
@@ -338,11 +346,11 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses contains only accounts where canSignWith returns true', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'SIGNER', custody: { kind: 'local', seed: 'algo25' } },
-            { address: 'WATCH', custody: { kind: 'watch' } },
-            { address: 'REKEYED_UNSIGNABLE', custody: { kind: 'watch' } },
+            algo25Account('SIGNER'),
+            watchAccount('WATCH'),
+            watchAccount('REKEYED_UNSIGNABLE'),
         ])
-        mockCanSignWith.mockImplementation(a => a.address === 'SIGNER')
+        mockCanSignWith.mockImplementation(a => addressOf(a) === 'SIGNER')
 
         const request: TransactionSignRequest = {
             id: 'req-1',
@@ -363,10 +371,7 @@ describe('useSigningPipeline', () => {
     })
 
     test('signableAddresses is empty when no accounts pass canSignWith', () => {
-        mockAllAccounts.mockReturnValue([
-            { address: 'A', custody: { kind: 'watch' } },
-            { address: 'B', custody: { kind: 'watch' } },
-        ])
+        mockAllAccounts.mockReturnValue([watchAccount('A'), watchAccount('B')])
         mockCanSignWith.mockReturnValue(false)
 
         mockSigningRequest.currentRequest = {
@@ -426,12 +431,7 @@ describe('useSigningPipeline', () => {
             matches: (s: string) => s === 'awaiting_user',
             context: {
                 signerAddress: 'A123',
-                allAccounts: [
-                    {
-                        address: 'A123',
-                        custody: { kind: 'local', seed: 'algo25' },
-                    },
-                ],
+                allAccounts: [algo25Account('A123')],
                 groupSigners: new Map([
                     ['A123', { custody: 'local', scheme: 'ed25519' }],
                 ]),
@@ -443,6 +443,9 @@ describe('useSigningPipeline', () => {
                     txs: [{}],
                 },
                 signableGroups: [{ signerAddress: 'A123' }],
+                deps: {
+                    scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' },
+                },
                 error: null,
             },
         }

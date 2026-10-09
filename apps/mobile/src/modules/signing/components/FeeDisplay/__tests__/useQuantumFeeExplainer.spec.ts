@@ -54,8 +54,9 @@ const quantumAccount = (authority?: string): WalletAccount => {
     return {
         id: 'quantum-id',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_ADDRESS,
-        keyPairId: 'quantum-key',
+        chains: {
+            algorand: { address: QUANTUM_ADDRESS, keyPairId: 'quantum-key' },
+        },
         name: 'Quantum',
     } as WalletAccount
 }
@@ -65,8 +66,9 @@ const standardAccount = (authority?: string): WalletAccount => {
     return {
         id: 'standard-id',
         custody: { kind: 'local', seed: 'algo25' },
-        address: STANDARD_ADDRESS,
-        keyPairId: 'standard-key',
+        chains: {
+            algorand: { address: STANDARD_ADDRESS, keyPairId: 'standard-key' },
+        },
         name: 'Standard',
     } as WalletAccount
 }

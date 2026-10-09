@@ -26,6 +26,7 @@ import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algo25Account, multisigAccount } from '../../../../__tests__/accounts'
 import {
     algodBackedTransport,
     registerFakeBroadcaster,
@@ -44,12 +45,7 @@ const ALGORAND_TESTNET: ChainScope = {
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-// Minimal mock account (algo25, local signing keys)
-const mockAlgo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAlgo25Account = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockSigningResult: SigningResult = {
     signedData: {
@@ -161,6 +157,12 @@ describe('transportActor', () => {
             { type: 'local' },
             {
                 signingResults: [dataResult],
+                allAccounts: [
+                    {
+                        ...mockAlgo25Account,
+                        chains: { ethereum: { address: MOCK_ADDRESS } },
+                    },
+                ],
                 createTransport: () => ({ send }),
                 scope: { chainId: 'ethereum', networkId: 'sepolia' },
             },
@@ -264,25 +266,17 @@ describe('transportActor', () => {
             'G3EG2YQE72G52LIV5AHOA5VEVM7AFT2BFKOSZXJIJBDHBSBPXPTZC5OM24'
         const J2_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
-        const jointSender = {
-            custody: { kind: 'multisig' },
-            address: J1_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p1', 'p2'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const jointSender = multisigAccount(J1_ADDRESS, {
+            threshold: 2,
+            addresses: ['p1', 'p2'],
+            version: 1,
+        })
         seedAuthority(J1_ADDRESS, J2_ADDRESS, scopeForLegacyNetwork('testnet'))
-        const authAccount = {
-            custody: { kind: 'multisig' },
-            address: J2_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p3', 'p4'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const authAccount = multisigAccount(J2_ADDRESS, {
+            threshold: 2,
+            addresses: ['p3', 'p4'],
+            version: 1,
+        })
 
         const proposeMock = vi
             .fn()
@@ -318,21 +312,17 @@ describe('transportActor', () => {
         // keyed on the sender's own (standard) type.
         const MSIG_AUTH_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
-        const rekeyedSender = mockAlgo25Account as unknown as WalletAccount
+        const rekeyedSender: WalletAccount = mockAlgo25Account
         seedAuthority(
-            rekeyedSender.address,
+            MOCK_ADDRESS,
             MSIG_AUTH_ADDRESS,
             scopeForLegacyNetwork('testnet'),
         )
-        const msigAuth = {
-            custody: { kind: 'multisig' },
-            address: MSIG_AUTH_ADDRESS,
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['p1', 'p2'],
-                version: 1,
-            },
-        } as unknown as WalletAccount
+        const msigAuth = multisigAccount(MSIG_AUTH_ADDRESS, {
+            threshold: 2,
+            addresses: ['p1', 'p2'],
+            version: 1,
+        })
 
         const proposeMock = vi
             .fn()
@@ -366,9 +356,9 @@ describe('transportActor', () => {
         // Multisig-cosign participants sign with their own key — the rekey
         // hop must not be followed for transport keying either.
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
-        const rekeyedParticipant = mockAlgo25Account as unknown as WalletAccount
+        const rekeyedParticipant: WalletAccount = mockAlgo25Account
         seedAuthority(
-            rekeyedParticipant.address,
+            MOCK_ADDRESS,
             'SOMEOTHERAUTH',
             scopeForLegacyNetwork('testnet'),
         )

@@ -16,7 +16,10 @@ import {
     useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 
@@ -39,27 +42,30 @@ export const useRekeyToQuantumSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const source = useFindAccountByAddress(sourceAddress)
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
         const isQuantumTargetEnabled = useCapability({
             platform: 'quantum',
             anyChain: 'quantumAccounts',
         })
 
-        const targets = useAuthorityTargets(source, 'quantum', {
+        const targets = useAuthorityTargets(source, 'quantum', scope, {
             isQuantumTargetEnabled,
         })
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToQuantum', {
                     screen: 'RekeyToQuantumConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

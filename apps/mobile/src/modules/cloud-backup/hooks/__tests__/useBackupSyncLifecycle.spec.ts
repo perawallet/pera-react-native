@@ -112,6 +112,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     registerStore: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
 vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useToast', () => ({

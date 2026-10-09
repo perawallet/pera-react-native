@@ -20,12 +20,14 @@ import {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useAutoDrawSwitch,
     useCardErrorToast,
     useFinishCardCreation,
 } from '@modules/card/hooks'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
 /**
  * True when the failure is the user declining a signing prompt rather than
@@ -65,8 +67,7 @@ export const useCardAutoFundingSigningScreen =
         const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
+            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
             [accounts, connectedAddress],
         )
 

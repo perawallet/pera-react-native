@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { ReviewerChainAdapter } from '../chain-adapter'
 import type { AnalysisContext, SignableGroup } from '../pipeline/types'
@@ -38,7 +38,11 @@ const txnsOf = (group: SignableGroup): FixtureTxn[] =>
         : []
 
 const signsFor = (group: SignableGroup, context: AnalysisContext) =>
-    context.accounts.some(a => a.address === group.signerAddress)
+    context.accounts.some(
+        a =>
+            chainAccountOf(a, FIXTURE_CHAIN_ID)?.address ===
+            group.signerAddress,
+    )
 
 const isOnOtherNetwork = (group: SignableGroup, context: AnalysisContext) =>
     txnsOf(group).some(
@@ -101,7 +105,13 @@ const groupOf = (signerAddress: string, txns: FixtureTxn[]): SignableGroup =>
 reviewerContractTests(() => fixtureReviewer, {
     context: {
         scope: { chainId: FIXTURE_CHAIN_ID, networkId: 'testnet' },
-        accounts: [{ address: WALLET } as WalletAccount],
+        accounts: [
+            {
+                id: WALLET,
+                custody: { kind: 'watch' },
+                chains: { [FIXTURE_CHAIN_ID]: { address: WALLET } },
+            },
+        ],
     },
     plainGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n }]),
     riskyGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n, isRisky: true }]),

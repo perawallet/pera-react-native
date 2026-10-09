@@ -12,7 +12,6 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
     PeraTransaction,
@@ -33,12 +32,9 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 import { SIGNING_KEY_DOMAIN } from '../../constants'
 import { registerFakeLocalKeySignerAdapter } from '../../__tests__/fakeLocalKeySignerAdapter'
 import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
+import { algo25Account } from '../../__tests__/accounts'
 
-const account = {
-    address: 'ADDR',
-    keyPairId: 'key-1',
-    custody: { kind: 'local', seed: 'algo25' },
-} as unknown as WalletAccount
+const account = algo25Account('ADDR', { keyPairId: 'key-1' })
 const group = [{ id: 'txn' }] as unknown as PeraTransaction[]
 const ALGORAND_MAINNET: ChainScope = {
     chainId: 'algorand',

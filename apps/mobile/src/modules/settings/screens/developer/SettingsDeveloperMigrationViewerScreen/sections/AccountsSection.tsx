@@ -11,8 +11,14 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import {
+    accountsChainAdapters,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     MigrationDataSection,
     useExpandableState,
@@ -23,13 +29,19 @@ import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { useStyles } from '../styles'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
-import { accountType } from '@perawallet/wallet-core-accounts'
+
+const kindOf = (account: WalletAccount): string => {
+    const scope = getSelectedScope(LEGACY_CHAIN_ID)
+    return accountsChainAdapters
+        .get(scope.chainId)
+        .presentation.describe(account, [], scope).kindId
+}
 
 const getDisplayType = (account: LegacyAccount): string => {
     if (account.type === 'watch') return 'watch'
     if (account.joint !== null) return 'multisig'
     if (account.ledger !== null) return 'hardware'
-    if (account.hdWalletId !== null) return 'hdWallet'
+    if (account.hdSeedId !== null) return 'hd'
     return 'algo25'
 }
 
@@ -126,9 +138,9 @@ const AccountCard = ({
                         const rnAccount = rn.accountsByAddress.get(
                             account.address,
                         )
-                        const rnOrderIndex = rn.manualAccountOrder.indexOf(
-                            account.address,
-                        )
+                        const rnOrderIndex = rnAccount
+                            ? rn.manualAccountOrder.indexOf(rnAccount.id)
+                            : -1
                         return (
                             <>
                                 <MigrationDataRow
@@ -152,7 +164,7 @@ const AccountCard = ({
                                     legacyValue={account.type}
                                     rnValue={
                                         rnAccount
-                                            ? accountType(rnAccount)
+                                            ? kindOf(rnAccount)
                                             : '(missing)'
                                     }
                                 />
@@ -177,8 +189,8 @@ const AccountCard = ({
                         value={account.secretKey}
                     />
                     <MigrationDataRow
-                        label='hdWalletId'
-                        value={account.hdWalletId}
+                        label='hdSeedId'
+                        value={account.hdSeedId}
                     />
 
                     {account.ledger && (

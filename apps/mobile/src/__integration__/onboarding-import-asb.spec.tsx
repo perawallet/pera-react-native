@@ -25,11 +25,7 @@ import { AsbImportBackupScreen } from '@modules/onboarding/screens/AsbImportBack
 import { AsbImportKeyScreen } from '@modules/onboarding/screens/AsbImportKeyScreen'
 import { AsbImportSelectAccountsScreen } from '@modules/onboarding/screens/AsbImportSelectAccountsScreen'
 import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResultScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks/asbImportFlowStore'
 
@@ -47,6 +43,7 @@ import {
     buildSingleAccountAsbBackup,
 } from './__fixtures__/asb'
 import { seedFromMnemonic } from 'algosdk'
+import { addressOf } from './__fixtures__/accounts'
 
 const renderAsbImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
@@ -182,8 +179,8 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         )
 
         const [account] = useAccountsStore.getState().accounts
-        expect(accountType(account)).toBe(AccountTypes.algo25)
-        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
         expect(account.name).toBe('Algo25 from ASB')
 
         await waitFor(() => screen.getByTestId('asb_import_result'))
@@ -220,7 +217,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
 
         const addresses = useAccountsStore
             .getState()
-            .accounts.map(a => a.address)
+            .accounts.map(a => addressOf(a))
             .sort()
         expect(addresses).toEqual(
             [ALGO25_TEST_ADDRESS, ASB_WATCH_ADDRESS].sort(),
@@ -228,14 +225,12 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
 
         const algo25 = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === ALGO25_TEST_ADDRESS)
+            .accounts.find(a => addressOf(a) === ALGO25_TEST_ADDRESS)
         const watch = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === ASB_WATCH_ADDRESS)
-        expect(algo25 ? accountType(algo25) : undefined).toBe(
-            AccountTypes.algo25,
-        )
-        expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
+            .accounts.find(a => addressOf(a) === ASB_WATCH_ADDRESS)
+        expect(algo25?.custody).toEqual({ kind: 'local', seed: 'algo25' })
+        expect(watch?.custody).toEqual({ kind: 'watch' })
     })
 
     it('Given a valid backup file pasted from the clipboard, the import path works without the file picker', async () => {
@@ -264,7 +259,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             },
             { timeout: 10_000 },
         )
-        expect(useAccountsStore.getState().accounts[0].address).toBe(
+        expect(addressOf(useAccountsStore.getState().accounts[0])).toBe(
             ALGO25_TEST_ADDRESS,
         )
         // File picker was never invoked — paste path is independent.
@@ -315,8 +310,12 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             {
                 id: 'pre-seeded',
                 custody: { kind: 'local', seed: 'algo25' },
-                address: ALGO25_TEST_ADDRESS,
-                keyPairId: 'pre-seeded',
+                chains: {
+                    algorand: {
+                        address: ALGO25_TEST_ADDRESS,
+                        keyPairId: 'pre-seeded',
+                    },
+                },
             },
         ])
 
@@ -371,14 +370,14 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
 
         const algo25 = useAccountsStore
             .getState()
-            .accounts.filter(a => a.address === ALGO25_TEST_ADDRESS)
+            .accounts.filter(a => addressOf(a) === ALGO25_TEST_ADDRESS)
         expect(algo25).toHaveLength(1)
         expect(algo25[0].id).toBe('pre-seeded')
 
         const watch = useAccountsStore
             .getState()
-            .accounts.find(a => accountType(a) === AccountTypes.watch)
-        expect(watch?.address).toBe(ASB_WATCH_ADDRESS)
+            .accounts.find(a => a.custody.kind === 'watch')
+        expect(watch ? addressOf(watch) : undefined).toBe(ASB_WATCH_ADDRESS)
     })
 
     it('Given the loaded file is not a valid ASB envelope, an error toast is raised and the wizard cannot advance', async () => {

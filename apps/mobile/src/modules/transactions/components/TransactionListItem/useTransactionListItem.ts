@@ -12,7 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     getDebitedAddress,
@@ -150,7 +154,9 @@ export const useTransactionListItem = ({
     const { t } = useLanguage()
     const { network } = useNetwork()
     const { openTxIds } = useOpenSubmissionTxIdsQuery({ network })
-    const userAddress = account?.address ?? ''
+    const userAddress = account
+        ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
+        : ''
     const isPendingVerifying = openTxIds.has(transaction.id)
 
     const isOutgoing = useMemo(

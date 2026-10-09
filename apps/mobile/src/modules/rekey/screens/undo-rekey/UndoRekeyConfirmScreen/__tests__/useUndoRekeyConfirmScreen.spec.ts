@@ -63,13 +63,13 @@ vi.mock('@modules/webview', () => ({
 }))
 
 const mockSourceAccount = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC' } },
     name: 'Source',
     custody: { kind: 'local', seed: 'algo25' } as WalletAccount['custody'],
 }
 let mockHasSource = true
 const mockAuthAccount = {
-    address: 'AUTH',
+    chains: { algorand: { address: 'AUTH' } },
     name: 'Auth',
     custody: { kind: 'local', seed: 'algo25' },
 }

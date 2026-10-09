@@ -12,8 +12,6 @@
 
 import {
     createChainAdapterRegistry,
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
     type Arc0001ResolveContext,
@@ -56,6 +54,7 @@ import type {
     SourceMetadata,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
+import { chainIdOfSignRequest } from './models/chain'
 
 export type RequestStructure = 'single' | 'list'
 
@@ -822,17 +821,9 @@ export interface PlannerChainAdapter {
 export const plannerChainAdapters =
     createChainAdapterRegistry<PlannerChainAdapter>('planner')
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
-    plannerAdapterForScope(scopeForLegacyNetwork(network))
-
 export const plannerAdapterForScope = (
     scope: ChainScope,
 ): PlannerChainAdapter => plannerChainAdapters.get(scope.chainId)
-
-// For callers with no network in hand: every legacy network maps to this chain.
-export const legacyPlannerAdapter = (): PlannerChainAdapter =>
-    plannerChainAdapters.get(LEGACY_CHAIN_ID)
 
 /** The local-key signing legs; the KMS primitive is chosen by scheme, never by account type. */
 export interface LocalKeySignerChainAdapter {
@@ -860,21 +851,28 @@ export const localKeySignerAdapterFor = (
 ): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
 export const resolveMinFeeForSender = (
+    chainId: ChainId,
     params: ResolveMinFeeForSenderParams,
-): bigint => legacyPlannerAdapter().minFeeForSender(params)
+): bigint => plannerChainAdapters.get(chainId).minFeeForSender(params)
 
 export const computeBalanceImpact = (
+    chainId: ChainId,
     transactions: PeraDisplayableTransaction[],
     userAddresses: Set<string>,
 ): BalanceImpact =>
-    legacyPlannerAdapter().computeBalanceImpact(transactions, userAddresses)
+    plannerChainAdapters
+        .get(chainId)
+        .computeBalanceImpact(transactions, userAddresses)
 
 export const encodeProgramAccount = (
+    chainId: ChainId,
     program: Uint8Array,
     sig: Uint8Array,
     signerAddress: string,
 ): Uint8Array =>
-    legacyPlannerAdapter().encodeProgramAccount(program, sig, signerAddress)
+    plannerChainAdapters
+        .get(chainId)
+        .encodeProgramAccount(program, sig, signerAddress)
 
 export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
@@ -883,11 +881,15 @@ export const classifyHandoffPoll = (
     plannerAdapterForScope(context.scope).classifyHandoffPoll(detail, context)
 
 export const completeMultisigHandoff = (
+    chainId: ChainId,
     args: CompleteMultisigHandoffArgs,
-): Promise<void> => legacyPlannerAdapter().completeMultisigHandoff(args)
+): Promise<void> =>
+    plannerChainAdapters.get(chainId).completeMultisigHandoff(args)
 
 export const isSignRequestMultisigUnsignable = (
     request: SignRequest,
     accounts: WalletAccount[],
 ): boolean =>
-    legacyPlannerAdapter().isSignRequestMultisigUnsignable(request, accounts)
+    plannerChainAdapters
+        .get(chainIdOfSignRequest(request))
+        .isSignRequestMultisigUnsignable(request, accounts)

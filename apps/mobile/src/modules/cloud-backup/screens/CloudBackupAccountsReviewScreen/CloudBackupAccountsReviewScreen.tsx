@@ -22,6 +22,7 @@ import { AvailableFromBackupRow } from './AvailableFromBackupRow'
 import { NotBackedUpAccountRow } from './NotBackedUpAccountRow'
 import { useCloudBackupAccountsReview } from './useCloudBackupAccountsReview'
 import { useStyles } from './styles'
+import { backupAddressOf } from '../../utils/backupAddress'
 
 export const CloudBackupAccountsReviewScreen = () => {
     const { t } = useLanguage()
@@ -113,11 +114,13 @@ export const CloudBackupAccountsReviewScreen = () => {
                         />
                         <PWView>
                             {notBackedUpAccounts.map((account, index) => (
-                                <Fragment key={account.address}>
+                                <Fragment key={account.id}>
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpAccountRow
                                         account={account}
-                                        isBusy={isBusy(account.address)}
+                                        isBusy={isBusy(
+                                            backupAddressOf(account),
+                                        )}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

@@ -34,9 +34,10 @@ export type HardwareSigningOperation = 'transaction' | 'data'
 export type HardwareSigningInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
+    /** The request's scope; each group's signer is looked up by its address there. */
+    scope: ChainScope
     hardwareWalletRegistry: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
-    scope: ChainScope
     /** Total transactions across all groups — set by parent for initial currentTx/totalTxs. */
     totalTxs: number
     /** Device name resolved at parent build-time so the overlay can render immediately. */

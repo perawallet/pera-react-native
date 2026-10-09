@@ -81,6 +81,7 @@ import {
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
+import { addressOf } from './__fixtures__/accounts'
 
 const NETWORK = 'mainnet'
 const CONFIRMED_ROUND = 1000
@@ -187,7 +188,7 @@ describe('Flow: offline submission reconnect', () => {
         // even though nothing has been persisted as a sign request.
         onlineManager.setOnline(false)
 
-        const history = renderHistoryQuery(account.address)
+        const history = renderHistoryQuery(addressOf(account))
         await waitFor(() => {
             expect(history.result.current.transactions.length).toBeGreaterThan(
                 0,
@@ -243,7 +244,7 @@ describe('Flow: offline submission reconnect', () => {
                     'current-round': CONFIRMED_ROUND,
                     transaction: {
                         id: String(params.txId),
-                        sender: account.address,
+                        sender: addressOf(account),
                         fee: 1000,
                         'first-valid': 1000,
                         'last-valid': 2000,
@@ -254,7 +255,7 @@ describe('Flow: offline submission reconnect', () => {
                 }),
             ),
             mockTransactionHistory({
-                accountAddress: account.address,
+                accountAddress: addressOf(account),
                 response: { results: [], current_round: CONFIRMED_ROUND },
             }),
         )
@@ -269,7 +270,7 @@ describe('Flow: offline submission reconnect', () => {
             expect(open).toHaveLength(0)
         })
 
-        const settledHistory = renderHistoryQuery(account.address)
+        const settledHistory = renderHistoryQuery(addressOf(account))
         await waitFor(() => {
             expect(settledHistory.result.current.isFetched).toBe(true)
         })
@@ -283,14 +284,14 @@ describe('Flow: offline submission reconnect', () => {
         // confirm it renders exactly once (the pending row is gone).
         server.use(
             mockTransactionHistory({
-                accountAddress: account.address,
-                response: committedHistoryResponse(txid, account.address),
+                accountAddress: addressOf(account),
+                response: committedHistoryResponse(txid, addressOf(account)),
             }),
         )
 
-        await fetchAndPersistTransactions(account.address, NETWORK)
+        await fetchAndPersistTransactions(addressOf(account), NETWORK)
 
-        const syncedHistory = renderHistoryQuery(account.address)
+        const syncedHistory = renderHistoryQuery(addressOf(account))
         await waitFor(() => {
             const matches = syncedHistory.result.current.transactions.filter(
                 tx => tx.id === txid,

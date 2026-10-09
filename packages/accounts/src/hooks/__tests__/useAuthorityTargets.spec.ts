@@ -13,7 +13,6 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAuthorityTargets } from '../useAuthorityTargets'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -22,15 +21,10 @@ import {
     fakeAccountsChain,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -38,52 +32,52 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain()
     })
 
-    it('passes the kind, source, accounts and quantum flag to the chain and keeps the accepted targets', () => {
+    it("passes the kind, source, accounts and the chain's options through and keeps the accepted targets", () => {
         const source = held('SRC')
         const good = held('GOOD')
         const bad = held('BAD')
         setAccounts([source, good, bad])
         const { authority } = fakeAccountsChain().adapter
         vi.mocked(authority!.isEligibleTarget).mockImplementation(
-            (_kind, target) => target.address === 'GOOD',
+            (_kind, target) => target.id === 'GOOD',
         )
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'quantum', {
-                isQuantumTargetEnabled: true,
+            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE, {
+                someChainSwitch: true,
             }),
         )
 
         expect(result.current).toEqual([good])
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
-            'quantum',
+            'fake-target-local',
             good,
             source,
             [source, good, bad],
             MAINNET_SCOPE,
-            { isQuantumTargetEnabled: true },
+            { someChainSwitch: true },
         )
     })
 
-    it('asks the chain on the selected network', () => {
+    it('asks the chain on the scope it is given', () => {
         const source = held('SRC')
         setAccounts([source, held('A')])
         const { authority } = fakeAccountsChain().adapter
-        useNetworkStore.getState().setNetwork('testnet')
 
-        renderHook(() => useAuthorityTargets(source, 'standard'))
+        renderHook(() =>
+            useAuthorityTargets(source, 'fake-target-local', TESTNET_SCOPE),
+        )
 
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
-            'standard',
+            'fake-target-local',
             expect.anything(),
             source,
             expect.any(Array),
             TESTNET_SCOPE,
-            { isQuantumTargetEnabled: false },
+            {},
         )
     })
 
@@ -94,7 +88,7 @@ describe('useAuthorityTargets', () => {
         ).mockReturnValue(true)
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(null, 'standard'),
+            useAuthorityTargets(null, 'fake-target-local', MAINNET_SCOPE),
         )
 
         expect(result.current).toEqual([])
@@ -106,7 +100,7 @@ describe('useAuthorityTargets', () => {
         setAccounts([source, held('A')])
 
         const { result } = renderHook(() =>
-            useAuthorityTargets(source, 'standard'),
+            useAuthorityTargets(source, 'fake-target-local', MAINNET_SCOPE),
         )
 
         expect(result.current).toEqual([])

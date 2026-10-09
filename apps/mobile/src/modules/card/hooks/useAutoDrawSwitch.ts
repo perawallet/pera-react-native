@@ -26,8 +26,13 @@ import {
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
 import { useFeeDelegation } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { requireCardAccountAddress } from '../utils/cardAccountAddress'
 import { canAutoFund } from './useCardFundingSourcePicker'
 
 export type UseAutoDrawSwitchResult = {
@@ -59,8 +64,9 @@ export type UseAutoDrawSwitchResult = {
  * injected here.
  */
 export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
-    const { signProgram } = useProgramSigner()
+    const { signProgram } = useProgramSigner(scope)
     const { buildEnable, buildKill, isAutoDrawEnabled } =
         useKillswitchAutoDraw()
     const { submit } = useSignAndSubmitGroup()
@@ -68,14 +74,18 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
     const [isPending, setIsPending] = useState(false)
 
     const canSwitchToAuto = useCallback(
-        (account: WalletAccount) => canAutoFund(account),
-        [],
+        (account: WalletAccount) => canAutoFund(account, scope.chainId),
+        [scope.chainId],
     )
 
     const enableAutoDraw = useCallback(
         async (account: WalletAccount, cardAddress: string): Promise<void> => {
             setIsPending(true)
             try {
+                const address = requireCardAccountAddress(
+                    account,
+                    scope.chainId,
+                )
                 // 1. Register the signed LSig with AB (its own ownership
                 // proof): compile the pinned AutoDraw program, sign it with the
                 // funding account's key, then POST the delegated LogicSig —
@@ -83,14 +93,15 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 // (useCreateEscrowCardMutation / useEscrowCardCreation).
                 const program = await compileAutoDrawProgram({ network })
                 const lsigBytes = encodeProgramAccount(
+                    scope.chainId,
                     program,
                     await signProgram(account, program),
-                    account.address,
+                    address,
                 )
                 await postDelegatorLsig({
                     network,
                     currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
-                    delegatorAddress: account.address,
+                    delegatorAddress: address,
                     lsigBytes: encodeToBase64(lsigBytes),
                     cardAddress,
                 })
@@ -112,14 +123,14 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 const { assetId } = resolveEscrowChainConfig(network)
                 if (
                     await isAutoDrawEnabled({
-                        sender: account.address,
+                        sender: address,
                         asset: assetId,
                     })
                 ) {
                     return
                 }
                 const txns = await buildEnable({
-                    sender: account.address,
+                    sender: address,
                     cardAddress,
                     asset: assetId,
                 })
@@ -129,7 +140,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 // so the funding account needs no ALGO. The accounts-box MBR
                 // is funded by the Killswitch app account, not the sponsor.
                 await submitWithFeeDelegation({
-                    account: account.address,
+                    account: address,
                     transactions: txns,
                     includeAssetOptInMbr: true,
                     sourceMetadata: {
@@ -147,6 +158,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
             isAutoDrawEnabled,
             buildEnable,
             submitWithFeeDelegation,
+            scope.chainId,
         ],
     )
 
@@ -160,6 +172,10 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
             }
             setIsPending(true)
             try {
+                const address = requireCardAccountAddress(
+                    account,
+                    scope.chainId,
+                )
                 // Pre-check instead of tolerating ALREADY_DISABLED (same
                 // simulate-revert opacity as enable). No box == nothing to
                 // kill: covers the retry case AND a persisted-Auto state whose
@@ -169,14 +185,14 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 const { assetId } = resolveEscrowChainConfig(network)
                 if (
                     !(await isAutoDrawEnabled({
-                        sender: account.address,
+                        sender: address,
                         asset: assetId,
                     }))
                 ) {
                     return
                 }
                 const txns = await buildKill({
-                    sender: account.address,
+                    sender: address,
                     asset: assetId,
                 })
                 await submit({
@@ -190,7 +206,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 setIsPending(false)
             }
         },
-        [network, isAutoDrawEnabled, buildKill, submit],
+        [network, isAutoDrawEnabled, buildKill, submit, scope.chainId],
     )
 
     return { enableAutoDraw, disableAutoDraw, canSwitchToAuto, isPending }

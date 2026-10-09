@@ -25,7 +25,6 @@ import {
 } from '../useSwapCosignResolver'
 
 const mocks = vi.hoisted(() => ({
-    useNetwork: vi.fn(),
     useDeviceID: vi.fn(),
     decodeFromBase64: vi.fn(),
     loggerWarn: vi.fn(),
@@ -48,9 +47,6 @@ const mocks = vi.hoisted(() => ({
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
-}))
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: mocks.useDeviceID,
 }))
@@ -114,7 +110,11 @@ const reportError = vi.fn()
 
 const render = (isAppActive = true) =>
     renderHook(props => useSwapCosignResolver(props), {
-        initialProps: { isAppActive, reportError },
+        initialProps: {
+            isAppActive,
+            reportError,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
+        },
     })
 
 // The config object the hook hands to the shared resolver core.
@@ -128,7 +128,6 @@ beforeEach(() => {
     submitSignedGroup = vi.fn()
     registerFakeSwapAdapter({ submitSignedGroup })
     mocks.handoffs = {}
-    mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
     mocks.useDeviceID.mockReturnValue('device-1')
     mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
         (scope: ChainScope, id: string) => ['msig', scope, id],
@@ -197,7 +196,6 @@ describe('swaps/useSwapCosignResolver', () => {
         expect(config().poll(handoff).enabled).toBe(false)
 
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.useDeviceID.mockReturnValue(null)
         mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
             (scope: ChainScope, id: string) => ['msig', scope, id],

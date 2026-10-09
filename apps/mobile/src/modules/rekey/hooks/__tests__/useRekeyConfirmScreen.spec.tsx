@@ -42,28 +42,24 @@ vi.mock('@modules/webview', () => ({
 // A quantum source, an Ed25519 target, and a quantum target. `type` drives the
 // real `isQuantumDowngrade` helper (kept unmocked below).
 const mockQuantumSource = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC', keyPairId: 'kp-src' } },
     name: 'Quantum Source',
     custody: { kind: 'local', seed: 'quantum' },
-    keyPairId: 'kp-src',
 }
 const mockEd25519Source = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC', keyPairId: 'kp-src' } },
     name: 'Standard Source',
     custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: 'kp-src',
 }
 const mockEd25519Target = {
-    address: 'TGT',
+    chains: { algorand: { address: 'TGT', keyPairId: 'kp-tgt' } },
     name: 'Standard Target',
     custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: 'kp-tgt',
 }
 const mockQuantumTarget = {
-    address: 'TGT',
+    chains: { algorand: { address: 'TGT', keyPairId: 'kp-tgt' } },
     name: 'Quantum Target',
     custody: { kind: 'local', seed: 'quantum' },
-    keyPairId: 'kp-tgt',
 }
 
 // Swapped per-test so useFindAccountByAddress / useAllAccounts reflect the case.

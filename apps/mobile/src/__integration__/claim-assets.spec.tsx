@@ -69,6 +69,7 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 // The claim flow hops through the Messages stack with
 // `push('Messages', { screen, params })`, but the test navigator is a single
 // FLAT stack that doesn't forward into a child navigator. So all four screens
@@ -193,12 +194,16 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'claimer-1',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
         name: 'Claimer',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -386,7 +391,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         const body = await calls[0][0].request.arrayBuffer()
         // A real signed app-call group is well over a few bytes.
         expect(body.byteLength).toBeGreaterThan(50)
-        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(addressOf(account)).toBe(ALGO25_TEST_ADDRESS)
 
         // The core guarantee: with an inbox address on record, the
         // claim group is built via explicit resource refs (`buildGroup`)

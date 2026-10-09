@@ -12,8 +12,9 @@
 
 // @vitest-environment node
 import { passkeyItemKey, passkeySecretsItemKey } from '../../models/itemKeys'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -143,6 +144,10 @@ const hdSeedSecrets = (address: string) => ({
     seed: 'aa',
     entropy: 'bb',
     address,
+})
+
+beforeEach(() => {
+    registerFakeBackupAdapter()
 })
 
 describe('markAccountForBackup', () => {

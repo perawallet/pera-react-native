@@ -63,6 +63,15 @@ export const multisigContractTests = (
     const { parameters, rawTransactionBase64, malformedAddress } = fixtures
 
     describe(`MultisigChainAdapter contract: ${makeAdapter().chainId}`, () => {
+        it('reads back the parameters it stores, and none from an empty entry', () => {
+            const adapter = makeAdapter()
+
+            const native = adapter.toNative(parameters)
+
+            expect(adapter.parametersOf(native)).toEqual(parameters)
+            expect(adapter.parametersOf(undefined)).toBeUndefined()
+        })
+
         it('derives the same address for the same parameters', () => {
             const adapter = makeAdapter()
 

@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
@@ -31,11 +35,14 @@ export const signGroupsBySignerAccount = (
         group: AnalyzedSignableGroup,
         signerAccount: WalletAccount,
     ) => SigningResult | Promise<SigningResult>,
+    chainId: ChainId,
 ): Promise<SigningResult[]> =>
     Promise.all(
         groups.map(group => {
-            const signerAccount = allAccounts.find(
-                a => a.address === group.signerAddress,
+            const signerAccount = findAccountByAddressOn(
+                allAccounts,
+                chainId,
+                group.signerAddress,
             )
             if (!signerAccount) {
                 throw new CannotSignError(

@@ -20,55 +20,26 @@ import {
     SigningError,
     SIGNING_ERROR_KEYS,
 } from '@perawallet/wallet-core-signing'
-import { accountType } from '@perawallet/wallet-core-accounts'
+import {
+    algo25Account as algo25,
+    hardwareAccount,
+    hdAccount,
+    quantumAccount as quantum,
+} from '../../../__tests__/algorandAccounts'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-const mocks = vi.hoisted(() => ({
-    hasSigningKeys: vi.fn(),
-    isAlgo25Account: vi.fn(),
-    isHDWalletAccount: vi.fn(),
-    isQuantumAccount: vi.fn(),
-}))
+const ALGORAND_MAINNET = {
+    chainId: ALGORAND_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...original,
-        hasSigningKeys: mocks.hasSigningKeys,
-        isAlgo25Account: mocks.isAlgo25Account,
-        isHDWalletAccount: mocks.isHDWalletAccount,
-        isQuantumAccount: mocks.isQuantumAccount,
-    }
-})
+const algo25Account = algo25('ADDR', { keyPairId: 'key-1' })
 
-const algo25Account = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: 'ADDR',
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const quantumAccount = quantum('ADDR', { keyPairId: 'key-q' })
 
-const quantumAccount = {
-    custody: { kind: 'local', seed: 'quantum' },
-    address: 'ADDR',
-    keyPairId: 'key-q',
-} as unknown as WalletAccount
+const hdWalletAccount = hdAccount('ADDR', { keyPairId: 'key-hd' })
 
-const unsupportedAccount = {
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    address: 'ADDR',
-} as unknown as WalletAccount
+const unsupportedAccount = hardwareAccount('ADDR')
 
 const emptyAnalysis = {
     totalFees: 0n,
@@ -137,30 +108,6 @@ describe('createLocalKeyStrategy', () => {
             ])
         signArbitraryData = vi.fn().mockResolvedValue([new Uint8Array([1])])
         signAuthData = vi.fn().mockResolvedValue(new Uint8Array([2]))
-        mocks.hasSigningKeys
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) =>
-                    accountType(account) === 'algo25' ||
-                    accountType(account) === 'hd-wallet' ||
-                    accountType(account) === 'quantum',
-            )
-        mocks.isAlgo25Account
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) => accountType(account) === 'algo25',
-            )
-        mocks.isHDWalletAccount
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) =>
-                    accountType(account) === 'hd-wallet',
-            )
-        mocks.isQuantumAccount
-            .mockReset()
-            .mockImplementation(
-                (account: WalletAccount) => accountType(account) === 'quantum',
-            )
         errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     })
 
@@ -191,6 +138,10 @@ describe('createLocalKeyStrategy', () => {
 
         test('returns true for algo25 accounts', () => {
             expect(makeStrategy().canSign(algo25Account)).toBe(true)
+        })
+
+        test('returns true for HD wallet accounts', () => {
+            expect(makeStrategy().canSign(hdWalletAccount)).toBe(true)
         })
     })
 
@@ -409,15 +360,16 @@ describe('createLocalKeyStrategy', () => {
             ).rejects.toThrow('Account does not have local signing keys')
         })
 
-        test('throws CannotSignError for unsupported account type', async () => {
-            const weirdAccount = {
-                custody: { kind: 'weird-kind' },
-                address: 'ADDR',
-            } as unknown as WalletAccount
-            mocks.hasSigningKeys.mockReturnValue(true)
-            mocks.isAlgo25Account.mockReturnValue(false)
-            mocks.isHDWalletAccount.mockReturnValue(false)
-            mocks.isQuantumAccount.mockReturnValue(false)
+        test('throws CannotSignError for a non-local account that carries a key', async () => {
+            const weirdAccount: WalletAccount = {
+                ...hardwareAccount('ADDR'),
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: 'ADDR',
+                        keyPairId: 'stray-key',
+                    },
+                },
+            }
 
             await expect(
                 makeStrategy().sign(makeTransactionGroup(), weirdAccount),
@@ -425,11 +377,6 @@ describe('createLocalKeyStrategy', () => {
         })
 
         describe('failure reporting', () => {
-            beforeEach(() => {
-                mocks.hasSigningKeys.mockReturnValue(true)
-                mocks.isAlgo25Account.mockReturnValue(true)
-            })
-
             test('forwards a KMS cause key so the toast names the key fault', async () => {
                 const cause = new KeyNotFoundError('key-1')
                 signTransactions.mockRejectedValue(cause)

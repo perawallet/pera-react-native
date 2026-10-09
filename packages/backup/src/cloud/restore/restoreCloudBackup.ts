@@ -69,7 +69,7 @@ export class CloudBackupRestoreError extends Error {
 export type RestoreProgress =
     | { phase: 'unlocking' }
     | { phase: 'downloading' }
-    // Counts backup entries, not wallet accounts: a quantum entry adds two.
+    // Counts backup entries, not wallet accounts: one recovery phrase can add several.
     | { phase: 'importing'; done: number; total: number }
     | { phase: 'finishing' }
 
@@ -159,14 +159,14 @@ const importContactsSafely = async (
     }
 }
 
-type PulledAccountTypes = {
+type PulledAccountKinds = {
     address: BackupAccountType
     secrets: BackupAccountType | null
 }
 
 const accountTypesByAddress = (
     accounts: PulledAccount[],
-): Map<string, PulledAccountTypes> =>
+): Map<string, PulledAccountKinds> =>
     new Map(
         accounts.map(({ address, addressPayload, secretsPayload }) => [
             address,
@@ -180,7 +180,7 @@ const accountTypesByAddress = (
 const accountTypeOf = (
     key: BackupItemKey,
     address: string,
-    types: Map<string, PulledAccountTypes>,
+    types: Map<string, PulledAccountKinds>,
 ): BackupAccountType | null => {
     if (isContactItemKey(key)) return null
     const pulled = types.get(address)

@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 
 const {
     seedReferenceMock,
@@ -34,7 +34,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    logger: { warn: loggerWarnMock },
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: loggerWarnMock,
+        error: vi.fn(),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -58,13 +63,11 @@ import { useResolveHdSeedForBackup } from '../useResolveHdSeedForBackup'
 
 const ENTROPY = Uint8Array.from({ length: 16 }, (_, i) => i)
 
-const account = {
+const account: LocalAccount = {
     id: 'acc-1',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 3, keyIndex: 7 } },
-    address: 'ADDR-2',
-    keyPairId: 'child-1',
-    hdWalletDetails: { account: 3, change: 0, keyIndex: 7, derivationType: 9 },
-} as unknown as HDWalletAccount
+    chains: { algorand: { address: 'ADDR-2', keyPairId: 'child-1' } },
+}
 
 describe('useResolveHdSeedForBackup', () => {
     let grantedDomain: string
@@ -173,7 +176,7 @@ describe('useResolveHdSeedForBackup', () => {
         expect(deriveHdAccountMock).toHaveBeenCalledWith(
             expect.anything(),
             'seed-1',
-            account.hdWalletDetails,
+            { account: 3, keyIndex: 7 },
         )
     })
 

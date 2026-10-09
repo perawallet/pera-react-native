@@ -28,6 +28,7 @@ import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { backupAddressOf } from '../utils/backupAddress'
 
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
@@ -70,7 +71,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
     const addresses = useMemo(
-        () => accounts.map(account => account.address),
+        () => accounts.map(backupAddressOf).filter(Boolean),
         [accounts],
     )
 
@@ -127,7 +128,12 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const byAddress = useMemo(
-        () => new Map(accounts.map(account => [account.address, account])),
+        () =>
+            new Map(
+                accounts.map(
+                    account => [backupAddressOf(account), account] as const,
+                ),
+            ),
         [accounts],
     )
 
@@ -140,7 +146,10 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const backedUpAccounts = useMemo(
-        () => accounts.filter(account => review.backedUp.has(account.address)),
+        () =>
+            accounts.filter(account =>
+                review.backedUp.has(backupAddressOf(account)),
+            ),
         [accounts, review.backedUp],
     )
 

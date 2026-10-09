@@ -14,40 +14,38 @@ import { beforeEach, describe, it, expect } from 'vitest'
 import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
 import {
     DelegationTargetNotFoundError,
+    chainAccountOf,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import type { SourceMetadata } from '../../../pipeline/types'
 import { resolveSigningAccount } from '../resolveSigningAccount'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    watchAccount,
+} from '../../../__tests__/accounts'
 
 const PARTICIPANT =
     'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP'
 const AUTH = 'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
-const rekeyedSigner: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: PARTICIPANT,
+const rekeyedSigner = algo25Account(PARTICIPANT, {
     keyPairId: 'key-participant',
-} as unknown as WalletAccount
+})
 
-const authAccount: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: AUTH,
-    keyPairId: 'key-auth',
-} as unknown as WalletAccount
+const authAccount = algo25Account(AUTH, { keyPairId: 'key-auth' })
 
 /** The shape: rekeyed on chain, no local key of its own. */
-const keylessRekeyedSigner: WalletAccount = {
-    custody: { kind: 'watch' },
-    address: PARTICIPANT,
-} as unknown as WalletAccount
+const keylessRekeyedSigner = watchAccount(PARTICIPANT)
 
-const plainSigner: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: PARTICIPANT,
+const plainSigner = algo25Account(PARTICIPANT, {
     keyPairId: 'key-participant',
-} as unknown as WalletAccount
+})
+
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, TEST_CHAIN_ID)?.address
 
 const cosignSource: SourceMetadata = {
     type: 'multisig-cosign',
@@ -70,7 +68,7 @@ describe('resolveSigningAccount', () => {
             [rekeyedSigner, authAccount],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('follows rekey to the auth account for transaction signing on non-cosign sources', () => {
@@ -82,7 +80,7 @@ describe('resolveSigningAccount', () => {
             [rekeyedSigner, authAccount],
             'algorand',
         )
-        expect(result.address).toBe(AUTH)
+        expect(addressOf(result)).toBe(AUTH)
     })
 
     it('returns the signer itself when not rekeyed (regardless of source)', () => {
@@ -93,7 +91,7 @@ describe('resolveSigningAccount', () => {
             [plainSigner],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('throws DelegationTargetNotFoundError on transactions when the rekey target is missing', () => {
@@ -120,7 +118,7 @@ describe('resolveSigningAccount', () => {
             [rekeyedSigner, authAccount],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('returns the keyless signer itself for auth-data even when its auth account holds a key', () => {
@@ -135,7 +133,7 @@ describe('resolveSigningAccount', () => {
             [keylessRekeyedSigner, authAccount],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('returns the rekeyed signer itself for auth-data when it holds its own key', () => {
@@ -147,7 +145,7 @@ describe('resolveSigningAccount', () => {
             [rekeyedSigner, authAccount],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('never consults the rekey target for auth-data, so a missing target does not throw', () => {
@@ -159,7 +157,7 @@ describe('resolveSigningAccount', () => {
             [keylessRekeyedSigner],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('returns the signer itself for auth-data when not rekeyed', () => {
@@ -170,7 +168,7 @@ describe('resolveSigningAccount', () => {
             [plainSigner],
             'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it("follows the rekey hop through the given chain's rules, never Algorand's", () => {

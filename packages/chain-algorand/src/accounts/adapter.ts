@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Address } from 'algosdk'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
@@ -24,11 +23,13 @@ import {
     createXHDGetPublicKey,
     fetchAlgorandRekeyedAddresses,
 } from './discovery'
-import { fetchAccountInformation, fetchAssetOptInRounds } from './information'
+import { fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAuthority } from './authority'
-import { algorandLegacyDetails } from './legacy-details'
-import { algorandQuantumDerivation } from './quantum'
+import { algorandDeviceAccountType } from './device'
+import { decodeAlgorandLegacyRecord } from './legacy-record'
+import { algorandDuplicateRank, algorandLocalKeyKinds } from './local-key-kinds'
+import { algorandAccountPresentation } from './presentation'
 import { withStoredQuantumPublicKey } from './quantumPublicKeyBackfill'
 import { algorandSingleKeyAccounts } from './single-key-accounts'
 import {
@@ -41,9 +42,6 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     fetchAccountState: (address, scope, hint) =>
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
     toChainState: toAlgorandChainState,
-    toAccountInformationAddress: address => Address.fromString(address),
-    fetchAccountInformation: (address, scope) =>
-        fetchAccountInformation(address, algorandNetworkOf(scope)),
     fetchAssetOptInRounds: (address, scope) =>
         fetchAssetOptInRounds(address, algorandNetworkOf(scope)),
     accountExists: (address, scope) =>
@@ -59,8 +57,11 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
             ALGORAND_HD_DERIVATION_TYPE,
         ),
     assertHdPathMatches: assertAlgorandBip44PathMatches,
-    legacyDetails: algorandLegacyDetails,
-    quantum: algorandQuantumDerivation,
+    localKeyKinds: algorandLocalKeyKinds,
+    duplicateRank: algorandDuplicateRank,
+    presentation: algorandAccountPresentation,
+    deviceAccountType: algorandDeviceAccountType,
+    decodeLegacyRecord: decodeAlgorandLegacyRecord,
     singleKeyAccounts: algorandSingleKeyAccounts,
     fetchRekeyedAddresses: (authAddress, scope) =>
         fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),

@@ -13,12 +13,13 @@
 import {
     authorityOf,
     canSignDirectly,
-    canSignViaParticipants,
     isMultisigAccount,
     type SignerResolution,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { hasLocalCoSigner } from './multisig-participants'
+import { algorandAddressOf } from './vocabulary'
 
 type AuthHop =
     | { kind: 'self'; auth: WalletAccount }
@@ -27,8 +28,9 @@ type AuthHop =
 
 /**
  * The one place the auth-addr hop is followed. Kept apart from the
- * signability check because the auth-account forms must not evaluate it:
- * legacy multisig records persisted without `multisigDetails` would throw.
+ * signability check because the auth-account forms must not depend on it:
+ * a legacy multisig persisted without its parameters can't sign, but is
+ * still the auth account.
  *
  * Rekey indirection follows exactly ONE hop: if A is rekeyed to B and B to C,
  * B still signs for A (A's auth-addr is literally B), so B's own rekey is
@@ -41,7 +43,7 @@ const followAuthHop = (
 ): AuthHop => {
     const authAddress = authorityOf(account, scope)
     if (!authAddress) return { kind: 'self', auth: account }
-    const auth = accounts.find(a => a.address === authAddress)
+    const auth = accounts.find(a => algorandAddressOf(a) === authAddress)
     return auth
         ? { kind: 'rekeyed', auth }
         : { kind: 'authMissing', authAddress }
@@ -59,7 +61,7 @@ export const resolveAlgorandSigner = (
     const { auth } = hop
     const isRekeyed = hop.kind === 'rekeyed'
     if (isMultisigAccount(auth)) {
-        if (canSignViaParticipants(auth.multisigDetails.addresses, accounts)) {
+        if (hasLocalCoSigner(auth, accounts)) {
             return { kind: 'ok', signer: auth }
         }
         return isRekeyed

@@ -11,25 +11,31 @@
  */
 
 import { useCallback } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { messageSignerFor } from '../message-signer'
 
 export type UseArbitraryDataSignerResult = {
-    signArbitraryData: LocalArbitrarySigningFunction
+    signArbitraryData: (
+        chainId: ChainId,
+        ...args: Parameters<LocalArbitrarySigningFunction>
+    ) => ReturnType<LocalArbitrarySigningFunction>
 }
 
-// Sign requests carry no chain yet, so every caller resolves the legacy one.
+// The caller names the request's chain; the signer resolves the account's address there.
 export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const { signDataWithKey } = useKMS()
 
-    const signArbitraryData = useCallback<LocalArbitrarySigningFunction>(
-        async (account, data) =>
+    const signArbitraryData = useCallback<
+        UseArbitraryDataSignerResult['signArbitraryData']
+    >(
+        async (chainId, account, data) =>
             messageSignerFor(
-                LEGACY_CHAIN_ID,
-                account.address,
+                chainId,
+                chainAccountOf(account, chainId)?.address ?? '',
             ).signArbitraryData(
                 {
                     signPayloads: (keyPairId, payloads) =>

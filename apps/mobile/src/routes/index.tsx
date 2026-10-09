@@ -11,6 +11,9 @@
  */
 
 import { NavigationContainer } from '@react-navigation/native'
+import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
@@ -31,15 +34,13 @@ import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import {
     MESSAGES_REQUIREMENTS,
-    REKEY_REQUIREMENT,
+    rekeyRequirementFor,
 } from '@hooks/capabilityRequirements'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/transactions/routes'
-import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding'
-import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { MigrationSplashScreen } from '@modules/migration'
 
 import type { RootStackParamList } from './types'
@@ -75,6 +76,7 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
+    const rekeyRequirement = rekeyRequirementFor(LEGACY_CHAIN_ID)
 
     return (
         <NavigationContainer
@@ -170,14 +172,14 @@ export const MainRoutes = () => {
                                 options={{ headerShown: false }}
                             />
                         )}
-                        {isAllowed(REKEY_REQUIREMENT) && (
+                        {isAllowed(rekeyRequirement) && (
                             <RootStack.Screen
                                 name='RekeyToStandard'
                                 component={RekeyToStandardStackNavigator}
                             />
                         )}
                         {isAllowed({
-                            ...REKEY_REQUIREMENT,
+                            ...rekeyRequirement,
                             anyChain: 'quantumAccounts',
                         }) && (
                             <RootStack.Screen
@@ -185,14 +187,14 @@ export const MainRoutes = () => {
                                 component={RekeyToQuantumStackNavigator}
                             />
                         )}
-                        {isAllowed(REKEY_REQUIREMENT) && (
+                        {isAllowed(rekeyRequirement) && (
                             <RootStack.Screen
                                 name='UndoRekey'
                                 component={UndoRekeyStackNavigator}
                             />
                         )}
                         {isAllowed({
-                            ...REKEY_REQUIREMENT,
+                            ...rekeyRequirement,
                             anyChain: 'ledger',
                         }) && (
                             <RootStack.Screen
@@ -201,7 +203,7 @@ export const MainRoutes = () => {
                             />
                         )}
                         {isAllowed({
-                            ...REKEY_REQUIREMENT,
+                            ...rekeyRequirement,
                             anyChain: 'multisig',
                         }) && (
                             <RootStack.Screen
@@ -209,7 +211,7 @@ export const MainRoutes = () => {
                                 component={RekeyToSharedStackNavigator}
                             />
                         )}
-                        {isAllowed(REKEY_REQUIREMENT) && (
+                        {isAllowed(rekeyRequirement) && (
                             <RootStack.Screen
                                 name='RescanRekeyed'
                                 component={RescanRekeyedStackNavigator}

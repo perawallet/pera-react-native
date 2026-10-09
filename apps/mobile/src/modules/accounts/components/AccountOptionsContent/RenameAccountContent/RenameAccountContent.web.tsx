@@ -21,7 +21,11 @@
 // web Modal-based sheet needs.
 import { useState } from 'react'
 import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -35,7 +39,7 @@ export const RenameAccountContent = ({
 }: RenameAccountContentProps) => {
     const { t } = useLanguage()
     const account = useAccountsStore(s =>
-        s.accounts.find(a => a.address === accountAddress),
+        findAccountByAddressOn(s.accounts, LEGACY_CHAIN_ID, accountAddress),
     )
     const initialName = account?.name ?? ''
     const [name, setName] = useState(initialName)

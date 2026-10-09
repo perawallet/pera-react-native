@@ -38,8 +38,9 @@ const DEVICE_ID = 'test-device-id'
 const SIGNER: WalletAccount = {
     id: 'signer-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'signer-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'signer-key' },
+    },
     name: 'Trading',
 }
 
@@ -87,7 +88,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SIGNER])
-        useAccountsStore.getState().setSelectedAccountAddress(SIGNER.address)
+        useAccountsStore.getState().setSelectedAccountId(SIGNER.id)
         useDeviceStore.getState().resetState()
         useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
         useDeviceStore.getState().setDeviceID('testnet', DEVICE_ID)

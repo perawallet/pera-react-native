@@ -13,7 +13,7 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 import { DeeplinkType } from '@modules/deeplink/types'
@@ -94,7 +94,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        resolveImportAccountType: vi.fn(),
+        detectImportKind: vi.fn(),
         setPendingImportMnemonic: vi.fn(),
     }
 })
@@ -449,9 +449,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'hdWallet',
+            seed: 'bip39',
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -463,7 +463,7 @@ describe('useImportAccountOptionsScreen', () => {
         // Mnemonic goes through the in-memory store, never the route params.
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'hdWallet',
+            accountType: 'bip39',
         })
     })
 
@@ -473,9 +473,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'algo25',
+            seed: 'algo25',
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -513,9 +513,10 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic: 'too short',
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: false,
-        } as never)
+            wordCount: 2,
+        })
         const restartScanning = vi.fn()
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())

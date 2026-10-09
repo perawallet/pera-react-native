@@ -15,6 +15,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
+import { backupAddressOf } from '../../utils/backupAddress'
 
 type NotBackedUpAccountRowProps = {
     account: WalletAccount
@@ -28,15 +29,16 @@ const NotBackedUpAccountRowComponent = ({
     onBackUp,
 }: NotBackedUpAccountRowProps) => {
     const { t } = useLanguage()
+    const address = backupAddressOf(account)
 
     const handleBackUp = useCallback(
-        () => onBackUp(account.address),
-        [onBackUp, account.address],
+        () => onBackUp(address),
+        [onBackUp, address],
     )
 
     return (
         <BackupAccountRow
-            address={account.address}
+            address={address}
             account={account}
             isBackedUp={false}
             trailing={
@@ -49,7 +51,7 @@ const NotBackedUpAccountRowComponent = ({
                     testID='backup_review_back_up_button'
                 />
             }
-            testID={`backup_review_not_backed_up_${account.address}`}
+            testID={`backup_review_not_backed_up_${address}`}
         />
     )
 }

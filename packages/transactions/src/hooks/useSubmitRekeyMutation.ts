@@ -132,7 +132,7 @@ export const useSubmitRekeyMutation = ({
                 // (pre-rekey) — resolveMinFeeForSender resolves the
                 // effective signer via getSignerFor, so this is the correct
                 // fee basis even when undoing a rekey to a quantum auth.
-                const resolvedMinFee = resolveMinFeeForSender({
+                const resolvedMinFee = resolveMinFeeForSender(scope.chainId, {
                     senderAddress: sourceAddress,
                     accounts,
                     suggestedMinFee,

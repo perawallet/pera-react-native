@@ -38,14 +38,7 @@ describe('useMnemonicForAddress', () => {
                 seed: 'bip39',
                 hd: { account: 1, keyIndex: 0 },
             },
-            address: 'HD_ADDR',
-            keyPairId: 'wallet-1',
-            hdWalletDetails: {
-                account: 1,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
+            chains: { algorand: { address: 'HD_ADDR', keyPairId: 'wallet-1' } },
         }
 
         const { result } = renderHook(() =>
@@ -66,8 +59,9 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'algo25-account',
             custody: { kind: 'local', seed: 'algo25' },
-            address: 'A25_ADDR',
-            keyPairId: 'wallet-2',
+            chains: {
+                algorand: { address: 'A25_ADDR', keyPairId: 'wallet-2' },
+            },
         }
 
         const { result } = renderHook(() =>
@@ -88,8 +82,7 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'quantum-account',
             custody: { kind: 'local', seed: 'quantum' },
-            address: 'Q_ADDR',
-            keyPairId: 'wallet-q',
+            chains: { algorand: { address: 'Q_ADDR', keyPairId: 'wallet-q' } },
         }
 
         const { result } = renderHook(() =>
@@ -124,13 +117,8 @@ describe('useMnemonicForAddress', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'OTHER_ADDR',
-            keyPairId: 'wallet-1',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
+            chains: {
+                algorand: { address: 'OTHER_ADDR', keyPairId: 'wallet-1' },
             },
         }
 
@@ -147,7 +135,7 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'watch-account',
             custody: { kind: 'watch' },
-            address: 'WATCH_ADDR',
+            chains: { algorand: { address: 'WATCH_ADDR' } },
         }
 
         const { result } = renderHook(() =>

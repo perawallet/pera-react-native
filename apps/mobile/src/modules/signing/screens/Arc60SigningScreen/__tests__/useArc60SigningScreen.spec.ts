@@ -57,6 +57,11 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 })
 
 const mockFindAccountByAddress = vi.fn()
+const SIGNER_ACCOUNT = {
+    id: 'signer',
+    custody: { kind: 'local', seed: 'algo25' },
+    chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
+}
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useFindAccountByAddress: (address: string) =>
         mockFindAccountByAddress(address),
@@ -197,7 +202,7 @@ describe('useArc60SigningScreen', () => {
 
     it('blocks confirmation when the signer is a quantum account', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
@@ -208,7 +213,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('allows confirmation of the same request when the signer is not quantum', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
@@ -231,7 +236,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('blocks confirmation when the sign-in domain differs from the browser-verified origin', async () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',
@@ -255,7 +260,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('allows confirmation when the sign-in domain matches the browser-verified origin', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',
@@ -273,7 +278,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('does not block a mismatched domain when no origin was verified (WalletConnect)', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',

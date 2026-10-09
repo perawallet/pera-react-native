@@ -176,7 +176,7 @@ const pull = {
         {
             address: 'A',
             addressPayload: {
-                type: BackupAccountType.hdWallet,
+                type: BackupAccountType.hdAccount,
                 address: 'A',
             },
             secretsPayload: { type: BackupAccountType.hdSeed, address: 'A' },
@@ -333,7 +333,7 @@ describe('restoreCloudBackup', () => {
 
         expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
             address: 'A',
-            accountType: BackupAccountType.hdWallet,
+            accountType: BackupAccountType.hdAccount,
         })
         expect(syncState.items[SECRETS_KEY]).toMatchObject({
             address: 'A',

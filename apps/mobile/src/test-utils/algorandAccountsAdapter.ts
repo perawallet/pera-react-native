@@ -15,17 +15,36 @@ import {
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
 import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
+import {
+    algorandAccountsAdapter,
+    algorandAddressCodec,
+} from '@perawallet/wallet-core-chain-algorand/accounts'
+import { algorandMultisigAdapter } from '@perawallet/wallet-core-chain-algorand/multisig'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 
 // Unit specs skip the app bootstrap, so signer resolution over real accounts
 // has no adapter unless a spec registers one.
 export const registerAlgorandAccountsAdapter = (): void => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
+}
+
+/** Lets `getAccountDisplayName` truncate an unnamed account's address as the app does. */
+export const registerAlgorandAddressCodec = (): void => {
+    if (!addressCodecs.has(algorandAddressCodec.chainId)) {
+        addressCodecs.register(algorandAddressCodec)
+    }
+}
+
+/** Lets `multisigParametersOf` read a multisig fixture's parameters. */
+export const registerAlgorandMultisigAdapter = (): void => {
+    multisigChainAdapters.reset()
+    multisigChainAdapters.register(algorandMultisigAdapter)
 }
 
 /**

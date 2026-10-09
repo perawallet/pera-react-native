@@ -46,8 +46,9 @@ const resetTestContacts = () => {
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'sender-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'sender-key' },
+    },
     name: 'Sender',
 }
 
@@ -55,9 +56,7 @@ describe('Flow: Contacts → use in send destination picker', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SENDER_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SENDER_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SENDER_ACCOUNT.id)
         resetTestContacts()
         vi.mocked(Notifier.showNotification).mockClear()
     })

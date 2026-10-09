@@ -97,7 +97,7 @@ describe('syncAndEnrichNewAccount', () => {
     it('fetches the account, then enriches held assets with metadata + prices, invalidating after each phase', async () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
 
-        await syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient)
+        await syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -122,7 +122,7 @@ describe('syncAndEnrichNewAccount', () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
         mockGetAccountHoldings.mockResolvedValue([])
 
-        await syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient)
+        await syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient)
 
         expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
         expect(mockFetchAndPersistPrices).not.toHaveBeenCalled()
@@ -134,7 +134,7 @@ describe('syncAndEnrichNewAccount', () => {
         fetchAccountState().mockRejectedValue(new Error('algod down'))
 
         await expect(
-            syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient),
+            syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient),
         ).resolves.toBeUndefined()
 
         expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()

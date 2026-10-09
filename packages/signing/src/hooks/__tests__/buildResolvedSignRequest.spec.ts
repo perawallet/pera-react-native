@@ -14,15 +14,25 @@ import { describe, it, expect } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import type { SigningMachineContext } from '../../machine/context'
 import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+} from '../../__tests__/accounts'
 
-const CUSTODY = {
-    algo25: { kind: 'local', seed: 'algo25' },
-    hardware: { kind: 'hardware' },
-    multisig: { kind: 'multisig' },
+const ACCOUNT_BUILDERS = {
+    algo25: algo25Account,
+    hardware: ledgerAccount,
+    multisig: multisigAccount,
 }
 
-const makeAccount = (address: string, type: keyof typeof CUSTODY = 'algo25') =>
-    ({ address, custody: CUSTODY[type] }) as any
+const makeAccount = (
+    address: string,
+    type: keyof typeof ACCOUNT_BUILDERS = 'algo25',
+) => ACCOUNT_BUILDERS[type](address)
+
+const deps = { scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' } }
 
 describe('buildResolvedSignRequest', () => {
     it('returns null when context has no signerAddress (failed pre-resolution)', () => {
@@ -57,6 +67,7 @@ describe('buildResolvedSignRequest', () => {
                 txs: [{}],
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
@@ -92,6 +103,7 @@ describe('buildResolvedSignRequest', () => {
                 signerOverrides: new Map([[0, 'PARTICIPANT_ADDR']]),
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
@@ -127,6 +139,7 @@ describe('buildResolvedSignRequest', () => {
             ]),
             request: authDataRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)

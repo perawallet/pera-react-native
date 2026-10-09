@@ -13,12 +13,14 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalanceHistoryQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { testAccount } from '../../__tests__/accountFactory'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -26,10 +28,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
-    useSelectedScope: () => ({
-        chainId: 'algorand',
-        networkId: mockNetwork.network,
-    }),
 }))
 
 // Mock endpoints
@@ -42,6 +40,11 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockNetwork = { network: 'mainnet' }
+
+const selectedScope = (): ChainScope => ({
+    chainId: 'algorand',
+    networkId: mockNetwork.network,
+})
 
 // Mock currencies
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(2))
@@ -70,13 +73,11 @@ const createWrapper = () => {
 }
 
 describe('useAccountsAssetsBalanceHistoryQuery', () => {
-    const mockAccount: WalletAccount = {
-        address: 'TEST_ADDRESS_123',
-        id: 'test-id',
-        name: 'Test Account',
-        custody: { kind: 'local', seed: 'algo25' },
-        canSign: true,
-    }
+    const mockAccount: WalletAccount = testAccount(
+        'local',
+        'TEST_ADDRESS_123',
+        { id: 'test-id', name: 'Test Account' },
+    )
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -112,6 +113,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                         mockAccount,
                         '456',
                         'one-week',
+                        selectedScope(),
                     ),
                 { wrapper: createWrapper() },
             )
@@ -152,6 +154,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                         mockAccount,
                         '789',
                         'one-month',
+                        selectedScope(),
                     ),
                 { wrapper: createWrapper() },
             )
@@ -177,6 +180,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                         mockAccount,
                         '123',
                         'one-year',
+                        selectedScope(),
                     ),
                 { wrapper: createWrapper() },
             )
@@ -195,6 +199,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                         mockAccount,
                         '123',
                         'one-year',
+                        selectedScope(),
                     ),
                 { wrapper: createWrapper() },
             )
@@ -214,6 +219,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                         mockAccount,
                         '999',
                         'one-day',
+                        selectedScope(),
                     ),
                 { wrapper: createWrapper() },
             )
@@ -244,6 +250,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                             mockAccount,
                             '123',
                             'one-day',
+                            selectedScope(),
                         ),
                     { wrapper: createWrapper() },
                 )
@@ -273,6 +280,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                             mockAccount,
                             '123',
                             'one-day',
+                            selectedScope(),
                         ),
                     { wrapper: createWrapper() },
                 )
@@ -297,6 +305,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                             mockAccount,
                             '123',
                             'one-day',
+                            selectedScope(),
                         ),
                     { wrapper: createWrapper() },
                 )
@@ -323,6 +332,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                             mockAccount,
                             '123',
                             'one-day',
+                            selectedScope(),
                         ),
                     { wrapper: createWrapper() },
                 )
@@ -347,6 +357,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                             mockAccount,
                             '123',
                             'one-day',
+                            selectedScope(),
                         ),
                     { wrapper: createWrapper() },
                 )

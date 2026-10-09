@@ -63,6 +63,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -84,12 +85,16 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'sender-1',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 
@@ -161,13 +166,13 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         // from the local DB (not algod). Seed both the holding row
         // and the algo-balance row so the screen has data to render.
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '10000000',
         })
         await upsertAccountBalance({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
@@ -261,7 +266,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
 
     it('Given the recipient is not opted into the asset, when the user confirms, then algod rejects the asset transfer and the processing screen surfaces an error toast instead of success', async () => {
         const sender = await seedAlgo25Sender()
-        await seedAsaHolding(sender.address)
+        await seedAsaHolding(addressOf(sender))
 
         useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal('1.5'))
@@ -323,7 +328,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
 
     it('Given the sender cannot cover the transaction fee, when the user confirms the asset transfer, then algod rejects the submission and the processing screen surfaces an error toast instead of success', async () => {
         const sender = await seedAlgo25Sender()
-        await seedAsaHolding(sender.address)
+        await seedAsaHolding(addressOf(sender))
 
         useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal('1.5'))
@@ -381,20 +386,20 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
     it('Given a frozen asset holding, when the user opens the send asset picker, then the frozen row is badged and not selectable', async () => {
         const sender = await seedAlgo25Sender()
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: '0',
             scope: MAINNET_SCOPE,
             amount: '5000000',
         })
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '10000000',
             isFrozen: true,
         })
         await upsertAccountBalance({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,

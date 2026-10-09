@@ -29,11 +29,11 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 import { useCardOwnerAccount } from '../useCardOwnerAccount'
 
 const owner = {
-    address: 'OWNER',
+    chains: { algorand: { address: 'OWNER' } },
     custody: { kind: 'local', seed: 'algo25' },
 } as WalletAccount
 const other = {
-    address: 'OTHER',
+    chains: { algorand: { address: 'OTHER' } },
     custody: { kind: 'local', seed: 'algo25' },
 } as WalletAccount
 
@@ -41,7 +41,10 @@ describe('useCardOwnerAccount', () => {
     beforeEach(() => {
         mocks.escrowCardOwner = 'OWNER'
         vi.mocked(useFindAccountByAddress).mockImplementation(
-            address => [other, owner].find(a => a.address === address) ?? null,
+            address =>
+                [other, owner].find(
+                    a => a.chains.algorand?.address === address,
+                ) ?? null,
         )
     })
 
@@ -60,7 +63,9 @@ describe('useCardOwnerAccount', () => {
     // owner means no withdrawal, not a fallback to whatever is selected.
     it('is null when the owner is no longer in the wallet', () => {
         vi.mocked(useFindAccountByAddress).mockImplementation(
-            address => [other].find(a => a.address === address) ?? null,
+            address =>
+                [other].find(a => a.chains.algorand?.address === address) ??
+                null,
         )
         const { result } = renderHook(() => useCardOwnerAccount())
         expect(result.current).toBeNull()

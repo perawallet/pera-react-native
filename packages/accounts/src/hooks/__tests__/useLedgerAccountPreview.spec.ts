@@ -13,20 +13,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import type { AccountStateSnapshot } from '../../chain-adapter'
+import { MAINNET_SCOPE } from '../../__tests__/fakeAccountsChain'
 import { useLedgerAccountPreview } from '../useLedgerAccountPreview'
 
 const NATIVE_ASSET_ID = '0'
 
+/** The native balance in base units (6 decimals); holdings beside it in base units. */
+const onChainState = (
+    nativeBaseUnits: number,
+    holdings: { assetId: string; amount: number; isFrozen: boolean }[] = [],
+    authAddress: string | null = null,
+): AccountStateSnapshot => ({
+    nativeBalance: new Decimal(nativeBaseUnits).div(1_000_000),
+    nativeBalanceBaseUnits: new Decimal(nativeBaseUnits),
+    minBalance: new Decimal(0),
+    authAddress,
+    chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
+    holdings: [
+        {
+            assetId: NATIVE_ASSET_ID,
+            amount: new Decimal(nativeBaseUnits),
+            isFrozen: false,
+        },
+        ...holdings.map(holding => ({
+            ...holding,
+            amount: new Decimal(holding.amount),
+        })),
+    ],
+    observedRound: null,
+})
+
 const mocks = vi.hoisted(() => ({
-    useOnChainAccountInformationQuery: vi.fn(),
+    useOnChainAccountStateQuery: vi.fn(),
     useRekeyedAddressesQuery: vi.fn(),
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
     useCurrency: vi.fn(),
 }))
 
-vi.mock('../useOnChainAccountInformationQuery', () => ({
-    useOnChainAccountInformationQuery: mocks.useOnChainAccountInformationQuery,
+vi.mock('../useOnChainAccountStateQuery', () => ({
+    useOnChainAccountStateQuery: mocks.useOnChainAccountStateQuery,
 }))
 vi.mock('../useRekeyedAddressesQuery', () => ({
     useRekeyedAddressesQuery: mocks.useRekeyedAddressesQuery,
@@ -69,25 +96,20 @@ beforeEach(() => {
 
 describe('useLedgerAccountPreview', () => {
     it('composes ALGO balance and total fiat value', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 3_000_000n,
-                minBalance: 100_000n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(3_000_000),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         expect(result.current.isLoading).toBe(false)
         expect(result.current.preview?.algoBalance.toString()).toBe('3')
-        expect(result.current.preview?.totalFiatValue.toString()).toBe('6')
+        expect(result.current.preview?.totalFiatValue?.toString()).toBe('6')
         expect(result.current.preview?.assets).toHaveLength(1)
         expect(result.current.preview?.assets[0].isAlgo).toBe(true)
         expect(result.current.preview?.assets[0].unitName).toBe('ALGO')
@@ -96,17 +118,10 @@ describe('useLedgerAccountPreview', () => {
     })
 
     it('includes ASA holdings with metadata, fiat value and verification tier', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [
-                    { assetId: 31566704n, amount: 1_500_000n, isFrozen: false },
-                ],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0, [
+                { assetId: '31566704', amount: 1_500_000, isFrozen: false },
+            ]),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -137,13 +152,15 @@ describe('useLedgerAccountPreview', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         const usdc = result.current.preview?.assets.find(
             a => a.assetId === '31566704',
         )
         expect(usdc?.amount.toString()).toBe('1.5')
-        expect(usdc?.fiatValue.toString()).toBe('1.5')
+        expect(usdc?.fiatValue?.toString()).toBe('1.5')
         expect(usdc?.verificationTier).toBe('verified')
         expect(usdc?.name).toBe('USDC')
         expect(usdc?.decimals).toBe(6)
@@ -152,15 +169,10 @@ describe('useLedgerAccountPreview', () => {
 
     it('flags holdings with missing asset metadata instead of pretending decimals=0', () => {
         // Arrange
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [{ assetId: 99999999n, amount: 42n, isFrozen: false }],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0, [
+                { assetId: '99999999', amount: 42, isFrozen: false },
+            ]),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -168,7 +180,9 @@ describe('useLedgerAccountPreview', () => {
         // useAssetsQuery returns an empty Map (beforeEach default) — no metadata for 99999999
 
         // Act
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         // Assert
         const asa = result.current.preview?.assets.find(
@@ -178,20 +192,15 @@ describe('useLedgerAccountPreview', () => {
         expect(asa?.unitName).toBe('')
         expect(asa?.verificationTier).toBe('unverified')
         expect(asa?.hasKnownDecimals).toBe(false)
-        expect(asa?.fiatValue.toString()).toBe('0')
+        expect(asa?.fiatValue?.toString()).toBe('0')
         expect(asa?.isAlgo).toBe(false)
     })
 
     it('excludes unknown-decimals holdings from fiat totals even when a price exists', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [{ assetId: 99999999n, amount: 42n, isFrozen: false }],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0, [
+                { assetId: '99999999', amount: 42, isFrozen: false },
+            ]),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -204,29 +213,24 @@ describe('useLedgerAccountPreview', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         // A price times a base-unit amount would be garbage — the holding
         // must contribute nothing to fiat until its decimals are known.
         const asa = result.current.preview?.assets.find(
             a => a.assetId === '99999999',
         )
-        expect(asa?.fiatValue.toString()).toBe('0')
-        expect(result.current.preview?.totalFiatValue.toString()).toBe('0')
+        expect(asa?.fiatValue?.toString()).toBe('0')
+        expect(result.current.preview?.totalFiatValue?.toString()).toBe('0')
     })
 
     it('marks ALGO and metadata-backed holdings as having known decimals', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 1_000_000n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [
-                    { assetId: 31566704n, amount: 1_500_000n, isFrozen: false },
-                ],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(1_000_000, [
+                { assetId: '31566704', amount: 1_500_000, isFrozen: false },
+            ]),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -246,7 +250,9 @@ describe('useLedgerAccountPreview', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         expect(
             result.current.preview?.assets.map(a => a.hasKnownDecimals),
@@ -254,16 +260,8 @@ describe('useLedgerAccountPreview', () => {
     })
 
     it('reports rekeyedTo when the account is rekeyed', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [],
-                authAddress: 'AUTHADDR',
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0, [], 'AUTHADDR'),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -274,7 +272,9 @@ describe('useLedgerAccountPreview', () => {
             isError: false,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         expect(result.current.preview?.rekey).toEqual({
             kind: 'rekeyedTo',
@@ -283,15 +283,8 @@ describe('useLedgerAccountPreview', () => {
     })
 
     it('reports canSignFor when accounts are rekeyed to it and it is not rekeyed', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -302,7 +295,9 @@ describe('useLedgerAccountPreview', () => {
             isError: false,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         expect(result.current.preview?.rekey).toEqual({
             kind: 'canSignFor',
@@ -311,59 +306,49 @@ describe('useLedgerAccountPreview', () => {
     })
 
     it('reports rekey none when neither applies', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
 
         expect(result.current.preview?.rekey).toEqual({ kind: 'none' })
     })
 
     it('surfaces loading and error from the on-chain query', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
             data: undefined,
             isLoading: true,
             isError: false,
             refetch: vi.fn(),
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
         expect(result.current.isLoading).toBe(true)
         expect(result.current.preview).toBeUndefined()
 
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
             data: undefined,
             isLoading: false,
             isError: true,
             refetch: vi.fn(),
         })
         const { result: errResult } = renderHook(() =>
-            useLedgerAccountPreview('ADDR'),
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
         )
         expect(errResult.current.isError).toBe(true)
     })
 
     it('degrades rekey to none when the rekeyed-addresses query errors', () => {
-        mocks.useOnChainAccountInformationQuery.mockReturnValue({
-            data: {
-                address: 'ADDR',
-                amount: 0n,
-                minBalance: 0n,
-                status: 'Offline',
-                rewards: 0n,
-                assets: [],
-            },
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(0),
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -374,7 +359,9 @@ describe('useLedgerAccountPreview', () => {
             isError: true,
         })
 
-        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
         expect(result.current.preview?.rekey).toEqual({ kind: 'none' })
     })
 })

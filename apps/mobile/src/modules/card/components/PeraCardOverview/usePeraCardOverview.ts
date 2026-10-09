@@ -20,11 +20,11 @@ import {
 } from '@perawallet/wallet-core-card'
 import {
     useAccountAssetBalanceQuery,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useNativeAsset } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -81,10 +81,10 @@ type UsePeraCardOverviewResult = {
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
-    const { network } = useNetwork()
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const isAutoFunding = useIsCardAutoFundingActive()
@@ -108,14 +108,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // figure. Reading it from the chain also keeps it right on platforms Baanx
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(
             isAutoFunding ? (fundingAccount ?? undefined) : undefined,
             usdcAssetId ?? undefined,
+            scope,
         )
     const canReadLinkedBalance =
         isAutoFunding && fundingAccount != null && usdcAssetId !== null
@@ -124,6 +122,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const { data: linkedAlgo } = useAccountAssetBalanceQuery(
         isAutoFunding ? (fundingAccount ?? undefined) : undefined,
         nativeAsset.assetId,
+        scope,
     )
     const hasLinkedAlgo =
         canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
@@ -151,7 +150,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const balance = cardBalance.plus(linkedBalance)
 
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
         useCardWithdraw()
     const withdrawState: CardWithdrawState =
@@ -179,7 +178,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         trackEvent(CardEvent.HomeGetUsdc)
         // Both tabs work on the selected account, so make it the linked one
         // first or the USDC lands wherever the user last was.
-        setSelectedAccountAddress(fundingAccount.address)
+        setSelectedAccountId(fundingAccount.id)
         if (canSwapToUsdc) {
             navigation.navigate('TabBar', {
                 screen: 'Swap',
@@ -200,7 +199,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         canSwapToUsdc,
         nativeAsset.assetId,
         usdcAssetId,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         navigation,
     ])
 

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { ImportAccountType } from './models'
-
 export const KEY_DOMAIN = 'pera.accounts'
 
 // gcTime for query entries that hold a hydrated per-holding row array, which
@@ -20,13 +18,3 @@ export const KEY_DOMAIN = 'pera.accounts'
 // the heap into GC-pause territory; SQLite re-reads are cheap, so
 // release quickly instead.
 export const HOLDINGS_ROWS_GC_TIME_MS = 60_000
-
-export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
-    hdWallet: 24,
-    algo25: 25,
-    // Quantum mnemonics collide with algo25 at 25 words. Key order matters:
-    // resolveImportAccountType scans this record in insertion order, so
-    // algo25 must stay ABOVE quantum for 25-word auto-detection to keep
-    // resolving to algo25 (quantum import is explicit-only —).
-    quantum: 25,
-}

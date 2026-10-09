@@ -11,7 +11,6 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -55,9 +54,7 @@ export const PaymentSummaryHeader = ({
             <PWView style={styles.amountContainer}>
                 <AssetAmount
                     asset={nativeAsset}
-                    value={microAlgosToAlgos(
-                        transaction.paymentTransaction?.amount ?? 0n,
-                    )}
+                    value={amount}
                     // The signer authorizes an outgoing payment, so the amount
                     // leaves their account.
                     sign='-'

@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     reject: vi.fn(),
     useDappRequest: vi.fn(),
     useSigningAccounts: vi.fn(),
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccountId: vi.fn(),
     useApprovalArming: vi.fn(),
 }))
 
@@ -33,13 +33,27 @@ vi.mock('@hooks/useApprovalArming.web', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
-    useSelectedAccountAddress: mocks.useSelectedAccountAddress,
+    useSelectedAccountId: mocks.useSelectedAccountId,
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        id: string,
+    ) => account.chains[id],
 }))
 
 import { useWcConnectScreen } from '../useWcConnectScreen'
 
-const ACCOUNT_A = { address: 'AAAA', name: 'Account A' }
-const ACCOUNT_B = { address: 'BBBB', name: 'Account B' }
+const ACCOUNT_A = {
+    id: 'account-a',
+    name: 'Account A',
+    custody: { kind: 'local', seed: 'algo25' },
+    chains: { algorand: { address: 'AAAA', keyPairId: 'key-a' } },
+}
+const ACCOUNT_B = {
+    id: 'account-b',
+    name: 'Account B',
+    custody: { kind: 'local', seed: 'algo25' },
+    chains: { algorand: { address: 'BBBB', keyPairId: 'key-b' } },
+}
 
 const PEER = {
     name: 'Test dApp',
@@ -75,8 +89,8 @@ describe('useWcConnectScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: null,
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: null,
         })
         mocks.useApprovalArming.mockReturnValue(true)
     })
@@ -128,8 +142,8 @@ describe('useWcConnectScreen', () => {
     })
 
     it('seeds the selection with the active account when it can sign', () => {
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'BBBB',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
         })
         const { result } = render()
 
@@ -138,8 +152,8 @@ describe('useWcConnectScreen', () => {
     })
 
     it('seeds once the account store rehydrates after the proposal', () => {
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'BBBB',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
         })
         mocks.useSigningAccounts.mockReturnValue([])
         const { result, rerender } = render()
@@ -153,8 +167,8 @@ describe('useWcConnectScreen', () => {
     })
 
     it('pre-checks nothing for a page-initiated proposal', () => {
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'BBBB',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
         })
         const { result } = render(
             proposalApproval({ requesterOrigin: 'https://dapp.example' }),
@@ -166,8 +180,8 @@ describe('useWcConnectScreen', () => {
 
     it('cannot connect before the window is armed, even with an account picked', () => {
         mocks.useApprovalArming.mockReturnValue(false)
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'BBBB',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
         })
         const { result } = render()
 
@@ -179,8 +193,8 @@ describe('useWcConnectScreen', () => {
     it('pre-checks nothing when the active account cannot sign', () => {
         // A watch-only active account would otherwise arrive pre-selected and
         // fail on approve.
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'ZZZZ',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-z',
         })
         const { result } = render()
 

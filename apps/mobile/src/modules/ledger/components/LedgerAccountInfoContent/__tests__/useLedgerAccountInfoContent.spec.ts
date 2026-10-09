@@ -13,11 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import {
-    accountType,
-    AccountTypes,
-    isHardwareWalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { hardwareDetailsOf } from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
@@ -147,7 +143,9 @@ describe('useLedgerAccountInfoContent', () => {
             kind: 'authorityAccount',
         })
         if (authorityItems[0].kind === 'authorityAccount') {
-            expect(authorityItems[0].account.address).toBe('AUTH')
+            expect(authorityItems[0].account.chains.algorand?.address).toBe(
+                'AUTH',
+            )
             // synth is hardware → base icon is the Ledger icon, no override.
             expect(authorityItems[0].displayStateOverride).toBeUndefined()
         }
@@ -175,7 +173,9 @@ describe('useLedgerAccountInfoContent', () => {
             i => i.kind === 'authorityAccount',
         )
         const authorityAddresses = authorityItems.map(i =>
-            i.kind === 'authorityAccount' ? i.account.address : '',
+            i.kind === 'authorityAccount'
+                ? i.account.chains.algorand?.address
+                : '',
         )
         expect(authorityAddresses).toEqual(['R1', 'R2'])
         authorityItems.forEach(i => {
@@ -248,12 +248,12 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(accountType(acct.account)).toBe(AccountTypes.hardware)
-            expect(acct.account.address).toBe('MYADDR')
-            if (isHardwareWalletAccount(acct.account)) {
-                expect(acct.account.hardwareDetails.accountIndex).toBe(2)
-                expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
-            }
+            expect(acct.account.custody.kind).toBe('hardware')
+            expect(acct.account.chains.algorand?.address).toBe('MYADDR')
+            expect(hardwareDetailsOf(acct.account)).toMatchObject({
+                accountIndex: 2,
+                manufacturer: 'ledger',
+            })
             // synth is hardware → base icon resolves correctly, no override.
             expect(acct.displayStateOverride).toBeUndefined()
         }
@@ -279,8 +279,8 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(accountType(acct.account)).toBe(AccountTypes.watch)
-            expect(acct.account.address).toBe('WATCH_ADDR')
+            expect(acct.account.custody.kind).toBe('watch')
+            expect(acct.account.chains.algorand?.address).toBe('WATCH_ADDR')
             expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
             expect(acct.displayStateOverride).toBe('rekeyedSignable')
         }

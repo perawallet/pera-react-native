@@ -34,6 +34,7 @@ import {
 
 import { assignFeeToGroup } from '../assignMinimumFeesToGroup'
 import { enqueueArc0001SignRequest } from '../enqueueArc0001SignRequest'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
@@ -149,9 +150,13 @@ const makePayment = (
 const quantumAccount = (): WalletAccount =>
     ({
         id: 'q1',
-        address: QUANTUM_ADDRESS.toString(),
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: QUANTUM_ADDRESS.toString(),
+                keyPairId: 'kp-quantum',
+            },
+        },
     }) as WalletAccount
 
 // Wire bytes are produced the way a dApp does: canonical unsigned msgpack.

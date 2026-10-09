@@ -11,16 +11,16 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import {
+    useCreateAccount,
+    useCreateNextHDAccount,
+    useHdSeedGroups,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
-import {
-    useCreateAccount,
-    useCreateNextHDAccount,
-    useHDWalletGroups,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -28,6 +28,9 @@ import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
+import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig'
 import type { AccountOption } from '@modules/onboarding/types'
@@ -40,13 +43,11 @@ const DEFAULT_CREATING_TITLE_KEY = 'onboarding.create_account.processing'
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const {
-        buildHdWalletAccount,
-        buildAlgo25WalletAccount,
-        buildQuantumWalletAccount,
-    } = useCreateAccount()
-    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
-    const { hasMultipleHDWallets } = useHDWalletGroups()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { buildHdWalletAccount, buildSingleKeyAccount } =
+        useCreateAccount(scope)
+    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount(scope)
+    const { hasMultipleHdSeeds } = useHdSeedGroups()
     const { showError } = useErrorToast()
     const { t, currentLanguage } = useLanguage()
     const { pushWebView } = useWebView()
@@ -63,7 +64,7 @@ export const useAddAccountScreen = () => {
         anyChain: 'multisig',
     })
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
-    const isQuantumAccountsEnabled = useCapability({
+    const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',
     })
@@ -126,7 +127,7 @@ export const useAddAccountScreen = () => {
     const handleAddAccount = useCallback(() => {
         if (!hasHDWallet) return
 
-        if (hasMultipleHDWallets) {
+        if (hasMultipleHdSeeds) {
             navigation.push('SelectHDWallet')
             return
         }
@@ -134,7 +135,7 @@ export const useAddAccountScreen = () => {
         runCreateAccount(buildNextHDAccount)
     }, [
         hasHDWallet,
-        hasMultipleHDWallets,
+        hasMultipleHdSeeds,
         navigation,
         buildNextHDAccount,
         runCreateAccount,
@@ -190,8 +191,10 @@ export const useAddAccountScreen = () => {
     }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() => buildAlgo25WalletAccount({}))
-    }, [buildAlgo25WalletAccount, runCreateAccount])
+        runCreateAccount(() =>
+            buildSingleKeyAccount({ seed: SeedScheme.Algo25 }),
+        )
+    }, [buildSingleKeyAccount, runCreateAccount])
 
     const handleCreateQuantum = useCallback(() => {
         trackEvent(OnboardingEvent.CreateAccountQuantum)
@@ -199,10 +202,10 @@ export const useAddAccountScreen = () => {
         // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
         // build in memory, then NameAccount persists after the user names it.
         runCreateAccount(
-            () => buildQuantumWalletAccount(),
+            () => buildSingleKeyAccount({ seed: SeedScheme.Quantum }),
             'onboarding.add_account.quantum_creating_title',
         )
-    }, [buildQuantumWalletAccount, runCreateAccount])
+    }, [buildSingleKeyAccount, runCreateAccount])
 
     const handleLearnMoreQuantum = useCallback(
         () =>
@@ -235,7 +238,7 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
                 },
-                isQuantumAccountsEnabled && {
+                isQuantumEnabled && {
                     testID: 'add_account_create_quantum_button',
                     titleKey:
                         'onboarding.add_account.quantum_account_option_title',
@@ -288,7 +291,7 @@ export const useAddAccountScreen = () => {
             hasHDWallet,
             handleAddAccount,
             handleCreateUniversalWallet,
-            isQuantumAccountsEnabled,
+            isQuantumEnabled,
             canUseMultisig,
             handleCreateQuantum,
             handleLearnMoreQuantum,

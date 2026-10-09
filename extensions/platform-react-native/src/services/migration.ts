@@ -245,11 +245,10 @@ const summarizeLegacyData = (
     accounts: data.accounts.length,
     accountsWithSecretKey: data.accounts.filter(a => a.secretKey !== null)
         .length,
-    accountsWithHDWallet: data.accounts.filter(a => a.hdWalletId !== null)
-        .length,
+    accountsWithHDWallet: data.accounts.filter(a => a.hdSeedId !== null).length,
     accountsWithLedger: data.accounts.filter(a => a.ledger !== null).length,
     accountsWithJoint: data.accounts.filter(a => a.joint !== null).length,
-    hdWallets: data.hdWallets.length,
+    hdWallets: data.hdSeeds.length,
     contacts: data.contacts.length,
     notificationFilters: data.notificationFilters.length,
     walletConnectV1: data.walletConnectV1.length,
@@ -346,10 +345,11 @@ type RawLegacyPreferences = Omit<
 
 interface RawLegacyAccount extends Omit<
     LegacyAccount,
-    'secretKey' | 'authAddress'
+    'secretKey' | 'authAddress' | 'hdSeedId'
 > {
     secretKey: Base64
     authAddress?: string | null
+    hdWalletId: string | null
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -430,7 +430,7 @@ const decodeLegacyMigrationData = (
         auth: { pin: decodeAuthPin(raw.auth.pin) },
         accounts,
         undecodableAccounts,
-        hdWallets: decodeHDWallets(raw.hdWallets),
+        hdSeeds: decodeHDWallets(raw.hdWallets),
         contacts: raw.contacts,
         notificationFilters: raw.notificationFilters,
         walletConnectV1: raw.walletConnectV1.map(decodeWalletConnectV1Session),
@@ -468,8 +468,12 @@ const decodeLegacyMigrationData = (
     }
 }
 
-const decodeAccount = (raw: RawLegacyAccount): LegacyAccount => ({
+const decodeAccount = ({
+    hdWalletId,
+    ...raw
+}: RawLegacyAccount): LegacyAccount => ({
     ...raw,
+    hdSeedId: hdWalletId,
     secretKey: decodeBase64(raw.secretKey),
     authAddress: raw.authAddress ?? null,
 })
@@ -577,7 +581,7 @@ const emptyLegacyMigrationData = (): LegacyMigrationData => ({
     auth: { pin: null },
     accounts: [],
     undecodableAccounts: [],
-    hdWallets: [],
+    hdSeeds: [],
     contacts: [],
     notificationFilters: [],
     walletConnectV1: [],

@@ -20,6 +20,17 @@ export const algorandMultisigAdapter: MultisigChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     deriveAddress: ({ version, threshold, addresses }) =>
         generateMultisigAddress(version, threshold, addresses),
+    parametersOf: native =>
+        native?.family === 'algorand' && native.multisig
+            ? {
+                  ...native.multisig,
+                  addresses: [...native.multisig.addresses],
+              }
+            : undefined,
+    toNative: ({ version, threshold, addresses }) => ({
+        family: 'algorand',
+        multisig: { version, threshold, addresses: [...addresses] },
+    }),
     assembleSignedTransactions: assembleSignedMultisigTransactions,
     validateSignRequest: validateAlgorandSignRequest,
 }

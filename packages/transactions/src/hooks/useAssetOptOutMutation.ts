@@ -15,7 +15,8 @@ import { useCallback } from 'react'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
-    fetchAccountInformation,
+    fetchOnChainAccountState,
+    type AccountHoldingSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
@@ -78,12 +79,12 @@ const resolveCreator = async (
 // returns-or-throws contract.
 const assertCanOptOut = (
     params: ResolvedOptOutParams,
-    holding: Optional<{ assetId: bigint; amount: bigint }>,
+    holding: Optional<AccountHoldingSnapshot>,
 ): void => {
     if (params.sender === params.creator) {
         throw new CreatorCannotOptOutError()
     }
-    if (holding && holding.amount !== 0n) {
+    if (holding && !holding.amount.isZero()) {
         throw new NonZeroBalanceError()
     }
 }
@@ -100,15 +101,16 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
 
             const sender = paramsList[0].sender
 
-            const accountInfo = await fetchAccountInformation(sender, network)
-            const assets = accountInfo.assets
+            const { holdings } = await fetchOnChainAccountState(sender, scope)
 
             // Skip txn-building for assets the chain shows as already
             // gone (a prior opt-out already settled and the local UI
             // is stale) — submitting again would be rejected as
             // `duplicate_txn`. We still reconcile local state below.
             const toSubmit = paramsList.filter(p => {
-                const holding = assets.find(a => a.assetId === p.assetId)
+                const holding = holdings.find(
+                    h => h.assetId === String(p.assetId),
+                )
                 assertCanOptOut(p, holding)
                 return holding !== undefined
             })

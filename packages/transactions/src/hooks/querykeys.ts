@@ -62,6 +62,10 @@ export const transactionQueryKeys = {
      */
     openSubmissionTxIds: (scope: ChainScope) =>
         [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
+
+    /** The stored balance row the rekey preflight reads; no network call. */
+    sourceBalance: (accountAddress: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'source-balance', { accountAddress, scope }] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

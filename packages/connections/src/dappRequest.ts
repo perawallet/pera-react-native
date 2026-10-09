@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     createChainAdapterRegistry,
@@ -112,6 +113,11 @@ export interface DappRequestChainAdapter {
         payload: unknown,
     ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
     useEnqueueTransactionSigning: () => EnqueueTransactionSigning
+    /**
+     * The account kind the dApp bridge reports for `account`, ignoring rekey:
+     * the bridge derives the rekeyed kinds from the signer resolution itself.
+     */
+    accountTypeOf(account: WalletAccount): string
 }
 
 export const dappRequestChainAdapters =

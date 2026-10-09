@@ -18,19 +18,19 @@ import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const HDWalletsSection = ({
-    hdWallets,
+    hdSeeds,
 }: {
-    hdWallets: LegacyHDWallet[]
+    hdSeeds: LegacyHDWallet[]
 }) => {
     return (
         <MigrationDataSection
             title='HD Wallets'
-            count={hdWallets.length}
+            count={hdSeeds.length}
         >
-            {hdWallets.length === 0 ? (
+            {hdSeeds.length === 0 ? (
                 <EmptyDataHint />
             ) : (
-                hdWallets.map((w, i) => (
+                hdSeeds.map((w, i) => (
                     <MigrationDataSubBlock
                         key={`${w.walletId}-${i}`}
                         title={`#${i} — ${w.walletId}`}

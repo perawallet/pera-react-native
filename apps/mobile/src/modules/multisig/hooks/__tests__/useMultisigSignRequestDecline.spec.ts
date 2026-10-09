@@ -91,8 +91,7 @@ const SIGNER = 'SIGNER_ADDRESS'
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: 'algo25' },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildMultisigSignRequest = (

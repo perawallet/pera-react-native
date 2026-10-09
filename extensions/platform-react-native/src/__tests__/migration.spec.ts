@@ -211,7 +211,7 @@ describe('RNMigrationService', () => {
             expect(data.schemaVersion).toBe(LEGACY_MIGRATION_SCHEMA_VERSION)
             expect(data.sourcePlatform).toBe('ios')
             expect(data.accounts).toEqual([])
-            expect(data.hdWallets).toEqual([])
+            expect(data.hdSeeds).toEqual([])
             expect(data.preferences.theme).toBeNull()
             expect(data.auth.pin).toBeNull()
             expect(data.dismissedBanners.bannerIds).toEqual([])
@@ -349,8 +349,8 @@ describe('RNMigrationService', () => {
             expect(data.accounts[0].secretKey).toEqual(
                 new Uint8Array([1, 2, 3]),
             )
-            expect(data.hdWallets[0].entropy).toEqual(new Uint8Array([1, 2, 3]))
-            expect(data.hdWallets[0].keys[0].privateKey).toEqual(
+            expect(data.hdSeeds[0].entropy).toEqual(new Uint8Array([1, 2, 3]))
+            expect(data.hdSeeds[0].keys[0].privateKey).toEqual(
                 new Uint8Array([1, 2, 3]),
             )
             expect(data.walletConnectV1[0].dateTimestampMs).toBe(1700000000000)
@@ -572,6 +572,33 @@ describe('RNMigrationService', () => {
             expect(summary.accountsWithJoint).toBe(1)
         })
 
+        test("maps the native payload's HD wallet id onto the account's seed id", async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        accounts: [
+                            {
+                                address: 'HDADDR',
+                                name: 'HD',
+                                type: 'standard',
+                                preferredOrder: 0,
+                                isBackedUp: false,
+                                secretKey: null,
+                                hdWalletId: 'W1',
+                                ledger: null,
+                                joint: null,
+                            },
+                        ],
+                    }),
+                ),
+            })
+
+            const data = await service.getLegacyData()
+
+            expect(data.accounts[0].hdSeedId).toBe('W1')
+            expect(data.accounts[0]).not.toHaveProperty('hdWalletId')
+        })
+
         test('decodes authAddress on an account', async () => {
             nativeModulesMock.LegacyMigration = createNativeModule({
                 getLegacyData: vi.fn().mockResolvedValue(
@@ -696,8 +723,8 @@ describe('RNMigrationService', () => {
 
                 const data = await service.getLegacyData()
 
-                expect(data.hdWallets).toHaveLength(1)
-                expect(data.hdWallets[0].walletId).toBe('W_GOOD')
+                expect(data.hdSeeds).toHaveLength(1)
+                expect(data.hdSeeds[0].walletId).toBe('W_GOOD')
                 expect(loggerMock.warn).toHaveBeenCalled()
             })
 

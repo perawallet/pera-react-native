@@ -19,6 +19,7 @@ const mockGetKey = vi.fn()
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({ getKey: mockGetKey }),
     PQ_DERIVATION_CANONICAL: 'pqk1',
+    SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
 
 const mockUseRekeyedAddressesQuery = vi.fn()
@@ -39,15 +40,20 @@ import { useLegacyQuantumNotice } from '../useLegacyQuantumNotice'
 const LEGACY_ACCOUNT: WalletAccount = {
     id: 'legacy-account-1',
     custody: { kind: 'local', seed: 'quantum' },
-    address: 'LEGACYADDRESS',
-    keyPairId: 'seed-1-quantum',
+    chains: {
+        algorand: { address: 'LEGACYADDRESS', keyPairId: 'seed-1-quantum' },
+    },
 }
 
 const CANONICAL_ACCOUNT: WalletAccount = {
     id: 'canonical-account-1',
     custody: { kind: 'local', seed: 'quantum' },
-    address: 'CANONICALADDRESS',
-    keyPairId: 'seed-2-quantum-pqk1',
+    chains: {
+        algorand: {
+            address: 'CANONICALADDRESS',
+            keyPairId: 'seed-2-quantum-pqk1',
+        },
+    },
 }
 
 const NO_LOOKUP_RESULT = {

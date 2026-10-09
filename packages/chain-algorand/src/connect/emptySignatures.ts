@@ -25,15 +25,21 @@ import {
 } from 'algosdk'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    findAccountByAddressOn,
     getAuthAccount,
-    isAlgo25Account,
     isHardwareWalletAccount,
-    isHDWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandMultisigOf } from '../accounts/multisig-participants'
+import {
+    algorandAddressOf,
+    algorandKeyOf,
+    isAlgo25Account,
+    isHDWalletAccount,
+    isQuantumAccount,
+} from '../accounts/vocabulary'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms'
 import {
     encodeToBase64,
@@ -99,7 +105,7 @@ export const emptySignatureFieldsOf = (
             ? { schemeId: 'falcon1024' as const, publicKey: stored }
             : resolvePQSigningInfo(
                   getKeystoreStore().state.keys,
-                  auth.keyPairId,
+                  algorandKeyOf(auth) ?? '',
               )
         if (!info) return null
         const scheme = PQ_SCHEMES[info.schemeId]
@@ -114,7 +120,8 @@ export const emptySignatureFieldsOf = (
         }
     }
     if (isMultisigAccount(auth)) {
-        const details = auth.multisigDetails
+        const details = algorandMultisigOf(auth)
+        if (!details) return null
         return {
             msig: {
                 v: details.version,
@@ -147,17 +154,22 @@ export const algorandEmptySignaturesFor = (
     const accounts = useAccountsStore.getState().accounts
     const result: Record<string, string> = {}
     for (const address of addresses) {
-        const account = accounts.find(a => a.address === address)
+        const account = findAccountByAddressOn(
+            accounts,
+            LEGACY_CHAIN_ID,
+            address,
+        )
         if (!account) continue
         const auth = getAuthAccount(account, accounts, LEGACY_CHAIN_ID)
-        if (!auth) continue
+        const authAddress = auth ? algorandAddressOf(auth) : undefined
+        if (!auth || !authAddress) continue
         try {
             const fields = emptySignatureFieldsOf(auth)
             if (!fields) continue
             result[address] = encodeEmptySignature(
-                auth.address === address
+                authAddress === address
                     ? fields
-                    : { ...fields, sgnr: Address.fromString(auth.address) },
+                    : { ...fields, sgnr: Address.fromString(authAddress) },
             )
         } catch (error) {
             logger.warn('[WC] could not build an empty signature', { error })

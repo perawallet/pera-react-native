@@ -61,14 +61,16 @@ import { useAccountHistory } from '@modules/accounts/components/AccountHistory/u
 
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'observer-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'observer-key' },
+    },
     name: 'Observer',
 }
 
@@ -161,13 +163,13 @@ describe('Flow: View transactions → tap into details', () => {
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([ACCOUNT])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT.id)
         vi.mocked(Notifier.showNotification).mockClear()
 
         // Account balance row so the history hook has something to
         // anchor its query against.
         await upsertAccountBalance({
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 0,
@@ -183,7 +185,7 @@ describe('Flow: View transactions → tap into details', () => {
         // the list to render without touching the network.
         await upsertTransactions({
             items: [TX_PAYMENT, TX_ASSET_TRANSFER],
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork('mainnet'),
         })
     })
@@ -199,7 +201,7 @@ describe('Flow: View transactions → tap into details', () => {
         // it also happens while the initial sync is still writing — so the
         // hook confirms against the API before showing the empty view.
         server.use(
-            http.get(`*/v1/accounts/${ACCOUNT.address}/transactions/`, () =>
+            http.get(`*/v1/accounts/${addressOf(ACCOUNT)}/transactions/`, () =>
                 HttpResponse.json(
                     {
                         current_round: 1100,
@@ -382,7 +384,7 @@ describe('Flow: View transactions → tap into details', () => {
         }
         await upsertTransactions({
             items: [closeOutTx],
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork('mainnet'),
         })
 
@@ -503,7 +505,7 @@ describe('Flow: View transactions → tap into details', () => {
         )
         await upsertTransactions({
             items: fullPage,
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork('mainnet'),
         })
 
@@ -537,7 +539,10 @@ describe('Flow: View transactions → tap into details', () => {
             ),
         )
         server.use(
-            http.get(`*/v1/accounts/${ACCOUNT.address}/transactions/`, apiSpy),
+            http.get(
+                `*/v1/accounts/${addressOf(ACCOUNT)}/transactions/`,
+                apiSpy,
+            ),
         )
 
         // Wrap the hook in a fresh QueryClient — `useAccountHistory`
@@ -603,7 +608,7 @@ describe('Flow: View transactions → tap into details', () => {
     it('Given a state proof transaction, when the user taps its row, then the details screen names the type instead of calling it unsupported', async () => {
         await upsertTransactions({
             items: [TX_STATE_PROOF],
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork('mainnet'),
         })
 

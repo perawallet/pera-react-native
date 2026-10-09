@@ -15,7 +15,11 @@ import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSigningAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
@@ -52,22 +56,32 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSigningAccounts: vi.fn().mockReturnValue([
-        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
-    ]),
-    useAllAccounts: vi.fn().mockReturnValue([
-        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
-    ]),
+const account = (
+    address: string,
+    custody: WalletAccount['custody'] = { kind: 'local', seed: 'algo25' },
+): WalletAccount => ({
+    id: address,
+    custody,
+    chains: { algorand: { address, keyPairId: `key-${address}` } },
+})
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useSigningAccounts: vi.fn(),
+    useAllAccounts: vi.fn(),
 }))
 
 beforeEach(() => {
+    vi.mocked(useSigningAccounts).mockReturnValue([
+        account('ADDR1'),
+        account('ADDR2'),
+    ])
     vi.mocked(useAllAccounts).mockReturnValue([
-        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
-    ] as ReturnType<typeof useAllAccounts>)
+        account('ADDR1'),
+        account('ADDR2'),
+    ])
     vi.mocked(useSelectedScope).mockReturnValue(
         scopeForLegacyNetwork('mainnet'),
     )
@@ -196,10 +210,10 @@ describe('useInboxQuery', () => {
 
     it('filters out multisig_import items whose address is already a local account', async () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-            { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
-            { address: 'MSIG_ADDR1', custody: { kind: 'multisig' } },
-        ] as ReturnType<typeof useAllAccounts>)
+            account('ADDR1'),
+            account('ADDR2'),
+            account('MSIG_ADDR1', { kind: 'multisig' }),
+        ])
 
         const mockResponse = {
             joint_account_import_requests: [

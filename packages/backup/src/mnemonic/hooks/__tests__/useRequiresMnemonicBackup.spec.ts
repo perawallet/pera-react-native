@@ -34,8 +34,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 describe('useRequiresMnemonicBackup', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules()
+        const { registerFakeBackupAdapter } =
+            await import('../../../__tests__/fakeBackupAdapter')
+        registerFakeBackupAdapter()
     })
 
     test('returns false when wallet root is already backed up', async () => {
@@ -44,9 +47,9 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
+            id: 'account-1',
             custody: { kind: 'local', seed: 'algo25' },
-            address: 'ADDR',
-            keyPairId: 'kp-backed',
+            chains: { algorand: { address: 'ADDR', keyPairId: 'kp-backed' } },
         }
 
         act(() => {
@@ -62,9 +65,9 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
+            id: 'account-2',
             custody: { kind: 'local', seed: 'algo25' },
-            address: 'ADDR',
-            keyPairId: 'kp-unbacked',
+            chains: { algorand: { address: 'ADDR', keyPairId: 'kp-unbacked' } },
         }
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))
@@ -78,8 +81,9 @@ describe('useRequiresMnemonicBackup', () => {
         const account: WalletAccount = {
             id: 'acc-quantum',
             custody: { kind: 'local', seed: 'quantum' },
-            address: 'ADDR',
-            keyPairId: 'kp-quantum-unbacked',
+            chains: {
+                algorand: { address: 'ADDR', keyPairId: 'kp-quantum-unbacked' },
+            },
         }
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))
@@ -91,8 +95,9 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
+            id: 'account-4',
             custody: { kind: 'watch' },
-            address: 'ADDR',
+            chains: { algorand: { address: 'ADDR' } },
         }
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))

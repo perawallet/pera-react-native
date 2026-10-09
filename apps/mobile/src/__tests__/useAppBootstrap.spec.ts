@@ -199,6 +199,10 @@ vi.mock('@perawallet/wallet-core-remote-config', async () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,

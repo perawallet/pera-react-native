@@ -12,7 +12,6 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     createChainAdapterRegistry,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -31,7 +30,3 @@ export interface MigrationChainAdapter {
 
 export const migrationChainAdapters =
     createChainAdapterRegistry<MigrationChainAdapter>('migration')
-
-// Pera 6 data predates chain scopes, so every legacy account is the legacy chain's.
-export const migrationAdapterFor = (): MigrationChainAdapter =>
-    migrationChainAdapters.get(LEGACY_CHAIN_ID)

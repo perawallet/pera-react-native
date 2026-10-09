@@ -13,7 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSigningAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCleanupDuplicateMultisigInvitations } from '../useCleanupDuplicateMultisigInvitations'
 import { fetchInbox } from '../../api/inbox'
 
@@ -36,12 +40,21 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSigningAccounts: vi.fn().mockReturnValue([
-        { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-        { address: 'ADDR2', custody: { kind: 'local', seed: 'algo25' } },
-    ]),
-    useAllAccounts: vi.fn().mockReturnValue([]),
+const account = (
+    address: string,
+    custody: WalletAccount['custody'] = { kind: 'local', seed: 'algo25' },
+): WalletAccount => ({
+    id: address,
+    custody,
+    chains: { algorand: { address, keyPairId: `key-${address}` } },
+})
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useSigningAccounts: vi.fn(),
+    useAllAccounts: vi.fn(),
 }))
 
 const mutateMock = vi.fn()
@@ -54,15 +67,20 @@ vi.mock('../useDeleteMultisigInvitationMutation', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useSigningAccounts).mockReturnValue([
+        account('ADDR1'),
+        account('ADDR2'),
+    ])
+    vi.mocked(useAllAccounts).mockReturnValue([])
 })
 
 describe('useCleanupDuplicateMultisigInvitations', () => {
     it('fires delete for each duplicate import address', async () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-            { address: 'MSIG_DUP_1', custody: { kind: 'multisig' } },
-            { address: 'MSIG_DUP_2', custody: { kind: 'multisig' } },
-        ] as ReturnType<typeof useAllAccounts>)
+            account('ADDR1'),
+            account('MSIG_DUP_1', { kind: 'multisig' }),
+            account('MSIG_DUP_2', { kind: 'multisig' }),
+        ])
 
         vi.mocked(fetchInbox).mockResolvedValue({
             joint_account_import_requests: [
@@ -113,9 +131,7 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
     })
 
     it('does not fire when there are no duplicates', async () => {
-        vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'ADDR1', custody: { kind: 'local', seed: 'algo25' } },
-        ] as ReturnType<typeof useAllAccounts>)
+        vi.mocked(useAllAccounts).mockReturnValue([account('ADDR1')])
 
         vi.mocked(fetchInbox).mockResolvedValue({
             joint_account_import_requests: [
@@ -146,8 +162,8 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
 
     it('does not re-fire across re-renders for the same duplicate', async () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'MSIG_DUP_1', custody: { kind: 'multisig' } },
-        ] as ReturnType<typeof useAllAccounts>)
+            account('MSIG_DUP_1', { kind: 'multisig' }),
+        ])
 
         vi.mocked(fetchInbox).mockResolvedValue({
             joint_account_import_requests: [

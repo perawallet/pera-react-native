@@ -11,7 +11,7 @@
  */
 
 import { useAccountsStore } from '../store'
-import { isHDWalletAccount } from '../utils'
+import { hdIndexOf } from '../credentials'
 
 /**
  * True when the wallet has at least one HD (mnemonic/passphrase-derived)
@@ -20,5 +20,5 @@ import { isHDWalletAccount } from '../utils'
  */
 export const useHasHDWallet = (): boolean => {
     const accounts = useAccountsStore(state => state.accounts)
-    return accounts.some(isHDWalletAccount)
+    return accounts.some(account => hdIndexOf(account) !== undefined)
 }

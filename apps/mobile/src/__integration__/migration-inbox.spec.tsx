@@ -62,6 +62,7 @@ import {
     HD_TEST_ADDRESS as REKEYED_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { addressOf } from './__fixtures__/accounts'
 
 const LEGACY_DEVICE_ID = 'LEGACY-DEVICE-1'
 // Distinct from `LEGACY_DEVICE_ID` on purpose — see the handler comment
@@ -84,7 +85,7 @@ const legacyAlgo25Account = (address: string): LegacyAccount => ({
     preferredOrder: 0,
     isBackedUp: true,
     secretKey: mnemonicToSecretKey(ALGO25_TEST_MNEMONIC).sk,
-    hdWalletId: null,
+    hdSeedId: null,
     ledger: null,
     joint: null,
     authAddress: null,
@@ -104,7 +105,7 @@ const legacyKeylessAccount = (
     preferredOrder: 1,
     isBackedUp: false,
     secretKey: null,
-    hdWalletId: null,
+    hdSeedId: null,
     ledger: null,
     joint: null,
     authAddress,
@@ -167,7 +168,7 @@ const InboxWithDeviceRegistration = () => {
 const MigratedUserApp = () => {
     const accounts = useAllAccounts()
     const addresses = useMemo(
-        () => accounts.map(account => account.address),
+        () => accounts.map(account => addressOf(account)),
         [accounts],
     )
     const legacyDeviceId = useDeviceStore(state =>

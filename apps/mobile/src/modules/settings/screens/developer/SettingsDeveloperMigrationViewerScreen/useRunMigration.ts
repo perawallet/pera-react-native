@@ -15,6 +15,8 @@ import {
     useCreateAccount,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -31,8 +33,9 @@ export type UseRunMigrationResult = {
 }
 
 export const useRunMigration = (): UseRunMigrationResult => {
-    const importAccount = useImportAccount()
-    const { createHdWalletAccountForSeed } = useCreateAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const importAccount = useImportAccount(scope)
+    const { createHdWalletAccountForSeed } = useCreateAccount(scope)
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const [isMigrating, setIsMigrating] = useState(false)
@@ -45,6 +48,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
         setError(null)
         try {
             const runResult = await runMigration(getProvider().migration, {
+                chainId: LEGACY_CHAIN_ID,
                 importAccount,
                 createHdWalletAccount: createHdWalletAccountForSeed,
                 createHDWalletKey,

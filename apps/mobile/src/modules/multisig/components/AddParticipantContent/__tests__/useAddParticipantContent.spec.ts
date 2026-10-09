@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useAddParticipantContent } from '../useAddParticipantContent'
 
 const LOCAL_ALGO_ADDR = 'A'.repeat(58)
@@ -56,12 +57,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useAllAccounts: () => [
             {
-                address: LOCAL_ALGO_ADDR,
+                chains: { algorand: { address: LOCAL_ALGO_ADDR } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
-            { address: LOCAL_WATCH_ADDR, custody: { kind: 'watch' } },
             {
-                address: LOCAL_QUANTUM_ADDR,
+                chains: { algorand: { address: LOCAL_WATCH_ADDR } },
+                custody: { kind: 'watch' },
+            },
+            {
+                chains: { algorand: { address: LOCAL_QUANTUM_ADDR } },
                 custody: { kind: 'local', seed: 'quantum' },
             },
         ],
@@ -98,6 +102,7 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
 describe('useAddParticipantContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         multisigCheckState.data = undefined
         multisigCheckState.isFetching = false
         sigTypeCheckState.sigType = null

@@ -30,6 +30,12 @@ import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
+import {
+    algo25Account,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
 import { deriveQuantumAddress } from '../../blockchain/pq/quantumAdapter'
 import { algorandEmptySignaturesFor } from '../emptySignatures'
@@ -75,22 +81,11 @@ const [ED_A, ED_B, ED_C] = Array.from({ length: 3 }, () =>
 )
 
 const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: `kp-${address}`,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
+    algo25Account(address, { rekeyAddress })
 
-const quantum = (address: string): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: 'quantum' },
-        address,
-        keyPairId: `kp-${address}`,
-    }) as WalletAccount
+const quantum = (address: string): WalletAccount => quantumAccount(address)
 
-const watch = (address: string): WalletAccount =>
-    ({ custody: { kind: 'watch' }, address }) as WalletAccount
+const watch = (address: string): WalletAccount => watchAccount(address)
 
 const fieldsOf = (value: string | undefined): Map<string, unknown> =>
     msgpackRawDecodeAsMap(decodeFromBase64(value ?? '')) as Map<string, unknown>
@@ -201,15 +196,11 @@ describe('algorandEmptySignaturesFor', () => {
 
     it('lists every participant key, unsigned, for a multisig account', () => {
         state.accounts = [
-            {
-                custody: { kind: 'multisig' },
-                address: ED_C,
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: [ED_A, ED_B],
-                    version: 1,
-                },
-            } as WalletAccount,
+            multisigAccount(ED_C, {
+                threshold: 2,
+                addresses: [ED_A, ED_B],
+                version: 1,
+            }),
         ]
 
         const msig = fieldsOf(algorandEmptySignaturesFor([ED_C])[ED_C]).get(

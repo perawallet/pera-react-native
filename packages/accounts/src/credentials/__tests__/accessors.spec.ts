@@ -17,15 +17,27 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAccountChainStateStore } from '../../store/accountChainState'
-import type { AccountType, WalletAccount } from '../../models'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import type { WalletAccount } from '../../models'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+    type TestCustody,
+} from '../../__tests__/accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE as mainnet,
+    TESTNET_SCOPE as testnet,
+} from '../../__tests__/fakeAccountsChain'
 import {
     addressOn,
     authorityOf,
     chainAccountOf,
     custodyOf,
+    hardwareDetailsOf,
     hardwareDeviceOf,
     hasCustody,
+    hasRecoverySeed,
     hdIndexOf,
     seedOf,
     signingKeyOn,
@@ -33,81 +45,82 @@ import {
 
 type Keys = NonNullable<Parameters<typeof seedOf>[1]>
 
-const mainnet: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
-const testnet: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+const CUSTODIES = Object.keys(TEST_CUSTODY) as TestCustody[]
 
-const withoutChains = (type: AccountType): WalletAccount => {
-    const { chains: _chains, ...rest } = buildTestAccount(type)
-    return rest as WalletAccount
-}
+describe('accessors', () => {
+    test.each(CUSTODIES)('a %s account reads its chain entry', custody => {
+        const account = testAccount(custody, 'ADDR')
+        const entry = account.chains[FAKE_CHAIN_ID]
 
-const TYPES = [
-    'algo25',
-    'quantum',
-    'hdWallet',
-    'hardware',
-    'multisig',
-    'watch',
-] as const
+        expect(addressOn(account, mainnet)).toBe('ADDR')
+        expect(chainAccountOf(account, FAKE_CHAIN_ID)).toBe(entry)
+        expect(signingKeyOn(account, FAKE_CHAIN_ID)).toBe(entry?.keyPairId)
+    })
 
-describe('accessors on every stored shape', () => {
-    test.each(TYPES)(
-        'a %s account answers the same with or without chains',
-        type => {
-            const built = buildTestAccount(type)
-            for (const account of [built, withoutChains(type)]) {
-                expect(addressOn(account, mainnet)).toBe(built.address)
-                expect(signingKeyOn(account, 'algorand')).toBe(built.keyPairId)
-                expect(chainAccountOf(account, 'algorand')?.address).toBe(
-                    built.address,
-                )
-            }
-        },
-    )
+    test.each(CUSTODIES)('a %s account reports its custody', custody => {
+        const account = testAccount(custody)
 
-    test.each(TYPES)('a %s account reports its custody', type => {
-        const account = buildTestAccount(type)
-
-        expect(custodyOf(account).kind).toBe(
-            type === 'hdWallet' || type === 'algo25' || type === 'quantum'
-                ? 'local'
-                : type,
+        expect(custodyOf(account)).toBe(TEST_CUSTODY[custody])
+        expect(hasCustody(account, 'watch')).toBe(custody === 'watch')
+        expect(hasCustody(account, 'local')).toBe(
+            TEST_CUSTODY[custody].kind === 'local',
         )
-        expect(hasCustody(account, 'watch')).toBe(type === 'watch')
+    })
+
+    test('only local custody has a recovery seed', () => {
+        expect(
+            CUSTODIES.filter(custody => hasRecoverySeed(testAccount(custody))),
+        ).toEqual(['local', 'explicit', 'hd'])
     })
 
     test('hdIndexOf gives the seed position from custody', () => {
-        expect(hdIndexOf(buildTestAccount('hdWallet'))).toEqual({
+        expect(hdIndexOf(testAccount('hd'))).toEqual({
             account: 0,
             keyIndex: 0,
         })
-        expect(hdIndexOf(buildTestAccount('algo25'))).toBeUndefined()
-        expect(hdIndexOf(buildTestAccount('watch'))).toBeUndefined()
+        expect(hdIndexOf(testAccount('local'))).toBeUndefined()
+        expect(hdIndexOf(testAccount('watch'))).toBeUndefined()
     })
 
     test('hardwareDeviceOf splits the device from the account index', () => {
-        expect(hardwareDeviceOf(buildTestAccount('hardware'))).toEqual({
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
+        expect(hardwareDeviceOf(testAccount('hardware'))).toEqual({
+            device: TEST_CUSTODY.hardware.device,
             accountIndex: 0,
         })
-        expect(hardwareDeviceOf(buildTestAccount('watch'))).toBeUndefined()
+        expect(hardwareDeviceOf(testAccount('watch'))).toBeUndefined()
+    })
+
+    test('hardwareDetailsOf flattens the device with its account index', () => {
+        expect(hardwareDetailsOf(testAccount('hardware'))).toEqual({
+            ...TEST_CUSTODY.hardware.device,
+            accountIndex: 0,
+        })
+        expect(hardwareDetailsOf(testAccount('local'))).toBeUndefined()
     })
 
     test('a chain the account is not on has no entry, address or key', () => {
-        const account = buildTestAccount('algo25')
-        const elsewhere = {
-            chainId: 'other',
-            networkId: 'x',
-        } as unknown as ChainScope
+        const account = testAccount('local')
+        const elsewhere: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        }
 
-        expect(chainAccountOf(account, 'other' as never)).toBeUndefined()
+        expect(chainAccountOf(account, 'ethereum')).toBeUndefined()
         expect(addressOn(account, elsewhere)).toBeUndefined()
-        expect(signingKeyOn(account, 'other' as never)).toBeUndefined()
+        expect(signingKeyOn(account, 'ethereum')).toBeUndefined()
+    })
+
+    test('each chain answers from its own entry', () => {
+        const account = buildTestAccount(TEST_CUSTODY.local, {
+            [FAKE_CHAIN_ID]: { address: 'FAKE', keyPairId: 'k-fake' },
+            ethereum: { address: '0xabc', keyPairId: 'k-eth' },
+        })
+
+        expect(
+            addressOn(account, { chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBe('0xabc')
+        expect(signingKeyOn(account, 'ethereum')).toBe('k-eth')
+        expect(signingKeyOn(account, FAKE_CHAIN_ID)).toBe('k-fake')
     })
 })
 
@@ -128,10 +141,8 @@ describe('authorityOf', () => {
 
     const slice = useAccountChainStateStore.getState
 
-    const rekeyed = (patch: Partial<WalletAccount>): WalletAccount => ({
-        ...buildTestAccount('watch'),
-        ...patch,
-    })
+    const rekeyed = (patch: Partial<WalletAccount>): WalletAccount =>
+        testAccount('watch', 'WATCH', patch)
 
     test('reads the requested network of the per-network map', () => {
         const account = rekeyed({ rekeyAddressByNetwork: { testnet: 'AUTH' } })
@@ -156,7 +167,7 @@ describe('authorityOf', () => {
     })
 
     test('is null for an account that signs for itself, and on any other chain', () => {
-        expect(authorityOf(buildTestAccount('watch'), mainnet)).toBeNull()
+        expect(authorityOf(testAccount('watch'), mainnet)).toBeNull()
         expect(
             authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), {
                 chainId: 'ethereum',
@@ -197,11 +208,10 @@ describe('seedOf', () => {
         { id: 'child', type: 'ed25519', metadata: { parentKeyId: 'seed' } },
     ] as unknown as Keys
 
-    const local = (keyPairId: string): WalletAccount => ({
-        ...buildTestAccount('algo25'),
-        keyPairId,
-        chains: { algorand: { address: 'ADDR', keyPairId } },
-    })
+    const local = (keyPairId: string): WalletAccount =>
+        buildTestAccount(TEST_CUSTODY.local, {
+            [FAKE_CHAIN_ID]: { address: 'ADDR', keyPairId },
+        })
 
     test('walks a child key to its seed', () => {
         expect(seedOf(local('child'), keys)).toBe('seed')
@@ -211,10 +221,12 @@ describe('seedOf', () => {
         expect(seedOf(local('seed'), keys)).toBe('seed')
     })
 
-    test('reads the legacy key of a record without chains', () => {
-        const { chains: _chains, ...rest } = local('child')
+    test('reads the key from any chain the account is on', () => {
+        const account = buildTestAccount(TEST_CUSTODY.local, {
+            ethereum: { address: '0xabc', keyPairId: 'child' },
+        })
 
-        expect(seedOf(rest as WalletAccount, keys)).toBe('seed')
+        expect(seedOf(account, keys)).toBe('seed')
     })
 
     test('is undefined for a key the snapshot lacks', () => {
@@ -223,8 +235,8 @@ describe('seedOf', () => {
 
     test.each(['hardware', 'multisig', 'watch'] as const)(
         'is undefined for a %s account',
-        type => {
-            expect(seedOf(buildTestAccount(type), keys)).toBeUndefined()
+        custody => {
+            expect(seedOf(testAccount(custody), keys)).toBeUndefined()
         },
     )
 })

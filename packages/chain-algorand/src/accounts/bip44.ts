@@ -12,7 +12,7 @@
 
 import {
     InvalidBip44PathError,
-    type HDWalletDetails,
+    type HdIndex,
 } from '@perawallet/wallet-core-accounts'
 
 /**
@@ -20,6 +20,9 @@ import {
  * for all Algorand HD wallet derivations.
  */
 export const ALGORAND_COIN_TYPE = 283
+
+/** Pera's HD accounts all derive on the external chain. */
+const HD_CHANGE = 0
 
 /**
  * Structured form of an Algorand BIP44 path
@@ -94,26 +97,23 @@ export const parseAlgorandBip44Path = (
 
 /**
  * Returns `true` when `path` resolves to the same BIP44 coordinates as the
- * given HD wallet details. Throws {@link InvalidBip44PathError} (with
+ * given HD index. Throws {@link InvalidBip44PathError} (with
  * `reason: 'malformed'`) if the path is not parseable — malformed is a
  * distinct failure mode from mismatch and callers typically want to surface
  * different errors to the user.
  */
-export const hdPathMatchesDetails = (
-    path: string,
-    details: HDWalletDetails,
-): boolean => {
+export const hdPathMatchesIndex = (path: string, index: HdIndex): boolean => {
     const parsed = parseAlgorandBip44Path(path)
     return (
-        parsed.account === details.account &&
-        parsed.change === details.change &&
-        parsed.keyIndex === details.keyIndex
+        parsed.account === index.account &&
+        parsed.change === HD_CHANGE &&
+        parsed.keyIndex === index.keyIndex
     )
 }
 
 /**
  * Asserts that `path` resolves to the same BIP44 coordinates as the given
- * HD wallet details. Throws {@link InvalidBip44PathError}:
+ * HD index. Throws {@link InvalidBip44PathError}:
  *
  * - `reason: 'malformed'` — path cannot be parsed
  * - `reason: 'mismatch'` — path parses but targets a different derivation
@@ -123,18 +123,13 @@ export const hdPathMatchesDetails = (
  */
 export const assertAlgorandBip44PathMatches = (
     path: string,
-    details: HDWalletDetails,
+    index: HdIndex,
 ): void => {
-    const parsed = parseAlgorandBip44Path(path)
-    if (
-        parsed.account !== details.account ||
-        parsed.change !== details.change ||
-        parsed.keyIndex !== details.keyIndex
-    ) {
+    if (!hdPathMatchesIndex(path, index)) {
         throw new InvalidBip44PathError(
             path,
             'mismatch',
-            `does not match HD wallet (account=${details.account}, change=${details.change}, keyIndex=${details.keyIndex})`,
+            `does not match HD wallet (account=${index.account}, change=${HD_CHANGE}, keyIndex=${index.keyIndex})`,
         )
     }
 }

@@ -13,17 +13,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createSigningMachine } from '../createSigningMachine'
 import type { SigningMachineDeps } from '../context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../../models'
+import { algo25Account } from '../../__tests__/accounts'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-const mockAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAccount = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockRequest: TransactionSignRequest = {
     id: 'req-create-1',

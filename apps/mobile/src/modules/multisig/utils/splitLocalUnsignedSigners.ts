@@ -11,9 +11,11 @@
  */
 
 import {
+    chainAccountOf,
     isHardwareWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 type SplitLocalUnsignedSignersResult = {
     /** Local-key participants (Algo25, HD) — eligible for batch dispatch. */
@@ -30,12 +32,14 @@ type SplitLocalUnsignedSignersResult = {
  */
 export const splitLocalUnsignedSigners = (
     localUnsignedSigners: WalletAccount[],
+    chainId: ChainId,
 ): SplitLocalUnsignedSignersResult => {
     const localKey: WalletAccount[] = []
     const hardware = new Set<string>()
     for (const account of localUnsignedSigners) {
         if (isHardwareWalletAccount(account)) {
-            hardware.add(account.address)
+            const address = chainAccountOf(account, chainId)?.address
+            if (address !== undefined) hardware.add(address)
         } else {
             localKey.push(account)
         }

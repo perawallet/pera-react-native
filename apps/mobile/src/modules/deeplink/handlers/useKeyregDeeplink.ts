@@ -16,10 +16,13 @@ import {
     isValidAlgorandAddress,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
@@ -27,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { buildKeyRegistrationTx } from '@perawallet/wallet-core-transactions'
 import {
+    findAccountByAddressOn,
     resolveSignerForAccount,
     useAllAccounts,
     type WalletAccount,
@@ -82,8 +86,9 @@ type Ineligible = {
 const checkSigningEligibility = (
     senderAddress: string,
     accounts: WalletAccount[],
+    chainId: ChainId,
 ): Ineligible | null => {
-    const account = accounts.find(a => a.address === senderAddress)
+    const account = findAccountByAddressOn(accounts, chainId, senderAddress)
     if (!account) {
         return {
             variant: 'keyreg-unknown-account',
@@ -93,11 +98,7 @@ const checkSigningEligibility = (
 
     // Judged on the RESOLVED signer, so a signable account rekeyed to an
     // unsignable one is rejected too.
-    const resolution = resolveSignerForAccount(
-        account,
-        accounts,
-        LEGACY_CHAIN_ID,
-    )
+    const resolution = resolveSignerForAccount(account, accounts, chainId)
     if (resolution.kind === 'ok') {
         return null
     }
@@ -131,12 +132,13 @@ const namesActiveNetwork = (
     target === getExpectedGenesisHash(network)
 
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network, networkConfig } = useNetwork()
     const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
 
     return useCallback(
         async (data: KeyregDeeplink) => {
@@ -156,6 +158,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             const ineligible = checkSigningEligibility(
                 data.senderAddress,
                 allAccounts,
+                scope.chainId,
             )
             if (ineligible) {
                 showError({
@@ -199,7 +202,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // not throw out of the handler. An out-of-range fee is caught at
                 // review time by the high-fee warning.
                 const dAppFee = data.fee ? BigInt(data.fee) : undefined
-                const scope = scopeForLegacyNetwork(network)
 
                 let tx
                 if (data.keyregType === 'offline') {
@@ -297,6 +299,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             network,
             networkConfig,
             showError,
+            scope,
         ],
     )
 }

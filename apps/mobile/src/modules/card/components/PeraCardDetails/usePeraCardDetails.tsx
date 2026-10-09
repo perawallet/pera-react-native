@@ -23,6 +23,7 @@ import {
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -51,6 +52,7 @@ import {
     type WalletPlatform,
 } from '../WalletInstructionsSheet'
 import { SECURE_CARD_IMAGE_CSS } from '../../utils/secureCardImageStyle'
+import { cardAccountAddressOf } from '../../utils/cardAccountAddress'
 
 const PAN_MASK = '••••'
 
@@ -409,12 +411,13 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             return
         }
         const account = await pickFundingSource()
-        if (!account || account.address === fundingAddress) return
+        const address = account
+            ? cardAccountAddressOf(account, LEGACY_CHAIN_ID)
+            : undefined
+        if (address === undefined || address === fundingAddress) return
         // Local only: the Pera backend registers the address with Baanx at
         // card creation; Baanx has no funding-source endpoint for our wallets.
-        useCardStore
-            .getState()
-            .setConnectedFundingSourceAddress(account.address)
+        useCardStore.getState().setConnectedFundingSourceAddress(address)
     }, [fundingAddress, isAutoFunding, pickFundingSource, infoToast, t])
 
     // Guard the whole picker → repoint sequence so a double-tap can't run two

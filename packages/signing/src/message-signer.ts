@@ -63,9 +63,14 @@ export type BuildSiwxAuthDataArgs = {
     now?: Date
 }
 
+/** What a message signer is asked to sign. */
+export type MessageSignKind = 'arbitraryData' | 'authData'
+
 /** The chain-specific legs of signing a message; registered by the chain package. */
 export interface MessageSignerChainAdapter {
     chainId: ChainId
+    /** Whether `account` can sign `kind` on this chain, judged from the account alone. */
+    canSign(account: WalletAccount, kind: MessageSignKind): boolean
     /** One signature per base64 item, with the account's own key; never follows rekey. */
     signArbitraryData(
         deps: MessageSigningDeps,

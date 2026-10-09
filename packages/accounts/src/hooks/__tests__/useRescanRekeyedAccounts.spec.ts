@@ -13,8 +13,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRescanRekeyedAccounts } from '../useRescanRekeyedAccounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { authorityOf } from '../../credentials'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import { RekeyUnsupportedError } from '../../errors'
@@ -23,7 +21,8 @@ import {
     registerFakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
-import { accountType } from '../../utils'
+import { testAccount } from '../../__tests__/accountFactory'
+import { addressOn, authorityOf } from '../../credentials'
 
 const mocks = {
     get fetchRekeyedAddresses() {
@@ -34,10 +33,6 @@ const mocks = {
     },
 }
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 const rekey = vi.hoisted(() => ({ isAvailable: true }))
 vi.mock('../useIsRekeyAvailable', () => ({
     useIsRekeyAvailable: () => rekey.isAvailable,
@@ -45,8 +40,6 @@ vi.mock('../useIsRekeyAvailable', () => ({
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
-
-const mainnet = scopeForLegacyNetwork('mainnet')
 
 describe('useRescanRekeyedAccounts — scan', () => {
     beforeEach(() => {
@@ -56,16 +49,12 @@ describe('useRescanRekeyedAccounts — scan', () => {
     })
 
     it('classifies discovered addresses into already-imported vs importable', async () => {
-        setAccounts([
-            {
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'IN_WALLET',
-                keyPairId: 'k',
-            } as WalletAccount,
-        ])
+        setAccounts([testAccount('local', 'IN_WALLET')])
         mocks.fetchRekeyedAddresses.mockResolvedValue(['IN_WALLET', 'NEW_ONE'])
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const scanResult = await result.current.scan('SOURCE')
 
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
@@ -81,7 +70,9 @@ describe('useRescanRekeyedAccounts — scan', () => {
     it('scans nothing while rekey is unavailable', async () => {
         rekey.isAvailable = false
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         expect(await result.current.scan('SOURCE')).toEqual({
             importedAddresses: [],
@@ -98,7 +89,9 @@ describe('useRescanRekeyedAccounts — scan', () => {
     it('fails closed on a chain without rekey', async () => {
         registerFakeAccountsChain({ fetchRekeyedAddresses: undefined })
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         await expect(result.current.scan('SOURCE')).rejects.toBeInstanceOf(
             RekeyUnsupportedError,
@@ -108,7 +101,9 @@ describe('useRescanRekeyedAccounts — scan', () => {
     it('returns empty classification when the indexer reports nothing', async () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue([])
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const scanResult = await result.current.scan('SOURCE')
 
         expect(scanResult).toEqual({
@@ -125,19 +120,15 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     })
 
     it('fans out one indexer scan per source key and merges classified results', async () => {
-        setAccounts([
-            {
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'IN_WALLET',
-                keyPairId: 'k',
-            } as WalletAccount,
-        ])
+        setAccounts([testAccount('local', 'IN_WALLET')])
         mocks.fetchRekeyedAddresses.mockImplementation(
             async (source: string) =>
                 source === 'SOURCE_A' ? ['IN_WALLET', 'NEW_A'] : ['NEW_B'],
         )
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
 
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(2)
@@ -154,7 +145,9 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         // a duplicated indexer answer must not produce duplicate rows.
         mocks.fetchRekeyedAddresses.mockResolvedValue(['NEW_SAME'])
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
 
         expect(sweep.candidates).toHaveLength(1)
@@ -169,7 +162,9 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
             },
         )
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const sweep = await result.current.scanAll([
             'SOURCE_BAD',
             'SOURCE_GOOD',
@@ -184,7 +179,9 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     it('dedupes the source list before scanning', async () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue([])
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         await result.current.scanAll(['SOURCE', 'SOURCE'])
 
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(1)
@@ -194,17 +191,13 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         mocks.fetchRekeyedAddresses.mockImplementation(async () => {
             // An import lands while the sweep is in flight — classification
             // must see it as already-in-wallet.
-            setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'LANDS_MID_SCAN',
-                    keyPairId: 'k',
-                } as WalletAccount,
-            ])
+            setAccounts([testAccount('local', 'LANDS_MID_SCAN')])
             return ['LANDS_MID_SCAN']
         })
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         const sweep = await result.current.scanAll(['SOURCE'])
 
         expect(sweep.importedAddresses).toEqual(['LANDS_MID_SCAN'])
@@ -215,7 +208,9 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue([])
         const progress: Array<[number, number]> = []
 
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
         await result.current.scanAll(['SOURCE_A', 'SOURCE_B'], {
             onProgress: (scanned, total) => progress.push([scanned, total]),
         })
@@ -235,7 +230,9 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
 
     it('groups candidates by their source key and persists each group', async () => {
         mocks.isValidAddress.mockReturnValue(true)
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         let count = -1
         await act(async () => {
@@ -249,10 +246,15 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
         expect(count).toBe(3)
         const persisted = useAccountsStore.getState().accounts
         const bySource = Object.fromEntries(
-            persisted.map(a => [a.address, authorityOf(a, mainnet)]),
+            persisted.map(a => [
+                addressOn(a, MAINNET_SCOPE),
+                authorityOf(a, MAINNET_SCOPE),
+            ]),
         )
         expect(bySource).toEqual({ C1: 'S1', C2: 'S2', C3: 'S1' })
-        persisted.forEach(account => expect(accountType(account)).toBe('watch'))
+        persisted.forEach(account =>
+            expect(account.custody).toEqual({ kind: 'watch' }),
+        )
     })
 })
 
@@ -263,7 +265,9 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
     })
 
     it('returns 0 without persisting when the selection is empty', async () => {
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         let count = -1
         await act(async () => {
@@ -276,7 +280,9 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
 
     it('returns 0 when every selected address fails format validation', async () => {
         mocks.isValidAddress.mockReturnValue(false)
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         let count = -1
         await act(async () => {
@@ -294,7 +300,9 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
         mocks.isValidAddress.mockImplementation(
             (addr: string) => addr !== 'INVALID',
         )
-        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const { result } = renderHook(() =>
+            useRescanRekeyedAccounts(MAINNET_SCOPE),
+        )
 
         let count = -1
         await act(async () => {
@@ -307,13 +315,13 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
 
         expect(count).toBe(2)
         const persisted = useAccountsStore.getState().accounts
-        expect(persisted.map(a => a.address).sort()).toEqual([
+        expect(persisted.map(a => addressOn(a, MAINNET_SCOPE)).sort()).toEqual([
             'VALID_1',
             'VALID_2',
         ])
         persisted.forEach(account => {
-            expect(accountType(account)).toBe('watch')
-            expect(authorityOf(account, mainnet)).toBe('SOURCE')
+            expect(account.custody).toEqual({ kind: 'watch' })
+            expect(authorityOf(account, MAINNET_SCOPE)).toBe('SOURCE')
         })
     })
 })

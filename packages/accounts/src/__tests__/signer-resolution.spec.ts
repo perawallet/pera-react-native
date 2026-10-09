@@ -20,8 +20,9 @@ import {
     resolveSignerForAccount,
 } from '../signer-resolution'
 import { DelegationTargetNotFoundError } from '../errors'
-import { type WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 import { useAccountChainStateStore } from '../store'
+import { testAccount } from './accountFactory'
 import {
     FAKE_CHAIN_ID,
     MAINNET_SCOPE,
@@ -34,14 +35,7 @@ import {
 const account = (
     address: string,
     extra: Partial<WalletAccount> = {},
-): WalletAccount =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+): WalletAccount => testAccount('local', address, { id: address, ...extra })
 
 beforeEach(() => {
     registerFakeAccountsChain()

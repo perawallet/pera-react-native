@@ -24,6 +24,11 @@ import {
     type DappSigningParamsResult,
 } from '@perawallet/wallet-core-connections'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
+import {
+    accountType,
+    AccountTypes,
+    type AccountType,
+} from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isArc60WirePayload } from '../signing/message/arc60-wire'
 import { useAlgorandTransactionSigning } from './transactionSigning'
@@ -47,6 +52,19 @@ const BAKED_NETWORKS: Network[] = [
     Networks.betanet,
 ]
 
+// The webview bridge's account-type names, shared with the Pera webapp.
+const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
+    [AccountTypes.algo25]: 'Algo25',
+    [AccountTypes.hdWallet]: 'HDWallet',
+    [AccountTypes.hardware]: 'Hardware',
+    [AccountTypes.multisig]: 'Multisig',
+    [AccountTypes.watch]: 'Unsignable',
+    // Not aliased to `Algo25`: a dApp told `Algo25` expects a 64-byte Ed25519
+    // signature verifiable against a recoverable public key, and a quantum
+    // account yields neither.
+    [AccountTypes.quantum]: 'Quantum',
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
@@ -64,6 +82,7 @@ const isWithinTxnBounds = (txns: unknown): boolean =>
 
 export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    accountTypeOf: account => BRIDGE_ACCOUNT_TYPES[accountType(account)],
     // ARC-0001 requires a message that only echoes the dApp's own request. Other
     // signing errors wrap third-party text or interpolate held addresses.
     relayableErrorNames: ['Arc0001Error'],

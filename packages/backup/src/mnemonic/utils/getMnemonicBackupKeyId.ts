@@ -10,26 +10,9 @@
  limitations under the License
  */
 
-import {
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { backupAdapterFor } from '../../chain-adapter'
 
-export const getMnemonicBackupKeyId = (
-    account: WalletAccount,
-): string | null => {
-    if (
-        isAlgo25Account(account) ||
-        isHDWalletAccount(account) ||
-        isQuantumAccount(account)
-    ) {
-        // All accounts derived from the same wallet root share a single
-        // backup state, keyed on the root id (keyPairId). Quantum accounts
-        // export the same 25-word (algo25 wire format) recovery phrase, so
-        // they back up through the identical key-scoped state.
-        return account.keyPairId
-    }
-    return null
-}
+/** Every account one recovery phrase restores shares one backup state, kept under this id. */
+export const getMnemonicBackupKeyId = (account: WalletAccount): string | null =>
+    backupAdapterFor().mnemonicBackupKeyId(account)

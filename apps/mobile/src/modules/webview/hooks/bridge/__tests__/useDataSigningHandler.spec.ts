@@ -14,7 +14,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     canSignArbitraryData,
-    canSignArc60,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -49,9 +48,15 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignArbitraryData: vi.fn(),
-    canSignArc60: vi.fn(),
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     useAllAccounts: vi.fn(),
 }))
+
+const mockCanSignAuthData = vi.fn()
 
 const mockAddSignRequest = vi.fn()
 // The auth-data discriminator is the real one: it decides the dApp-visible answers
@@ -88,6 +93,12 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
                 }
             },
         ),
+        messageSignerChainAdapters: {
+            get: () => ({
+                canSign: (account: unknown, kind: string) =>
+                    kind === 'authData' && mockCanSignAuthData(account),
+            }),
+        },
         useSigningRequest: () => ({
             addSignRequest: mockAddSignRequest,
         }),
@@ -117,7 +128,8 @@ describe('useDataSigningHandler', () => {
         mockAddSignRequest.mockImplementation(() => {})
         vi.mocked(useAllAccounts).mockReturnValue([
             {
-                address: 'addr1',
+                id: 'account-1',
+                chains: { [LEGACY_CHAIN_ID]: { address: 'addr1' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
@@ -126,7 +138,7 @@ describe('useDataSigningHandler', () => {
             },
         ] as never)
         vi.mocked(canSignArbitraryData).mockReturnValue(true)
-        vi.mocked(canSignArc60).mockReturnValue(true)
+        mockCanSignAuthData.mockReturnValue(true)
     })
 
     const render = () => {
@@ -316,7 +328,7 @@ describe('useDataSigningHandler', () => {
         it('rejects a signer that cannot sign ARC-60 before the review sheet', () => {
             // An ARC-60 signature verifies against the signer's own key, so a
             // keyless rekeyed signer is refused even if its auth key is held.
-            vi.mocked(canSignArc60).mockReturnValue(false)
+            mockCanSignAuthData.mockReturnValue(false)
             const { webview, handle } = render()
 
             handle(

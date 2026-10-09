@@ -11,8 +11,9 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
-    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
@@ -26,6 +27,7 @@ export const usePaymentTransactionDisplay = (
     const payment = transaction.paymentTransaction
 
     const styles = useStyles()
+    const { decimals: nativeDecimals } = useNativeAsset()
 
     const receiverAddress = payment?.receiver
     const senderAddress = transaction.sender
@@ -34,18 +36,21 @@ export const usePaymentTransactionDisplay = (
         (): Nullable<Decimal> =>
             payment?.closeAmount === undefined
                 ? null
-                : microAlgosToAlgos(payment.closeAmount),
-        [payment?.closeAmount],
+                : baseUnitsToDisplayUnits(payment.closeAmount, nativeDecimals),
+        [payment?.closeAmount, nativeDecimals],
     )
     // The paid leg only — a close-out's swept remainder renders in its own
     // Remainder Amount row (closeAmountValue), so the two never double-count.
     const amount = useMemo(() => {
-        const algos = microAlgosToAlgos(payment?.amount ?? 0n)
+        const paid = baseUnitsToDisplayUnits(
+            payment?.amount ?? 0n,
+            nativeDecimals,
+        )
         if (senderAddress === referenceAddress) {
-            return algos.negated()
+            return paid.negated()
         }
-        return algos
-    }, [senderAddress, payment, referenceAddress])
+        return paid
+    }, [senderAddress, payment, referenceAddress, nativeDecimals])
 
     const amountStyle = useMemo(() => {
         if (senderAddress === referenceAddress) {

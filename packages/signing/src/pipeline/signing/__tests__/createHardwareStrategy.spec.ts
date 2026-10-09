@@ -38,11 +38,13 @@ import {
 import { plannerChainAdapters } from '../../../chain-adapter'
 import { messageSignerChainAdapters } from '../../../message-signer'
 import { CannotSignError } from '../../errors'
+import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type {
-    WalletAccount,
+    HardwareRef,
     HardwareWalletAccount,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransportProvider,
@@ -70,27 +72,14 @@ const DIFFERENT_SENDER =
 const makeLedgerAccount = (
     address: string = SIGNER_ADDRESS,
     accountIndex: number = 0,
+    device: Partial<HardwareRef> = {},
 ): HardwareWalletAccount =>
-    ({
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: accountIndex,
-        },
-        address,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            accountIndex,
-            transportType: 'ble',
-        },
-    }) as HardwareWalletAccount
+    ledgerAccount(address, accountIndex, device) as HardwareWalletAccount
+
+const ethereumLedgerAccount = (): HardwareWalletAccount => ({
+    ...makeLedgerAccount(),
+    chains: { ethereum: { address: SIGNER_ADDRESS } },
+})
 
 const mockTransaction = (sender: string = SIGNER_ADDRESS) =>
     ({
@@ -181,12 +170,8 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
                 chainId: 'algorand',
             })
-            const algo25Account = {
-                custody: { kind: 'local', seed: 'algo25' },
-                address: SIGNER_ADDRESS,
-                keyPairId: 'key-1',
-            } as unknown as WalletAccount
-            expect(strategy.canSign(algo25Account)).toBe(false)
+            const algo25 = algo25Account(SIGNER_ADDRESS, { keyPairId: 'key-1' })
+            expect(strategy.canSign(algo25)).toBe(false)
         })
     })
 
@@ -211,7 +196,7 @@ describe('createHardwareStrategy', () => {
 
             await strategy.sign(
                 makeGroup([mockTransaction()], [0]),
-                makeLedgerAccount(),
+                ethereumLedgerAccount(),
             )
 
             expect(assembleSignedTransaction).toHaveBeenCalledTimes(1)
@@ -376,7 +361,7 @@ describe('createHardwareStrategy', () => {
 
             expect(planner.assembleSignedTransaction).toHaveBeenCalledWith(
                 txns[0],
-                { sig: MOCK_SIGNATURE, signerAddress: account.address },
+                { sig: MOCK_SIGNATURE, signerAddress: SIGNER_ADDRESS },
             )
         })
 
@@ -464,14 +449,10 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
                 chainId: 'algorand',
             })
-            const algo25Account = {
-                custody: { kind: 'local', seed: 'algo25' },
-                address: SIGNER_ADDRESS,
-                keyPairId: 'key-1',
-            } as unknown as WalletAccount
+            const algo25 = algo25Account(SIGNER_ADDRESS, { keyPairId: 'key-1' })
             const group = makeGroup([mockTransaction()], [0])
 
-            await expect(strategy.sign(group, algo25Account)).rejects.toThrow(
+            await expect(strategy.sign(group, algo25)).rejects.toThrow(
                 'not a hardware wallet',
             )
         })
@@ -501,16 +482,11 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
                 chainId: 'algorand',
             })
-            const usbAccount = {
-                ...makeLedgerAccount(),
-                hardwareDetails: {
-                    manufacturer: 'ledger' as const,
-                    deviceId: 'usb-dev-1',
-                    deviceName: 'Nano S Plus',
-                    accountIndex: 0,
-                    transportType: 'usb' as const,
-                },
-            }
+            const usbAccount = makeLedgerAccount(SIGNER_ADDRESS, 0, {
+                deviceId: 'usb-dev-1',
+                deviceName: 'Nano S Plus',
+                transportType: 'usb',
+            })
             const group = makeGroup([mockTransaction()], [0])
 
             await strategy.sign(group, usbAccount)
@@ -948,10 +924,7 @@ describe('createHardwareStrategy', () => {
                 chainId: 'ethereum',
             })
 
-            await strategy.sign(
-                makeAuthDataGroup(),
-                makeLedgerAccount(SIGNER_ADDRESS, 0),
-            )
+            await strategy.sign(makeAuthDataGroup(), ethereumLedgerAccount())
 
             expect(signerPublicKey).toHaveBeenCalledWith(SIGNER_ADDRESS)
         })

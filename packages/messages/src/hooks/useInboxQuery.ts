@@ -15,14 +15,17 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
+    addressOn,
     useAllAccounts,
     useSigningAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
 import { queryOptions, useQuery } from '@tanstack/react-query'
@@ -38,6 +41,15 @@ import { sortInboxItems } from '../utils'
 
 const INBOX_IN_FLIGHT_POLL_INTERVAL_MS = 10_000
 
+const addressesOn = (
+    accounts: readonly WalletAccount[],
+    scope: ChainScope,
+): string[] =>
+    accounts.flatMap(account => {
+        const address = addressOn(account, scope)
+        return address ? [address] : []
+    })
+
 /**
  * Single owner of the shared inbox query. Query-level options (queryFn,
  * retry) are last-observer-wins in TanStack, so every observer of
@@ -48,15 +60,15 @@ export const useInboxQueryOptions = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network) ?? ''
-    const signingAccounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts(scope.chainId)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'notifications',
     )
 
     const addresses = useMemo(
-        () => signingAccounts.map(a => a.address),
-        [signingAccounts],
+        () => addressesOn(signingAccounts, scope),
+        [signingAccounts, scope],
     )
 
     const queryOptionsResult = useMemo(
@@ -114,12 +126,17 @@ export type UseInboxQueryResult = {
 export const useInboxQuery = (): UseInboxQueryResult => {
     const { queryOptions: inboxQueryOptions, isUnavailableOnNetwork } =
         useInboxQueryOptions()
-    const signingAccounts = useSigningAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const signingAccounts = useSigningAccounts(scope.chainId)
     const allAccounts = useAllAccounts()
 
+    const signingAddresses = useMemo(
+        () => addressesOn(signingAccounts, scope),
+        [signingAccounts, scope],
+    )
     const localAddresses = useMemo(
-        () => new Set(allAccounts.map(a => a.address)),
-        [allAccounts],
+        () => new Set(addressesOn(allAccounts, scope)),
+        [allAccounts, scope],
     )
 
     const query = useQuery({
@@ -136,8 +153,8 @@ export const useInboxQuery = (): UseInboxQueryResult => {
                         }
                         return true
                     })
-                    .sort((a, b) => sortInboxItems(a, b, signingAccounts)),
-            [signingAccounts, localAddresses],
+                    .sort((a, b) => sortInboxItems(a, b, signingAddresses)),
+            [signingAddresses, localAddresses],
         ),
     })
 

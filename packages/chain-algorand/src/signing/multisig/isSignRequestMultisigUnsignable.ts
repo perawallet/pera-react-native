@@ -19,6 +19,7 @@ import {
     isTransactionRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 /**
  * True iff `request` is a transaction sign request in which ANY transaction's
@@ -48,7 +49,7 @@ export const isSignRequestMultisigUnsignable = (
 
     for (const signerAddress of signerAddresses) {
         const signerAccount = accounts.find(
-            account => account.address === signerAddress,
+            account => algorandAddressOf(account) === signerAddress,
         )
         if (!signerAccount) continue
         if (isMultisigUnsignable(signerAccount, accounts, LEGACY_CHAIN_ID))

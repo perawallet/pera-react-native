@@ -158,6 +158,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     // they stay self-consistent without the real module.
     SIGNING_ACCESS_DOMAIN: 'pera.accounts',
     BACKUP_ACCESS_DOMAIN: 'backup-flow',
+    SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
 
 // Mock @perawallet/wallet-core-assets
@@ -312,24 +313,73 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 
 // Mock @perawallet/wallet-core-accounts
 vi.mock('@perawallet/wallet-core-accounts', () => {
-    // Mirrors `accountType()`: the kind is read from custody alone.
-    const kindOf = (account: any): string | undefined => {
-        const custody = account?.custody
-        if (!custody) return undefined
-        if (custody.kind !== 'local') return custody.kind
-        return custody.seed === 'bip39' ? 'hdWallet' : custody.seed
-    }
-    // The one source every rekey answer below derives from; a spec seeds a
-    // rekeyed account with `vi.mocked(authorityOf).mockImplementation(...)`.
-    const authorityOf = vi.fn(
-        (_account: any, _scope?: any): string | null => null,
-    )
+    // Pure re-implementations of the accessors: an account is its custody and
+    // its per-chain entries.
+    const entriesOf = (account: any): any[] =>
+        Object.values(account?.chains ?? {}).filter(Boolean)
+    const chainAccountOf = (account: any, chainId: string) =>
+        account?.chains?.[chainId]
+    const hasSigningKeys = (account: any): boolean =>
+        entriesOf(account).some(entry => !!entry.keyPairId)
+    const kindOf = (account: any): string | undefined => account?.custody?.kind
+    const findAccountByAddressOn = (
+        accounts: any[] = [],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => chainAccountOf(a, chainId)?.address === address)
+    const findInAnyChain = (accounts: any[] = [], address: string) =>
+        accounts.find(a =>
+            entriesOf(a).some(entry => entry.address === address),
+        )
     return {
-        authorityOf,
-        useAuthorityOf: vi.fn((account: any, scope?: any) =>
-            account ? authorityOf(account, scope) : null,
+        custodyOf: vi.fn((account: any) => account.custody),
+        hasCustody: vi.fn(
+            (account: any, kind: string) => kindOf(account) === kind,
         ),
-        accountType: vi.fn(kindOf),
+        chainAccountOf: vi.fn(chainAccountOf),
+        addressOn: vi.fn(
+            (account: any, scope: { chainId: string }) =>
+                chainAccountOf(account, scope.chainId)?.address,
+        ),
+        signingKeyOn: vi.fn(
+            (account: any, chainId: string) =>
+                chainAccountOf(account, chainId)?.keyPairId,
+        ),
+        hdIndexOf: vi.fn((account: any) =>
+            account?.custody?.kind === 'local' &&
+            account.custody.seed === 'bip39'
+                ? account.custody.hd
+                : undefined,
+        ),
+        hardwareDeviceOf: vi.fn((account: any) =>
+            account?.custody?.kind === 'hardware'
+                ? {
+                      device: account.custody.device,
+                      accountIndex: account.custody.accountIndex,
+                  }
+                : undefined,
+        ),
+        hardwareDetailsOf: vi.fn((account: any) =>
+            account?.custody?.kind === 'hardware'
+                ? {
+                      ...account.custody.device,
+                      accountIndex: account.custody.accountIndex,
+                  }
+                : undefined,
+        ),
+        hasRecoverySeed: vi.fn(
+            (account: any) => account?.custody?.kind === 'local',
+        ),
+        seedOf: vi.fn(() => undefined),
+        authorityOf: vi.fn((account: any) => account?.rekeyAddress ?? null),
+        findAccountByAddressOn: vi.fn(findAccountByAddressOn),
+        findAddressHolder: vi.fn(
+            (accounts: any[], scope: { chainId: string }, address: string) =>
+                findAccountByAddressOn(accounts, scope.chainId, address),
+        ),
+        isSameAddress: vi.fn(
+            (_chainId: string, a: string, b: string) => a === b,
+        ),
         useAllAccounts: vi.fn(() => []),
         useAccountDiscovery: vi.fn(() => ({
             discoverRekeyedAccounts: vi.fn(),
@@ -340,9 +390,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         useSelectedAccount: vi.fn(() => null),
-        useSelectedAccountAddress: vi.fn(() => ({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: vi.fn(),
+        useSelectedAccountId: vi.fn(() => ({
+            selectedAccountId: null,
+            setSelectedAccountId: vi.fn(),
         })),
         useSetAccounts: vi.fn(() => ({
             setAccounts: vi.fn(),
@@ -356,80 +406,77 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getAccountDisplayName: vi.fn(a => a?.name || ''),
-        // Account type functions with actual implementations
+        useAccountPresentation: vi.fn(() => null),
+        authorityTransitionLabel: vi.fn(() => ({
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_standard',
+            descriptionKey: 'account_type_info.rekeyed_standard_description',
+        })),
+        importFormatsFor: vi.fn(() => []),
+        detectImportKind: vi.fn((_chainId: string, mnemonic: string) => ({
+            success: false,
+            wordCount: mnemonic.trim().split(/\s+/).length,
+        })),
+        useFindAlternateImportKinds: vi.fn(() => vi.fn(async () => [])),
+        // Custody guards with actual implementations
         isHardwareWalletAccount: vi.fn(
             (account: any) => kindOf(account) === 'hardware',
         ),
         isLedgerAccount: vi.fn(
             (account: any) =>
                 kindOf(account) === 'hardware' &&
-                account?.hardwareDetails?.manufacturer === 'ledger',
+                account?.custody?.device?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn(
-            (account: any) => !!account && !!authorityOf(account),
-        ),
-        isHDWalletAccount: vi.fn(
-            (account: any) => kindOf(account) === 'hdWallet',
-        ),
-        isAlgo25Account: vi.fn((account: any) => kindOf(account) === 'algo25'),
-        isQuantumAccount: vi.fn(
-            (account: any) => kindOf(account) === 'quantum',
-        ),
+        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
         isWatchAccount: vi.fn((account: any) => kindOf(account) === 'watch'),
         isMultisigAccount: vi.fn(
             (account: any) => kindOf(account) === 'multisig',
         ),
-        hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
-        canSignWith: vi.fn((account: any) => !!account?.keyPairId),
+        hasSigningKeys: vi.fn(hasSigningKeys),
+        canSignWith: vi.fn((account: any) => hasSigningKeys(account)),
         canSignArbitraryData: vi.fn(
             (account: any) =>
-                !!account?.keyPairId && kindOf(account) !== 'hardware',
-        ),
-        // Mirrors the real predicate: account-local (no rekey hop), non-multisig
-        // with a local key, or hardware.
-        canSignArc60: vi.fn(
-            (account: any) =>
-                !!account &&
-                kindOf(account) !== 'multisig' &&
-                (!!account.keyPairId || kindOf(account) === 'hardware'),
+                hasSigningKeys(account) && kindOf(account) !== 'hardware',
         ),
         canSignProgram: vi.fn(
             (account: any) =>
                 kindOf(account) !== 'hardware' &&
-                !authorityOf(account) &&
-                !!account?.keyPairId,
+                !account?.rekeyAddress &&
+                hasSigningKeys(account),
         ),
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),
+        isAuthorityDowngrade: vi.fn(() => false),
         getRekeyAccount: vi.fn(() => null),
         getSignerFor: vi.fn(
             (address: string, accs: any[] = []) =>
-                accs.find((a: any) => a.address === address) ?? null,
+                findInAnyChain(accs, address) ?? null,
         ),
         resolveSignerFor: vi.fn((address: string, accs: any[] = []) => {
-            const signer = accs.find((a: any) => a.address === address)
+            const signer = findInAnyChain(accs, address)
             return signer ? { kind: 'ok', signer } : { kind: 'accountNotFound' }
         }),
         resolveSignerForAccount: vi.fn((account: any) =>
-            account?.keyPairId
+            hasSigningKeys(account)
                 ? { kind: 'ok', signer: account }
                 : { kind: 'watch', account },
         ),
-        useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
+        multisigParametersOf: vi.fn(() => undefined),
+        useCanSignWith: vi.fn((account: any) => hasSigningKeys(account)),
         useRekeyAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
         })),
-        useOnChainAccountInformationQuery: vi.fn(() => ({
+        useOnChainAccountStateQuery: vi.fn(() => ({
             data: undefined,
             isPending: false,
         })),
-        getOnChainAccountInformationQueryKey: vi.fn(
+        getOnChainAccountStateQueryKey: vi.fn(
             (address: string, scope: ChainScope) => [
                 'accounts',
-                'on-chain-account-information',
+                'on-chain-account-state',
                 { address, scope },
             ],
         ),
@@ -441,17 +488,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useArbitraryDataSigner: vi.fn(() => ({
             signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
-        AccountTypes: {
-            algo25: 'algo25',
-            hdWallet: 'hdWallet',
-            hardware: 'hardware',
-            multisig: 'multisig',
-            watch: 'watch',
-        },
-        DerivationTypes: {
-            Khovratovich: 32,
-            Peikert: 9,
-        },
         AccountSortModes: {
             alphabeticalAsc: 'alphabeticalAsc',
             alphabeticalDesc: 'alphabeticalDesc',
@@ -471,6 +507,33 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             assets: [],
             isLoading: false,
         })),
+        rehydrateAccountsStore: vi.fn(async () => {}),
+        // Subclassed at module load by chain packages' own account errors.
+        AccountError: class AccountError extends Error {},
+        LaunchAccountModes: {
+            lastUsed: 'lastUsed',
+            specific: 'specific',
+        },
+        buildAccount: vi.fn((input: any) => ({
+            id: input.id ?? `account-${Math.random().toString(36).slice(2)}`,
+            ...(input.name !== undefined ? { name: input.name } : {}),
+            custody: input.custody,
+            chains: input.chains,
+        })),
+        credentialScheme: vi.fn(() => null),
+        useAccountStateQuery: vi.fn(() => ({
+            data: undefined,
+            isPending: false,
+            isLoading: false,
+            isSuccess: false,
+        })),
+        useRemoveAccount: vi.fn(() => vi.fn(async () => {})),
+        useUpdateAccount: vi.fn(() => vi.fn()),
+        useSigningAccounts: vi.fn(() => []),
+        useRekeyTransition: vi.fn(() => null),
+        useMultisigDetailsBackfill: vi.fn(() => ({ isBackfilling: false })),
+        useHasAccounts: vi.fn(() => false),
+        useHasNoAccounts: vi.fn(() => true),
     }
 })
 

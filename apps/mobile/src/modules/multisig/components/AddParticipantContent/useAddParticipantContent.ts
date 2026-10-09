@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-    isQuantumAccount,
+    findAccountByAddressOn,
     isWatchAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -20,6 +20,7 @@ import {
     AccountSigTypes,
     useAccountSigTypeQuery,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
@@ -32,6 +33,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { signsWithParticipantScheme } from '../../utils/participantEligibility'
 
 /**
  * Value the add-participant bottom sheet resolves with. `nfdName` is set
@@ -58,7 +60,12 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
 
     const isLocalAccount = useMemo(
-        () => accounts.some(a => a.address === selectedAddress),
+        () =>
+            !!findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                selectedAddress,
+            ),
         [accounts, selectedAddress],
     )
 
@@ -144,13 +151,19 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
 
     const handleSelected = useCallback(
         (address: string, nfdName?: string) => {
-            const localAccount = accounts.find(a => a.address === address)
+            const localAccount = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                address,
+            )
             if (localAccount) {
                 if (isWatchAccount(localAccount)) {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (isQuantumAccount(localAccount)) {
+                if (
+                    !signsWithParticipantScheme(localAccount, LEGACY_CHAIN_ID)
+                ) {
                     showValidationError(new ParticipantIsQuantumError())
                     return
                 }

@@ -69,6 +69,7 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -90,22 +91,30 @@ const seedRekeyAccounts = async (): Promise<{
     const source: WalletAccount = {
         id: 'rekey-source',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Source',
     }
     const target: WalletAccount = {
         id: 'rekey-target',
         custody: { kind: 'local', seed: 'algo25' },
-        address: HD_TEST_ADDRESS,
-        keyPairId: 'rekey-target-key',
+        chains: {
+            algorand: {
+                address: HD_TEST_ADDRESS,
+                keyPairId: 'rekey-target-key',
+            },
+        },
         name: 'Target',
     }
     useAccountsStore.getState().setAccounts([source, target])
-    useAccountsStore.getState().setSelectedAccountAddress(source.address)
+    useAccountsStore.getState().setSelectedAccountId(source.id)
 
     await upsertAccountBalance({
-        accountAddress: source.address,
+        accountAddress: addressOf(source),
         scope: MAINNET_SCOPE,
         algoBalance: new Decimal(5_000_000),
         totalAssetsOptedIn: 0,

@@ -14,6 +14,7 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { chainAccountOf } from '@perawallet/wallet-core-accounts/credentials/accessors'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { buildGroupSignerMap } from '@perawallet/wallet-core-signing/machine/actions'
 import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
@@ -234,8 +235,9 @@ describe('rekeyed signer resolution conformance', () => {
             LEGACY_CHAIN_ID,
         )
 
-        expect(resolved.address).toBe(auth.address)
-        expect(resolved.keyPairId).toBe(auth.walletAccount.keyPairId)
+        const signer = chainAccountOf(resolved, LEGACY_CHAIN_ID)
+        expect(signer?.address).toBe(auth.address)
+        expect(signer?.keyPairId).toBe(auth.keyId)
     })
 
     it('does NOT follow the rekey hop for off-chain data, which has no auth-addr lookup', async () => {
@@ -249,13 +251,16 @@ describe('rekeyed signer resolution conformance', () => {
         // account's own pubkey, so following the hop here would produce a
         // signature the dApp rejects — with no node to catch it.
         expect(
-            resolveSigningAccount(
-                account,
-                WALLETCONNECT_SOURCE,
-                'arbitrary-data',
-                allAccounts,
+            chainAccountOf(
+                resolveSigningAccount(
+                    account,
+                    WALLETCONNECT_SOURCE,
+                    'arbitrary-data',
+                    allAccounts,
+                    LEGACY_CHAIN_ID,
+                ),
                 LEGACY_CHAIN_ID,
-            ).address,
+            )?.address,
         ).toBe(rekeyed.address)
     })
 

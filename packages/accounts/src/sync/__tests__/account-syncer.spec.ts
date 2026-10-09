@@ -12,8 +12,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { authorityOf } from '../../credentials/accessors'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
@@ -82,29 +83,32 @@ describe('fetchAndPersistAccount', () => {
         useAccountsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([
             {
+                id: 'A',
                 custody: { kind: 'watch' },
-                address: 'A',
-            } as unknown as import('../../models').WalletAccount,
+                chains: { algorand: { address: 'A' } },
+            },
         ])
     })
 
     it('mirrors the chain authAddr into the Zustand account', async () => {
-        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        await fetchAndPersistAccount('A', MAINNET_SCOPE)
 
         const account = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === 'A')
-        expect(authorityOf(account!, scopeForLegacyNetwork('mainnet'))).toBe(
-            'S',
-        )
+            .accounts.find(a => a.id === 'A')
+        expect(authorityOf(account!, MAINNET_SCOPE)).toBe('S')
+        expect(account?.rekeyAddress).toBe('S')
+        // The sync's network is threaded into the per-network state, not
+        // just the active-network mirror.
+        expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
     })
 
     it('writes the chain-state slice and keeps its reference on an unchanged sync', async () => {
         const mainnetKey = 'algorand/mainnet' as never
-        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        await fetchAndPersistAccount('A', MAINNET_SCOPE)
         const first = useAccountChainStateStore.getState().states[mainnetKey]?.A
 
-        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        await fetchAndPersistAccount('A', MAINNET_SCOPE)
         const second =
             useAccountChainStateStore.getState().states[mainnetKey]?.A
 

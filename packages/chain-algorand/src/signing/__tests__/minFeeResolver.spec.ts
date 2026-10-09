@@ -18,30 +18,43 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { resolveMinFeeForSender } from '../minFeeResolver'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
-        address: 'QADDR',
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'QADDR',
+                keyPairId: 'kp-quantum',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
-        address: 'AADDR',
         custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-algo25',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'AADDR',
+                keyPairId: 'kp-algo25',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'w1',
-        address: 'WADDR',
         custody: { kind: 'watch' },
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: 'WADDR',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 

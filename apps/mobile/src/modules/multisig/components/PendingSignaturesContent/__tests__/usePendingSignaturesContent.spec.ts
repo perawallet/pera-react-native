@@ -185,8 +185,7 @@ const mockQueryReturn = (
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: 'algo25' },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 describe('usePendingSignaturesContent', () => {
@@ -1178,12 +1177,5 @@ const buildHardwareAccount = (address: string): WalletAccount => ({
         },
         accountIndex: 0,
     },
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address } },
 })

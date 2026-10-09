@@ -56,6 +56,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: 'testnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@tanstack/react-query', async () => ({
@@ -68,7 +69,11 @@ import {
     CardEscrowUnavailableError,
 } from '../useCardManualDeposit'
 
-const account = { address: 'FUNDINGADDR' } as WalletAccount
+const account: WalletAccount = {
+    id: 'funding',
+    custody: { kind: 'local', seed: 'algo25' },
+    chains: { algorand: { address: 'FUNDINGADDR' } },
+}
 const ESCROW = 'ESCROWCARDADDR'
 
 describe('useCardManualDeposit', () => {

@@ -38,19 +38,24 @@ import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
 
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const ACCOUNT_A: WalletAccount = {
     id: 'gift-card-a',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'gift-card-a-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'gift-card-a-key',
+        },
+    },
     name: 'Spending',
 }
 
 const ACCOUNT_B: WalletAccount = {
     id: 'gift-card-b',
     custody: { kind: 'watch' },
-    address: HD_TEST_ADDRESS,
+    chains: { algorand: { address: HD_TEST_ADDRESS } },
     name: 'Vault',
 }
 
@@ -134,7 +139,11 @@ describe('Flow: Gift card (Bidali)', () => {
         })
 
         const { result } = renderHook(() => useBidali())
-        expect(result.current.selectedAccount?.address).toBe(ACCOUNT_B.address)
+        expect(
+            result.current.selectedAccount
+                ? addressOf(result.current.selectedAccount)
+                : undefined,
+        ).toBe(addressOf(ACCOUNT_B))
     })
 
     it('Given a selected account, when a malformed Bidali payment request arrives (bad address), then no sign request is enqueued', async () => {

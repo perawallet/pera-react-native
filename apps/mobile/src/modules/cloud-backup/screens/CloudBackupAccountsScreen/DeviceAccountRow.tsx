@@ -15,6 +15,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
+import { backupAddressOf } from '../../utils/backupAddress'
 
 type DeviceAccountRowProps = {
     account: WalletAccount
@@ -30,15 +31,16 @@ const DeviceAccountRowComponent = ({
     onBackUp,
 }: DeviceAccountRowProps) => {
     const { t } = useLanguage()
+    const address = backupAddressOf(account)
 
     const handleBackUp = useCallback(
-        () => onBackUp(account.address),
-        [onBackUp, account.address],
+        () => onBackUp(address),
+        [onBackUp, address],
     )
 
     return (
         <BackupAccountRow
-            address={account.address}
+            address={address}
             account={account}
             isBackedUp={isBackedUp}
             trailing={
@@ -53,7 +55,7 @@ const DeviceAccountRowComponent = ({
                     />
                 )
             }
-            testID={`cloud_backup_account_${account.address}`}
+            testID={`cloud_backup_account_${address}`}
         />
     )
 }

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import { plannerAdapterFor, type AssignFeeToGroup } from '../chain-adapter'
+import { plannerChainAdapters, type AssignFeeToGroup } from '../chain-adapter'
 
 export type UseMinimumFeeCalculatorResult = {
     assignFeeToGroup: AssignFeeToGroup
@@ -27,9 +27,11 @@ export type UseMinimumFeeCalculatorResult = {
  * Throws `InvalidSignableDataError` when a fee must be raised but the group is
  * invalid as received (stale/tampered group ID).
  */
-export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
-    const { network } = useNetwork()
-    const useAssignFeeToGroup = plannerAdapterFor(network).useAssignFeeToGroup
+export const useMinimumFeeCalculator = (
+    chainId: ChainId,
+): UseMinimumFeeCalculatorResult => {
+    const useAssignFeeToGroup =
+        plannerChainAdapters.get(chainId).useAssignFeeToGroup
 
     return { assignFeeToGroup: useAssignFeeToGroup() }
 }

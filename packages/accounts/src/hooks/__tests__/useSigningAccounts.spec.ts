@@ -11,87 +11,65 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useSigningAccounts } from '../useSigningAccounts'
 import { useAccountsStore } from '../../store'
-import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
-
-vi.mock('../../store', () => ({
-    useAccountsStore: vi.fn(),
-}))
+import { testAccount } from '../../__tests__/accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    fakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 
 describe('useSigningAccounts', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
-        registerFakeAccountsChain()
+        useAccountsStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('mainnet')
     })
 
-    it('should return only accounts that can sign', () => {
-        const mockAccounts = [
-            {
-                address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
-                keyPairId: 'pk1',
-            },
-            { address: 'addr2', custody: { kind: 'watch' } },
-            {
-                address: 'addr3',
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'pk3',
-            },
-        ]
+    it('keeps the accounts the chain resolves a signer for', () => {
+        const local = testAccount('local', 'A')
+        const watch = testAccount('watch', 'B')
+        const hd = testAccount('hd', 'C')
+        useAccountsStore.getState().setAccounts([local, watch, hd])
 
-        ;(useAccountsStore as any).mockImplementation((selector: any) =>
-            selector({ accounts: mockAccounts }),
+        const { result } = renderHook(() => useSigningAccounts(FAKE_CHAIN_ID))
+
+        expect(result.current).toEqual([local, hd])
+        expect(fakeAccountsChain().adapter.resolveSigner).toHaveBeenCalledWith(
+            watch,
+            [local, watch, hd],
+            MAINNET_SCOPE,
         )
-
-        const { result } = renderHook(() => useSigningAccounts())
-
-        expect(result.current).toEqual([
-            {
-                address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
-                keyPairId: 'pk1',
-            },
-            {
-                address: 'addr3',
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'pk3',
-            },
-        ])
     })
 
-    it('should return empty array if no accounts can sign', () => {
-        const mockAccounts = [
-            { address: 'addr1', custody: { kind: 'watch' } },
-            { address: 'addr2', custody: { kind: 'watch' } },
-        ]
+    it('includes a watch account the chain resolves a held signer for', () => {
+        const signer = testAccount('local', 'SIGNER')
+        const rekeyed = testAccount('watch', 'REKEYED')
+        useAccountsStore.getState().setAccounts([signer, rekeyed])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockReturnValue({
+            kind: 'ok',
+            signer,
+        })
 
-        ;(useAccountsStore as any).mockImplementation((selector: any) =>
-            selector({ accounts: mockAccounts }),
-        )
+        const { result } = renderHook(() => useSigningAccounts(FAKE_CHAIN_ID))
 
-        const { result } = renderHook(() => useSigningAccounts())
+        expect(result.current).toEqual([signer, rekeyed])
+    })
+
+    it('is empty when nothing can sign', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([testAccount('watch', 'A'), testAccount('watch', 'B')])
+
+        const { result } = renderHook(() => useSigningAccounts(FAKE_CHAIN_ID))
 
         expect(result.current).toEqual([])
     })
 
-    it('should return empty array if there are no accounts', () => {
-        const mockAccounts: any[] = []
-
-        ;(useAccountsStore as any).mockImplementation((selector: any) =>
-            selector({ accounts: mockAccounts }),
-        )
-
-        const { result } = renderHook(() => useSigningAccounts())
+    it('is empty with no accounts', () => {
+        const { result } = renderHook(() => useSigningAccounts(FAKE_CHAIN_ID))
 
         expect(result.current).toEqual([])
     })

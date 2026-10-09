@@ -16,7 +16,6 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
@@ -29,19 +28,20 @@ import {
     applyLegacyAccountOrder,
     applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
+    migratedAddressOf,
     removeAccountFromStore,
 } from './accountStoreOps'
-import { migrationAdapterFor } from '../chain-adapter'
+import { migrationChainAdapters } from '../chain-adapter'
 import type {
     ImportedHdRoot,
     MigratedAccountPair,
-    MigrationDeps,
     MigrationResult,
+    MigrationRunOptions,
 } from './types'
 
-export type RunMigrationLoopArgs = MigrationDeps & {
+export type RunMigrationLoopArgs = MigrationRunOptions & {
     accounts: LegacyAccount[]
-    hdWallets: LegacyHDWallet[]
+    hdSeeds: LegacyHDWallet[]
     undecodableAccounts?: LegacyUndecodableAccount[]
     /**
      * True when the accounts step is re-running for an already-migrated user
@@ -55,12 +55,15 @@ export type RunMigrationLoopArgs = MigrationDeps & {
 export const runMigrationLoop = async (
     args: RunMigrationLoopArgs,
 ): Promise<MigrationResult> => {
-    const adapter = migrationAdapterFor()
+    const { chainId } = args
+    const adapter = migrationChainAdapters.get(chainId)
+    const addressOf = (account: WalletAccount) =>
+        migratedAddressOf(account, chainId)
     const summary: MigrationResult = { imported: 0, skipped: 0, failed: [] }
     const existingAddresses = new Set(
-        useAccountsStore.getState().accounts.map(a => a.address),
+        useAccountsStore.getState().accounts.map(addressOf),
     )
-    const hdWalletsById = new Map(args.hdWallets.map(w => [w.walletId, w]))
+    const hdSeedsById = new Map(args.hdSeeds.map(w => [w.walletId, w]))
     const importedHdRoots = new Map<string, ImportedHdRoot>()
     const pendingMetadata: MigratedAccountPair[] = []
 
@@ -75,10 +78,10 @@ export const runMigrationLoop = async (
         if (existingAddresses.has(account.address)) {
             const existing = useAccountsStore
                 .getState()
-                .accounts.find(a => a.address === account.address)
+                .accounts.find(a => addressOf(a) === account.address)
             const hasSigningMaterial =
                 (account.secretKey !== null && account.secretKey.length > 0) ||
-                account.hdWalletId !== null
+                account.hdSeedId !== null
 
             if (
                 existing !== undefined &&
@@ -87,19 +90,20 @@ export const runMigrationLoop = async (
             ) {
                 // Earlier migration builds imported this as watch (key was
                 // withheld natively); reimport now that the key is present.
-                removeAccountFromStore(account.address)
+                removeAccountFromStore(existing.id)
                 existingAddresses.delete(account.address)
                 removedForReconcile = existing
             } else {
                 if (
                     existing !== undefined &&
                     isWatchAccount(existing) &&
-                    !isRekeyedAccount(existing, LEGACY_CHAIN_ID) &&
+                    !isRekeyedAccount(existing, chainId) &&
                     account.authAddress !== null
                 ) {
                     applyRekeyAddressToStoreAccount(
                         account.address,
                         account.authAddress,
+                        chainId,
                     )
                 }
                 summary.skipped += 1
@@ -110,7 +114,7 @@ export const runMigrationLoop = async (
         try {
             const created = await adapter.migrateAccount({
                 account,
-                hdWalletsById,
+                hdSeedsById,
                 importedHdRoots,
                 importAccount: args.importAccount,
                 createHdWalletAccount: args.createHdWalletAccount,
@@ -119,7 +123,7 @@ export const runMigrationLoop = async (
             })
             if (
                 account.authAddress !== null &&
-                !isRekeyedAccount(created, LEGACY_CHAIN_ID)
+                !isRekeyedAccount(created, chainId)
             ) {
                 // Only buildWatchAccount carries the legacy authAddress;
                 // key-bearing imports (incl. the watch-reconcile reimport
@@ -128,11 +132,12 @@ export const runMigrationLoop = async (
                 // window before the first sync writes the authoritative
                 // per-network value.
                 applyRekeyAddressToStoreAccount(
-                    created.address,
+                    addressOf(created) ?? account.address,
                     account.authAddress,
+                    chainId,
                 )
             }
-            existingAddresses.add(created.address)
+            existingAddresses.add(addressOf(created))
             pendingMetadata.push({ created, legacy: account })
             summary.imported += 1
         } catch (e) {
@@ -141,7 +146,7 @@ export const runMigrationLoop = async (
                 // transient reimport failure never leaves the user's account
                 // permanently gone; it will be retried next launch.
                 addKeylessAccountToStore(removedForReconcile)
-                existingAddresses.add(removedForReconcile.address)
+                existingAddresses.add(addressOf(removedForReconcile))
             }
             const route = adapter.classifyAccountRoute(account)
             const errorName = e instanceof Error ? e.name : 'Unknown'
@@ -175,12 +180,12 @@ export const runMigrationLoop = async (
         })
     }
 
-    applyAllLegacyMetadata(pendingMetadata)
+    applyAllLegacyMetadata(pendingMetadata, chainId)
     markLegacyBackedUpAccounts(pendingMetadata, args.markAccountBackedUp)
     // First-run only: on a re-run the store already holds the user's own
     // ordering (incl. Pera-7-native accounts), and reapplying the legacy Pera 6
     // order would clobber it.
-    if (!args.isRerun) applyLegacyAccountOrder(args.accounts)
+    if (!args.isRerun) applyLegacyAccountOrder(args.accounts, chainId)
 
     return summary
 }

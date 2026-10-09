@@ -138,6 +138,7 @@ vi.mock('../ethereum-chain-module', () => ({
     },
 }))
 
+import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
 import { registerChainAdapters } from '../chain-adapters'
 
 const contextGivenToModule = (): ChainContext =>
@@ -209,6 +210,16 @@ describe('registerChainAdapters', () => {
         expect(() => registerChainAdapters()).toThrow(
             /no chain module was supplied/,
         )
+    })
+
+    it('rehydrates the accounts store only once the adapters are registered', () => {
+        vi.mocked(rehydrateAccountsStore).mockImplementation(async () => {
+            expect(mocks.registerModule).toHaveBeenCalledOnce()
+        })
+
+        registerChainAdapters()
+
+        expect(rehydrateAccountsStore).toHaveBeenCalledOnce()
     })
 
     it('registers the Algorand adapters once', () => {

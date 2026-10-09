@@ -18,10 +18,7 @@ import {
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
 } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
-import {
-    useAccountInformationQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useNativeAsset,
     type PeraAsset,
@@ -37,7 +34,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
@@ -89,9 +86,7 @@ export const useARC59SendSummaryScreen =
         const { data: asset, isLoading: assetLoading } =
             useSingleAssetDetailsQuery(assetId)
 
-        const { data: accountInfo } = useAccountInformationQuery(
-            selectedAccount?.address ?? '',
-        )
+        const accountInfo = useSenderBalances(selectedAccount)
 
         const isLoading = summaryLoading || assetLoading
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage

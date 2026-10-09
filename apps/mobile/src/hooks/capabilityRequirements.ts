@@ -10,15 +10,17 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { CapabilityRequirement } from './useCapability'
 
-// Rekey entry points act on an account, and Algorand is the only account chain
-// until WalletAccount carries a chain id.
-export const REKEY_REQUIREMENT: CapabilityRequirement = {
+// Rekey entry points act on an account, so the requirement names the chain the
+// account is on.
+export const rekeyRequirementFor = (
+    chainId: ChainId,
+): CapabilityRequirement => ({
     platform: 'rekeyFlows',
-    chain: { chainId: LEGACY_CHAIN_ID, capability: 'rekey' },
-}
+    chain: { chainId, capability: 'rekey' },
+})
 
 // Messages hosts notifications, the asset inbox and multisig invitations, so it
 // stays reachable while any one of them is on.

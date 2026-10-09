@@ -11,10 +11,8 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    getSignerFor,
-    isQuantumAccount,
-} from '@perawallet/wallet-core-accounts'
+import { getSignerFor } from '@perawallet/wallet-core-accounts'
+import { isQuantumAccount } from '../accounts/vocabulary'
 import { calculateMinTxnFee } from '../blockchain'
 import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signing'
 

@@ -13,14 +13,17 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountInfoCard } from '../useAccountInfoCard'
+import { Decimal } from 'decimal.js'
 import {
     useAccountChainStateStore,
-    type HDWalletAccount,
+    useAccountsStore,
     type HardwareWalletAccount,
+    type LocalAccount,
     type MultiSigAccount,
     type RekeyTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { accountForType } from '@test-utils/accountCustody'
 import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
@@ -42,8 +45,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const mockUseAccountInformationQuery = vi.fn()
-const mockUseHDWalletGroups = vi.fn()
+const mockUseAccountStateQuery = vi.fn()
+const mockUseHdSeedGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
@@ -55,9 +58,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountInformationQuery: (...args: unknown[]) =>
-            mockUseAccountInformationQuery(...args),
-        useHDWalletGroups: () => mockUseHDWalletGroups(),
+        useAccountStateQuery: (...args: unknown[]) =>
+            mockUseAccountStateQuery(...args),
+        useHdSeedGroups: () => mockUseHdSeedGroups(),
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
         useRekeyTransition: () => mockUseRekeyTransition(),
@@ -75,17 +78,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     },
 }))
 
-const hdAccount: HDWalletAccount = {
+const hdAccount: LocalAccount = {
     id: 'hd-account',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    address: 'HD_ADDR',
-    keyPairId: 'key-1',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9,
-    },
+    chains: { algorand: { address: 'HD_ADDR', keyPairId: 'key-1' } },
 }
 
 const ledgerAccount: HardwareWalletAccount = {
@@ -100,38 +96,37 @@ const ledgerAccount: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: 'LEDGER_ADDR',
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-abc',
-        deviceName: 'My Ledger',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: 'LEDGER_ADDR' } },
 }
 
 const watchAccount: WalletAccount = {
     id: 'watch-account',
     custody: { kind: 'watch' },
-    address: 'WATCH_ADDR',
+    chains: { algorand: { address: 'WATCH_ADDR' } },
 }
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
     custody: { kind: 'multisig' },
-    address: 'MULTISIG_ADDR',
-    multisigDetails: {
-        threshold: 2,
-        addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
-        version: 1,
+    chains: {
+        algorand: {
+            address: 'MULTISIG_ADDR',
+            native: {
+                family: 'algorand',
+                multisig: {
+                    threshold: 2,
+                    addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
+                    version: 1,
+                },
+            },
+        },
     },
 }
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-account',
     custody: { kind: 'local', seed: 'quantum' },
-    address: 'QUANTUM_ADDR',
-    keyPairId: 'key-1',
+    chains: { algorand: { address: 'QUANTUM_ADDR', keyPairId: 'key-1' } },
 }
 
 describe('useAccountInfoCard', () => {
@@ -139,12 +134,25 @@ describe('useAccountInfoCard', () => {
         registerAlgorandAccountsAdapter()
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
-        mockUseAccountInformationQuery.mockReturnValue({
-            data: { minBalance: BigInt(100_000) },
+        useAccountsStore.setState({ accounts: [] })
+        mockUseAccountStateQuery.mockReturnValue({
+            data: {
+                address: 'ANY',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                nativeBalance: new Decimal(1),
+                chainState: {
+                    family: 'algorand',
+                    minBalance: new Decimal(100_000),
+                    status: 'Offline',
+                    totalAssetsOptedIn: 0,
+                    totalCreatedAssets: 0,
+                    totalAppsOptedIn: 0,
+                },
+            },
             isLoading: false,
         })
-        mockUseHDWalletGroups.mockReturnValue({
-            hdWalletGroups: [
+        mockUseHdSeedGroups.mockReturnValue({
+            hdSeedGroups: [
                 {
                     keyPairId: 'key-1',
                     accounts: [hdAccount],
@@ -152,7 +160,7 @@ describe('useAccountInfoCard', () => {
                     accountCount: 1,
                 },
             ],
-            hasMultipleHDWallets: false,
+            hasMultipleHdSeeds: false,
         })
         mockUseLedgerDeviceGroups.mockReturnValue({
             ledgerDeviceGroups: [
@@ -178,7 +186,7 @@ describe('useAccountInfoCard', () => {
         expect(result.current.structureIcon).toBe('wallet')
         expect(result.current.structureLabel).toBe('account_info.wallet_label')
         expect(result.current.structureAccounts).toEqual([hdAccount])
-        expect(result.current.structureMainAddress).toBe(hdAccount.address)
+        expect(result.current.structureMainAddress).toBe('HD_ADDR')
     })
 
     test('Ledger account: showStructure true with deviceName and ledger icon', () => {
@@ -189,7 +197,7 @@ describe('useAccountInfoCard', () => {
         expect(result.current.structureIcon).toBe('ledger')
         expect(result.current.structureLabel).toBe('My Ledger')
         expect(result.current.structureAccounts).toEqual([ledgerAccount])
-        expect(result.current.structureMainAddress).toBe(ledgerAccount.address)
+        expect(result.current.structureMainAddress).toBe('LEDGER_ADDR')
     })
 
     test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
@@ -205,14 +213,7 @@ describe('useAccountInfoCard', () => {
                 },
                 accountIndex: 1,
             },
-            address: 'LEDGER_SUB_ADDR',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'device-abc',
-                deviceName: 'My Ledger',
-                accountIndex: 1,
-                transportType: 'ble',
-            },
+            chains: { algorand: { address: 'LEDGER_SUB_ADDR' } },
         }
         mockUseLedgerDeviceGroups.mockReturnValueOnce({
             ledgerDeviceGroups: [
@@ -232,11 +233,18 @@ describe('useAccountInfoCard', () => {
                 onClose: vi.fn(),
             }),
         )
-        expect(result.current.structureMainAddress).toBe(ledgerAccount.address)
+        expect(result.current.structureMainAddress).toBe('LEDGER_ADDR')
         expect(result.current.structureAccounts).toEqual([
             ledgerAccount,
             subLedgerAccount,
         ])
+    })
+
+    test('reads the min balance from the Algorand chain state, in Algos', () => {
+        const { result } = renderHook(() =>
+            useAccountInfoCard({ account: hdAccount, onClose: vi.fn() }),
+        )
+        expect(result.current.minBalanceAlgos?.toString()).toBe('0.1')
     })
 
     test('Watch account: showStructure false', () => {
@@ -249,6 +257,9 @@ describe('useAccountInfoCard', () => {
     })
 
     test('Multisig account: resolves the shared account type label', () => {
+        useAccountsStore.setState({
+            accounts: [multisigAccount, accountForType('algo25', 'ADDR_1')],
+        })
         const { result } = renderHook(() =>
             useAccountInfoCard({
                 account: multisigAccount,
@@ -277,11 +288,11 @@ describe('useAccountInfoCard', () => {
     test('RekeyedSignable account with a transition shows the "Rekeyed (Signed by …)" label', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
-            from: 'algo25',
-            to: 'hardware',
+            from: accountForType('algo25'),
+            to: accountForType('hardware'),
         })
         const rekeyed = ledgerAccount
-        seedAuthority(rekeyed.address, 'AUTH')
+        seedAuthority('LEDGER_ADDR', 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
@@ -294,7 +305,7 @@ describe('useAccountInfoCard', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
         const rekeyed = ledgerAccount
-        seedAuthority(rekeyed.address, 'AUTH')
+        seedAuthority('LEDGER_ADDR', 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )

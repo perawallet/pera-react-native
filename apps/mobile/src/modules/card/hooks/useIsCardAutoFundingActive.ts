@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCardFundingAccount } from './useCardFundingAccount'
 import { canAutoFund } from './useCardFundingSourcePicker'
 
@@ -34,7 +35,7 @@ export const useIsCardAutoFundingActive = (): boolean => {
         () =>
             selectedFundingType === FundingType.Auto &&
             connectedAccount != null &&
-            canAutoFund(connectedAccount),
+            canAutoFund(connectedAccount, LEGACY_CHAIN_ID),
         [selectedFundingType, connectedAccount],
     )
 }

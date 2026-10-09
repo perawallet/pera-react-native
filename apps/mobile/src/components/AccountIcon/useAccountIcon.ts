@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
-
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    accountType,
-    type AccountType,
-    AccountTypes,
+    addressOn,
     isRekeyedAccount,
+    useAccountPresentation,
     useCanSignWith,
     useRekeyAccount,
     type WalletAccount,
@@ -32,66 +31,40 @@ export type AccountDisplayState =
 
 export type AccountGlyph = { name: IconName; variant: PWRoundIconVariant }
 
-const BASE_GLYPH: Record<AccountType, AccountGlyph> = {
-    [AccountTypes.algo25]: {
-        name: 'accounts/glyph/algo25-account',
-        variant: 'accountTurquoise',
-    },
-    [AccountTypes.hdWallet]: {
-        name: 'accounts/glyph/hdwallet-account',
-        variant: 'accountTurquoise',
-    },
-    [AccountTypes.hardware]: {
-        name: 'accounts/glyph/ledger-account',
-        variant: 'accountPurple',
-    },
-    [AccountTypes.multisig]: {
-        name: 'accounts/glyph/multisig-account',
-        variant: 'accountMagenta',
-    },
-    [AccountTypes.watch]: {
-        name: 'accounts/glyph/watch-account',
-        variant: 'accountPink',
-    },
-    [AccountTypes.quantum]: {
-        name: 'accounts/glyph/quantum-account',
-        variant: 'accountQuantum',
-    },
-}
+// A presentation's glyph id is the PWIcon name; this table gives it its tone.
+const GLYPH_TONE = {
+    'accounts/glyph/algo25-account': 'accountTurquoise',
+    'accounts/glyph/hdwallet-account': 'accountTurquoise',
+    'accounts/glyph/ledger-account': 'accountPurple',
+    'accounts/glyph/multisig-account': 'accountMagenta',
+    'accounts/glyph/watch-account': 'accountPink',
+    'accounts/glyph/quantum-account': 'accountQuantum',
+    'accounts/glyph/rekeyed-standard': 'accountTurquoise',
+    'accounts/glyph/rekeyed-ledger': 'accountPurple',
+    'accounts/glyph/rekeyed-multisig': 'accountMagenta',
+    'accounts/glyph/noauth-account': 'accountPeach',
+    'accounts/glyph/unknown-account': 'accountNeutral',
+} as const satisfies Partial<Record<IconName, PWRoundIconVariant>>
 
-const REKEYED_SIGNABLE_GLYPH: Partial<Record<AccountType, AccountGlyph>> = {
-    [AccountTypes.hardware]: {
-        name: 'accounts/glyph/rekeyed-ledger',
-        variant: 'accountPurple',
-    },
-    [AccountTypes.multisig]: {
-        name: 'accounts/glyph/rekeyed-multisig',
-        variant: 'accountMagenta',
-    },
-}
+type KnownGlyph = keyof typeof GLYPH_TONE
 
-const REKEYED_SIGNABLE_DEFAULT: AccountGlyph = {
-    name: 'accounts/glyph/rekeyed-standard',
-    variant: 'accountTurquoise',
-}
+const REKEYED_SIGNABLE_GLYPH: KnownGlyph = 'accounts/glyph/rekeyed-standard'
+const REKEYED_UNSIGNABLE_GLYPH: KnownGlyph = 'accounts/glyph/noauth-account'
+const FALLBACK_GLYPH: KnownGlyph = 'accounts/glyph/unknown-account'
 
-const REKEYED_UNSIGNABLE_GLYPH: AccountGlyph = {
-    name: 'accounts/glyph/noauth-account',
-    variant: 'accountPeach',
-}
+const isKnownGlyph = (glyphId: string): glyphId is KnownGlyph =>
+    Object.hasOwn(GLYPH_TONE, glyphId)
 
-const FALLBACK_GLYPH: AccountGlyph = {
-    name: 'accounts/glyph/unknown-account',
-    variant: 'accountNeutral',
+/** The icon for a presentation glyph id; the neutral unknown glyph for an id the app has no icon for. */
+export const accountGlyphFor = (glyphId: string | undefined): AccountGlyph => {
+    const name = glyphId && isKnownGlyph(glyphId) ? glyphId : FALLBACK_GLYPH
+    return { name, variant: GLYPH_TONE[name] }
 }
-
-export const accountGlyphForType = (type: AccountType): AccountGlyph =>
-    BASE_GLYPH[type] ?? FALLBACK_GLYPH
 
 export type UseAccountIconOptions = {
     /**
-     * When true, render the icon for the account's base `type` and ignore
-     * its rekey state (e.g. the undo-rekey preview).
+     * When true, render the icon for the account's own kind and ignore its
+     * rekey state (e.g. the undo-rekey preview).
      */
     ignoreRekey?: boolean
     /**
@@ -101,27 +74,38 @@ export type UseAccountIconOptions = {
      */
     displayState?: AccountDisplayState
     /**
-     * The type of the auth account, for callers that force `rekeyedSignable`
-     * on a synthetic account. `useRekeyAccount` can only resolve an auth
-     * address that is already in the store, so without this a rekeyed-to-Ledger
+     * The auth account, for callers that force `rekeyedSignable` on a
+     * synthetic account. `useRekeyAccount` can only resolve an auth address
+     * that is already in the store, so without this a rekeyed-to-Ledger
      * preview falls back to the turquoise standard glyph.
      */
-    authType?: AccountType
+    authAccount?: WalletAccount
 }
 
 export const useAccountIcon = (
     account: WalletAccount | undefined,
     options: UseAccountIconOptions = {},
 ): AccountGlyph | null => {
-    const { ignoreRekey, displayState, authType } = options
-    const rekeyAccount = useRekeyAccount(account?.address)
-    const canSign = useCanSignWith(account)
+    const { ignoreRekey, displayState, authAccount } = options
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const rekeyAccount = useRekeyAccount(
+        account ? addressOn(account, scope) : undefined,
+        scope.chainId,
+    )
+    const canSign = useCanSignWith(account, scope.chainId)
+    const presentation = useAccountPresentation(account, scope)
+    // Keyed off the auth account (what it's rekeyed *to*), not the account
+    // itself: a standard account rekeyed to a Ledger shows the ledger glyph.
+    const authPresentation = useAccountPresentation(
+        rekeyAccount ?? authAccount,
+        scope,
+    )
 
     return useMemo(() => {
         if (!account) return null
 
         const isRekeyed =
-            !ignoreRekey && isRekeyedAccount(account, LEGACY_CHAIN_ID)
+            !ignoreRekey && isRekeyedAccount(account, scope.chainId)
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed
@@ -132,27 +116,24 @@ export const useAccountIcon = (
 
         switch (state) {
             case 'rekeyedSignable': {
-                // Key off the auth account's type (what it's rekeyed *to*),
-                // not the account's own type — a standard account rekeyed to
-                // a Ledger keeps type `algo25`, so indexing by its own type
-                // wrongly picks the standard glyph instead of the ledger one.
-                const resolvedAuthType = rekeyAccount
-                    ? accountType(rekeyAccount)
-                    : authType
-                const authGlyph = resolvedAuthType
-                    ? REKEYED_SIGNABLE_GLYPH[resolvedAuthType]
-                    : undefined
-                return authGlyph ?? REKEYED_SIGNABLE_DEFAULT
+                return accountGlyphFor(
+                    authPresentation?.rekeyedGlyph ?? REKEYED_SIGNABLE_GLYPH,
+                )
             }
             case 'rekeyedUnsignable': {
-                return REKEYED_UNSIGNABLE_GLYPH
+                return accountGlyphFor(REKEYED_UNSIGNABLE_GLYPH)
             }
             case 'base': {
-                return accountGlyphForType(accountType(account))
+                return accountGlyphFor(presentation?.glyph)
             }
         }
-        // rekeyAccount keeps the memo invalidating when the auth account
-        // changes (which can flip canSign).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, displayState, authType, canSign, rekeyAccount])
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        canSign,
+        presentation,
+        authPresentation,
+        scope.chainId,
+    ])
 }

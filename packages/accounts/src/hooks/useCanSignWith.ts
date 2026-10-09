@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-import { useSignerFor } from './useSignerFor'
+import { useMemo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '../models'
+import { canSignWith } from '../signer-resolution'
+import { useAccountsStore } from '../store'
 
+/** `account` need not be held; whatever signs for it on `chainId` must be. */
 export const useCanSignWith = (
     account: WalletAccount | null | undefined,
-): boolean => useSignerFor(account?.address) !== null
+    chainId: ChainId,
+): boolean => {
+    const accounts = useAccountsStore(state => state.accounts)
+    return useMemo(
+        () => !!account && canSignWith(account, accounts, chainId),
+        [account, accounts, chainId],
+    )
+}

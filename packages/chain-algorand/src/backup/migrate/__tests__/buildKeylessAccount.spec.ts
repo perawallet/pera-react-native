@@ -37,6 +37,8 @@ import {
     type MultisigParameters,
 } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import { algorandMultisigOf } from '../../../accounts/multisig-participants'
+import { algorandMultisigAdapter } from '../../../multisig/adapter'
 import {
     buildWatchAccount,
     buildLedgerAccount,
@@ -54,7 +56,7 @@ const buildLegacyAccount = (
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: null,
-        hdWalletId: null,
+        hdSeedId: null,
         ledger: null,
         joint: null,
         authAddress: null,
@@ -75,6 +77,8 @@ beforeEach(() => {
         deriveAddress,
         assembleSignedTransactions: vi.fn(),
         validateSignRequest: vi.fn(),
+        parametersOf: algorandMultisigAdapter.parametersOf,
+        toNative: algorandMultisigAdapter.toNative,
     })
 })
 
@@ -91,7 +95,6 @@ describe('buildWatchAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'My Watcher',
-            address: 'ADDR_WATCH',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR_WATCH' } },
         })
@@ -152,14 +155,6 @@ describe('buildLedgerAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Ledger 1',
-            address: 'ADDR_LEDGER',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                transportType: 'ble',
-                deviceId: 'BT-ADDR',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 3,
-            },
             custody: {
                 kind: 'hardware',
                 device: {
@@ -188,7 +183,7 @@ describe('buildLedgerAccount', () => {
 
         if (!isHardwareWalletAccount(account))
             throw new Error('expected hardware account')
-        expect(account.hardwareDetails.deviceName).toBe('')
+        expect(account.custody.device.deviceName).toBe('')
     })
 
     it('returns undefined name when legacy name is empty', () => {
@@ -246,12 +241,6 @@ describe('buildMultiSigAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Joint',
-            address: 'ADDR_MSIG',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
-            },
             custody: { kind: 'multisig' },
             chains: {
                 algorand: {
@@ -281,9 +270,8 @@ describe('buildMultiSigAccount', () => {
 
         const account = buildMultiSigAccount(legacy)
 
-        if (!isMultisigAccount(account))
-            throw new Error('expected multisig account')
-        expect(account.multisigDetails.threshold).toBe(2)
+        expect(isMultisigAccount(account)).toBe(true)
+        expect(algorandMultisigOf(account)?.threshold).toBe(2)
         expect(deriveAddress).toHaveBeenCalledWith({
             version: 1,
             threshold: 1,

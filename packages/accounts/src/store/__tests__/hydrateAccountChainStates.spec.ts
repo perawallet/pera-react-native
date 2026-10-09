@@ -22,9 +22,9 @@ import {
     scopeForLegacyNetwork,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import { testAccount } from '../../__tests__/accountFactory'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
-import { authorityOf } from '../../credentials/accessors'
+import { addressOn, authorityOf } from '../../credentials/accessors'
 import { AccountBalancesSchema, upsertAccountBalance } from '../../db'
 import type { WalletAccount } from '../../models'
 import { useAccountChainStateStore } from '../accountChainState'
@@ -57,7 +57,7 @@ describe('hydrateAccountChainStates', () => {
         })
 
     const holdAccount = (patch: Partial<WalletAccount> = {}): WalletAccount => {
-        const account = { ...buildTestAccount('watch'), ...patch }
+        const account = testAccount('watch', undefined, patch)
         useAccountsStore.getState().setAccounts([account])
         return account
     }
@@ -78,7 +78,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('gives a legacy account the auth address from its balance row', async () => {
         const account = holdAccount()
-        await seedRow(account.address as string, MAINNET, 'AUTH')
+        await seedRow(addressOn(account, MAINNET)!, MAINNET, 'AUTH')
 
         await hydrateAccountChainStates({ db })
 
@@ -95,7 +95,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('lets the row beat the seed', async () => {
         const account = holdAccount({ rekeyAddressByNetwork: { mainnet: 'M' } })
-        await seedRow(account.address as string, MAINNET, null)
+        await seedRow(addressOn(account, MAINNET)!, MAINNET, null)
 
         await hydrateAccountChainStates({ db })
 
@@ -104,7 +104,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('keeps an entry held before hydration', async () => {
         const account = holdAccount()
-        const address = account.address as string
+        const address = addressOn(account, MAINNET)!
         await seedRow(address, MAINNET, 'FROM_ROW')
         useAccountChainStateStore
             .getState()
@@ -125,7 +125,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('skips a row with an unreadable network and hydrates the rest', async () => {
         const account = holdAccount()
-        const address = account.address as string
+        const address = addressOn(account, MAINNET)!
         await seedRow(address, MAINNET, 'AUTH')
         await db
             .insert(AccountBalancesSchema)

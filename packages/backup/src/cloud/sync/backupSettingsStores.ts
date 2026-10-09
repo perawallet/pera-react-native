@@ -11,10 +11,13 @@
  */
 
 import {
+    chainAccountOf,
+    findAccountByAddressOn,
     LaunchAccountModes,
     useAccountsStore,
     type LaunchAccountMode,
 } from '@perawallet/wallet-core-accounts'
+import { backupAdapterFor } from '../../chain-adapter'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import {
     useSettingsStore,
@@ -36,8 +39,15 @@ export const readBackupSettings = (): BackupSettings => {
     const { preferredCurrency, fallbackCurrency } =
         useCurrenciesStore.getState()
     const { language, confirmationMode } = useSettingsStore.getState()
-    const { launchAccountMode, launchAccountAddress } =
+    const { launchAccountMode, launchAccountId, accounts } =
         useAccountsStore.getState()
+    // The settings item names the launch account by its address, as the
+    // backup format always has.
+    const launchAccount = accounts.find(a => a.id === launchAccountId)
+    const launchAccountAddress = launchAccount
+        ? (chainAccountOf(launchAccount, backupAdapterFor().chainId)?.address ??
+          null)
+        : null
     return {
         currency: { preferred: preferredCurrency, fallback: fallbackCurrency },
         language,
@@ -78,11 +88,15 @@ export const applyBackupSettings = (
             .setConfirmationMode(confirmationMode as ConfirmationMode)
     }
     if (launchAccount && isLaunchAccountMode(launchAccount.mode)) {
-        useAccountsStore
-            .getState()
-            .setLaunchAccountPreference(
-                launchAccount.mode,
-                launchAccount.address,
-            )
+        const { accounts, setLaunchAccountPreference } =
+            useAccountsStore.getState()
+        const pinned = launchAccount.address
+            ? findAccountByAddressOn(
+                  accounts,
+                  backupAdapterFor().chainId,
+                  launchAccount.address,
+              )
+            : undefined
+        setLaunchAccountPreference(launchAccount.mode, pinned?.id ?? null)
     }
 }

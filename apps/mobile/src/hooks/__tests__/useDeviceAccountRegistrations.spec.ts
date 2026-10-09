@@ -17,6 +17,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationsStore } from '@perawallet/wallet-core-messages'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { allCapabilities } from '@test-utils/chain-fixtures'
 
 // The mobile-wide vitest setup mocks `@perawallet/wallet-core-accounts` with a
 // fixed empty-store double (RootComponent et al. don't need the real store to
@@ -32,11 +37,22 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 import { useDeviceAccountRegistrations } from '../useDeviceAccountRegistrations'
 
-type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'custody'> &
-    Partial<WalletAccount>
+type SeedAccount = Pick<WalletAccount, 'id' | 'custody'> & {
+    address: string
+    keyPairId?: string
+}
+
+const toWalletAccount = ({
+    address,
+    keyPairId,
+    ...account
+}: SeedAccount): WalletAccount => ({
+    ...account,
+    chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
+})
 
 const seedAccounts = (accounts: SeedAccount[]) => {
-    useAccountsStore.getState().setAccounts(accounts as WalletAccount[])
+    useAccountsStore.getState().setAccounts(accounts.map(toWalletAccount))
 }
 
 const seedDisabledAccounts = (addresses: string[]) => {
@@ -49,6 +65,11 @@ const seedDisabledAccounts = (addresses: string[]) => {
 
 describe('useDeviceAccountRegistrations', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
+        const { chains } = getProvider()
+        if (!chains.has(LEGACY_CHAIN_ID)) {
+            chains.register(algorandDescriptor, allCapabilities(true))
+        }
         useAccountsStore.getState().resetState()
         useNotificationsStore.getState().resetState()
     })
@@ -70,11 +91,13 @@ describe('useDeviceAccountRegistrations', () => {
             {
                 address: 'QADDR',
                 accountType: 'quantum',
+                rank: 6,
                 receiveNotifications: true,
             },
             {
                 address: 'WADDR',
                 accountType: 'watch',
+                rank: 1,
                 receiveNotifications: true,
             },
         ])

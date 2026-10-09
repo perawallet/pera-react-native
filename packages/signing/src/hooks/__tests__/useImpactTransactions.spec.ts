@@ -12,11 +12,16 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useSigningPipeline } from '../useSigningPipeline'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 import { useImpactTransactions } from '../useImpactTransactions'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../useSigningPipeline', () => ({ useSigningPipeline: vi.fn() }))
 vi.mock('../useGroupSimulationQuery', () => ({
@@ -66,7 +71,7 @@ describe('useImpactTransactions', () => {
     test('returns the top-level group untouched and disables simulation without an app call', () => {
         mockPipeline([payment])
 
-        const { result } = renderHook(() => useImpactTransactions())
+        const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(result.current.transactions).toEqual([payment])
         expect(result.current.signableAddresses).toBe(SIGNERS)
@@ -80,7 +85,7 @@ describe('useImpactTransactions', () => {
         mockPipeline([appCall])
         mockSimulation({ data: [innerTxn] })
 
-        const { result } = renderHook(() => useImpactTransactions())
+        const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(useGroupSimulationQuery).toHaveBeenCalledWith(
             expect.objectContaining({ enabled: true }),
@@ -92,7 +97,7 @@ describe('useImpactTransactions', () => {
         mockPipeline([appCall])
         mockSimulation({ isFetching: true })
 
-        const { result } = renderHook(() => useImpactTransactions())
+        const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(result.current.isSimulating).toBe(true)
     })
@@ -101,7 +106,7 @@ describe('useImpactTransactions', () => {
         mockPipeline([appCall])
         mockSimulation({ isError: true, error: new Error('simulate failed') })
 
-        const { result } = renderHook(() => useImpactTransactions())
+        const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(result.current.simulationFailed).toBe(true)
     })
@@ -110,7 +115,7 @@ describe('useImpactTransactions', () => {
         mockPipeline([payment])
         mockSimulation({ isError: true })
 
-        const { result } = renderHook(() => useImpactTransactions())
+        const { result } = renderHook(() => useImpactTransactions(SCOPE))
 
         expect(result.current.simulationFailed).toBe(false)
     })

@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),
@@ -644,9 +645,13 @@ describe('submitAndAutoRefresh (public)', () => {
     const algo25Account = (address: string): WalletAccount =>
         ({
             id: address,
-            address,
             custody: { kind: 'local', seed: 'algo25' },
-            keyPairId: 'kp',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address,
+                    keyPairId: 'kp',
+                },
+            },
         }) as WalletAccount
 
     beforeEach(() => {

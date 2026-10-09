@@ -17,11 +17,7 @@ import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     BackupAccountType,
     buildBackupCredentialsFile,
@@ -49,7 +45,11 @@ import {
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import {
@@ -70,6 +70,7 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const renderCloudBackupFlow = () =>
     renderWithNavigation(CloudBackupScreen, 'CloudBackupHome', {
@@ -189,7 +190,9 @@ describe('Flow: Cloud backup → Restore', () => {
                 expect(
                     useAccountsStore
                         .getState()
-                        .accounts.some(a => a.address === ALGO25_TEST_ADDRESS),
+                        .accounts.some(
+                            a => addressOf(a) === ALGO25_TEST_ADDRESS,
+                        ),
                 ).toBe(true)
             },
             { timeout: 10_000 },
@@ -202,10 +205,8 @@ describe('Flow: Cloud backup → Restore', () => {
 
         const restored = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === ALGO25_TEST_ADDRESS)
-        expect(restored ? accountType(restored) : undefined).toBe(
-            AccountTypes.algo25,
-        )
+            .accounts.find(a => addressOf(a) === ALGO25_TEST_ADDRESS)
+        expect(restored?.custody).toEqual({ kind: 'local', seed: 'algo25' })
         expect(restored?.name).toBe('Restored')
 
         // The restore has to hand the sync engine the versions the server
@@ -246,7 +247,9 @@ describe('Flow: Cloud backup → Restore', () => {
         const { handlers, getItem } = buildSyncHandlers({ backupId })
         server.use(...handlers)
 
-        const importHook = renderQueryHook(() => useCloudBackupImport())
+        const importHook = renderQueryHook(() =>
+            useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+        )
         const hdHook = renderQueryHook(() => useResolveHdSeedForBackup())
         const contactImportHook = renderQueryHook(() =>
             useCloudBackupContactImport(),
@@ -271,10 +274,10 @@ describe('Flow: Cloud backup → Restore', () => {
         }).syncNow()
 
         expect(
-            getItem(accountItemKey(hashAddress(first.address))),
+            getItem(accountItemKey(hashAddress(addressOf(first)))),
         ).toBeDefined()
         expect(
-            getItem(secretsItemKey(hashAddress(first.address))),
+            getItem(secretsItemKey(hashAddress(addressOf(first)))),
         ).toBeDefined()
 
         // Wipe the device; the fake backend keeps what was pushed.
@@ -291,9 +294,9 @@ describe('Flow: Cloud backup → Restore', () => {
             () => {
                 const addresses = useAccountsStore
                     .getState()
-                    .accounts.map(a => a.address)
-                expect(addresses).toContain(first.address)
-                expect(addresses).toContain(second.address)
+                    .accounts.map(a => addressOf(a))
+                expect(addresses).toContain(addressOf(first))
+                expect(addresses).toContain(addressOf(second))
             },
             { timeout: 10_000 },
         )
@@ -303,14 +306,20 @@ describe('Flow: Cloud backup → Restore', () => {
         })
 
         const accounts = useAccountsStore.getState().accounts
-        const restoredFirst = accounts.find(a => a.address === first.address)
-        const restoredSecond = accounts.find(a => a.address === second.address)
-        expect(restoredFirst ? accountType(restoredFirst) : undefined).toBe(
-            AccountTypes.hdWallet,
+        const restoredFirst = accounts.find(
+            a => addressOf(a) === addressOf(first),
         )
-        expect(restoredSecond ? accountType(restoredSecond) : undefined).toBe(
-            AccountTypes.hdWallet,
+        const restoredSecond = accounts.find(
+            a => addressOf(a) === addressOf(second),
         )
+        expect(restoredFirst?.custody).toMatchObject({
+            kind: 'local',
+            seed: 'bip39',
+        })
+        expect(restoredSecond?.custody).toMatchObject({
+            kind: 'local',
+            seed: 'bip39',
+        })
         expect(restoredFirst?.name).toBe('HD First')
         expect(restoredSecond?.name).toBe('HD Second')
 
@@ -414,7 +423,9 @@ describe('Flow: Cloud backup → Restore', () => {
                 expect(
                     useAccountsStore
                         .getState()
-                        .accounts.some(a => a.address === ALGO25_TEST_ADDRESS),
+                        .accounts.some(
+                            a => addressOf(a) === ALGO25_TEST_ADDRESS,
+                        ),
                 ).toBe(true)
             },
             { timeout: 10_000 },

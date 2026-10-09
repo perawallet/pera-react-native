@@ -17,17 +17,20 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
+    chainAccountOf,
+    hasCustody,
+    hdIndexOf,
+    signingKeyOn,
     useAccountDiscovery,
     useAllAccounts,
     useCreateAccount,
     useHDImportSession,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useExitAccountFlow,
@@ -53,12 +56,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation = useAppNavigation()
-    const { discoverAccounts } = useAccountDiscovery()
-    const { discoverImportAccounts, cancelImport } = useHDImportSession()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { discoverAccounts } = useAccountDiscovery(scope)
+    const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
     const { exitAccountFlow } = useExitAccountFlow()
     const { scanRekeyed } = useRekeyScanNotice()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { buildHdWalletAccount } = useCreateAccount()
+    const { setSelectedAccountId } = useSelectedAccountId()
+    const { buildHdWalletAccount } = useCreateAccount(scope)
     const allAccounts = useAllAccounts()
     const { seedIdOf } = useKMS()
 
@@ -140,10 +144,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             // reactive map hasn't observed the freshly-committed seed
             // yet (race between createAlgo25Key and useKeystoreKeys
             // re-render).
-            const walletKeyId = seedIdOf(account.keyPairId) ?? account.keyPairId
+            const keyPairId = signingKeyOn(account, scope.chainId)
+            const accountAddress =
+                chainAccountOf(account, scope.chainId)?.address ?? ''
+            const walletKeyId = seedIdOf(keyPairId) ?? keyPairId
             if (!walletKeyId) return
 
-            if (isHDWalletAccount(account)) {
+            if (hdIndexOf(account) !== undefined) {
                 const discoveredAccounts = await discoverAccounts({
                     walletKeyId,
                 })
@@ -152,20 +159,20 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 if (discoveredAccounts.length === 1) {
                     if (createIfEmpty) {
-                        const walletAccounts = allAccounts
-                            .filter(isHDWalletAccount)
-                            .filter(a => a.keyPairId === account.keyPairId)
+                        const walletKeyIndexes = allAccounts
+                            .filter(
+                                a =>
+                                    signingKeyOn(a, scope.chainId) ===
+                                    keyPairId,
+                            )
+                            .flatMap(a => hdIndexOf(a)?.keyIndex ?? [])
                         const nextKeyIndex =
-                            walletAccounts.length > 0
-                                ? Math.max(
-                                      ...walletAccounts.map(
-                                          a => a.hdWalletDetails.keyIndex,
-                                      ),
-                                  ) + 1
+                            walletKeyIndexes.length > 0
+                                ? Math.max(...walletKeyIndexes) + 1
                                 : 0
 
                         const newAccount = await buildHdWalletAccount({
-                            walletId: account.keyPairId,
+                            walletId: keyPairId,
                             account: 0,
                             keyIndex: nextKeyIndex,
                         })
@@ -174,10 +181,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                             account: newAccount,
                         })
                     } else {
-                        setSelectedAccountAddress(account.address)
+                        setSelectedAccountId(account.id)
 
                         const rekeyedAccounts = await scanRekeyed([
-                            account.address,
+                            accountAddress,
                         ])
 
                         if (
@@ -212,13 +219,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         accounts: discoveredAccounts,
                     })
                 }
-            } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
+            } else if (hasCustody(account, 'local')) {
                 // Quantum accounts are flat single-key accounts like algo25:
                 // discovery is an address-only rekey scan (no derivation), and
                 // an empty result must still move the flow on to NameAccount —
                 // otherwise the "Searching your accounts" step hangs forever.
                 const discoveredRekeyedAccounts = await scanRekeyed([
-                    account.address,
+                    accountAddress,
                 ])
 
                 // A scan we couldn't run is not a failed import — the account
@@ -232,7 +239,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     // flow on confirm.
                     navigation.replace('NameAccount', { account })
                 } else {
-                    setSelectedAccountAddress(account.address)
+                    setSelectedAccountId(account.id)
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
                     })
@@ -263,10 +270,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         t,
         showToast,
         exitAccountFlow,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         buildHdWalletAccount,
         allAccounts,
         seedIdOf,
+        scope.chainId,
     ])
 
     useEffect(() => {

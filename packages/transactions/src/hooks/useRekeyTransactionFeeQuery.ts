@@ -86,7 +86,7 @@ export const useRekeyTransactionFeeQuery = (
             // rekeyed to a quantum auth (e.g. mid undo-rekey) correctly pays
             // the PQ fee. The max(suggested, config) congestion guard also
             // lives there.
-            const resolvedMinFee = resolveMinFeeForSender({
+            const resolvedMinFee = resolveMinFeeForSender(scope.chainId, {
                 senderAddress: sourceAddress,
                 accounts,
                 suggestedMinFee: suggestedMinFee!,

@@ -19,11 +19,16 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { UseQueryResult } from '@tanstack/react-query'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
@@ -32,7 +37,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(),
-        useNativeAsset: () => ({ assetId: '0' }),
+        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     }
 })
 
@@ -66,8 +71,10 @@ const createPaymentTx = (
 describe('useTransactionAmounts', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
-            address: USER_ADDRESS,
-        } as ReturnType<typeof useSelectedAccount>)
+            id: 'acc-1',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: USER_ADDRESS } },
+        })
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: undefined,
         } as UseQueryResult<PeraAsset, Error>)

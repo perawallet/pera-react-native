@@ -11,19 +11,23 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { rekeyTransitionFor, type RekeyTransition } from '../signer-resolution'
+import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
 
 export const useRekeyTransition = (
     address: string | undefined | null,
+    chainId: ChainId,
 ): RekeyTransition | null => {
     const accounts = useAccountsStore(state => state.accounts)
 
     return useMemo(() => {
         if (!address) return null
-        const account = accounts.find(a => a.address === address)
+        const account = accounts.find(
+            a => chainAccountOf(a, chainId)?.address === address,
+        )
         if (!account) return null
-        return rekeyTransitionFor(account, accounts, LEGACY_CHAIN_ID)
-    }, [address, accounts])
+        return rekeyTransitionFor(account, accounts, chainId)
+    }, [address, accounts, chainId])
 }

@@ -18,7 +18,11 @@ import {
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
-import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import { Decimal } from 'decimal.js'
+import {
+    microAlgosToAlgos,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
 import {
     useAssetOptInMutation,
     AlreadyOptedInError,
@@ -30,7 +34,7 @@ const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
-const mockAccountInformation = vi.fn()
+const mockAccountState = vi.fn()
 const mockBuild = vi.fn()
 const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
@@ -47,8 +51,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    fetchAccountInformation: (...args: unknown[]) =>
-        mockAccountInformation(...args),
+    fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
         mockInvalidate(...args),
@@ -63,14 +66,25 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
+/** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
+const accountState = (
+    balance: bigint,
+    minBalance: bigint,
+    heldAssetIds: bigint[] = [],
+) => ({
+    nativeBalanceBaseUnits: new Decimal(balance.toString()),
+    minBalance: microAlgosToAlgos(minBalance),
+    holdings: heldAssetIds.map(assetId => ({
+        assetId: String(assetId),
+        amount: new Decimal(0),
+        isFrozen: false,
+    })),
+})
+
 describe('useAssetOptInMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAccountInformation.mockResolvedValue({
-            amount: 1000000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValue(accountState(1000000n, 100000n))
         mockBuild.mockResolvedValue([{ sender: 'SENDER', fee: 1000n }])
         sendFlowChainAdapters.reset()
         sendFlowChainAdapters.register({
@@ -135,11 +149,9 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('throws AlreadyOptedInError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 1000000n,
-            minBalance: 100000n,
-            assets: [{ assetId: 12345n }],
-        })
+        mockAccountState.mockResolvedValueOnce(
+            accountState(1000000n, 100000n, [12345n]),
+        )
 
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
@@ -158,11 +170,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 1n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(1n, 100000n))
 
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
@@ -180,11 +188,7 @@ describe('useAssetOptInMutation', () => {
     it('reports the ALGO shortfall so the toast can say how much is missing', async () => {
         // 100000 minBalance + 100000 assetOptInMinBalance + 1000 fee = 201000 needed;
         // 100000 held leaves 101000 microAlgos short.
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 100000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(100000n, 100000n))
 
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
@@ -208,11 +212,7 @@ describe('useAssetOptInMutation', () => {
             pqMultiplier: 3n,
             assetOptInMinBalance: 200000n,
         })
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 250000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(250000n, 100000n))
 
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
@@ -276,11 +276,7 @@ describe('useAssetOptInMutation', () => {
                 },
             ],
         })
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 202000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(202000n, 100000n))
 
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
@@ -328,7 +324,7 @@ describe('useAssetOptInMutation', () => {
                 ).rejects.toBeInstanceOf(NoConnectionError)
             })
 
-            expect(mockAccountInformation).not.toHaveBeenCalled()
+            expect(mockAccountState).not.toHaveBeenCalled()
             expect(mockBuild).not.toHaveBeenCalled()
         })
     })

@@ -18,14 +18,15 @@ import {
     useSubmitAndConfirmMutation,
 } from '@perawallet/wallet-core-card'
 import {
-    getOnChainAccountInformationQueryKey,
+    addressOn,
+    getOnChainAccountStateQueryKey,
     invalidateAccountQueriesForAddresses,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import {
     assertOnline,
@@ -70,16 +71,13 @@ const SOURCE = {
  * the app shows is read straight off that account.
  */
 export const useCardManualDeposit = (): UseCardManualDepositResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const algokit = useAlgorandClient()
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getKnownAssetId('USDC', scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const [isDepositing, setIsDepositing] = useState(false)
 
@@ -88,7 +86,12 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
             account,
             amount,
         }: CardManualDepositParams): Promise<{ txIds: string[] }> => {
-            if (escrowCardAddress === null || usdcAssetId === null) {
+            const sender = addressOn(account, scope)
+            if (
+                escrowCardAddress === null ||
+                usdcAssetId === null ||
+                sender === undefined
+            ) {
                 throw new CardEscrowUnavailableError()
             }
             setIsDepositing(true)
@@ -99,7 +102,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                     assets.get(usdcAssetId)?.decimals ?? USDC_FALLBACK_DECIMALS
                 const composer = algokit.newGroup()
                 composer.addAssetTransfer({
-                    sender: account.address,
+                    sender,
                     receiver: escrowCardAddress,
                     assetId: BigInt(usdcAssetId),
                     amount: BigInt(
@@ -116,14 +119,12 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                 const result = await submit({ unsignedTxs, source: SOURCE })
 
                 await queryClient.invalidateQueries({
-                    queryKey: getOnChainAccountInformationQueryKey(
+                    queryKey: getOnChainAccountStateQueryKey(
                         escrowCardAddress,
-                        scopeForLegacyNetwork(network),
+                        scope,
                     ),
                 })
-                invalidateAccountQueriesForAddresses(queryClient, [
-                    account.address,
-                ])
+                invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return result
             } catch (error) {
@@ -137,8 +138,8 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
             assets,
             assignFeeToGroup,
             escrowCardAddress,
-            network,
             queryClient,
+            scope,
             submit,
             usdcAssetId,
         ],

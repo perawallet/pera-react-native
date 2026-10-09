@@ -21,14 +21,14 @@ const ADDRESS = 'ADDR'
 
 const withKey = (custody: unknown): WalletAccount =>
     ({
-        address: ADDRESS,
+        id: ADDRESS,
         custody,
         chains: { algorand: { address: ADDRESS, keyPairId: 'key-1' } },
     }) as unknown as WalletAccount
 
 const withoutKey = (custody: unknown): WalletAccount =>
     ({
-        address: ADDRESS,
+        id: ADDRESS,
         custody,
         chains: { algorand: { address: ADDRESS } },
     }) as unknown as WalletAccount

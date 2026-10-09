@@ -23,6 +23,8 @@ import type {
     PlannerChainAdapter,
     ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
+import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
+import { canSignArc60 } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { decodeArbitraryDataForDisplay } from './arbitraryDataDisplay'
 import { computeBalanceImpact } from './balanceImpact'
@@ -143,6 +145,10 @@ export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
 
 export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    canSign: (account, kind) =>
+        kind === 'authData'
+            ? canSignArc60(account)
+            : canSignArbitraryData(account),
     signArbitraryData,
     signAuthData: signArc60AuthRequest,
     validateAuthData: validateArc60AuthRequest,

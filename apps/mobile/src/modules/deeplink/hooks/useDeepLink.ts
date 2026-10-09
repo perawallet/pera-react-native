@@ -12,17 +12,19 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
+import { baseUnitsToDisplayUnits, logger } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { logger, microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { DeeplinkType, type LinkSource } from '../types'
 import {
-    isHDWalletAccount,
+    findAccountByAddressOn,
+    hdIndexOf,
     useAccountsStore,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
@@ -85,7 +87,16 @@ const isValidDeepLink = (url: string): boolean => {
 
 export const useDeepLink = (): UseDeepLinkResult => {
     const { errorToast, infoToast } = useToast()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
+    // A link naming an address outside the wallet leaves the selection alone.
+    const selectAccountByAddress = (address: string) => {
+        const account = findAccountByAddressOn(
+            useAccountsStore.getState().accounts,
+            LEGACY_CHAIN_ID,
+            address,
+        )
+        if (account) setSelectedAccountId(account.id)
+    }
     const { t } = useLanguage()
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
@@ -249,9 +260,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     openSendFunds({
                         assetId: nativeAsset.assetId,
                         destination: parsedData.receiverAddress,
-                        // Wire is microAlgos; the store holds display units.
+                        // Wire is native base units; the store holds display units.
                         amount: parsedData.amount
-                            ? microAlgosToAlgos(BigInt(parsedData.amount))
+                            ? baseUnitsToDisplayUnits(
+                                  BigInt(parsedData.amount),
+                                  nativeAsset.decimals,
+                              )
                             : undefined,
                         note: parsedData.note ?? parsedData.xnote,
                     })
@@ -315,7 +329,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS: {
-                    setSelectedAccountAddress(parsedData.address)
+                    selectAccountByAddress(parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: {
@@ -384,7 +398,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.SWAP: {
                     if (parsedData.address) {
-                        setSelectedAccountAddress(parsedData.address)
+                        selectAccountByAddress(parsedData.address)
                     }
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Swap',
@@ -398,7 +412,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.BUY: {
                     if (parsedData.address) {
-                        setSelectedAccountAddress(parsedData.address)
+                        selectAccountByAddress(parsedData.address)
                     }
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Fund',
@@ -410,14 +424,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // The same Bidali sheet and gate as the Menu's "Buy Gift Card"
                     // button, inheriting its bidaliProvider JS bridge wiring.
                     if (parsedData.address) {
-                        setSelectedAccountAddress(parsedData.address)
+                        selectAccountByAddress(parsedData.address)
                     }
                     void requestByType('bidali', {}, BIDALI_SHEET_OPTIONS)
                     break
                 }
 
                 case DeeplinkType.ACCOUNT_DETAIL: {
-                    setSelectedAccountAddress(parsedData.address)
+                    selectAccountByAddress(parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: { screen: 'AccountDetails' },
@@ -454,7 +468,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         // assert nothing to sign with. Explain rather than dead-end in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
-                            .accounts.some(isHDWalletAccount)
+                            .accounts.some(
+                                account => hdIndexOf(account) !== undefined,
+                            )
                         if (!hasHDWallet) {
                             void requestByType('passkey-hd-wallet-required', {})
                             // Close the QR scanner (when present) so the sheet,

@@ -16,8 +16,8 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../models'
-import { isSameAddress } from '../utils'
-import { addressOn, hasCustody, hdIndexOf, seedOf } from './accessors'
+import { findAccountByAddressOn } from '../utils'
+import { hasCustody, hdIndexOf, seedOf } from './accessors'
 import type { KeystoreSnapshot } from './credentialScheme'
 
 /**
@@ -76,7 +76,4 @@ export const findAddressHolder = (
     scope: ChainScope,
     address: string,
 ): WalletAccount | undefined =>
-    accounts.find(account => {
-        const held = addressOn(account, scope)
-        return held !== undefined && isSameAddress(scope.chainId, held, address)
-    })
+    findAccountByAddressOn(accounts, scope.chainId, address)

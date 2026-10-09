@@ -12,11 +12,7 @@
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
-import {
-    getSignerFor,
-    isQuantumAccount,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+import { getSignerFor, useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     QuantumDappWarningSheet,
@@ -24,6 +20,7 @@ import {
 } from '@components/QuantumDappWarningSheet'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { UserPreferences } from '@constants/user-preferences'
+import { holdsQuantumKey } from '@utils/quantumKey'
 import { useIsQuantumDappWarningEnabled } from './useIsQuantumDappWarningEnabled'
 
 export type UseQuantumDappWarningResult = {
@@ -51,7 +48,7 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             // effective signer, so a rekey to a quantum auth counts too.
             const hasQuantumAccount = addresses.some(address => {
                 const signer = getSignerFor(address, accounts, LEGACY_CHAIN_ID)
-                return signer !== null && isQuantumAccount(signer)
+                return signer !== null && holdsQuantumKey(signer)
             })
             if (!hasQuantumAccount) return 'continue'
 

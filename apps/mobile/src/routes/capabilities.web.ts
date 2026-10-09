@@ -53,7 +53,7 @@ export const routeCapabilities: RouteCapabilities = {
     // Off: the vault password already locks the extension, and web has no PIN
     // lock screen, so shake to lock and duress PIN would do nothing.
     pin: false,
-    quantum: true, // WASM falcon-1024 via its synchronous CJS build (metro.config.js)
+    quantum: true, // WASM quantum signer via its synchronous CJS build (metro.config.js)
     rekeyFlows: true,
     // Also gates the SHARED_ACCOUNT_IMPORT deeplink: without the Multisig stack
     // registered it navigates nowhere and leaves the QR scanner locked awaiting a callback.

@@ -150,7 +150,9 @@ describe('WealthTrend', () => {
     })
 
     it('uses single account when account prop is provided', () => {
-        const mockAccount = { address: 'test-address' }
+        const mockAccount = {
+            chains: { algorand: { address: 'test-address' } },
+        }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
                 {

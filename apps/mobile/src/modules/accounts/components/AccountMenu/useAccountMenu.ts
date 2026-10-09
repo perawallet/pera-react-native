@@ -19,18 +19,20 @@ import {
     type MutableRefObject,
 } from 'react'
 import {
+    findAccountByAddressOn,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
     useAccountValueTotalsQuery,
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { PWFlatList } from '@components/core'
 import type { AccountMenuProps } from './AccountMenu'
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AccountMenuListItem =
     | { kind: 'account'; account: WalletAccount }
@@ -38,7 +40,7 @@ export type AccountMenuListItem =
 
 type UseAccountMenuResult = {
     listItems: AccountMenuListItem[]
-    selectedAccountAddress: Nullable<string>
+    selectedAccountId: Nullable<string>
     sortMode: string
     flatListRef: MutableRefObject<ComponentRef<typeof PWFlatList> | null>
     handleTap: (acct: WalletAccount) => void
@@ -47,17 +49,21 @@ type UseAccountMenuResult = {
 export const useAccountMenu = (
     props: AccountMenuProps,
 ): UseAccountMenuResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
-    const { selectedAccountAddress, setSelectedAccountAddress } =
-        useSelectedAccountAddress()
-    const { accountValueTotals } = useAccountValueTotalsQuery(accounts, true)
+    const { selectedAccountId, setSelectedAccountId } = useSelectedAccountId()
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        accounts,
+        scope,
+        true,
+    )
 
-    // Controlled mode: when `selectedAddress` is passed (even `null`), the caller
-    // owns the highlight and tapping won't mutate the global account.
-    const isControlled = props.selectedAddress !== undefined
-    const effectiveSelectedAddress: Nullable<string> = isControlled
-        ? (props.selectedAddress ?? null)
-        : selectedAccountAddress
+    // Controlled mode: when `selectedAccountId` is passed (even `null`), the
+    // caller owns the highlight and tapping won't mutate the global account.
+    const isControlled = props.selectedAccountId !== undefined
+    const effectiveSelectedId: Nullable<string> = isControlled
+        ? (props.selectedAccountId ?? null)
+        : selectedAccountId
 
     const filteredAccounts = useMemo(
         () =>
@@ -70,6 +76,7 @@ export const useAccountMenu = (
     const { sortedAccounts, sortMode, manualAccountOrder } = useSortedAccounts(
         filteredAccounts,
         accountValueTotals,
+        scope.chainId,
     )
 
     const flatListRef = useRef<ComponentRef<typeof PWFlatList>>(null)
@@ -111,13 +118,17 @@ export const useAccountMenu = (
         if (!props.showPeraCardActivation || !isPeraCardEnabled)
             return accountItems
 
-        const connectedIndex =
+        const connectedAccount =
             isAuthenticated && connectedFundingSourceAddress
-                ? sortedAccounts.findIndex(
-                      account =>
-                          account.address === connectedFundingSourceAddress,
+                ? findAccountByAddressOn(
+                      sortedAccounts,
+                      scope.chainId,
+                      connectedFundingSourceAddress,
                   )
-                : -1
+                : undefined
+        const connectedIndex = connectedAccount
+            ? sortedAccounts.indexOf(connectedAccount)
+            : -1
         // Only nest (and draw the connector) when the connected account is in
         // the list; otherwise place the row right after the first account. The
         // render variant is derived from the same `nested` flag so the drawn
@@ -138,19 +149,20 @@ export const useAccountMenu = (
         isPeraCardEnabled,
         isAuthenticated,
         connectedFundingSourceAddress,
+        scope.chainId,
     ])
 
     const handleTap = useCallback(
         (acct: WalletAccount) => {
-            if (!isControlled) setSelectedAccountAddress(acct.address)
+            if (!isControlled) setSelectedAccountId(acct.id)
             props?.onSelected?.(acct)
         },
-        [props, isControlled, setSelectedAccountAddress],
+        [props, isControlled, setSelectedAccountId],
     )
 
     return {
         listItems,
-        selectedAccountAddress: effectiveSelectedAddress,
+        selectedAccountId: effectiveSelectedId,
         sortMode,
         flatListRef,
         handleTap,

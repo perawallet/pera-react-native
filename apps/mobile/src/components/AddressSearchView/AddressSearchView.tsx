@@ -12,8 +12,14 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import type { AccountType } from '@perawallet/wallet-core-accounts'
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainFamily,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -33,7 +39,8 @@ export type AddressSearchViewProps = {
     /** See {@link UseAddressSearchViewProps.chainFamily}. */
     chainFamily: ChainFamily
     excludeAddress?: string
-    excludeTypes?: AccountType[]
+    /** Only accounts passing this predicate are offered. */
+    accountFilter?: (account: WalletAccount) => boolean
     showAllContactsWhenEmpty?: boolean
     inBottomSheet?: boolean
     showAccountBalance?: boolean
@@ -46,7 +53,7 @@ export const AddressSearchView = ({
     onSelected,
     chainFamily,
     excludeAddress,
-    excludeTypes,
+    accountFilter,
     showAllContactsWhenEmpty,
     inBottomSheet,
     showAccountBalance = false,
@@ -59,7 +66,7 @@ export const AddressSearchView = ({
         useAddressSearchView({
             chainFamily,
             excludeAddress,
-            excludeTypes,
+            accountFilter,
             showAllContactsWhenEmpty,
             showClipboardPaste,
         })
@@ -94,10 +101,13 @@ export const AddressSearchView = ({
                     )
                 }
                 case 'account': {
+                    const address =
+                        chainAccountOf(item.account, LEGACY_CHAIN_ID)
+                            ?.address ?? ''
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onSelected(item.account.address)}
-                            testID={`account_result_row_${item.account.address}`}
+                            onPress={() => onSelected(address)}
+                            testID={`account_result_row_${address}`}
                         >
                             <AccountResultRow
                                 account={item.account}

@@ -18,11 +18,14 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
-const mockAccount = {
-    address: 'test-address',
+const mockAccount: WalletAccount = {
+    id: 'test-account',
     name: 'Test Account',
-} as WalletAccount
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const mockT = (key: string) => key
 
@@ -162,6 +165,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useAccountAssetList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         useRemoteConfigStore.getState().resetState()
         mockAssetsQuery.holdings = [makeHolding('123')]
         mockAssetsQuery.isPending = false
@@ -363,7 +367,10 @@ describe('useAccountAssetList', () => {
 
             mockAssetsQuery.holdings = [makeHolding('789')]
             rerender({
-                account: { ...mockAccount, address: 'other-address' },
+                account: {
+                    ...mockAccount,
+                    chains: { algorand: { address: 'other-address' } },
+                },
             })
             await flushFrame()
 

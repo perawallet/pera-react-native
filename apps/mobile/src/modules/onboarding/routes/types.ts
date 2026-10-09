@@ -11,11 +11,11 @@
  */
 
 import type {
+    LocalAccount,
     WalletAccount,
-    HDWalletAccount,
-    ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
+import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     SerializedLedgerAccount,
@@ -61,12 +61,12 @@ export type SearchAccountsParams =
 export type ImportSelectAddressesParams =
     | {
           mode?: 'existing'
-          accounts: HDWalletAccount[]
+          accounts: LocalAccount[]
       }
     | {
           mode: 'import'
           walletKeyId: string
-          accounts: HDWalletAccount[]
+          accounts: LocalAccount[]
       }
 
 /**
@@ -88,10 +88,10 @@ export type ImportFlowParamList = {
         accounts: WalletAccount[]
     }
     ImportInfo: {
-        accountType: ImportAccountType
+        accountType: SeedScheme
     }
     ImportAccount: {
-        accountType: ImportAccountType
+        accountType: SeedScheme
     }
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined

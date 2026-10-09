@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { describeError, logger } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -29,6 +30,7 @@ import {
     useAutoDrawSwitch,
     useCardErrorToast,
 } from '../../hooks'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
 export type UseSelectFundingTypeSheetResult = {
     selectedType: FundingType
@@ -67,8 +69,7 @@ export const useSelectFundingTypeSheet =
         const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
+            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
             [accounts, connectedAddress],
         )
 

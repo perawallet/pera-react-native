@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     CurrencyAmount,
     type CurrencyAmountProps,
@@ -70,6 +71,7 @@ const ConvertedPreferredAmount = ({
     density = 'detailed',
     ...displayProps
 }: ConvertProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { displayCurrency, convertedValue, isPending } = usePreferredAmount(
         sourceAmount,
         sourceAssetId,
@@ -82,7 +84,7 @@ const ConvertedPreferredAmount = ({
             currency={displayCurrency}
             // The preferred/fallback currency is a settings value, so its ALGO
             // ticker is trusted — translate it into the id-keyed identity.
-            assetId={displayCurrencyToAssetId(displayCurrency, LEGACY_CHAIN_ID)}
+            assetId={displayCurrencyToAssetId(displayCurrency, scope.chainId)}
             value={convertedValue}
             {...displayProps}
             isLoading={isPending || displayProps.isLoading}
@@ -96,15 +98,13 @@ const PrecomputedPreferredAmount = ({
     density = 'detailed',
     ...displayProps
 }: PrecomputedProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { preferredCurrency } = useCurrency()
 
     return (
         <CurrencyAmount
             currency={preferredCurrency}
-            assetId={displayCurrencyToAssetId(
-                preferredCurrency,
-                LEGACY_CHAIN_ID,
-            )}
+            assetId={displayCurrencyToAssetId(preferredCurrency, scope.chainId)}
             value={value}
             {...displayProps}
             precision={precisionFor(density)}

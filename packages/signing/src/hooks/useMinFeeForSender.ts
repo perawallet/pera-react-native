@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
-    legacyPlannerAdapter,
+    plannerChainAdapters,
     type MinFeeForSenderResult,
 } from '../chain-adapter'
 
@@ -23,7 +24,9 @@ import {
  */
 export const useMinFeeForSender = (
     senderAddress: string | undefined,
+    chainId: ChainId,
 ): MinFeeForSenderResult => {
-    const useChainMinFeeForSender = legacyPlannerAdapter().useMinFeeForSender
+    const useChainMinFeeForSender =
+        plannerChainAdapters.get(chainId).useMinFeeForSender
     return useChainMinFeeForSender(senderAddress)
 }

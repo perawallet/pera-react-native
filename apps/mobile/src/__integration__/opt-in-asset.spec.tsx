@@ -65,6 +65,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -87,7 +88,7 @@ const OptInHost = ({
             contents: (
                 <OptInConfirmationContent
                     assetId={assetId}
-                    accountAddress={sender.address}
+                    accountAddress={addressOf(sender)}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
@@ -98,7 +99,7 @@ const OptInHost = ({
             // `AlreadyOptedInError` and we don't want it surfacing
             // as an unhandled rejection.
             optIn({
-                sender: sender.address,
+                sender: addressOf(sender),
                 assetId: BigInt(assetId),
             }).catch(() => {})
         })
@@ -135,14 +136,14 @@ const OptOutHost = ({
             contents: (
                 <OptOutConfirmationContent
                     assetId={accountBalance.assetId}
-                    accountAddress={sender.address}
+                    accountAddress={addressOf(sender)}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         }).then(result => {
             if (result !== 'confirm') return
             optOut({
-                sender: sender.address,
+                sender: addressOf(sender),
                 assetId: BigInt(accountBalance.assetId),
                 creator,
             })
@@ -189,12 +190,16 @@ describe('Flow: Opt into an asset', () => {
         sender = {
             id: 'sender-1',
             custody: { kind: 'local', seed: 'algo25' },
-            address: ALGO25_TEST_ADDRESS,
-            keyPairId: key!.seedKey.id ?? '',
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: key!.seedKey.id ?? '',
+                },
+            },
             name: 'Sender',
         }
         useAccountsStore.getState().setAccounts([sender])
-        useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+        useAccountsStore.getState().setSelectedAccountId(sender.id)
 
         server.use(
             mockAlgodAccountInformation({
@@ -385,23 +390,27 @@ describe('Flow: Opt out of an asset', () => {
         sender = {
             id: 'sender-1',
             custody: { kind: 'local', seed: 'algo25' },
-            address: ALGO25_TEST_ADDRESS,
-            keyPairId: key!.seedKey.id ?? '',
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: key!.seedKey.id ?? '',
+                },
+            },
             name: 'Sender',
         }
         useAccountsStore.getState().setAccounts([sender])
-        useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+        useAccountsStore.getState().setSelectedAccountId(sender.id)
 
         // Pre-seed the opted-in holding (zero balance — the happy-path
         // precondition for opt-out).
         await insertAssetHolding({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '0',
         })
         await upsertAccountBalance({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
@@ -445,7 +454,7 @@ describe('Flow: Opt out of an asset', () => {
         // Pre-flight: confirm the seeded holding exists in the DB
         // (this is what the mutation removes on success).
         const before = await getAccountHoldings({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
         })
         expect(before.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(true)
@@ -486,7 +495,7 @@ describe('Flow: Opt out of an asset', () => {
         expect(onRejected).not.toHaveBeenCalled()
 
         const after = await getAccountHoldings({
-            accountAddress: sender.address,
+            accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
         })
         expect(after.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(false)

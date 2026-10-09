@@ -35,7 +35,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('returns the planner hook assigner, called with the request untouched', async () => {
-        const { result } = renderHook(() => useMinimumFeeCalculator())
+        const { result } = renderHook(() => useMinimumFeeCalculator('algorand'))
         const params = { transactions, signableIndices: [0] }
 
         const outcome = await result.current.assignFeeToGroup(params)

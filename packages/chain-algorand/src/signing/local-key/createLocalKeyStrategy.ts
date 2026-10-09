@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    accountType,
     hasSigningKeys,
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     AppError,
@@ -37,6 +33,13 @@ import {
     type SigningResult,
     type SigningStrategy,
 } from '@perawallet/wallet-core-signing'
+import {
+    accountType,
+    algorandAddressOf,
+    isAlgo25Account,
+    isHDWalletAccount,
+    isQuantumAccount,
+} from '../../accounts/vocabulary'
 import {
     signArbitraryDataCase,
     signAuthDataCase,
@@ -63,9 +66,10 @@ export const createLocalKeyStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            if (!hasSigningKeys(account)) {
+            const address = algorandAddressOf(account)
+            if (!address || !hasSigningKeys(account)) {
                 throw new CannotSignError(
-                    account.address,
+                    address ?? account.id,
                     'Account does not have local signing keys',
                 )
             }
@@ -76,7 +80,7 @@ export const createLocalKeyStrategy = (
                 !isQuantumAccount(account)
             ) {
                 throw new CannotSignError(
-                    account.address,
+                    address,
                     `Unsupported account type: ${accountType(account)}`,
                 )
             }
@@ -110,7 +114,7 @@ export const createLocalKeyStrategy = (
                         // multisig participants, so nothing reads it in that
                         // case anyway.
                         const signerInfo: SignerInfo = {
-                            address: account.address,
+                            address,
                             signatures: signed.map(stx =>
                                 stx.sig ? encodeToBase64(stx.sig) : null,
                             ),

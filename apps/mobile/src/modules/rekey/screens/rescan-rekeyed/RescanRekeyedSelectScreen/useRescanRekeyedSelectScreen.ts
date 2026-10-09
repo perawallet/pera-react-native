@@ -16,7 +16,10 @@ import {
     useRescanRekeyedAccounts,
     useSigningAccounts,
     type RekeyedSweepCandidate,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
@@ -47,6 +50,7 @@ export type UseRescanRekeyedSelectScreenResult = {
 
 export const useRescanRekeyedSelectScreen =
     (): UseRescanRekeyedSelectScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation = useAppNavigation()
         const route =
             useRoute<
@@ -54,8 +58,8 @@ export const useRescanRekeyedSelectScreen =
             >()
         const sourceAddress = route.params?.sourceAddress
 
-        const { scanAll, importFromSweep } = useRescanRekeyedAccounts()
-        const signingAccounts = useSigningAccounts()
+        const { scanAll, importFromSweep } = useRescanRekeyedAccounts(scope)
+        const signingAccounts = useSigningAccounts(scope.chainId)
         const { showError } = useErrorToast()
         const { showToast } = useToast()
         const { t } = useLanguage()
@@ -66,7 +70,10 @@ export const useRescanRekeyedSelectScreen =
         const [sources] = useState<string[]>(() =>
             sourceAddress
                 ? [sourceAddress]
-                : signingAccounts.map(account => account.address),
+                : signingAccounts.flatMap(
+                      account =>
+                          chainAccountOf(account, scope.chainId)?.address ?? [],
+                  ),
         )
 
         const [isLoading, setIsLoading] = useState(true)

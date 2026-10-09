@@ -21,16 +21,19 @@ import {
     rekeyTransitionFor,
     resolveSignerFor,
     useAccountChainStateStore,
-    AccountTypes,
-    type Algo25Account,
-    type HDWalletAccount,
-    type HardwareWalletAccount,
-    type MultiSigAccount,
-    type WatchAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    algo25Account,
+    hardwareAccount,
+    hdAccount,
+    multisigAccount,
+    watchAccount,
+    type AlgorandAccountOptions,
+} from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { algorandAddressOf } from '../vocabulary'
 import { seedAuthority } from './seedAuthority'
 
 beforeAll(() => {
@@ -46,76 +49,28 @@ const rekeyedTo = <T extends WalletAccount>(
     account: T,
     authority: string,
 ): T => {
-    seedAuthority(account.address as string, authority)
+    seedAuthority(algorandAddressOf(account) as string, authority)
     return account
 }
 
-const algo25 = (
-    address: string,
-    extra: Partial<Algo25Account> = {},
-): Algo25Account => ({
-    custody: { kind: 'local', seed: 'algo25' },
-    address,
-    keyPairId: 'kp',
-    ...extra,
-})
+const algo25 = (address: string, options: AlgorandAccountOptions = {}) =>
+    algo25Account(address, { keyPairId: 'kp', ...options })
 
-const hdWallet = (
-    address: string,
-    extra: Partial<HDWalletAccount> = {},
-): HDWalletAccount => ({
-    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    address,
-    keyPairId: 'kp',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 32,
-    },
-    ...extra,
-})
+const hdWallet = (address: string) => hdAccount(address, { keyPairId: 'kp' })
 
-const hardware = (
-    address: string,
-    extra: Partial<HardwareWalletAccount> = {},
-): HardwareWalletAccount => ({
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'd',
-            deviceName: 'Ledger',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'd',
-        deviceName: 'Ledger',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-    ...extra,
-})
+const hardware = (address: string) => hardwareAccount(address)
 
-const multisig = (
-    address: string,
-    participants: string[],
-    extra: Partial<MultiSigAccount> = {},
-): MultiSigAccount => ({
-    custody: { kind: 'multisig' },
-    address,
-    multisigDetails: { threshold: 2, addresses: participants, version: 1 },
-    ...extra,
-})
+const multisig = (address: string, participants: string[]) =>
+    multisigAccount(address, {
+        threshold: 2,
+        addresses: participants,
+        version: 1,
+    })
 
-const watch = (address: string, authority?: string): WatchAccount => {
-    const account: WatchAccount = { custody: { kind: 'watch' }, address }
-    return authority ? rekeyedTo(account, authority) : account
-}
+const watch = (address: string, authority?: string) =>
+    authority
+        ? rekeyedTo(watchAccount(address), authority)
+        : watchAccount(address)
 
 describe('getRekeyAccount', () => {
     it('returns null when the address is not in the wallet', () => {
@@ -328,24 +283,24 @@ describe('rekeyTransitionFor', () => {
         expect(rekeyTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
-    it('returns from/to raw account types for a signable algo25 → hardware rekey', () => {
+    it('returns the rekeyed account and its signer for a signable algo25 → hardware rekey', () => {
         const auth = hardware('S')
         const a: WalletAccount = rekeyedTo(algo25('A'), 'S')
         expect(rekeyTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toEqual({
-            from: AccountTypes.algo25,
-            to: AccountTypes.hardware,
+            from: a,
+            to: auth,
         })
     })
 
     it('returns from/to for a multisig rekeyed to a multisig', () => {
         const participant = algo25('P1')
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P1', 'P3']), 'M')
+        const a: WalletAccount = rekeyedTo(multisig('A', ['P1', 'P3']), 'M')
         expect(
             rekeyTransitionFor(a, [a, authMs, participant], ALGORAND_CHAIN_ID),
         ).toEqual({
-            from: AccountTypes.multisig,
-            to: AccountTypes.multisig,
+            from: a,
+            to: authMs,
         })
     })
 
@@ -355,8 +310,8 @@ describe('rekeyTransitionFor', () => {
         const c = algo25('C')
         const b: WalletAccount = rekeyedTo(algo25('B'), 'C')
         expect(rekeyTransitionFor(b, [b, c], ALGORAND_CHAIN_ID)).toEqual({
-            from: AccountTypes.algo25,
-            to: AccountTypes.algo25,
+            from: b,
+            to: c,
         })
     })
 })
@@ -500,7 +455,7 @@ describe('isMultisigUnsignable', () => {
 
     it('returns true for a multisig rekeyed to an unsignable multisig', () => {
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
+        const a: WalletAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
         expect(isMultisigUnsignable(a, [a, authMs], ALGORAND_CHAIN_ID)).toBe(
             true,
         )
@@ -509,7 +464,7 @@ describe('isMultisigUnsignable', () => {
     it('returns false for a multisig rekeyed to a signable multisig', () => {
         const participant = algo25('P1')
         const authMs = multisig('M', ['P1', 'P2'])
-        const a: MultiSigAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
+        const a: WalletAccount = rekeyedTo(multisig('A', ['P3', 'P4']), 'M')
         expect(
             isMultisigUnsignable(
                 a,

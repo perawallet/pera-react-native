@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useChainCapabilityCheck: () => mocks.checkChain,
     useSelectedChainMode: () => mocks.chainMode,
 }))

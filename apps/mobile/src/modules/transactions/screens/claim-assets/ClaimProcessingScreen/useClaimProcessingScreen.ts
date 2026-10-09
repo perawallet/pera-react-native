@@ -30,6 +30,8 @@ import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useArc59Invalidator } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
@@ -43,7 +45,8 @@ export const useClaimProcessingScreen = () => {
         useRoute<RouteProp<MessagesStackParamList, 'ClaimProcessing'>>()
     const { mode, assetIndex, shouldClaimAlgo } = route.params
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
-    const account = useFindAccountByAddress(accountAddress ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
 
     const { remove: removeArc59Queries } = useArc59Invalidator()

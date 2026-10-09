@@ -112,7 +112,8 @@ const renderRestore = (
     renderHook(
         () =>
             useRestoreCloudBackupMutation(
-                options as Parameters<typeof useRestoreCloudBackupMutation>[0],
+                { chainId: 'algorand', networkId: 'mainnet' },
+                options as Parameters<typeof useRestoreCloudBackupMutation>[1],
             ),
         { wrapper: createWrapper() },
     )

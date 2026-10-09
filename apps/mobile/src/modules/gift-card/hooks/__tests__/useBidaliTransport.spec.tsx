@@ -52,6 +52,14 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
+    getSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
     useSelectedChainMode: () => mockChainMode,
     useNetwork: () => ({ network: mockNetwork }),
 }))
@@ -116,10 +124,11 @@ const VALID_ADDRESS =
 
 const mockAccount: WalletAccount = {
     id: 'bidali-transport-account',
-    address: VALID_ADDRESS,
+    chains: {
+        algorand: { address: VALID_ADDRESS, keyPairId: 'test-key-pair-id' },
+    },
     name: 'Test',
     custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: 'test-key-pair-id',
 }
 
 const emptyBalances: AccountBalances = new Map()

@@ -15,10 +15,8 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    isQuantumAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { isQuantumAccount } from '../accounts/vocabulary'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
 import {

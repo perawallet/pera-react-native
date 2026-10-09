@@ -14,12 +14,11 @@ import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { usePrefetchProviders } from '../usePrefetchProviders'
 import { fetchProviders } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchProviders: vi.fn(),
@@ -40,7 +39,9 @@ describe('usePrefetchProviders', () => {
                 children,
             )
 
-        const { result } = renderHook(() => usePrefetchProviders(), { wrapper })
+        const { result } = renderHook(() => usePrefetchProviders(SCOPE), {
+            wrapper,
+        })
 
         act(() => {
             result.current()

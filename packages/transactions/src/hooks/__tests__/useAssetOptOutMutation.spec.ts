@@ -11,6 +11,7 @@
  */
 
 import { createElement, type ReactNode } from 'react'
+import { Decimal } from 'decimal.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -25,7 +26,7 @@ const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
-const mockAccountInformation = vi.fn()
+const mockAccountState = vi.fn()
 const mockBuild = vi.fn()
 const mockFetchOnChainAsset = vi.fn()
 const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
@@ -48,24 +49,28 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    fetchAccountInformation: (...args: unknown[]) =>
-        mockAccountInformation(...args),
+    fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     deleteAssetHoldings: (...args: unknown[]) =>
         mockDeleteAssetHoldings(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
         mockInvalidate(...args),
 }))
 
+/** `amount` in base units. */
+const holding = (assetId: bigint, amount: bigint) => ({
+    assetId: String(assetId),
+    amount: new Decimal(amount.toString()),
+    isFrozen: false,
+})
+
 const baseAccount = {
-    amount: 1000000n,
-    minBalance: 100000n,
-    assets: [{ assetId: 12345n, amount: 0n }],
+    holdings: [holding(12345n, 0n)],
 }
 
 describe('useAssetOptOutMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAccountInformation.mockResolvedValue(baseAccount)
+        mockAccountState.mockResolvedValue(baseAccount)
         mockBuild.mockResolvedValue([{ sender: 'SENDER' }])
         sendFlowChainAdapters.reset()
         sendFlowChainAdapters.register({
@@ -160,12 +165,8 @@ describe('useAssetOptOutMutation', () => {
             { sender: 'SENDER' },
         ])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1', 'tx2'] })
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [
-                { assetId: 12345n, amount: 0n },
-                { assetId: 67890n, amount: 0n },
-            ],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 0n), holding(67890n, 0n)],
         })
 
         const { result } = renderHook(() => useAssetOptOutMutation(), {
@@ -236,9 +237,8 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('throws NonZeroBalanceError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [{ assetId: 12345n, amount: 5n }],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 5n)],
         })
 
         const { result } = renderHook(() => useAssetOptOutMutation(), {
@@ -277,9 +277,8 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('skips submit but still reconciles local state when the asset is already gone on-chain', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [],
         })
 
         const { result } = renderHook(() => useAssetOptOutMutation(), {
@@ -306,9 +305,8 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('only submits assets still held when some are already gone on-chain', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [{ assetId: 12345n, amount: 0n }],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 0n)],
         })
         mockBuild.mockResolvedValueOnce([{ sender: 'SENDER' }])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
@@ -369,7 +367,7 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual([])
         })
 
-        expect(mockAccountInformation).not.toHaveBeenCalled()
+        expect(mockAccountState).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
         expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
         expect(mockInvalidate).not.toHaveBeenCalled()

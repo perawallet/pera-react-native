@@ -13,9 +13,10 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import type {
-    AccountBalances,
-    WalletAccount,
+import {
+    chainAccountOf,
+    type AccountBalances,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     isValidAlgorandAddress,
@@ -29,12 +30,13 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     type ChainMode,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    useSelectedChainMode,
     useNetwork,
+    useSelectedChainMode,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningRequest,
@@ -45,7 +47,6 @@ import {
     logger,
     type Optional,
     type Nullable,
-    type Network,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -63,7 +64,7 @@ type CurrencyInfo = {
 
 const getCurrencyInfo = (
     protocol: string,
-    network: Network,
+    scope: ChainScope,
     nativeAsset: PeraAsset,
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
@@ -75,10 +76,7 @@ const getCurrencyInfo = (
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
-            const assetId = getKnownAssetId(
-                'USDC',
-                scopeForLegacyNetwork(network),
-            )
+            const assetId = getKnownAssetId('USDC', scope)
             if (assetId === null) return null
 
             return {
@@ -99,21 +97,21 @@ const getCurrencyInfo = (
 export const computeBidaliBalances = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
-    network: Network,
+    scope: ChainScope,
     chainMode: ChainMode,
 ): Record<string, string> => {
-    const balance = balances.get(account?.address ?? '')
+    const balance = balances.get(
+        (account && chainAccountOf(account, scope.chainId)?.address) ?? '',
+    )
 
     const algoBalance = balance?.assetBalances.find(a =>
-        isNativeAssetId(scopeForLegacyNetwork(network).chainId, a.assetId),
+        isNativeAssetId(scope.chainId, a.assetId),
     )?.amount
     // A null id (no known USDC on this network) simply never matches an
     // asset id here — the existing "user holds no USDC" path. No branch
     // needed.
     const usdcBalance = balance?.assetBalances.find(
-        a =>
-            a.assetId ===
-            getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
+        a => a.assetId === getKnownAssetId('USDC', scope),
     )?.amount
 
     // Bidali only has live and test catalogues; every developer mode uses the test one.
@@ -195,8 +193,9 @@ export const useBidaliTransport = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
-    const chainMode = useSelectedChainMode(LEGACY_CHAIN_ID)
+    const chainMode = useSelectedChainMode(scope.chainId)
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const algokit = useAlgorandClient()
@@ -207,7 +206,7 @@ export const useBidaliTransport = (
         const balanceMap = computeBidaliBalances(
             account,
             balances,
-            network,
+            scope,
             chainMode,
         )
 
@@ -215,13 +214,16 @@ export const useBidaliTransport = (
             getNetworkConfig(network).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, chainMode, account, balances])
+    }, [network, chainMode, account, balances, scope])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
             const { address, amount, protocol, extraId } = params
 
-            if (!account) {
+            const sender = account
+                ? chainAccountOf(account, scope.chainId)?.address
+                : undefined
+            if (!sender) {
                 logger.warn('Bidali: no selected account')
                 return
             }
@@ -255,7 +257,7 @@ export const useBidaliTransport = (
                 return
             }
 
-            const currencyInfo = getCurrencyInfo(protocol, network, nativeAsset)
+            const currencyInfo = getCurrencyInfo(protocol, scope, nativeAsset)
             if (!currencyInfo) {
                 logger.warn('Bidali: unsupported protocol', { protocol })
                 return
@@ -266,7 +268,6 @@ export const useBidaliTransport = (
                     ? extraId
                     : undefined
 
-            const sender = account.address
             const baseAmount = BigInt(
                 displayUnitsToBaseUnits(amount, currencyInfo.decimals).toFixed(
                     0,
@@ -323,7 +324,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, nativeAsset, algokit, addSignRequest, t],
+        [account, network, nativeAsset, algokit, addSignRequest, t, scope],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {

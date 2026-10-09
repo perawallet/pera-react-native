@@ -15,7 +15,7 @@ import { renderHook, act } from '@test-utils/render'
 import { useAccountSortContent } from '../useAccountSortContent'
 
 const h = vi.hoisted(() => ({
-    accounts: [{ address: 'addr1' }, { address: 'addr2' }],
+    accounts: [{ id: 'id1' }, { id: 'id2' }],
     sortMode: 'alphabeticalAsc',
     setSortMode: vi.fn(),
     setManualAccountOrder: vi.fn(),
@@ -51,9 +51,9 @@ describe('useAccountSortContent', () => {
         const { result } = renderHook(() => useAccountSortContent())
 
         expect(result.current.sortMode).toBe('alphabeticalAsc')
-        expect(result.current.sortedAccounts.map(a => a.address)).toEqual([
-            'addr1',
-            'addr2',
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
+            'id1',
+            'id2',
         ])
     })
 
@@ -61,26 +61,26 @@ describe('useAccountSortContent', () => {
         const { result } = renderHook(() => useAccountSortContent())
 
         act(() => result.current.handleSortModeChange('manual'))
-        act(() => result.current.handleReorder(['addr2', 'addr1']))
+        act(() => result.current.handleReorder(['id2', 'id1']))
 
         expect(result.current.sortMode).toBe('manual')
-        expect(result.current.sortedAccounts.map(a => a.address)).toEqual([
-            'addr2',
-            'addr1',
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
+            'id2',
+            'id1',
         ])
         expect(h.setSortMode).not.toHaveBeenCalled()
         expect(h.setManualAccountOrder).not.toHaveBeenCalled()
     })
 
-    it('commits the mode and reordered addresses on commit when manual', () => {
+    it('commits the mode and reordered ids on commit when manual', () => {
         const { result } = renderHook(() => useAccountSortContent())
 
         act(() => result.current.handleSortModeChange('manual'))
-        act(() => result.current.handleReorder(['addr2', 'addr1']))
+        act(() => result.current.handleReorder(['id2', 'id1']))
         act(() => result.current.commitChanges())
 
         expect(h.setSortMode).toHaveBeenCalledWith('manual')
-        expect(h.setManualAccountOrder).toHaveBeenCalledWith(['addr2', 'addr1'])
+        expect(h.setManualAccountOrder).toHaveBeenCalledWith(['id2', 'id1'])
     })
 
     it('commits only the mode (not the order) when not manual', () => {

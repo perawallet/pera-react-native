@@ -11,17 +11,20 @@
  */
 
 import { useMemo } from 'react'
-import { useAccountInformationQuery } from '@perawallet/wallet-core-accounts'
-import { algosToMicroAlgosBigInt } from '@perawallet/wallet-core-shared'
+import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { getAccountBalance } from '@perawallet/wallet-core-accounts'
 
 import type { Decimal } from 'decimal.js'
+import { transactionQueryKeys } from './querykeys'
 
 export type UseRekeyFeePreflightResult = {
     /**
      * True when the source's spendable balance (balance − min-balance
-     * reserve, in microalgos) cannot cover the rekey fee. Stays false while
-     * the fee or the balance row is still loading — missing data never
-     * blocks the flow; algod remains the final authority.
+     * reserve) cannot cover the rekey fee. Stays false while the fee or the
+     * balance row is still loading — missing data never blocks the flow;
+     * algod remains the final authority.
      */
     isUnderfunded: boolean
 }
@@ -38,15 +41,24 @@ export const useRekeyFeePreflight = (
     sourceAddress: string,
     feeAlgos: Decimal | undefined,
 ): UseRekeyFeePreflightResult => {
-    const { data: accountInformation } =
-        useAccountInformationQuery(sourceAddress)
+    const { network } = useNetwork()
+    const scope = scopeForLegacyNetwork(network)
+
+    const { data: balance } = useQuery({
+        queryKey: transactionQueryKeys.sourceBalance(sourceAddress, scope),
+        queryFn: async () =>
+            (await getAccountBalance({
+                accountAddress: sourceAddress,
+                scope,
+            })) ?? null,
+        enabled: !!sourceAddress,
+        staleTime: Infinity,
+    })
 
     const isUnderfunded = useMemo(() => {
-        if (!feeAlgos || !accountInformation) return false
-        const spendable =
-            accountInformation.amount - accountInformation.minBalance
-        return spendable < algosToMicroAlgosBigInt(feeAlgos)
-    }, [feeAlgos, accountInformation])
+        if (!feeAlgos || !balance) return false
+        return balance.algoBalance.minus(balance.minBalance).lessThan(feeAlgos)
+    }, [feeAlgos, balance])
 
     return { isUnderfunded }
 }

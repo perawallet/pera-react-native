@@ -25,7 +25,7 @@ const {
     mockCancelImport,
     mockExitAccountFlow,
     mockSetShouldPlayConfetti,
-    mockSetSelectedAccountAddress,
+    mockSetSelectedAccountId,
     mockBuildHdWalletAccount,
     mockAllAccounts,
     mockRouteParams,
@@ -39,25 +39,23 @@ const {
     mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockSetShouldPlayConfetti: vi.fn(),
-    mockSetSelectedAccountAddress: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     mockBuildHdWalletAccount: vi.fn(),
     mockAllAccounts: { current: [] as unknown[] },
     mockRouteParams: {
         current: {
             account: {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
             createIfEmpty: undefined as boolean | undefined,
@@ -105,8 +103,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         commitImport: vi.fn(),
         cancelImport: mockCancelImport,
     }),
-    useSelectedAccountAddress: () => ({
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
     }),
     useCreateAccount: () => ({
         buildHdWalletAccount: mockBuildHdWalletAccount,
@@ -177,18 +175,16 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             account: {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
             createIfEmpty: undefined,
@@ -226,7 +222,7 @@ describe('useSearchAccountsScreen', () => {
     it('selects the imported account, scans for rekeyed accounts, and exits when only one HD account is discovered with no rekeys', async () => {
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -239,9 +235,7 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'MOCK_ADDRESS',
-            )
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
             expect(mockExitAccountFlow).toHaveBeenCalled()
         })
     })
@@ -249,7 +243,7 @@ describe('useSearchAccountsScreen', () => {
     it('navigates to ImportRekeyedAddresses when single HD account has rekeyed accounts', async () => {
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -259,7 +253,7 @@ describe('useSearchAccountsScreen', () => {
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
-                address: 'REKEYED_ADDRESS',
+                chains: { algorand: { address: 'REKEYED_ADDRESS' } },
                 custody: { kind: 'watch' },
             },
         ]
@@ -279,18 +273,16 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             account: {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
             createIfEmpty: true,
@@ -298,25 +290,23 @@ describe('useSearchAccountsScreen', () => {
         mockAllAccounts.current = [
             {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
         ]
 
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -327,7 +317,7 @@ describe('useSearchAccountsScreen', () => {
 
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -362,7 +352,7 @@ describe('useSearchAccountsScreen', () => {
         ).notifyOnEmpty = true
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -395,7 +385,7 @@ describe('useSearchAccountsScreen', () => {
         ).notifyOnEmpty = true
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -405,7 +395,7 @@ describe('useSearchAccountsScreen', () => {
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
-                address: 'REKEYED_ADDRESS',
+                chains: { algorand: { address: 'REKEYED_ADDRESS' } },
                 custody: { kind: 'watch' },
             },
         ]
@@ -427,18 +417,16 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             account: {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
             createIfEmpty: true,
@@ -446,25 +434,23 @@ describe('useSearchAccountsScreen', () => {
         mockAllAccounts.current = [
             {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
         ]
 
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -492,18 +478,11 @@ describe('useSearchAccountsScreen', () => {
         const discovered = [
             {
                 id: '1',
-                address: 'CBLW...',
+                chains: { algorand: { address: 'CBLW...', keyPairId: 'w-1' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 1, keyIndex: 0 },
-                },
-                keyPairId: 'w-1',
-                hdWalletDetails: {
-                    account: 1,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
         ]
@@ -517,7 +496,7 @@ describe('useSearchAccountsScreen', () => {
                 walletKeyId: 'w-1',
                 accounts: discovered,
             })
-            expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
             expect(mockCancelImport).not.toHaveBeenCalled()
         })
     })
@@ -566,9 +545,10 @@ describe('useSearchAccountsScreen', () => {
     it('algo25 account with no rekeyed: navigates to NameAccount to let the user name the import', async () => {
         const algo25Account = {
             id: '1',
-            address: 'PARENT_ADDRESS',
+            chains: {
+                algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
+            },
             custody: { kind: 'local', seed: 'algo25' },
-            keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
             account: algo25Account,
@@ -591,14 +571,15 @@ describe('useSearchAccountsScreen', () => {
     it('algo25 account with rekeyed: selects the parent before navigating to ImportRekeyedAddresses', async () => {
         const algo25Account = {
             id: '1',
-            address: 'PARENT_ADDRESS',
+            chains: {
+                algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
+            },
             custody: { kind: 'local', seed: 'algo25' },
-            keyPairId: 'wallet-1',
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
-                address: 'REKEYED_1',
+                chains: { algorand: { address: 'REKEYED_1' } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
         ]
@@ -611,9 +592,7 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'PARENT_ADDRESS',
-            )
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
             expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
                 accounts: rekeyedAccounts,
             })
@@ -624,9 +603,10 @@ describe('useSearchAccountsScreen', () => {
     it('quantum account with no rekeyed: moves on to NameAccount instead of hanging on the search step', async () => {
         const quantumAccount = {
             id: '1',
-            address: 'PARENT_ADDRESS',
+            chains: {
+                algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
+            },
             custody: { kind: 'local', seed: 'quantum' },
-            keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
             account: quantumAccount,
@@ -648,14 +628,15 @@ describe('useSearchAccountsScreen', () => {
     it('quantum account with rekeyed: selects the parent before navigating to ImportRekeyedAddresses', async () => {
         const quantumAccount = {
             id: '1',
-            address: 'PARENT_ADDRESS',
+            chains: {
+                algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
+            },
             custody: { kind: 'local', seed: 'quantum' },
-            keyPairId: 'wallet-1',
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
-                address: 'REKEYED_1',
+                chains: { algorand: { address: 'REKEYED_1' } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
         ]
@@ -668,9 +649,7 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'PARENT_ADDRESS',
-            )
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
             expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
                 accounts: rekeyedAccounts,
             })
@@ -681,9 +660,10 @@ describe('useSearchAccountsScreen', () => {
     it('algo25 account with a failed rekey scan: continues to NameAccount instead of reporting an import failure', async () => {
         const algo25Account = {
             id: '1',
-            address: 'PARENT_ADDRESS',
+            chains: {
+                algorand: { address: 'PARENT_ADDRESS', keyPairId: 'wallet-1' },
+            },
             custody: { kind: 'local', seed: 'algo25' },
-            keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
             account: algo25Account,
@@ -710,18 +690,16 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             account: {
                 id: '1',
-                address: 'MOCK_ADDRESS',
+                chains: {
+                    algorand: {
+                        address: 'MOCK_ADDRESS',
+                        keyPairId: 'wallet-1',
+                    },
+                },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
                     hd: { account: 0, keyIndex: 0 },
-                },
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
                 },
             },
             createIfEmpty: false,
@@ -729,7 +707,7 @@ describe('useSearchAccountsScreen', () => {
         } as SearchAccountsParams
         const singleAccount = {
             id: '1',
-            address: 'MOCK_ADDRESS',
+            chains: { algorand: { address: 'MOCK_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',

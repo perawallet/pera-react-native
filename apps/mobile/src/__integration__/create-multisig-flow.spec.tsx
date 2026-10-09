@@ -22,10 +22,10 @@ import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
 import { useMultisigCreationStore } from '@modules/multisig'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
-    type MultiSigAccount,
-    accountType,
+    multisigParametersOf,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
@@ -36,6 +36,7 @@ import {
     HD_TEST_ADDRESS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // The store is the flow's source of truth — `NameMultisig` reads participants
 // and threshold from it, never from route params — so it's seeded directly,
@@ -182,17 +183,17 @@ describe('Flow: Create a multisig account from scratch', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
         const saved = useAccountsStore.getState().accounts[0]
-        expect(accountType(saved)).toBe('multisig')
-        expect(saved.address).toBe(expectedAddress)
+        expect(saved.custody).toEqual({ kind: 'multisig' })
+        expect(addressOf(saved)).toBe(expectedAddress)
         expect(saved.name).toBe('Ops treasury')
-        expect((saved as MultiSigAccount).multisigDetails).toEqual({
+        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
             threshold,
             addresses,
             version: VERSION,
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            expectedAddress,
-        )
+        expect(
+            addressOf(useAccountsStore.getState().getSelectedAccount()!),
+        ).toBe(expectedAddress)
 
         // Finishing resets the navigator onto the wallet home stub.
         await waitFor(() => screen.getByTestId('create-flow-home'))

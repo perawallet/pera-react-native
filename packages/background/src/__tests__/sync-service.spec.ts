@@ -27,8 +27,18 @@ const flushMicrotasks = async (turns = 50): Promise<void> => {
 }
 
 const mockAccounts = [
-    { address: 'ADDR1', name: 'Account 1' },
-    { address: 'ADDR2', name: 'Account 2' },
+    {
+        id: '1',
+        name: 'Account 1',
+        custody: { kind: 'watch' as const },
+        chains: { algorand: { address: 'ADDR1' } },
+    },
+    {
+        id: '2',
+        name: 'Account 2',
+        custody: { kind: 'watch' as const },
+        chains: { algorand: { address: 'ADDR2' } },
+    },
 ]
 
 // Mirrors the private constants in sync-service.ts.
@@ -74,6 +84,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountsStore: {
         getState: () => ({ accounts: mockAccounts }),
     },
@@ -359,7 +373,7 @@ describe('SyncService', () => {
 
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
-            mockAccounts.map(a => a.address),
+            mockAccounts.map(a => a.chains.algorand.address),
         )
     })
 
@@ -1064,14 +1078,14 @@ describe('SyncService', () => {
             await service.refreshAccounts(['ADDR1', 'ADDR2'], 'testnet')
 
             expect(fetchAndPersistAccount).toHaveBeenCalledTimes(2)
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
-                'ADDR1',
-                'testnet',
-            )
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
-                'ADDR2',
-                'testnet',
-            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR1', {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR2', {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(fetchAndPersistTransactions).toHaveBeenCalledTimes(2)
             expect(fetchAndPersistTransactions).toHaveBeenCalledWith(
                 'ADDR1',
@@ -1795,10 +1809,10 @@ describe('SyncService', () => {
             ported.stop()
 
             expect(fetchAndPersistAccount).toHaveBeenCalledTimes(1)
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
-                'PORT1',
-                'testnet',
-            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith('PORT1', {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(stores.setLastRefreshedRound).toHaveBeenCalledWith(
                 'testnet',
                 77,

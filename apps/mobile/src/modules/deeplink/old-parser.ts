@@ -11,6 +11,9 @@
  */
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
@@ -36,9 +39,6 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet old-style URIs: perawallet://ADDRESS?params

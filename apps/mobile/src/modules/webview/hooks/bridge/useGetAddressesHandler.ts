@@ -10,77 +10,47 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
 import {
-    accountType,
-    type AccountType,
-    AccountTypes,
     canSignWith,
+    chainAccountOf,
     isRekeyedAccount,
     useAllAccounts,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { sendMessageToWebview } from '../handlers'
 import type { BridgeHandler } from './types'
 
 /**
- * The SDK still accepts the legacy names (`HdKey`, `LedgerBle`, `NoAuth`, …);
- * the webapp is moving to these in lockstep.
- */
-type WebviewAccountType =
-    | 'Algo25'
-    | 'HDWallet'
-    | 'Hardware'
-    | 'Multisig'
-    | 'Quantum'
-    | 'Unsignable'
-    | 'RekeyedSignable'
-    | 'RekeyedUnsignable'
-
-const BASE_WEBVIEW_TYPE: Record<
-    AccountType,
-    Exclude<WebviewAccountType, 'RekeyedSignable' | 'RekeyedUnsignable'>
-> = {
-    [AccountTypes.algo25]: 'Algo25',
-    [AccountTypes.hdWallet]: 'HDWallet',
-    [AccountTypes.hardware]: 'Hardware',
-    [AccountTypes.multisig]: 'Multisig',
-    [AccountTypes.watch]: 'Unsignable',
-    // Quantum gets its own name rather than being aliased to `Algo25`:
-    // "Algo25" would state something untrue about the key type. A dApp told
-    // `Algo25` expects a 64-byte Ed25519 signature it can verify against a
-    // recoverable public key; a quantum account hands back a ~1.2 KB Falcon
-    // signature and yields no Ed25519 public key at all. The webapp is being
-    // updated to these names in lockstep (see the type comment above), so
-    // adding a name is the correct move here.
-    [AccountTypes.quantum]: 'Quantum',
-}
-
-/**
- * Only invoked on already-filtered `signingAccounts`, so `Unsignable` and
- * `RekeyedUnsignable` never emit in practice — mapped anyway so the bridge stays
- * self-contained if that filter loosens.
+ * Only invoked on already-filtered `signingAccounts`, so the unsignable kinds
+ * never emit in practice — mapped anyway so the bridge stays self-contained if
+ * that filter loosens.
  */
 const toWebviewAccountType = (
     account: WalletAccount,
     accounts: WalletAccount[],
-): WebviewAccountType => {
-    if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
-        return canSignWith(account, accounts, LEGACY_CHAIN_ID)
+    chainId: ChainId,
+): string => {
+    if (isRekeyedAccount(account, chainId)) {
+        return canSignWith(account, accounts, chainId)
             ? 'RekeyedSignable'
             : 'RekeyedUnsignable'
     }
-    return BASE_WEBVIEW_TYPE[accountType(account)]
+    return dappRequestChainAdapters.get(chainId).accountTypeOf(account)
 }
 
 export const useGetAddressesHandler = (
     webview: Nullable<WebView>,
 ): BridgeHandler => {
-    const signingAccounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
     const allAccounts = useAllAccounts()
 
     return useCallback(
@@ -90,11 +60,25 @@ export const useGetAddressesHandler = (
             // truncated-address fallback, and sending that as both name and
             // address made its rows render the same string twice. Ordering is
             // the consumer's responsibility.
-            const payload = signingAccounts.map(account => ({
-                name: account.name ?? '',
-                address: account.address,
-                type: toWebviewAccountType(account, allAccounts),
-            }))
+            const payload = signingAccounts.flatMap(account => {
+                const address = chainAccountOf(
+                    account,
+                    LEGACY_CHAIN_ID,
+                )?.address
+                return address === undefined
+                    ? []
+                    : [
+                          {
+                              name: account.name ?? '',
+                              address,
+                              type: toWebviewAccountType(
+                                  account,
+                                  allAccounts,
+                                  LEGACY_CHAIN_ID,
+                              ),
+                          },
+                      ]
+            })
             sendMessageToWebview(message.id, payload, webview)
         },
         [signingAccounts, allAccounts, webview],

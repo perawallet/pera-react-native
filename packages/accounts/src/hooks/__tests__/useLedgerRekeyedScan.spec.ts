@@ -12,19 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLedgerRekeyedScan } from '../useLedgerRekeyedScan'
+import { testAccount } from '../../__tests__/accountFactory'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mocks = vi.hoisted(() => ({
     useQueries: vi.fn(),
-    useSelectedScope: vi.fn(),
     useAllAccounts: vi.fn(),
     useIsRekeyAvailable: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mocks.useSelectedScope,
-}))
 vi.mock('../useAllAccounts', () => ({ useAllAccounts: mocks.useAllAccounts }))
 vi.mock('../useIsRekeyAvailable', () => ({
     useIsRekeyAvailable: mocks.useIsRekeyAvailable,
@@ -38,10 +38,6 @@ const derived = (address: string, accountIndex: number) => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useSelectedScope.mockReturnValue({
-        chainId: 'algorand',
-        networkId: 'mainnet',
-    })
     mocks.useAllAccounts.mockReturnValue([])
     mocks.useIsRekeyAvailable.mockReturnValue(true)
 })
@@ -52,7 +48,7 @@ describe('useLedgerRekeyedScan', () => {
         mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
         const { result } = renderHook(() =>
-            useLedgerRekeyedScan([derived('LEDGER0', 0)]),
+            useLedgerRekeyedScan([derived('LEDGER0', 0)], SCOPE),
         )
 
         expect(result.current).toEqual({ rekeyed: [], isScanning: false })
@@ -67,7 +63,7 @@ describe('useLedgerRekeyedScan', () => {
             { data: ['REKEYED_A', 'REKEYED_B'], isPending: false },
         ])
 
-        const { result } = renderHook(() => useLedgerRekeyedScan([d0]))
+        const { result } = renderHook(() => useLedgerRekeyedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(false)
         expect(result.current.rekeyed).toEqual([
@@ -79,13 +75,15 @@ describe('useLedgerRekeyedScan', () => {
     it('dedupes vs derived addresses, already-imported addresses, and repeats', () => {
         const d0 = derived('LEDGER0', 0)
         const d1 = derived('LEDGER1', 1)
-        mocks.useAllAccounts.mockReturnValue([{ address: 'IMPORTED' }])
+        mocks.useAllAccounts.mockReturnValue([testAccount('watch', 'IMPORTED')])
         mocks.useQueries.mockReturnValue([
             { data: ['REKEYED_A', 'LEDGER1', 'IMPORTED'], isPending: false },
             { data: ['REKEYED_A', 'REKEYED_C'], isPending: false },
         ])
 
-        const { result } = renderHook(() => useLedgerRekeyedScan([d0, d1]))
+        const { result } = renderHook(() =>
+            useLedgerRekeyedScan([d0, d1], SCOPE),
+        )
 
         expect(result.current.rekeyed).toEqual([
             { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
@@ -97,7 +95,7 @@ describe('useLedgerRekeyedScan', () => {
         const d0 = derived('LEDGER0', 0)
         mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
-        const { result } = renderHook(() => useLedgerRekeyedScan([d0]))
+        const { result } = renderHook(() => useLedgerRekeyedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(true)
         expect(result.current.rekeyed).toEqual([])
@@ -105,7 +103,7 @@ describe('useLedgerRekeyedScan', () => {
 
     it('returns empty and not scanning for no derived accounts', () => {
         mocks.useQueries.mockReturnValue([])
-        const { result } = renderHook(() => useLedgerRekeyedScan([]))
+        const { result } = renderHook(() => useLedgerRekeyedScan([], SCOPE))
         expect(result.current).toEqual({ rekeyed: [], isScanning: false })
     })
 })

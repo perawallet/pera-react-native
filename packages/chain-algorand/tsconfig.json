@@ -10,6 +10,7 @@
     "paths": {
       "@perawallet/wallet-core-accounts/testing": ["../accounts/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-shared/test-handlers": ["../shared/src/test-handlers.ts"],
+      "@perawallet/wallet-core-backup/testing": ["../backup/src/__tests__/testing.ts"],
       "@perawallet/wallet-core-card/testing": ["../card/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-chain-contract/testing": ["../chain-contract/src/__tests__/testing.ts"],
       "@perawallet/wallet-core-connections/testing": ["../connections/src/__tests__/handler-contract.ts"],

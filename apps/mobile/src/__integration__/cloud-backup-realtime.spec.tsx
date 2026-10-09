@@ -16,7 +16,11 @@ import { waitFor } from '@testing-library/react'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     deriveBackupKeys,
     persistBackupKeys,
@@ -47,6 +51,7 @@ import {
     seedAlgo25Account,
 } from './__fixtures__/cloudBackup'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // Any valid address this wallet doesn't hold. Watch is the cheapest type to
 // pull — an address record with no secrets item behind it.
@@ -118,7 +123,9 @@ describe('Flow: Cloud backup → real-time manager', () => {
             return socket
         }
 
-        const importHook = renderQueryHook(() => useCloudBackupImport())
+        const importHook = renderQueryHook(() =>
+            useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+        )
         const mnemonicHook = renderQueryHook(() =>
             useResolveMnemonicForBackup(),
         )
@@ -149,7 +156,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
         await waitFor(
             () =>
                 expect(
-                    getItem(accountItemKey(hashAddress(account.address))),
+                    getItem(accountItemKey(hashAddress(addressOf(account)))),
                 ).toBeDefined(),
             { timeout: 10_000 },
         )
@@ -186,7 +193,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
         expect(
             useAccountsStore
                 .getState()
-                .accounts.some(a => a.address === REMOTE_WATCH_ADDRESS),
+                .accounts.some(a => addressOf(a) === REMOTE_WATCH_ADDRESS),
         ).toBe(false)
 
         socket!.onmessage?.({
@@ -201,7 +208,9 @@ describe('Flow: Cloud backup → real-time manager', () => {
                 expect(
                     useAccountsStore
                         .getState()
-                        .accounts.find(a => a.address === REMOTE_WATCH_ADDRESS),
+                        .accounts.find(
+                            a => addressOf(a) === REMOTE_WATCH_ADDRESS,
+                        ),
                 ).toMatchObject({
                     custody: { kind: 'watch' },
                     name: 'Pulled Over Socket',

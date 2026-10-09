@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type React from 'react'
 import type { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import { AccountErrorBoundary } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import type { CapabilityRequirement } from '@hooks/useCapability'
-import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
+import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { fullScreenLayout } from '@layouts/index'
 
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen'
@@ -193,6 +194,7 @@ export type ImportFlowStack = ReturnType<
 export const renderImportFlowScreens = (
     Stack: ImportFlowStack,
     isAllowed: (requirement: CapabilityRequirement) => boolean,
+    chainId: ChainId,
 ): React.ReactNode => (
     <>
         <Stack.Screen
@@ -226,7 +228,7 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={ImportSelectAddressesScreenWithErrorBoundary}
         />
-        {isAllowed(REKEY_REQUIREMENT) && (
+        {isAllowed(rekeyRequirementFor(chainId)) && (
             <Stack.Screen
                 name='ImportRekeyedAddresses'
                 options={{ title: '' }}

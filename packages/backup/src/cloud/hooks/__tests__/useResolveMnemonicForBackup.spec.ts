@@ -12,16 +12,26 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { Algo25Account } from '@perawallet/wallet-core-accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 
 const { executeWithMnemonicMock, loggerWarnMock } = vi.hoisted(() => ({
     executeWithMnemonicMock: vi.fn(),
     loggerWarnMock: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: loggerWarnMock },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: loggerWarnMock,
+            error: vi.fn(),
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     BACKUP_ACCESS_DOMAIN: 'backup-flow',
@@ -29,18 +39,19 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({ executeWithMnemonic: executeWithMnemonicMock }),
 }))
 
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useResolveMnemonicForBackup } from '../useResolveMnemonicForBackup'
 
-const ACCOUNT = {
+const ACCOUNT: LocalAccount = {
     id: 'a-1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: 'ADDR',
-    keyPairId: 'key-1',
+    chains: { algorand: { address: 'ADDR', keyPairId: 'key-1' } },
     name: 'Algo25',
-} as unknown as Algo25Account
+}
 
 describe('useResolveMnemonicForBackup', () => {
     beforeEach(() => {
+        registerFakeBackupAdapter()
         executeWithMnemonicMock.mockReset()
         loggerWarnMock.mockReset()
     })
@@ -71,5 +82,16 @@ describe('useResolveMnemonicForBackup', () => {
 
         await expect(result.current(ACCOUNT)).resolves.toBeNull()
         expect(loggerWarnMock).toHaveBeenCalled()
+    })
+    it('resolves null without opening a session when the account holds no key on the backup chain', async () => {
+        const { result } = renderHook(() => useResolveMnemonicForBackup())
+
+        await expect(
+            result.current({
+                ...ACCOUNT,
+                chains: { ethereum: { address: '0xA', keyPairId: 'key-1' } },
+            }),
+        ).resolves.toBeNull()
+        expect(executeWithMnemonicMock).not.toHaveBeenCalled()
     })
 })

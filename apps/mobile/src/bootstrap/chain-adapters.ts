@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
 import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
@@ -108,4 +109,6 @@ export const registerChainAdapters = (): void => {
         chains,
         chainContextFor,
     )
+    // Its migration decodes persisted accounts through the adapters just registered.
+    void rehydrateAccountsStore()
 }

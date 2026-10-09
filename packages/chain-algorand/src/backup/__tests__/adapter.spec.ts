@@ -12,13 +12,12 @@
 
 import { describe, expect, it } from 'vitest'
 import { createFakeChainKeyStore } from '@perawallet/wallet-core-chain-contract/testing'
-import {
-    DerivationTypes,
-    HdDerivationTypeUnsupportedError,
-} from '@perawallet/wallet-core-accounts'
 import { encodeAlgorandAddress } from '../../blockchain'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
+import { HdDerivationTypeUnsupportedError } from '../../accounts/errors'
 import { hdDerivedKeyId } from '../../accounts/hd-derivation'
+import { algorandAccountPresentation } from '../../accounts/presentation'
+import { DerivationTypes } from '../../accounts/vocabulary'
 import { algorandBackupAdapter } from '../adapter'
 
 const recordingKms = () => {
@@ -47,7 +46,7 @@ describe('algorandBackupAdapter.deriveHdAccount', () => {
         const derived = await algorandBackupAdapter.deriveHdAccount(
             kms,
             'seed-1',
-            { account: 2, change: 0, keyIndex: 5, derivationType },
+            { account: 2, keyIndex: 5, derivationType },
         )
 
         expect(derivations[0]).toMatchObject({
@@ -68,12 +67,24 @@ describe('algorandBackupAdapter.deriveHdAccount', () => {
         await expect(
             algorandBackupAdapter.deriveHdAccount(kms, 'seed-1', {
                 account: 0,
-                change: 0,
                 keyIndex: 0,
                 derivationType: DerivationTypes.Khovratovich,
             }),
         ).rejects.toBeInstanceOf(HdDerivationTypeUnsupportedError)
         expect(derivations).toHaveLength(0)
+    })
+
+    it('derives Peikert when the payload names no derivation type', async () => {
+        const { kms, derivations } = recordingKms()
+
+        await algorandBackupAdapter.deriveHdAccount(kms, 'seed-1', {
+            account: 1,
+            keyIndex: 2,
+        })
+
+        expect(derivations[0]).toMatchObject({
+            id: hdDerivedKeyId('seed-1', 1, 2, DerivationTypes.Peikert),
+        })
     })
 })
 
@@ -96,11 +107,32 @@ describe('algorandBackupAdapter.seedReference', () => {
             'seed-1',
             {
                 account: 0,
-                change: 0,
                 keyIndex: 0,
                 derivationType: DerivationTypes.Peikert,
             },
         )
         expect(reference).toBe(peikert.address)
+    })
+})
+
+describe('algorandBackupAdapter.kindIdOf', () => {
+    // An address held only in a backup shows the glyph its kind has as a held account.
+    it.each([
+        ['algo25', 'accounts/glyph/algo25-account'],
+        ['hdWallet', 'accounts/glyph/hdwallet-account'],
+        ['hardware', 'accounts/glyph/ledger-account'],
+        ['watch', 'accounts/glyph/watch-account'],
+        ['multisig', 'accounts/glyph/multisig-account'],
+        ['quantum', 'accounts/glyph/quantum-account'],
+    ] as const)('decodes a %s item to the kind showing %s', (type, glyph) => {
+        const kindId = algorandBackupAdapter.kindIdOf(type)
+
+        expect(kindId && algorandAccountPresentation.kindGlyph(kindId)).toBe(
+            glyph,
+        )
+    })
+
+    it('has no kind for a bare seed item', () => {
+        expect(algorandBackupAdapter.kindIdOf('hdSeed')).toBeUndefined()
     })
 })

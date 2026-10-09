@@ -14,6 +14,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,10 +28,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
-    useSelectedScope: () => ({
-        chainId: 'algorand',
-        networkId: mockNetwork.network,
-    }),
 }))
 
 // Mock endpoints
@@ -43,6 +40,11 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockNetwork = { network: 'mainnet' }
+
+const selectedScope = (): ChainScope => ({
+    chainId: 'algorand',
+    networkId: mockNetwork.network,
+})
 
 // Mock currencies
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(1.5))
@@ -116,7 +118,12 @@ describe('useAccountBalancesHistoryQuery', () => {
             mocks.fetchAccountsBalanceHistory.mockResolvedValue(mockData)
 
             const { result } = renderHook(
-                () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-day',
+                        selectedScope(),
+                    ),
                 { wrapper: createWrapper() },
             )
 
@@ -143,7 +150,12 @@ describe('useAccountBalancesHistoryQuery', () => {
             })
 
             const { result } = renderHook(
-                () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-week'),
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-week',
+                        selectedScope(),
+                    ),
                 { wrapper: createWrapper() },
             )
 
@@ -158,7 +170,12 @@ describe('useAccountBalancesHistoryQuery', () => {
             )
 
             const { result } = renderHook(
-                () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-month'),
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-month',
+                        selectedScope(),
+                    ),
                 { wrapper: createWrapper() },
             )
 
@@ -171,7 +188,12 @@ describe('useAccountBalancesHistoryQuery', () => {
             )
 
             const { result } = renderHook(
-                () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-year'),
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-year',
+                        selectedScope(),
+                    ),
                 { wrapper: createWrapper() },
             )
 
@@ -184,7 +206,12 @@ describe('useAccountBalancesHistoryQuery', () => {
             mocks.fetchAccountsBalanceHistory.mockResolvedValue({ results: [] })
 
             const { result } = renderHook(
-                () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-day',
+                        selectedScope(),
+                    ),
                 { wrapper: createWrapper() },
             )
 
@@ -203,7 +230,12 @@ describe('useAccountBalancesHistoryQuery', () => {
                 mockNetwork.network = network
 
                 const { result } = renderHook(
-                    () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                    () =>
+                        useAccountBalancesHistoryQuery(
+                            ['ADDR1'],
+                            'one-day',
+                            selectedScope(),
+                        ),
                     { wrapper: createWrapper() },
                 )
 
@@ -225,7 +257,12 @@ describe('useAccountBalancesHistoryQuery', () => {
                 })
 
                 const { result } = renderHook(
-                    () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                    () =>
+                        useAccountBalancesHistoryQuery(
+                            ['ADDR1'],
+                            'one-day',
+                            selectedScope(),
+                        ),
                     { wrapper: createWrapper() },
                 )
 
@@ -244,7 +281,12 @@ describe('useAccountBalancesHistoryQuery', () => {
                 mockNetwork.network = network
 
                 const { result } = renderHook(
-                    () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                    () =>
+                        useAccountBalancesHistoryQuery(
+                            ['ADDR1'],
+                            'one-day',
+                            selectedScope(),
+                        ),
                     { wrapper: createWrapper() },
                 )
 
@@ -263,7 +305,12 @@ describe('useAccountBalancesHistoryQuery', () => {
                 })
 
                 const { result } = renderHook(
-                    () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                    () =>
+                        useAccountBalancesHistoryQuery(
+                            ['ADDR1'],
+                            'one-day',
+                            selectedScope(),
+                        ),
                     { wrapper: createWrapper() },
                 )
 
@@ -282,7 +329,12 @@ describe('useAccountBalancesHistoryQuery', () => {
                 mockNetwork.network = network
 
                 const { result } = renderHook(
-                    () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
+                    () =>
+                        useAccountBalancesHistoryQuery(
+                            ['ADDR1'],
+                            'one-day',
+                            selectedScope(),
+                        ),
                     { wrapper: createWrapper() },
                 )
 

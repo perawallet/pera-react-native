@@ -13,6 +13,8 @@
 export const name = '@perawallet/wallet-core-accounts'
 
 export * from './constants'
+export * from './import-formats'
+export * from './multisig'
 export * from './models'
 export * from './credentials'
 export * from './hooks'
@@ -26,6 +28,7 @@ export * from './cleanup'
 export * from './import-session'
 
 export {
+    rehydrateAccountsStore,
     backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,
@@ -53,7 +56,4 @@ export {
     usePendingImportMnemonicStore,
 } from './store'
 
-export {
-    buildDeviceAccountRegistrations,
-    toDeviceAccountType,
-} from './device-accounts'
+export { buildDeviceAccountRegistrations } from './device-accounts'

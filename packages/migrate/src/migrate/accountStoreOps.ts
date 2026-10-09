@@ -11,11 +11,19 @@
  */
 
 import {
+    chainAccountOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import type { MigratedAccountPair } from './types'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+
+/** The address a migrated account holds on the chain Pera 6 data belongs to. */
+export const migratedAddressOf = (
+    account: WalletAccount,
+    chainId: ChainId,
+): string | undefined => chainAccountOf(account, chainId)?.address
 
 export const addKeylessAccountToStore = (
     account: WalletAccount,
@@ -25,17 +33,27 @@ export const addKeylessAccountToStore = (
     return account
 }
 
-export const applyAllLegacyMetadata = (pairs: MigratedAccountPair[]): void => {
+export const applyAllLegacyMetadata = (
+    pairs: MigratedAccountPair[],
+    chainId: ChainId,
+): void => {
     if (pairs.length === 0) return
 
+    // By address, not id: the store's dedupe may have kept another record for
+    // the same address over the one the import returned.
     const legacyByAddress = new Map(
-        pairs.map(({ created, legacy }) => [created.address, legacy]),
+        pairs.map(({ created, legacy }) => [
+            migratedAddressOf(created, chainId),
+            legacy,
+        ]),
     )
 
     const store = useAccountsStore.getState()
     let changed = false
     const next = store.accounts.map(account => {
-        const legacy = legacyByAddress.get(account.address)
+        const address = migratedAddressOf(account, chainId)
+        const legacy =
+            address !== undefined ? legacyByAddress.get(address) : undefined
         if (!legacy) return account
 
         const name = legacy.name || account.name
@@ -58,25 +76,29 @@ export const markLegacyBackedUpAccounts = (
     }
 }
 
-export const removeAccountFromStore = (address: string): void => {
+export const removeAccountFromStore = (id: string): void => {
     const store = useAccountsStore.getState()
-    store.setAccounts(store.accounts.filter(a => a.address !== address))
+    store.setAccounts(store.accounts.filter(a => a.id !== id))
 }
 
 export const applyRekeyAddressToStoreAccount = (
     address: string,
     authAddress: string,
+    chainId: ChainId,
 ): void => {
     const store = useAccountsStore.getState()
     store.setAccounts(
         store.accounts.map(a =>
-            a.address === address ? { ...a, rekeyAddress: authAddress } : a,
+            migratedAddressOf(a, chainId) === address
+                ? { ...a, rekeyAddress: authAddress }
+                : a,
         ),
     )
 }
 
 export const applyLegacyAccountOrder = (
     legacyAccounts: LegacyAccount[],
+    chainId: ChainId,
 ): void => {
     const orderByAddress = new Map(
         legacyAccounts
@@ -85,14 +107,18 @@ export const applyLegacyAccountOrder = (
     )
     if (orderByAddress.size === 0) return
 
+    const orderOf = (account: WalletAccount): number => {
+        const address = migratedAddressOf(account, chainId)
+        return (
+            (address !== undefined ? orderByAddress.get(address) : undefined) ??
+            Number.POSITIVE_INFINITY
+        )
+    }
+
     const store = useAccountsStore.getState()
     const sorted = [...store.accounts]
-        .sort((a, b) => {
-            const ao = orderByAddress.get(a.address) ?? Number.POSITIVE_INFINITY
-            const bo = orderByAddress.get(b.address) ?? Number.POSITIVE_INFINITY
-            return ao - bo
-        })
-        .map(a => a.address)
+        .sort((a, b) => orderOf(a) - orderOf(b))
+        .map(a => a.id)
 
     store.setManualAccountOrder(sorted)
 }

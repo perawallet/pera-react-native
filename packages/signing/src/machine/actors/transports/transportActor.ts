@@ -11,7 +11,11 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningResult,
@@ -53,7 +57,11 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             scope,
         } = input
 
-        const signerAccount = allAccounts.find(a => a.address === signerAddress)
+        const signerAccount = findAccountByAddressOn(
+            allAccounts,
+            scope.chainId,
+            signerAddress,
+        )
         if (!signerAccount) {
             throw new Error(
                 `Signer account not found for transport: ${signerAddress}`,
@@ -82,6 +90,11 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         const merged =
             plannerAdapterForScope(scope).mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, authAccount.address)
+        return transport.send(
+            merged,
+            source,
+            chainAccountOf(authAccount, scope.chainId)?.address ??
+                signerAddress,
+        )
     },
 )

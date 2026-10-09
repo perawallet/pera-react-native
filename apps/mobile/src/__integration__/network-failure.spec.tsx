@@ -34,26 +34,11 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
-import { server } from '@test-utils/msw-server'
-import { createTestQueryClient } from '@test-utils/render'
-import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import {
-    resetTestDatabase,
-    seedAlgoAsset,
-    setupTestDatabase,
-    teardownTestDatabase,
-} from '@test-utils/database-setup'
 import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
-
-import { useSendFundsStore } from '@modules/transactions'
-import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
-import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
@@ -65,6 +50,23 @@ import {
     mockSwapProviders,
 } from '@perawallet/wallet-core-swaps/test-handlers'
 import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { server } from '@test-utils/msw-server'
+import { createTestQueryClient } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
+
+import { useSendFundsStore } from '@modules/transactions'
+import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
+import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
+import { TransactionSuccessScreen } from '@modules/transactions/routes'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -89,12 +91,16 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'failure-sender',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
         name: 'Sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 
@@ -209,9 +215,7 @@ describe('Edge: Network failure paths', () => {
         expect(screen.queryByTestId('pw-result-view')).toBeFalsy()
         // Sender state survives — the failure shouldn't drop the
         // selected account.
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            sender.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
     })
 
     it('Given a swap quote fetch starts with the providers list ready, when /v2/dex-swap/quotes/ returns 503, then the mutation transitions to an error state without throwing', async () => {
@@ -233,9 +237,12 @@ describe('Edge: Network failure paths', () => {
             }),
         )
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
-            wrapper: buildHookWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: buildHookWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapper_address: ALGO25_TEST_ADDRESS,
@@ -279,9 +286,12 @@ describe('Edge: Network failure paths', () => {
             http.post('*/v2/dex-swap/quotes/', () => HttpResponse.error()),
         )
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
-            wrapper: buildHookWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: buildHookWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapper_address: ALGO25_TEST_ADDRESS,

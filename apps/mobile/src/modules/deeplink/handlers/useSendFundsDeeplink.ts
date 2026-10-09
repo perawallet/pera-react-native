@@ -19,8 +19,8 @@ export type SendFundsDeeplinkPrefill = {
     assetId?: string
     destination?: string
     /**
-     * Display-units amount (e.g. ALGOs). Set when the deeplink already
-     * carries enough info to convert (microAlgos → ALGOs). Lands on
+     * Display-units amount. Set when the deeplink already carries enough
+     * info to convert (native base units → display units). Lands on
      * `useSendFundsStore.amount`.
      */
     amount?: Decimal

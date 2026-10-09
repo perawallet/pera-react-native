@@ -13,27 +13,14 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { WalletAccount } from '../../models'
-import { buildTestAccount } from '../../__tests__/accountFactory'
-import { accountType } from '../../utils'
-
-// Built by hand: buildAccount needs a registered adapter for every chain it
-// derives from, and these specs put accounts on Ethereum.
-const watchOn = (
-    id: string,
-    addresses: Partial<Record<'algorand' | 'ethereum', string>>,
-): WalletAccount =>
-    ({
-        id,
-        ...(addresses.algorand ? { address: addresses.algorand } : {}),
-        custody: { kind: 'watch' },
-        chains: Object.fromEntries(
-            Object.entries(addresses).map(([chainId, address]) => [
-                chainId,
-                { address },
-            ]),
-        ),
-    }) as WalletAccount
+import type { AccountChains, WalletAccount } from '../../models'
+import type { FakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+    type TestCustody,
+} from '../../__tests__/accountFactory'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -48,199 +35,147 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const STORE_KEY = 'accounts-store'
+
+const account = (
+    custody: TestCustody,
+    address: string,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => testAccount(custody, address, { id: address, ...overrides })
+
+const on = (
+    custody: TestCustody,
+    id: string,
+    chains: AccountChains,
+): WalletAccount => buildTestAccount(TEST_CUSTODY[custody], chains, { id })
+
+const hardwareDetails = {
+    ...TEST_CUSTODY.hardware.device,
+    accountIndex: 0,
+}
+
 describe('services/accounts/store', () => {
     let useAccountsStore: typeof import('../store').useAccountsStore
+    let fake: FakeAccountsChain
 
-    beforeEach(async () => {
+    // The store reads the registry its own module graph imports, so both are
+    // re-imported together after every reset.
+    const loadStore = async () => {
         vi.resetModules()
         const { registerFakeAccountsChain } =
             await import('../../__tests__/fakeAccountsChain')
-        registerFakeAccountsChain()
+        fake = registerFakeAccountsChain()
         const module = await import('../store')
         useAccountsStore = module.useAccountsStore
+        return module
+    }
+
+    beforeEach(async () => {
+        getProvider().keyValueStorage.removeItem(STORE_KEY)
+        await loadStore()
     })
 
-    test('defaults to empty list and setAccounts updates state', () => {
-        const state = useAccountsStore.getState()
-        expect(state.accounts).toEqual([])
-
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        const a2: WalletAccount = {
-            id: '2',
-            name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'BOB-ADDR',
-            canSign: true,
-        }
+    test('defaults to an empty list, and setAccounts replaces it', () => {
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        const a1 = account('local', 'A')
+        const a2 = account('local', 'B')
+        const a3 = account('local', 'C')
 
         useAccountsStore.getState().setAccounts([a1, a2])
         expect(useAccountsStore.getState().accounts).toEqual([a1, a2])
 
-        const a3: WalletAccount = {
-            id: '3',
-            name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'CAROL-ADDR',
-            canSign: true,
-        }
         useAccountsStore.getState().setAccounts([a1, a3])
         expect(useAccountsStore.getState().accounts).toEqual([a1, a3])
     })
 
     describe('setAccounts duplicate resolution', () => {
-        const watchDupe: WalletAccount = {
-            id: 'watch',
-            name: 'Watched',
-            custody: { kind: 'watch' },
-            address: 'DUPE-ADDR',
-        }
-        const hardwareDupe: WalletAccount = {
-            id: 'hardware',
-            name: 'Ledger',
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev-1',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
+        // Ranks come from the chain's `duplicateRank`: the fake ranks
+        // hardware > local > multisig > watch.
+        test.each([
+            ['watch', 'hardware'],
+            ['watch', 'local'],
+            ['watch', 'hd'],
+            ['watch', 'multisig'],
+            ['multisig', 'local'],
+            ['local', 'hardware'],
+        ] as const)(
+            'a %s and a %s account on one address: the higher rank survives in either order',
+            (lower, higher) => {
+                const loser = account(lower, 'DUPE', { id: 'loser' })
+                const winner = account(higher, 'DUPE', { id: 'winner' })
+
+                for (const order of [
+                    [loser, winner],
+                    [winner, loser],
+                ]) {
+                    useAccountsStore.getState().setAccounts(order)
+
+                    expect(useAccountsStore.getState().accounts).toEqual([
+                        winner,
+                    ])
+                }
+                expect(fake.adapter.duplicateRank).toHaveBeenCalledWith(winner)
             },
-            address: 'DUPE-ADDR',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        }
-
-        test('keeps the higher-precedence type when the watch entry comes first', () => {
-            useAccountsStore.getState().setAccounts([watchDupe, hardwareDupe])
-
-            const { accounts } = useAccountsStore.getState()
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0]).toEqual(hardwareDupe)
-        })
-
-        test('keeps the higher-precedence type when the watch entry comes last', () => {
-            useAccountsStore.getState().setAccounts([hardwareDupe, watchDupe])
-
-            const { accounts } = useAccountsStore.getState()
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0]).toEqual(hardwareDupe)
-        })
+        )
 
         test('places the surviving entry at the first occurrence position', () => {
-            const first: WalletAccount = {
-                id: '1',
-                name: 'First',
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'FIRST-ADDR',
-                keyPairId: 'kp1',
-            }
-            const last: WalletAccount = {
-                id: '3',
-                name: 'Last',
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'LAST-ADDR',
-                keyPairId: 'kp3',
-            }
+            const first = account('local', 'FIRST')
+            const watch = account('watch', 'DUPE', { id: 'watch' })
+            const last = account('local', 'LAST')
+            const hardware = account('hardware', 'DUPE', { id: 'hardware' })
 
             useAccountsStore
                 .getState()
-                .setAccounts([first, watchDupe, last, hardwareDupe])
+                .setAccounts([first, watch, last, hardware])
 
-            const { accounts } = useAccountsStore.getState()
-            expect(accounts.map(a => a.address)).toEqual([
-                'FIRST-ADDR',
-                'DUPE-ADDR',
-                'LAST-ADDR',
+            expect(useAccountsStore.getState().accounts).toEqual([
+                first,
+                hardware,
+                last,
             ])
-            expect(accounts[1]).toEqual(hardwareDupe)
         })
 
         test('keeps the first occurrence when both entries rank equally', () => {
-            const a1: WalletAccount = {
-                id: '1',
-                name: 'Alice',
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'DUPE-ADDR',
-                keyPairId: 'kp1',
-            }
-            const a2: WalletAccount = {
-                id: '2',
-                name: 'Alice copy',
-                custody: { kind: 'local', seed: 'algo25' },
-                address: 'DUPE-ADDR',
-                keyPairId: 'kp2',
-            }
+            const a1 = account('local', 'DUPE', { id: '1' })
+            const a2 = account('local', 'DUPE', { id: '2' })
 
             useAccountsStore.getState().setAccounts([a1, a2])
 
-            const { accounts } = useAccountsStore.getState()
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].id).toBe('1')
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['1'],
+            )
         })
 
         test('returns a duplicate-free list unchanged and in order', () => {
-            const accountsIn: WalletAccount[] = [
-                {
-                    id: '1',
-                    name: 'Alice',
-                    custody: { kind: 'watch' },
-                    address: 'A',
-                },
-                {
-                    id: '2',
-                    name: 'Bob',
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'B',
-                    keyPairId: 'kp2',
-                },
-                {
-                    id: '3',
-                    name: 'Carol',
-                    custody: { kind: 'local', seed: 'quantum' },
-                    address: 'C',
-                    keyPairId: 'kp3',
-                },
+            const accounts = [
+                account('watch', 'A'),
+                account('local', 'B'),
+                account('explicit', 'C'),
             ]
 
-            useAccountsStore.getState().setAccounts(accountsIn)
+            useAccountsStore.getState().setAccounts(accounts)
 
-            expect(useAccountsStore.getState().accounts).toEqual(accountsIn)
+            expect(useAccountsStore.getState().accounts).toEqual(accounts)
         })
 
-        test('collapses accounts that share an address on a non-Algorand chain, keeping the higher rank in the first position', () => {
-            const watch = watchOn('watch', {
-                algorand: 'WATCH-ALGO',
-                ethereum: '0xDUPE',
+        test('collapses accounts sharing an address on a second chain, the higher rank in the first position', async () => {
+            const { accountsChainAdapters } =
+                await import('../../chain-adapter')
+            accountsChainAdapters.register({
+                ...fake.adapter,
+                chainId: 'ethereum',
             })
-            const hd = {
-                id: 'hd',
-                address: 'HD-ALGO',
-                keyPairId: 'kp-hd',
-                hdWalletDetails: { account: 0, keyIndex: 0 },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-                chains: {
-                    algorand: { address: 'HD-ALGO', keyPairId: 'kp-hd' },
-                    ethereum: { address: '0xDUPE', keyPairId: 'kp-hd-eth' },
-                },
-            } as unknown as WalletAccount
-            const other = watchOn('other', { algorand: 'OTHER' })
+            const watch = on('watch', 'watch', {
+                algorand: { address: 'WATCH' },
+                ethereum: { address: '0xDUPE' },
+            })
+            const other = on('watch', 'other', {
+                algorand: { address: 'OTHER' },
+            })
+            const hd = on('hd', 'hd', {
+                algorand: { address: 'HD', keyPairId: 'kp-hd' },
+                ethereum: { address: '0xDUPE', keyPairId: 'kp-hd-eth' },
+            })
 
             useAccountsStore.getState().setAccounts([watch, other, hd])
 
@@ -249,268 +184,153 @@ describe('services/accounts/store', () => {
             )
         })
 
-        test('keeps accounts that share an address only on different chains', () => {
-            const onAlgorand = watchOn('algo', { algorand: 'SHARED' })
-            const onEthereum = watchOn('eth', { ethereum: 'SHARED' })
+        test('the same address on two different chains is not a duplicate', () => {
+            const onFake = on('watch', 'fake', {
+                algorand: { address: 'SAME' },
+            })
+            const onOther = on('watch', 'other', {
+                ethereum: { address: 'SAME' },
+            })
 
-            useAccountsStore.getState().setAccounts([onAlgorand, onEthereum])
+            useAccountsStore.getState().setAccounts([onFake, onOther])
 
             expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
-                ['algo', 'eth'],
+                ['fake', 'other'],
             )
         })
     })
 
-    test('getSelectedAccount returns the selected account', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        const a2: WalletAccount = {
-            id: '2',
-            name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'BOB-ADDR',
-            canSign: true,
-        }
+    describe('selection', () => {
+        const a1 = account('local', 'A', { id: '1' })
+        const a2 = account('local', 'B', { id: '2' })
+        const a3 = account('local', 'C', { id: '3' })
 
-        useAccountsStore.getState().setAccounts([a1, a2])
+        test('getSelectedAccount returns the account the id selects', () => {
+            useAccountsStore.getState().setAccounts([a1, a2])
+            expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a1)
 
-        // Test default selection (index 0)
-        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a1)
+            useAccountsStore.getState().setSelectedAccountId('2')
+            expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a2)
 
-        // Test selecting index 1
-        useAccountsStore.getState().setSelectedAccountAddress(a2.address)
-        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a2)
+            useAccountsStore.getState().setSelectedAccountId(null)
+            expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
+        })
 
-        // Test null address
-        useAccountsStore.getState().setSelectedAccountAddress(null)
-        expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
+        test('setSelectedAccountId refuses an id that is not an account', () => {
+            useAccountsStore.getState().setAccounts([a1, a2])
 
-        // Test invalid index (out of bounds)
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress("someotheraddressthatdoesn'texist")
-        expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
-    })
+            useAccountsStore.getState().setSelectedAccountId('ghost')
 
-    test('setAccounts selects first remaining account if selected account is removed', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        const a2: WalletAccount = {
-            id: '2',
-            name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'BOB-ADDR',
-            canSign: true,
-        }
+            expect(useAccountsStore.getState().selectedAccountId).toBe('1')
+        })
 
-        useAccountsStore.getState().setAccounts([a1, a2])
-        useAccountsStore.getState().setSelectedAccountAddress(a1.address)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            a1.address,
-        )
+        test('setAccounts selects the first remaining account when the selected one is removed', () => {
+            useAccountsStore.getState().setAccounts([a1, a2])
+            useAccountsStore.getState().setSelectedAccountId('1')
 
-        // Setting new accounts without the selected one should fall back to first remaining
-        useAccountsStore.getState().setAccounts([a2])
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            a2.address,
-        )
-    })
+            useAccountsStore.getState().setAccounts([a2])
 
-    test('setAccounts resets to null when all accounts are removed', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
+            expect(useAccountsStore.getState().selectedAccountId).toBe('2')
+        })
 
-        useAccountsStore.getState().setAccounts([a1])
-        useAccountsStore.getState().setSelectedAccountAddress(a1.address)
+        test('setAccounts resets to null when all accounts are removed', () => {
+            useAccountsStore.getState().setAccounts([a1])
 
-        useAccountsStore.getState().setAccounts([])
-        expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
-    })
+            useAccountsStore.getState().setAccounts([])
 
-    test('setAccounts auto-selects first account when no previous selection', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
+            expect(useAccountsStore.getState().selectedAccountId).toBeNull()
+            expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
+        })
 
-        // Start with no selection
-        expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
+        test('setAccounts auto-selects the first account when nothing is selected', () => {
+            expect(useAccountsStore.getState().selectedAccountId).toBeNull()
 
-        // Setting accounts should auto-select the first one
-        useAccountsStore.getState().setAccounts([a1])
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            a1.address,
-        )
-    })
+            useAccountsStore.getState().setAccounts([a1])
 
-    test('setAccounts preserves selection when selected account still exists', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        const a2: WalletAccount = {
-            id: '2',
-            name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'BOB-ADDR',
-            canSign: true,
-        }
-        const a3: WalletAccount = {
-            id: '3',
-            name: 'Carol',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'CAROL-ADDR',
-            canSign: true,
-        }
+            expect(useAccountsStore.getState().selectedAccountId).toBe('1')
+        })
 
-        useAccountsStore.getState().setAccounts([a1, a2])
-        useAccountsStore.getState().setSelectedAccountAddress(a2.address)
+        test('setAccounts preserves a selection that still exists', () => {
+            useAccountsStore.getState().setAccounts([a1, a2])
+            useAccountsStore.getState().setSelectedAccountId('2')
 
-        // Update accounts but keep a2
-        useAccountsStore.getState().setAccounts([a2, a3])
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            a2.address,
-        )
-    })
+            useAccountsStore.getState().setAccounts([a2, a3])
 
-    test('setSelectedAccountAddress sets the address directly', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
+            expect(useAccountsStore.getState().selectedAccountId).toBe('2')
+        })
 
-        useAccountsStore.getState().setAccounts([a1])
+        test('the manual order keeps known ids and appends new ones', () => {
+            useAccountsStore.getState().setAccounts([a1, a2])
+            useAccountsStore.getState().setManualAccountOrder(['2', '1'])
 
-        // Set a specific address
-        useAccountsStore.getState().setSelectedAccountAddress('ALICE-ADDR')
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            'ALICE-ADDR',
-        )
+            useAccountsStore.getState().setAccounts([a1, a2, a3])
+            expect(useAccountsStore.getState().manualAccountOrder).toEqual([
+                '2',
+                '1',
+                '3',
+            ])
 
-        // Set to null
-        useAccountsStore.getState().setSelectedAccountAddress(null)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
-    })
-
-    test('handles empty accounts array', () => {
-        useAccountsStore.getState().setAccounts([])
-        expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
-    })
-
-    test('getSelectedAccount returns null when accounts is empty', () => {
-        useAccountsStore.getState().setSelectedAccountAddress('NON-EXISTENT')
-        expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
+            useAccountsStore.getState().setAccounts([a3, a1])
+            expect(useAccountsStore.getState().manualAccountOrder).toEqual([
+                '1',
+                '3',
+            ])
+        })
     })
 
     test('resetState reverts state to initial values', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        useAccountsStore.getState().setAccounts([a1])
-        expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            a1.address,
-        )
+        useAccountsStore.getState().setAccounts([account('local', 'A')])
 
         act(() => {
             useAccountsStore.getState().resetState()
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
+        expect(useAccountsStore.getState().selectedAccountId).toBeNull()
     })
 
     describe('updateAccountRekeyAddress', () => {
         test('sets the mirror and the per-network entry for the active network', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'watch' },
-                    address: 'A',
-                } as unknown as WalletAccount,
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'B',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore
+                .getState()
+                .setAccounts([account('watch', 'A'), account('local', 'B')])
 
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', 'B', 'mainnet')
 
-            const accounts = useAccountsStore.getState().accounts
-            const a = accounts.find(x => x.address === 'A')!
+            const [a, b] = useAccountsStore.getState().accounts
             expect(a.rekeyAddress).toBe('B')
             expect(a.rekeyAddressByNetwork).toEqual({ mainnet: 'B' })
-            expect(
-                accounts.find(x => x.address === 'B')?.rekeyAddress,
-            ).toBeUndefined()
+            expect(b.rekeyAddress).toBeUndefined()
         })
 
         test('records an inactive-network sync without touching the mirror', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore.getState().setAccounts([account('local', 'A')])
             useAccountsStore.getState().applyNetworkRekeyState('mainnet')
 
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', 'B', 'testnet')
 
-            const a = useAccountsStore.getState().accounts[0]
+            const [a] = useAccountsStore.getState().accounts
             expect(a.rekeyAddress).toBeUndefined()
             expect(a.rekeyAddressByNetwork).toEqual({ testnet: 'B' })
         })
 
         test('clears the mirror and the network entry when passed null', () => {
             useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
+                account('local', 'A', {
                     rekeyAddress: 'B',
                     rekeyAddressByNetwork: { mainnet: 'B' },
-                } as unknown as WalletAccount,
+                }),
             ])
 
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', null, 'mainnet')
 
-            const a = useAccountsStore.getState().accounts[0]
+            const [a] = useAccountsStore.getState().accounts
             expect(a.rekeyAddress).toBeUndefined()
             // The (empty) map stays: it records "per-network state is known",
             // which gates the legacy-scalar fallback on network switches.
@@ -518,47 +338,36 @@ describe('services/accounts/store', () => {
         })
 
         test('is a no-op when the address is not in the store', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore.getState().setAccounts([account('local', 'A')])
             const before = useAccountsStore.getState().accounts
+
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('Z', 'Y', 'mainnet')
+
             expect(useAccountsStore.getState().accounts).toBe(before)
         })
 
         test('does not write when the value is unchanged for that network', () => {
             useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
+                account('local', 'A', {
                     rekeyAddress: 'B',
                     rekeyAddressByNetwork: { mainnet: 'B' },
-                } as unknown as WalletAccount,
+                }),
             ])
             const before = useAccountsStore.getState().accounts
+
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', 'B', 'mainnet')
+
             expect(useAccountsStore.getState().accounts).toBe(before)
         })
     })
 
     describe('per-network rekey state on network switch', () => {
-        test('mirrors flip in both directions when the network changes (mainnet-rekeyed, testnet-clean)', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+        test('mirrors flip in both directions when the network changes', () => {
+            useAccountsStore.getState().setAccounts([account('local', 'A')])
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
@@ -578,13 +387,7 @@ describe('services/accounts/store', () => {
         })
 
         test('an account with per-network state but no entry for the new network reads as not rekeyed', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore.getState().setAccounts([account('local', 'A')])
             useAccountsStore
                 .getState()
                 .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
@@ -597,17 +400,9 @@ describe('services/accounts/store', () => {
         })
 
         test('a legacy account with no per-network state keeps its mirror across switches', () => {
-            // Pre-upgrade persisted account: scalar only. Until a sync tick
-            // writes the map, the mirror must not be cleared by a switch —
-            // single-network usage keeps today's behavior exactly.
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                    rekeyAddress: 'AUTH',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore
+                .getState()
+                .setAccounts([account('local', 'A', { rekeyAddress: 'AUTH' })])
 
             useAccountsStore.getState().applyNetworkRekeyState('testnet')
 
@@ -617,13 +412,7 @@ describe('services/accounts/store', () => {
         })
 
         test('applyNetworkRekeyState leaves state referentially unchanged when nothing differs', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
+            useAccountsStore.getState().setAccounts([account('local', 'A')])
             const before = useAccountsStore.getState().accounts
 
             useAccountsStore.getState().applyNetworkRekeyState('testnet')
@@ -633,13 +422,9 @@ describe('services/accounts/store', () => {
     })
 
     describe('addAccount', () => {
-        beforeEach(() => {
-            useAccountsStore.getState().resetState()
-        })
-
         test('appends an account whose addresses are free', () => {
-            const existing = watchOn('existing', { algorand: 'A' })
-            const added = watchOn('added', { algorand: 'B' })
+            const existing = account('watch', 'A')
+            const added = account('watch', 'B')
             useAccountsStore.getState().setAccounts([existing])
 
             useAccountsStore.getState().addAccount(added)
@@ -652,16 +437,18 @@ describe('services/accounts/store', () => {
 
         test('throws naming the existing account by id when an address is taken on the same chain', async () => {
             const { DuplicateAccountError } = await import('../../errors')
-            const existing = watchOn('existing-id', {
-                algorand: 'A',
-                ethereum: '0xDUPE',
+            const existing = on('watch', 'existing-id', {
+                algorand: { address: 'A' },
+                ethereum: { address: '0xDUPE' },
             })
             useAccountsStore.getState().setAccounts([existing])
 
             const add = () =>
-                useAccountsStore
-                    .getState()
-                    .addAccount(watchOn('added', { ethereum: '0xDUPE' }))
+                useAccountsStore.getState().addAccount(
+                    on('watch', 'added', {
+                        ethereum: { address: '0xDUPE' },
+                    }),
+                )
 
             expect(add).toThrow(DuplicateAccountError)
             expect(add).toThrow(
@@ -671,286 +458,194 @@ describe('services/accounts/store', () => {
         })
 
         test('accepts an address that an existing account holds only on a different chain', () => {
-            const existing = watchOn('existing', { algorand: 'SHARED' })
-            const added = watchOn('added', { ethereum: 'SHARED' })
-            useAccountsStore.getState().setAccounts([existing])
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    on('watch', 'existing', { algorand: { address: 'SAME' } }),
+                ])
 
-            useAccountsStore.getState().addAccount(added)
+            useAccountsStore
+                .getState()
+                .addAccount(
+                    on('watch', 'added', { ethereum: { address: 'SAME' } }),
+                )
 
             expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
                 ['existing', 'added'],
             )
         })
-
-        test('matches a legacy record with no chains through its Algorand address', async () => {
-            const { DuplicateAccountError } = await import('../../errors')
-            useAccountsStore.setState({
-                accounts: [
-                    {
-                        id: 'legacy',
-                        custody: { kind: 'watch' },
-                        address: 'LEGACY',
-                    } as WalletAccount,
-                ],
-            })
-
-            expect(() =>
-                useAccountsStore
-                    .getState()
-                    .addAccount(watchOn('added', { algorand: 'LEGACY' })),
-            ).toThrow(DuplicateAccountError)
-        })
     })
 
     describe('addRekeyedWatchAccounts', () => {
-        test('stamps new watch accounts with the scanned network entry and mirror', () => {
-            useAccountsStore.getState().setAccounts([])
-
+        test('appends watch accounts holding just the address, with the scanned network entry and mirror', () => {
             const added = useAccountsStore
                 .getState()
                 .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
 
             expect(added).toBe(1)
-            const r1 = useAccountsStore.getState().accounts[0]
+            const [r1] = useAccountsStore.getState().accounts
+            expect(r1.custody).toEqual({ kind: 'watch' })
+            expect(r1.chains).toEqual({ algorand: { address: 'R1' } })
             expect(r1.rekeyAddress).toBe('SRC')
             expect(r1.rekeyAddressByNetwork).toEqual({ mainnet: 'SRC' })
+        })
+
+        test('skips addresses already held', () => {
+            useAccountsStore.getState().setAccounts([account('local', 'R1')])
+
+            expect(
+                useAccountsStore
+                    .getState()
+                    .addRekeyedWatchAccounts('SRC', ['R1', 'R2'], 'testnet'),
+            ).toBe(1)
+            expect(useAccountsStore.getState().accounts).toHaveLength(2)
         })
     })
 
     describe('upgradeWatchAccountToHardware', () => {
-        const hardwareDetails = {
-            manufacturer: 'ledger' as const,
-            deviceId: 'dev-1',
-            deviceName: 'Nano X',
-            accountIndex: 0,
-            transportType: 'ble' as const,
-        }
-
-        test('replaces a watch account with a hardware account, preserving id, name and rekey state', () => {
+        test('replaces a watch account with a hardware account, preserving id, name, chains and rekey state', () => {
             useAccountsStore.getState().setAccounts([
-                {
+                account('watch', 'WATCHED', {
                     id: 'w1',
                     name: 'My Ledger (watched)',
-                    custody: { kind: 'watch' },
-                    address: 'WATCHED',
                     rekeyAddress: 'AUTH',
                     rekeyAddressByNetwork: { mainnet: 'AUTH' },
-                } as WalletAccount,
+                }),
             ])
 
             const upgraded = useAccountsStore
                 .getState()
-                .upgradeWatchAccountToHardware('WATCHED', hardwareDetails)
+                .upgradeWatchAccountToHardware('w1', {
+                    ...hardwareDetails,
+                    accountIndex: 3,
+                })
 
             expect(upgraded).toBe(true)
-            const account = useAccountsStore.getState().accounts[0]
-            expect(account).toEqual({
+            expect(useAccountsStore.getState().accounts[0]).toStrictEqual({
                 id: 'w1',
                 name: 'My Ledger (watched)',
-                address: 'WATCHED',
                 rekeyAddress: 'AUTH',
                 rekeyAddressByNetwork: { mainnet: 'AUTH' },
-                hardwareDetails,
                 custody: {
                     kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: 'dev-1',
-                        deviceName: 'Nano X',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
+                    device: TEST_CUSTODY.hardware.device,
+                    accountIndex: 3,
                 },
                 chains: { algorand: { address: 'WATCHED' } },
             })
-            expect(account).not.toHaveProperty('type')
-        })
-
-        test('upgrades a watch account built with its chain entry', () => {
-            const watch = buildTestAccount('watch')
-            useAccountsStore.getState().setAccounts([watch])
-
-            const upgraded = useAccountsStore
-                .getState()
-                .upgradeWatchAccountToHardware(watch.address!, hardwareDetails)
-
-            expect(upgraded).toBe(true)
-            expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-                'hardware',
-            )
         })
 
         test('refuses to touch a non-watch account', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'h1',
-                    custody: { kind: 'local', seed: 'algo25' },
-                    address: 'SIGNER',
-                    keyPairId: 'kp1',
-                } as WalletAccount,
-            ])
+            const signer = account('local', 'SIGNER')
+            useAccountsStore.getState().setAccounts([signer])
 
             const upgraded = useAccountsStore
                 .getState()
                 .upgradeWatchAccountToHardware('SIGNER', hardwareDetails)
 
             expect(upgraded).toBe(false)
-            expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-                'algo25',
-            )
+            expect(useAccountsStore.getState().accounts[0]).toEqual(signer)
         })
 
-        test('is a no-op for an unknown address', () => {
-            useAccountsStore.getState().setAccounts([])
-
-            const upgraded = useAccountsStore
-                .getState()
-                .upgradeWatchAccountToHardware('MISSING', hardwareDetails)
-
-            expect(upgraded).toBe(false)
+        test('is a no-op for an unknown id', () => {
+            expect(
+                useAccountsStore
+                    .getState()
+                    .upgradeWatchAccountToHardware('MISSING', hardwareDetails),
+            ).toBe(false)
             expect(useAccountsStore.getState().accounts).toEqual([])
         })
     })
 
     describe('updateHardwareDetails', () => {
-        const staleDetails = {
-            manufacturer: 'ledger' as const,
-            deviceId: 'old-device',
-            deviceName: 'Nano X',
-            accountIndex: 0,
-            transportType: 'ble' as const,
-        }
-        const account = {
-            id: 'hw1',
-            name: 'Ledger 1',
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'old-device',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address: 'HW',
-            hardwareDetails: staleDetails,
-        } as WalletAccount
-
-        test('re-binds the stored details when the device id changes', () => {
-            useAccountsStore.getState().setAccounts([account])
+        test('re-binds the hardware custody when the device id changes', () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([account('hardware', 'HW', { name: 'Ledger 1' })])
 
             const updated = useAccountsStore
                 .getState()
                 .updateHardwareDetails('HW', {
-                    ...staleDetails,
+                    ...hardwareDetails,
                     deviceId: 'new-device',
                 })
 
             expect(updated).toBe(true)
-            const stored = useAccountsStore.getState().accounts[0]
-            expect(stored).toMatchObject({
-                custody: {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: 'new-device',
-                        deviceName: 'Nano X',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
+            const [stored] = useAccountsStore.getState().accounts
+            expect(stored.custody).toEqual({
+                kind: 'hardware',
+                device: {
+                    ...TEST_CUSTODY.hardware.device,
+                    deviceId: 'new-device',
                 },
-                hardwareDetails: { deviceId: 'new-device' },
+                accountIndex: 0,
             })
             expect(stored.name).toBe('Ledger 1')
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            expect(stored.chains).toEqual({ algorand: { address: 'HW' } })
         })
 
         test('is a no-op when the details are unchanged', () => {
-            useAccountsStore.getState().setAccounts([account])
+            useAccountsStore.getState().setAccounts([account('hardware', 'HW')])
 
-            const updated = useAccountsStore
-                .getState()
-                .updateHardwareDetails('HW', { ...staleDetails })
-
-            expect(updated).toBe(false)
+            expect(
+                useAccountsStore
+                    .getState()
+                    .updateHardwareDetails('HW', { ...hardwareDetails }),
+            ).toBe(false)
         })
 
         test('refuses to touch a non-hardware account', () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'w1',
-                    custody: { kind: 'watch' },
-                    address: 'WATCHED',
-                } as WalletAccount,
-            ])
+            const watch = account('watch', 'WATCHED')
+            useAccountsStore.getState().setAccounts([watch])
 
-            const updated = useAccountsStore
-                .getState()
-                .updateHardwareDetails('WATCHED', staleDetails)
-
-            expect(updated).toBe(false)
-            expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-                'watch',
-            )
+            expect(
+                useAccountsStore
+                    .getState()
+                    .updateHardwareDetails('WATCHED', hardwareDetails),
+            ).toBe(false)
+            expect(useAccountsStore.getState().accounts[0]).toEqual(watch)
         })
     })
 
     describe('launch account preference', () => {
-        const alice: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'ALICE-ADDR',
-            canSign: true,
-        }
-        const bob: WalletAccount = {
-            id: '2',
-            name: 'Bob',
-            custody: { kind: 'local', seed: 'algo25' },
-            address: 'BOB-ADDR',
-            canSign: true,
-        }
+        const alice = account('local', 'ALICE', { id: 'alice' })
+        const bob = account('local', 'BOB', { id: 'bob' })
 
         beforeEach(() => {
-            // The mock persist storage outlives vi.resetModules(), so a pin set
-            // by an earlier test rehydrates into this one. Every assertion here
-            // is about a transition from a known state, so reset explicitly.
-            useAccountsStore.getState().resetState()
             useAccountsStore.getState().setAccounts([alice, bob])
         })
 
-        test('defaults to lastUsed with no pinned address', () => {
-            const { launchAccountMode, launchAccountAddress } =
+        test('defaults to lastUsed with no pinned account', () => {
+            const { launchAccountMode, launchAccountId } =
                 useAccountsStore.getState()
 
             expect(launchAccountMode).toBe('lastUsed')
-            expect(launchAccountAddress).toBeNull()
+            expect(launchAccountId).toBeNull()
         })
 
         test('pins a specific account', () => {
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+                .setLaunchAccountPreference('specific', 'bob')
 
-            const { launchAccountMode, launchAccountAddress } =
-                useAccountsStore.getState()
-            expect(launchAccountMode).toBe('specific')
-            expect(launchAccountAddress).toBe('BOB-ADDR')
+            expect(useAccountsStore.getState()).toMatchObject({
+                launchAccountMode: 'specific',
+                launchAccountId: 'bob',
+            })
         })
 
-        test('refuses to pin an address that is not a known account', () => {
+        test('refuses to pin an id that is not a known account', () => {
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'GHOST-ADDR')
+                .setLaunchAccountPreference('specific', 'ghost')
 
-            const { launchAccountMode, launchAccountAddress } =
-                useAccountsStore.getState()
-            expect(launchAccountMode).toBe('lastUsed')
-            expect(launchAccountAddress).toBeNull()
+            expect(useAccountsStore.getState()).toMatchObject({
+                launchAccountMode: 'lastUsed',
+                launchAccountId: null,
+            })
         })
 
-        test('refuses to pin specific mode with no address at all', () => {
+        test('refuses to pin specific mode with no id at all', () => {
             useAccountsStore.getState().setLaunchAccountPreference('specific')
 
             expect(useAccountsStore.getState().launchAccountMode).toBe(
@@ -958,480 +653,266 @@ describe('services/accounts/store', () => {
             )
         })
 
-        test('switching back to lastUsed clears the pinned address', () => {
+        test('switching back to lastUsed clears the pinned account', () => {
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+                .setLaunchAccountPreference('specific', 'bob')
 
             useAccountsStore.getState().setLaunchAccountPreference('lastUsed')
 
-            const { launchAccountMode, launchAccountAddress } =
-                useAccountsStore.getState()
-            expect(launchAccountMode).toBe('lastUsed')
-            expect(launchAccountAddress).toBeNull()
+            expect(useAccountsStore.getState()).toMatchObject({
+                launchAccountMode: 'lastUsed',
+                launchAccountId: null,
+            })
         })
 
         test('reverts to lastUsed when the pinned account is removed', () => {
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+                .setLaunchAccountPreference('specific', 'bob')
 
             useAccountsStore.getState().setAccounts([alice])
 
-            const { launchAccountMode, launchAccountAddress } =
-                useAccountsStore.getState()
-            expect(launchAccountMode).toBe('lastUsed')
-            expect(launchAccountAddress).toBeNull()
+            expect(useAccountsStore.getState()).toMatchObject({
+                launchAccountMode: 'lastUsed',
+                launchAccountId: null,
+            })
         })
 
         test('keeps the pin when an unrelated account is removed', () => {
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+                .setLaunchAccountPreference('specific', 'bob')
 
             useAccountsStore.getState().setAccounts([bob])
 
-            const { launchAccountMode, launchAccountAddress } =
-                useAccountsStore.getState()
-            expect(launchAccountMode).toBe('specific')
-            expect(launchAccountAddress).toBe('BOB-ADDR')
+            expect(useAccountsStore.getState()).toMatchObject({
+                launchAccountMode: 'specific',
+                launchAccountId: 'bob',
+            })
         })
 
         test('applyLaunchAccountPreference selects the pinned account', () => {
-            useAccountsStore.getState().setSelectedAccountAddress('ALICE-ADDR')
+            useAccountsStore.getState().setSelectedAccountId('alice')
             useAccountsStore
                 .getState()
-                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+                .setLaunchAccountPreference('specific', 'bob')
 
             useAccountsStore.getState().applyLaunchAccountPreference()
 
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                'BOB-ADDR',
-            )
+            expect(useAccountsStore.getState().selectedAccountId).toBe('bob')
         })
 
-        test('applyLaunchAccountPreference leaves lastUsed selection alone', () => {
-            useAccountsStore.getState().setSelectedAccountAddress('BOB-ADDR')
+        test('applyLaunchAccountPreference leaves a lastUsed selection alone', () => {
+            useAccountsStore.getState().setSelectedAccountId('bob')
 
             useAccountsStore.getState().applyLaunchAccountPreference()
 
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                'BOB-ADDR',
-            )
-        })
-
-        // The launch fields were added without bumping the persist version, on
-        // the theory that zustand's default shallow merge leaves absent keys at
-        // their initial-state values. This asserts that rather than trusting
-        // it: seed storage with exactly what a pre- build wrote, and
-        // require the upgrade to be a no-op for existing users.
-        test('rehydrates a pre-launch-preference payload without a migration', async () => {
-            const legacyPayload = {
-                state: {
-                    accounts: [alice, bob],
-                    selectedAccountAddress: 'BOB-ADDR',
-                    sortMode: 'alphabeticalAsc',
-                    manualAccountOrder: ['BOB-ADDR', 'ALICE-ADDR'],
-                },
-                version: 3,
-            }
-            getProvider().keyValueStorage.setItem(
-                'accounts-store',
-                JSON.stringify(legacyPayload),
-            )
-
-            vi.resetModules()
-            const module = await import('../store')
-            await module.useAccountsStore.persist.rehydrate()
-
-            const state = module.useAccountsStore.getState()
-            expect(state.accounts).toEqual([alice, bob])
-            expect(state.selectedAccountAddress).toBe('BOB-ADDR')
-            expect(state.sortMode).toBe('alphabeticalAsc')
-            expect(state.manualAccountOrder).toEqual(['BOB-ADDR', 'ALICE-ADDR'])
-            expect(state.launchAccountMode).toBe('lastUsed')
-            expect(state.launchAccountAddress).toBeNull()
+            expect(useAccountsStore.getState().selectedAccountId).toBe('bob')
         })
 
         test('applyLaunchAccountPreference ignores a pin that no longer resolves', () => {
-            // Reaches past setLaunchAccountPreference's guard to simulate state
-            // rehydrated from a build where the account still existed.
             useAccountsStore.setState({
                 launchAccountMode: 'specific',
-                launchAccountAddress: 'GHOST-ADDR',
-                selectedAccountAddress: 'ALICE-ADDR',
+                launchAccountId: 'ghost',
+                selectedAccountId: 'alice',
             })
 
             useAccountsStore.getState().applyLaunchAccountPreference()
 
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                'ALICE-ADDR',
-            )
+            expect(useAccountsStore.getState().selectedAccountId).toBe('alice')
         })
     })
 
-    describe('custody', () => {
-        const kinds = [
-            'algo25',
-            'quantum',
-            'hdWallet',
-            'hardware',
-            'multisig',
-            'watch',
-        ] as const
-
-        // Records as store v0-v2 persisted them: `type` is the legacy kind.
-        const legacyAccounts = [
+    describe('v4 migration', () => {
+        // Records in the fake chain's legacy shape: a top-level address, a
+        // `keyPairId` marking a local key.
+        const legacyRecords = () => [
+            { id: 'a', name: 'Alpha', address: 'A-ADDR', keyPairId: 'k-a' },
+            {
+                id: 'h',
+                address: 'H-ADDR',
+                rekeyAddress: 'AUTH',
+                rekeyAddressByNetwork: { mainnet: 'AUTH' },
+                custody: TEST_CUSTODY.hardware,
+            },
+            { id: 'w', address: 'W-ADDR' },
+            // Nothing the registered chain decodes.
+            { id: 'undecodable', somethingElse: true },
+            // No id to keep.
+            { address: 'NO-ID' },
+        ]
+        const legacyState = () => ({
+            accounts: legacyRecords(),
+            selectedAccountAddress: 'H-ADDR',
+            sortMode: 'alphabeticalAsc',
+            manualAccountOrder: ['W-ADDR', 'GONE-ADDR', 'A-ADDR', 'H-ADDR'],
+            launchAccountMode: 'specific',
+            launchAccountAddress: 'A-ADDR',
+        })
+        const migratedAccounts: WalletAccount[] = [
             {
                 id: 'a',
-                type: 'algo25',
-                address: 'ALGO25-ADDR',
-                keyPairId: 'seed-ed25519',
+                name: 'Alpha',
+                custody: { kind: 'local', seed: TEST_CUSTODY.local.seed },
+                chains: { algorand: { address: 'A-ADDR', keyPairId: 'k-a' } },
             },
             {
                 id: 'h',
-                type: 'hdWallet',
-                address: 'HD-ADDR',
-                keyPairId: 'seed-acc0-idx0-dt9',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-            { id: 'w', type: 'watch', address: 'WATCH-ADDR' },
-        ] as unknown as WalletAccount[]
-        const migratedAccounts = [
-            {
-                id: 'a',
-                address: 'ALGO25-ADDR',
-                keyPairId: 'seed-ed25519',
-                custody: { kind: 'local', seed: 'algo25' },
-                chains: {
-                    algorand: {
-                        address: 'ALGO25-ADDR',
-                        keyPairId: 'seed-ed25519',
-                    },
-                },
-            },
-            {
-                id: 'h',
-                address: 'HD-ADDR',
-                keyPairId: 'seed-acc0-idx0-dt9',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-                chains: {
-                    algorand: {
-                        address: 'HD-ADDR',
-                        keyPairId: 'seed-acc0-idx0-dt9',
-                    },
-                },
+                rekeyAddress: 'AUTH',
+                rekeyAddressByNetwork: { mainnet: 'AUTH' },
+                custody: TEST_CUSTODY.hardware,
+                chains: { algorand: { address: 'H-ADDR' } },
             },
             {
                 id: 'w',
-                address: 'WATCH-ADDR',
                 custody: { kind: 'watch' },
-                chains: { algorand: { address: 'WATCH-ADDR' } },
+                chains: { algorand: { address: 'W-ADDR' } },
             },
         ]
-        const v0State = {
-            accounts: legacyAccounts,
-            selectedAccountAddress: 'HD-ADDR',
+        const migratedState = {
+            accounts: migratedAccounts,
+            selectedAccountId: 'h',
             sortMode: 'alphabeticalAsc',
-            manualAccountOrder: ['HD-ADDR', 'ALGO25-ADDR', 'WATCH-ADDR'],
+            manualAccountOrder: ['w', 'a', 'h'],
             launchAccountMode: 'specific',
-            launchAccountAddress: 'HD-ADDR',
+            launchAccountId: 'a',
         }
 
-        test('migrating a v0 state backfills every account and keeps the other fields', async () => {
+        test.each([2, 3])(
+            'decodes every v%s record through the registered chain, keyed by id',
+            async version => {
+                const { migrateAccountsState } = await import('../store')
+                const records = legacyRecords()
+
+                const migrated = migrateAccountsState(
+                    { ...legacyState(), accounts: records },
+                    version,
+                )
+
+                expect(migrated).toStrictEqual(migratedState)
+                for (const record of records.filter(r => 'id' in r)) {
+                    expect(
+                        fake.adapter.decodeLegacyRecord,
+                    ).toHaveBeenCalledWith(record)
+                }
+            },
+        )
+
+        test('leaves no legacy key on the migrated accounts or state', async () => {
             const { migrateAccountsState } = await import('../store')
 
-            const migrated = migrateAccountsState(structuredClone(v0State), 0)
+            const migrated = migrateAccountsState(legacyState(), 3)
 
-            expect(migrated).toEqual({
-                ...v0State,
-                accounts: migratedAccounts,
-            })
-        })
-
-        test('migrating an already-migrated state changes nothing', async () => {
-            const { migrateAccountsState } = await import('../store')
-            const once = migrateAccountsState(structuredClone(v0State), 0)
-
-            expect(migrateAccountsState(structuredClone(once), 2)).toEqual(once)
-        })
-
-        const v1Accounts = legacyAccounts.map(account => ({
-            ...account,
-            provenance: { kind: 'stale' },
-            credentials: { algorand: { keyPairId: 'stale' } },
-        }))
-
-        test('v0 and v1 state migrate to the same current accounts, without the v1 fields', async () => {
-            const { migrateAccountsState } = await import('../store')
-
-            const fromV0 = migrateAccountsState(structuredClone(v0State), 0)
-            const fromV1 = migrateAccountsState(
-                structuredClone({ ...v0State, accounts: v1Accounts }),
-                1,
-            )
-
-            expect(fromV1.accounts).toEqual(fromV0.accounts)
-            for (const account of fromV1.accounts) {
-                expect(account).not.toHaveProperty('provenance')
-                expect(account).not.toHaveProperty('credentials')
+            for (const key of [
+                'selectedAccountAddress',
+                'launchAccountAddress',
+            ]) {
+                expect(migrated).not.toHaveProperty(key)
+            }
+            for (const migratedAccount of migrated.accounts) {
+                for (const key of [
+                    'address',
+                    'keyPairId',
+                    'type',
+                    'hardwareDetails',
+                    'hdWalletDetails',
+                    'multisigDetails',
+                ]) {
+                    expect(migratedAccount).not.toHaveProperty(key)
+                }
             }
         })
 
-        test('v1 custody is derived again from the stored type', async () => {
+        test('decodes v0 and v1 records from their legacy fields, ignoring a stored custody', async () => {
             const { migrateAccountsState } = await import('../store')
-            const stale = {
-                ...buildTestAccount('hardware'),
-                type: 'watch',
-                provenance: { kind: 'hardware' },
-                credentials: {},
-            }
+            const v1Records = legacyRecords().map(record => ({
+                ...record,
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'STALE' } },
+                provenance: { kind: 'stale' },
+            }))
 
-            const [account] = migrateAccountsState(
-                { ...v0State, accounts: [stale] },
-                1,
-            ).accounts
+            for (const version of [0, 1]) {
+                const { accounts } = migrateAccountsState(
+                    { ...legacyState(), accounts: structuredClone(v1Records) },
+                    version,
+                )
 
-            expect(accountType(account)).toBe('watch')
-        })
-
-        // Every persisted record the way v2 stored it, plus the shapes the
-        // backfill couldn't give a custody.
-        const makeV2Accounts = () =>
-            [
-                ...kinds.map(kind => ({
-                    ...buildTestAccount(kind),
-                    type: kind,
-                })),
-                { id: 'bare-multisig', type: 'multisig', address: 'BARE-MSIG' },
-                { id: 'bare-algo25', type: 'algo25', address: 'BARE-ALGO25' },
-                {
-                    id: 'bare-hd',
-                    type: 'hdWallet',
-                    address: 'BARE-HD',
-                    keyPairId: 'kp',
-                },
-                { id: 'bare-hardware', type: 'hardware', address: 'BARE-HW' },
-                { id: 'no-type', address: 'NO-TYPE' },
-                { ...buildTestAccount('hardware'), id: 'liar', type: 'watch' },
-            ] as unknown as WalletAccount[]
-        const makeV2State = () => {
-            const accounts = makeV2Accounts()
-            return {
-                accounts,
-                selectedAccountAddress: 'HDWALLET-ADDR',
-                sortMode: 'manual',
-                manualAccountOrder: accounts.map(a => a.address),
-                launchAccountMode: 'lastUsed',
-                launchAccountAddress: null,
-            }
-        }
-        const v2Kinds = [
-            ...kinds,
-            'multisig',
-            'algo25',
-            'watch',
-            'watch',
-            'watch',
-            'hardware',
-        ]
-
-        test('v2 accounts keep their kind, and none keeps a type', async () => {
-            const { migrateAccountsState } = await import('../store')
-
-            const { accounts } = migrateAccountsState(makeV2State(), 2)
-
-            expect(accounts.map(accountType)).toEqual(v2Kinds)
-            for (const account of accounts) {
-                expect(account).not.toHaveProperty('type')
-                expect(account.custody).toBeDefined()
-            }
-        })
-
-        test('a record the backfill could not decode becomes a read-only watch account', async () => {
-            const { migrateAccountsState } = await import('../store')
-
-            const { accounts } = migrateAccountsState(makeV2State(), 2)
-            const byId = (id: string) => accounts.find(a => a.id === id)!
-
-            expect(byId('bare-multisig').chains).toEqual({
-                algorand: { address: 'BARE-MSIG' },
-            })
-            expect(byId('bare-algo25').keyPairId).toBeUndefined()
-            for (const id of ['bare-hd', 'bare-hardware', 'no-type']) {
-                const account = byId(id)
-                expect(account.custody).toEqual({ kind: 'watch' })
-                expect(account.keyPairId).toBeUndefined()
-                expect(account).not.toHaveProperty('hardwareDetails')
-            }
-        })
-
-        test('rehydrating a v2 payload keeps every account kind and the other fields', async () => {
-            getProvider().keyValueStorage.setItem(
-                'accounts-store',
-                JSON.stringify({ state: makeV2State(), version: 2 }),
-            )
-
-            vi.resetModules()
-            const module = await import('../store')
-            await module.useAccountsStore.persist.rehydrate()
-
-            const state = module.useAccountsStore.getState()
-            expect(state.accounts.map(accountType)).toEqual(v2Kinds)
-            expect(state.selectedAccountAddress).toBe('HDWALLET-ADDR')
-            expect(state.sortMode).toBe('manual')
-            expect(state.manualAccountOrder).toEqual(
-                makeV2State().manualAccountOrder,
-            )
-            expect(state.launchAccountMode).toBe('lastUsed')
-        })
-
-        test('persisted v3 state is not migrated again', async () => {
-            const { migrateAccountsState } = await import('../store')
-            const v3State = { ...makeV2State(), accounts: migratedAccounts }
-
-            expect(migrateAccountsState(v3State, 3)).toBe(v3State)
-        })
-
-        test('hydrating a v0 payload twice yields identical state', async () => {
-            getProvider().keyValueStorage.setItem(
-                'accounts-store',
-                JSON.stringify({ state: v0State, version: 0 }),
-            )
-
-            vi.resetModules()
-            const first = (await import('../store')).useAccountsStore
-            await first.persist.rehydrate()
-            const firstState = first.getState()
-
-            vi.resetModules()
-            const second = (await import('../store')).useAccountsStore
-            await second.persist.rehydrate()
-
-            expect(firstState.accounts).toEqual(migratedAccounts)
-            expect(second.getState().accounts).toEqual(firstState.accounts)
-            expect(second.getState().selectedAccountAddress).toBe('HD-ADDR')
-            expect(second.getState().manualAccountOrder).toEqual(
-                v0State.manualAccountOrder,
-            )
-        })
-
-        test('setAccounts keeps the custody an account was built with', () => {
-            const accounts = (
-                [
-                    'algo25',
-                    'quantum',
-                    'hdWallet',
-                    'hardware',
-                    'multisig',
+                // The hardware custody record `h` stored is dropped: it
+                // decodes as the address-only record it is underneath.
+                expect(accounts.map(a => a.custody.kind)).toEqual([
+                    'local',
                     'watch',
-                ] as const
-            ).map(type => buildTestAccount(type))
-
-            useAccountsStore.getState().setAccounts(accounts)
-
-            expect(useAccountsStore.getState().accounts).toEqual(accounts)
-        })
-
-        test('addRekeyedWatchAccounts writes a watch custody with just the address', () => {
-            useAccountsStore.getState().setAccounts([])
-
-            useAccountsStore
-                .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
-
-            const [account] = useAccountsStore.getState().accounts
-            expect(account.custody).toEqual({ kind: 'watch' })
-            expect(account.chains).toEqual({ algorand: { address: 'R1' } })
-            expect(account.rekeyAddressByNetwork).toEqual({ testnet: 'SRC' })
-        })
-
-        test('upgrading a watch account replaces its watch custody with a hardware one', () => {
-            useAccountsStore
-                .getState()
-                .setAccounts([
-                    { id: 'w', custody: { kind: 'watch' }, address: 'WATCHED' },
+                    'watch',
                 ])
-
-            useAccountsStore
-                .getState()
-                .upgradeWatchAccountToHardware('WATCHED', {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev-1',
-                    deviceName: 'Nano X',
-                    accountIndex: 3,
-                    transportType: 'ble',
+                expect(accounts[1].chains).toEqual({
+                    algorand: { address: 'H-ADDR' },
                 })
-
-            const [account] = useAccountsStore.getState().accounts
-            expect(account.custody).toEqual({
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev-1',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 3,
-            })
-            expect(account.chains).toEqual({ algorand: { address: 'WATCHED' } })
+            }
         })
 
-        test('re-binding hardware details updates the hardware custody', () => {
-            const details = {
-                manufacturer: 'ledger' as const,
-                deviceId: 'old-device',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble' as const,
-            }
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'hw',
-                    custody: {
-                        kind: 'hardware',
-                        device: {
-                            manufacturer: 'ledger',
-                            deviceId: 'device-1',
-                            deviceName: 'Nano X',
-                            transportType: 'ble',
-                        },
-                        accountIndex: 0,
-                    },
-                    address: 'HW',
-                    hardwareDetails: details,
-                },
-            ])
+        test('falls back to lastUsed when the launch pin names no surviving account', async () => {
+            const { migrateAccountsState } = await import('../store')
 
-            useAccountsStore
-                .getState()
-                .updateHardwareDetails('HW', { ...details, deviceId: 'new' })
+            const migrated = migrateAccountsState(
+                { ...legacyState(), launchAccountAddress: 'GONE-ADDR' },
+                3,
+            )
 
-            expect(useAccountsStore.getState().accounts[0].custody).toEqual({
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'new',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
+            expect(migrated.launchAccountMode).toBe('lastUsed')
+            expect(migrated.launchAccountId).toBeNull()
+        })
+
+        test('persisted v4 state is not migrated again', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            expect(migrateAccountsState(migratedState, 4)).toBe(migratedState)
+        })
+
+        test('stays at its defaults, and writes nothing back, until rehydrateAccountsStore runs', async () => {
+            const persisted = JSON.stringify({
+                state: legacyState(),
+                version: 3,
             })
+            getProvider().keyValueStorage.setItem(STORE_KEY, persisted)
+
+            const module = await loadStore()
+
+            expect(module.useAccountsStore.persist.hasHydrated()).toBe(false)
+            expect(module.useAccountsStore.getState().accounts).toEqual([])
+            expect(fake.adapter.decodeLegacyRecord).not.toHaveBeenCalled()
+            expect(getProvider().keyValueStorage.getItem(STORE_KEY)).toBe(
+                persisted,
+            )
+
+            await module.rehydrateAccountsStore()
+
+            expect(module.useAccountsStore.persist.hasHydrated()).toBe(true)
+            expect(module.useAccountsStore.getState()).toMatchObject(
+                migratedState,
+            )
+        })
+
+        test('hydrating a legacy payload twice yields identical state', async () => {
+            getProvider().keyValueStorage.setItem(
+                STORE_KEY,
+                JSON.stringify({ state: legacyState(), version: 0 }),
+            )
+
+            const first = await loadStore()
+            await first.rehydrateAccountsStore()
+            const firstState = first.useAccountsStore.getState()
+
+            const second = await loadStore()
+            await second.rehydrateAccountsStore()
+
+            expect(second.useAccountsStore.getState().accounts).toEqual(
+                firstState.accounts,
+            )
+            expect(second.useAccountsStore.getState().selectedAccountId).toBe(
+                firstState.selectedAccountId,
+            )
         })
     })
 })

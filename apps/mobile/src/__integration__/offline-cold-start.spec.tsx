@@ -39,6 +39,7 @@ import { QueryClientProvider, onlineManager } from '@tanstack/react-query'
 import { ThemeProvider } from '@rneui/themed'
 import { http, HttpResponse } from 'msw'
 
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient, getTestTheme } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -68,20 +69,28 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 import { useNetworkStatusStore } from '@modules/network'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const NETWORK = 'mainnet' as const
 
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
     custody: { kind: 'local', seed: 'algo25' },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'offline-cold-start-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'offline-cold-start-key',
+        },
+    },
     name: 'Synced',
 }
 
@@ -120,7 +129,7 @@ const wrapperWithClient = () => {
 /** Everything the sync service would have written on a previous online run. */
 const seedPreviouslySyncedAccount = async () => {
     await upsertAccountBalance({
-        accountAddress: ACCOUNT.address,
+        accountAddress: addressOf(ACCOUNT),
         scope: scopeForLegacyNetwork(NETWORK),
         algoBalance: new Decimal(10_000_000), // 10 ALGO
         totalAssetsOptedIn: 0,
@@ -131,7 +140,7 @@ const seedPreviouslySyncedAccount = async () => {
         authAddress: null,
     })
     await insertAssetHolding({
-        accountAddress: ACCOUNT.address,
+        accountAddress: addressOf(ACCOUNT),
         assetId: '0',
         scope: scopeForLegacyNetwork(NETWORK),
         amount: '10000000', // 10 ALGO in base units
@@ -142,7 +151,7 @@ const seedPreviouslySyncedAccount = async () => {
     })
     await upsertTransactions({
         items: [CACHED_TX],
-        accountAddress: ACCOUNT.address,
+        accountAddress: addressOf(ACCOUNT),
         scope: scopeForLegacyNetwork(NETWORK),
     })
 }
@@ -165,7 +174,7 @@ describe('Flow: Cold start with no connectivity', () => {
         await seedAlgoAsset(NETWORK)
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([ACCOUNT])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT.id)
     })
 
     it('Given a previously-synced install with no connectivity, when the app cold starts, then portfolio totals, holdings and history all resolve from SQLite instead of pinning on skeletons', async () => {
@@ -178,11 +187,12 @@ describe('Flow: Cold start with no connectivity', () => {
 
         const { result } = renderHook(
             () => {
-                const accounts = useSigningAccounts()
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const accounts = useSigningAccounts(scope.chainId)
                 return {
-                    totals: useAccountValueTotalsQuery(accounts),
-                    balances: useAccountBalancesQuery(accounts, true),
-                    summary: useAccountSummaryQuery(ACCOUNT.address),
+                    totals: useAccountValueTotalsQuery(accounts, scope),
+                    balances: useAccountBalancesQuery(accounts, scope, true),
+                    summary: useAccountSummaryQuery(addressOf(ACCOUNT), scope),
                     history: useAccountHistory(),
                 }
             },
@@ -204,7 +214,7 @@ describe('Flow: Cold start with no connectivity', () => {
         expect(result.current.summary.algoAmount.toString()).toBe('10')
         expect(result.current.totals.portfolioUsdValue?.toString()).toBe('3')
         expect(
-            result.current.balances.accountBalances.get(ACCOUNT.address)
+            result.current.balances.accountBalances.get(addressOf(ACCOUNT))
                 ?.assetBalances.length,
         ).toBeGreaterThan(0)
 
@@ -249,7 +259,7 @@ describe('Flow: Cold start with no connectivity', () => {
         // the rate is the identity, and it's the missing *price* that makes
         // the total unknown.
         await upsertAccountBalance({
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 0,
@@ -260,7 +270,7 @@ describe('Flow: Cold start with no connectivity', () => {
             authAddress: null,
         })
         await insertAssetHolding({
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
             amount: '10000000',
@@ -271,8 +281,9 @@ describe('Flow: Cold start with no connectivity', () => {
 
         const { result } = renderHook(
             () => {
-                const accounts = useSigningAccounts()
-                return useAccountValueTotalsQuery(accounts)
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const accounts = useSigningAccounts(scope.chainId)
+                return useAccountValueTotalsQuery(accounts, scope)
             },
             { wrapper: wrapperWithClient() },
         )
@@ -313,9 +324,10 @@ describe('Flow: Cold start with no connectivity', () => {
 
         const { result } = renderHook(
             () => {
-                const accounts = useSigningAccounts()
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const accounts = useSigningAccounts(scope.chainId)
                 return {
-                    totals: useAccountValueTotalsQuery(accounts),
+                    totals: useAccountValueTotalsQuery(accounts, scope),
                     currency: useCurrency(),
                     history: useAccountHistory(),
                 }
@@ -341,7 +353,7 @@ describe('Flow: Cold start with no connectivity', () => {
     it('Given a never-synced install with no connectivity, when the History tab renders, then it says the device is offline instead of claiming there are no transactions', async () => {
         // Balance row only — no transactions were ever synced.
         await upsertAccountBalance({
-            accountAddress: ACCOUNT.address,
+            accountAddress: addressOf(ACCOUNT),
             scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(0),
             totalAssetsOptedIn: 0,

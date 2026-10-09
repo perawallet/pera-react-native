@@ -50,6 +50,7 @@ import { syncBackup } from '../syncBackup'
 import { BackupSyncAbortedError } from '../types'
 import { canonicalJson, contentHash } from '../canonicalize'
 import { TEST_SETTINGS } from './testSettings'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
@@ -73,7 +74,7 @@ const encryptionKey = new Uint8Array(32).fill(7)
 const watch: WalletAccount = {
     id: '1',
     custody: { kind: 'watch' },
-    address: 'W',
+    chains: { algorand: { address: 'W' } },
     name: 'Watcher',
 }
 
@@ -103,6 +104,7 @@ const deps = () => ({
 describe('syncBackup', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeBackupAdapter()
     })
 
     it('short-circuits to UpToDate when remote hash matches and nothing is dirty', async () => {
@@ -360,7 +362,11 @@ describe('syncBackup', () => {
     })
 
     it('stops reading account keys as soon as a stop lands', async () => {
-        const second: WalletAccount = { ...watch, id: '2', address: 'W2' }
+        const second: WalletAccount = {
+            ...watch,
+            id: '2',
+            chains: { algorand: { address: 'W2' } },
+        }
         let stopped = false
         const serializeAccount = vi.fn(async (a: WalletAccount) => {
             stopped = true

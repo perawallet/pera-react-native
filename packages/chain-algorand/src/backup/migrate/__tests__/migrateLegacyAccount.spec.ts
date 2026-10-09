@@ -65,7 +65,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
-import { accountType } from '@perawallet/wallet-core-accounts'
+import { accountType } from '../../../accounts/vocabulary'
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -75,7 +75,7 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: null,
-        hdWalletId: null,
+        hdSeedId: null,
         ledger: null,
         joint: null,
         authAddress: null,
@@ -85,7 +85,7 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
 const buildArgs = (account: LegacyAccount): MigrateAccountArgs =>
     ({
         account,
-        hdWalletsById: new Map(),
+        hdSeedsById: new Map(),
         importedHdRoots: new Map(),
         importAccount:
             vi.fn() as unknown as MigrateAccountArgs['importAccount'],
@@ -130,7 +130,7 @@ describe('migrateLegacyAccount dispatch', () => {
                 participants: ['P1', 'P2'],
             },
             ledger: null,
-            hdWalletId: 'should-be-ignored',
+            hdSeedId: 'should-be-ignored',
             secretKey: new Uint8Array(32).fill(1),
         })
 
@@ -151,7 +151,7 @@ describe('migrateLegacyAccount dispatch', () => {
                 bluetoothName: null,
                 positionInLedger: 0,
             },
-            hdWalletId: 'should-be-ignored',
+            hdSeedId: 'should-be-ignored',
         })
 
         await migrateLegacyAccount(buildArgs(account))
@@ -163,8 +163,8 @@ describe('migrateLegacyAccount dispatch', () => {
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
     })
 
-    it('routes hd accounts when hdWalletId is set and no keyless flags', async () => {
-        const account = buildAccount({ hdWalletId: 'wallet-x' })
+    it('routes hd accounts when hdSeedId is set and no keyless flags', async () => {
+        const account = buildAccount({ hdSeedId: 'wallet-x' })
 
         const result = await migrateLegacyAccount(buildArgs(account))
 
@@ -243,7 +243,7 @@ describe('isKeylessLegacyAccount', () => {
     })
 
     it('returns false for key-bearing accounts (hd, algo25)', () => {
-        expect(isKeylessLegacyAccount(buildAccount({ hdWalletId: 'w' }))).toBe(
+        expect(isKeylessLegacyAccount(buildAccount({ hdSeedId: 'w' }))).toBe(
             false,
         )
         expect(
@@ -298,15 +298,15 @@ describe('classifyLegacyAccountRoute', () => {
                         bluetoothName: null,
                         positionInLedger: 0,
                     },
-                    hdWalletId: 'w',
+                    hdSeedId: 'w',
                 }),
             ),
         ).toBe('ledger')
     })
 
-    it('returns "hd" when only hdWalletId is set', () => {
+    it('returns "hd" when only hdSeedId is set', () => {
         expect(
-            classifyLegacyAccountRoute(buildAccount({ hdWalletId: 'w' })),
+            classifyLegacyAccountRoute(buildAccount({ hdSeedId: 'w' })),
         ).toBe('hd')
     })
 
@@ -346,7 +346,7 @@ describe('migrateLegacyAccount with authAddress', () => {
         const account = buildAccount({
             type: 'standard',
             secretKey: null,
-            hdWalletId: null,
+            hdSeedId: null,
             ledger: null,
             joint: null,
             authAddress: 'AUTHADDR',

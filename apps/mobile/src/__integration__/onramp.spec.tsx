@@ -96,6 +96,7 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // The API-response shapes aren't exported from the package (schemas are
 // internal); the mock-factory param types carry them, so derive the fixture
@@ -374,12 +375,16 @@ const seedSelectedAccount = (): WalletAccount => {
     const account: WalletAccount = {
         id: 'buyer-1',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: 'buyer-key-1',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: 'buyer-key-1',
+            },
+        },
         name: 'Buyer',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -398,12 +403,16 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'buyer-1',
         custody: { kind: 'local', seed: 'algo25' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Buyer',
     }
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -652,7 +661,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         // "already opted in" branch (no attestation, no extra signing).
         server.use(
             mockAlgodAccountInformation({
-                address: account.address,
+                address: addressOf(account),
                 response: {
                     amount: 5_000_000,
                     'min-balance': 100_000,
@@ -1049,7 +1058,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         // Spendable balance below min-balance + MBR + fee → sponsored,
         // and below the MBR requirement → the sponsor funds the MBR too.
         installDelegatedOptInHandlers({
-            accountAddress: account.address,
+            accountAddress: addressOf(account),
             accountAmount: 150_000,
             sendSpy,
         })
@@ -1075,7 +1084,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             timeout: 10_000,
         })
         expect(feeDelegationBody).toMatchObject({
-            account: account.address,
+            account: addressOf(account),
             includeAssetOptInMbr: true,
             optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
         })
@@ -1115,7 +1124,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         // on top → still sponsored, but the sponsor only pools the fee
         // (0-amount self-payment; no MBR transfer to the account).
         installDelegatedOptInHandlers({
-            accountAddress: account.address,
+            accountAddress: addressOf(account),
             accountAmount: 200_500,
             sendSpy,
         })
@@ -1135,7 +1144,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         // MBR funding is always requested; the backend decides the amount
         // (zero here) from the account's live balance.
         expect(feeDelegationBody).toMatchObject({
-            account: account.address,
+            account: addressOf(account),
             includeAssetOptInMbr: true,
             optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
         })
@@ -1164,7 +1173,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
         )
         installDelegatedOptInHandlers({
-            accountAddress: account.address,
+            accountAddress: addressOf(account),
             accountAmount: 150_000,
             sendSpy,
         })

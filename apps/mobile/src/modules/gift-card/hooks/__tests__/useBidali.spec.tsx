@@ -17,10 +17,11 @@ import { useBidali } from '../useBidali'
 
 const mockAccount: WalletAccount = {
     id: 'bidali-account',
-    address: 'TESTADDRESS123',
+    chains: {
+        algorand: { address: 'TESTADDRESS123', keyPairId: 'test-key-pair-id' },
+    },
     name: 'Test Account',
     custody: { kind: 'local', seed: 'algo25' },
-    keyPairId: 'test-key-pair-id',
 }
 
 describe('useBidali', () => {

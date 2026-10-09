@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../../models'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import { testAccount } from '../../__tests__/accountFactory'
 import {
     canDerive,
     canImportRawKey,
@@ -38,18 +38,18 @@ describe('wallet eligibility and holder lookups', () => {
 
     const keys = [
         { id: 'hd-seed', type: 'seed', metadata: { scheme: 'bip39' } },
-        { id: 'algo25-seed', type: 'seed', metadata: { scheme: 'algo25' } },
-        { id: 'quantum-seed', type: 'seed', metadata: { scheme: 'quantum' } },
+        { id: 'local-seed', type: 'seed', metadata: { scheme: 'algo25' } },
+        { id: 'explicit-seed', type: 'seed', metadata: { scheme: 'quantum' } },
         { id: 'hd-key', type: 'ed25519', metadata: { parentKeyId: 'hd-seed' } },
         {
-            id: 'algo25-key',
+            id: 'local-key',
             type: 'ed25519',
-            metadata: { parentKeyId: 'algo25-seed' },
+            metadata: { parentKeyId: 'local-seed' },
         },
         {
-            id: 'quantum-key',
+            id: 'explicit-key',
             type: 'falcon-1024',
-            metadata: { parentKeyId: 'quantum-seed' },
+            metadata: { parentKeyId: 'explicit-seed' },
         },
     ] as unknown as Keys
 
@@ -87,22 +87,17 @@ describe('wallet eligibility and holder lookups', () => {
         `m/44'/9999'/${account}'/0/${keyIndex}`
 
     let hd: WalletAccount
-    let algo25: WalletAccount
+    let single: WalletAccount
     let accounts: WalletAccount[]
 
-    const withoutCredentials = (account: WalletAccount): WalletAccount => {
-        const { custody: _custody, chains: _chains, ...rest } = account
-        return rest as WalletAccount
-    }
-
     beforeEach(() => {
-        hd = buildTestAccount('hdWallet')
-        algo25 = buildTestAccount('algo25')
+        hd = testAccount('hd')
+        single = testAccount('local')
         accounts = [
             hd,
-            algo25,
-            buildTestAccount('quantum'),
-            buildTestAccount('hardware'),
+            single,
+            testAccount('explicit'),
+            testAccount('hardware'),
         ]
         register(ALGORAND, {
             schemes: ['ed25519', 'falcon-1024'],
@@ -115,8 +110,8 @@ describe('wallet eligibility and holder lookups', () => {
     describe('canDerive', () => {
         test.each([
             ['HD wallet', 'hd-seed', true, true],
-            ['raw-seed key', 'algo25-seed', false, false],
-            ['Falcon key', 'quantum-seed', false, false],
+            ['single-key seed', 'local-seed', false, false],
+            ['explicit-kind seed', 'explicit-seed', false, false],
             ['hardware device', 'device-1', false, false],
         ])('%s', (_kind, walletId, onAlgorand, onFixture) => {
             expect(canDerive(accounts, walletId, ALGORAND, keys)).toBe(
@@ -147,7 +142,7 @@ describe('wallet eligibility and holder lookups', () => {
         })
 
         test('is false for a seed with no account behind it', () => {
-            expect(canDerive([algo25], 'hd-seed', ALGORAND, keys)).toBe(false)
+            expect(canDerive([single], 'hd-seed', ALGORAND, keys)).toBe(false)
         })
     })
 
@@ -191,7 +186,7 @@ describe('wallet eligibility and holder lookups', () => {
 
         test('is undefined in a wallet that is not HD', () => {
             expect(
-                findPathHolder(accounts, 'algo25-seed', ORIGIN, keys),
+                findPathHolder(accounts, 'local-seed', ORIGIN, keys),
             ).toBeUndefined()
         })
 
@@ -259,19 +254,11 @@ describe('wallet eligibility and holder lookups', () => {
         })
 
         test('finds a watch account by its address', () => {
-            const watch = buildTestAccount('watch')
+            const watch = testAccount('watch', 'WATCH-ADDR')
 
             expect(
-                findAddressHolder([hd, watch], algorandScope, watch.address!),
+                findAddressHolder([hd, watch], algorandScope, 'WATCH-ADDR'),
             ).toBe(watch)
-        })
-
-        test('finds a record that has only a top-level address', () => {
-            const older = withoutCredentials(buildTestAccount('watch'))
-
-            expect(
-                findAddressHolder([older], algorandScope, older.address!),
-            ).toBe(older)
         })
     })
 })

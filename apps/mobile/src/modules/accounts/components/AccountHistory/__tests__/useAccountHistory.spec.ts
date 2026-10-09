@@ -50,6 +50,8 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useSelectedAccount: vi.fn(),
+    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
+        account.chains.algorand?.address,
 }))
 
 vi.mock(
@@ -121,8 +123,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 describe('useAccountHistory', () => {
+    const ACCOUNT_ADDRESS =
+        'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
-        address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        chains: { algorand: { address: ACCOUNT_ADDRESS } },
     }
     const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
@@ -449,7 +453,7 @@ describe('useAccountHistory', () => {
             })
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
-                [mockAccount.address],
+                [ACCOUNT_ADDRESS],
                 'mainnet',
             )
         })
@@ -484,7 +488,7 @@ describe('useAccountHistory', () => {
             result.current.handleExportCsv()
 
             expect(mockExportCsv).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
             })
         })
 

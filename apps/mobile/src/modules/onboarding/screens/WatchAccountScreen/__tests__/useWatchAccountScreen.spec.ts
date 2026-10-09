@@ -134,7 +134,7 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'VALID_ALGORAND_ADDRESS',
+                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
                 custody: { kind: 'watch' },
             } as WalletAccount,
         ])
@@ -152,7 +152,7 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'invalid',
+                chains: { algorand: { address: 'invalid' } },
                 custody: { kind: 'watch' },
             } as WalletAccount,
         ])
@@ -185,7 +185,7 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'VALID_ALGORAND_ADDRESS',
+                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
                 custody: { kind: 'watch' },
             } as WalletAccount,
         ])
@@ -217,7 +217,6 @@ describe('useWatchAccountScreen', () => {
 
         const expectedAccount = {
             id: 'mock-uuid',
-            address: 'VALID_ALGORAND_ADDRESS',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
         }
@@ -231,7 +230,7 @@ describe('useWatchAccountScreen', () => {
     it('handleWatchAccount appends to existing accounts', () => {
         const existingAccount = {
             id: 'existing',
-            address: 'OTHER_ADDRESS',
+            chains: { algorand: { address: 'OTHER_ADDRESS' } },
             custody: { kind: 'watch' },
         } as WalletAccount
 
@@ -251,7 +250,6 @@ describe('useWatchAccountScreen', () => {
             existingAccount,
             {
                 id: 'mock-uuid',
-                address: 'VALID_ALGORAND_ADDRESS',
                 custody: { kind: 'watch' },
                 chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
             },
@@ -308,7 +306,6 @@ describe('useWatchAccountScreen', () => {
 
         const expectedAccount = {
             id: 'mock-uuid',
-            address: QUANTUM_TEST_ADDRESS,
             custody: { kind: 'watch' },
             chains: { algorand: { address: QUANTUM_TEST_ADDRESS } },
         }

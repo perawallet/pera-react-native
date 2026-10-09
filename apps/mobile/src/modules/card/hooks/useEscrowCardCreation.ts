@@ -18,7 +18,7 @@ import {
     type CreateAndApproveCardResult,
 } from '@perawallet/wallet-core-card'
 import {
-    canSignArc60,
+    canSignDirectly,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -30,6 +30,8 @@ import {
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { requireCardAccountAddress } from '../utils/cardAccountAddress'
 
 export type UseEscrowCardCreationResult = {
     /** Step 1: signs the ARC-60 SIWA ownership proof. No network call. */
@@ -61,8 +63,10 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
     const { mutateAsync: createAndApproveAsync } =
         useCreateAndApproveCardMutation()
 
+    // An ARC-60 signature verifies against the signer's own key, so rekey is
+    // never followed; Ledger signs it on-device without a local key.
     const canCreateCard = useCallback(
-        (account: WalletAccount) => canSignArc60(account),
+        (account: WalletAccount) => canSignDirectly(account),
         [],
     )
 
@@ -101,11 +105,12 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
     const signOwnership = useCallback(
         (account: WalletAccount) => {
             // Fail before any network call so nothing is half-applied.
+            const address = requireCardAccountAddress(account, LEGACY_CHAIN_ID)
             if (!canCreateCard(account)) {
-                throw new ProgramSigningUnsupportedError(account.address)
+                throw new ProgramSigningUnsupportedError(address)
             }
             return signOwnershipAsync({
-                address: account.address,
+                address,
                 signAuthData: (authData, metadata) =>
                     requestArc60Approval(account, authData, metadata),
             })
@@ -115,7 +120,10 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
 
     const createAndApprove = useCallback(
         (account: WalletAccount, proof: CardOwnershipProof) =>
-            createAndApproveAsync({ address: account.address, proof }),
+            createAndApproveAsync({
+                address: requireCardAccountAddress(account, LEGACY_CHAIN_ID),
+                proof,
+            }),
         [createAndApproveAsync],
     )
 

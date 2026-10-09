@@ -26,6 +26,7 @@ import {
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import { validateTransactionGroupIntegrity } from '../validateTransactionGroupIntegrity'
@@ -42,18 +43,26 @@ const receiverAddress = makeTestAddress(9)
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
-        address: quantumAddress.toString(),
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: quantumAddress.toString(),
+                keyPairId: 'kp-quantum',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
-        address: algoAddress.toString(),
         custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-algo25',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: algoAddress.toString(),
+                keyPairId: 'kp-algo25',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 

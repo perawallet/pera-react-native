@@ -24,7 +24,11 @@ import {
     PWView,
 } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -61,22 +65,25 @@ export const WcConnectScreen = (): React.JSX.Element => {
         item,
     }: {
         item: WalletAccount
-    }): React.JSX.Element => (
-        <PWTouchableOpacity
-            key={item.address}
-            style={styles.accountItem}
-            onPress={() => toggle(item.address)}
-        >
-            <AccountDisplay
-                account={item}
-                showChevron={false}
-            />
-            <PWCheckbox
-                onPress={() => toggle(item.address)}
-                checked={selected.has(item.address)}
-            />
-        </PWTouchableOpacity>
-    )
+    }): React.JSX.Element => {
+        const address = chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+        return (
+            <PWTouchableOpacity
+                key={item.id}
+                style={styles.accountItem}
+                onPress={() => toggle(address)}
+            >
+                <AccountDisplay
+                    account={item}
+                    showChevron={false}
+                />
+                <PWCheckbox
+                    onPress={() => toggle(address)}
+                    checked={selected.has(address)}
+                />
+            </PWTouchableOpacity>
+        )
+    }
 
     if (isLoading || !peer) {
         return <FullScreenLoadingView />

@@ -11,12 +11,12 @@
  */
 
 import {
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
-    type HDWalletAccount,
+    hasCustody,
+    hdIndexOf,
+    type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { backupAdapterFor } from '../../chain-adapter'
 import {
     secretsItemKey,
     BackupAccountType,
@@ -49,30 +49,25 @@ export const serializeAccountForBackup = async (
     account: WalletAccount,
     { updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
 ): Promise<SerializedAccount | null> => {
-    if (isHDWalletAccount(account)) {
+    if (hasCustody(account, 'local') && hdIndexOf(account)) {
         return serializeHdAccount(account, updatedAt, hashAddress, resolveHd)
     }
 
     let secrets: SecretsBackupPayload | null = null
-    if (isAlgo25Account(account) || isQuantumAccount(account)) {
+    if (hasCustody(account, 'local')) {
         if (!resolveMnemonic) return null
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = {
-            type: isQuantumAccount(account)
-                ? BackupAccountType.quantum
-                : BackupAccountType.algo25,
-            mnemonic,
-            address: account.address,
-        }
+        secrets = backupAdapterFor().serializeMnemonicSecret(account, mnemonic)
+        if (!secrets) return null
     }
     return serializeAccountItems(account, { updatedAt, secrets, hashAddress })
 }
 
-/** HD child -> hdWallet address item; the seed rides as a shared hdSeed secret
+/** HD child -> HD address item; the seed rides as a shared hdSeed secret
  *  at secrets/<hash of seedFirstDerivedAddress> (deduped by buildLocalItems). */
 const serializeHdAccount = async (
-    account: HDWalletAccount,
+    account: LocalAccount,
     updatedAt: number,
     hashAddress: ItemKeyHasher,
     resolveHd?: SerializeHdResolver,

@@ -18,19 +18,15 @@ import { useRekeyAccount } from '../useRekeyAccount'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    FAKE_CHAIN_ID,
     fakeAccountsChain,
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -51,7 +47,7 @@ describe('useSignerFor', () => {
             signer: auth,
         })
 
-        const { result } = renderHook(() => useSignerFor('A'))
+        const { result } = renderHook(() => useSignerFor('A', FAKE_CHAIN_ID))
 
         expect(result.current).toBe(auth)
     })
@@ -64,14 +60,14 @@ describe('useSignerFor', () => {
             account: held('A'),
         })
 
-        const { result } = renderHook(() => useSignerFor('A'))
+        const { result } = renderHook(() => useSignerFor('A', FAKE_CHAIN_ID))
 
         expect(result.current).toBeNull()
     })
 
     it('returns null for an unknown address', () => {
         setAccounts([])
-        const { result } = renderHook(() => useSignerFor('Z'))
+        const { result } = renderHook(() => useSignerFor('Z', FAKE_CHAIN_ID))
         expect(result.current).toBeNull()
     })
 })
@@ -80,17 +76,18 @@ describe('useCanSignWith', () => {
     it('is true when the chain resolves a signer', () => {
         const account = held('A')
         setAccounts([account])
-        const { result } = renderHook(() => useCanSignWith(account))
+        const { result } = renderHook(() =>
+            useCanSignWith(account, FAKE_CHAIN_ID),
+        )
         expect(result.current).toBe(true)
     })
 
     it('is false when the chain resolves none', () => {
-        const account = held('A', {
-            custody: { kind: 'watch' },
-            keyPairId: undefined,
-        })
+        const account = testAccount('watch', 'A', { id: 'A' })
         setAccounts([account])
-        const { result } = renderHook(() => useCanSignWith(account))
+        const { result } = renderHook(() =>
+            useCanSignWith(account, FAKE_CHAIN_ID),
+        )
         expect(result.current).toBe(false)
     })
 })
@@ -103,14 +100,14 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
 
         expect(result.current).toBe(auth)
     })
 
     it('returns null when the account is not rekeyed', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
         expect(result.current).toBeNull()
     })
 
@@ -120,7 +117,7 @@ describe('useRekeyAccount', () => {
         const { adapter } = fakeAccountsChain()
         vi.mocked(adapter.getAuthAccount).mockReturnValue(null)
 
-        const { result } = renderHook(() => useRekeyAccount('A'))
+        const { result } = renderHook(() => useRekeyAccount('A', 'algorand'))
 
         expect(result.current).toBeNull()
     })

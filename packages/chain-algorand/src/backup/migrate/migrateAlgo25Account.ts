@@ -11,7 +11,8 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { SeedScheme, zeroBytes } from '@perawallet/wallet-core-kms'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 import { algo25SecretKeyToIndices } from './legacyKeyConversion'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
 
@@ -27,18 +28,19 @@ export const migrateAlgo25Account = async ({
         mnemonicIndices = algo25SecretKeyToIndices(account.secretKey)
         const created = await importAccount({
             mnemonicIndices,
-            type: 'algo25',
+            seed: SeedScheme.Algo25,
         })
 
-        if (!('address' in created)) {
+        if (Array.isArray(created) || !('custody' in created)) {
             throw new Error(
                 'algo25 import unexpectedly returned a pending HD result',
             )
         }
 
-        if (created.address !== account.address) {
+        const createdAddress = algorandAddressOf(created)
+        if (createdAddress !== account.address) {
             throw new Error(
-                `Imported algo25 address ${created.address} did not match legacy address ${account.address}`,
+                `Imported algo25 address ${createdAddress} did not match legacy address ${account.address}`,
             )
         }
 

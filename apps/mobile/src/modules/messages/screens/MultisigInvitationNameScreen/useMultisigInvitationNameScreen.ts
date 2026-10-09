@@ -19,21 +19,24 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     buildAccount,
+    chainAccountOf,
+    findAccountByAddressOn,
     useAccountsStore,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding'
 import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
-import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string
@@ -67,7 +70,7 @@ export const useMultisigInvitationNameScreen =
 
         const accounts = useAllAccounts()
         const setAccounts = useAccountsStore(state => state.setAccounts)
-        const { setSelectedAccountAddress } = useSelectedAccountAddress()
+        const { setSelectedAccountId } = useSelectedAccountId()
         const { setShouldPlayConfetti } = useShouldPlayConfetti()
 
         const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
@@ -79,6 +82,7 @@ export const useMultisigInvitationNameScreen =
             getNextSharedAccountName(
                 accounts,
                 t('multisig.invitation.name.default_name'),
+                LEGACY_CHAIN_ID,
                 invitation.address,
             ),
         )
@@ -91,7 +95,8 @@ export const useMultisigInvitationNameScreen =
             trimmedName !== '' &&
             accounts.some(
                 a =>
-                    a.address !== invitation.address &&
+                    chainAccountOf(a, LEGACY_CHAIN_ID)?.address !==
+                        invitation.address &&
                     (a.name ?? '').trim().toLowerCase() === normalizedName,
             )
         const nameError = isNameTaken
@@ -114,8 +119,10 @@ export const useMultisigInvitationNameScreen =
                 return
             }
 
-            const alreadyExists = accounts.some(
-                a => a.address === invitation.address,
+            const alreadyExists = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                invitation.address,
             )
             if (alreadyExists) {
                 errorToast(
@@ -160,20 +167,17 @@ export const useMultisigInvitationNameScreen =
                     chains: {
                         [adapter.chainId]: {
                             address: derivedAddress,
-                            native: {
-                                family: 'algorand',
-                                multisig: {
-                                    version: invitation.version,
-                                    threshold: invitation.threshold,
-                                    addresses: invitation.participantAddresses,
-                                },
-                            },
+                            native: adapter.toNative({
+                                version: invitation.version,
+                                threshold: invitation.threshold,
+                                addresses: invitation.participantAddresses,
+                            }),
                         },
                     },
                 })
 
                 setAccounts([...accounts, newAccount])
-                setSelectedAccountAddress(derivedAddress)
+                setSelectedAccountId(newAccount.id)
                 setShouldPlayConfetti(true)
                 successToast(
                     t('multisig.invitation.accept_success'),
@@ -201,7 +205,7 @@ export const useMultisigInvitationNameScreen =
             trimmedName,
             deleteImportInboxMutation,
             setAccounts,
-            setSelectedAccountAddress,
+            setSelectedAccountId,
             setShouldPlayConfetti,
             successToast,
             errorToast,

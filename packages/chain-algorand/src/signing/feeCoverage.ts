@@ -17,9 +17,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
-    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandAddressOf, isQuantumAccount } from '../accounts/vocabulary'
 import {
     bytesToHex,
     logger,
@@ -87,7 +87,8 @@ const signedShapeOf = (
     txn: PeraTransaction,
     signer: Nullable<WalletAccount>,
 ): Nullable<SignedTransaction> => {
-    if (!signer) return null
+    const signerAddress = signer ? algorandAddressOf(signer) : undefined
+    if (!signer || !signerAddress) return null
     let fields: Nullable<EmptySignatureFields>
     try {
         fields = emptySignatureFieldsOf(signer)
@@ -98,9 +99,9 @@ const signedShapeOf = (
     return new SignedTransaction({
         txn: asAlgosdkTransaction(txn),
         ...fields,
-        ...(signer.address === txn.sender.toString()
+        ...(signerAddress === txn.sender.toString()
             ? {}
-            : { sgnr: Address.fromString(signer.address) }),
+            : { sgnr: Address.fromString(signerAddress) }),
     })
 }
 

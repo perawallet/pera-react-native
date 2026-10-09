@@ -21,30 +21,37 @@ import {
 import type { MintedAccount } from '../../chain-adapter'
 import type { WalletAccount } from '../../models'
 import {
+    FAKE_EXPLICIT_SEED,
+    FAKE_HD_SEED,
+    FAKE_SINGLE_SEED,
     fakeAccountsChain,
     MAINNET_SCOPE,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
+import { buildTestAccount, TEST_CUSTODY } from '../../__tests__/accountFactory'
+import { addressOn } from '../../credentials'
 
 const DUMMY_INDICES = new Uint16Array(25)
 
 const mintedOf = (address: string, seedKeyId = 'SEED1'): MintedAccount => ({
-    account: {
-        id: `ACC-${address}`,
-        address,
-        custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: `${seedKeyId}-ed25519`,
-    },
+    account: buildTestAccount(
+        TEST_CUSTODY.local,
+        { algorand: { address, keyPairId: `${seedKeyId}-sign` } },
+        { id: `ACC-${address}` },
+    ),
     seedKeyId,
     isNewSeed: true,
 })
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
+// A signing key is `<seed>-sign`, so `seedOf` reads the seed off its id.
+vi.mock('../../credentials', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../credentials')>()
+    return {
+        ...actual,
+        seedOf: (account: WalletAccount) =>
+            actual.signingKeyOn(account, 'algorand')?.replace(/-sign$/, ''),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -60,28 +67,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockKeyStoreExport = vi.fn()
-
 const kmsMock = vi.hoisted(() => ({
-    getKey: vi.fn(),
-    getKeyOrThrow: vi.fn(),
-    createHDWalletKey: vi.fn(),
-    createAlgo25Key: vi.fn(),
-    createQuantumKey: vi.fn(),
     removeKeyAndChildren: vi.fn(),
     persistHDMasterKey: vi.fn(),
-    withExportedKey: vi.fn(),
-    // Mirrors the deterministic suffixes this file's fixtures use, rather than
-    // exercising the real keystore-metadata lookup.
-    seedIdOf: vi.fn((keyPairId?: string) => {
-        if (!keyPairId) return undefined
-        for (const suffix of ['-quantum-pqk1', '-quantum', '-ed25519']) {
-            if (keyPairId.endsWith(suffix)) {
-                return keyPairId.slice(0, -suffix.length)
-            }
-        }
-        return undefined
-    }),
 }))
 
 const prepareHDMasterKeyMock = vi.hoisted(() => vi.fn())
@@ -119,19 +107,7 @@ describe('useImportAccount', () => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         kmsMock.removeKeyAndChildren.mockReset()
-        kmsMock.withExportedKey.mockReset()
-        mockKeyStoreExport.mockReset()
-
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
-        mockKeyStoreExport.mockResolvedValue({
-            publicKey: new Uint8Array(32).fill(2),
-        })
-        kmsMock.withExportedKey.mockImplementation(
-            async (keyId: string, handler: (keyData: any) => any) => {
-                const keyData = await mockKeyStoreExport(keyId)
-                return handler(keyData)
-            },
-        )
         prepareHDMasterKeyMock.mockReset()
         prepareHDMasterKeyMock.mockResolvedValue({
             keyId: 'WALLET1',
@@ -141,20 +117,21 @@ describe('useImportAccount', () => {
     })
 
     test('hd wallet path: prepares import session, does not create an account', async () => {
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
-        let imported: any
+        let imported: unknown
         await act(async () => {
             imported = await result.current({
                 mnemonicIndices: DUMMY_INDICES,
-                type: 'hdWallet',
+                seed: FAKE_HD_SEED,
             })
         })
 
-        expect(imported.type).toBe('hdWallet')
-        expect(imported.walletKeyId).toBe('WALLET1')
+        expect(imported).toEqual({ kind: 'hd', walletKeyId: 'WALLET1' })
+        expect(prepareHDMasterKeyMock).toHaveBeenCalledWith({
+            mnemonicIndices: DUMMY_INDICES,
+        })
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
-        expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         expect(importOp()).not.toHaveBeenCalled()
     })
 
@@ -163,38 +140,37 @@ describe('useImportAccount', () => {
             new Error('Invalid mnemonic'),
         )
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
                 result.current({
                     mnemonicIndices: DUMMY_INDICES,
-                    type: 'hdWallet',
+                    seed: FAKE_HD_SEED,
                 }),
             ).rejects.toThrow('Invalid mnemonic')
         })
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
-    test('hands the keystore, kind and scope to the adapter and returns what it imports', async () => {
+    test('hands the kind and scope to the adapter and returns what it imports', async () => {
         const account = mintedOf('ADDR1').account
         importOp().mockResolvedValue(account)
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
-        let imported: any
+        let imported: unknown
         await act(async () => {
             imported = await result.current({
                 mnemonicIndices: DUMMY_INDICES,
-                type: 'algo25',
+                seed: FAKE_SINGLE_SEED,
             })
         })
 
         expect(imported).toBe(account)
         expect(importOp()).toHaveBeenCalledWith(
-            kmsMock,
             expect.objectContaining({
-                kind: 'algo25',
+                seed: FAKE_SINGLE_SEED,
                 mnemonicIndices: DUMMY_INDICES,
             }),
             MAINNET_SCOPE,
@@ -203,7 +179,7 @@ describe('useImportAccount', () => {
     })
 
     test('reports an address as held from the live store, not a render snapshot', async () => {
-        importOp().mockImplementation(async (_kms, { isHeld }) => {
+        importOp().mockImplementation(async ({ isHeld }) => {
             useAccountsStore.setState({
                 accounts: [mintedOf('HELD').account],
             })
@@ -212,12 +188,12 @@ describe('useImportAccount', () => {
             return []
         })
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await result.current({
                 mnemonicIndices: DUMMY_INDICES,
-                type: 'quantum',
+                seed: FAKE_EXPLICIT_SEED,
             })
         })
 
@@ -225,7 +201,7 @@ describe('useImportAccount', () => {
     })
 
     test('persists each account the adapter saves, one at a time', async () => {
-        importOp().mockImplementation(async (_kms, _request, _scope, save) => {
+        importOp().mockImplementation(async (_request, _scope, save) => {
             const first = mintedOf('ADDR1')
             const second = mintedOf('ADDR2')
             await save(first)
@@ -234,40 +210,42 @@ describe('useImportAccount', () => {
             return [first.account, second.account]
         })
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await result.current({
                 mnemonicIndices: DUMMY_INDICES,
-                type: 'quantum',
+                seed: FAKE_EXPLICIT_SEED,
             })
         })
 
         expect(
-            useAccountsStore.getState().accounts.map(a => a.address),
+            useAccountsStore
+                .getState()
+                .accounts.map(a => addressOn(a, MAINNET_SCOPE)),
         ).toEqual(['ADDR1', 'ADDR2'])
         expect(kmsMock.removeKeyAndChildren).not.toHaveBeenCalled()
     })
 
     test('rejects a second import of the same address and sweeps the seed it minted', async () => {
-        importOp().mockImplementation(async (_kms, _request, _scope, save) => {
+        importOp().mockImplementation(async (_request, _scope, save) => {
             const minted = mintedOf('ADDR1', 'WALLET1')
             await save(minted)
             return minted.account
         })
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         // Back to back with no re-render, as the Pera Web / ASB import loop does.
         await act(async () => {
             await result.current({
                 mnemonicIndices: DUMMY_INDICES,
-                type: 'algo25',
+                seed: FAKE_SINGLE_SEED,
             })
             await expect(
                 result.current({
                     mnemonicIndices: DUMMY_INDICES,
-                    type: 'algo25',
+                    seed: FAKE_SINGLE_SEED,
                 }),
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
@@ -277,27 +255,26 @@ describe('useImportAccount', () => {
     })
 
     test('keeps a seed that a sibling account still depends on when a duplicate is found', async () => {
-        const sibling: WalletAccount = {
-            id: 'SIBLING',
-            address: 'SIBLING_ADDR',
-            custody: { kind: 'local', seed: 'quantum' },
-            keyPairId: 'SEED1-quantum-pqk1',
-        }
+        const sibling: WalletAccount = buildTestAccount(
+            TEST_CUSTODY.explicit,
+            { algorand: { address: 'SIBLING_ADDR', keyPairId: 'SEED1-sign' } },
+            { id: 'SIBLING' },
+        )
         useAccountsStore.setState({
             accounts: [sibling, mintedOf('DUP', 'OTHER_SEED').account],
         })
-        importOp().mockImplementation(async (_kms, _request, _scope, save) => {
+        importOp().mockImplementation(async (_request, _scope, save) => {
             await save(mintedOf('DUP', 'SEED1'))
             return []
         })
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
                 result.current({
                     mnemonicIndices: DUMMY_INDICES,
-                    type: 'quantum',
+                    seed: FAKE_EXPLICIT_SEED,
                 }),
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
@@ -308,16 +285,16 @@ describe('useImportAccount', () => {
     test('fails closed on a chain without single-key accounts, minting nothing', async () => {
         registerFakeAccountsChain({ singleKeyAccounts: undefined })
 
-        const { result } = renderHook(() => useImportAccount())
+        const { result } = renderHook(() => useImportAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
                 result.current({
                     mnemonicIndices: DUMMY_INDICES,
-                    type: 'quantum',
+                    seed: FAKE_EXPLICIT_SEED,
                 }),
             ).rejects.toBeInstanceOf(SingleKeyAccountsUnsupportedError)
         })
-        expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
+        expect(useAccountsStore.getState().accounts).toEqual([])
     })
 })

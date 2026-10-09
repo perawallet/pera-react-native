@@ -14,7 +14,12 @@ import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    findAddressHolder,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,8 +43,9 @@ export const OptOutConfirmationContent = ({
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
     const { fee } = useOptOutConfirmationContent()
 
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountName = useAccountsStore(s => {
-        const account = s.accounts.find(a => a.address === accountAddress)
+        const account = findAddressHolder(s.accounts, scope, accountAddress)
         return account?.name ?? accountAddress
     })
 

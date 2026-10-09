@@ -55,5 +55,6 @@ export const signLocalKeyGroups = async (
             )
             return strategy.sign(group, accountForSigning)
         },
+        scope.chainId,
     )
 }

@@ -24,6 +24,7 @@ import {
     AsbAccountKind,
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 export type UseAsbAccountImportResult = {
     importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
@@ -76,7 +77,7 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             }
             const currentAccounts = useAccountsStore.getState().accounts
             const isDuplicate = currentAccounts.some(
-                a => a.address === account.address,
+                a => algorandAddressOf(a) === account.address,
             )
             if (isDuplicate) {
                 throw new DuplicateAccountError(account.address)

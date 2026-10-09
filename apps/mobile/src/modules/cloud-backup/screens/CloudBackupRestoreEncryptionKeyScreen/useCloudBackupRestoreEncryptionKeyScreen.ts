@@ -17,6 +17,8 @@ import {
     type BackupEncryptionKey,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
@@ -93,7 +95,8 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
     const [encryptionKey, setEncryptionKey] = useState(importedKey?.salt ?? '')
     const { hasMnemonic, clearDraft } = useRestoreDraft()
     const outcome = useRestoreOutcome({ clearDraft, onDone })
-    const mutation = useRestoreCloudBackupMutation(outcome)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const mutation = useRestoreCloudBackupMutation(scope, outcome)
     const isRestoring = mutation.isPending
     const restoreProgress = useCloudBackupRestoreProgress()
     const handleRestore = useRestoreRunner(

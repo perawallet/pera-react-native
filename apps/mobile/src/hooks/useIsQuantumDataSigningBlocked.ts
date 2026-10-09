@@ -11,7 +11,7 @@
  */
 
 import {
-    isQuantumAccount,
+    findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -20,6 +20,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { holdsQuantumKey } from '@utils/quantumKey'
 
 /**
  * ARC-60 and arbitrary-data signatures are ed25519-only in the current
@@ -42,7 +43,11 @@ export const useIsQuantumDataSigningBlocked = (
     // by validateArc60AuthRequest (control moved to the auth), and naming the
     // quantum auth lands here.
     return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
-        const account = accounts.find(a => a.address === address)
-        return !!account && isQuantumAccount(account)
+        const account = findAccountByAddressOn(
+            accounts,
+            LEGACY_CHAIN_ID,
+            address,
+        )
+        return !!account && holdsQuantumKey(account)
     })
 }

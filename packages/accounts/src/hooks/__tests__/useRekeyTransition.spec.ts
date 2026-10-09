@@ -20,15 +20,10 @@ import {
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: 'algo25' },
-        address,
-        keyPairId: 'k',
-        ...extra,
-    }) as WalletAccount
+    testAccount('local', address, { id: address, ...extra })
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -41,39 +36,36 @@ describe('useRekeyTransition', () => {
     })
 
     it('returns null when no address is provided', () => {
-        const { result } = renderHook(() => useRekeyTransition(null))
+        const { result } = renderHook(() =>
+            useRekeyTransition(null, 'algorand'),
+        )
         expect(result.current).toBeNull()
     })
 
     it('returns null when the address is not in the wallet', () => {
         setAccounts([])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useRekeyTransition('A', 'algorand'))
         expect(result.current).toBeNull()
     })
 
     it('returns null for a non-rekeyed account', () => {
         setAccounts([held('A')])
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useRekeyTransition('A', 'algorand'))
         expect(result.current).toBeNull()
     })
 
-    it("returns the from/to types from the chain's signer for a rekeyed account", () => {
+    it("returns the account and the chain's signer for a rekeyed account", () => {
         const signer = held('S')
+        const rekeyed = testAccount('watch', 'A', { id: 'A' })
         seedAuthority('A', 'S')
-        setAccounts([
-            held('A', {
-                custody: { kind: 'watch' },
-                keyPairId: undefined,
-            }),
-            signer,
-        ])
+        setAccounts([rekeyed, signer])
         vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockReturnValue({
             kind: 'ok',
             signer,
         })
 
-        const { result } = renderHook(() => useRekeyTransition('A'))
+        const { result } = renderHook(() => useRekeyTransition('A', 'algorand'))
 
-        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
+        expect(result.current).toEqual({ from: rekeyed, to: signer })
     })
 })

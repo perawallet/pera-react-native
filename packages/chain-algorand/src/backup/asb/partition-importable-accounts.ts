@@ -16,6 +16,7 @@ import type {
     AsbBackupAccount,
     AsbImportablePartition,
 } from '@perawallet/wallet-core-backup'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 /**
  * Bucket the decrypted accounts into three lists driven by the wallet's
@@ -34,7 +35,9 @@ export const partitionImportableAccounts = (
     asbAccounts: AsbBackupAccount[],
     existingAccounts: WalletAccount[],
 ): AsbImportablePartition => {
-    const existingAddresses = new Set(existingAccounts.map(a => a.address))
+    const existingAddresses = new Set(
+        existingAccounts.flatMap(a => algorandAddressOf(a) ?? []),
+    )
 
     const importable: AsbBackupAccount[] = []
     const alreadyImported: AsbBackupAccount[] = []

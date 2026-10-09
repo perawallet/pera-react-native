@@ -14,7 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     SETTINGS_ITEM_ID,
     deriveBackupKeys,
@@ -70,7 +74,9 @@ const setupSyncedBackup = async () => {
     })
     server.use(...handlers)
 
-    const importHook = renderQueryHook(() => useCloudBackupImport())
+    const importHook = renderQueryHook(() =>
+        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+    )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )

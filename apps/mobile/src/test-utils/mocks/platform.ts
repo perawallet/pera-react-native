@@ -273,6 +273,12 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         // Keystore hydration completes before `RootComponent` (and so
         // `ConnectionsProvider`) mounts, so an already-resolved promise is faithful.
         getKeystore: () => ({ ready: Promise.resolve() }),
+        // Empty, as before the keystore loads: a key's scheme falls back to
+        // its account's custody.
+        getKeystoreStore: () => ({
+            state: { keys: [] },
+            subscribe: vi.fn(() => vi.fn()),
+        }),
     }
 })
 

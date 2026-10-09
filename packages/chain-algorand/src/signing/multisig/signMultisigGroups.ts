@@ -86,5 +86,6 @@ export const signMultisigGroups = async (
             const strategy = selectStrategy(signerAccount, allAccounts)
             return strategy.sign(group, signerAccount, signingCallbacks)
         },
+        scope.chainId,
     )
 }

@@ -23,9 +23,12 @@ import {
     type SignAndSubmitGroupParams,
 } from '@perawallet/wallet-core-signing'
 import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
-import { mutationDefaults, toError } from '@perawallet/wallet-core-shared'
-
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    mutationDefaults,
+    type Network,
+    type Nullable,
+    toError,
+} from '@perawallet/wallet-core-shared'
 
 export type AssetHoldingMutationContext = {
     scope: ChainScope
@@ -66,8 +69,10 @@ export const useAssetHoldingMutation = <TParams>({
     run,
 }: UseAssetHoldingMutationOptions<TParams>): UseAssetHoldingMutationResult<TParams> => {
     const { submit } = useSignAndSubmitGroup()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
     const { network } = useNetwork()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(
+        scopeForLegacyNetwork(network).chainId,
+    )
     const queryClient = useQueryClient()
 
     const mutation = useMutation<{ txIds: string[] }, Error, TParams>({

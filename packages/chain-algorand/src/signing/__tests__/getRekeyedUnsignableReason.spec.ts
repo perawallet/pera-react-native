@@ -19,6 +19,7 @@ import {
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getRekeyedUnsignableReason } from '../getRekeyedUnsignableReason'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const OK_SENDER = 'OK_SENDER'
 const REKEYED_EXTERNAL = 'REKEYED_EXTERNAL'
@@ -29,26 +30,44 @@ const WATCH_AUTH = 'WATCH_AUTH'
 const accounts = [
     {
         id: 'ok',
-        address: OK_SENDER,
         custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-ok',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: OK_SENDER,
+                keyPairId: 'kp-ok',
+            },
+        },
     },
     {
         id: 'ext',
-        address: REKEYED_EXTERNAL,
         custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-ext',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: REKEYED_EXTERNAL,
+                keyPairId: 'kp-ext',
+            },
+        },
+        rekeyAddress: EXTERNAL_AUTH,
     },
     {
         id: 'rw',
-        address: REKEYED_TO_WATCH,
         custody: { kind: 'local', seed: 'algo25' },
-        keyPairId: 'kp-rw',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: REKEYED_TO_WATCH,
+                keyPairId: 'kp-rw',
+            },
+        },
+        rekeyAddress: WATCH_AUTH,
     },
     {
         id: 'watch-auth',
-        address: WATCH_AUTH,
         custody: { kind: 'watch' },
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: WATCH_AUTH,
+            },
+        },
     },
 ] as unknown as WalletAccount[]
 

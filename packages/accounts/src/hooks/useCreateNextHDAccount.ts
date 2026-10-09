@@ -11,12 +11,12 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
 import type { WalletAccount } from '../models'
-import { isHDWalletAccount } from '../utils'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { hdIndexOf, seedOf } from '../credentials'
 
 type UseCreateNextHDAccountResult = {
     createNextHDAccount: () => Promise<Nullable<WalletAccount>>
@@ -24,63 +24,43 @@ type UseCreateNextHDAccountResult = {
     hasHDWallet: boolean
 }
 
-export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
-    const accounts = useAllAccounts()
-    const { createHdWalletAccount, buildHdWalletAccount } = useCreateAccount()
-    const { seedIdOf } = useKMS()
+/** The first HD wallet's id and the account index after its highest, or null with no HD wallet. */
+const nextHdSlot = (
+    hdAccounts: readonly WalletAccount[],
+): Nullable<{ walletId: string; account: number }> => {
+    if (hdAccounts.length === 0) return null
+    // The seed (the wallet identifier) is the parent of each account's key.
+    const walletId = seedOf(hdAccounts[0])
+    if (!walletId) return null
+    const indices = hdAccounts
+        .filter(a => seedOf(a) === walletId)
+        .flatMap(a => hdIndexOf(a)?.account ?? [])
+    return { walletId, account: Math.max(...indices) + 1 }
+}
 
-    const hdWalletAccounts = useMemo(
-        () => accounts.filter(isHDWalletAccount),
+export const useCreateNextHDAccount = (
+    scope: ChainScope,
+): UseCreateNextHDAccountResult => {
+    const accounts = useAllAccounts()
+    const { createHdWalletAccount, buildHdWalletAccount } =
+        useCreateAccount(scope)
+
+    const hdAccounts = useMemo(
+        () => accounts.filter(a => hdIndexOf(a) !== undefined),
         [accounts],
     )
 
-    const hasHDWallet = hdWalletAccounts.length > 0
+    const hasHDWallet = hdAccounts.length > 0
 
     const createNextHDAccount = useCallback(async () => {
-        if (hdWalletAccounts.length === 0) return null
-
-        const firstHDAccount = hdWalletAccounts[0]
-        // Account.keyPairId is the derived child id; the seed (i.e. the
-        // wallet identifier) is its parent.
-        const walletId = seedIdOf(firstHDAccount.keyPairId)
-        if (!walletId) return null
-
-        const sameWalletAccounts = hdWalletAccounts.filter(
-            a => seedIdOf(a.keyPairId) === walletId,
-        )
-        const nextAccountIndex =
-            Math.max(
-                ...sameWalletAccounts.map(a => a.hdWalletDetails.account),
-            ) + 1
-
-        return createHdWalletAccount({
-            walletId,
-            account: nextAccountIndex,
-            keyIndex: 0,
-        })
-    }, [hdWalletAccounts, createHdWalletAccount, seedIdOf])
+        const slot = nextHdSlot(hdAccounts)
+        return slot ? createHdWalletAccount({ ...slot, keyIndex: 0 }) : null
+    }, [hdAccounts, createHdWalletAccount])
 
     const buildNextHDAccount = useCallback(async () => {
-        if (hdWalletAccounts.length === 0) return null
-
-        const firstHDAccount = hdWalletAccounts[0]
-        const walletId = seedIdOf(firstHDAccount.keyPairId)
-        if (!walletId) return null
-
-        const sameWalletAccounts = hdWalletAccounts.filter(
-            a => seedIdOf(a.keyPairId) === walletId,
-        )
-        const nextAccountIndex =
-            Math.max(
-                ...sameWalletAccounts.map(a => a.hdWalletDetails.account),
-            ) + 1
-
-        return buildHdWalletAccount({
-            walletId,
-            account: nextAccountIndex,
-            keyIndex: 0,
-        })
-    }, [hdWalletAccounts, buildHdWalletAccount, seedIdOf])
+        const slot = nextHdSlot(hdAccounts)
+        return slot ? buildHdWalletAccount({ ...slot, keyIndex: 0 }) : null
+    }, [hdAccounts, buildHdWalletAccount])
 
     return { createNextHDAccount, buildNextHDAccount, hasHDWallet }
 }

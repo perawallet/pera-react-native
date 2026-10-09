@@ -14,7 +14,9 @@ import { useCallback } from 'react'
 import {
     useSigningAccounts,
     type WalletAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AccountPicker } from '@components/AccountPicker'
@@ -36,10 +38,13 @@ export const OptInAccountSelectionContent = ({
 }: OptInAccountSelectionContentProps) => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<string>()
-    const signableAccounts = useSigningAccounts()
+    const signableAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
 
     const handleSelect = useCallback(
-        (account: WalletAccount) => resolve(account.address),
+        (account: WalletAccount) => {
+            const address = chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+            if (address) resolve(address)
+        },
         [resolve],
     )
 

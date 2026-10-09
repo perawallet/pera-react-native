@@ -12,11 +12,10 @@
 
 import { useMemo } from 'react'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
-    scopeForLegacyNetwork,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
@@ -24,7 +23,6 @@ import {
     useNativeAsset,
 } from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
@@ -56,14 +54,14 @@ export type UseAccountSummaryResult = {
  * `useAccountValueTotalsQuery` can populate the exact same cache entries this
  * hook reads — the header and the account lists share one query per account.
  */
-export const readAccountSummary = async (address: string, network: Network) => {
+export const readAccountSummary = async (
+    address: string,
+    scope: ChainScope,
+) => {
     // Self-heal a freshly imported/selected account the background sync
     // hasn't populated yet (deduped with the holdings-page fetch).
-    await ensureAccountFetched(address, network)
-    return getAccountPortfolioTotals({
-        accountAddress: address,
-        scope: scopeForLegacyNetwork(network),
-    })
+    await ensureAccountFetched(address, scope)
+    return getAccountPortfolioTotals({ accountAddress: address, scope })
 }
 
 /**
@@ -76,9 +74,9 @@ export const readAccountSummary = async (address: string, network: Network) => {
  * only needed to express the USD total in ALGO terms.
  */
 export const useAccountSummaryQuery = (
-    address?: string,
+    address: string | undefined,
+    scope: ChainScope,
 ): UseAccountSummaryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
 
     const query = useQuery({
@@ -90,7 +88,7 @@ export const useAccountSummaryQuery = (
         // which would strand consumers in `pending`. Network segments are
         // already caught in the syncer.
         networkMode: 'always',
-        queryFn: () => readAccountSummary(address as string, network),
+        queryFn: () => readAccountSummary(address as string, scope),
     })
 
     const nativeAssetId = useNativeAsset().assetId

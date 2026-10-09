@@ -17,13 +17,9 @@ import {
     isRekeyedAccount,
     useAccountAssetBalanceQuery,
     useAccountBalancesQuery,
-    useAccountInformationQuery,
     useSelectedAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { useSendDestinationRouter } from '../useSendDestinationRouter'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import {
     useIsNativeAssetId,
     useNativeAsset,
@@ -33,6 +29,12 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
+import { useSendDestinationRouter } from '../useSendDestinationRouter'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -40,16 +42,19 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import type { Maybe } from '@perawallet/wallet-core-shared'
 
 type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const isNativeAssetId = useIsNativeAssetId()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
+    const selectedAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const {
         selectedAssetId,
         amount,
@@ -108,6 +113,7 @@ export const useInputScreen = () => {
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -143,26 +149,25 @@ export const useInputScreen = () => {
     // and this is the same resolver the confirmation screen displays from —
     // any amount derived here must reserve the fee the transaction will
     // actually carry, not the base one.
-    const { minFee } = useMinFeeForSender(selectedAccount?.address)
+    const { minFee } = useMinFeeForSender(selectedAddress, scope.chainId)
     const { baseAccountMbr } = useMinimumFeeConfig()
-    const { data: accountInformation } = useAccountInformationQuery(
-        selectedAccount?.address ?? '',
-    )
+    const accountInformation = useSenderBalances(selectedAccount)
     const { data: accountAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         selectedAssetId,
+        scope,
     )
 
     const tokenBalance = useMemo(() => {
-        if (!selectedAccount) {
+        if (!selectedAddress) {
             return null
         }
         const assetToUse = accountBalances
-            ?.get(selectedAccount.address)
+            ?.get(selectedAddress)
             ?.assetBalances?.find(b => b.assetId === selectedAssetId)
         const assetAmount = assetToUse?.amount ?? new Decimal(0)
         return assetAmount
-    }, [accountBalances, selectedAssetId, selectedAccount])
+    }, [accountBalances, selectedAssetId, selectedAddress])
 
     const maxAmount = useMemo(() => {
         if (isNativeAssetId(selectedAssetId)) {
@@ -231,7 +236,7 @@ export const useInputScreen = () => {
     // balance — the rekey would be lost and the account left unusable. So
     // MAX is the spendable amount, and the close-account path is suppressed.
     const isRekeyedSender = selectedAccount
-        ? isRekeyedAccount(selectedAccount, LEGACY_CHAIN_ID)
+        ? isRekeyedAccount(selectedAccount, scope.chainId)
         : false
 
     const setMax = useCallback(() => {
@@ -244,7 +249,7 @@ export const useInputScreen = () => {
     const canCloseAccount = useMemo(() => {
         return (
             isNativeAssetId(selectedAssetId) &&
-            (accountInformation?.assets?.length ?? 0) === 0 &&
+            !accountInformation?.hasOptedInAssets &&
             (accountInformation?.minBalance ?? 0n) <= baseAccountMbr
         )
     }, [isNativeAssetId, selectedAssetId, accountInformation, baseAccountMbr])
@@ -451,8 +456,7 @@ export const useInputScreen = () => {
         !!accountInformation &&
         minFee !== undefined &&
         (isNativeAssetId(selectedAssetId) ||
-            (!!selectedAccount &&
-                !!accountBalances?.get(selectedAccount.address)))
+            (!!selectedAddress && !!accountBalances?.get(selectedAddress)))
 
     // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
     // so every check a real tap makes still applies on the way to confirm.

@@ -11,8 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     isSignRequestAwaitingPreflight,
     useSigningRequest,
@@ -59,15 +58,11 @@ export const useSignRequestApprovalScreen =
     (): UseSignRequestApprovalScreenResult => {
         const { requestId, approval, isLoading } = useDappRequest()
         const { t } = useLanguage()
-        // Every legacy network is the same chain, so reading it once is safe
-        // (the pattern useConnectionsProvider.web.ts already uses); the
-        // approval's own `chainId` still goes on the message below.
-        const transactionSigning = useChainTransactionSigning(
-            scopeForLegacyNetwork(useNetworkStore.getState().network).chainId,
-        )
+        // The approval's own `chainId` still goes on the message below.
+        const transactionSigning = useChainTransactionSigning(LEGACY_CHAIN_ID)
         const { addSignRequest, removeSignRequest, currentRequest } =
             useSigningRequest()
-        const accounts = useSigningAccounts()
+        const accounts = useSigningAccounts(LEGACY_CHAIN_ID)
         // The adapter matches a named signer against approved accounts' auth
         // addresses, and useSigningAccounts filters a keyless one of those out.
         const allAccounts = useAllAccounts()

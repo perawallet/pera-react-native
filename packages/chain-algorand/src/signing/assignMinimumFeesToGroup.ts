@@ -16,9 +16,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
-    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { isQuantumAccount } from '../accounts/vocabulary'
 import {
     calculateMinTxnFee,
     calculatePQFeeSurcharge,

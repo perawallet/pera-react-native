@@ -39,9 +39,17 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: mockNetwork }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountBalancesQuery: () => ({
         accountBalances: new Map([
             [
@@ -101,7 +109,12 @@ vi.mock('../../../components/CardSelectAssetContent', () => ({
 }))
 
 vi.mock('../../../hooks', () => ({
-    useCardFundingAccount: () => ({ address: 'ADDR', name: 'Main Account' }),
+    useCardFundingAccount: () => ({
+        id: 'main',
+        name: 'Main Account',
+        custody: { kind: 'local', seed: 'algo25' },
+        chains: { algorand: { address: 'ADDR' } },
+    }),
     useCardManualDeposit: () => ({
         deposit: mockDeposit,
         isDepositing: false,
@@ -153,7 +166,9 @@ describe('useCardAddFundsScreen', () => {
         const { result } = renderHook(() => useCardAddFundsScreen())
 
         expect(result.current.isUsdc).toBe(true)
-        expect(result.current.fundingAccount?.address).toBe('ADDR')
+        expect(result.current.fundingAccount?.chains.algorand?.address).toBe(
+            'ADDR',
+        )
         expect(result.current.balanceDisplay).toBe('320.32')
         expect(result.current.rate).toBeNull()
     })

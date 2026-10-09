@@ -10,206 +10,99 @@
  limitations under the License
  */
 
-import { beforeEach, describe, test, expect } from 'vitest'
-import { DerivationTypes, type AccountCustody } from '../../models'
+import { describe, test, expect } from 'vitest'
+import type { AccountCustody } from '../../models'
 import { AccountError } from '../../errors'
 import { buildAccount, type BuildAccountInput } from '../buildAccount'
-import { custodyFromLegacy } from '../backfill'
-import { accountType } from '../../utils'
-import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import { TEST_CUSTODY } from '../../__tests__/accountFactory'
+import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
 
-const device = {
-    manufacturer: 'ledger' as const,
-    deviceId: 'ble-1',
-    deviceName: 'Nano X',
-    transportType: 'ble' as const,
-}
-
-const multisig = { version: 1, threshold: 2, addresses: ['P1', 'P2'] }
-
-const inputs: Record<string, BuildAccountInput> = {
-    algo25: {
-        custody: { kind: 'local', seed: 'algo25' },
-        chainId: 'algorand',
-        chains: { algorand: { address: 'ADDR', keyPairId: 'seed-ed25519' } },
+const inputs: Record<keyof typeof TEST_CUSTODY, BuildAccountInput> = {
+    local: {
+        custody: TEST_CUSTODY.local,
+        chainId: FAKE_CHAIN_ID,
+        chains: { [FAKE_CHAIN_ID]: { address: 'ADDR', keyPairId: 'k-local' } },
     },
-    quantum: {
-        custody: { kind: 'local', seed: 'quantum' },
-        chainId: 'algorand',
+    explicit: {
+        custody: TEST_CUSTODY.explicit,
+        chainId: FAKE_CHAIN_ID,
         chains: {
-            algorand: { address: 'ADDR', keyPairId: 'seed-quantum-pqk1' },
+            [FAKE_CHAIN_ID]: { address: 'ADDR', keyPairId: 'k-explicit' },
         },
     },
-    hdWallet: {
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 1, keyIndex: 4 },
-        },
-        chainId: 'algorand',
-        chains: {
-            algorand: { address: 'ADDR', keyPairId: 'seed-acc1-idx4-dt9' },
-        },
+    hd: {
+        custody: TEST_CUSTODY.hd,
+        chainId: FAKE_CHAIN_ID,
+        chains: { [FAKE_CHAIN_ID]: { address: 'ADDR', keyPairId: 'k-hd' } },
     },
     hardware: {
-        custody: { kind: 'hardware', device, accountIndex: 2 },
-        chainId: 'algorand',
-        chains: { algorand: { address: 'ADDR' } },
+        custody: TEST_CUSTODY.hardware,
+        chainId: FAKE_CHAIN_ID,
+        chains: { [FAKE_CHAIN_ID]: { address: 'ADDR' } },
     },
     multisig: {
-        custody: { kind: 'multisig' },
-        chainId: 'algorand',
-        chains: {
-            algorand: {
-                address: 'ADDR',
-                native: { family: 'algorand', multisig },
-            },
-        },
+        custody: TEST_CUSTODY.multisig,
+        chainId: FAKE_CHAIN_ID,
+        chains: { [FAKE_CHAIN_ID]: { address: 'ADDR' } },
     },
     watch: {
-        custody: { kind: 'watch' },
-        chainId: 'algorand',
-        chains: { algorand: { address: 'ADDR' } },
+        custody: TEST_CUSTODY.watch,
+        chainId: FAKE_CHAIN_ID,
+        chains: { [FAKE_CHAIN_ID]: { address: 'ADDR' } },
     },
 }
 
 describe('buildAccount', () => {
-    beforeEach(() => {
-        registerFakeAccountsChain()
-    })
-
-    test('builds a legacy algo25 account keyed by its Algorand key', () => {
-        expect(buildAccount({ id: 'id', ...inputs.algo25 })).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
-            keyPairId: 'seed-ed25519',
-            custody: { kind: 'local', seed: 'algo25' },
-            chains: {
-                algorand: { address: 'ADDR', keyPairId: 'seed-ed25519' },
-            },
-        })
-    })
-
-    test('builds a legacy quantum account from a quantum seed', () => {
-        expect(buildAccount({ id: 'id', ...inputs.quantum })).toMatchObject({
-            custody: { kind: 'local', seed: 'quantum' },
-            keyPairId: 'seed-quantum-pqk1',
-        })
-    })
-
-    test('writes the fixed legacy HD details from the custody position', () => {
-        expect(buildAccount({ id: 'id', ...inputs.hdWallet })).toMatchObject({
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 1, keyIndex: 4 },
-            },
-            keyPairId: 'seed-acc1-idx4-dt9',
-            hdWalletDetails: {
-                account: 1,
-                change: 0,
-                keyIndex: 4,
-                derivationType: DerivationTypes.Peikert,
-            },
-        })
-    })
-
-    test('builds a hardware account with its device details and no key', () => {
-        expect(buildAccount({ id: 'id', ...inputs.hardware })).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
-            hardwareDetails: { ...device, accountIndex: 2 },
-            custody: inputs.hardware.custody,
-            chains: { algorand: { address: 'ADDR' } },
-        })
-    })
-
-    test('derives the multisig details from the chain entry', () => {
-        expect(buildAccount({ id: 'id', ...inputs.multisig })).toMatchObject({
-            custody: { kind: 'multisig' },
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        })
-    })
-
-    test('builds a watch account', () => {
-        expect(buildAccount({ id: 'id', ...inputs.watch })).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR' } },
-        })
-    })
-
     test.each(Object.entries(inputs))(
-        'writes the top-level address from the chain entry of a %s account',
+        'a %s account holds only its id, custody and chains',
         (_kind, input) => {
-            expect(buildAccount(input).address).toBe(
-                input.chains.algorand?.address,
-            )
-        },
-    )
-
-    test.each(Object.entries(inputs))(
-        'round-trips a %s custody and its chains through the legacy fields',
-        (_kind, input) => {
-            const account = buildAccount(input)
-
-            expect(
-                custodyFromLegacy({ ...account, type: accountType(account) }),
-            ).toEqual({
+            expect(buildAccount({ id: 'id', ...input })).toStrictEqual({
+                id: 'id',
                 custody: input.custody,
                 chains: input.chains,
             })
         },
     )
 
-    test.each(Object.entries(inputs))(
-        'a %s account carries no type, and reads back as its kind',
-        (kind, input) => {
-            const account = buildAccount(input)
+    test('keeps every chain entry, not only the one it was built on', () => {
+        const chains = {
+            [FAKE_CHAIN_ID]: { address: 'ADDR', keyPairId: 'k1' },
+            ethereum: { address: '0xabc', keyPairId: 'k2' },
+        }
 
-            expect(account).not.toHaveProperty('type')
-            expect(accountType(account)).toBe(kind)
-        },
-    )
+        expect(
+            buildAccount({
+                custody: TEST_CUSTODY.local,
+                chainId: FAKE_CHAIN_ID,
+                chains,
+            }).chains,
+        ).toStrictEqual(chains)
+    })
+
+    test('refuses an account with no entry on the chain it is built on', () => {
+        expect(() =>
+            buildAccount({
+                custody: TEST_CUSTODY.watch,
+                chainId: 'ethereum',
+                chains: { [FAKE_CHAIN_ID]: { address: 'ADDR' } },
+            }),
+        ).toThrow(AccountError)
+    })
 
     test('refuses a local custody without a key on its chain', () => {
         const input = {
-            custody: { kind: 'local', seed: 'algo25' },
-            chainId: 'algorand',
-            chains: { algorand: { address: 'ADDR' } },
-        } as unknown as BuildAccountInput<AccountCustody>
+            custody: TEST_CUSTODY.local,
+            chainId: FAKE_CHAIN_ID,
+            chains: { [FAKE_CHAIN_ID]: { address: 'ADDR' } },
+        } as BuildAccountInput<AccountCustody>
 
         expect(() => buildAccount(input)).toThrow(AccountError)
     })
 
-    test('refuses a multisig custody without its multisig on its chain', () => {
-        const input = {
-            custody: { kind: 'multisig' },
-            chainId: 'algorand',
-            chains: { algorand: { address: 'ADDR' } },
-        } as unknown as BuildAccountInput<AccountCustody>
-
-        expect(() => buildAccount(input)).toThrow(AccountError)
-    })
-
-    test('passes name and rekey state through', () => {
-        const account = buildAccount({
-            ...inputs.watch,
-            name: 'Savings',
-            rekeyAddress: 'AUTH',
-            rekeyAddressByNetwork: { mainnet: 'AUTH' },
-        })
-
-        expect(account).toMatchObject({
-            name: 'Savings',
-            rekeyAddress: 'AUTH',
-            rekeyAddressByNetwork: { mainnet: 'AUTH' },
-        })
+    test('passes the name through', () => {
+        expect(
+            buildAccount({ ...inputs.watch, name: 'Savings' }),
+        ).toMatchObject({ name: 'Savings' })
     })
 
     test('generates a distinct id when none is given', () => {

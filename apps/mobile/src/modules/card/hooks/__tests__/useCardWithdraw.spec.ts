@@ -17,7 +17,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     escrowCardAddress: 'CARD' as string | null,
-    owner: { address: 'OWNER' } as unknown,
+    owner: { chains: { algorand: { address: 'OWNER' } } } as unknown,
     pending: null as unknown,
     waitTimeSeconds: 20 as number | null,
     buildRequest: vi.fn(),
@@ -67,6 +67,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: 'testnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 vi.mock('@tanstack/react-query', async () => ({
     ...(await vi.importActual<object>('@tanstack/react-query')),
@@ -93,7 +94,7 @@ describe('useCardWithdraw', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.escrowCardAddress = 'CARD'
-        mocks.owner = { address: 'OWNER' }
+        mocks.owner = { chains: { algorand: { address: 'OWNER' } } }
         mocks.pending = null
         mocks.waitTimeSeconds = 20
         mocks.buildRequest.mockResolvedValue(['REQ'])

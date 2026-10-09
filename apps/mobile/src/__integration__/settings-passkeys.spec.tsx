@@ -28,7 +28,6 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 import { PASSKEY_MIGRATION_NEEDED } from '@perawallet/wallet-core-passkeys'
 import {
-    DerivationTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -38,15 +37,8 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    address: HD_TEST_ADDRESS,
+    chains: { algorand: { address: HD_TEST_ADDRESS, keyPairId: 'hd-key-1' } },
     name: 'Universal',
-    keyPairId: 'hd-key-1',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: DerivationTypes.Peikert,
-    },
 }
 
 const NATIVE_CREDENTIAL: NativeStoredCredential = {

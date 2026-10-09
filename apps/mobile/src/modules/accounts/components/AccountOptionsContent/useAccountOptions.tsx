@@ -10,26 +10,27 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
+    addressOn,
     authorityOf,
+    hasRecoverySeed,
     hasSigningKeys,
-    isAlgo25Account,
-    isHDWalletAccount,
+    hdIndexOf,
     isMultisigAccount,
-    isQuantumAccount,
     isRekeyedAccount,
+    multisigParametersOf,
     useAllAccounts,
     useAuthorityOf,
     useCanSignWith,
     useFindAccountByAddress,
     useMultisigDetailsBackfill,
-    useRemoveAccountByAddress,
+    useRemoveAccount,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -39,7 +40,7 @@ import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
-import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
+import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
@@ -116,48 +117,47 @@ export const useAccountOptions = ({
     const { toggleAccountNotification, isTogglePending } =
         useAccountNotificationToggle()
     const accounts = useAllAccounts()
-    const removeAccount = useRemoveAccountByAddress()
+    const removeAccount = useRemoveAccount()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
-    const isBackedUp = useIsAccountBackedUp(account.address)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const address = addressOn(account, scope) ?? ''
+    const isBackedUp = useIsAccountBackedUp(address)
 
-    useMultisigDetailsBackfill(account)
+    useMultisigDetailsBackfill(account, scope)
 
-    const canSign = useCanSignWith(account)
-    const canRekey = useCapability(REKEY_REQUIREMENT)
+    const canSign = useCanSignWith(account, scope.chainId)
+    const canRekey = useCapability(rekeyRequirementFor(scope.chainId))
     const canUseMultisig = useCapability({
         platform: 'sharedAccounts',
         anyChain: 'multisig',
     })
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
+    const isRekeyed = isRekeyedAccount(account, scope.chainId)
     const canBackUpMnemonic = useCapability({
-        chain: { chainId: LEGACY_CHAIN_ID, capability: 'mnemonicBackup' },
+        chain: { chainId: scope.chainId, capability: 'mnemonicBackup' },
     })
     const showPassphrase =
-        canBackUpMnemonic &&
-        !isRekeyed &&
-        (isAlgo25Account(account) ||
-            isHDWalletAccount(account) ||
-            isQuantumAccount(account))
+        canBackUpMnemonic && !isRekeyed && hasRecoverySeed(account)
     const canUndoRekey = canRekey && isRekeyed && canSign
-    const isHdWallet = isHDWalletAccount(account)
+    const isHdWallet = hdIndexOf(account) !== undefined
     const isSharedAccount = isMultisigAccount(account)
-    const participantCount = isMultisigAccount(account)
-        ? (account.multisigDetails?.addresses.length ?? 0)
-        : 0
+    const multisigParameters = useMemo(
+        () => multisigParametersOf(account, scope.chainId),
+        [account, scope.chainId],
+    )
+    const participantCount = multisigParameters?.addresses.length ?? 0
 
     const authority = useAuthorityOf(account, scope)
-    const authAccount = useFindAccountByAddress(authority ?? '')
+    const authAccount = useFindAccountByAddress(authority ?? '', scope)
 
     const handleCopyAddress = useCallback(() => {
         trackEvent(AccountOptionsEvent.CopyAddress)
-        void copyToClipboard(account.address)
+        void copyToClipboard(address)
         onClose()
-    }, [copyToClipboard, account.address, onClose])
+    }, [copyToClipboard, address, onClose])
 
     const handleShowAddress = useCallback(() => {
         onClose()
@@ -169,16 +169,16 @@ export const useAccountOptions = ({
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
-        void openViewPassphraseFlow(account.address)
-    }, [onClose, openViewPassphraseFlow, account.address])
+        void openViewPassphraseFlow(address)
+    }, [onClose, openViewPassphraseFlow, address])
 
     const handleUndoRekey = useCallback(() => {
         onClose()
         navigation.navigate('UndoRekey', {
             screen: 'UndoRekeyConfirm',
-            params: { sourceAddress: account.address },
+            params: { sourceAddress: address },
         })
-    }, [onClose, navigation, account.address])
+    }, [onClose, navigation, address])
 
     const navigateToRekeyFlow = useCallback(
         (target: RekeyTargetType | 'shared') => {
@@ -187,7 +187,7 @@ export const useAccountOptions = ({
                     trackEvent(AccountOptionsEvent.RekeyToLedger)
                     navigation.navigate('RekeyToLedger', {
                         screen: 'RekeyToLedgerIntro',
-                        params: { sourceAddress: account.address },
+                        params: { sourceAddress: address },
                     })
                     return
                 }
@@ -195,7 +195,7 @@ export const useAccountOptions = ({
                     trackEvent(AccountOptionsEvent.RekeyToStandard)
                     navigation.navigate('RekeyToStandard', {
                         screen: 'RekeyToStandardIntro',
-                        params: { sourceAddress: account.address },
+                        params: { sourceAddress: address },
                     })
                     return
                 }
@@ -203,7 +203,7 @@ export const useAccountOptions = ({
                     trackEvent(AccountOptionsEvent.RekeyToQuantum)
                     navigation.navigate('RekeyToQuantum', {
                         screen: 'RekeyToQuantumIntro',
-                        params: { sourceAddress: account.address },
+                        params: { sourceAddress: address },
                     })
                     return
                 }
@@ -211,12 +211,12 @@ export const useAccountOptions = ({
                     trackEvent(AccountDetailsEvent.JointAccountRekey)
                     navigation.navigate('RekeyToShared', {
                         screen: 'RekeyToSharedIntro',
-                        params: { sourceAddress: account.address },
+                        params: { sourceAddress: address },
                     })
                 }
             }
         },
-        [navigation, account.address],
+        [navigation, address],
     )
 
     const handleRekeyAccount = useCallback(async () => {
@@ -244,35 +244,33 @@ export const useAccountOptions = ({
         onClose()
         navigation.navigate('RescanRekeyed', {
             screen: 'RescanRekeyedSelect',
-            params: { sourceAddress: account.address },
+            params: { sourceAddress: address },
         })
-    }, [onClose, navigation, account.address])
+    }, [onClose, navigation, address])
 
     const handleExportShareAccount = useCallback(async () => {
         trackEvent(AccountDetailsEvent.JointAccountExport)
         onClose()
         await requestBottomSheet<void>({
-            contents: (
-                <ExportShareAccountContent accountAddress={account.address} />
-            ),
+            contents: <ExportShareAccountContent accountAddress={address} />,
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [onClose, requestBottomSheet, account.address])
+    }, [onClose, requestBottomSheet, address])
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
-        if (!isMultisigAccount(account) || !account.multisigDetails) return
+        if (!isMultisigAccount(account) || !multisigParameters) return
         trackEvent(AccountDetailsEvent.JointAccountDetail)
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',
-            address: account.address,
-            participantCount: account.multisigDetails.addresses.length,
-            threshold: account.multisigDetails.threshold,
-            addresses: account.multisigDetails.addresses,
+            address,
+            participantCount: multisigParameters.addresses.length,
+            threshold: multisigParameters.threshold,
+            addresses: [...multisigParameters.addresses],
         }
         await requestBottomSheet<void>({
             contents: <SharedAccountDetailsContent details={details} />,
@@ -282,13 +280,13 @@ export const useAccountOptions = ({
                 autoCreateContainer: false,
             },
         })
-    }, [onClose, requestBottomSheet, account])
+    }, [onClose, requestBottomSheet, account, address, multisigParameters])
 
     const handleOpenRename = useCallback(async () => {
         trackEvent(AccountOptionsEvent.Rename)
         onClose()
         const newName = await requestBottomSheet<string>({
-            contents: <RenameAccountContent accountAddress={account.address} />,
+            contents: <RenameAccountContent accountAddress={address} />,
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
@@ -305,15 +303,23 @@ export const useAccountOptions = ({
             },
             { delayLength: 'short' },
         )
-    }, [onClose, requestBottomSheet, account, updateAccount, showToast, t])
+    }, [
+        onClose,
+        requestBottomSheet,
+        account,
+        address,
+        updateAccount,
+        showToast,
+        t,
+    ])
 
     const handleToggleNotifications = useCallback(() => {
-        const currentlyEnabled = isAccountEnabled(account.address)
+        const currentlyEnabled = isAccountEnabled(address)
         // The sheet closes at once so the interaction feels immediate; the
         // confirmation waits for the backend, because before this
         // toast fired for a request that was never sent.
         onClose()
-        void toggleAccountNotification(account.address, !currentlyEnabled).then(
+        void toggleAccountNotification(address, !currentlyEnabled).then(
             succeeded => {
                 if (!succeeded) return
                 showToast({
@@ -328,7 +334,7 @@ export const useAccountOptions = ({
     }, [
         isAccountEnabled,
         toggleAccountNotification,
-        account.address,
+        address,
         showToast,
         t,
         onClose,
@@ -339,9 +345,7 @@ export const useAccountOptions = ({
      *  refuses to remove. */
     const blockedByRekeyedDependents = useCallback((): boolean => {
         const rekeyedToThisAccount = accounts.filter(
-            a =>
-                authorityOf(a, scope) === account.address &&
-                a.address !== account.address,
+            a => authorityOf(a, scope) === address && a.id !== account.id,
         )
         if (rekeyedToThisAccount.length === 0) return false
 
@@ -353,11 +357,11 @@ export const useAccountOptions = ({
             type: 'error',
         })
         return true
-    }, [accounts, scope, account.address, showToast, t])
+    }, [accounts, scope, address, account.id, showToast, t])
 
     const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
-        void removeAccount(account.address)
+        void removeAccount(account.id)
         showToast(
             {
                 title: t('account_options.remove_account_success_message'),
@@ -370,7 +374,7 @@ export const useAccountOptions = ({
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
         }
-    }, [accounts, account.address, removeAccount, navigation, showToast, t])
+    }, [accounts, account.id, removeAccount, navigation, showToast, t])
 
     const [removeConfirmView, setRemoveConfirmView] =
         useState<RemoveConfirmView>('none')
@@ -433,7 +437,7 @@ export const useAccountOptions = ({
                     return await choose()
                 } catch (error) {
                     logger.warn('useAccountOptions: backup choice failed', {
-                        address: account.address,
+                        address: address,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -449,7 +453,7 @@ export const useAccountOptions = ({
             }
             finishRemove()
         },
-        [runBackupChoice, showToast, t, finishRemove, account.address],
+        [runBackupChoice, showToast, t, finishRemove, address],
     )
 
     const handleDeleteFromBackup = useCallback(() => {
@@ -458,32 +462,32 @@ export const useAccountOptions = ({
             'delete',
             async () =>
                 (await getBackupSyncManager().deleteAccountFromBackup(
-                    account.address,
+                    address,
                 )) !== 'refused',
             'cloud_backup.accounts.delete_error',
         )
-    }, [finishRemoveWithBackupChoice, account.address])
+    }, [finishRemoveWithBackupChoice, address])
 
     const handleKeepInBackup = useCallback(() => {
         trackEvent(AccountOptionsEvent.KeepInCloudBackup)
         return finishRemoveWithBackupChoice(
             'keep',
-            () => getBackupSyncManager().keepAccountInBackup(account.address),
+            () => getBackupSyncManager().keepAccountInBackup(address),
             'cloud_backup.accounts.keep_error',
         )
-    }, [finishRemoveWithBackupChoice, account.address])
+    }, [finishRemoveWithBackupChoice, address])
 
     const handleCancelRemove = useCallback(() => {
         setRemoveConfirmView('none')
     }, [])
 
-    const notificationsEnabled = isAccountEnabled(account.address)
+    const notificationsEnabled = isAccountEnabled(address)
     // Mirrors NotificationSettingsList: disable the row instead of letting a
     // tap silently resolve `false` while a toggle for this address is
     // already in flight (docs/OFFLINE_PAUSED_STATE.md). Note this only
     // reflects toggles started by *this* hook instance — see the caveat on
     // `isTogglePending` in useAccountNotificationToggle.ts.
-    const isNotificationTogglePending = isTogglePending(account.address)
+    const isNotificationTogglePending = isTogglePending(address)
 
     const options = useMemo(() => {
         const items: AccountOption[] = []
@@ -503,7 +507,7 @@ export const useAccountOptions = ({
             id: 'copy-address',
             icon: 'copy',
             title: t('account_options.copy_address'),
-            subtitle: truncateAlgorandAddress(account.address),
+            subtitle: truncateAlgorandAddress(address),
             onPress: handleCopyAddress,
         })
 
@@ -593,7 +597,7 @@ export const useAccountOptions = ({
         return items
     }, [
         t,
-        account.address,
+        address,
         participantCount,
         showPassphrase,
         canSign,

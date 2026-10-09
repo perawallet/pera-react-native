@@ -13,10 +13,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import {
-    accountType,
-    AccountTypes,
     authorityOf,
-    isHardwareWalletAccount,
+    hardwareDetailsOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -90,6 +88,8 @@ vi.mock('@modules/ledger/utils', async () => ({
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        // Before bootstrap registers a chain, the scope reads the tier name.
+        chains: { has: () => false },
         keyValueStorage: {
             getItem: vi.fn().mockResolvedValue(null),
             setItem: vi.fn().mockResolvedValue(undefined),
@@ -218,7 +218,7 @@ describe('useLedgerVerifyScreen', () => {
         useAccountsStore.getState().setAccounts([
             {
                 custody: { kind: 'watch' },
-                address: 'ALREADY',
+                chains: { algorand: { address: 'ALREADY' } },
             } as WalletAccount,
         ])
         routeParams.current = {
@@ -240,15 +240,21 @@ describe('useLedgerVerifyScreen', () => {
         })
 
         const accounts = useAccountsStore.getState().accounts
-        const hw = accounts.find(a => a.address === 'LEDGER0')
-        const watch = accounts.find(a => a.address === 'REKEYED_A')
-        expect(hw ? accountType(hw) : undefined).toBe(AccountTypes.hardware)
-        expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
+        const hw = accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
+        const watch = accounts.find(
+            a => a.chains.algorand?.address === 'REKEYED_A',
+        )
+        expect(hw?.custody.kind).toBe('hardware')
+        expect(watch?.custody.kind).toBe('watch')
         expect(authorityOf(watch!, scopeForLegacyNetwork('mainnet'))).toBe(
             'LEDGER0',
         )
-        expect(accounts.filter(a => a.address === 'ALREADY')).toHaveLength(1)
-        expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
+        expect(
+            accounts.filter(a => a.chains.algorand?.address === 'ALREADY'),
+        ).toHaveLength(1)
+        expect(
+            accounts.find(a => a.chains.algorand?.address === '!!bad'),
+        ).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
         expect(mockSetConfetti).toHaveBeenCalledWith(true)
     })
@@ -282,7 +288,9 @@ describe('useLedgerVerifyScreen', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .accounts.some(a => a.address === 'LEDGER0'),
+                    .accounts.some(
+                        a => a.chains.algorand?.address === 'LEDGER0',
+                    ),
             ).toBe(true)
             expect(mockExit).not.toHaveBeenCalled()
             expect(mockSetConfetti).not.toHaveBeenCalled()
@@ -336,9 +344,11 @@ describe('useLedgerVerifyScreen', () => {
         })
 
         const accounts = useAccountsStore.getState().accounts
-        expect(accounts.find(a => a.address === 'REKEYED_X')).toBeUndefined()
         expect(
-            accounts.find(a => a.address === '!!invalidauth'),
+            accounts.find(a => a.chains.algorand?.address === 'REKEYED_X'),
+        ).toBeUndefined()
+        expect(
+            accounts.find(a => a.chains.algorand?.address === '!!invalidauth'),
         ).toBeUndefined()
     })
 
@@ -422,7 +432,7 @@ describe('useLedgerVerifyScreen', () => {
                 id: `watch-${address}`,
                 ...(name ? { name } : {}),
                 custody: { kind: 'watch' },
-                address,
+                chains: { algorand: { address: address } },
             }) as WalletAccount
 
         it('upgrades a watch account of a derived address to hardware after confirmation, preserving its name', async () => {
@@ -451,12 +461,10 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             const upgraded = accounts[0]
-            expect(accountType(upgraded)).toBe(AccountTypes.hardware)
+            expect(upgraded.custody.kind).toBe('hardware')
             expect(upgraded.name).toBe('My Cold Wallet')
             expect(upgraded.id).toBe('watch-LEDGER0')
-            expect(
-                isHardwareWalletAccount(upgraded) && upgraded.hardwareDetails,
-            ).toEqual({
+            expect(hardwareDetailsOf(upgraded)).toEqual({
                 manufacturer: 'ledger',
                 deviceId: 'dev',
                 deviceName: 'Nano',
@@ -491,10 +499,12 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accountType(accounts[0])).toBe(AccountTypes.watch)
+            expect(accounts[0].custody.kind).toBe('watch')
             // The brand-new LEDGER1 is withheld too: a declined confirmation
             // aborts the add wholesale instead of importing a partial set.
-            expect(accounts.find(a => a.address === 'LEDGER1')).toBeUndefined()
+            expect(
+                accounts.find(a => a.chains.algorand?.address === 'LEDGER1'),
+            ).toBeUndefined()
             expect(mockExit).not.toHaveBeenCalled()
             expect(mockSetConfetti).not.toHaveBeenCalled()
         })
@@ -521,14 +531,14 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             const accounts = useAccountsStore.getState().accounts
-            const auth = accounts.find(a => a.address === 'LEDGER0')
-            const rekeyed = accounts.find(a => a.address === 'REKEYED_A')
-            expect(auth ? accountType(auth) : undefined).toBe(
-                AccountTypes.hardware,
+            const auth = accounts.find(
+                a => a.chains.algorand?.address === 'LEDGER0',
             )
-            expect(rekeyed ? accountType(rekeyed) : undefined).toBe(
-                AccountTypes.watch,
+            const rekeyed = accounts.find(
+                a => a.chains.algorand?.address === 'REKEYED_A',
             )
+            expect(auth?.custody.kind).toBe('hardware')
+            expect(rekeyed?.custody.kind).toBe('watch')
             expect(
                 authorityOf(rekeyed!, scopeForLegacyNetwork('mainnet')),
             ).toBe('LEDGER0')
@@ -558,9 +568,9 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accountType(accounts[0])).toBe(AccountTypes.watch)
+            expect(accounts[0].custody.kind).toBe('watch')
             expect(
-                accounts.find(a => a.address === 'REKEYED_A'),
+                accounts.find(a => a.chains.algorand?.address === 'REKEYED_A'),
             ).toBeUndefined()
         })
 
@@ -579,14 +589,7 @@ describe('useLedgerVerifyScreen', () => {
                         },
                         accountIndex: 0,
                     },
-                    address: 'LEDGER0',
-                    hardwareDetails: {
-                        manufacturer: 'ledger',
-                        deviceId: 'forgotten-device',
-                        deviceName: 'Nano',
-                        accountIndex: 0,
-                        transportType: 'ble',
-                    },
+                    chains: { algorand: { address: 'LEDGER0' } },
                 } as WalletAccount,
             ])
             routeParams.current = {
@@ -612,10 +615,7 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             const rebound = accounts[0]
-            expect(
-                isHardwareWalletAccount(rebound) &&
-                    rebound.hardwareDetails.deviceId,
-            ).toBe('dev')
+            expect(hardwareDetailsOf(rebound)?.deviceId).toBe('dev')
             expect(rebound.name).toBe('Ledger 1')
             expect(mockExit).toHaveBeenCalledTimes(1)
         })
@@ -633,14 +633,7 @@ describe('useLedgerVerifyScreen', () => {
                     },
                     accountIndex: 0,
                 },
-                address: 'LEDGER0',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev',
-                    deviceName: 'Nano',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
+                chains: { algorand: { address: 'LEDGER0' } },
             } as WalletAccount
             useAccountsStore.getState().setAccounts([untouched])
             routeParams.current = {
@@ -692,7 +685,10 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             const accounts = useAccountsStore.getState().accounts
-            const names = accounts.map(a => [a.address, a.name])
+            const names = accounts.map(a => [
+                a.chains.algorand?.address,
+                a.name,
+            ])
             expect(names).toContainEqual([
                 'LEDGER0',
                 'ledger.default_account_name#1',
@@ -720,14 +716,7 @@ describe('useLedgerVerifyScreen', () => {
                         },
                         accountIndex: 0,
                     },
-                    address: 'OLDLEDGER',
-                    hardwareDetails: {
-                        manufacturer: 'ledger',
-                        deviceId: 'other-dev',
-                        deviceName: 'Nano S',
-                        accountIndex: 0,
-                        transportType: 'ble',
-                    },
+                    chains: { algorand: { address: 'OLDLEDGER' } },
                 } as WalletAccount,
             ])
             routeParams.current = {
@@ -750,7 +739,7 @@ describe('useLedgerVerifyScreen', () => {
 
             const added = useAccountsStore
                 .getState()
-                .accounts.find(a => a.address === 'LEDGER0')
+                .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
             expect(added?.name).toBe('ledger.default_account_name#2')
         })
     })

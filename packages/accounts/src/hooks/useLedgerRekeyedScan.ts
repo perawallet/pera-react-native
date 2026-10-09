@@ -12,17 +12,14 @@
 
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'
 import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 import { useAllAccounts } from './useAllAccounts'
 import type { LedgerSelectableAccount } from '../models'
+import { chainAccountOf } from '../credentials'
 
 type UseLedgerRekeyedScanResult = {
     rekeyed: LedgerSelectableAccount[]
@@ -41,16 +38,15 @@ type UseLedgerRekeyedScanResult = {
  */
 export const useLedgerRekeyedScan = (
     derivedAccounts: HardwareWalletDerivedAccount[],
+    scope: ChainScope,
 ): UseLedgerRekeyedScanResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     const allAccounts = useAllAccounts()
-    const isRekeyAvailable = useIsRekeyAvailable(LEGACY_CHAIN_ID)
+    const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
 
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
             queryKey: getRekeyedAddressesQueryKey(acc.address, scope),
-            queryFn: () => fetchRekeyedAddresses(acc.address, network),
+            queryFn: () => fetchRekeyedAddresses(acc.address, scope),
             staleTime: 30_000,
             enabled: isRekeyAvailable,
         })),
@@ -76,7 +72,11 @@ export const useLedgerRekeyedScan = (
             return { rekeyed: [], isScanning: false }
         }
         const derivedAddresses = new Set(derivedAccounts.map(a => a.address))
-        const importedAddresses = new Set(allAccounts.map(a => a.address))
+        const importedAddresses = new Set(
+            allAccounts.flatMap(
+                a => chainAccountOf(a, scope.chainId)?.address ?? [],
+            ),
+        )
         const seen = new Set<string>()
         const rekeyed: LedgerSelectableAccount[] = []
 

@@ -19,16 +19,24 @@ import { getNextSharedAccountName } from '../getNextSharedAccountName'
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     isMultisigAccount: (account: { custody: { kind: string } }) =>
         account.custody.kind === 'multisig',
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
 }))
 
 const acc = (kind: string, address: string, name?: string): WalletAccount =>
-    ({ custody: { kind }, address, name }) as unknown as WalletAccount
+    ({
+        custody: { kind },
+        chains: { algorand: { address } },
+        name,
+    }) as unknown as WalletAccount
 
 const BASE = 'Shared Account'
 
 describe('getNextSharedAccountName', () => {
     it('returns "#1" when the wallet has no shared accounts', () => {
-        expect(getNextSharedAccountName([], BASE)).toBe('Shared Account #1')
+        expect(getNextSharedAccountName([], BASE, 'algorand')).toBe(
+            'Shared Account #1',
+        )
     })
 
     it('numbers the next account after the count of existing multisig accounts', () => {
@@ -37,21 +45,21 @@ describe('getNextSharedAccountName', () => {
             acc('algo25', 'A1', 'Standard'),
             acc('multisig', 'M2', 'Second'),
         ]
-        expect(getNextSharedAccountName(accounts, BASE)).toBe(
+        expect(getNextSharedAccountName(accounts, BASE, 'algorand')).toBe(
             'Shared Account #3',
         )
     })
 
     it('skips a number whose default name is already taken', () => {
         const accounts = [acc('multisig', 'M1', 'Shared Account #2')]
-        expect(getNextSharedAccountName(accounts, BASE)).toBe(
+        expect(getNextSharedAccountName(accounts, BASE, 'algorand')).toBe(
             'Shared Account #3',
         )
     })
 
     it('matches taken names case-insensitively', () => {
         const accounts = [acc('algo25', 'A1', 'shared account #1')]
-        expect(getNextSharedAccountName(accounts, BASE)).toBe(
+        expect(getNextSharedAccountName(accounts, BASE, 'algorand')).toBe(
             'Shared Account #2',
         )
     })
@@ -61,7 +69,7 @@ describe('getNextSharedAccountName', () => {
             acc('multisig', 'M1', 'Shared Account #1'),
             acc('multisig', 'M2', 'Shared Account #2'),
         ]
-        expect(getNextSharedAccountName(accounts, BASE, 'M2')).toBe(
+        expect(getNextSharedAccountName(accounts, BASE, 'algorand', 'M2')).toBe(
             'Shared Account #2',
         )
     })

@@ -11,38 +11,43 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     type AuthorityTargetKind,
+    type AuthorityTargetOptions,
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
 import { useAllAccounts } from './useAllAccounts'
 
-export type UseAuthorityTargetsOptions = {
-    isQuantumTargetEnabled?: boolean
-}
-
 /**
  * Held accounts that `source`'s signing authority can move to. Empty when the
- * source is missing or the chain can't move authority.
+ * source is missing or the chain can't move authority. `options` are the
+ * chain's switches, passed through as given.
  */
 export const useAuthorityTargets = (
     source: WalletAccount | null | undefined,
     kind: AuthorityTargetKind,
-    { isQuantumTargetEnabled = false }: UseAuthorityTargetsOptions = {},
+    scope: ChainScope,
+    options: AuthorityTargetOptions = {},
 ): WalletAccount[] => {
     const accounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    // Keyed by value: callers pass a fresh options object on every render.
+    const optionsKey = JSON.stringify(options)
 
     return useMemo(() => {
-        const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
+        const authority = accountsChainAdapters.get(scope.chainId).authority
         if (!source || !authority) return []
+        const targetOptions = JSON.parse(optionsKey) as AuthorityTargetOptions
         return accounts.filter(target =>
-            authority.isEligibleTarget(kind, target, source, accounts, scope, {
-                isQuantumTargetEnabled,
-            }),
+            authority.isEligibleTarget(
+                kind,
+                target,
+                source,
+                accounts,
+                scope,
+                targetOptions,
+            ),
         )
-    }, [accounts, scope, source, kind, isQuantumTargetEnabled])
+    }, [accounts, scope, source, kind, optionsKey])
 }

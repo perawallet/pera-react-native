@@ -15,7 +15,10 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountCollectiblesQuery } from '../useAccountCollectiblesQuery'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockGetAccountCollectiblesLite = vi.fn()
 vi.mock('../../db', () => ({
@@ -25,10 +28,6 @@ vi.mock('../../db', () => ({
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
-
 const wrapper = () => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
@@ -63,7 +62,9 @@ describe('useAccountCollectiblesQuery', () => {
 
         const { result } = renderHook(
             () =>
-                useAccountCollectiblesQuery('ADDR1', { sortMode: 'titleAsc' }),
+                useAccountCollectiblesQuery('ADDR1', SCOPE, {
+                    sortMode: 'titleAsc',
+                }),
             { wrapper: wrapper() },
         )
 
@@ -89,7 +90,7 @@ describe('useAccountCollectiblesQuery', () => {
 
             const { result, rerender } = renderHook(
                 ({ sortMode }: { sortMode: 'titleAsc' | 'titleDesc' }) =>
-                    useAccountCollectiblesQuery('ADDR1', { sortMode }),
+                    useAccountCollectiblesQuery('ADDR1', SCOPE, { sortMode }),
                 { wrapper: wrapper(), initialProps: { sortMode: 'titleAsc' } },
             )
 
@@ -124,7 +125,7 @@ describe('useAccountCollectiblesQuery', () => {
 
             const { result, rerender } = renderHook(
                 ({ address }: { address: string }) =>
-                    useAccountCollectiblesQuery(address),
+                    useAccountCollectiblesQuery(address, SCOPE),
                 { wrapper: wrapper(), initialProps: { address: 'ADDR1' } },
             )
 

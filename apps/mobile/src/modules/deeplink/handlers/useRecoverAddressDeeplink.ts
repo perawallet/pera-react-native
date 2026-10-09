@@ -12,9 +12,10 @@
 
 import { useCallback } from 'react'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { navigateToScreen } from '../navigateToScreen'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import type { LinkSource } from '../types'
@@ -28,7 +29,7 @@ export type RecoverAddressDeeplinkHandler = (params: {
 /**
  * Normalize the mnemonic field carried by a recover-address deeplink: native
  * pera QR generators emit comma-separated words (e.g.
- * `?mnemonic=word1,word2,...`), but resolveImportAccountType / the import
+ * `?mnemonic=word1,word2,...`), but detectImportKind / the import
  * flow expects whitespace-separated. Normalize commas + extra whitespace
  * here so both shapes work.
  */
@@ -50,7 +51,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
             if (source !== 'qr') return Promise.resolve()
 
             const normalized = normalizeMnemonic(mnemonic)
-            const resolved = resolveImportAccountType(normalized)
+            const resolved = detectImportKind(LEGACY_CHAIN_ID, normalized)
             if (!resolved.success) {
                 showError({
                     variant: 'recover',
@@ -67,7 +68,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
             navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                 screen: 'ImportAccount',
                 params: {
-                    accountType: resolved.accountType,
+                    accountType: resolved.seed,
                 },
             })
 

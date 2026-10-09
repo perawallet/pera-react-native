@@ -13,6 +13,7 @@
 import {
     createChainAdapterRegistry,
     scopeForLegacyNetwork,
+    type ChainAccountNative,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
@@ -71,6 +72,12 @@ export type MultisigSignRequestValidation =
 export interface MultisigChainAdapter {
     chainId: ChainId
     deriveAddress(parameters: MultisigParameters): string
+    /** The parameters an account's chain entry stores; `undefined` when a legacy record lacks them. */
+    parametersOf(
+        native: ChainAccountNative | undefined,
+    ): MultisigParameters | undefined
+    /** The chain entry data that stores `parameters`. */
+    toNative(parameters: MultisigParameters): ChainAccountNative
     /**
      * Verifies every signature against the transaction bytes before building
      * the envelopes: the coordination backend is a relay, not a trust anchor.

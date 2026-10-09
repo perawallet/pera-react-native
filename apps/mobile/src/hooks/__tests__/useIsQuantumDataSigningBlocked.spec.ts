@@ -17,10 +17,20 @@ import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useIsQuantumDataSigningBlocked } from '../useIsQuantumDataSigningBlocked'
 
+type TestAccount = {
+    custody: { kind: string }
+    chains: Record<string, { address: string }>
+}
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    isQuantumAccount: (account: { custody?: { seed?: string } }) =>
-        account.custody?.seed === 'quantum',
+    hasCustody: (account: TestAccount, kind: string) =>
+        account.custody.kind === kind,
+    findAccountByAddressOn: (
+        accounts: TestAccount[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
 }))
 
 const QUANTUM_ADDRESS = 'QUANTUMADDRESS'
@@ -47,15 +57,15 @@ describe('useIsQuantumDataSigningBlocked', () => {
         registerAlgorandReviewerAdapter()
         ;(useAllAccounts as Mock).mockReturnValue([
             {
-                address: QUANTUM_ADDRESS,
+                chains: { algorand: { address: QUANTUM_ADDRESS } },
                 custody: { kind: 'local', seed: 'quantum' },
             },
             {
-                address: STANDARD_ADDRESS,
+                chains: { algorand: { address: STANDARD_ADDRESS } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
             {
-                address: REKEYED_TO_QUANTUM_ADDRESS,
+                chains: { algorand: { address: REKEYED_TO_QUANTUM_ADDRESS } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
         ])

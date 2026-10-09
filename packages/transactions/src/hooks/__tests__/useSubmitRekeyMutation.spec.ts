@@ -64,10 +64,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -437,7 +437,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(mockBuildRekeyTx).toHaveBeenCalledWith(
             expect.objectContaining({ minFee: 3000n }),
         )
-        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
             senderAddress: 'SRC',
             accounts: [
                 { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },

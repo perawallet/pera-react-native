@@ -25,7 +25,7 @@ import { latestConformanceKeystoreStore } from './src/harness/keystore'
 const store = new Map<string, string>()
 
 // The app's own signer (`signTransactionsWithLocalKey`) imports the accounts
-// barrel for its three account-type guards, and the barrel drags every
+// barrel for its account accessors and guards, and the barrel drags every
 // accounts hook (multisig, staking, currencies) along with them — none of
 // which is reachable from a Node suite.
 //
@@ -40,15 +40,17 @@ const store = new Map<string, string>()
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const [
         models,
+        credentials,
+        multisig,
         utils,
         signerResolution,
         constants,
         errors,
         chainAdapter,
-        credentialScheme,
-        accessors,
     ] = await Promise.all([
         vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/credentials'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/multisig'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/signer-resolution',
@@ -58,22 +60,16 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/chain-adapter',
         ),
-        vi.importActual<object>(
-            '@perawallet/wallet-core-accounts/credentials/credentialScheme',
-        ),
-        vi.importActual<object>(
-            '@perawallet/wallet-core-accounts/credentials/accessors',
-        ),
     ])
     return {
         ...models,
+        ...credentials,
+        ...multisig,
         ...utils,
         ...signerResolution,
         ...constants,
         ...errors,
         ...chainAdapter,
-        ...credentialScheme,
-        ...accessors,
         useAccountsStore: { getState: () => ({ accounts: [] }) },
     }
 })

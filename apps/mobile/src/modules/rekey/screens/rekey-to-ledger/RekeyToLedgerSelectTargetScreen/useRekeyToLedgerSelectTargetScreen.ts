@@ -16,7 +16,10 @@ import {
     useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToLedgerStackParamList } from '../../../routes/rekey-to-ledger/types'
@@ -38,21 +41,24 @@ export const useRekeyToLedgerSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const source = useFindAccountByAddress(sourceAddress)
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
 
-        const targets = useAuthorityTargets(source, 'hardware')
+        const targets = useAuthorityTargets(source, 'hardware', scope)
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToLedger', {
                     screen: 'RekeyToLedgerConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

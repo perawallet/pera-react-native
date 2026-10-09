@@ -17,6 +17,8 @@ import {
     useKMS,
 } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import { signingKeyOn } from '@perawallet/wallet-core-accounts'
+import { backupAdapterFor } from '../../chain-adapter'
 import type { SerializeMnemonicResolver } from '../sync/types'
 
 /** Resolves null when the phrase is unavailable, which skips that account
@@ -27,9 +29,11 @@ export const useResolveMnemonicForBackup = (): SerializeMnemonicResolver => {
 
     return useCallback<SerializeMnemonicResolver>(
         async account => {
+            const keyPairId = signingKeyOn(account, backupAdapterFor().chainId)
+            if (!keyPairId) return null
             try {
                 return await executeWithMnemonic(
-                    account.keyPairId,
+                    keyPairId,
                     BACKUP_ACCESS_DOMAIN,
                     indices =>
                         Array.from(indices, mnemonicIndexToWord).join(' '),

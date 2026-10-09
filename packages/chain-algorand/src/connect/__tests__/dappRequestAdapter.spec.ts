@@ -26,6 +26,14 @@ import {
     TransportError,
     UserCancelledError,
 } from '@perawallet/wallet-core-signing'
+import {
+    algo25Account,
+    hardwareAccount,
+    hdAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandDappRequestAdapter as adapter } from '../dappRequestAdapter'
 
@@ -35,6 +43,23 @@ const signTxns = (txns: unknown) =>
 describe('algorandDappRequestAdapter', () => {
     it('is keyed by the Algorand chain id', () => {
         expect(adapter.chainId).toBe(ALGORAND_CHAIN_ID)
+    })
+
+    it.each([
+        ['algo25', 'Algo25', algo25Account('A')],
+        ['hd', 'HDWallet', hdAccount('A')],
+        ['hardware', 'Hardware', hardwareAccount('A')],
+        ['multisig', 'Multisig', multisigAccount('A', null)],
+        ['watch', 'Unsignable', watchAccount('A')],
+        ['quantum', 'Quantum', quantumAccount('A')],
+    ])('reports a %s account to the bridge as %s', (_, expected, account) => {
+        expect(adapter.accountTypeOf(account)).toBe(expected)
+    })
+
+    it('ignores rekey when naming the account type', () => {
+        expect(
+            adapter.accountTypeOf(algo25Account('A', { rekeyAddress: 'B' })),
+        ).toBe('Algo25')
     })
 
     describe('parseSigningParams', () => {

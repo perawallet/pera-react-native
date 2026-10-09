@@ -12,7 +12,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
@@ -73,7 +75,11 @@ export const useOnrampQuotes = ({
     sourceAmount,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
     const [selectedQuoteId, setSelectedQuoteId] =

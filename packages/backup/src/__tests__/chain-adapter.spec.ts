@@ -19,6 +19,7 @@ import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     backupAdapterFor,
     backupChainAdapters,
+    backupItemKindId,
     backupSeedReference,
 } from '../chain-adapter'
 import { parseBackupEnvelope } from '../asb/parsers/parse-backup-envelope'
@@ -59,6 +60,15 @@ describe('backupChainAdapters', () => {
 
         expect(await backupSeedReference('seed-1')).toBe('REF-seed-1')
         expect(adapter.seedReference).toHaveBeenCalledWith(kmsCore, 'seed-1')
+    })
+
+    it("decodes a backup item's kind through the chain's adapter", () => {
+        const adapter = fakeBackupAdapter()
+        backupChainAdapters.register(adapter)
+
+        expect(backupItemKindId('multisig', 'algorand')).toBe('multisig')
+        expect(backupItemKindId('hdSeed', 'algorand')).toBeUndefined()
+        expect(adapter.kindIdOf).toHaveBeenCalledWith('multisig')
     })
 
     it('forwards each secure backup step to the adapter', () => {

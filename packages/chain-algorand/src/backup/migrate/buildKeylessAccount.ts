@@ -25,18 +25,21 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 
-export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
-    buildAccount({
+export const buildWatchAccount = (account: LegacyAccount): WalletAccount => {
+    const watch = buildAccount({
         name: account.name || undefined,
         custody: { kind: 'watch' },
         chainId: ALGORAND_CHAIN_ID,
         chains: { [ALGORAND_CHAIN_ID]: { address: account.address } },
-        // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
-        // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
-        // writes the authoritative per-network map on first tick, per the field's documented contract.
-        // The chain-state slice entry is fill-only for the same reason.
-        ...(account.authAddress ? { rekeyAddress: account.authAddress } : {}),
     })
+    // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
+    // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
+    // writes the authoritative per-network map on first tick, per the field's documented contract.
+    // The chain-state slice entry is fill-only for the same reason.
+    return account.authAddress
+        ? { ...watch, rekeyAddress: account.authAddress }
+        : watch
+}
 
 /** Active network's scope: the same assumption `applyNetworkRekeyState` makes. */
 export const recordLegacyAuthority = (account: LegacyAccount): void => {

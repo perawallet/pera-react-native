@@ -16,8 +16,12 @@ import { useHDImportSession } from '../useHDImportSession'
 import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
-import { DerivationTypes } from '../../models'
-import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import type { LocalAccount } from '../../models'
+import { buildAccount, addressOn } from '../../credentials'
+import {
+    fakeAccountsChain,
+    TESTNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
@@ -31,20 +35,33 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     prepareHDMasterKey: prepareMock,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
         generateOrderedUniqueId: vi.fn(() => 'gen-id'),
-        fetchAccountFastLookup: vi.fn(async () => []),
     }
 })
+
+const INDICES = new Uint16Array(24)
+
+const discovered = (): LocalAccount =>
+    buildAccount({
+        id: 'discovered-1',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 1, keyIndex: 0 },
+        },
+        chainId: TESTNET_SCOPE.chainId,
+        chains: {
+            [TESTNET_SCOPE.chainId]: {
+                address: 'ADDR-A',
+                keyPairId: 'w-1-acc1-idx0-dt9',
+            },
+        },
+    })
 
 describe('useHDImportSession', () => {
     beforeEach(() => {
@@ -69,50 +86,36 @@ describe('useHDImportSession', () => {
     })
 
     test('prepareImport stores rootKey/entropy in the session store', async () => {
-        const { result } = renderHook(() => useHDImportSession())
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         let prep: any
         await act(async () => {
-            prep = await result.current.prepareImport({ mnemonic: 'm' })
+            prep = await result.current.prepareImport({
+                mnemonicIndices: INDICES,
+            })
         })
         expect(prep.walletKeyId).toBe('w-1')
+        expect(prepareMock).toHaveBeenCalledWith({ mnemonicIndices: INDICES })
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',
         )
     })
 
     test('cancelImport clears the session', async () => {
-        const { result } = renderHook(() => useHDImportSession())
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
-            await result.current.prepareImport({ mnemonic: 'm' })
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
         })
         act(() => result.current.cancelImport())
         expect(useHDImportSessionStore.getState().pending).toBeNull()
     })
 
     test('commitImport persists the keystore root and saves selected accounts', async () => {
-        const { result } = renderHook(() => useHDImportSession())
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
-            await result.current.prepareImport({ mnemonic: 'm' })
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
         })
 
-        const selected = [
-            {
-                id: 'discovered-1',
-                address: 'ADDR-A',
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 1, keyIndex: 0 },
-                },
-                keyPairId: 'w-1',
-                hdWalletDetails: {
-                    account: 1,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: DerivationTypes.Peikert,
-                },
-            },
-        ]
+        const selected = [discovered()]
 
         let saved: any
         await act(async () => {
@@ -127,15 +130,12 @@ describe('useHDImportSession', () => {
         )
         expect(
             fakeAccountsChain().derivation.deriveAccount,
-        ).toHaveBeenCalledWith(
-            expect.anything(),
-            'w-1',
-            1,
-            0,
-            expect.objectContaining({ scheme: 'ed25519' }),
-        )
+        ).toHaveBeenCalledWith(expect.anything(), 'w-1', 1, 0, {
+            scheme: 'ed25519',
+            networkId: 'testnet',
+        })
         expect(saved).toHaveLength(1)
-        expect(saved[0].address).toBe('ADDR-A')
+        expect(addressOn(saved[0], TESTNET_SCOPE)).toBe('ADDR-A')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(useHDImportSessionStore.getState().pending).toBeNull()
     })
@@ -144,33 +144,16 @@ describe('useHDImportSession', () => {
         vi.mocked(
             fakeAccountsChain().derivation.deriveAccount,
         ).mockRejectedValueOnce(new Error('derive failed'))
-        const { result } = renderHook(() => useHDImportSession())
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
-            await result.current.prepareImport({ mnemonic: 'm' })
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
         })
 
         await act(async () => {
             await expect(
                 result.current.commitImport({
                     walletKeyId: 'w-1',
-                    selectedAccounts: [
-                        {
-                            id: 'discovered-1',
-                            address: 'ADDR-A',
-                            custody: {
-                                kind: 'local',
-                                seed: 'bip39',
-                                hd: { account: 1, keyIndex: 0 },
-                            },
-                            keyPairId: 'w-1',
-                            hdWalletDetails: {
-                                account: 1,
-                                change: 0,
-                                keyIndex: 0,
-                                derivationType: DerivationTypes.Peikert,
-                            },
-                        },
-                    ],
+                    selectedAccounts: [discovered()],
                 }),
             ).rejects.toThrow('derive failed')
         })
@@ -180,9 +163,9 @@ describe('useHDImportSession', () => {
     })
 
     test('commitImport throws and keeps session pending if walletKeyId mismatches', async () => {
-        const { result } = renderHook(() => useHDImportSession())
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
-            await result.current.prepareImport({ mnemonic: 'm' })
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
         })
 
         await act(async () => {
@@ -197,5 +180,40 @@ describe('useHDImportSession', () => {
             'w-1',
         )
         expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
+    })
+
+    test('discoverImportAccounts scans the scope with the session root key', async () => {
+        const { adapter } = fakeAccountsChain()
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+
+        let found: LocalAccount[] = []
+        await act(async () => {
+            found = await result.current.discoverImportAccounts({
+                walletKeyId: 'w-1',
+            })
+        })
+
+        expect(adapter.createPublicKeyGetter).toHaveBeenCalledWith(
+            new Uint8Array(96).fill(7),
+        )
+        expect(adapter.checkActivity).toHaveBeenCalledWith(
+            expect.any(Array),
+            TESTNET_SCOPE,
+        )
+        // Nothing is active, so discovery falls back to the first account.
+        expect(found.map(account => account.custody)).toEqual([
+            { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+        ])
+    })
+
+    test('discoverImportAccounts refuses a wallet the session did not prepare', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+
+        await expect(
+            result.current.discoverImportAccounts({ walletKeyId: 'w-1' }),
+        ).rejects.toThrow(HDImportSessionNotFoundError)
     })
 })

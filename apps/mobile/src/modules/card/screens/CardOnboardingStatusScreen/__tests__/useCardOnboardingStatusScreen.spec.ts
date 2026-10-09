@@ -15,10 +15,7 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    type WalletAccount,
-    type AccountType,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -94,10 +91,14 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockAccounts,
-        useSelectedAccountAddress: () => ({
-            selectedAccountAddress: mockSelectedAddress,
-            setSelectedAccountAddress: vi.fn(),
-        }),
+        useSelectedAccount: () =>
+            mockSelectedAddress === null
+                ? null
+                : {
+                      id: mockSelectedAddress,
+                      custody: { kind: 'local', seed: 'algo25' },
+                      chains: { algorand: { address: mockSelectedAddress } },
+                  },
     }
 })
 
@@ -202,14 +203,24 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 }))
 
 import { useCardOnboardingStatusScreen } from '../useCardOnboardingStatusScreen'
-import { custodyForType } from '@test-utils/accountCustody'
+import {
+    custodyForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
 
 const account = (
     address: string,
-    type: AccountType,
-    extra: Partial<WalletAccount> = {},
-): WalletAccount =>
-    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
+    type: AlgorandAccountKind,
+    {
+        keyPairId,
+        ...extra
+    }: Partial<WalletAccount> & { keyPairId?: string } = {},
+): WalletAccount => ({
+    id: address,
+    custody: custodyForType(type),
+    chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
+    ...extra,
+})
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -451,7 +462,9 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.isFundsConnected).toBe(true)
-        expect(result.current.connectedAccount?.address).toBe('ADDR1')
+        expect(result.current.connectedAccount?.chains.algorand?.address).toBe(
+            'ADDR1',
+        )
     })
 
     it('connects the chosen account locally, without linking it anywhere', async () => {

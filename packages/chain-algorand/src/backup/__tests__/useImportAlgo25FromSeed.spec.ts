@@ -16,6 +16,7 @@ import {
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mocks = vi.hoisted(() => ({
     importAlgo25: vi.fn(),
@@ -36,9 +37,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
     ALGO25_SEED_LENGTH: 32,
     algo25SeedToIndices: mocks.algo25SeedToIndices,
     zeroBytes: mocks.zeroBytes,
@@ -67,10 +70,13 @@ const VALID_ADDRESS =
 
 const importedAccount: WalletAccount = {
     id: 'acc-1',
-    address: VALID_ADDRESS,
     custody: { kind: 'local', seed: 'algo25' },
-    name: null,
-} as WalletAccount
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: VALID_ADDRESS,
+        },
+    },
+}
 
 const renderImport = () =>
     renderHook(() => useImportAlgo25FromSeed()).result.current.importFromSeed
@@ -101,7 +107,7 @@ describe('useImportAlgo25FromSeed', () => {
         )
         expect(mocks.importAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            seed: 'algo25',
         })
         expect(mocks.markBackupComplete).toHaveBeenCalledWith(importedAccount)
         expect(mocks.updateAccount).not.toHaveBeenCalled()

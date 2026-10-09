@@ -15,8 +15,9 @@ import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    useSelectedChainMode,
     useNetwork,
+    useSelectedChainMode,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 // Imported from the handlers file directly (not the module barrel) so this
@@ -43,13 +44,15 @@ type UseBidaliWebViewScreenResult = {
 }
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccount } = useBidali()
     const onClose = useBidaliClose()
     const { network } = useNetwork()
-    const chainMode = useSelectedChainMode(LEGACY_CHAIN_ID)
+    const chainMode = useSelectedChainMode(scope.chainId)
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
         !!selectedAccount,
     )
 
@@ -70,7 +73,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         computeBidaliBalances(
             selectedAccount,
             accountBalances,
-            network,
+            scope,
             chainMode,
         ),
     )

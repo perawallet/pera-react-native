@@ -46,6 +46,7 @@ const mockGetKey = vi.fn()
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({ getKey: mockGetKey }),
     PQ_DERIVATION_CANONICAL: 'pqk1',
+    SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
 
 import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
@@ -53,15 +54,13 @@ import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
 const legacyAccount = (id: string, address: string): WalletAccount => ({
     id,
     custody: { kind: 'local', seed: 'quantum' },
-    address,
-    keyPairId: `${id}-quantum`,
+    chains: { algorand: { address, keyPairId: `${id}-quantum` } },
 })
 
 const canonicalAccount = (id: string, address: string): WalletAccount => ({
     id,
     custody: { kind: 'local', seed: 'quantum' },
-    address,
-    keyPairId: `${id}-quantum-pqk1`,
+    chains: { algorand: { address, keyPairId: `${id}-quantum-pqk1` } },
 })
 
 const buildWrapper = () => {

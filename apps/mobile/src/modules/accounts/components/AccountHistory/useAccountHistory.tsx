@@ -13,8 +13,12 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -103,6 +107,8 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountAddress = account ? addressOn(account, scope) : undefined
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
@@ -147,9 +153,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         fetchNextPage,
     } = useTransactionHistoryQuery({
-        accountAddress: account?.address ?? '',
+        accountAddress: accountAddress ?? '',
         network,
-        isEnabled: !!account?.address,
+        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
     })
@@ -166,8 +172,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const refreshAddresses = useMemo(
-        () => (account?.address ? [account.address] : []),
-        [account?.address],
+        () => (accountAddress ? [accountAddress] : []),
+        [accountAddress],
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
@@ -209,11 +215,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             )
             return
         }
-        if (account?.address) {
-            exportCsv({ accountAddress: account.address })
+        if (accountAddress) {
+            exportCsv({ accountAddress })
         }
     }, [
-        account?.address,
+        accountAddress,
         exportCsv,
         isUnavailableOnNetwork,
         network,

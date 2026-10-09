@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountDiscovery } from '../useAccountDiscovery'
-import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import {
+    fakeAccountsChain,
+    TESTNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
 const mockBaseDiscoverAccounts = vi.fn()
 const mockBaseDiscoverRekeyedAccounts = vi.fn()
@@ -29,10 +32,6 @@ vi.mock('../useIsRekeyAvailable', () => ({
     useIsRekeyAvailable: () => rekey.isAvailable,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
-
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -43,7 +42,9 @@ describe('useAccountDiscovery', () => {
 
     describe('discoverAccounts', () => {
         it('passes a getPublicKey callback that derives through the registered key derivation', async () => {
-            const { result } = renderHook(() => useAccountDiscovery())
+            const { result } = renderHook(() =>
+                useAccountDiscovery(TESTNET_SCOPE),
+            )
 
             let discovered: unknown
             await act(async () => {
@@ -63,6 +64,7 @@ describe('useAccountDiscovery', () => {
                 walletKeyId: 'WALLET1',
                 accountGapLimit: 3,
                 keyIndexGapLimit: 2,
+                scope: TESTNET_SCOPE,
             })
             expect(typeof baseCall.getPublicKey).toBe('function')
 
@@ -75,7 +77,7 @@ describe('useAccountDiscovery', () => {
                 'WALLET1',
                 1,
                 0,
-                expect.objectContaining({ scheme: 'ed25519' }),
+                { scheme: 'ed25519', networkId: 'testnet' },
             )
             expect(Array.from(pubKey)).toEqual([1, 0, 0xfa, 0xce])
 
@@ -85,7 +87,9 @@ describe('useAccountDiscovery', () => {
 
     describe('discoverRekeyedAccounts', () => {
         it('forwards the address list without touching key derivation', async () => {
-            const { result } = renderHook(() => useAccountDiscovery())
+            const { result } = renderHook(() =>
+                useAccountDiscovery(TESTNET_SCOPE),
+            )
 
             let discovered: unknown
             await act(async () => {
@@ -99,13 +103,16 @@ describe('useAccountDiscovery', () => {
             ).not.toHaveBeenCalled()
             expect(mockBaseDiscoverRekeyedAccounts).toHaveBeenCalledWith({
                 accountAddresses: ['A', 'B'],
+                scope: TESTNET_SCOPE,
             })
             expect(discovered).toEqual(['rekeyed'])
         })
 
         it('finds nothing, without scanning, while rekey is unavailable', async () => {
             rekey.isAvailable = false
-            const { result } = renderHook(() => useAccountDiscovery())
+            const { result } = renderHook(() =>
+                useAccountDiscovery(TESTNET_SCOPE),
+            )
 
             let discovered: unknown
             await act(async () => {

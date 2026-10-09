@@ -12,21 +12,36 @@
 
 import {
     authorityOf,
-    canSignViaParticipants,
     hasSigningKeys,
-    isAlgo25Account,
     isHardwareWalletAccount,
-    isHDWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
     type AccountAuthorityOps,
     type AuthorityTargetKind,
+    type AuthorityTargetOptions,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_SCOPES,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { hasLocalCoSigner } from './multisig-participants'
+import { getAlgorandAuthAccount } from './signer-resolution'
+import {
+    algorandAddressOf,
+    isAlgo25Account,
+    isHDWalletAccount,
+    isQuantumAccount,
+} from './vocabulary'
+
+export const AuthorityTargetKinds = {
+    standard: 'standard',
+    quantum: 'quantum',
+    hardware: 'hardware',
+    shared: 'shared',
+} as const
+
+/** The `AuthorityTargetOptions` switch that lists quantum targets. */
+export const QUANTUM_TARGET_OPTION = 'isQuantumTargetEnabled'
 
 const isDelegated = (account: WalletAccount, scope: ChainScope): boolean =>
     !!authorityOf(account, scope)
@@ -39,9 +54,13 @@ const isCurrentOrSelf = (
     target: WalletAccount,
     source: WalletAccount,
     scope: ChainScope,
-): boolean =>
-    target.address === source.address ||
-    target.address === authorityOf(source, scope)
+): boolean => {
+    const address = algorandAddressOf(target)
+    return (
+        address === algorandAddressOf(source) ||
+        address === authorityOf(source, scope)
+    )
+}
 
 /**
  * Mirrors Android
@@ -108,7 +127,7 @@ const isEligibleSharedTarget = (
     if (isCurrentOrSelf(target, source, scope)) return false
     if (!isMultisigAccount(target)) return false
     if (isDelegated(target, scope)) return false
-    return canSignViaParticipants(target.multisigDetails.addresses, accounts)
+    return hasLocalCoSigner(target, accounts)
 }
 
 /**
@@ -121,8 +140,8 @@ const isEligibleSharedTarget = (
  * - Multisig — permanent for a *delegated* LSig, which carries a single
  *   `sigkey`: `encodeDelegatedLsigAccount` emits one signature, so a threshold
  *   account can never be represented. Stated explicitly rather than relying on
- *   `hasSigningKeys`, because `keyPairId` is optional on `BaseWalletAccount`
- *   and a multisig account is only key-less by convention.
+ *   `hasSigningKeys`, because a chain entry's key is optional and a multisig
+ *   account is only key-less by convention.
  * - Rekeyed accounts — deferred, not impossible. A delegated LSig authorizes
  *   spending, so the chain verifies it against the sender's auth-addr: the
  *   delegation is signable, but only by the auth account. Supporting that
@@ -148,7 +167,7 @@ const accountsDelegatedTo = (
 ): WalletAccount[] =>
     accounts.filter(
         a =>
-            a.address !== address &&
+            algorandAddressOf(a) !== address &&
             LEGACY_SCOPES.some(scope => authorityOf(a, scope) === address),
     )
 
@@ -158,32 +177,67 @@ const isEligibleTarget = (
     source: WalletAccount,
     accounts: WalletAccount[],
     scope: ChainScope,
-    { isQuantumTargetEnabled }: { isQuantumTargetEnabled: boolean },
+    options: AuthorityTargetOptions,
 ): boolean => {
     switch (kind) {
-        case 'standard': {
+        case AuthorityTargetKinds.standard: {
             return isEligibleStandardTarget(target, source, scope)
         }
-        case 'quantum': {
+        case AuthorityTargetKinds.quantum: {
             return isEligibleQuantumTarget(
                 target,
                 source,
                 scope,
-                isQuantumTargetEnabled,
+                options[QUANTUM_TARGET_OPTION] === true,
             )
         }
-        case 'hardware': {
+        case AuthorityTargetKinds.hardware: {
             return isEligibleHardwareTarget(target, source, scope)
         }
-        case 'shared': {
+        case AuthorityTargetKinds.shared: {
             return isEligibleSharedTarget(target, source, accounts, scope)
+        }
+        default: {
+            return false
         }
     }
 }
 
+/**
+ * A broken auth chain counts as non-quantum: we cannot assert protection we
+ * cannot resolve.
+ */
+const hasQuantumAuthority = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): boolean => {
+    const auth = getAlgorandAuthAccount(account, accounts, scope)
+    return !!auth && isQuantumAccount(auth)
+}
+
+/**
+ * Compares *effective* authority (one rekey hop), not the account's own kind,
+ * because that is where the protection lives:
+ * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
+ *   back to Ed25519, even though it is still an algo25 account.
+ * - A quantum account already rekeyed away to Ed25519 has no protection
+ *   left, so rekeying it further is NOT a downgrade.
+ */
+const isAuthorityDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): boolean =>
+    hasQuantumAuthority(source, accounts, scope) &&
+    !hasQuantumAuthority(target, accounts, scope)
+
 export const algorandAuthority: AccountAuthorityOps = {
+    targetKinds: Object.values(AuthorityTargetKinds),
     isDelegated,
     accountsDelegatedTo,
     isEligibleTarget,
     canSignProgram,
+    isAuthorityDowngrade,
 }

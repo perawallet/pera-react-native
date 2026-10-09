@@ -15,82 +15,7 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type { Network } from '@perawallet/wallet-core-shared'
-import type {
-    AccountChains,
-    AccountCustody,
-    HardwareCustody,
-    LocalCustody,
-    MultisigCustody,
-    WatchCustody,
-} from './credentials'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
-
-export const DerivationTypes = {
-    Khovratovich: 32,
-    Peikert: 9,
-} as const
-
-export type DerivationType =
-    (typeof DerivationTypes)[keyof typeof DerivationTypes]
-
-export const AccountTypes = {
-    algo25: 'algo25',
-    hdWallet: 'hdWallet',
-    hardware: 'hardware',
-    multisig: 'multisig',
-    watch: 'watch',
-    quantum: 'quantum',
-} as const
-
-export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
-
-/**
- * Precedence used to resolve two accounts that share an address: higher wins.
- *
- * `quantum` ranks highest because misreporting it is the expensive failure —
- * the backend prices a quantum account's swap quotes at the Ed25519 minimum
- * fee and the chain rejects the swap, with no client-side symptom. `watch`
- * ranks lowest because it carries no signing capability, so dropping it in
- * favour of anything else can only ever gain the user capability.
- *
- * In practice only `watch` can genuinely collide with another type — an
- * Algorand address is derived from its key, so one address cannot be two
- * different signing schemes — but the order is total so the rule stays
- * deterministic rather than a special case.
- *
- * `as const` is load-bearing, not decoration: `satisfies Record<K, number>`
- * alone widens every value to `number`, which would make the cross-enum
- * equality assertion in `device-accounts.ts` pass vacuously. The literal types
- * are what make a reordering of one table a compile error.
- *
- * Mirrored, over the wire enum, by `DEVICE_ACCOUNT_TYPE_RANK` in
- * `@perawallet/wallet-core-device`. The two are held in sync by that
- * assertion — update both together.
- */
-export const ACCOUNT_TYPE_RANK = {
-    quantum: 6,
-    hardware: 5,
-    hdWallet: 4,
-    algo25: 3,
-    multisig: 2,
-    watch: 1,
-} as const satisfies Record<AccountType, number>
-
-export type ImportAccountType = 'hdWallet' | 'algo25' | 'quantum'
-
-export type HDWalletDetails = {
-    account: number
-    change: number
-    keyIndex: number
-    derivationType: DerivationType
-}
-
-export type MultiSigDetails = {
-    threshold: number
-    addresses: string[]
-    /** Algorand multisig version byte. Always 1 today. */
-    version: number
-}
+import type { AccountChains, AccountCustody } from './credentials'
 
 export type HardwareWalletDetails = {
     manufacturer: HardwareWalletManufacturer
@@ -104,31 +29,13 @@ export type HardwareWalletDetails = {
     transportType: LedgerTransportType
 }
 
-export type WalletAccount =
-    | Algo25Account
-    | HDWalletAccount
-    | MultiSigAccount
-    | HardwareWalletAccount
-    | WatchAccount
-    | QuantumAccount
-
-export type BaseWalletAccount = {
+export type WalletAccount = {
     /**
      * Stable unique identifier for the account, independent of any on-chain
-     * address. Every wallet account has one so it can always be referenced
-     * (and so future account kinds without an address — e.g. vIBANs, cards —
-     * still fit this shape). May coincide with an Indexer account id.
+     * address, so an account is referenced the same way on every chain.
      */
     id: string
     name?: string
-    /**
-     * On-chain Algorand address. Required for every account kind that exists
-     * today (all of them are on-chain), so it is redeclared as required on each
-     * concrete type below. Optional here so future off-chain account kinds can
-     * omit it.
-     */
-    address?: string
-    keyPairId?: string
     /**
      * Mirror of the on-chain auth-addr for the ACTIVE network — the value
      * badges, pickers, and signer resolution read. Re-derived from
@@ -142,58 +49,20 @@ export type BaseWalletAccount = {
      * a sync tick writes the map (self-healing, seconds).
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
-    /**
-     * The account's kind (`accountType()`) is read from here. A write that
-     * changes how the account is held builds it again with `buildAccount`.
-     */
+    /** How the account is held; the same on every chain. */
     custody: AccountCustody
     /** Everything that varies by chain, keyed by chain id. */
-    chains?: AccountChains
+    chains: AccountChains
 }
 
-export type Algo25Account = BaseWalletAccount & {
-    custody: { kind: 'local'; seed: typeof SeedScheme.Algo25 }
-    address: string
-    keyPairId: string
-}
+/** The account narrowed to one custody kind, as `hasCustody` narrows it. */
+export type AccountWithCustody<K extends AccountCustody['kind']> =
+    WalletAccount & { custody: Extract<AccountCustody, { kind: K }> }
 
-/**
- * Account backed by a post-quantum signature keypair. Flat and single-key
- * like {@link Algo25Account}: the key material lives in the KMS under
- * `keyPairId`; there is no derivation path or device metadata. The concrete
- * signature scheme (Falcon today) is a KMS / signing-pipeline detail that the
- * model deliberately does not encode, so the scheme can change without a
- * data migration.
- */
-export type QuantumAccount = BaseWalletAccount & {
-    custody: { kind: 'local'; seed: typeof SeedScheme.Quantum }
-    address: string
-    keyPairId: string
-}
-
-export type HDWalletAccount = BaseWalletAccount & {
-    custody: Extract<LocalCustody, { seed: typeof SeedScheme.Bip39 }>
-    address: string
-    hdWalletDetails: HDWalletDetails
-    keyPairId: string
-}
-
-export type MultiSigAccount = BaseWalletAccount & {
-    custody: MultisigCustody
-    address: string
-    multisigDetails: MultiSigDetails
-}
-
-export type HardwareWalletAccount = BaseWalletAccount & {
-    custody: HardwareCustody
-    address: string
-    hardwareDetails: HardwareWalletDetails
-}
-
-export type WatchAccount = BaseWalletAccount & {
-    custody: WatchCustody
-    address: string
-}
+export type LocalAccount = AccountWithCustody<'local'>
+export type HardwareWalletAccount = AccountWithCustody<'hardware'>
+export type MultiSigAccount = AccountWithCustody<'multisig'>
+export type WatchAccount = AccountWithCustody<'watch'>
 
 export type AccountAddress = string
 

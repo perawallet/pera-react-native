@@ -12,10 +12,13 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    addressOn,
     type AssetWithAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useIsNativeAssetId,
     useAssetsQuery,
@@ -62,17 +65,20 @@ export const useRemoveAssetsScreen = ({
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const { optOut, isLoading: isRemoving } = useAssetOptOutMutation()
 
     const balanceData = useMemo(
         () =>
-            selectedAccount
-                ? accountBalances.get(selectedAccount.address)
-                : undefined,
-        [accountBalances, selectedAccount],
+            selectedAddress ? accountBalances.get(selectedAddress) : undefined,
+        [accountBalances, selectedAddress],
     )
 
     const removableAssets = useMemo(() => {
@@ -95,7 +101,7 @@ export const useRemoveAssetsScreen = ({
 
     // Filter out assets where the user is the creator (creators cannot opt out)
     const filteredRemovableAssets = useMemo(() => {
-        if (!assets || !selectedAccount) {
+        if (!assets || !selectedAddress) {
             return removableAssets
         }
         return removableAssets.filter(item => {
@@ -103,9 +109,9 @@ export const useRemoveAssetsScreen = ({
             if (!asset) {
                 return true
             }
-            return asset.creator.address !== selectedAccount.address
+            return asset.creator.address !== selectedAddress
         })
-    }, [removableAssets, assets, selectedAccount])
+    }, [removableAssets, assets, selectedAddress])
 
     const isAllSelected =
         filteredRemovableAssets.length > 0 &&
@@ -134,14 +140,14 @@ export const useRemoveAssetsScreen = ({
     }, [isAllSelected, filteredRemovableAssets])
 
     const handleRemoveSelected = useCallback(async () => {
-        if (!selectedAccount || selectedAssetIds.size === 0 || !assets) {
+        if (!selectedAddress || selectedAssetIds.size === 0 || !assets) {
             return
         }
 
         const optOutParams = Array.from(selectedAssetIds).map(assetId => {
             const asset = assets.get(assetId)
             return {
-                sender: selectedAccount.address,
+                sender: selectedAddress,
                 assetId: BigInt(assetId),
                 // Creator is optional — the mutation will fetch it from the
                 // indexer when the asset metadata is not in the local DB.
@@ -170,7 +176,7 @@ export const useRemoveAssetsScreen = ({
             showError(err, t('asset_opt_out.error'))
         }
     }, [
-        selectedAccount,
+        selectedAddress,
         selectedAssetIds,
         assets,
         optOut,

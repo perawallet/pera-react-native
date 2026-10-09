@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     parseAddressPayload,
@@ -22,18 +22,24 @@ import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { canonicalJson } from '../canonicalize'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
     custody: { kind: 'local', seed: 'algo25' },
-    address: 'ADDR',
-    keyPairId: 'seed-1-ed25519',
+    chains: { algorand: { address: 'ADDR', keyPairId: 'seed-1-ed25519' } },
     name: 'Main',
 }
 
 describe('serializeAccountItems', () => {
+    beforeEach(() => {
+        backupChainAdapters.reset()
+        backupChainAdapters.register(fakeBackupAdapter())
+    })
+
     it('serializes an algo25 account to address + secrets items that round-trip', () => {
         const result = serializeAccountItems(algo25, {
             updatedAt: 1719300000000,
@@ -68,7 +74,7 @@ describe('serializeAccountItems', () => {
         const watch: WalletAccount = {
             id: '2',
             custody: { kind: 'watch' },
-            address: 'WADDR',
+            chains: { algorand: { address: 'WADDR' } },
             name: 'Watcher',
         }
         const result = serializeAccountItems(watch, {
@@ -95,14 +101,7 @@ describe('serializeAccountItems', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'HADDR',
-            keyPairId: 'k',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
+            chains: { algorand: { address: 'HADDR', keyPairId: 'k' } },
         }
         expect(
             serializeAccountItems(hd, {
@@ -121,15 +120,13 @@ describe('serializeAccountItems', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 1 },
             },
-            address: 'CHILD',
-            keyPairId: 'seed-1-acc0-idx1-dt9',
-            name: 'Child 1',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 1,
-                derivationType: 9,
+            chains: {
+                algorand: {
+                    address: 'CHILD',
+                    keyPairId: 'seed-1-acc0-idx1-dt9',
+                },
             },
+            name: 'Child 1',
         }
         const result = serializeAccountItems(hd, {
             updatedAt: 1719300000000,

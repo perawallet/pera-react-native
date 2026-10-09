@@ -13,13 +13,14 @@
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
@@ -51,9 +52,9 @@ export type UseHandleMultisigSignTapResult = (
  * prompt.
  */
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const accounts = useAllAccounts()
-    const { network } = useNetwork()
     const { decodeTransaction } = useTransactionEncoder()
     const { addSignRequest, pendingSignRequests } = useSigningRequest()
     const { t } = useLanguage()
@@ -63,7 +64,12 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
         (signRequest: MultisigSignRequest) => {
             if (ACTIONABLE_SIGN_REQUEST_STATUSES.has(signRequest.status)) {
                 const { localKey, hardware } = splitLocalUnsignedSigners(
-                    getLocalUnsignedSigners(signRequest, accounts),
+                    getLocalUnsignedSigners(
+                        signRequest,
+                        accounts,
+                        scope.chainId,
+                    ),
+                    scope.chainId,
                 )
                 if (localKey.length > 0 && hardware.size === 0) {
                     const toDispatch = selectCosignDispatchAddresses({
@@ -74,6 +80,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                         ),
                         threshold: signRequest.multisigAccount.threshold,
                         signedCount: getSignedResponseCount(signRequest),
+                        chainId: scope.chainId,
                     })
                     for (const address of toDispatch) {
                         try {
@@ -81,7 +88,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                 buildMultisigCosignRequest({
                                     signRequest,
                                     signerAddress: address,
-                                    network,
+                                    scope,
                                     decodeTransaction,
                                     localAccounts: accounts,
                                 }),
@@ -112,12 +119,12 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
         [
             openSheet,
             accounts,
-            network,
             decodeTransaction,
             addSignRequest,
             pendingSignRequests,
             errorToast,
             t,
+            scope,
         ],
     )
 }

@@ -9,68 +9,63 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { buildAccount } from '../credentials'
+import type { AccountChains, AccountCustody, WalletAccount } from '../models'
+import {
+    FAKE_CHAIN_ID,
+    FAKE_EXPLICIT_SEED,
+    FAKE_HD_SEED,
+    FAKE_SINGLE_SEED,
+} from './fakeAccountsChain'
 
-import { buildAccount, type BuildAccountInput } from '../credentials'
-import type { AccountType, WalletAccount } from '../models'
+/** A valid account, built the same way production code builds one, on the first chain of `chains`. */
+export const buildTestAccount = (
+    custody: AccountCustody,
+    chains: AccountChains,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => {
+    const chainId = Object.keys(chains)[0] as ChainId
+    return { ...buildAccount({ custody, chainId, chains }), ...overrides }
+}
 
-const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
-    algo25: {
-        custody: { kind: 'local', seed: 'algo25' },
-        chainId: 'algorand',
-        chains: { algorand: { address, keyPairId: 'algo25-key' } },
-    },
-    quantum: {
-        custody: { kind: 'local', seed: 'quantum' },
-        chainId: 'algorand',
-        chains: { algorand: { address, keyPairId: 'quantum-key' } },
-    },
-    hdWallet: {
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        chainId: 'algorand',
-        chains: { algorand: { address, keyPairId: 'hd-key' } },
-    },
+export const TEST_CUSTODY = {
+    local: { kind: 'local', seed: FAKE_SINGLE_SEED },
+    explicit: { kind: 'local', seed: FAKE_EXPLICIT_SEED },
+    hd: { kind: 'local', seed: FAKE_HD_SEED, hd: { account: 0, keyIndex: 0 } },
     hardware: {
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 0,
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
         },
-        chainId: 'algorand',
-        chains: { algorand: { address } },
+        accountIndex: 0,
     },
-    multisig: {
-        custody: { kind: 'multisig' },
-        chainId: 'algorand',
-        chains: {
-            algorand: {
-                address,
-                native: {
-                    family: 'algorand',
-                    multisig: {
-                        version: 1,
-                        threshold: 1,
-                        addresses: ['MEMBER-1', 'MEMBER-2'],
-                    },
-                },
-            },
-        },
-    },
-    watch: {
-        custody: { kind: 'watch' },
-        chainId: 'algorand',
-        chains: { algorand: { address } },
-    },
-})
+    multisig: { kind: 'multisig' },
+    watch: { kind: 'watch' },
+} as const satisfies Record<string, AccountCustody>
 
-/** A valid account of `type`, built the same way production code builds one. */
-export const buildTestAccount = (type: AccountType): WalletAccount =>
-    buildAccount(inputs(`${type.toUpperCase()}-ADDR`)[type])
+export type TestCustody = keyof typeof TEST_CUSTODY
+
+/** An account of `custody` on the fake chain; a local one gets a key. */
+export const testAccount = (
+    custody: TestCustody,
+    address = `${custody.toUpperCase()}-ADDR`,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount => {
+    const held = TEST_CUSTODY[custody]
+    return buildTestAccount(
+        held,
+        {
+            [FAKE_CHAIN_ID]: {
+                address,
+                ...(held.kind === 'local'
+                    ? { keyPairId: `${custody}-key` }
+                    : {}),
+            },
+        },
+        overrides,
+    )
+}

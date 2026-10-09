@@ -53,10 +53,10 @@ import {
 } from '@perawallet/wallet-core-kms'
 import {
     buildAccount,
-    quantumDerivationFor,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
@@ -122,7 +122,7 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
         },
     })
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -136,7 +136,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
@@ -155,7 +155,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     })
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, account])
-    store.setSelectedAccountAddress(account.address)
+    store.setSelectedAccountId(account.id)
     return account
 }
 

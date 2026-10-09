@@ -19,15 +19,12 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // Use the existing pinned algo25 address as the watch target. It's a
 // real, valid Algorand address — the form's `isValidAlgorandAddress`
@@ -81,10 +78,10 @@ describe('Flow: Add Account → Watch address', () => {
         await waitFor(() => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
-        expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-            AccountTypes.watch,
-        )
-        expect(useAccountsStore.getState().accounts[0].address).toBe(
+        expect(useAccountsStore.getState().accounts[0].custody).toEqual({
+            kind: 'watch',
+        })
+        expect(addressOf(useAccountsStore.getState().accounts[0])).toBe(
             WATCH_TARGET_ADDRESS,
         )
 
@@ -99,9 +96,9 @@ describe('Flow: Add Account → Watch address', () => {
                 'Cold storage',
             )
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            WATCH_TARGET_ADDRESS,
-        )
+        expect(
+            addressOf(useAccountsStore.getState().getSelectedAccount()!),
+        ).toBe(WATCH_TARGET_ADDRESS)
     })
 
     it('Given an account with the same address already exists, when the user enters that address, then the submit button stays disabled', async () => {
@@ -112,7 +109,7 @@ describe('Flow: Add Account → Watch address', () => {
             {
                 id: 'existing-1',
                 custody: { kind: 'watch' },
-                address: WATCH_TARGET_ADDRESS,
+                chains: { algorand: { address: WATCH_TARGET_ADDRESS } },
             },
         ])
 

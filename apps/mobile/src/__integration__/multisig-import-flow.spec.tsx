@@ -20,10 +20,10 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { ImportSharedAccountScreen } from '@modules/multisig/screens/ImportSharedAccountScreen/ImportSharedAccountScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
-    type MultiSigAccount,
-    accountType,
+    multisigParametersOf,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
@@ -38,6 +38,7 @@ import {
     HD_TEST_ADDRESS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // Deeplink parsing (perawallet://app/shared-account-import/?address=X and the
 // joint-account-import alias) is unit-tested in
@@ -142,17 +143,17 @@ describe('Flow: Import shared account by scanning its QR code', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
         const saved = useAccountsStore.getState().accounts[0]
-        expect(accountType(saved)).toBe('multisig')
-        expect(saved.address).toBe(SHARED_ADDRESS)
+        expect(saved.custody).toEqual({ kind: 'multisig' })
+        expect(addressOf(saved)).toBe(SHARED_ADDRESS)
         expect(saved.name).toBe('Team treasury')
-        expect((saved as MultiSigAccount).multisigDetails).toEqual({
+        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
             threshold: THRESHOLD,
             addresses: PARTICIPANTS,
             version: 1,
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            SHARED_ADDRESS,
-        )
+        expect(
+            addressOf(useAccountsStore.getState().getSelectedAccount()!),
+        ).toBe(SHARED_ADDRESS)
 
         // Finishing navigates away from the flow — the reset lands on
         // the wallet home (the stub TabBar route).

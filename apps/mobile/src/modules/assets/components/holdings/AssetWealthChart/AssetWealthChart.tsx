@@ -12,6 +12,8 @@
 
 import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -43,6 +45,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
     asset,
     period,
 }: AssetWealthChartProps) {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -53,7 +56,12 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
-    } = useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
+    } = useAccountsAssetsBalanceHistoryQuery(
+        account,
+        asset.assetId,
+        period,
+        scope,
+    )
 
     // See WealthChart: an unpriced point has no rate behind it and must not be
     // plotted as 0.

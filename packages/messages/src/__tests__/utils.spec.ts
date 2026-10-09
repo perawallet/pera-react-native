@@ -18,7 +18,6 @@ import type {
     MultisigSignRequest,
     ASAInbox,
 } from '../models'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const createMultiSigAccount = (
     overrides: Partial<MultiSigAccount> = {},
@@ -75,17 +74,11 @@ const createASAInboxItem = (address: string): InboxItem => ({
     createdAt: new Date(0),
 })
 
-const createMockAccounts = (addresses: string[]): WalletAccount[] =>
-    addresses.map(address => ({
-        address,
-        custody: { kind: 'local', seed: 'algo25' },
-    })) as WalletAccount[]
-
 describe('utils', () => {
     describe('sortInboxItems', () => {
         describe('type-based sorting', () => {
             it('should sort multisig_import before multisig_sign', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
@@ -99,7 +92,7 @@ describe('utils', () => {
             })
 
             it('should sort multisig_sign before asa_inbox', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const signItem = createMultisigSignItem(
                     new Date('2025-01-20T00:00:00Z'),
                 )
@@ -111,7 +104,7 @@ describe('utils', () => {
             })
 
             it('should sort multisig_import before asa_inbox', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
@@ -123,7 +116,7 @@ describe('utils', () => {
             })
 
             it('should sort asa_inbox after multisig_import', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const asaItem = createASAInboxItem('ADDR1')
                 const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
@@ -137,7 +130,7 @@ describe('utils', () => {
 
         describe('date-based sorting within same type', () => {
             it('should sort newer multisig_import items first', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const newerItem = createMultisigImportItem(
                     new Date('2025-01-20T00:00:00Z'),
                     'msig-newer',
@@ -153,7 +146,7 @@ describe('utils', () => {
             })
 
             it('should sort newer multisig_sign items first', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const newerItem = createMultisigSignItem(
                     new Date('2025-01-25T00:00:00Z'),
                     'sign-newer',
@@ -169,7 +162,7 @@ describe('utils', () => {
             })
 
             it('should sort older items after newer items', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const olderItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
@@ -183,7 +176,7 @@ describe('utils', () => {
             })
 
             it('should return 0 for items with identical createdAt', () => {
-                const accounts = createMockAccounts(['ADDR1'])
+                const accounts = ['ADDR1']
                 const sameDate = new Date('2025-01-15T00:00:00Z')
                 const item1 = createMultisigImportItem(sameDate, 'msig-1')
                 const item2 = createMultisigImportItem(sameDate, 'msig-2')
@@ -196,7 +189,7 @@ describe('utils', () => {
 
         describe('asa_inbox account-based sorting', () => {
             it('should sort asa_inbox items by account order in accounts array', () => {
-                const accounts = createMockAccounts(['ADDR1', 'ADDR2', 'ADDR3'])
+                const accounts = ['ADDR1', 'ADDR2', 'ADDR3']
                 const itemAddr2 = createASAInboxItem('ADDR2')
                 const itemAddr1 = createASAInboxItem('ADDR1')
 
@@ -206,7 +199,7 @@ describe('utils', () => {
             })
 
             it('should sort asa_inbox for first account before second account', () => {
-                const accounts = createMockAccounts(['ADDR1', 'ADDR2', 'ADDR3'])
+                const accounts = ['ADDR1', 'ADDR2', 'ADDR3']
                 const itemAddr1 = createASAInboxItem('ADDR1')
                 const itemAddr3 = createASAInboxItem('ADDR3')
 
@@ -216,7 +209,7 @@ describe('utils', () => {
             })
 
             it('should return 0 for asa_inbox items with same account', () => {
-                const accounts = createMockAccounts(['ADDR1', 'ADDR2'])
+                const accounts = ['ADDR1', 'ADDR2']
                 const item1 = createASAInboxItem('ADDR1')
                 const item2 = createASAInboxItem('ADDR1')
 
@@ -226,7 +219,7 @@ describe('utils', () => {
             })
 
             it('should handle asa_inbox items with unknown addresses', () => {
-                const accounts = createMockAccounts(['ADDR1', 'ADDR2'])
+                const accounts = ['ADDR1', 'ADDR2']
                 const unknownItem = createASAInboxItem('UNKNOWN')
                 const knownItem = createASAInboxItem('ADDR1')
 
@@ -238,7 +231,7 @@ describe('utils', () => {
 
         describe('integration with Array.sort', () => {
             it('should correctly sort a mixed array of inbox items', () => {
-                const accounts = createMockAccounts(['ADDR1', 'ADDR2', 'ADDR3'])
+                const accounts = ['ADDR1', 'ADDR2', 'ADDR3']
                 const items: InboxItem[] = [
                     createASAInboxItem('ADDR2'),
                     createMultisigSignItem(

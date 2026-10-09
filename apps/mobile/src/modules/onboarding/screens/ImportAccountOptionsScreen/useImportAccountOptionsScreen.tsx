@@ -13,10 +13,11 @@
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -54,7 +55,7 @@ export const useImportAccountOptionsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { chooseRestoreRoute, isReadingCredentials } =
             useRestoreBackupOptions()
-        const isQuantumAccountsEnabled = useCapability({
+        const isQuantumEnabled = useCapability({
             platform: 'quantum',
             anyChain: 'quantumAccounts',
         })
@@ -151,7 +152,8 @@ export const useImportAccountOptionsScreen =
                     return
                 }
 
-                const resolved = resolveImportAccountType(
+                const resolved = detectImportKind(
+                    LEGACY_CHAIN_ID,
                     parsedDeeplink.mnemonic,
                 )
                 if (!resolved.success) {
@@ -174,7 +176,7 @@ export const useImportAccountOptionsScreen =
                 // secret never enters the navigation state tree.
                 setPendingImportMnemonic(parsedDeeplink.mnemonic)
                 navigation.push('ImportAccount', {
-                    accountType: resolved.accountType,
+                    accountType: resolved.seed,
                 })
             },
             [closeQRScanner, parseDeeplink, navigation, errorToast, t],
@@ -230,7 +232,7 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
-                ...(isQuantumAccountsEnabled
+                ...(isQuantumEnabled
                     ? [
                           {
                               testID: 'import_account_quantum_button',
@@ -337,7 +339,7 @@ export const useImportAccountOptionsScreen =
             handleImportQuantum,
             isCloudBackupAvailable,
             canImportSecureBackup,
-            isQuantumAccountsEnabled,
+            isQuantumEnabled,
             canUseLedger,
             canUseLedgerUsb,
             canImportPeraWeb,

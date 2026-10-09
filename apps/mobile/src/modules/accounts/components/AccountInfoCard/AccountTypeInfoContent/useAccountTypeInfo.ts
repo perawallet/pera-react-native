@@ -10,22 +10,21 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    accountType,
-    type AccountType,
-    AccountTypes,
-    isMultisigAccount,
+    addressOn,
+    authorityTransitionLabel,
     isRekeyedAccount,
+    useAccountPresentation,
     useCanSignWith,
     useRekeyTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
-import { getRekeyLabelI18n, splitAccountTypeLabel } from '@utils/rekeyLabels'
+import { splitAccountTypeLabel } from '@utils/rekeyLabels'
 
 type UseAccountTypeInfoParams = {
     account: WalletAccount
@@ -42,42 +41,6 @@ type UseAccountTypeInfoResult = {
     handleLearnMore: () => void
 }
 
-const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
-    [AccountTypes.algo25]: {
-        title: 'account_type_info.standard_title',
-        description: 'account_type_info.standard_description',
-    },
-    [AccountTypes.hdWallet]: {
-        title: 'account_type_info.hd_wallet_title',
-        description: 'account_type_info.hd_wallet_description',
-    },
-    [AccountTypes.hardware]: {
-        title: 'account_type_info.ledger_title',
-        description: 'account_type_info.ledger_description',
-    },
-    [AccountTypes.multisig]: {
-        title: 'account_type_info.multisig_title',
-        description: 'account_type_info.multisig_description',
-    },
-    [AccountTypes.watch]: {
-        title: 'account_type_info.watch_title',
-        description: 'account_type_info.watch_description',
-    },
-    [AccountTypes.quantum]: {
-        title: 'account_type_info.quantum_title',
-        description: 'account_type_info.quantum_description',
-    },
-}
-
-const SUPPORT_URL: Record<AccountType, string> = {
-    [AccountTypes.algo25]: config.accountTypeSupportUrl,
-    [AccountTypes.hdWallet]: config.accountTypeSupportUrl,
-    [AccountTypes.watch]: config.accountTypeSupportUrl,
-    [AccountTypes.hardware]: config.ledgerAccountSupportUrl,
-    [AccountTypes.multisig]: config.multisigSupportUrl,
-    [AccountTypes.quantum]: config.quantumAccountSupportUrl,
-}
-
 const REKEYED_UNSIGNABLE_I18N = {
     title: 'account_type_info.no_auth_title',
     description: 'account_type_info.no_auth_description',
@@ -88,23 +51,29 @@ const REKEYED_SIGNABLE_I18N = {
     description: 'account_type_info.rekeyed_standard_description',
 }
 
-const MULTISIG_UNSIGNABLE_I18N = {
-    title: 'account_type_info.no_auth_title',
-    description: 'account_type_info.multisig_no_auth_description',
-}
-
 export const useAccountTypeInfo = ({
     account,
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const canSign = useCanSignWith(account)
-    const rekeyTransition = useRekeyTransition(account.address)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const canSign = useCanSignWith(account, scope.chainId)
+    const rekeyTransition = useRekeyTransition(
+        addressOn(account, scope),
+        scope.chainId,
+    )
+    const presentation = useAccountPresentation(account, scope)
+    const transitionLabel = useMemo(
+        () =>
+            rekeyTransition
+                ? authorityTransitionLabel(rekeyTransition, scope.chainId)
+                : null,
+        [rekeyTransition, scope.chainId],
+    )
 
     const { title, titleQualifier, description } = useMemo(() => {
-        if (rekeyTransition) {
-            const { labelKey, signerKey, descriptionKey } =
-                getRekeyLabelI18n(rekeyTransition)
+        if (transitionLabel) {
+            const { labelKey, signerKey, descriptionKey } = transitionLabel
             const label = t(labelKey, { to: t(signerKey) })
             const { main, qualifier } = splitAccountTypeLabel(label)
             return {
@@ -114,7 +83,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
+        if (isRekeyedAccount(account, scope.chainId)) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N
@@ -125,28 +94,24 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isMultisigAccount(account) && !canSign) {
-            return {
-                title: t(MULTISIG_UNSIGNABLE_I18N.title),
-                titleQualifier: null,
-                description: t(MULTISIG_UNSIGNABLE_I18N.description),
-            }
-        }
-
-        const i18n = TYPE_I18N[accountType(account)]
         return {
-            title: t(i18n.title),
+            title: t(
+                presentation?.infoTitleKey ?? REKEYED_UNSIGNABLE_I18N.title,
+            ),
             titleQualifier: null,
-            description: t(i18n.description),
+            description: t(
+                presentation?.infoBodyKey ??
+                    REKEYED_UNSIGNABLE_I18N.description,
+            ),
         }
-    }, [account, canSign, rekeyTransition, t])
+    }, [account, canSign, transitionLabel, presentation, t, scope.chainId])
 
     const handleLearnMore = useCallback(() => {
         // A rekeyed account's sheet copy describes its signer, not its own
-        // type, so the article has to follow the same type to match.
-        const type = rekeyTransition?.to ?? accountType(account)
-        pushWebView({ url: SUPPORT_URL[type] })
-    }, [pushWebView, account, rekeyTransition])
+        // kind, so the article has to follow the signer too.
+        const url = transitionLabel?.supportUrl ?? presentation?.supportUrl
+        if (url) pushWebView({ url })
+    }, [pushWebView, transitionLabel, presentation])
 
     return {
         title,

@@ -20,20 +20,22 @@ import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnable
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
 type TestAccount = {
-    address: string
     custody: { kind: string }
+    chains: { algorand: { address: string } }
     authority?: string
 }
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    isQuantumAccount: (account: { custody?: { seed?: string } }) =>
-        account.custody?.seed === 'quantum',
+    hasCustody: (account: TestAccount, kind: string) =>
+        account.custody.kind === kind,
     getSignerFor: (address: string, accounts: TestAccount[]) => {
-        const account = accounts.find(a => a.address === address)
+        const holder = (held: string) =>
+            accounts.find(a => a.chains.algorand.address === held)
+        const account = holder(address)
         if (!account) return null
         if (!account.authority) return account
-        const auth = accounts.find(a => a.address === account.authority)
+        const auth = holder(account.authority)
         // Mirrors resolveSignerForAccount: an unresolvable or watch-only auth
         // account yields no signer.
         return auth && auth.custody.kind !== 'watch' ? auth : null
@@ -70,15 +72,15 @@ describe('useQuantumDappWarning', () => {
         ;(useIsQuantumDappWarningEnabled as Mock).mockReturnValue(true)
         ;(useAllAccounts as Mock).mockReturnValue([
             {
-                address: QUANTUM_ADDRESS,
+                chains: { algorand: { address: QUANTUM_ADDRESS } },
                 custody: { kind: 'local', seed: 'quantum' },
             },
             {
-                address: STANDARD_ADDRESS,
+                chains: { algorand: { address: STANDARD_ADDRESS } },
                 custody: { kind: 'local', seed: 'algo25' },
             },
             {
-                address: REKEYED_TO_QUANTUM_ADDRESS,
+                chains: { algorand: { address: REKEYED_TO_QUANTUM_ADDRESS } },
                 custody: { kind: 'local', seed: 'algo25' },
                 authority: QUANTUM_ADDRESS,
             },

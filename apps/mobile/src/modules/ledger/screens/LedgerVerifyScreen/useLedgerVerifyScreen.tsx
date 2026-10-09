@@ -15,13 +15,16 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     buildAccount,
+    chainAccountOf,
+    findAccountByAddressOn,
+    hardwareDetailsOf,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
     isLedgerAccount,
     isWatchAccount,
     type LedgerSelectableAccount,
     useAccountsStore,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
     useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -97,7 +100,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     )
     const { t } = useLanguage()
     const { setAccounts } = useSetAccounts()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -210,15 +213,24 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
-        const byAddress = new Map(current.map(a => [a.address, a]))
+        const byAddress = new Map(
+            current.flatMap(account => {
+                const address = chainAccountOf(
+                    account,
+                    LEGACY_CHAIN_ID,
+                )?.address
+                return address === undefined ? [] : [[address, account]]
+            }),
+        )
         const added = new Set<string>()
         const batch: WalletAccount[] = []
         const upgrades: Array<{
+            id: string
             address: string
             details: HardwareWalletDetails
         }> = []
         const rebinds: Array<{
-            address: string
+            id: string
             details: HardwareWalletDetails
         }> = []
 
@@ -245,21 +257,22 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 if (isWatchAccount(collision)) {
                     if (!upgrades.some(u => u.address === acc.address)) {
                         upgrades.push({
+                            id: collision.id,
                             address: acc.address,
                             details: detailsFor(acc),
                         })
                     }
                 } else if (
                     isHardwareWalletAccount(collision) &&
-                    (collision.hardwareDetails.deviceId !== deviceId ||
-                        collision.hardwareDetails.transportType !==
+                    (hardwareDetailsOf(collision)?.deviceId !== deviceId ||
+                        hardwareDetailsOf(collision)?.transportType !==
                             transportType)
                 ) {
                     // Same address under a different stored device id — the
                     // OS forgot/re-paired or the device was replaced from the
                     // same seed. The address match proves the same key.
                     rebinds.push({
-                        address: acc.address,
+                        id: collision.id,
                         details: detailsFor(acc),
                     })
                 }
@@ -305,16 +318,16 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     // Every account carries a unique `id`; dedup within this
                     // import still keys on `address` (see `addHardware` above)
                     // because all account kinds today are on-chain.
-                    batch.push(
-                        buildAccount({
+                    batch.push({
+                        ...buildAccount({
                             custody: { kind: 'watch' },
                             chainId: LEGACY_CHAIN_ID,
                             chains: {
                                 [LEGACY_CHAIN_ID]: { address: sel.address },
                             },
-                            rekeyAddress: sel.authAccount.address,
                         }),
-                    )
+                        rekeyAddress: sel.authAccount.address,
+                    })
                 }
             }
         }
@@ -341,13 +354,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
         const store = useAccountsStore.getState()
         for (const upgrade of upgrades) {
-            store.upgradeWatchAccountToHardware(
-                upgrade.address,
-                upgrade.details,
-            )
+            store.upgradeWatchAccountToHardware(upgrade.id, upgrade.details)
         }
         for (const rebind of rebinds) {
-            store.updateHardwareDetails(rebind.address, rebind.details)
+            store.updateHardwareDetails(rebind.id, rebind.details)
         }
         if (batch.length > 0) {
             setAccounts([...useAccountsStore.getState().accounts, ...batch])
@@ -362,10 +372,17 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const firstDerived = selectedAccounts.find(s => s.kind === 'derived')
         const selectedAddress =
             firstDerived?.account.address ??
-            batch[0]?.address ??
+            (batch[0] && chainAccountOf(batch[0], LEGACY_CHAIN_ID)?.address) ??
             upgrades[0]?.address
-        if (selectedAddress) {
-            setSelectedAccountAddress(selectedAddress)
+        const selected = selectedAddress
+            ? findAccountByAddressOn(
+                  useAccountsStore.getState().accounts,
+                  LEGACY_CHAIN_ID,
+                  selectedAddress,
+              )
+            : undefined
+        if (selected) {
+            setSelectedAccountId(selected.id)
         }
         if (isHandoffTab) {
             setIsAddedInHandoffTab(true)
@@ -380,7 +397,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         selectedAccounts,
         requestBottomSheet,
         setAccounts,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         setShouldPlayConfetti,
         exitAccountFlow,
         isHandoffTab,

@@ -35,8 +35,8 @@ export type AccountMenuContentProps = {
     accountFilter?: (account: WalletAccount) => boolean
     /** Opt in to the Pera Card activation/connected row (home switcher only). */
     showPeraCardActivation?: boolean
-    /** Controlled highlight forwarded to AccountMenu (see its `selectedAddress`). */
-    selectedAddress?: Nullable<string>
+    /** Controlled highlight forwarded to AccountMenu (see its `selectedAccountId`). */
+    selectedAccountId?: Nullable<string>
 }
 
 export const AccountMenuContent = ({
@@ -45,7 +45,7 @@ export const AccountMenuContent = ({
     showSearch = false,
     accountFilter,
     showPeraCardActivation = false,
-    selectedAddress,
+    selectedAccountId,
 }: AccountMenuContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -83,7 +83,7 @@ export const AccountMenuContent = ({
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}
                 showPeraCardActivation={showPeraCardActivation}
-                selectedAddress={selectedAddress}
+                selectedAccountId={selectedAccountId}
             />
         </PWView>
     )
