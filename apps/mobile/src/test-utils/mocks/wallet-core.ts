@@ -326,6 +326,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         (_account: any, _scope?: any): string | null => null,
     )
     return {
+        // Chain modules register into it at bootstrap; nothing here reads it back.
+        accountsChainAdapters: {
+            register: vi.fn(),
+            get: vi.fn(),
+            has: vi.fn(() => false),
+            reset: vi.fn(),
+        },
         authorityOf,
         useAuthorityOf: vi.fn((account: any, scope?: any) =>
             account ? authorityOf(account, scope) : null,

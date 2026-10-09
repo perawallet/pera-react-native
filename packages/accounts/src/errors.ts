@@ -194,6 +194,18 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
     }
 }
 
+export class RootKeyDiscoveryUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Discovery from an in-memory root key', chainId)
+    }
+}
+
+export class AccountInformationUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Account information', chainId)
+    }
+}
+
 export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(derivationType: number, chainId: ChainId) {
         super(`HD derivation type ${derivationType}`, chainId)

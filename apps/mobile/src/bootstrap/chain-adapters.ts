@@ -14,7 +14,6 @@ import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chai
 import {
     buildChainSetup,
     CHAIN_IDS,
-    ChainHttpClientUnavailableError,
     registerChainSetup,
     type ChainCapabilityOverrides,
     type ChainContext,
@@ -83,11 +82,6 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     timeouts: {
         readMs: config.algodReadTimeout,
         submitMs: config.algodSubmitTimeout,
-    },
-    // Nothing implements ChainHttpClient; a module that calls it must fail loudly.
-    http: {
-        request: () =>
-            Promise.reject(new ChainHttpClientUnavailableError(entry.chainId)),
     },
     kms: kmsCore,
 })

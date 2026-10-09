@@ -15,10 +15,9 @@ import { describe, it, test, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
     fromClients: vi.fn(),
     registerErrorTransformer: vi.fn(),
-    getChainConfig: vi.fn(),
     getAlgorandChainConfig: vi.fn(),
     registerCustomNetworkSource: vi.fn(() => () => undefined),
-    updateNodeEndpoints: vi.fn(),
+    resetNodeClients: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
     Algodv2: vi.fn(),
     Indexer: vi.fn(),
@@ -51,31 +50,18 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         algodReadTimeout: 10_000,
         algodSubmitTimeout: 30_000,
     },
-    getChainConfig: mocks.getChainConfig,
     getAlgorandChainConfig: mocks.getAlgorandChainConfig,
     registerCustomNetworkSource: mocks.registerCustomNetworkSource,
-    // Real 4-network union. The subscription under test (module-level, at
-    // the bottom of algorandClient.ts) iterates Object.values(Networks)
-    // unconditionally, so it needs a real-shaped Networks map, not just a
-    // getNetworkConfig stub.
-    Networks: {
-        mainnet: 'mainnet',
-        testnet: 'testnet',
-        betanet: 'betanet',
-        custom: 'custom',
-    },
 }))
 
-// Only updateNodeEndpoints is swapped out — everything else (registerStore,
+// Only resetNodeClients is swapped out; everything else (registerStore,
 // logger, etc., which the real '../../store' barrel needs at import time)
-// stays real via importOriginal, or the store import below would crash. This
-// also keeps algorandClient.ts's module-level subscription/deferred push
-// from building real ky clients as a side effect of the tests in this file.
+// stays real via importOriginal, or the store import below would crash.
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    updateNodeEndpoints: mocks.updateNodeEndpoints,
+    resetNodeClients: mocks.resetNodeClients,
 }))
 
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
@@ -88,17 +74,6 @@ beforeEach(() => {
     mocks.fromClients.mockReturnValue({
         registerErrorTransformer: mocks.registerErrorTransformer,
     })
-    // getChainConfig's mock implementation MUST be (re-)established before
-    // resetState() below: useNetworkStore.subscribe(...) in
-    // algorandClient.ts fires SYNCHRONOUSLY on resetState/setCustomNetwork,
-    // which synchronously calls getChainConfig() for every network.
-    // Clearing the mock's calls (vi.clearAllMocks, above) doesn't touch its
-    // implementation, but the very first run in this file has none yet — if
-    // resetState() below ran first, that first subscriber firing would call a
-    // bare `vi.fn()` returning undefined and throw ("Cannot read properties of
-    // undefined") inside beforeEach itself, which then fails every subsequent
-    // test too (the throw stops this function before it ever reaches this
-    // mockImplementation call).
     const chainConfigFor = (scope: { networkId: string }) =>
         scope.networkId === 'custom'
             ? // Mirrors the real `custom` placeholder with no saved node.
@@ -114,14 +89,30 @@ beforeEach(() => {
                   algodToken: `algod-token-${scope.networkId}`,
                   indexerToken: `indexer-token-${scope.networkId}`,
               }
-    mocks.getChainConfig.mockImplementation(chainConfigFor)
     mocks.getAlgorandChainConfig.mockImplementation(chainConfigFor)
     mocks.Algodv2.mockImplementation(function Algodv2() {})
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
-    // Safe now that getChainConfig has a real implementation above.
     useNetworkStore.getState().resetState()
     useNetworkStore.getState().setNetwork('mainnet')
+    mocks.resetNodeClients.mockClear()
+})
+
+describe('node client reset', () => {
+    it('drops the cached node clients when a custom node is saved', () => {
+        useNetworkStore.getState().setCustomNetwork('algorand', {
+            id: 'custom',
+            algodUrl: 'https://node.example',
+        })
+
+        expect(mocks.resetNodeClients).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps them on a plain network switch', () => {
+        useNetworkStore.getState().setNetwork('testnet')
+
+        expect(mocks.resetNodeClients).not.toHaveBeenCalled()
+    })
 })
 
 describe('getAlgorandClient', () => {

@@ -13,22 +13,17 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-    updateNodeEndpoints: vi.fn(),
+    resetNodeClients: vi.fn(),
 }))
 
-// Partial mock: algorandClient.ts's module-level subscription (Step 4) would
-// otherwise call the REAL updateNodeEndpoints on every setCustomNetwork/
-// clearCustomNetwork/resetState below, building real ky clients as a side
-// effect of unrelated tests. Only updateNodeEndpoints is swapped out —
-// everything else (registerStore, logger, etc., which the network
-// store needs at import time) stays real via
-// importOriginal, or the store import below would crash with "registerStore
-// is not a function".
+// Partial mock: only resetNodeClients is swapped out. Everything else
+// (registerStore, logger, etc., which the network store needs at import time)
+// stays real via importOriginal, or the store import below would crash.
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    updateNodeEndpoints: mocks.updateNodeEndpoints,
+    resetNodeClients: mocks.resetNodeClients,
 }))
 
 // Spy on createTimeoutBoundedAlgorandClient while still delegating to the
@@ -55,6 +50,7 @@ import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork, clearCustomNetwork } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
+import { algorandNodeBackends } from '../../node-backends'
 
 const CUSTOM_SCOPE = scopeForLegacyNetwork(Networks.custom)
 
@@ -195,10 +191,10 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
 describe('custom-network store subscription (real store, end-to-end)', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
-        mocks.updateNodeEndpoints.mockClear()
+        mocks.resetNodeClients.mockClear()
     })
 
-    test('saving a custom config re-syncs every network, not just custom', () => {
+    test('saving a custom config drops the cached node clients, and the custom backends read the saved node', () => {
         setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
@@ -206,84 +202,50 @@ describe('custom-network store subscription (real store, end-to-end)', () => {
             genesisId: 'dockernet-v1',
         })
 
-        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-            Networks.custom,
-            {
-                algodUrl: 'http://10.0.0.5:4001',
-                indexerUrl: 'http://10.0.0.5:8980',
-                // No token saved, so the store's source reports none (`''`).
-                algodToken: '',
-                indexerToken: '',
+        expect(mocks.resetNodeClients).toHaveBeenCalled()
+        expect(algorandNodeBackends.backendsFor(CUSTOM_SCOPE)).toEqual({
+            algod: {
+                url: 'http://10.0.0.5:4001',
+                tokenHeader: 'X-Algo-API-Token',
+                // No token saved, so the store's source reports none.
+                token: '',
             },
-        )
-        // Every other network still gets pushed, with its baked config — the
-        // subscription callback takes no argument and re-pushes ALL networks
-        // unconditionally rather than branching on which one changed (see
-        // the "clearing" test below for why a keys/diff-based push would be
-        // wrong here).
-        for (const network of [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ]) {
-            expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(network, {
-                algodUrl: getNetworkConfig(network).algodUrl,
-                indexerUrl: getNetworkConfig(network).indexerUrl,
-                algodToken: getNetworkConfig(network).algodToken,
-                indexerToken: getNetworkConfig(network).indexerToken,
-            })
-        }
+            indexer: {
+                url: 'http://10.0.0.5:8980',
+                tokenHeader: 'X-Indexer-API-Token',
+                token: '',
+            },
+        })
     })
 
-    test('clearing the custom config re-syncs it back to the empty baked placeholder, not the stale custom endpoints', () => {
+    test('clearing the custom config drops them again, back to the empty baked placeholder', () => {
         setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
             genesisId: 'dockernet-v1',
         })
-        // Isolate what clearCustomNetwork itself triggers from what
-        // setCustomNetwork above already did.
-        mocks.updateNodeEndpoints.mockClear()
+        mocks.resetNodeClients.mockClear()
 
         clearCustomNetwork()
 
-        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-            Networks.custom,
-            {
-                algodUrl: getNetworkConfig(Networks.custom).algodUrl,
-                indexerUrl: getNetworkConfig(Networks.custom).indexerUrl,
-                algodToken: getNetworkConfig(Networks.custom).algodToken,
-                indexerToken: getNetworkConfig(Networks.custom).indexerToken,
-            },
+        expect(mocks.resetNodeClients).toHaveBeenCalled()
+        expect(algorandNodeBackends.backendsFor(CUSTOM_SCOPE).algod?.url).toBe(
+            getNetworkConfig(Networks.custom).algodUrl,
         )
     })
 })
 
-describe('initial push of a persisted custom config on module load', () => {
-    // Placed last in this file deliberately: every test here calls
-    // `vi.resetModules()` and re-imports `../algorandClient` dynamically, so
-    // it must not run before the describe blocks above that rely on the
-    // module instance captured by this file's own static top-level imports
-    // (`vi.resetModules()` only affects what a LATER `import()` resolves to —
-    // it does not retroactively change already-bound references — but there
-    // is no reason to tempt that).
-    test('a pre-seeded (persisted) custom config reaches updateNodeEndpoints on fresh module load, with no store write in this test', async () => {
+describe('a persisted custom config on module load', () => {
+    // Last in this file: it calls vi.resetModules() and re-imports, which the
+    // describe blocks above must not see.
+    test('reaches the node backends with no store write in this test', async () => {
         vi.resetModules()
-        mocks.updateNodeEndpoints.mockClear()
 
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
-        // Simulates a previous session's persisted custom config already on
-        // disk BEFORE the module ever loads — no `setCustomNetwork` /
-        // `clearCustomNetwork` / `resetState` call happens anywhere in this
-        // test, only a raw write of the legacy custom-network record the
-        // network store folds in on hydrate. zustand's `persist` hydration
-        // is synchronous (MMKV's `getString` is sync in production; the
-        // in-memory Map this package's vitest.setup.ts backs it with is sync
-        // too), so the store created as part of the fresh import below has
-        // already hydrated this value by the time `algorandClient.ts`
-        // finishes evaluating.
+        // A previous session's legacy custom-network record, already on disk
+        // before the module loads; the network store folds it in on hydrate.
         getProvider().keyValueStorage.setItem(
             'custom-network-store',
             JSON.stringify({
@@ -299,35 +261,13 @@ describe('initial push of a persisted custom config on module load', () => {
             }),
         )
 
-        // Fresh import — pulls in a fresh network store transitively, which
-        // hydrates from the storage seeded above.
+        // algorandClient registers the saved-node reader node-backends reads.
         await import('../algorandClient')
+        const { algorandNodeBackends: fresh } =
+            await import('../../node-backends')
 
-        // The push is deferred past module evaluation (see the comment in
-        // algorandClient.ts), so give it a moment to fire rather than
-        // asserting immediately.
-        await vi.waitFor(() => {
-            expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-                Networks.custom,
-                {
-                    algodUrl: 'http://10.0.0.9:4001',
-                    indexerUrl: 'http://10.0.0.9:8980',
-                    algodToken: '',
-                    indexerToken: '',
-                },
-            )
-        })
-
-        // The three real networks (no custom config involved) get pushed
-        // too — the loop is unconditional over every network, not just custom.
-        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-            Networks.mainnet,
-            {
-                algodUrl: getNetworkConfig(Networks.mainnet).algodUrl,
-                indexerUrl: getNetworkConfig(Networks.mainnet).indexerUrl,
-                algodToken: getNetworkConfig(Networks.mainnet).algodToken,
-                indexerToken: getNetworkConfig(Networks.mainnet).indexerToken,
-            },
+        expect(fresh.backendsFor(CUSTOM_SCOPE).algod?.url).toBe(
+            'http://10.0.0.9:4001',
         )
     })
 })

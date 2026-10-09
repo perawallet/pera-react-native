@@ -81,14 +81,9 @@ describe('ChainModule', () => {
 })
 
 describe('ChainContext', () => {
-    it('exposes only the scope, endpoints, Pera backend, timeouts, http client and key store', () => {
+    it('exposes only the scope, endpoints, Pera backend, timeouts and key store', () => {
         expectTypeOf<keyof ChainContext>().toEqualTypeOf<
-            | 'getScope'
-            | 'getEndpoints'
-            | 'getPeraBackend'
-            | 'timeouts'
-            | 'http'
-            | 'kms'
+            'getScope' | 'getEndpoints' | 'getPeraBackend' | 'timeouts' | 'kms'
         >()
     })
 })

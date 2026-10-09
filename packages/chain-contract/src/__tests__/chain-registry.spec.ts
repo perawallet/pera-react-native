@@ -107,7 +107,6 @@ const context: ChainContext = {
     getEndpoints: () => ({}),
     getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
     timeouts: { readMs: 10_000, submitMs: 30_000 },
-    http: { request: vi.fn() },
     kms: {} as ChainContext['kms'],
 }
 

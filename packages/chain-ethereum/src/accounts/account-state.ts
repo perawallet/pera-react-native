@@ -90,11 +90,8 @@ const fetchAccountState =
 const fetchChangeSignal =
     (ctx: ChainContext): EthereumAccountStateOps['fetchChangeSignal'] =>
     async (addresses, scope, cursor): Promise<AccountChangeSignal> => {
-        const backend = ctx.getPeraBackend(scope)
-        if (backend.services.has(BLOCK_FOLLOWING_SERVICE)) {
+        if (ctx.getPeraBackend(scope).services.has(BLOCK_FOLLOWING_SERVICE)) {
             const { refresh, block } = await fetchShouldRefresh(
-                ctx,
-                backend.baseUrl,
                 scope,
                 addresses,
                 cursor,
@@ -109,7 +106,6 @@ const fetchChangeSignal =
         return { changed: head > cursor, cursor: Math.max(head, cursor) }
     }
 
-/** Not registered: the chain's full accounts adapter needs Ethereum key derivation first. */
 export const createEthereumAccountStateOps = (
     ctx: ChainContext,
 ): EthereumAccountStateOps => ({

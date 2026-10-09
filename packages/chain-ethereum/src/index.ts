@@ -11,7 +11,6 @@
  */
 
 export {
-    BlockFollowingRequestError,
     createEthereumAccountStateOps,
     InvalidPrivateKeyError,
     parseEthereumPrivateKey,

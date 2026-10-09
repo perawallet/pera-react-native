@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+export { createEthereumAccountsAdapter } from './adapter'
 export {
     createEthereumAccountStateOps,
     type EthereumAccountStateOps,
 } from './account-state'
 export { ethereumAddressCodec } from './address-codec'
-export { BlockFollowingRequestError } from './endpoints'
 export { ethereumKeyDerivation } from './key-derivation'
 export {
     InvalidPrivateKeyError,
