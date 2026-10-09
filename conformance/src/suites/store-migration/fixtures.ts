@@ -329,4 +329,22 @@ export const STORE_FIXTURES: StoreFixture[] = [
             version: 3,
         }),
     },
+    {
+        // The last v3 shape: records without the authority fields, which the
+        // store's own maps hold instead.
+        name: 'v3 with the authority maps',
+        payload: a => ({
+            state: {
+                accounts: v3Records(a, {}),
+                ...topLevel(a),
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 3,
+        }),
+    },
 ]

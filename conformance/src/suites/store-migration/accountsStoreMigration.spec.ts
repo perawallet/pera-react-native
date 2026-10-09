@@ -282,6 +282,11 @@ describe('accounts-store migration conformance', () => {
                     `${record.address} kept ${field}`,
                 ).not.toHaveProperty(field)
             }
+            // v4 renamed the Algorand-specific seed scheme.
+            expect(
+                (record.custody as { seed?: unknown }).seed,
+                `${record.address} kept the algo25 seed scheme`,
+            ).not.toBe('algo25')
         }
         expect(persisted.authorities?.[toScopeKey(scope)]).toEqual({
             [rekeyed.address]: algo25.address,
