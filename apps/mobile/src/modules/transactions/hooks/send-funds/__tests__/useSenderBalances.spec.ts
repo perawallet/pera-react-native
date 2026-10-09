@@ -29,6 +29,8 @@ const algorandState = (totalAssetsOptedIn: number) => ({
     address: 'SENDER',
     scope: { chainId: 'algorand' as const, networkId: 'mainnet' as const },
     nativeBalance: new Decimal('12.345678'),
+    reserveBalance: new Decimal(200_000),
+    heldTokenCount: totalAssetsOptedIn,
     chainState: {
         family: 'algorand' as const,
         minBalance: new Decimal(200_000),
@@ -80,6 +82,30 @@ describe('useSenderBalances', () => {
 
         const { result } = renderHook(() => useSenderBalances(ACCOUNT))
 
+        expect(result.current?.hasOptedInAssets).toBe(false)
+    })
+
+    it('reads a chain with no reserve as a zero minimum balance', () => {
+        vi.mocked(useAccountStateQuery).mockReturnValue({
+            data: {
+                address: 'SENDER',
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                nativeBalance: new Decimal('1'),
+                reserveBalance: new Decimal(0),
+                heldTokenCount: 0,
+                chainState: {
+                    family: 'evm',
+                    nonce: { latest: 0, pending: 0 },
+                },
+            },
+            isPending: false,
+            isLoading: false,
+            isSuccess: true,
+        } as never)
+
+        const { result } = renderHook(() => useSenderBalances(ACCOUNT))
+
+        expect(result.current?.minBalance).toBe(0n)
         expect(result.current?.hasOptedInAssets).toBe(false)
     })
 

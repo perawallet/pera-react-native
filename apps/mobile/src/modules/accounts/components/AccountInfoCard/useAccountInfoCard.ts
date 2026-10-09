@@ -86,10 +86,7 @@ export const useAccountInfoCard = ({
     }, [])
 
     const { decimals: nativeDecimals } = useNativeAsset()
-    const chainState = accountState?.chainState
-    // Base units of the chain's native asset.
-    const minBalanceBaseUnits =
-        chainState?.family === 'algorand' ? chainState.minBalance : undefined
+    const minBalanceBaseUnits = accountState?.reserveBalance
     const minBalanceAlgos = useMemo(
         () =>
             minBalanceBaseUnits === undefined

@@ -42,15 +42,13 @@ export const useSenderBalances = (
 
     return useMemo(() => {
         if (!data) return undefined
-        const chainState =
-            data.chainState.family === 'algorand' ? data.chainState : undefined
         return {
             amount: displayUnitsToBaseUnitsBigInt(
                 data.nativeBalance,
                 nativeDecimals,
             ),
-            minBalance: chainState ? toBigInt(chainState.minBalance) : 0n,
-            hasOptedInAssets: (chainState?.totalAssetsOptedIn ?? 0) > 0,
+            minBalance: toBigInt(data.reserveBalance),
+            hasOptedInAssets: data.heldTokenCount > 0,
         }
     }, [data, nativeDecimals])
 }

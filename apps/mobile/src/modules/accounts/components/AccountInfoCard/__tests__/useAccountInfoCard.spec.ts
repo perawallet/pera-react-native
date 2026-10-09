@@ -140,6 +140,8 @@ describe('useAccountInfoCard', () => {
                 address: 'ANY',
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 nativeBalance: new Decimal(1),
+                reserveBalance: new Decimal(100_000),
+                heldTokenCount: 0,
                 chainState: {
                     family: 'algorand',
                     minBalance: new Decimal(100_000),
@@ -240,11 +242,23 @@ describe('useAccountInfoCard', () => {
         ])
     })
 
-    test('reads the min balance from the Algorand chain state, in Algos', () => {
+    test("reads the min balance from the chain's reserve, in display units", () => {
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: hdAccount, onClose: vi.fn() }),
         )
         expect(result.current.minBalanceAlgos?.toString()).toBe('0.1')
+    })
+
+    test('reads no min balance until the state loads', () => {
+        mockUseAccountStateQuery.mockReturnValue({
+            data: undefined,
+            isLoading: true,
+        })
+        const { result } = renderHook(() =>
+            useAccountInfoCard({ account: hdAccount, onClose: vi.fn() }),
+        )
+        expect(result.current.minBalanceAlgos).toBeNull()
+        expect(result.current.isMinBalanceLoading).toBe(true)
     })
 
     test('Watch account: showStructure false', () => {
