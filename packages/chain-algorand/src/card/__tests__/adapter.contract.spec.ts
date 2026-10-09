@@ -71,6 +71,7 @@ const REKEYED_ADDRESS = 'REKEYED'
 const algorandAccount = (address: string) =>
     ({
         id: address,
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address } },
     }) as unknown as WalletAccount
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }

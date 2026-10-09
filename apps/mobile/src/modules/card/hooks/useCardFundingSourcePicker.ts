@@ -15,15 +15,9 @@ import {
     getCardFundingSourceEligibility,
     useCardStore,
 } from '@perawallet/wallet-core-card'
-import type {
-    ChainId,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainAccountOf,
     findAccountByAddressOn,
-    hasCustody,
-    localKeyKindOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -37,32 +31,14 @@ import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
 import { useCardScope } from './useCardScope'
 
-// The card's ownership proof and AutoDraw delegation are Ed25519 signatures,
-// so a local key of any other scheme can't back the card.
-const CARD_SIGNING_SCHEME = 'ed25519'
-
-const holdsCardSigningKey = (
-    account: WalletAccount,
-    chainId: ChainId,
-): boolean =>
-    // A key held only on another chain can't fund the card.
-    chainAccountOf(account, chainId) !== undefined &&
-    (hasCustody(account, 'hardware') ||
-        (hasCustody(account, 'local') &&
-            localKeyKindOf(chainId, account.custody.seed)?.signingScheme ===
-                CARD_SIGNING_SCHEME))
-
 /**
- * Accounts eligible as the card's funding source: local and hardware accounts
- * whose key signs Ed25519 and that the card contract can draw from. Watch and
- * multisig accounts, and any account the chain refuses, are excluded.
+ * Accounts eligible as the card's funding source: those the card's chain
+ * says its contract can draw from and whose key can sign the card's proofs.
  */
 export const isEligibleFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
-): boolean =>
-    holdsCardSigningKey(account, scope.chainId) &&
-    getCardFundingSourceEligibility(account, scope).canFund
+): boolean => getCardFundingSourceEligibility(account, scope).canFund
 
 /**
  * Funding sources that can also sign the ownership proof card creation needs —
@@ -73,7 +49,6 @@ export const isSigningCapableFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
 ): boolean => {
-    if (!holdsCardSigningKey(account, scope.chainId)) return false
     const { canFund, canProveOwnership } = getCardFundingSourceEligibility(
         account,
         scope,

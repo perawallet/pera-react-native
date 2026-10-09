@@ -127,6 +127,21 @@ describe('isEligibleFundingSource', () => {
         )
     })
 
+    it('rejects a quantum account, whose key cannot sign the card proofs', () => {
+        expect(
+            isEligibleFundingSource(
+                account('Q', 'quantum', { keyPairId: 'kq' }),
+                SCOPE,
+            ),
+        ).toBe(false)
+        expect(
+            isSigningCapableFundingSource(
+                account('Q', 'quantum', { keyPairId: 'kq' }),
+                SCOPE,
+            ),
+        ).toBe(false)
+    })
+
     it('rejects an account that holds no address on the card chain', () => {
         const elsewhere: WalletAccount = {
             id: 'G',

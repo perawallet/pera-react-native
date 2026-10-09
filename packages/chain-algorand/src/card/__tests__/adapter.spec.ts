@@ -215,8 +215,67 @@ describe('algorandCardAdapter.buildManualDeposit', () => {
 describe('algorandCardAdapter.fundingSourceEligibility', () => {
     const account = {
         id: 'a1',
+        custody: { kind: 'local', seed: null },
         chains: { algorand: { address: SENDER } },
     } as unknown as WalletAccount
+    const withCustody = (
+        custody: WalletAccount['custody'],
+        chains: WalletAccount['chains'] = { algorand: { address: SENDER } },
+    ): WalletAccount => ({ id: 'a2', custody, chains })
+    const canFund = (candidate: WalletAccount): boolean =>
+        adapter.fundingSourceEligibility(candidate, TESTNET).canFund
+
+    it.each([
+        ['standalone', { kind: 'local', seed: null }],
+        ['HD', { kind: 'local', seed: 'bip39' }],
+        [
+            'Ledger',
+            {
+                kind: 'hardware',
+                device: { manufacturer: 'ledger', id: 'd1', index: 0 },
+            },
+        ],
+    ] as const)('lets a %s account fund the card', (_, custody) => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(canFund(withCustody(custody as WalletAccount['custody']))).toBe(
+            true,
+        )
+    })
+
+    it('refuses a quantum account, whose Falcon key cannot sign the Ed25519 proofs', () => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(canFund(withCustody({ kind: 'local', seed: 'quantum' }))).toBe(
+            false,
+        )
+    })
+
+    it.each([
+        ['watch', { kind: 'watch' }],
+        ['multisig', { kind: 'multisig', threshold: 1, participants: [] }],
+    ] as const)('refuses a %s account', (_, custody) => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(
+            canFund(
+                withCustody(custody as unknown as WalletAccount['custody']),
+            ),
+        ).toBe(false)
+    })
+
+    it('refuses an account with no Algorand address', () => {
+        isDelegatedAccount.mockReturnValue(false)
+
+        expect(
+            canFund(
+                withCustody(
+                    { kind: 'local', seed: null },
+                    { ethereum: { address: '0xabc' } },
+                ),
+            ),
+        ).toBe(false)
+    })
 
     it('refuses a rekeyed account as a funding source', () => {
         isDelegatedAccount.mockReturnValue(true)
