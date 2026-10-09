@@ -27,10 +27,12 @@ import { algorandDappRequestAdapter } from '../connect'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
+    algorandTransferAdapter,
 } from '../transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from '../ledger'
@@ -72,6 +74,8 @@ describe('registerChain', () => {
         dappRequestChainAdapters.reset()
         sendFlowChainAdapters.reset()
         historyChainAdapters.reset()
+    transferChainAdapters.reset()
+        transferChainAdapters.reset()
         nameServiceChainAdapters.reset()
         cardChainAdapters.reset()
         rampChainAdapters.reset()
@@ -145,6 +149,14 @@ describe('registerChain', () => {
 
         expect(historyChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandHistoryAdapter,
+        )
+    })
+
+    it('registers the Algorand transfer adapter', () => {
+        registerChain()
+
+        expect(transferChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandTransferAdapter,
         )
     })
 

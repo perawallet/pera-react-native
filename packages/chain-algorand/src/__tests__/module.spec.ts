@@ -34,6 +34,7 @@ import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
@@ -46,6 +47,7 @@ import { algorandDappRequestAdapter } from '../connect'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
+    algorandTransferAdapter,
 } from '../transactions'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
@@ -58,6 +60,7 @@ import { algorandMultisigAdapter } from '../multisig'
 import { algorandBackupAdapter } from '../backup'
 import { algorandPinnedHosts } from '../blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from '../blockchain/remote-config'
+import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 
 // register ignores its context: the adapters are module-level instances.
 const stubCtx = {} as ChainContext
@@ -73,6 +76,7 @@ const resetAdapters = () => {
     dappRequestChainAdapters.reset()
     sendFlowChainAdapters.reset()
     historyChainAdapters.reset()
+    transferChainAdapters.reset()
     nameServiceChainAdapters.reset()
     cardChainAdapters.reset()
     rampChainAdapters.reset()
@@ -92,6 +96,7 @@ const expectAdaptersRegistered = () => {
     )
     expect(sendFlowChainAdapters.get('algorand')).toBe(algorandSendFlowAdapter)
     expect(historyChainAdapters.get('algorand')).toBe(algorandHistoryAdapter)
+    expect(transferChainAdapters.get('algorand')).toBe(algorandTransferAdapter)
     expect(nameServiceChainAdapters.get('algorand')).toBe(
         algorandNameServiceAdapter,
     )
@@ -161,6 +166,13 @@ describe('chainModule', () => {
         })
         expect(() => swapChainAdapters.get('algorand')).toThrow(notRegistered)
         expect(() => cardChainAdapters.get('algorand')).toThrow(notRegistered)
+        expect(() => transferChainAdapters.get('algorand')).toThrow(
+            notRegistered,
+        )
+    })
+
+    it('declares the i18n keys its transfer summaries carry', () => {
+        expect(chainModule.i18nKeys()).toEqual(ALGORAND_TRANSFER_TITLE_KEYS)
     })
 })
 
