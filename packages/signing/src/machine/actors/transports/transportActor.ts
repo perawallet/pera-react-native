@@ -20,6 +20,7 @@ import type {
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
 import { plannerAdapterForScope } from '../../../chain-adapter'
+import { findSignerAccount } from '../../utils/findSignerAccount'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -53,7 +54,11 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             scope,
         } = input
 
-        const signerAccount = allAccounts.find(a => a.address === signerAddress)
+        const signerAccount = findSignerAccount(
+            allAccounts,
+            signerAddress,
+            scope.chainId,
+        )
         if (!signerAccount) {
             throw new Error(
                 `Signer account not found for transport: ${signerAddress}`,

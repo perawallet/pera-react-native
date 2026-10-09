@@ -51,6 +51,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
 import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
+import { makeUnsignedTransaction } from '../../__tests__/transactions'
 import {
     useSigningPipeline,
     __resetDisplayDataCacheForTests,
@@ -133,6 +134,20 @@ describe('useSigningPipeline', () => {
         // `allTransactions` comes from mapToDisplayableTransaction which passes through
         expect(result.current.allTransactions).toHaveLength(1)
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
+    })
+
+    test('shows no Algorand transactions for a chain-neutral request, which its own chain reviews', () => {
+        mockSigningRequest.currentRequest = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [makeUnsignedTransaction('0xFROM')],
+        } satisfies TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.allTransactions).toEqual([])
+        expect(mockMapToDisplayable).not.toHaveBeenCalled()
     })
 
     test('prefers groupContext over txs for display so partial atomic groups show fully', () => {

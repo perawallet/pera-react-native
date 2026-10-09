@@ -22,6 +22,7 @@ import type { Database } from '@perawallet/wallet-core-database'
 import {
     getSubmissionAttemptsByTxIds,
     isTransactionRequest,
+    isUnsignedTransactionRequest,
     LANDABLE_SUBMISSION_STATUSES,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
@@ -87,6 +88,7 @@ export const isRequestGroupAlreadySubmitted = async (
     }: { db?: Database; scope?: ChainScope } = {},
 ): Promise<boolean> => {
     if (!isTransactionRequest(request)) return false
+    if (isUnsignedTransactionRequest(request)) return false
 
     const txIds = deriveRequestGroupTxIds(request.txs)
     if (txIds.length === 0) return false

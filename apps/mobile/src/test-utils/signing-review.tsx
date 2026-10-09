@@ -44,6 +44,7 @@ import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataSignResult,
     type SignRequest,
+    type PeraTransactionSignRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -216,10 +217,10 @@ export const buildTransactionSignRequest = ({
 }: {
     txs?: Transaction[]
     sourceType?: TransactionSignRequest['sourceType']
-    overrides?: Partial<TransactionSignRequest>
+    overrides?: Partial<PeraTransactionSignRequest>
 } = {}): BuiltRequest<TransactionSignRequest> => {
     const spies = makeCallbackSpies()
-    const request: TransactionSignRequest = {
+    const request: PeraTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
         transport: 'callback',

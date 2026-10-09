@@ -13,6 +13,7 @@
 import type {
     PeraSignedTransaction,
     PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
@@ -65,8 +66,8 @@ type BaseSignRequest = {
     transportOptions?: SignRequestTransportOptions
 }
 
-export type TransactionSignRequest = {
-    txs: PeraTransaction[]
+/** Algorand group and delivery concepts; a chain-neutral request carries none. */
+type AlgorandRequestFields = {
     /**
      * The full atomic group, for ARC-0001 group-integrity validation. A source
      * that filters `txs` down to the signable subset (e.g. WalletConnect)
@@ -107,8 +108,6 @@ export type TransactionSignRequest = {
      * original ARC-0001 slot order.
      */
     approve?: (signedTxs: Nullable<PeraSignedTransaction>[]) => Promise<void>
-    reject?: (reason?: RejectReason) => Promise<void>
-    error?: (error: Error) => Promise<void>
     /** See {@link SourceCallbacks.approveSignedBytes}. */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
     /** See {@link SourceCallbacks.onProposed}. */
@@ -117,7 +116,32 @@ export type TransactionSignRequest = {
         status: import('../pipeline/types').SignRequestStatus
         rawTransactionsBase64: string[]
     }) => Promise<void>
+}
+
+type TransactionRequestCallbacks = {
+    reject?: (reason?: RejectReason) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
+
+export type PeraTransactionSignRequest = AlgorandRequestFields &
+    TransactionRequestCallbacks & {
+        txs: PeraTransaction[]
+    }
+
+/**
+ * Each transaction names its scope, so the request's chain comes from them.
+ * The Algorand fields are typed out so a source can't set one the pipeline
+ * would ignore.
+ */
+export type UnsignedTransactionSignRequest = {
+    [Field in keyof AlgorandRequestFields]?: never
+} & TransactionRequestCallbacks & {
+        txs: UnsignedTransaction[]
+    }
+
+export type TransactionSignRequest =
+    | PeraTransactionSignRequest
+    | UnsignedTransactionSignRequest
 
 export type PeraArbitraryDataMessage = {
     signer: string
@@ -219,4 +243,6 @@ export {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from './guards'

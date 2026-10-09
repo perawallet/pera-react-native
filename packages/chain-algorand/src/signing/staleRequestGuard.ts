@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     isTransactionRequest,
+    isUnsignedTransactionRequest,
     type SignRequest,
     type StaleGroupReason,
 } from '@perawallet/wallet-core-signing'
@@ -159,6 +160,7 @@ export const findStaleGroupReason = async (
     } = {},
 ): Promise<Nullable<StaleGroupReason>> => {
     if (!isTransactionRequest(request)) return null
+    if (isUnsignedTransactionRequest(request)) return null
     const txs = request.groupContext ?? request.txs
     if (txs.length === 0) return null
 

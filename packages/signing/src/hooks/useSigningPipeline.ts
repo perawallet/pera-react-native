@@ -22,7 +22,11 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PipelineStage, TransactionSignRequest } from '../models'
+import {
+    isUnsignedTransactionRequest,
+    type PipelineStage,
+    type TransactionSignRequest,
+} from '../models'
 import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
@@ -69,7 +73,10 @@ const computeDisplayData = (
     // signable subset — gives the user context for partial-group
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
-    const source = txRequest.groupContext ?? txRequest.txs ?? []
+    // A chain-neutral request is reviewed by its own chain, not this Algorand view.
+    const source = isUnsignedTransactionRequest(txRequest)
+        ? []
+        : (txRequest.groupContext ?? txRequest.txs)
     const reviewer = reviewerChainAdapters.get(LEGACY_CHAIN_ID)
     const allTransactions = source
         .map(tx => reviewer.toDisplayableTransaction(tx))
@@ -82,7 +89,7 @@ const computeDisplayData = (
         txRequest.signableIndices ?? allTransactions.map((_, i) => i),
     )
 
-    // Sign requests carry no chain yet, so the review resolves the legacy chain.
+    // This view is Algorand's; a chain-neutral request reached it with no transactions.
     const listItems = createTransactionListItems(
         LEGACY_CHAIN_ID,
         allTransactions,

@@ -22,9 +22,10 @@ import {
     isMultisigAccount,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    AnalyzedSignableGroup,
-    SigningResult,
+import {
+    isUnsignedTransactionsData,
+    type AnalyzedSignableGroup,
+    type SigningResult,
 } from '@perawallet/wallet-core-signing'
 import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 
@@ -118,9 +119,12 @@ export const shouldDeferPropose = (
 export const buildDeferredProposeSigningResult = (
     group: AnalyzedSignableGroup,
 ): SigningResult => {
-    if (group.data.type !== 'transactions') {
+    if (
+        group.data.type !== 'transactions' ||
+        isUnsignedTransactionsData(group.data)
+    ) {
         throw new Error(
-            'Deferred propose is only supported for transaction signing requests',
+            'Deferred propose is only supported for Algorand transaction signing requests',
         )
     }
     return {

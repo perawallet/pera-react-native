@@ -17,16 +17,39 @@ import type {
     PeraTransaction,
     PeraSignedTransaction,
     PeraTransactionType,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
 
-export interface TransactionSignableData {
+/** Algorand transactions in the shape Algorand's sources build and decode. */
+export interface PeraTransactionsSignableData {
     type: 'transactions'
     transactions: PeraTransaction[]
     /** Populated only when decoding external requests. */
     rawTransactionsBase64?: string[]
     indicesToSign: number[]
 }
+
+/** An Algorand group's members the wallet signs, and its bytes as an external request sent them. */
+export interface AlgorandGroupData {
+    indicesToSign: number[]
+    rawTransactionsBase64?: string[]
+}
+
+/** Chain-neutral transactions: each names its scope, and only its chain reads the payload. */
+export interface UnsignedTransactionsSignableData {
+    type: 'transactions'
+    transactions: UnsignedTransaction[]
+    chainData: { algorand?: AlgorandGroupData }
+}
+
+export type TransactionSignableData =
+    | PeraTransactionsSignableData
+    | UnsignedTransactionsSignableData
+
+export const isUnsignedTransactionsData = (
+    data: TransactionSignableData,
+): data is UnsignedTransactionsSignableData => 'chainData' in data
 
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'

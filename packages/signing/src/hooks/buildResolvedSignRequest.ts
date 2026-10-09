@@ -12,6 +12,8 @@
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { SigningMachineContext } from '../machine/context'
+import { findSignerAccount } from '../machine/utils/findSignerAccount'
+import { chainIdOfSignRequest } from '../models/chain'
 import {
     isArbitraryDataRequest,
     isAuthDataRequest,
@@ -89,7 +91,11 @@ export const buildResolvedSignRequest = (
     const signerType = groupSigners.get(signerAddress)?.custody
     if (!signerType) return null
 
-    const signerAccount = allAccounts.find(a => a.address === signerAddress)
+    const signerAccount = findSignerAccount(
+        allAccounts,
+        signerAddress,
+        chainIdOfSignRequest(context.request),
+    )
     if (!signerAccount) return null
 
     return {

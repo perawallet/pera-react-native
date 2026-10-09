@@ -16,6 +16,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getExpectedGenesisHash } from '../../blockchain'
+import { makeUnsignedAlgorandTransaction } from './transactions'
 import {
     findStaleGroupReason,
     partitionByGroup,
@@ -122,6 +123,19 @@ describe('staleReasonFor', () => {
 describe('findStaleGroupReason', () => {
     const run = (request: SignRequest, simulate: SimulateOriginalGroup) =>
         findStaleGroupReason(request, { simulate, network: 'mainnet' })
+
+    it('never simulates a chain-neutral request', async () => {
+        const simulate = vi.fn<SimulateOriginalGroup>()
+        const request = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [makeUnsignedAlgorandTransaction()],
+        } as SignRequest
+
+        await expect(run(request, simulate)).resolves.toBeNull()
+        expect(simulate).not.toHaveBeenCalled()
+    })
 
     it('simulates each original group with its group id intact', async () => {
         const first = grouped(payment(1n), payment(2n))

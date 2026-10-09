@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { makeUnsignedTransaction } from '../../__tests__/transactions'
 import { chainIdOfSignRequest } from '../chain'
 import type { SignRequest } from '../index'
 
@@ -25,5 +26,15 @@ describe('chainIdOfSignRequest', () => {
         const request = { ...base, ...shape } as unknown as SignRequest
 
         expect(chainIdOfSignRequest(request)).toBe('algorand')
+    })
+
+    it("resolves a chain-neutral transaction request to its transactions' chain", () => {
+        const request = {
+            ...base,
+            type: 'transactions',
+            txs: [makeUnsignedTransaction('0xFROM')],
+        } as SignRequest
+
+        expect(chainIdOfSignRequest(request)).toBe('ethereum')
     })
 })

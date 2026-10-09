@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLocalKeyStrategy } from '../createLocalKeyStrategy'
+import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
@@ -196,6 +197,24 @@ describe('createLocalKeyStrategy', () => {
     })
 
     describe('sign - transactions', () => {
+        test('refuses chain-neutral transactions for good, without signing anything', async () => {
+            const group = {
+                ...makeTransactionGroup(),
+                data: {
+                    type: 'transactions',
+                    transactions: [makeUnsignedAlgorandTransaction()],
+                    chainData: {},
+                },
+            } as unknown as AnalyzedSignableGroup
+
+            await expect(
+                makeStrategy().sign(group, algo25Account),
+            ).rejects.toMatchObject({
+                metadata: expect.objectContaining({ retryable: false }),
+            })
+            expect(signTransactions).not.toHaveBeenCalled()
+        })
+
         test('signs and calls start/progress/complete callbacks', async () => {
             const callbacks = {
                 onSigningStart: vi.fn(),

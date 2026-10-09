@@ -11,24 +11,17 @@
  */
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
+import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
-import {
-    accountsChainAdapters,
-    type AccountsChainAdapter,
-} from '@perawallet/wallet-core-accounts'
-import {
-    CHAIN_CAPABILITIES,
-    type ChainCapabilities,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    makeUnsignedTransaction,
+    planFromPayload,
+} from '../../__tests__/transactions'
 import {
     fakeReviewerAdapter,
     registerFakeReviewerAdapter,
@@ -1013,21 +1006,7 @@ describe('signingMachine', () => {
         const SECOND_CHAIN_ID: ChainId = 'ethereum'
         const secondScope = { chainId: SECOND_CHAIN_ID, networkId: 'mainnet' }
 
-        // Algorand's account rules and schemes under the second chain's id, so
-        // the machine resolves a signer there without that chain's package. A
-        // real id, since scope keys in the stores accept no other.
-        beforeAll(() => {
-            accountsChainAdapters.register({
-                ...algorandAccountsAdapter,
-                chainId: SECOND_CHAIN_ID,
-            } as AccountsChainAdapter)
-            getProvider().chains.register(
-                { ...algorandDescriptor, id: SECOND_CHAIN_ID },
-                Object.fromEntries(
-                    CHAIN_CAPABILITIES.map(capability => [capability, false]),
-                ) as ChainCapabilities,
-            )
-        })
+        beforeAll(() => registerAlgorandRulesAs(SECOND_CHAIN_ID))
 
         const secondChainAccount = {
             ...mockAlgo25Account,
@@ -1077,7 +1056,10 @@ describe('signingMachine', () => {
                 }),
             )
             plannerChainAdapters.register(
-                fakePlannerAdapter({ chainId: SECOND_CHAIN_ID }),
+                fakePlannerAdapter({
+                    chainId: SECOND_CHAIN_ID,
+                    plan: planFromPayload,
+                }),
             )
         })
 
@@ -1104,6 +1086,40 @@ describe('signingMachine', () => {
 
             expect(state.context.error).toBeInstanceOf(ReviewRequiredError)
             expect(state.can({ type: 'RETRY' })).toBe(false)
+        })
+
+        it('carries a chain-neutral request through review, signing and delivery to completed', async () => {
+            const transaction = makeUnsignedTransaction(
+                MOCK_ADDRESS,
+                secondScope,
+            )
+            const actor = createActor(realAnalyzerMachine, {
+                input: {
+                    ...secondChainInput(),
+                    request: { ...mockRequest, txs: [transaction] },
+                },
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            const state = await waitFor(actor, s => s.matches('completed'))
+
+            expect(state.context.signableGroups).toEqual([
+                expect.objectContaining({
+                    data: {
+                        type: 'transactions',
+                        transactions: [transaction],
+                        chainData: {},
+                    },
+                    signerAddress: MOCK_ADDRESS,
+                }),
+            ])
+            expect(secondDecode).toHaveBeenCalledWith(
+                state.context.signableGroups?.[0],
+                expect.anything(),
+            )
+            expect(state.context.transportResult).toEqual(mockTransportResult)
         })
 
         it('leaves a request a review screen shows to the user, whatever the policy', async () => {

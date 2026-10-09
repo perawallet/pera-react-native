@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { deriveRequestGroupTxIds, isRequestGroupAlreadySubmitted } from '..'
+import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
 import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
@@ -131,6 +132,19 @@ describe('isRequestGroupAlreadySubmitted', () => {
     afterEach(() => {
         teardown()
         vi.restoreAllMocks()
+    })
+
+    it('is false for a chain-neutral request, which the Algorand ledger never records', async () => {
+        const request = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [makeUnsignedAlgorandTransaction()],
+        } as SignRequest
+
+        await expect(
+            isRequestGroupAlreadySubmitted(request, { db }),
+        ).resolves.toBe(false)
     })
 
     it('is true when the group has an open ledger row', async () => {

@@ -238,6 +238,14 @@ signs unreviewed. A request the app built itself has no review screen, so the ch
 `policy.autoApproveLocal` decides it, and one the policy turns down fails with `ReviewRequiredError`
 rather than waiting for a screen that never opens.
 
+A transaction request carries either Algorand transactions or chain-neutral `UnsignedTransaction`s,
+told apart by `isUnsignedTransactionRequest`. A chain-neutral request takes its chain from its
+transactions' scope and its signers from the chain planner's `plan`, because only the chain can read
+its payload. One built for a network other than its chain's selected one fails with
+`ScopeChangedError`. The Algorand-only request fields are typed out of a chain-neutral request, so a
+source can't set one the pipeline would ignore. Algorand's own signing paths sign only Algorand
+transactions.
+
 ## State management
 
 Zustand holds client state (user settings, wallet accounts). TanStack Query holds server state

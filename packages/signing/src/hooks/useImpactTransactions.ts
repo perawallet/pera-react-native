@@ -15,7 +15,10 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-c
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { plannerAdapterFor } from '../chain-adapter'
-import type { TransactionSignRequest } from '../models'
+import {
+    isUnsignedTransactionRequest,
+    type TransactionSignRequest,
+} from '../models'
 import { useSigningPipeline } from './useSigningPipeline'
 import { useGroupSimulationQuery } from './useGroupSimulationQuery'
 
@@ -48,8 +51,12 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
         useSigningPipeline()
     const request = currentRequest as Optional<TransactionSignRequest>
 
-    // The full pre-filter group (or txs) in raw form, for the composer.
-    const groupTxs = request?.groupContext ?? request?.txs
+    // The full pre-filter group (or txs) in raw form, for the composer. A
+    // chain-neutral request has no Algorand group to simulate.
+    const groupTxs =
+        request && !isUnsignedTransactionRequest(request)
+            ? (request.groupContext ?? request.txs)
+            : undefined
 
     const hasAppCall = useMemo(
         () => plannerAdapterFor(network).needsSimulation(allTransactions),
