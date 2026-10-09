@@ -29,7 +29,7 @@ export type AccountBalanceRow = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
 }
 
 /** `network` is the raw column; read it through `scopeFromNetworkColumn`. */
@@ -47,7 +47,7 @@ type UpsertAccountBalanceParams = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
 }
 
 export async function upsertAccountBalance({
@@ -60,7 +60,7 @@ export async function upsertAccountBalance({
     totalAppsOptedIn,
     minBalance,
     status,
-    authAddress,
+    authorityAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
     const network = toScopeKey(scope)
     const now = Date.now()
@@ -76,7 +76,7 @@ export async function upsertAccountBalance({
             totalAppsOptedIn,
             minBalance,
             status,
-            authAddress,
+            authAddress: authorityAddress,
             updatedAt: now,
         })
         .onConflictDoUpdate({
@@ -91,7 +91,7 @@ export async function upsertAccountBalance({
                 totalAppsOptedIn,
                 minBalance,
                 status,
-                authAddress,
+                authAddress: authorityAddress,
                 updatedAt: now,
             },
         })
@@ -119,7 +119,7 @@ export async function getAccountBalance({
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
             minBalance: AccountBalancesSchema.minBalance,
             status: AccountBalancesSchema.status,
-            authAddress: AccountBalancesSchema.authAddress,
+            authorityAddress: AccountBalancesSchema.authAddress,
         })
         .from(AccountBalancesSchema)
         .where(
@@ -146,7 +146,7 @@ export async function getAllAccountBalances({
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
             minBalance: AccountBalancesSchema.minBalance,
             status: AccountBalancesSchema.status,
-            authAddress: AccountBalancesSchema.authAddress,
+            authorityAddress: AccountBalancesSchema.authAddress,
         })
         .from(AccountBalancesSchema)
         .all()

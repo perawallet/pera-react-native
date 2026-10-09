@@ -18,6 +18,7 @@ import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('../../store', () => ({
     useAccountsStore: vi.fn(),
+    useAccountChainStateStore: (selector: any) => selector({ states: {} }),
 }))
 
 describe('useSigningAccounts', () => {

@@ -21,7 +21,7 @@ import {
     getAuthAccount,
     getRekeyAccount,
     getSignerFor,
-    rekeyTransitionFor,
+    delegateTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
     DelegationTargetNotFoundError,
@@ -152,7 +152,7 @@ describe('resolveSignerForAccount — tagged resolution', () => {
         ).toEqual({
             kind: 'authMissing',
             account,
-            authAddress: 'GONE',
+            authorityAddress: 'GONE',
         })
     })
 
@@ -304,7 +304,7 @@ describe('the adapter resolves on the scope it is given', () => {
 
         expect(
             algorandAccountsAdapter.resolveSigner(account, [account], testnet),
-        ).toEqual({ kind: 'authMissing', account, authAddress: 'GONE' })
+        ).toEqual({ kind: 'authMissing', account, authorityAddress: 'GONE' })
     })
 })
 
@@ -688,7 +688,7 @@ describe.each(signerCases)('signer resolution: $name', c => {
                 ? { from: accountType(account), to: signerType }
                 : null
         expect(
-            rekeyTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
+            delegateTransitionFor(account, c.accounts, ALGORAND_CHAIN_ID),
         ).toEqual(expected)
     })
 })

@@ -17,7 +17,7 @@ import {
     getRekeyAccount,
     getSignerFor,
     isQuantumDowngrade,
-    rekeyTransitionFor,
+    delegateTransitionFor,
     resolveAuthAccount,
     useAccountChainStateStore,
     DelegationTargetNotFoundError,
@@ -483,7 +483,7 @@ describe('services/accounts/utils - getSignerFor', () => {
     })
 })
 
-describe('services/accounts/utils - rekeyTransitionFor', () => {
+describe('services/accounts/utils - delegateTransitionFor', () => {
     test('returns null for a non-rekeyed account', () => {
         const account = {
             custody: { kind: 'local', seed: 'algo25' },
@@ -491,7 +491,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
             keyPairId: 'pk1',
         } as any
         expect(
-            rekeyTransitionFor(account, [account], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(account, [account], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
@@ -503,7 +503,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
         } as any
         seedAuthority('A', 'MISSING')
         expect(
-            rekeyTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
@@ -535,7 +535,7 @@ describe('services/accounts/utils - rekeyTransitionFor', () => {
         } as any
         seedAuthority('A', 'AUTH')
         expect(
-            rekeyTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
+            delegateTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
         ).toEqual({
             from: 'algo25',
             to: 'hardware',

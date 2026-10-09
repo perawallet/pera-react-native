@@ -128,7 +128,7 @@ const seedPreviouslySyncedAccount = async () => {
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: ACCOUNT.address,
@@ -257,7 +257,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: ACCOUNT.address,
@@ -349,7 +349,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         onlineManager.setOnline(false)

@@ -12,10 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
-import {
-    generateOrderedUniqueId,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { AccountError } from '../errors'
 import {
@@ -38,8 +35,6 @@ export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
     /** The chain the account is created on: its adapter writes the legacy details, and its entry sets the top-level `address`. */
     chainId: ChainId
     chains: AccountChains
-    rekeyAddress?: string
-    rekeyAddressByNetwork?: Partial<Record<Network, string>>
 }
 
 /** The legacy account variant a custody maps onto. */
@@ -67,15 +62,7 @@ export type AccountForCustody<C extends AccountCustody> = C extends {
 export const buildAccount = <C extends AccountCustody>(
     input: BuildAccountInput<C>,
 ): AccountForCustody<C> => {
-    const {
-        id,
-        name,
-        custody,
-        chainId,
-        chains,
-        rekeyAddress,
-        rekeyAddressByNetwork,
-    } = input
+    const { id, name, custody, chainId, chains } = input
     const entry = chains[chainId]
     if (!entry) {
         throw new AccountError(`The account has no entry on ${chainId}`)
@@ -97,10 +84,6 @@ export const buildAccount = <C extends AccountCustody>(
               }
             : {}),
         ...accountsChainAdapters.get(chainId).legacyDetails(custody, entry),
-        ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
-        ...(rekeyAddressByNetwork !== undefined
-            ? { rekeyAddressByNetwork }
-            : {}),
         custody,
         chains,
     } as unknown as AccountForCustody<C>

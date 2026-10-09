@@ -197,19 +197,13 @@ describe('buildAccount', () => {
         expect(() => buildAccount(input)).toThrow(AccountError)
     })
 
-    test('passes name and rekey state through', () => {
+    test('passes the name through', () => {
         const account = buildAccount({
             ...inputs.watch,
             name: 'Savings',
-            rekeyAddress: 'AUTH',
-            rekeyAddressByNetwork: { mainnet: 'AUTH' },
         })
 
-        expect(account).toMatchObject({
-            name: 'Savings',
-            rekeyAddress: 'AUTH',
-            rekeyAddressByNetwork: { mainnet: 'AUTH' },
-        })
+        expect(account).toMatchObject({ name: 'Savings' })
     })
 
     test('generates a distinct id when none is given', () => {

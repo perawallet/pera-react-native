@@ -29,6 +29,7 @@ import {
     getAllHeldAssetIdsForNetwork,
 } from '../db'
 import { useAccountChainStateStore } from '../store/accountChainState'
+import { useAccountsStore } from '../store/store'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -68,6 +69,7 @@ export async function cleanupRemovedAccountData({
     useAccountChainStateStore
         .getState()
         .removeAccountChainStates(accountAddress)
+    useAccountsStore.getState().forgetAuthorities(accountAddress)
 
     const prunedAssetIdsByNetwork: Record<string, string[]> = {}
 

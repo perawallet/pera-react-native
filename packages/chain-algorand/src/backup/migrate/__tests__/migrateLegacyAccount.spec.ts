@@ -60,8 +60,6 @@ import {
     buildWatchAccount,
     recordLegacyAuthority,
 } from '../buildKeylessAccount'
-import { authorityOf } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
@@ -338,7 +336,7 @@ const { buildWatchAccount: realBuildWatchAccount } = await vi.importActual<
 >('../buildKeylessAccount')
 
 describe('migrateLegacyAccount with authAddress', () => {
-    it('migrates a keyless account with authAddress as a rekeyed watch account', async () => {
+    it('migrates a keyless account with authAddress as a watch account and records its authority', async () => {
         vi.mocked(buildWatchAccount).mockImplementationOnce(
             realBuildWatchAccount,
         )
@@ -355,8 +353,6 @@ describe('migrateLegacyAccount with authAddress', () => {
         const created = await migrateLegacyAccount(buildArgs(account))
 
         expect(accountType(created)).toBe('watch')
-        expect(authorityOf(created, scopeForLegacyNetwork('mainnet'))).toBe(
-            'AUTHADDR',
-        )
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 })

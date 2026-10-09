@@ -15,14 +15,16 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSignerFor } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
+import { useSelectedChainStates } from './useSelectedChainStates'
 
 export const useSignerFor = (
     address: string | undefined | null,
 ): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
     return useMemo(
         () =>
             address ? getSignerFor(address, accounts, LEGACY_CHAIN_ID) : null,
-        [address, accounts],
+        [address, accounts, chainStates],
     )
 }

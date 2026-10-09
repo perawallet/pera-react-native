@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
-import { useAccountsStore } from '../../store'
+import { getAccountChainState } from '../../store'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
@@ -51,7 +51,7 @@ const snapshot = (
     totalCreatedAssets: 1,
     totalAppsOptedIn: 0,
     status: 'Online',
-    authAddress: 'REKEY_ADDR',
+    authorityAddress: 'REKEY_ADDR',
     chainState: {
         family: 'algorand',
         authAddress: 'REKEY_ADDR',
@@ -83,11 +83,6 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it("persists the chain's account state as the balance row and holdings", async () => {
-        const updateRekey = vi.spyOn(
-            useAccountsStore.getState(),
-            'updateAccountRekeyAddress',
-        )
-
         const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
@@ -106,7 +101,7 @@ describe('fetchAndPersistAccount', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal('0.1'),
             status: 'Online',
-            authAddress: 'REKEY_ADDR',
+            authorityAddress: 'REKEY_ADDR',
         })
         expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -119,10 +114,8 @@ describe('fetchAndPersistAccount', () => {
             scope: { chainId: 'algorand', networkId: 'mainnet' },
             holdings: snapshot().holdings,
         })
-        expect(updateRekey).toHaveBeenCalledWith(
-            'ADDR1',
-            'REKEY_ADDR',
-            'mainnet',
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toEqual(
+            snapshot().chainState,
         )
         // First sync of an account with no prior row → changed.
         expect(result).toEqual({
@@ -140,7 +133,7 @@ describe('fetchAndPersistAccount', () => {
             totalAppsOptedIn: 2,
             minBalance: new Decimal(0),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         await fetchAndPersistAccount('ADDR1', 'mainnet')
@@ -166,20 +159,11 @@ describe('fetchAndPersistAccount', () => {
         expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
     })
 
-    it('still mirrors the rekey and refreshes holdings when the chain-state write fails', async () => {
+    it('still refreshes holdings when the chain-state write fails', async () => {
         mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
-        const updateRekey = vi.spyOn(
-            useAccountsStore.getState(),
-            'updateAccountRekeyAddress',
-        )
 
         const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
 
-        expect(updateRekey).toHaveBeenCalledWith(
-            'ADDR1',
-            'REKEY_ADDR',
-            'mainnet',
-        )
         expect(mockRefreshAccountHoldings).toHaveBeenCalled()
         expect(result.changed).toBe(true)
     })
@@ -191,7 +175,7 @@ describe('fetchAndPersistAccount', () => {
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 status: 'Offline',
-                authAddress: null,
+                authorityAddress: null,
                 observedRound: null,
             }),
         )
@@ -202,7 +186,7 @@ describe('fetchAndPersistAccount', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal('0.1'),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         mockRefreshAccountHoldings.mockResolvedValue(false)
 

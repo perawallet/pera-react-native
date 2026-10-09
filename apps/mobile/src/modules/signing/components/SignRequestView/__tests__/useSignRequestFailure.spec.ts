@@ -29,10 +29,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
 // the same identity the hook imports — so re-mock the module here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     DelegationTargetNotFoundError: class DelegationTargetNotFoundError extends Error {
-        readonly metadata: { params: { authAddress: string } }
-        constructor(authAddress: string) {
-            super(`Rekey target ${authAddress} not found`)
-            this.metadata = { params: { authAddress } }
+        readonly metadata: { params: { authorityAddress: string } }
+        constructor(authorityAddress: string) {
+            super(`Rekey target ${authorityAddress} not found`)
+            this.metadata = { params: { authorityAddress } }
         }
     },
 }))

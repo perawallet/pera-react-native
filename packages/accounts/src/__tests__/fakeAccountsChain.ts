@@ -86,7 +86,9 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
         totalAppsOptedIn: 0,
-        ...(observed.authAddress ? { authAddress: observed.authAddress } : {}),
+        ...(observed.authorityAddress
+            ? { authAddress: observed.authorityAddress }
+            : {}),
     })),
     toAccountInformationAddress: vi.fn(
         ((address: string) =>
@@ -170,13 +172,10 @@ export const fakeAccountsChain = (): FakeAccountsChain => {
     return current
 }
 
-/**
- * Records `authAddress` as `address`'s authority on `scope`; `null` is an
- * observed "signs for itself", which shadows the legacy record fields.
- */
+/** Records `authorityAddress` as `address`'s authority on `scope`; `null` is an observed "signs for itself". */
 export const seedAuthority = (
     address: string,
-    authAddress: string | null,
+    authorityAddress: string | null,
     scope: ChainScope = MAINNET_SCOPE,
 ): void =>
     useAccountChainStateStore
@@ -184,5 +183,5 @@ export const seedAuthority = (
         .setAccountChainState(
             scope,
             address,
-            fakeAccountsChain().adapter.toChainState({ authAddress }),
+            fakeAccountsChain().adapter.toChainState({ authorityAddress }),
         )

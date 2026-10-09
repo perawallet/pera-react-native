@@ -112,7 +112,7 @@ describe('signer resolution', () => {
         expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
             expect.objectContaining({
                 metadata: expect.objectContaining({
-                    params: { authAddress: 'GONE' },
+                    params: { authorityAddress: 'GONE' },
                 }),
             }),
         )

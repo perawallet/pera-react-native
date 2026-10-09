@@ -77,7 +77,7 @@ const fetchAccountState =
             nativeBalanceBaseUnits: baseUnits,
             chainState: { family: 'evm', nonce: { latest, pending } },
             minBalance: new Decimal(0),
-            authAddress: null,
+            authorityAddress: null,
             // Token holdings come from the assets adapter; native only here.
             holdings: [
                 {

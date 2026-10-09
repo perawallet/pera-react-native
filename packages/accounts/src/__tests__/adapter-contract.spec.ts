@@ -52,7 +52,7 @@ const fixtureAdapter: AccountsChainAdapter = {
             nativeBalance: new Decimal(account.balance),
             nativeBalanceBaseUnits: new Decimal(account.balance),
             minBalance: new Decimal(0),
-            authAddress: null,
+            authorityAddress: null,
             chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
             holdings: [
                 {

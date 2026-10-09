@@ -92,7 +92,7 @@ export type AccountStateSnapshot = {
     totalAppsOptedIn?: number
     status?: string
     /** The account's signer when it isn't the account's own key. */
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
     /** Includes the native asset, so reads sort and page it like any holding. */
     holdings: AccountHoldingSnapshot[]
     /**
@@ -103,7 +103,10 @@ export type AccountStateSnapshot = {
 }
 
 /** An `account_balances` row, or a legacy authority with no row. */
-export type ObservedChainState = Pick<AccountStateSnapshot, 'authAddress'> &
+export type ObservedChainState = Pick<
+    AccountStateSnapshot,
+    'authorityAddress'
+> &
     Partial<
         Pick<
             AccountStateSnapshot,
@@ -259,9 +262,9 @@ export interface AccountsChainAdapter {
     readonly quantum?: QuantumChainDerivation
     /** Absent on a chain whose only software accounts are HD. */
     readonly singleKeyAccounts?: SingleKeyAccountOps
-    /** Accounts whose signer is `authAddress`. Absent on a chain without rekey. */
+    /** Accounts whose signer is `authorityAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
-        authAddress: string,
+        authorityAddress: string,
         scope: ChainScope,
     ): Promise<string[]>
     /** Absent on a chain whose signing authority can't move to another account. */
@@ -352,11 +355,11 @@ export const requireSingleKeyAccounts = (
 
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
 export const fetchRekeyedAddresses = async (
-    authAddress: string,
+    authorityAddress: string,
     network: Network,
 ): Promise<string[]> =>
     requireRekey(accountsAdapterFor(network))(
-        authAddress,
+        authorityAddress,
         scopeForLegacyNetwork(network),
     )
 

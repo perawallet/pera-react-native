@@ -19,6 +19,7 @@ import {
     type AccountSortMode,
     type HardwareWalletDetails,
     type LaunchAccountMode,
+    type RecordedAuthorities,
     type WalletAccount,
 } from '../models'
 import {
@@ -28,7 +29,12 @@ import {
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_IDS,
+    scopeForLegacyNetwork,
+    toScopeKey,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
 import { buildAccount, chainAccountOf } from '../credentials'
@@ -37,6 +43,8 @@ import {
     type PersistedAccountRecord,
 } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
+import { useAccountChainStateStore } from './accountChainState'
+import { liftLegacyAuthority } from './legacyAuthority'
 import {
     accountType,
     isHardwareWalletAccount,
@@ -55,6 +63,8 @@ type PersistedAccountsState = Pick<
     | 'manualAccountOrder'
     | 'launchAccountMode'
     | 'launchAccountAddress'
+    | 'authorities'
+    | 'unscopedAuthorities'
 >
 
 type PersistedAccountsRecordState = Omit<PersistedAccountsState, 'accounts'> & {
@@ -86,14 +96,45 @@ export const migrateAccountsState = (
 ): PersistedAccountsState => {
     if (version >= 3) return persistedState as PersistedAccountsState
     const state = persistedState as PersistedAccountsRecordState
+    const lifted = liftLegacyAuthority(state.accounts ?? [])
     return {
         ...state,
-        accounts: (state.accounts ?? []).map(account =>
+        accounts: lifted.records.map(account =>
             toCurrentAccount(
                 version < 2 ? stripPreV2Custody(account) : account,
             ),
         ),
+        authorities: mergeAuthorities(lifted.authorities, state.authorities),
+        unscopedAuthorities: {
+            ...lifted.unscopedAuthorities,
+            ...state.unscopedAuthorities,
+        },
     }
+}
+
+// Entries in `held` win: they were persisted alongside the records the legacy
+// fields came from, so they are at least as recent.
+const mergeAuthorities = (
+    lifted: RecordedAuthorities,
+    held: RecordedAuthorities | undefined,
+): RecordedAuthorities => {
+    const merged: RecordedAuthorities = { ...lifted }
+    for (const [key, entries] of Object.entries(held ?? {}) as [
+        keyof RecordedAuthorities,
+        Record<string, string>,
+    ][]) {
+        merged[key] = { ...merged[key], ...entries }
+    }
+    return merged
+}
+
+const withoutAddress = <V>(
+    entries: Record<string, V>,
+    address: string,
+): Record<string, V> => {
+    if (!(address in entries)) return entries
+    const { [address]: _removed, ...rest } = entries
+    return rest
 }
 
 type ChainAddresses = Partial<Record<ChainId, string>>
@@ -141,13 +182,6 @@ const sharedChainAddress = (
  * intentional operation (`upgradeWatchAccountToHardware` below); doing it
  * implicitly here would be far too subtle to reason about at a call site that
  * just wanted to write a list of accounts.
- *
- * What that surrenders: when a watch entry loses, its `rekeyAddress` and
- * `rekeyAddressByNetwork` are discarded with it. That is safe — both are
- * mirrors re-derived from the next sync tick and network switch — and the one
- * flow that must preserve them (watch → hardware on Ledger verify) routes
- * around this function through `upgradeWatchAccountToHardware`, which merges
- * them onto the upgraded account explicitly.
  */
 const resolveDuplicateAccounts = (
     accounts: WalletAccount[],
@@ -196,8 +230,6 @@ const rebindToHardware = (
                 ...current.chains,
                 [chainId]: { address: entry.address },
             },
-            rekeyAddress: current.rekeyAddress,
-            rekeyAddressByNetwork: current.rekeyAddressByNetwork,
         })
     }
     return undefined
@@ -210,10 +242,8 @@ const initialState = {
     manualAccountOrder: [] as string[],
     launchAccountMode: LaunchAccountModes.lastUsed as LaunchAccountMode,
     launchAccountAddress: null as Nullable<string>,
-    // Session-only (not persisted): null until the first network switch is
-    // applied; while null, rekey writes treat their own network as active —
-    // syncs only ever run on the active network, so this matches reality.
-    activeRekeyNetwork: null as Nullable<Network>,
+    authorities: {} as RecordedAuthorities,
+    unscopedAuthorities: {} as Record<string, string>,
 }
 
 export const useAccountsStore: UseBoundStore<
@@ -337,64 +367,6 @@ export const useAccountsStore: UseBoundStore<
             setManualAccountOrder: (order: string[]) => {
                 set({ manualAccountOrder: order })
             },
-            updateAccountRekeyAddress: (
-                address: string,
-                rekeyAddress: string | null,
-                network: Network,
-            ) => {
-                const accounts = get().accounts
-                const idx = accounts.findIndex(a => a.address === address)
-                if (idx === -1) return
-
-                const current = accounts[idx]
-                const nextValue = rekeyAddress ?? undefined
-                const activeNetwork = get().activeRekeyNetwork
-                const isActiveNetwork =
-                    activeNetwork === null || activeNetwork === network
-                const mapUnchanged =
-                    current.rekeyAddressByNetwork !== undefined &&
-                    current.rekeyAddressByNetwork[network] === nextValue
-                const mirrorUnchanged =
-                    !isActiveNetwork || current.rekeyAddress === nextValue
-                if (mapUnchanged && mirrorUnchanged) return
-
-                const nextMap = { ...current.rekeyAddressByNetwork }
-                if (nextValue === undefined) {
-                    // Key removed but the map kept: an (even empty) map
-                    // records "per-network state is known", which gates the
-                    // legacy-scalar fallback in applyNetworkRekeyState.
-                    delete nextMap[network]
-                } else {
-                    nextMap[network] = nextValue
-                }
-
-                const next = [...accounts]
-                next[idx] = {
-                    ...current,
-                    rekeyAddressByNetwork: nextMap,
-                    ...(isActiveNetwork ? { rekeyAddress: nextValue } : {}),
-                }
-                set({ accounts: next })
-            },
-            applyNetworkRekeyState: (network: Network) => {
-                const accounts = get().accounts
-                let changed = false
-                const next = accounts.map(account => {
-                    // Legacy account (persisted before per-network state):
-                    // keep the mirror until a sync tick writes the map.
-                    if (account.rekeyAddressByNetwork === undefined) {
-                        return account
-                    }
-                    const target = account.rekeyAddressByNetwork[network]
-                    if (account.rekeyAddress === target) return account
-                    changed = true
-                    return { ...account, rekeyAddress: target }
-                })
-                set({
-                    activeRekeyNetwork: network,
-                    ...(changed ? { accounts: next } : {}),
-                })
-            },
             addRekeyedWatchAccounts: (
                 sourceAddress: string,
                 addresses: string[],
@@ -404,10 +376,8 @@ export const useAccountsStore: UseBoundStore<
 
                 const current = get().accounts
                 const currentAddresses = new Set(current.map(a => a.address))
-                const activeNetwork = get().activeRekeyNetwork
-                const isActiveNetwork =
-                    activeNetwork === null || activeNetwork === network
-                const { chainId } = accountsAdapterFor(network)
+                const adapter = accountsAdapterFor(network)
+                const { chainId } = adapter
                 const watchAccounts = addresses
                     .filter(addr => !currentAddresses.has(addr))
                     .map(address =>
@@ -415,17 +385,58 @@ export const useAccountsStore: UseBoundStore<
                             custody: { kind: 'watch' },
                             chainId,
                             chains: { [chainId]: { address } },
-                            ...(isActiveNetwork
-                                ? { rekeyAddress: sourceAddress }
-                                : {}),
-                            rekeyAddressByNetwork: { [network]: sourceAddress },
                         }),
                     )
 
                 if (watchAccounts.length === 0) return 0
 
+                const scope = scopeForLegacyNetwork(network)
+                const recorded = Object.fromEntries(
+                    watchAccounts.map(({ address }) => [
+                        address,
+                        sourceAddress,
+                    ]),
+                )
+                useAccountChainStateStore.getState().fillAccountChainStates({
+                    [toScopeKey(scope)]: Object.fromEntries(
+                        watchAccounts.map(({ address }) => [
+                            address,
+                            adapter.toChainState({
+                                authorityAddress: sourceAddress,
+                            }),
+                        ]),
+                    ),
+                })
+
                 get().setAccounts([...current, ...watchAccounts])
+                get().recordAuthorities({ [toScopeKey(scope)]: recorded })
                 return watchAccounts.length
+            },
+            recordAuthorities: (incoming: RecordedAuthorities) => {
+                set({
+                    authorities: mergeAuthorities(get().authorities, incoming),
+                })
+            },
+            settleAuthorities: (authorities: RecordedAuthorities) => {
+                set({ authorities, unscopedAuthorities: {} })
+            },
+            forgetAuthorities: (address: string) => {
+                const { authorities, unscopedAuthorities } = get()
+                const next: RecordedAuthorities = {}
+                for (const [key, entries] of Object.entries(authorities) as [
+                    keyof RecordedAuthorities,
+                    Record<string, string>,
+                ][]) {
+                    const kept = withoutAddress(entries, address)
+                    if (Object.keys(kept).length > 0) next[key] = kept
+                }
+                set({
+                    authorities: next,
+                    unscopedAuthorities: withoutAddress(
+                        unscopedAuthorities,
+                        address,
+                    ),
+                })
             },
             upgradeWatchAccountToHardware: (
                 address: string,
@@ -493,6 +504,28 @@ export const useAccountsStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: STORE_VERSION,
             migrate: migrateAccountsState,
+            // The persisted accounts of a v3 payload may still carry the
+            // authority fields, which migrate never sees.
+            merge: (persisted, current) => {
+                if (!persisted) return current
+                const state = persisted as Partial<PersistedAccountsState>
+                const lifted = liftLegacyAuthority(
+                    state.accounts ?? current.accounts,
+                )
+                return {
+                    ...current,
+                    ...state,
+                    accounts: lifted.records,
+                    authorities: mergeAuthorities(
+                        lifted.authorities,
+                        state.authorities,
+                    ),
+                    unscopedAuthorities: {
+                        ...lifted.unscopedAuthorities,
+                        ...state.unscopedAuthorities,
+                    },
+                }
+            },
             partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
@@ -500,6 +533,8 @@ export const useAccountsStore: UseBoundStore<
                 manualAccountOrder: state.manualAccountOrder,
                 launchAccountMode: state.launchAccountMode,
                 launchAccountAddress: state.launchAccountAddress,
+                authorities: state.authorities,
+                unscopedAuthorities: state.unscopedAuthorities,
             }),
         },
     ),

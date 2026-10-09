@@ -128,45 +128,8 @@ describe('authorityOf', () => {
 
     const slice = useAccountChainStateStore.getState
 
-    const rekeyed = (patch: Partial<WalletAccount>): WalletAccount => ({
-        ...buildTestAccount('watch'),
-        ...patch,
-    })
-
-    test('reads the requested network of the per-network map', () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { testnet: 'AUTH' } })
-
-        expect(authorityOf(account, testnet)).toBe('AUTH')
-        expect(authorityOf(account, mainnet)).toBeNull()
-    })
-
-    test('falls back to the mirror when the account predates the map', () => {
-        expect(authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), mainnet)).toBe(
-            'AUTH',
-        )
-    })
-
-    test('ignores the mirror once the map exists', () => {
-        const account = rekeyed({
-            rekeyAddress: 'STALE',
-            rekeyAddressByNetwork: {},
-        })
-
-        expect(authorityOf(account, mainnet)).toBeNull()
-    })
-
-    test('is null for an account that signs for itself, and on any other chain', () => {
-        expect(authorityOf(buildTestAccount('watch'), mainnet)).toBeNull()
-        expect(
-            authorityOf(rekeyed({ rekeyAddress: 'AUTH' }), {
-                chainId: 'ethereum',
-                networkId: 'mainnet',
-            }),
-        ).toBeNull()
-    })
-
-    test('reads the slice per scope, not the stale mirror', () => {
-        const account = rekeyed({ rekeyAddress: 'STALE' })
+    test('reads the slice entry of the requested scope', () => {
+        const account = buildTestAccount('watch')
         const address = addressOn(account, testnet) as string
         slice().setAccountChainState(testnet, address, chainState('AUTH'))
         slice().setAccountChainState(mainnet, address, chainState())
@@ -175,19 +138,29 @@ describe('authorityOf', () => {
         expect(authorityOf(account, mainnet)).toBeNull()
     })
 
-    test('a slice entry beats the per-network map for the same scope', () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'OLD' } })
+    test("is null for a scope the slice doesn't hold", () => {
+        const account = buildTestAccount('watch')
         const address = addressOn(account, mainnet) as string
-        slice().setAccountChainState(mainnet, address, chainState('NEW'))
+        slice().setAccountChainState(mainnet, address, chainState('AUTH'))
 
-        expect(authorityOf(account, mainnet)).toBe('NEW')
+        expect(authorityOf(account, testnet)).toBeNull()
+    })
+
+    test('is null for an account that signs for itself, and on any other chain', () => {
+        const account = buildTestAccount('watch')
+        const address = addressOn(account, mainnet) as string
+        slice().setAccountChainState(mainnet, address, chainState('AUTH'))
+
+        expect(authorityOf(buildTestAccount('algo25'), mainnet)).toBeNull()
+        expect(
+            authorityOf(account, { chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBeNull()
     })
 
     test("another address's entry does not answer for this account", () => {
-        const account = rekeyed({ rekeyAddressByNetwork: { mainnet: 'MAP' } })
         slice().setAccountChainState(mainnet, 'OTHER', chainState('AUTH'))
 
-        expect(authorityOf(account, mainnet)).toBe('MAP')
+        expect(authorityOf(buildTestAccount('watch'), mainnet)).toBeNull()
     })
 })
 

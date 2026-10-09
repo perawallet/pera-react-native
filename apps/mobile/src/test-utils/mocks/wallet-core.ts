@@ -416,7 +416,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 : { kind: 'watch', account },
         ),
         useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
-        useRekeyAccount: vi.fn(() => null),
+        useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,

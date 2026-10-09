@@ -236,14 +236,12 @@ describe('toCurrentAccount', () => {
             address: 'ADDR',
             type: 'hdWallet',
             keyPairId: 'kp',
-            rekeyAddress: 'AUTH',
         } as PersistedAccountRecord
 
         expect(toCurrentAccount(record)).toEqual({
             id: 'x',
             name: 'Broken',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'ADDR' } },
         })
@@ -269,7 +267,6 @@ describe('withLegacyMultisigDetails', () => {
             name: 'Shared',
             type: 'multisig',
             address: 'MSIG',
-            rekeyAddress: 'AUTH',
         }) as MultiSigAccount
         const details = { threshold: 2, addresses: ['P1', 'P2'], version: 1 }
 
@@ -279,7 +276,6 @@ describe('withLegacyMultisigDetails', () => {
             id: 'm',
             name: 'Shared',
             address: 'MSIG',
-            rekeyAddress: 'AUTH',
             custody: { kind: 'multisig' },
             multisigDetails: details,
         })

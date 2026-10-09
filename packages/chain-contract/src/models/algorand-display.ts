@@ -324,7 +324,7 @@ export type AccountInformation = {
     /** Opted-in assets with amounts in base units (smallest indivisible unit) */
     assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
     /** Auth (signer) address when the account is rekeyed; undefined otherwise */
-    authAddress?: string
+    authorityAddress?: string
 }
 
 export type Arc0001MultisigMetadata = {

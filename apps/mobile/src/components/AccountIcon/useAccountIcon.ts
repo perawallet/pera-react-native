@@ -11,15 +11,16 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 
 import {
     accountType,
     type AccountType,
     AccountTypes,
-    isRekeyedAccount,
+    useAuthorityOf,
     useCanSignWith,
-    useRekeyAccount,
+    useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { IconName } from '@components/core'
@@ -102,7 +103,7 @@ export type UseAccountIconOptions = {
     displayState?: AccountDisplayState
     /**
      * The type of the auth account, for callers that force `rekeyedSignable`
-     * on a synthetic account. `useRekeyAccount` can only resolve an auth
+     * on a synthetic account. `useDelegatedAccount` can only resolve an auth
      * address that is already in the store, so without this a rekeyed-to-Ledger
      * preview falls back to the turquoise standard glyph.
      */
@@ -114,14 +115,14 @@ export const useAccountIcon = (
     options: UseAccountIconOptions = {},
 ): AccountGlyph | null => {
     const { ignoreRekey, displayState, authType } = options
-    const rekeyAccount = useRekeyAccount(account?.address)
+    const rekeyAccount = useDelegatedAccount(account?.address)
     const canSign = useCanSignWith(account)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     return useMemo(() => {
         if (!account) return null
 
-        const isRekeyed =
-            !ignoreRekey && isRekeyedAccount(account, LEGACY_CHAIN_ID)
+        const isRekeyed = !ignoreRekey && authority !== null
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed
@@ -154,5 +155,13 @@ export const useAccountIcon = (
         // rekeyAccount keeps the memo invalidating when the auth account
         // changes (which can flip canSign).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, displayState, authType, canSign, rekeyAccount])
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        authType,
+        canSign,
+        rekeyAccount,
+        authority,
+    ])
 }
