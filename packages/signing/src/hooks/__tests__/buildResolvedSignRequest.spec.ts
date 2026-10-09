@@ -62,6 +62,7 @@ describe('buildResolvedSignRequest', () => {
             request: {
                 id: 'r1',
                 type: 'transactions',
+                chainId: 'algorand',
                 sourceType: 'local',
                 transport: 'algod',
                 txs: [{}],
@@ -96,6 +97,7 @@ describe('buildResolvedSignRequest', () => {
             request: {
                 id: 'r1',
                 type: 'transactions',
+                chainId: 'algorand',
                 sourceType: 'multisig-cosign',
                 transport: 'callback',
                 signRequestId: 'sr1',
@@ -125,6 +127,7 @@ describe('buildResolvedSignRequest', () => {
         const authDataRequest = {
             id: 'r1',
             type: 'auth-data',
+            chainId: 'algorand',
             sourceType: 'card',
             transport: 'callback',
             authData: { data: 'SGVsbG8=', signer: 'A123' },

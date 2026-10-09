@@ -17,6 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isQuantumAccount } from '../accounts/vocabulary'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
 import {
@@ -160,6 +161,7 @@ export const requestSwapSignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
+            chainId: ALGORAND_CHAIN_ID,
             txs: unsignedTxs,
             // Full atomic group as the backend assembled it (pre-signed +
             // user-signable slots). The signing-machine analyzer recomputes
@@ -223,6 +225,7 @@ export const requestSwapProposal = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
+            chainId: ALGORAND_CHAIN_ID,
             // Force the sync protocol: the backend collects signatures but does
             // NOT broadcast — the proposer's device assembles + submits via the
             // cosign resolver once threshold is met.

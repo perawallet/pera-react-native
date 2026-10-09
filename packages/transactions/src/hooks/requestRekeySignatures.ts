@@ -15,6 +15,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
 
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -43,6 +44,7 @@ const REKEY_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
  */
 export const requestRekeySignatures = (
     addSignRequest: AddSignRequestFn,
+    chainId: ChainId,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
 ): Promise<PeraSignedTransaction[]> =>
@@ -76,6 +78,7 @@ export const requestRekeySignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
+            chainId,
             txs: unsignedTxs,
             sourceMetadata: source,
             approve: async signed => {

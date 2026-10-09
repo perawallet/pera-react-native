@@ -223,6 +223,7 @@ export const buildTransactionSignRequest = ({
     const request: PeraTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         txs: txs ?? [buildPaymentTransaction()],
@@ -250,6 +251,7 @@ export const buildArbitraryDataSignRequest = ({
     const request: ArbitraryDataSignRequest = {
         id: `review-data-${Math.round(Math.random() * 1e9)}`,
         type: 'arbitrary-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         data: (messages ?? [{ message: 'Sign me' }]).map(m => ({
@@ -315,6 +317,7 @@ export const buildArc60SignRequest = ({
     const request: AuthDataSignRequest = {
         id: `review-arc60-${Math.round(Math.random() * 1e9)}`,
         type: 'auth-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         verifiedOrigin,

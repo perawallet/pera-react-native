@@ -345,6 +345,7 @@ describe('executeAlgorandSwap', () => {
         // must stay `'local'` (outside `INTERACTIVE_SOURCES`) to skip the
         // standard review/completion sheets.
         expect(request.sourceType).toBe('local')
+        expect(request).toMatchObject({ chainId: 'algorand' })
         expect(request.sourceMetadata).toEqual(SIGNING_SOURCE)
         expect(request.txs).toHaveLength(2)
         // The signing-machine analyzer recomputes the group hash over

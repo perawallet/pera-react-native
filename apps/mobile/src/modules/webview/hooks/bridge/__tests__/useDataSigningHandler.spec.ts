@@ -161,6 +161,7 @@ describe('useDataSigningHandler', () => {
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'arbitrary-data',
+                    chainId: 'algorand',
                     transport: 'callback',
                     sourceType: 'webview',
                     transportId: '14',

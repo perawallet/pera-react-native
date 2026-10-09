@@ -28,9 +28,11 @@ import {
     type EnqueueDappRequestDeps,
     type ExternalSignTxnTransport,
     type FeeAdjustment,
+    type PeraTransactionSignRequest,
     type RejectReason,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
 
 // Bridges an ARC-0001 resolver result to the signing pipeline: builds the
@@ -95,9 +97,10 @@ export const enqueueArc0001SignRequest = async (
         feeAdjustments = assigned.adjustments
     }
 
-    const signRequest: TransactionSignRequest = {
+    const signRequest: PeraTransactionSignRequest = {
         id: generateOrderedUniqueId(),
         type: 'transactions',
+        chainId: ALGORAND_CHAIN_ID,
         transport: 'callback',
         sourceType: transport.sourceType,
         transportId: transport.transportId,
@@ -168,7 +171,7 @@ export const enqueueArc0001SignRequest = async (
                 removeSignRequest(signRequest)
             }
         },
-    } as TransactionSignRequest
+    }
 
     addSignRequest(signRequest)
     return signRequest

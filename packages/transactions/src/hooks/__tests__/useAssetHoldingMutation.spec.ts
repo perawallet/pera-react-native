@@ -85,6 +85,7 @@ describe('useAssetHoldingMutation', () => {
             transactions: [{ sender: 'SENDER', fee: 1000n }],
         })
         expect(mockSubmit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ sender: 'SENDER', fee: 3000n }],
             source: SOURCE,
         })

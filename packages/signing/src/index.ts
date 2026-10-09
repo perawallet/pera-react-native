@@ -280,6 +280,7 @@ export {
 } from './db'
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
+export { rehydrateSigningStore } from './store'
 
 export {
     BLE_CLASS_ERROR_KINDS,

@@ -219,6 +219,7 @@ const enqueueDataSignRequest = (
     const signRequest: AuthDataSignRequest | ArbitraryDataSignRequest = {
         ...payload,
         id: generateOrderedUniqueId(),
+        chainId: message.chainId,
         transport: 'callback',
         sourceType: message.sourceType,
         transportId: message.connectionId,

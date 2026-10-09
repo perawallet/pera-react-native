@@ -194,6 +194,7 @@ describe('useAlgorandCardAutoDraw.disableAutoDraw', () => {
             asset: '10458941',
         })
         expect(submit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ txn: 'kill' }],
             source: {
                 name: 'card-autodraw-disable',

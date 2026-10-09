@@ -226,9 +226,10 @@ describe('multisig members of the planner', () => {
         await completeMultisigHandoff('algorand', args)
 
         expect(adapter.completeMultisigHandoff).toHaveBeenCalledWith(args)
-        expect(isSignRequestMultisigUnsignable({} as never, [])).toBe(true)
+        const request = { chainId: 'algorand' } as never
+        expect(isSignRequestMultisigUnsignable(request, [])).toBe(true)
         expect(adapter.isSignRequestMultisigUnsignable).toHaveBeenCalledWith(
-            {},
+            request,
             [],
         )
     })

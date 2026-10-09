@@ -210,6 +210,7 @@ describe('enqueueArc0001SignRequest', () => {
             expect.objectContaining({
                 id: expect.any(String),
                 type: 'transactions',
+                chainId: 'algorand',
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: 'test-transport-id',

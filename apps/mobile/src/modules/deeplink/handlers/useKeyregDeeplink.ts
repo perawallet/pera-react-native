@@ -269,6 +269,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
+                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'deeplink',
                     txs: transactions,

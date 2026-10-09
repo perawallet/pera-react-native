@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -25,7 +26,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../broadcaster'
 import type { TransactionSignRequest } from '../models'
-import { chainIdOfSignRequest } from '../models/chain'
 import { useSigningRequest } from './useSigningRequest'
 
 /**
@@ -51,6 +51,7 @@ export type SignAndSubmitGroupSource = {
 }
 
 export type SignAndSubmitGroupParams = {
+    chainId: ChainId
     /** Unsigned transactions, already grouped by the caller. */
     unsignedTxs: PeraTransaction[]
     /** Display metadata threaded through the pipeline. */
@@ -78,6 +79,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
 
     const submit = useCallback(
         ({
+            chainId,
             unsignedTxs,
             source,
         }: SignAndSubmitGroupParams): Promise<{ txIds: string[] }> => {
@@ -90,6 +92,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     type: 'transactions',
                     transport: 'callback',
                     sourceType: 'local',
+                    chainId,
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (
@@ -105,7 +108,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                                     tx !== null,
                             )
                             const txIds = await submitAndAutoRefresh(
-                                chainIdOfSignRequest(request),
+                                chainId,
                                 signedTxns,
                                 { flow: 'sign-and-submit' },
                             )

@@ -35,12 +35,18 @@ describe('requestRekeySignatures', () => {
     it('hands a headless transactions sign request to the pipeline with the supplied txs', () => {
         const addSignRequest = vi.fn()
 
-        void requestRekeySignatures(addSignRequest, source, unsignedTxs)
+        void requestRekeySignatures(
+            addSignRequest,
+            'algorand',
+            source,
+            unsignedTxs,
+        )
 
         expect(addSignRequest).toHaveBeenCalledTimes(1)
         const request = addSignRequest.mock
             .calls[0][0] as TransactionSignRequest
         expect(request.type).toBe('transactions')
+        expect(request).toMatchObject({ chainId: 'algorand' })
         expect(request.transport).toBe('callback')
         expect(request.sourceType).toBe('local')
         expect(request.txs).toEqual(unsignedTxs)
@@ -56,6 +62,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )
@@ -74,6 +81,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )
@@ -91,6 +99,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )
@@ -110,6 +119,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )

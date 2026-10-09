@@ -153,6 +153,7 @@ export const useSubmitRekeyMutation = ({
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
             const signed = await requestRekeySignatures(
                 addSignRequest,
+                scope.chainId,
                 signingMetadata,
                 [unsignedTxn],
             )

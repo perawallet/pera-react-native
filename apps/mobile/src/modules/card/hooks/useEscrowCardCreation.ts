@@ -85,6 +85,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'auth-data',
+                    chainId: scope.chainId,
                     transport: 'callback',
                     sourceType: 'card',
                     authData,

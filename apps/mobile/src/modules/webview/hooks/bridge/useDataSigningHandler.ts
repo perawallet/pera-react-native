@@ -12,7 +12,10 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     canSignArbitraryData,
     findAccountByAddressOn,
@@ -45,10 +48,12 @@ import { useRequiredParams } from './useRequiredParams'
 
 // Auth-data and legacy arbitrary-data requests share one page answer.
 const webviewDataSignRequestBase = (
+    chainId: ChainId,
     messageId: string,
     webview: Nullable<WebView>,
 ) => ({
     id: generateOrderedUniqueId(),
+    chainId,
     transport: 'callback' as const,
     sourceType: 'webview' as const,
     transportId: messageId,
@@ -127,7 +132,11 @@ export const useDataSigningHandler = (
                         return
                     }
                     addSignRequest({
-                        ...webviewDataSignRequestBase(message.id, webview),
+                        ...webviewDataSignRequestBase(
+                            LEGACY_CHAIN_ID,
+                            message.id,
+                            webview,
+                        ),
                         type: 'auth-data',
                         // The verified webview origin — NOT the dApp-asserted
                         // metadata — is what the analyzer checks the sign-in
@@ -193,7 +202,11 @@ export const useDataSigningHandler = (
             const metadata = message.params!['metadata'] as SignRequestSource
             try {
                 addSignRequest({
-                    ...webviewDataSignRequestBase(message.id, webview),
+                    ...webviewDataSignRequestBase(
+                        LEGACY_CHAIN_ID,
+                        message.id,
+                        webview,
+                    ),
                     type: 'arbitrary-data',
                     sourceMetadata: metadata,
                     // Platform-observed origin, not page-asserted — gates the

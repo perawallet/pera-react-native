@@ -210,6 +210,7 @@ const makeTxRequest = (
     ({
         id: 'tx-1',
         type: 'transactions',
+        chainId: 'algorand',
         transport: 'algod',
         txs: [{ sender: { toString: () => 'ADDR1' } } as never],
         ...overrides,

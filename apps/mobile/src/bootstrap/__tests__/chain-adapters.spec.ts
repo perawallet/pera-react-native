@@ -127,6 +127,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({ kmsCore: mocks.kmsCore }))
 
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    rehydrateSigningStore: vi.fn(async () => {}),
+}))
+
 // The real module pulls in every adapter; the root only needs the module's shape.
 vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
     const descriptorEntry =
@@ -153,6 +160,7 @@ vi.mock('../ethereum-chain-module', () => ({
 }))
 
 import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
+import { rehydrateSigningStore } from '@perawallet/wallet-core-signing'
 import {
     pinnedHostRegistry,
     remoteConfigDefaultsRegistry,
@@ -243,6 +251,14 @@ describe('registerChainAdapters', () => {
         registerChainAdapters()
 
         expect(rehydrateAccountsStore).toHaveBeenCalledOnce()
+    })
+
+    it('rehydrates the signing store, naming the legacy chain for requests stored without one', () => {
+        registerChainAdapters()
+
+        expect(rehydrateSigningStore).toHaveBeenCalledWith({
+            unstampedRequestChainId: 'algorand',
+        })
     })
 
     it('registers the Algorand adapters once', () => {

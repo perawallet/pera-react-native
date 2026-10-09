@@ -92,7 +92,12 @@ export const useAssetHoldingMutation = <TParams>({
                     assignFees: async unsignedTxs =>
                         (await assignFeeToGroup({ transactions: unsignedTxs }))
                             .transactions,
-                    submit: unsignedTxs => submit({ unsignedTxs, source }),
+                    submit: unsignedTxs =>
+                        submit({
+                            chainId: scopeForLegacyNetwork(network).chainId,
+                            unsignedTxs,
+                            source,
+                        }),
                 })
                 // Not balances-only: account reads (holdings page, NFT
                 // gallery sort caches) cache over SQLite with staleTime:

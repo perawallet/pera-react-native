@@ -967,6 +967,7 @@ describe('useConnectionSigningAdapter', () => {
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'arbitrary-data',
+                    chainId: CHAIN_ID,
                     data: payload,
                     // The connection's peer identity, stamped as the
                     // anti-spoofing dApp identity shown on the signing sheet.

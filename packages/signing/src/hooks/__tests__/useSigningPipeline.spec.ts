@@ -131,6 +131,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
@@ -148,6 +149,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-neutral',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [makeUnsignedTransaction('0xFROM')],
         } satisfies TransactionSignRequest
@@ -164,6 +166,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-2',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             // Wallet only signs slot 0; slot 1 is the other party's tx.
             txs: [wallet as never],
@@ -185,6 +188,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-external',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [tx0 as never, tx2 as never],
             groupContext: [tx0 as never, tx1 as never, tx2 as never],
@@ -208,6 +212,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'shared-req',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: txs as never,
         }
@@ -230,6 +235,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'kept-req',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: txs as never,
         }
@@ -255,6 +261,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-3',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
@@ -277,6 +284,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-override',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
             txs: [foreignTx as never],
             groupContext: [otherPartyTx as never, foreignTx as never],
@@ -299,6 +307,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-no-override',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
             txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
         } satisfies TransactionSignRequest
@@ -325,6 +334,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-warn',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
             txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
         } satisfies TransactionSignRequest
@@ -370,6 +380,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         }
@@ -392,6 +403,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         } as TransactionSignRequest
@@ -406,6 +418,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         } as TransactionSignRequest

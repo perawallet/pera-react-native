@@ -98,6 +98,7 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(result.type).toBe('transactions')
+        expect(result.chainId).toBe('algorand')
         expect(result.transport).toBe('callback')
         expect(result.sourceType).toBe('multisig-cosign')
         expect(result.signRequestId).toBe('sr-42')

@@ -56,6 +56,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn, fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -76,6 +77,7 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
+        expect(captured).toMatchObject({ chainId: 'algorand' })
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
     })
 
@@ -90,6 +92,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn, fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -118,6 +121,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -145,6 +149,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-out', description: 'test' },
             }),
@@ -167,6 +172,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'send', description: 'test' },
             }),
@@ -192,6 +198,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -214,6 +221,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const res = await act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [],
                 source: { name: 'no-op', description: 'test' },
             }),

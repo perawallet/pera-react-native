@@ -106,6 +106,7 @@ export const buildMultisigCosignRequest = ({
         // inline-error guards in SignRequestView keep cosigns apart as before.
         id: `${signRequest.id}:${signerAddress}`,
         type: 'transactions',
+        chainId: scope.chainId,
         transport: 'callback',
         // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
         // the standard review flow shows the review sheet automatically
