@@ -215,6 +215,20 @@ result. Swallowing it is indistinguishable from a genuine empty result in the UI
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.
 
+## How a chain reaches its backends
+
+Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client
+of its own: the Pera client in `packages/shared/src/api/query-client.ts` is the one place that adds
+the API key, the integrity token and the device headers. It is built for every configured scope, on
+every chain.
+
+A chain's ky-based node backends (`algod`, `indexer`) come from the `NodeBackendsAdapter` it
+registers (`packages/shared/src/api/node-backends.ts`): URL, token header and token. `queryClient`
+builds and caches each client on first use and never adds the Pera headers to it, so a Pera
+credential cannot reach a third-party node. A chain whose endpoints change at runtime calls
+`resetNodeClients()`; Algorand does so when a custom node is saved or cleared. Ethereum's JSON-RPC
+is a viem client the chain builds from `ctx.getEndpoints()`, outside `queryClient`.
+
 ## Account types share one signing path
 
 Algo25, HD-wallet and quantum (Falcon-1024) accounts all route through
@@ -257,6 +271,7 @@ when the app reinitializes (see `BaseStoreState`).
 | `accounts`       | Wallet account management                                    |
 | `assets`         | Asset information and pricing                                |
 | `chain-algorand` | Algorand chain: node/indexer access and per-package adapters |
+| `chain-ethereum` | Ethereum chain: JSON-RPC client and per-package adapters     |
 | `signing`        | Transaction signing and submission                           |
 | `database`       | Local persistence                                            |
 | `settings`       | User preferences                                             |
