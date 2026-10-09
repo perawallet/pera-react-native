@@ -11,21 +11,14 @@
  */
 
 export {
-    BlockFollowingRequestError,
     createEthereumAccountStateOps,
+    type EthereumAccountStateOps,
+} from './account-state'
+export { ethereumAddressCodec } from './address-codec'
+export { BlockFollowingRequestError } from './endpoints'
+export { ethereumKeyDerivation } from './key-derivation'
+export {
     InvalidPrivateKeyError,
     parseEthereumPrivateKey,
     revealEthereumPrivateKey,
-    type EthereumAccountStateOps,
-} from './accounts'
-export {
-    createEvmClient,
-    EvmError,
-    EvmErrorCode,
-    evmHttpTransport,
-    isEvmError,
-    toEvmError,
-    UnconfiguredEvmRpcError,
-    type EvmErrorParams,
-} from './blockchain'
-export { ethereumModule } from './module'
+} from './private-key'

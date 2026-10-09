@@ -10,22 +10,6 @@
  limitations under the License
  */
 
-export {
-    BlockFollowingRequestError,
-    createEthereumAccountStateOps,
-    InvalidPrivateKeyError,
-    parseEthereumPrivateKey,
-    revealEthereumPrivateKey,
-    type EthereumAccountStateOps,
-} from './accounts'
-export {
-    createEvmClient,
-    EvmError,
-    EvmErrorCode,
-    evmHttpTransport,
-    isEvmError,
-    toEvmError,
-    UnconfiguredEvmRpcError,
-    type EvmErrorParams,
-} from './blockchain'
-export { ethereumModule } from './module'
+export { EvmError, isEvmError, type EvmErrorParams } from './EvmError'
+export { EVM_ERROR_I18N_KEYS, EvmErrorCode } from './evmErrorCodes'
+export { toEvmError } from './toEvmError'
