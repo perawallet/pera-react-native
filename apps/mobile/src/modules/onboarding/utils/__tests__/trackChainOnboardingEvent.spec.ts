@@ -11,8 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { offeredLocalKeyKinds } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { OnboardingEvent } from '@analytics'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { trackChainOnboardingEvent } from '../trackChainOnboardingEvent'
+
+vi.mock('@perawallet/wallet-core-accounts', async () =>
+    vi.importActual('@perawallet/wallet-core-accounts'),
+)
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 vi.mock('@analytics', async () => ({
@@ -39,5 +46,28 @@ describe('trackChainOnboardingEvent', () => {
         trackChainOnboardingEvent(undefined)
 
         expect(mockTrackEvent).not.toHaveBeenCalled()
+    })
+})
+
+describe('the registered chain key-kind options', () => {
+    // A chain names its events as strings, and the tracker silently drops a
+    // name the catalog lacks, so a renamed or new event must land here first.
+    it('log only events the onboarding catalog sends without a payload', () => {
+        registerAlgorandAccountsAdapter()
+        const events = offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
+            ({ options }) =>
+                [
+                    options.recover?.analyticsEvent,
+                    options.create?.analyticsEvent,
+                ].filter((event): event is string => event !== undefined),
+        )
+
+        expect(events.length).toBeGreaterThan(0)
+        for (const event of events) {
+            expect(Object.values(OnboardingEvent)).toContain(event)
+            mockTrackEvent.mockClear()
+            trackChainOnboardingEvent(event)
+            expect(mockTrackEvent).toHaveBeenCalledWith(event)
+        }
     })
 })
