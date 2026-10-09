@@ -43,10 +43,10 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -196,16 +196,12 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         useAccountsStore.getState().setAccounts([sender])
         useAccountsStore.getState().setSelectedAccountAddress(sender.address)
 
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: sender.address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: sender.address,

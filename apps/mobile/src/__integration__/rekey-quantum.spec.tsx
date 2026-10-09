@@ -44,9 +44,9 @@ import {
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
     quantumDerivationFor,
@@ -170,16 +170,11 @@ const seedRekeyInAccounts = async (): Promise<{
     useAccountsStore.getState().setAccounts([source, quantumTarget])
     useAccountsStore.getState().setSelectedAccountAddress(source.address)
 
-    await upsertAccountBalance({
+    await seedAlgorandAccountState({
         accountAddress: source.address,
         scope: MAINNET_SCOPE,
-        algoBalance: new Decimal(5_000_000),
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
+        nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
-        status: 'Offline',
-        authorityAddress: null,
     })
 
     return { source, quantumTarget }
@@ -210,16 +205,11 @@ const seedRekeyOutAccounts = async (): Promise<{
     useAccountsStore.getState().setAccounts([quantumSource, target])
     useAccountsStore.getState().setSelectedAccountAddress(quantumSource.address)
 
-    await upsertAccountBalance({
+    await seedAlgorandAccountState({
         accountAddress: quantumSource.address,
         scope: MAINNET_SCOPE,
-        algoBalance: new Decimal(5_000_000),
-        totalAssetsOptedIn: 0,
-        totalCreatedAssets: 0,
-        totalAppsOptedIn: 0,
+        nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
-        status: 'Offline',
-        authorityAddress: null,
     })
 
     return { quantumSource, target }

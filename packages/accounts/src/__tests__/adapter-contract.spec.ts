@@ -49,10 +49,7 @@ const fixtureAdapter: AccountsChainAdapter = {
         const account = await getAccount(address)
         if (!account) throw new Error('no such account')
         return {
-            nativeBalance: new Decimal(account.balance),
             nativeBalanceBaseUnits: new Decimal(account.balance),
-            minBalance: new Decimal(0),
-            authorityAddress: null,
             chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
             holdings: [
                 {
@@ -156,7 +153,7 @@ accountsContractTests(() => fixtureAdapter, {
             }),
         ],
         nativeAssetId: NATIVE_ASSET_ID,
-        nativeBalance: new Decimal('2.5'),
+        nativeBalanceBaseUnits: new Decimal('2.5'),
         heldAssetId: HELD_ASSET_ID,
     },
     empty: { address: EMPTY, handlers: [missing(EMPTY)] },

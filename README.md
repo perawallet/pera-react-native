@@ -124,7 +124,7 @@ running either. `algorand/algod:nightly` is not a substitute; it still lacks `pq
 > Balances, the asset list and sending are unaffected, because `account-syncer.ts` reads them from
 > algod and holdings only fall back to the indexer past algod's resource cap. Expect indexer-backed
 > surfaces (transaction history, large accounts) to be empty. If a balance reads 0.00 on LocalNet it
-> is far more likely a stale `account_balances` row than the indexer: pull-to-refresh does NOT
+> is far more likely a stale `account_chain_state` row than the indexer: pull-to-refresh does NOT
 > re-fetch when a row already exists, so relaunch the app after funding.
 
 ### Conformance suite

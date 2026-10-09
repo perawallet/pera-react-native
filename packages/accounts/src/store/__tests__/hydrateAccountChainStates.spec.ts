@@ -26,9 +26,12 @@ import {
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { buildTestAccount } from '../../__tests__/accountFactory'
-import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import {
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 import { authorityOf } from '../../credentials/accessors'
-import { AccountBalancesSchema, upsertAccountBalance } from '../../db'
+import { AccountChainStateSchema, upsertAccountChainState } from '../../db'
 import type { WalletAccount } from '../../models'
 import { useAccountChainStateStore } from '../accountChainState'
 import { hydrateAccountChainStates } from '../hydrateAccountChainStates'
@@ -47,17 +50,20 @@ describe('hydrateAccountChainStates', () => {
         scope: typeof MAINNET,
         authorityAddress: string | null,
     ) =>
-        upsertAccountBalance({
+        upsertAccountChainState({
             db,
             accountAddress: address,
             scope,
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            minBalance: new Decimal('0.1'),
-            status: 'Offline',
-            authorityAddress,
+            nativeBalance: new Decimal(1_000_000),
+            chainData: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Offline',
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                ...(authorityAddress ? { authAddress: authorityAddress } : {}),
+            },
         })
 
     const holdAccount = (): WalletAccount => {
@@ -122,13 +128,36 @@ describe('hydrateAccountChainStates', () => {
         teardown()
     })
 
-    it('gives a legacy account the auth address from its balance row', async () => {
+    it('gives a legacy account the auth address from its chain-state row', async () => {
         const account = holdAccount()
         await seedRow(account.address as string, MAINNET, 'AUTH')
 
         await hydrateAccountChainStates({ db })
 
         expect(authorityOf(account, MAINNET)).toBe('AUTH')
+    })
+
+    it("hands the slice the row's chain_data as stored", async () => {
+        const account = holdAccount()
+        const address = account.address as string
+        await seedRow(address, MAINNET, 'AUTH')
+
+        await hydrateAccountChainStates({ db })
+
+        expect(
+            useAccountChainStateStore.getState().states[toScopeKey(MAINNET)]?.[
+                address
+            ],
+        ).toEqual({
+            family: 'algorand',
+            minBalance: new Decimal(100_000),
+            status: 'Offline',
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: 'AUTH',
+        })
+        expect(fakeAccountsChain().adapter.toChainState).not.toHaveBeenCalled()
     })
 
     it('seeds a scope with no row from the per-network authority', async () => {
@@ -269,10 +298,12 @@ describe('hydrateAccountChainStates', () => {
         const address = account.address as string
         await seedRow(address, MAINNET, 'AUTH')
         await db
-            .insert(AccountBalancesSchema)
+            .insert(AccountChainStateSchema)
             .values({
                 accountAddress: address,
                 network: 'bogus' as ChainScopeKey,
+                nativeBalance: new Decimal(0),
+                chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
                 updatedAt: Date.now(),
             })
             .run()

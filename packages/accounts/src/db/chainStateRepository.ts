@@ -16,6 +16,7 @@ import {
     toScopeKey,
     type AccountChainState,
     type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -26,6 +27,11 @@ export type AccountChainStateRow = {
     /** Base units of the chain's native asset. */
     nativeBalance: Decimal
     chainData: AccountChainState
+}
+
+/** `network` is the raw column; read it through `scopeFromNetworkColumn`. */
+export type StoredAccountChainStateRow = AccountChainStateRow & {
+    network: ChainScopeKey
 }
 
 type UpsertAccountChainStateParams = {
@@ -94,6 +100,21 @@ export async function getAccountChainStateRow({
         .all()
 
     return rows[0]
+}
+
+/** Every row on every scope. */
+export async function getAllAccountChainStateRows({
+    db = getDatabase(),
+}: { db?: Database } = {}): Promise<StoredAccountChainStateRow[]> {
+    return db
+        .select({
+            accountAddress: AccountChainStateSchema.accountAddress,
+            network: AccountChainStateSchema.network,
+            nativeBalance: AccountChainStateSchema.nativeBalance,
+            chainData: AccountChainStateSchema.chainData,
+        })
+        .from(AccountChainStateSchema)
+        .all()
 }
 
 type DeleteAccountChainStateParams = {
