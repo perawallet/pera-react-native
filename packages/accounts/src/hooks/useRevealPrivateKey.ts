@@ -11,6 +11,8 @@
  */
 
 import { BACKUP_ACCESS_DOMAIN, useKMS } from '@perawallet/wallet-core-kms'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { accountsChainAdapters } from '../chain-adapter'
 import { standaloneSecretOf } from '../credentials/accessors'
 import { PrivateKeyRevealUnsupportedError } from '../errors'
 import { useAccountsStore } from '../store'
@@ -29,7 +31,7 @@ export type UseRevealPrivateKeyResult = {
 }
 
 export const useRevealPrivateKey = (): UseRevealPrivateKeyResult => {
-    const { exportSecp256k1Key } = useKMS()
+    const keystore = useKMS()
 
     const revealPrivateKey = async (
         accountId: string,
@@ -38,19 +40,28 @@ export const useRevealPrivateKey = (): UseRevealPrivateKeyResult => {
         const account = useAccountsStore
             .getState()
             .accounts.find(a => a.id === accountId)
-        const entries = Object.values(account?.chains ?? {})
-        const keyPairId =
-            entries.length === 1 ? entries[0]?.keyPairId : undefined
+        const entries = Object.entries(account?.chains ?? {})
+        const [chainId, entry] = entries.length === 1 ? entries[0]! : []
+        const keyPairId = entry?.keyPairId
+        const adapter =
+            chainId && accountsChainAdapters.has(chainId as ChainId)
+                ? accountsChainAdapters.get(chainId as ChainId)
+                : undefined
         if (
             !account ||
             !isStandaloneAccount(account) ||
             standaloneSecretOf(account) !== 'privateKey' ||
-            !keyPairId
+            !keyPairId ||
+            !adapter?.revealPrivateKey
         ) {
             throw new PrivateKeyRevealUnsupportedError(accountId)
         }
         if (!(await authenticate())) return null
-        return exportSecp256k1Key(keyPairId, BACKUP_ACCESS_DOMAIN)
+        return adapter.revealPrivateKey(
+            keystore,
+            keyPairId,
+            BACKUP_ACCESS_DOMAIN,
+        )
     }
 
     return { revealPrivateKey }

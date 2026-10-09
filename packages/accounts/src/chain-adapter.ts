@@ -142,6 +142,12 @@ export type AccountKeystore = Pick<
     'getKey' | 'createAlgo25Key' | 'createQuantumKey' | 'removeKeyAndChildren'
 >
 
+/** The `useKMS()` call a private-key reveal makes; the hook passes its own. */
+export type PrivateKeyKeystore = Pick<
+    ReturnType<typeof useKMS>,
+    'exportSecp256k1Key'
+>
+
 export type MintedAccount = {
     /** Not yet persisted. */
     account: WalletAccount
@@ -262,6 +268,16 @@ export interface AccountsChainAdapter {
     readonly quantum?: QuantumChainDerivation
     /** Absent on a chain whose only software accounts are HD. */
     readonly singleKeyAccounts?: SingleKeyAccountOps
+    /**
+     * Reads a standalone account's private key back from the keystore. The
+     * caller zeroes the bytes. Absent on a chain whose standalone secret is a
+     * mnemonic, which the passphrase flow shows instead.
+     */
+    revealPrivateKey?(
+        keystore: PrivateKeyKeystore,
+        keyPairId: string,
+        domain: string,
+    ): Promise<Uint8Array>
     /** Accounts whose signer is `authorityAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
         authorityAddress: string,

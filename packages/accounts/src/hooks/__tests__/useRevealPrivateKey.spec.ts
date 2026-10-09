@@ -21,7 +21,10 @@ import {
 import { BACKUP_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { PrivateKeyRevealUnsupportedError } from '../../errors'
-import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
+import {
+    FAKE_CHAIN_ID,
+    registerFakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 import { useAccountsStore } from '../../store'
 import { useRevealPrivateKey } from '../useRevealPrivateKey'
@@ -94,6 +97,10 @@ describe('useRevealPrivateKey', () => {
             Uint8Array.from(fakeKms.entries.get(id) ?? []),
         )
         authenticate.mockReset()
+        registerFakeAccountsChain({
+            revealPrivateKey: (keystore, keyPairId, domain) =>
+                keystore.exportSecp256k1Key(keyPairId, domain),
+        })
         keyDerivations.reset()
         keyDerivations.register({
             chainId: FAKE_CHAIN_ID,
@@ -168,6 +175,17 @@ describe('useRevealPrivateKey', () => {
     test('refuses a standalone account whose secret is a mnemonic', async () => {
         const account = await importAccount()
         registerChain('mnemonic')
+        const { result } = renderHook(() => useRevealPrivateKey())
+
+        await expect(
+            result.current.revealPrivateKey(account.id, authenticate),
+        ).rejects.toBeInstanceOf(PrivateKeyRevealUnsupportedError)
+        expect(authenticate).not.toHaveBeenCalled()
+    })
+
+    test('refuses an account whose chain adapter cannot reveal a private key', async () => {
+        const account = await importAccount()
+        registerFakeAccountsChain()
         const { result } = renderHook(() => useRevealPrivateKey())
 
         await expect(
