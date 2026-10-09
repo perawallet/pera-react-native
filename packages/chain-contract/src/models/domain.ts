@@ -49,6 +49,12 @@ export type ChainAccountNative = {
     family: 'algorand'
     /** Present on a multisig account; Algorand derives the address from it. */
     multisig?: { version: number; threshold: number; addresses: string[] }
+    /**
+     * Present on a post-quantum account; `publicKey` is base64. Kept on the
+     * record because a realm that can't open the keystore (the extension's
+     * offscreen document) still has to describe the account's signature.
+     */
+    pq?: { scheme: Extract<SigningScheme, 'falcon-1024'>; publicKey: string }
 }
 
 export type AccountChainState =

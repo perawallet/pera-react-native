@@ -95,6 +95,12 @@ const isDappConnection = (
 const isDappMethod = (method: string): method is DappMethod =>
     (DAPP_METHODS as readonly string[]).includes(method)
 
+// What the user grants at connect. Empty signatures are public data the wallet
+// answers unprompted, so they are served but never listed as a permission.
+const PERMISSION_METHODS: readonly DappMethod[] = DAPP_METHODS.filter(
+    method => method !== 'getEmptySignatures',
+)
+
 const toWireResult = (result: WalletOperationResult): unknown =>
     result.type === 'sign-transactions'
         ? result.signed
@@ -167,6 +173,27 @@ export const createDappConnectionHandler = (
             const account = known.get(address)
             return account ? [account] : []
         })
+    }
+
+    const emptySignaturesOf = (
+        adapter: DappRequestChainAdapter,
+        accounts: DappAccount[],
+    ): Record<string, string> =>
+        adapter.emptySignaturesFor(accounts.map(({ address }) => address))
+
+    // Empty signatures are public, so they ride along with the accounts rather
+    // than costing the page a second request (use-wallet's connect-flow form).
+    const connectResult = (
+        adapter: DappRequestChainAdapter,
+        connection: DappConnection,
+        network: string,
+    ) => {
+        const accounts = accountsFor(connection)
+        return {
+            accounts,
+            network,
+            emptySignatures: emptySignaturesOf(adapter, accounts),
+        }
     }
 
     // Looked up per request, not at construction: a realm may build the
@@ -277,10 +304,10 @@ export const createDappConnectionHandler = (
                 lastActiveAt: now(),
             })
             return release(
-                jsonRpcResult(request.id, {
-                    accounts: accountsFor(existing),
-                    network,
-                }),
+                jsonRpcResult(
+                    request.id,
+                    connectResult(adapter, existing, network),
+                ),
             )
         }
 
@@ -316,7 +343,10 @@ export const createDappConnectionHandler = (
             proposalId,
             peer,
             requesterOrigin: ctx.origin,
-            requested: { networks: [network], methods: [...DAPP_METHODS] },
+            requested: {
+                networks: [network],
+                methods: [...PERMISSION_METHODS],
+            },
             expiresAt,
             approve: async accounts => {
                 if (settled)
@@ -344,10 +374,10 @@ export const createDappConnectionHandler = (
                 }
                 await deliver(
                     respond,
-                    jsonRpcResult(request.id, {
-                        accounts: accountsFor(connection),
-                        network,
-                    }),
+                    jsonRpcResult(
+                        request.id,
+                        connectResult(adapter, connection, network),
+                    ),
                 )
                 return connection
             },
@@ -455,6 +485,62 @@ export const createDappConnectionHandler = (
         })
     }
 
+    // `connect()` already carries these; this lets a page refresh them after
+    // a rekey, and gives SDKs the same request they send over WalletConnect.
+    const handleGetEmptySignatures = async (
+        ctx: DappRequestContext,
+        request: JsonRpcRequest,
+        respond: DappRespond,
+    ): Promise<void> => {
+        const adapter = chainAdapter()
+        if (!adapter) return deliver(respond, chainNotSupported(request.id))
+        const connection = await getConnection(ctx.origin)
+        if (!connection) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    JsonRpcErrorCode.Unauthorized,
+                    'Not connected: call connect() first',
+                ),
+            )
+        }
+        const params = isRecord(request.params) ? request.params : {}
+        const network = adapter.resolveReportedNetwork(
+            scopeForLegacyNetwork(deps.getNetwork()),
+            deps.getCustomNetworkGenesisHash(),
+        )
+        if (!network) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    JsonRpcErrorCode.NetworkNotSupported,
+                    'The wallet is on a network this connection cannot use',
+                ),
+            )
+        }
+        // Rekey state is only held for the active network, so another
+        // network's answer would be a guess.
+        if (typeof params.network === 'string' && params.network !== network) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    JsonRpcErrorCode.NetworkNotSupported,
+                    `The wallet is on ${network}, not ${params.network}`,
+                ),
+            )
+        }
+        return deliver(
+            respond,
+            jsonRpcResult(
+                request.id,
+                emptySignaturesOf(adapter, accountsFor(connection)),
+            ),
+        )
+    }
+
     const disconnect = async (id: ConnectionId): Promise<void> => {
         const connection = await getConnection(id)
         if (!connection) return
@@ -506,6 +592,9 @@ export const createDappConnectionHandler = (
                               'Not connected: call connect() first',
                           ),
                 )
+            }
+            case 'getEmptySignatures': {
+                return handleGetEmptySignatures(ctx, request, respond)
             }
             case 'disconnect': {
                 await disconnect(ctx.origin)
@@ -563,7 +652,7 @@ export const createDappConnectionHandler = (
         },
         restore,
         matchesNetwork: () => true,
-        methodsFor: () => [...DAPP_METHODS],
+        methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const notification =
                 notice.type === 'accounts-changed'

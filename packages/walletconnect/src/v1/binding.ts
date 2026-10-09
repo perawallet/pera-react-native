@@ -25,6 +25,7 @@ import {
     WalletConnectBridgeConnectionError,
     WalletConnectError,
 } from '../shared/errors'
+import { GET_EMPTY_SIGNATURES_METHOD } from '../shared/emptySignatures'
 import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import type { V1ConnectorEventHandler } from './requests'
 import { scopeFor } from './scope'
@@ -45,6 +46,7 @@ export const createV1ConnectorBinding = (deps: {
     handleSessionRequest: V1ConnectorEventHandler
     handleSignTxn: V1ConnectorEventHandler
     handleSignData: V1ConnectorEventHandler
+    handleGetEmptySignatures: V1ConnectorEventHandler
 }): V1ConnectorBinding => {
     const {
         kit,
@@ -54,6 +56,7 @@ export const createV1ConnectorBinding = (deps: {
         handleSessionRequest,
         handleSignTxn,
         handleSignData,
+        handleGetEmptySignatures,
     } = deps
     const { reportError } = kit
 
@@ -113,6 +116,17 @@ export const createV1ConnectorBinding = (deps: {
                 void handleSignData(connector, eventError, payload).catch(
                     onFailure,
                 )
+            },
+        )
+
+        connector.on(
+            GET_EMPTY_SIGNATURES_METHOD,
+            (eventError: Nullable<Error>, payload: unknown) => {
+                void handleGetEmptySignatures(
+                    connector,
+                    eventError,
+                    payload,
+                ).catch(onFailure)
             },
         )
 

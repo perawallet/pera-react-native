@@ -80,6 +80,7 @@ const mocks = vi.hoisted(() => {
         ),
         applyLaunchAccountPreference: vi.fn(),
         hydrateAccountChainStates: vi.fn(),
+        backfillAccountRecords: vi.fn(),
     }
 })
 
@@ -148,6 +149,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    backfillAccountRecords: () => mocks.backfillAccountRecords(),
     hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
     useAccountsStore: {
         getState: () => ({
@@ -255,6 +257,7 @@ describe('useAppBootstrap', () => {
         expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.backfillAccountRecords).toHaveBeenCalledTimes(1)
     })
 
     it('stays unbootstrapped until the chain-state slice has hydrated', async () => {

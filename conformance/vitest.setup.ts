@@ -13,6 +13,7 @@
 import { vi } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 import { registerAlgorandChain } from './src/harness/registerAlgorandAccounts'
+import { latestConformanceKeystoreStore } from './src/harness/keystore'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
 // `@perawallet/wallet-core-chain-algorand/blockchain`'s network/accounts stores for their
@@ -45,6 +46,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         errors,
         chainAdapter,
         credentialScheme,
+        accessors,
     ] = await Promise.all([
         vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
@@ -59,6 +61,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/credentials/credentialScheme',
         ),
+        vi.importActual<object>(
+            '@perawallet/wallet-core-accounts/credentials/accessors',
+        ),
     ])
     return {
         ...models,
@@ -68,6 +73,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...errors,
         ...chainAdapter,
         ...credentialScheme,
+        ...accessors,
         useAccountsStore: { getState: () => ({ accounts: [] }) },
     }
 })
@@ -78,8 +84,6 @@ const chains = createChainRegistry()
 registerAlgorandChain(chains)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    // Suites hold their own keystores, so a scheme read falls back to custody.
-    getKeystoreStore: () => ({ state: { keys: [] } }),
     getProvider: () => ({
         chains,
         keyValueStorage: {
@@ -90,4 +94,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
     }),
+    // The suite's own keystore, so app code that reads public key metadata
+    // sees its keys; before one exists a scheme read falls back to custody.
+    getKeystoreStore: () => latestConformanceKeystoreStore(),
 }))

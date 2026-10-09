@@ -67,6 +67,7 @@ export const enqueueArc0001SignRequest = async (
             signableIndices: indicesToSign,
             signerOverrides:
                 signerOverrides.size > 0 ? signerOverrides : undefined,
+            isExternallyPriced: true,
         })
     } catch (err) {
         // Incoming group was invalid as received (stale/tampered group ID).

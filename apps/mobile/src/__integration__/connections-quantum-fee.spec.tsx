@@ -85,6 +85,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
+    mockAlgodSimulate,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
@@ -392,6 +393,23 @@ const useAlgodMocks = () => {
         }),
         mockAlgodStatus({ response: { 'last-round': 100 } }),
         mockIndexerSearchForAccounts(),
+        // algod's fee rule, so the pre-bump coverage check sees what a node
+        // would: a `pqsig` transaction owes base × 3, any other one base.
+        mockAlgodSimulate({
+            failureMessage: ({ txnGroups: [group] }) => {
+                const paid = group.txns.reduce(
+                    (sum, stxn) => sum + stxn.txn.fee,
+                    0n,
+                )
+                const owed = group.txns.reduce(
+                    (sum, stxn) => sum + (stxn.pqsig ? 3000n : 1000n),
+                    0n,
+                )
+                return paid < owed
+                    ? `txgroup with ${paid} fees is less than ${owed}`
+                    : ''
+            },
+        }),
     )
 }
 

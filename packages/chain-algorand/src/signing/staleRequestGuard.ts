@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { modelsv2, SignedTransaction } from 'algosdk'
+import { SignedTransaction } from 'algosdk'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -29,11 +29,11 @@ import {
 import {
     AlgodErrorCode,
     asAlgosdkTransaction,
-    createWalletAlgorandClient,
     getExpectedGenesisHash,
     isAlgodError,
     toAlgodError,
 } from '../blockchain'
+import { simulateSignedGroup } from './feeCoverage'
 
 // How long a WalletConnect request may wait on this check before its sheet
 // shows; past it the request is presented as if the check never ran.
@@ -50,25 +50,13 @@ export type SimulateOriginalGroup = (
  * balance-impact simulation does) would change every txid, so a confirmed
  * group could never match algod's duplicate check.
  */
-const simulateOriginalGroup: SimulateOriginalGroup = async (group, network) => {
-    const request = new modelsv2.SimulateRequest({
-        txnGroups: [
-            new modelsv2.SimulateRequestTransactionGroup({
-                txns: group.map(
-                    txn =>
-                        new SignedTransaction({
-                            txn: asAlgosdkTransaction(txn),
-                        }),
-                ),
-            }),
-        ],
-        allowEmptySignatures: true,
-    })
-    const response = await createWalletAlgorandClient(network)
-        .client.algod.simulateTransactions(request)
-        .do()
-    return response.txnGroups[0]?.failureMessage ?? null
-}
+const simulateOriginalGroup: SimulateOriginalGroup = (group, network) =>
+    simulateSignedGroup(
+        group.map(
+            txn => new SignedTransaction({ txn: asAlgosdkTransaction(txn) }),
+        ),
+        network,
+    )
 
 /**
  * A request may concatenate several atomic groups and ungrouped transactions;

@@ -94,6 +94,16 @@ export const dappRequestContractTests = (
             if (!result.ok) expect(result.message).toMatch(/\S/)
         })
 
+        it('answers empty signatures only for addresses it was asked about', () => {
+            const unheld = 'A'.repeat(58)
+            const answered = makeAdapter().emptySignaturesFor([unheld])
+
+            expect(
+                Object.keys(answered).every(address => address === unheld),
+            ).toBe(true)
+            expect(makeAdapter().emptySignaturesFor([])).toEqual({})
+        })
+
         describe('walletConnect', () => {
             it('names a non-empty namespace', () => {
                 expect(makeAdapter().walletConnect.namespace).toMatch(/\S/)

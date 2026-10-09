@@ -11,6 +11,7 @@
  */
 
 export * from './store'
+export * from './backfillAccountRecords'
 export * from './pendingAccountCreation'
 export * from './pendingImportMnemonic'
 export * from './accountChainState'

@@ -50,6 +50,8 @@ export type AssignMinimumFeesToGroupParams = {
     configMinTxnFee: bigint
     /** Remote-config PQ fee multiplier */
     pqMultiplier: bigint
+    /** Indices whose partition already pays for its signers; never raised. */
+    fundedIndices?: ReadonlySet<number>
 }
 
 /** Effective authorizer for the signable slot at `subsetIndex`. */
@@ -139,6 +141,7 @@ export const assignMinimumFeesToGroup = ({
     suggestedMinFee,
     configMinTxnFee,
     pqMultiplier,
+    fundedIndices,
 }: AssignMinimumFeesToGroupParams): AssignMinimumFeesToGroupResult => {
     // Congestion guard (same as resolveMinFeeForSender): derive both the
     // surcharge and the floor from the max of algod's suggested minimum and
@@ -168,6 +171,7 @@ export const assignMinimumFeesToGroup = ({
     const adjustments: FeeAdjustment[] = []
     for (let i = 0; i < signableIndices.length; i++) {
         const groupIndex = signableIndices[i]
+        if (fundedIndices?.has(groupIndex)) continue
         const tx = transactions[groupIndex]
         const authorizer = resolveAuthorizer(
             transactions,
@@ -253,12 +257,18 @@ export const assignMinimumFeesToGroup = ({
  * network traffic and come back by reference.
  */
 export const assignFeeToGroup = async (
-    { transactions, signableIndices, signerOverrides }: AssignFeeToGroupParams,
+    {
+        transactions,
+        signableIndices,
+        signerOverrides,
+        isExternallyPriced,
+    }: AssignFeeToGroupParams,
     {
         accounts,
         fetchSuggestedMinFee,
         configMinTxnFee,
         pqMultiplier,
+        findFundedIndices,
     }: AssignFeeToGroupDeps,
 ): Promise<AssignMinimumFeesToGroupResult> => {
     const indices = signableIndices ?? transactions.map((_, index) => index)
@@ -274,13 +284,27 @@ export const assignFeeToGroup = async (
         return { transactions, adjustments: [] }
     }
 
+    // Wallet-built groups carry base fees by construction, so only a dApp's
+    // can already include the PQ premium.
+    const [suggestedMinFee, fundedIndices] = await Promise.all([
+        fetchSuggestedMinFee(),
+        isExternallyPriced && findFundedIndices
+            ? findFundedIndices({
+                  transactions,
+                  signableIndices: indices,
+                  signerOverrides,
+              })
+            : undefined,
+    ])
+
     return assignMinimumFeesToGroup({
         transactions,
         signableIndices: indices,
         signerOverrides,
         accounts,
-        suggestedMinFee: await fetchSuggestedMinFee(),
+        suggestedMinFee,
         configMinTxnFee,
         pqMultiplier,
+        fundedIndices,
     })
 }

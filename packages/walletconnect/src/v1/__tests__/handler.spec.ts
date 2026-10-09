@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
     memoryStore,
     runHandlerContractTests,
@@ -40,6 +40,7 @@ import {
     createConnectorRegistry,
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
+import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -609,6 +610,7 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(connector.options.uri).toBe(V1_URI)
         expect(getConnector(connector.clientId) as unknown).toBe(connector)
         expect([...connector.listeners.keys()].sort()).toEqual([
+            'algo_getEmptySignatures',
             'algo_signData',
             'algo_signTxn',
             'disconnect',
@@ -1195,6 +1197,57 @@ describe('walletconnect v1 handler behaviour', () => {
             id: 10,
             error: declined,
         })
+    })
+
+    it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
+        keys.set('c1', 'restored-key')
+        const adapter = dappRequestAdapterFor(testGetNetwork())
+        if (!adapter) throw new Error('no Algorand adapter registered')
+        const emptySignaturesFor = vi
+            .spyOn(adapter, 'emptySignaturesFor')
+            .mockReturnValue({ AAAA: 'gA==' })
+        onTestFinished(() => emptySignaturesFor.mockRestore())
+        const { onMessage, onError } = await setupRestored([SEEDED])
+        const connector = lastConnector()
+
+        connector.emit('algo_getEmptySignatures', null, {
+            id: 11,
+            params: [
+                {
+                    chainId:
+                        adapter.walletConnect.caip2ChainIdFor(testGetNetwork()),
+                },
+            ],
+        })
+        await flush()
+
+        expect(emptySignaturesFor).toHaveBeenCalledWith(['AAAA'])
+        expect(connector.approveRequest).toHaveBeenCalledWith({
+            id: 11,
+            result: { AAAA: 'gA==' },
+        })
+        expect(onMessage).not.toHaveBeenCalled()
+        expect(onError).not.toHaveBeenCalled()
+    })
+
+    it('refuses algo_getEmptySignatures, silently, for a session on another network', async () => {
+        keys.set('c1', 'restored-key')
+        const { onError } = await setupRestored([
+            { ...SEEDED, metadata: { ...SEEDED.metadata, chainId: 416_002 } },
+        ])
+        const connector = lastConnector()
+
+        connector.emit('algo_getEmptySignatures', null, {
+            id: 12,
+            params: [{}],
+        })
+        await flush()
+
+        expect(connector.approveRequest).not.toHaveBeenCalled()
+        expect(connector.rejectRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 12 }),
+        )
+        expect(onError).not.toHaveBeenCalled()
     })
 
     it('swallows a background reject that cannot be delivered', async () => {

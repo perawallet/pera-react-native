@@ -27,6 +27,7 @@ import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/c
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isArc60WirePayload } from '../signing/message/arc60-wire'
 import { useAlgorandTransactionSigning } from './transactionSigning'
+import { algorandEmptySignaturesFor } from './emptySignatures'
 import { algorandWalletConnectSupport } from './walletConnect'
 
 /**
@@ -112,6 +113,8 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
             baked => getNetworkConfig(baked).genesisHash === customGenesisHash,
         )
     },
+
+    emptySignaturesFor: algorandEmptySignaturesFor,
 
     walletConnect: algorandWalletConnectSupport,
 

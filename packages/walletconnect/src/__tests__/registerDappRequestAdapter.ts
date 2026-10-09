@@ -52,6 +52,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignArc60: () => false,
 }))
 
+// Reached through the adapter's `emptySignaturesFor`, which specs here stub;
+// the real one drags in react-native-mmkv, the same wall as above.
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    resolvePQSigningInfo: () => null,
+}))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
+    getKeystoreStore: () => ({ state: { keys: [] } }),
+}))
+
 const { dappRequestChainAdapters } =
     await import('@perawallet/wallet-core-connections/dappRequest')
 const { algorandDappRequestAdapter } =
