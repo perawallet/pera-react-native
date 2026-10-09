@@ -15,6 +15,7 @@ import {
     detectImportKind,
     importFormatsFor,
     localKeyKindOf,
+    postQuantumKeyKindOf,
 } from '../import-formats'
 import {
     FAKE_CHAIN_ID,
@@ -88,5 +89,17 @@ describe('localKeyKindOf', () => {
         expect(
             localKeyKindOf(FAKE_CHAIN_ID, FAKE_EXPLICIT_SEED),
         ).toBeUndefined()
+    })
+})
+
+describe('postQuantumKeyKindOf', () => {
+    it('finds the kind that signs post-quantum, or none', () => {
+        expect(postQuantumKeyKindOf(FAKE_CHAIN_ID)).toBe(
+            FAKE_LOCAL_KEY_KINDS[2],
+        )
+        registerFakeAccountsChain({
+            localKeyKinds: FAKE_LOCAL_KEY_KINDS.slice(0, 2),
+        })
+        expect(postQuantumKeyKindOf(FAKE_CHAIN_ID)).toBeUndefined()
     })
 })

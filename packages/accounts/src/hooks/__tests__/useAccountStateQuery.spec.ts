@@ -56,7 +56,7 @@ describe('useAccountStateQuery', () => {
             )
     })
 
-    test('reads the stored balance row on the scope and asks the chain for its state', async () => {
+    test('reads the stored balance row on the scope and asks the chain for its state and summary', async () => {
         mockGetAccountBalance.mockResolvedValue(storedBalance)
         const account = testAccount('local', 'ADDR')
 
@@ -66,16 +66,22 @@ describe('useAccountStateQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        const { toChainState } = fakeAccountsChain().adapter
+        const { toChainState, summarizeChainState } =
+            fakeAccountsChain().adapter
         expect(mockGetAccountBalance).toHaveBeenCalledWith({
             accountAddress: 'ADDR',
             scope: TESTNET_SCOPE,
         })
         expect(toChainState).toHaveBeenCalledWith(storedBalance)
+        expect(summarizeChainState).toHaveBeenCalledWith(
+            vi.mocked(toChainState).mock.results[0].value,
+        )
         expect(result.current.data).toEqual({
             address: 'ADDR',
             scope: TESTNET_SCOPE,
             nativeBalance: new Decimal('1.5'),
+            reserveBalance: new Decimal('0.1'),
+            heldTokenCount: 0,
             chainState: vi.mocked(toChainState).mock.results[0].value,
         })
     })
@@ -94,6 +100,7 @@ describe('useAccountStateQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data?.nativeBalance).toEqual(new Decimal(0))
+        expect(result.current.data?.reserveBalance).toEqual(new Decimal(0))
         expect(fakeAccountsChain().adapter.toChainState).toHaveBeenCalledWith({
             authorityAddress: null,
         })

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    isPostQuantumScheme,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     accountsChainAdapters,
@@ -56,3 +59,11 @@ export const localKeyKindOf = (
     seed: LocalKeySeed | SeedScheme,
 ): LocalKeyKind | undefined =>
     importFormatsFor(chainId).find(kind => kind.seed === seed)
+
+/** The key kind on `chainId` that signs post-quantum, or `undefined` when the chain mints none. */
+export const postQuantumKeyKindOf = (
+    chainId: ChainId,
+): LocalKeyKind | undefined =>
+    importFormatsFor(chainId).find(kind =>
+        isPostQuantumScheme(kind.signingScheme),
+    )

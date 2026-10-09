@@ -39,7 +39,8 @@ export type UseAccountStateQueryResult = {
 
 /**
  * The account's state on `scope` as the last sync stored it; an account never
- * synced reads as empty. `nativeBalance` is in display units.
+ * synced reads as empty. `nativeBalance` is in display units, `reserveBalance`
+ * in base units.
  */
 export const useAccountStateQuery = (
     account: Nullable<WalletAccount> | undefined,
@@ -56,13 +57,15 @@ export const useAccountStateQuery = (
                 scope,
             })
             const adapter = accountsChainAdapters.get(scope.chainId)
+            const chainState = adapter.toChainState(
+                balance ?? { authorityAddress: null },
+            )
             return {
                 address,
                 scope,
                 nativeBalance: balance?.algoBalance ?? new Decimal(0),
-                chainState: adapter.toChainState(
-                    balance ?? { authorityAddress: null },
-                ),
+                ...adapter.summarizeChainState(chainState),
+                chainState,
             }
         },
         staleTime: Infinity,
