@@ -28,7 +28,7 @@ import {
     verifyPinAgainstDuressSlot,
     verifyPinAgainstRecord,
 } from '../pinRecord'
-import { migratePinRecordToV3 } from '../pinRecordMigration'
+import { hydrateLockoutState } from '../lockoutHydration'
 import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -65,38 +65,6 @@ type UsePinCodeResult = {
     setAutoLockStartedAt: (date: Nullable<number>) => void
     saveDuressPin: (pin: Nullable<string>) => Promise<void>
     checkDuressPinEnabled: () => Promise<boolean>
-}
-
-type LockoutState = Pick<PinRecord, 'failedAttempts' | 'lockoutEndTime'>
-
-type HydrationKms = Parameters<typeof migratePinRecordToV3>[0]
-
-// Every mounted instance hydrates, each read is a round trip through the
-// Keychain's single lock, and the lock screen's biometric prompt reads the same
-// record behind them. Shared only while in flight, so a later mount still reads
-// the record rather than a remembered copy; only the lockout counters leave the
-// read, never the hashes.
-let hydration: Nullable<Promise<Nullable<LockoutState>>> = null
-
-const hydrateLockoutState = (
-    kms: HydrationKms,
-): Promise<Nullable<LockoutState>> => {
-    hydration ??= (async () => {
-        const { lockout } = await migratePinRecordToV3(kms)
-        if (lockout) return lockout
-        return kms.withSecret(PIN_RECORD_KEY_ID, bytes => {
-            const record = parsePinRecord(bytes)
-            return record
-                ? {
-                      failedAttempts: record.failedAttempts,
-                      lockoutEndTime: record.lockoutEndTime,
-                  }
-                : null
-        })
-    })().finally(() => {
-        hydration = null
-    })
-    return hydration
 }
 
 const calculateLockoutSeconds = (failedAttempts: number): number => {

@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import { Core, EXPIRER_EVENTS } from '@walletconnect/core'
-import {
-    WalletKit,
-    type IWalletKit,
-    type WalletKitTypes,
-} from '@reown/walletkit'
+import type { IWalletKit, WalletKitTypes } from '@reown/walletkit'
 import { PERA_CLIENT_META } from '../shared/constants'
+import { loadWalletConnectSdk } from './sdk'
 import type { WalletConnectV2Storage } from './storage'
 
 export type WalletKitEvent = WalletKitTypes.Event
@@ -45,12 +41,6 @@ export type WalletKitJsonRpcResponse = { id: number; jsonrpc: '2.0' } & (
     | { result: unknown }
     | { error: { code: number; message: string } }
 )
-
-/**
- * Core's own name for the event, read from the SDK rather than spelled out, so
- * a rename cannot leave the wallet listening for a frame nothing emits.
- */
-export const EXPIRER_EXPIRED_EVENT = EXPIRER_EVENTS.expired
 
 /**
  * One expiry core reports. `target` is `topic:<value>` or `id:<value>`; a
@@ -159,6 +149,7 @@ export const createWalletKitClient: WalletKitFactory = async ({
     // frame is handled twice. A data wipe tears down and re-initializes, so
     // the handler needs a genuinely new client each time.
     process.env.DISABLE_GLOBAL_CORE = 'true'
+    const { Core, WalletKit } = await loadWalletConnectSdk()
     const core = new Core({ projectId, storage })
     return await WalletKit.init({ core, metadata: PERA_CLIENT_META })
 }
