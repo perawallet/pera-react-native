@@ -340,7 +340,7 @@ const sharedChainAddress = (
 
 const duplicateRankOn = (chainId: ChainId, account: WalletAccount): number =>
     accountsChainAdapters.has(chainId)
-        ? accountsChainAdapters.get(chainId).duplicateRank(account)
+        ? (accountsChainAdapters.get(chainId).duplicateRank?.(account) ?? 0)
         : 0
 
 /**

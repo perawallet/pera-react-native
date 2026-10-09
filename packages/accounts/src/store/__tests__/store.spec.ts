@@ -151,6 +151,20 @@ describe('services/accounts/store', () => {
             )
         })
 
+        test('keeps the first occurrence on a chain that ranks no duplicates', async () => {
+            const { registerFakeAccountsChain } =
+                await import('../../__tests__/fakeAccountsChain')
+            registerFakeAccountsChain({ duplicateRank: undefined })
+            const watch = account('watch', 'DUPE', { id: 'watch' })
+            const hardware = account('hardware', 'DUPE', { id: 'hardware' })
+
+            useAccountsStore.getState().setAccounts([watch, hardware])
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['watch'],
+            )
+        })
+
         test('returns a duplicate-free list unchanged and in order', () => {
             const accounts = [
                 account('watch', 'A'),
