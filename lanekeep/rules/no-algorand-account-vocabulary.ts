@@ -71,6 +71,94 @@ const VOCABULARY: readonly Term[] = [
 ]
 
 const VOCABULARY_PATTERN = `^(${VOCABULARY.map(term => term.name).join('|')})$`
+const VOCABULARY_NAMES = new Set(VOCABULARY.map(term => term.name))
+
+// Word segments that name an Algorand account kind or state wherever they sit
+// in a compound name (`useIsQuantumBlocked`, `ALGO25_SEED`, `RekeyedRow`).
+// `PostQuantum` is the cryptographic family any chain may adopt. HD wallets and
+// standalone keys are every chain's, and the bare `Rekey` verb names the
+// transaction and its feature, so their exact names stay on the list above.
+const COMPOUND_TOKENS = new Set(['quantum', 'algo25', 'rekeyed'])
+const COMPOUND_CANDIDATE =
+    '([Qq]uantum|QUANTUM|[Aa]lgo25|ALGO25|[Rr]ekeyed|REKEYED)'
+
+// Shared code: every package other chains' features build on, and the app's
+// cross-module hooks. An app feature module is its product's own UI (rekey to
+// quantum, the legacy quantum notice) and answers to the exact names only. The
+// keystore owns its seed schemes, and dev-fixtures builds one sample account
+// per Algorand kind.
+const SHARED_CODE =
+    /(^|\/)(packages\/(?!chain-algorand\/|kms\/|dev-fixtures\/)[^/]+\/src|apps\/mobile\/src\/hooks)\//
+
+type ProductName = { pattern: RegExp; reason: string }
+
+// Product features the team names "quantum", matched against the whole name.
+const PRODUCT_NAMES: readonly ProductName[] = [
+    {
+        pattern: /QuantumDapp/i,
+        reason: 'the quantum dApp warning, a product feature behind its own remote-config flag',
+    },
+    {
+        pattern: /QuantumSwap/i,
+        reason: 'quantum swaps, a product feature behind its own remote-config flag',
+    },
+    {
+        pattern: /^isQuantum(Enabled|Available)$/,
+        reason: 'reads the platform `quantum` capability',
+    },
+    {
+        pattern: /^quantumAccountSupportUrl$/,
+        reason: "the quantum-account support article's configured URL",
+    },
+]
+
+type AllowedNames = { file: string; names: readonly string[]; reason: string }
+
+// Matched by path fragment and the exact name.
+const ALLOWED: readonly AllowedNames[] = [
+    {
+        file: 'packages/accounts/src/',
+        names: [
+            'DiscoverRekeyedAccountsParams',
+            'RekeyedSweepCandidate',
+            'RekeyedSweepResult',
+            'baseDiscoverRekeyedAccounts',
+            'discoverRekeyedAccounts',
+            'fetchRekeyedAddresses',
+            'isRekeyedUnsignable',
+            'rekeyed',
+            'rekeyedAddress',
+            'rekeyedAddresses',
+            'rekeyedGlyph',
+        ],
+        reason: "the accounts discovery API and presentation field use Algorand's word for delegation; renaming them changes that package's public API",
+    },
+]
+
+const segmentsOf = (name: string): string[] =>
+    name
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+        .split(/[\s_$]+/)
+        .filter(Boolean)
+        .map(segment => segment.toLowerCase())
+
+const hasCompoundToken = (name: string): boolean => {
+    // An i18n key spelled as an object key.
+    if (/^[a-z0-9]+(_[a-z0-9]+)+$/.test(name)) return false
+    const segments = segmentsOf(name)
+    return segments.some(
+        (segment, i) =>
+            COMPOUND_TOKENS.has(segment) &&
+            !(segment === 'quantum' && segments[i - 1] === 'post'),
+    )
+}
+
+const isAllowedCompound = (path: string, name: string): boolean =>
+    PRODUCT_NAMES.some(product => product.pattern.test(name)) ||
+    ALLOWED.some(
+        entry => path.includes(entry.file) && entry.names.includes(name),
+    )
 
 // Bip39 is the root every chain derives from, so only the Algorand-only
 // schemes count.
@@ -98,7 +186,7 @@ export default defineRule({
     card: {
         message: 'shared code names an Algorand account concept',
         remediation:
-            "Ask the account through the accessors in @perawallet/wallet-core-accounts (custodyOf, hasCustody, addressOn, chainAccountOf, signingKeyOn, hdIndexOf, hardwareDetailsOf, accountKindIdOf, localKeyKindOf), its presentation (useAccountPresentation, accountPresentationChainAdapters), or the chain adapter registry of the feature doing the work (deviceChainAdapters, multisigChainAdapters, backup's kindIdOf, …); render what a chain's LocalKeyKind declares instead of spelling a kind. The Algorand vocabulary lives in packages/chain-algorand/src/accounts.",
+            "Name shared code after what it does, not the Algorand account kind it once served (`useIsDataSigningBlocked`, not `useIsQuantumDataSigningBlocked`). Ask the account through the accessors in @perawallet/wallet-core-accounts (custodyOf, hasCustody, addressOn, chainAccountOf, signingKeyOn, hdIndexOf, hardwareDetailsOf, accountKindIdOf, localKeyKindOf), its presentation (useAccountPresentation, accountPresentationChainAdapters), or the chain adapter registry of the feature doing the work (deviceChainAdapters, multisigChainAdapters, backup's kindIdOf, …); render the key-kind options the presentation registry offers (offeredLocalKeyKinds, keyKindOptionsOf) instead of spelling a kind. The Algorand vocabulary lives in packages/chain-algorand/src/accounts.",
         examples: {
             bad: "if (isQuantumAccount(account)) warn()\nif (custody.seed === 'quantum') warn()",
             good: 'const label = useAccountPresentation(account, chainId)?.labelKey',
@@ -117,6 +205,8 @@ export default defineRule({
     query: [
         `([(identifier) (type_identifier) (property_identifier) (shorthand_property_identifier) (shorthand_property_identifier_pattern)] @name
             (#match? @name "${VOCABULARY_PATTERN}"))`,
+        `([(identifier) (type_identifier) (property_identifier) (shorthand_property_identifier) (shorthand_property_identifier_pattern)] @compound
+            (#match? @compound "${COMPOUND_CANDIDATE}"))`,
         `((member_expression
             object: (identifier) @seedObject
             property: (property_identifier) @seedMember) @seed
@@ -133,6 +223,21 @@ export default defineRule({
             const term = VOCABULARY.find(t => t.name === name)
             if (term?.ownedBy && isOwnedBy(path, term.ownedBy)) return
             ctx.report(m.name, `"${name}" is Algorand vocabulary`)
+            return
+        }
+
+        if (m.compound !== undefined) {
+            const name = ctx.text(m.compound) ?? ''
+            if (VOCABULARY_NAMES.has(name)) return
+            if (!SHARED_CODE.test(path)) return
+            if (!hasCompoundToken(name) || isAllowedCompound(path, name)) {
+                return
+            }
+            if (isSeedSchemeMember(ctx, m.compound)) return
+            ctx.report(
+                m.compound,
+                `"${name}" is Algorand account vocabulary in shared code`,
+            )
             return
         }
 
@@ -156,6 +261,20 @@ export default defineRule({
         )
     },
 })
+
+// `SeedScheme.Quantum` is the seed-scheme branch's to judge.
+function isSeedSchemeMember(ctx: RuleContext, name: Node): boolean {
+    const parent = ctx.parent(name)
+    if (parent === undefined || ctx.kind(parent) !== 'member_expression') {
+        return false
+    }
+    const [object] = ctx.namedChildren(parent)
+    return (
+        object !== undefined &&
+        object !== name &&
+        ctx.text(object) === 'SeedScheme'
+    )
+}
 
 function isNonKindPosition(ctx: RuleContext, literal: Node): boolean {
     const parent = ctx.parent(literal)

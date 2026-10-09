@@ -35,6 +35,7 @@ describe('pera/no-algorand-account-vocabulary', () => {
                 'bad.ts:17',
                 'bad.ts:18',
                 'bad.ts:19',
+                'bad.ts:19',
                 'bad.ts:20',
                 'bad.ts:20',
                 'bad.ts:21',
@@ -42,11 +43,17 @@ describe('pera/no-algorand-account-vocabulary', () => {
                 'bad.ts:22',
                 'bad.ts:23',
                 'bad.ts:24',
+                'bad.ts:24',
+                'compound.ts:1',
+                'compound.ts:2',
+                'compound.ts:3',
+                'compound.ts:4',
                 'kinds.ts:1',
                 'legacy.ts:1',
                 'seeds.ts:3',
                 'useDemo.ts:1',
                 'useDemo.ts:2',
+                'useIsQuantumThing.ts:1',
             ].sort(),
         )
     })
@@ -72,6 +79,7 @@ describe('pera/no-algorand-account-vocabulary', () => {
             messagesIn(found, 'bad.ts').filter(m => /^(18|19|20|21):/.test(m)),
         ).toEqual([
             '18: "SeedScheme.Quantum" picks an Algorand key scheme outside the chain package',
+            '19: "isQuantum" is Algorand account vocabulary in shared code',
             "19: 'quantum' names an Algorand account kind",
             "20: 'hdWallet' names an Algorand account kind",
             "20: 'standalone' names an Algorand account kind",
@@ -95,6 +103,36 @@ describe('pera/no-algorand-account-vocabulary', () => {
             '22: "microAlgos" is Algorand vocabulary',
             '23: "falcon" is Algorand vocabulary',
         ])
+    })
+
+    it('reads Algorand account words inside compound names in shared code', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(messagesIn(found, 'compound.ts')).toEqual([
+            '1: "ParticipantIsQuantumError" is Algorand account vocabulary in shared code',
+            '2: "useIsQuantumBlocked" is Algorand account vocabulary in shared code',
+            '3: "ALGO25_SEED_LENGTH" is Algorand account vocabulary in shared code',
+            '4: "isRekeyedSender" is Algorand account vocabulary in shared code',
+        ])
+        expect(messagesIn(found, 'useIsQuantumThing.ts')).toEqual([
+            '1: "useIsQuantumThing" is Algorand account vocabulary in shared code',
+        ])
+        expect(
+            messagesIn(found, 'bad.ts').filter(m => m.startsWith('24:')),
+        ).toEqual([
+            '24: "rekeyed" is Algorand account vocabulary in shared code',
+            '24: "useRekeyAccount" is Algorand vocabulary',
+        ])
+    })
+
+    it('leaves compound names to an app feature module, the keystore and the product features named quantum', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(messagesIn(found, 'RekeyToQuantumScreen.ts')).toEqual([])
+        expect(messagesIn(found, 'scheme.ts')).toEqual([])
+        expect(
+            messagesIn(found, 'compound.ts').filter(m => !/^[1-4]:/.test(m)),
+        ).toEqual([])
     })
 
     it('ignores the bip39 root, capabilities, icons, test ids and i18n keys', async () => {
