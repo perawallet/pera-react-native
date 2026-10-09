@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWInfoView, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAnalyticsConsent } from '@perawallet/wallet-core-settings'
 import { useStyles } from './styles'
@@ -37,20 +37,27 @@ export const AnalyticsConsentPrompt = () => {
             style={styles.container}
             testID='analytics_consent_prompt'
         >
-            <PWInfoView
-                title={t('analytics_consent.prompt.title')}
-                body={t('analytics_consent.prompt.body')}
-                primaryAction={{
-                    label: t('analytics_consent.prompt.allow'),
-                    onPress: handleAllow,
-                    testID: 'analytics_consent_prompt_allow_button',
-                }}
-                secondaryAction={{
-                    label: t('analytics_consent.prompt.decline'),
-                    onPress: handleDecline,
-                    testID: 'analytics_consent_prompt_decline_button',
-                }}
-            />
+            <PWText variant='h3'>{t('analytics_consent.prompt.title')}</PWText>
+            <PWText
+                variant='bodyLarge'
+                style={styles.body}
+            >
+                {t('analytics_consent.prompt.body')}
+            </PWText>
+            <PWView style={styles.actions}>
+                <PWButton
+                    variant='primary'
+                    title={t('analytics_consent.prompt.allow')}
+                    onPress={handleAllow}
+                    testID='analytics_consent_prompt_allow_button'
+                />
+                <PWButton
+                    variant='secondary'
+                    title={t('analytics_consent.prompt.decline')}
+                    onPress={handleDecline}
+                    testID='analytics_consent_prompt_decline_button'
+                />
+            </PWView>
         </PWView>
     )
 }

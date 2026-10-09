@@ -78,6 +78,8 @@ export type Prompt = {
      * a full-bleed prompt insets whatever chrome it needs itself.
      */
     isFullBleed?: boolean
+    /** Content-sized and anchored to the bottom, like a bottom sheet. */
+    isSheet?: boolean
     // Nullable: a prompt's own data can empty underneath it (a banner refetch
     // dropping the banner it was showing), and rendering nothing for that frame
     // while it asks to be dismissed beats asserting it cannot happen.
@@ -131,6 +133,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 id: ANALYTICS_CONSENT_PROMPT_ID,
                 priority: PromptPriority.analyticsConsent,
                 isGate: true,
+                isSheet: true,
                 component: AnalyticsConsentPrompt,
                 isDue:
                     routeCapabilities.analyticsConsent &&
