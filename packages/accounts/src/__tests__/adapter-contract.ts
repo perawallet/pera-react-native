@@ -23,6 +23,7 @@ import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
+    accountKindId,
     accountsChainAdapters,
     requireRekey,
     requireSingleKeyAccounts,
@@ -259,6 +260,7 @@ export const accountsContractTests = (
 
         it('ranks duplicates deterministically, a key holder above a watch account', () => {
             const adapter = makeAdapter()
+            if (!adapter.duplicateRank) return
             const { signing, watch } = fixtures.signers
 
             const rank = adapter.duplicateRank(signing)
@@ -618,7 +620,9 @@ export const accountPresentationContractTests = (
                 expect(unsignable!.glyph).toBe(described!.glyph)
             }
             expect(
-                presentation.describe('not-a-kind', { canSign: true }),
+                presentation.describe(accountKindId('not-a-kind'), {
+                    canSign: true,
+                }),
             ).toBeUndefined()
         })
 
@@ -637,6 +641,25 @@ export const accountPresentationContractTests = (
             expect(isNonEmptyString(label?.labelKey)).toBe(true)
             expect(isNonEmptyString(label?.signerKey)).toBe(true)
             expect(isNonEmptyString(label?.descriptionKey)).toBe(true)
+        })
+
+        it('names a test-id slug and copy for every key-kind row it offers', () => {
+            const presentation = makePresentation()
+            if (!presentation.keyKindOptions) return
+
+            for (const kind of makeAdapter().localKeyKinds) {
+                const options = presentation.keyKindOptions(kind.seed)
+                for (const row of [
+                    options?.recover,
+                    options?.create,
+                    options?.import,
+                ]) {
+                    if (!row) continue
+                    expect(isNonEmptyString(row.id)).toBe(true)
+                    expect(isNonEmptyString(row.titleKey)).toBe(true)
+                    expect(isNonEmptyString(row.descriptionKey)).toBe(true)
+                }
+            }
         })
     })
 }

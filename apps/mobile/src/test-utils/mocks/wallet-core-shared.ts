@@ -63,6 +63,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
+    // No runtime imports; the real accounts and signing stores persist through it.
+    const { gateWritesOnHydration } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/hydration-gate')
+    >('@packages/shared/src/utils/hydration-gate')
 
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
@@ -522,6 +526,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ErrorCategory,
         useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
         registerStore: vi.fn(),
+        gateWritesOnHydration,
         clearAllStores: vi.fn(),
         resetStoreRegistry: vi.fn(),
         getStoreRegistry: vi.fn(() => []),

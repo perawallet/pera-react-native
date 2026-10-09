@@ -39,7 +39,7 @@ import {
     getAlgorandAuthAccount,
     resolveAlgorandSigner,
 } from './signer-resolution'
-import { accountType } from './vocabulary'
+import { accountType, algorandKindIdOf } from './vocabulary'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -64,7 +64,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     localKeyKinds: algorandLocalKeyKinds,
     duplicateRank: algorandDuplicateRank,
-    kindIdOf: accountType,
+    kindIdOf: account => algorandKindIdOf(accountType(account)),
     decodeLegacyRecord: decodeAlgorandLegacyRecord,
     decodeLegacyAuthority: decodeAlgorandLegacyAuthority,
     multisigNative: algorandMultisigNative,

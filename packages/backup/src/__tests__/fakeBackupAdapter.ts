@@ -11,7 +11,10 @@
  */
 
 import { vi } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountKindId,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { backupChainAdapters, type BackupChainAdapter } from '../chain-adapter'
 import {
     BackupAccountType,
@@ -127,7 +130,9 @@ export const fakeLocalKindOf: BackupChainAdapter['localKindOf'] = type => {
 
 // The wire kinds double as the fake chain's presentation kind ids.
 export const fakeKindIdOf: BackupChainAdapter['kindIdOf'] = type =>
-    type === BackupAccountType.hdSeed ? undefined : type
+    // A type-only cast: a value import here would load the accounts module
+    // before a spec's hoisted mock of it can see its own variables.
+    type === BackupAccountType.hdSeed ? undefined : (type as AccountKindId)
 
 export const fakeSerializeMnemonicSecret: BackupChainAdapter['serializeMnemonicSecret'] =
     (account, mnemonic): SecretsBackupPayload | null => {

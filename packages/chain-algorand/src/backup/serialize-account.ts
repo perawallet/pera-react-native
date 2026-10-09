@@ -33,6 +33,7 @@ import {
     AccountTypes,
     algorandAddressOf,
     algorandKeyOf,
+    algorandKindIdOf,
     type AccountType,
     isStandaloneAccount,
     isHDWalletAccount,
@@ -185,5 +186,7 @@ const KIND_ID_BY_WIRE_TYPE: ReadonlyMap<BackupItemKind, AccountType> = new Map<
     [AlgorandBackupKinds.quantum, AccountTypes.quantum],
 ])
 
-export const algorandBackupKindIdOf: BackupChainAdapter['kindIdOf'] = type =>
-    KIND_ID_BY_WIRE_TYPE.get(type)
+export const algorandBackupKindIdOf: BackupChainAdapter['kindIdOf'] = type => {
+    const accountType = KIND_ID_BY_WIRE_TYPE.get(type)
+    return accountType === undefined ? undefined : algorandKindIdOf(accountType)
+}

@@ -43,9 +43,13 @@ import type { SignerResolution } from './signer-resolution'
 
 /**
  * The id a chain gives one of its account kinds (`kindIdOf`). The account
- * presentation registry and backup's `kindIdOf` speak the same ids.
+ * presentation registry and backup's `kindIdOf` speak the same ids. Branded so
+ * an arbitrary string (a wire value, a label) can't pass for one.
  */
-export type AccountKindId = string
+export type AccountKindId = string & { readonly __brand: 'AccountKindId' }
+
+/** For the chain that defines the kind; the runtime value is `id` itself. */
+export const accountKindId = (id: string): AccountKindId => id as AccountKindId
 
 /** The kinds of account a signing authority can move to; the app runs one flow per category. */
 export const AuthorityTargetCategories = {
@@ -110,48 +114,6 @@ export type LocalKeyKind = {
     mnemonicWordCounts: readonly number[]
     /** False: reachable only from its own import entry, never from a word count. */
     isAutoDetected: boolean
-    /** Absent: the recover-a-wallet chooser doesn't offer the kind. */
-    recoverOption?: LocalKeyRecoverOption
-    /** Absent: the add-account screen doesn't offer minting the kind. */
-    createOption?: LocalKeyCreateOption
-    /** Absent: the import-options screen has no row of its own for the kind. */
-    importOption?: LocalKeyEntryOption
-}
-
-/** A screen row that mints or imports one key kind; every `*Key` is an i18n key. */
-export type LocalKeyEntryOption = {
-    /** Stable slug the row's test id is built from. */
-    id: string
-    titleKey: string
-    descriptionKey: string
-    /** A name from the app's icon set. */
-    icon: string
-}
-
-/** How the add-account screen offers minting a key kind. */
-export type LocalKeyCreateOption = LocalKeyEntryOption & {
-    /** Listed among the screen's main options rather than under its other options. */
-    isFeatured: boolean
-    /** Replaces the screen's progress title while the key is generated. */
-    progressTitleKey?: string
-    badgeKey?: string
-    learnMore?: { labelKey: string; url: string }
-    /** Analytics event logged when the user picks the option. */
-    analyticsEvent?: string
-}
-
-/** How the recover-a-wallet chooser offers a key kind; every `*Key` is an i18n key. */
-export type LocalKeyRecoverOption = {
-    /** Stable slug the option's test id is built from. */
-    id: string
-    titleKey: string
-    chipKey: string
-    descriptionKey: string
-    mnemonicInfoKey: string
-    /** Gives the chip the emphasis of the chain's suggested kind. */
-    isSuggested: boolean
-    /** Analytics event logged when the user picks the option. */
-    analyticsEvent: string
 }
 
 export type DecodedAccountRecord = {
@@ -353,8 +315,11 @@ export interface AccountsChainAdapter {
     assertHdPathMatches(hdPath: string, index: HdIndex): void
     /** Every software key kind the chain mints, in auto-detection order. */
     readonly localKeyKinds: readonly LocalKeyKind[]
-    /** Which of two accounts sharing an address on this chain survives: higher wins. */
-    duplicateRank(account: WalletAccount): number
+    /**
+     * Which of two accounts sharing an address on this chain survives: higher
+     * wins. Absent: every account ranks 0, so the first occurrence survives.
+     */
+    duplicateRank?(account: WalletAccount): number
     /** The account's kind, whatever its authority. Analytics reports it, so an id never changes. */
     kindIdOf(account: WalletAccount): AccountKindId
     /**

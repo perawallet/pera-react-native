@@ -24,6 +24,7 @@ import {
     type WalletAccount,
 } from '../models'
 import {
+    gateWritesOnHydration,
     logger,
     registerStore,
     type WithPersist,
@@ -63,7 +64,6 @@ import {
     WalletCannotDeriveError,
 } from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
-import { gateWritesOnHydration } from './hydrationGate'
 import {
     isHardwareWalletAccount,
     isSameAddress,

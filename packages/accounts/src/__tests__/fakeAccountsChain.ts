@@ -21,7 +21,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
+    accountKindId,
     accountsChainAdapters,
+    type AccountKindId,
     type AccountStateSnapshot,
     type AccountsChainAdapter,
     type DecodedAccountRecord,
@@ -99,8 +101,8 @@ export const fakeKindOf = (account: WalletAccount): string =>
         : account.custody.kind
 
 /** The fake's kind id: `fake.<fakeKindOf>`. */
-export const fakeKindIdOf = (account: WalletAccount): string =>
-    `fake.${fakeKindOf(account)}`
+export const fakeKindIdOf = (account: WalletAccount): AccountKindId =>
+    accountKindId(`fake.${fakeKindOf(account)}`)
 
 const fakePresentationOfKind = (kindId: string): AccountKindPresentation => ({
     labelKey: `${kindId}.label`,

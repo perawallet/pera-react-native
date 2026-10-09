@@ -1773,9 +1773,6 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
-      '@perawallet/wallet-core-device':
-        specifier: workspace:*
-        version: link:../device
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet

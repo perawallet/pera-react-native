@@ -19,6 +19,7 @@ import {
     fixtureCodec,
 } from '@perawallet/wallet-core-chain-contract/testing'
 import { kmsCore } from '@perawallet/wallet-core-kms'
+import { accountKindId } from '../chain-adapter'
 import type {
     AccountsChainAdapter,
     LocalKeySeed,
@@ -120,7 +121,7 @@ const fixtureAdapter: AccountsChainAdapter = {
         },
     ],
     duplicateRank: account => (account.custody.kind === 'watch' ? 0 : 1),
-    kindIdOf: account => `fx-${account.custody.kind}`,
+    kindIdOf: account => accountKindId(`fx-${account.custody.kind}`),
     resolveSigner: (account, _accounts) =>
         canSignDirectly(account)
             ? { kind: 'ok', signer: account }

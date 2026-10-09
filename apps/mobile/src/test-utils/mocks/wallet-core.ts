@@ -426,6 +426,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             descriptionKey: 'account_type_info.rekeyed_standard_description',
         })),
         importFormatsFor: vi.fn(() => []),
+        offeredLocalKeyKinds: vi.fn(() => []),
+        keyKindOptionsOf: vi.fn(() => undefined),
         detectImportKind: vi.fn((_chainId: string, mnemonic: string) => ({
             success: false,
             wordCount: mnemonic.trim().split(/\s+/).length,
@@ -535,6 +537,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             hardware: 'hardware',
             shared: 'shared',
         },
+        useAuthorityTargetCategories: vi.fn(() => [
+            'standard',
+            'postQuantum',
+            'hardware',
+            'shared',
+        ]),
+        accountKindId: vi.fn((id: string) => id),
         LaunchAccountModes: {
             lastUsed: 'lastUsed',
             specific: 'specific',
