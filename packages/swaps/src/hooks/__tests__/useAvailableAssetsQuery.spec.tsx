@@ -17,8 +17,8 @@ import React from 'react'
 import { useAvailableAssetsQuery } from '../useAvailableAssetsQuery'
 import { fetchAvailableAssets } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api', () => ({

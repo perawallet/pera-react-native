@@ -12,7 +12,10 @@
 
 import { useCallback, useRef } from 'react'
 import {
-    AccountTypes,
+    isStandaloneAccount,
+    standaloneSecretOf,
+    isHDWalletAccount,
+    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -62,9 +65,12 @@ export const useMnemonicForAddress = (
             }
 
             if (
-                currentAccount.type !== AccountTypes.hdWallet &&
-                currentAccount.type !== AccountTypes.algo25 &&
-                currentAccount.type !== AccountTypes.quantum
+                !isHDWalletAccount(currentAccount) &&
+                !(
+                    isStandaloneAccount(currentAccount) &&
+                    standaloneSecretOf(currentAccount) === 'mnemonic'
+                ) &&
+                !isQuantumAccount(currentAccount)
             ) {
                 throw new Error('Account type does not support backup')
             }

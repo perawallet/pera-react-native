@@ -10,22 +10,20 @@
  limitations under the License
  */
 
-import {
-    RemoteConfigKeys,
-    useRemoteConfig,
-} from '@perawallet/wallet-core-remote-config'
-import { useIsQuantumAccountsEnabled } from './useIsQuantumAccountsEnabled'
+import { AlgorandRemoteConfigKeys } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
+import { useCapability } from './useCapability'
 
-// Defaults ON so it can be switched *off* once dApps support PQ. Composes
-// useIsQuantumAccountsEnabled rather than re-reading its flag to inherit the
-// web capability gate and the dev/staging fallback.
+// Defaults ON so it can be switched *off* once dApps support PQ.
 export const useIsQuantumDappWarningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const isQuantumEnabled = useIsQuantumAccountsEnabled()
+    // Platform part only: an existing quantum account still connects to dApps
+    // after remote config switches `quantumAccounts` off.
+    const isQuantumEnabled = useCapability({ platform: 'quantum' })
     return (
         isQuantumEnabled &&
         remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_quantum_dapp_warning,
+            AlgorandRemoteConfigKeys.enable_quantum_dapp_warning,
             true,
         )
     )

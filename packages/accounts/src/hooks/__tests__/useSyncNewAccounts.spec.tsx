@@ -24,12 +24,16 @@ vi.mock('../../sync/account-syncer', () => ({
     syncAndEnrichNewAccount: (...args: unknown[]) =>
         mockSyncAndEnrichNewAccount(...args),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 const makeAccount = (address: string): WalletAccount =>
-    ({ type: 'watch', address, name: address }) as unknown as WalletAccount
+    ({
+        custody: { kind: 'watch' },
+        address,
+        name: address,
+    }) as unknown as WalletAccount
 
 const makeWrapper = () => {
     const client = new QueryClient({

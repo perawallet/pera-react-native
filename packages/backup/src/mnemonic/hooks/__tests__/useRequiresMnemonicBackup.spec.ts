@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -33,6 +30,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: async () => {},
             removeItem: async () => {},
         },
+        chains: {
+            has: () => true,
+            get: () => ({
+                descriptor: { signing: { standaloneSecret: 'mnemonic' } },
+            }),
+        },
     }),
 }))
 
@@ -47,7 +50,7 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR',
             keyPairId: 'kp-backed',
         }
@@ -65,7 +68,7 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR',
             keyPairId: 'kp-unbacked',
         }
@@ -80,7 +83,7 @@ describe('useRequiresMnemonicBackup', () => {
 
         const account: WalletAccount = {
             id: 'acc-quantum',
-            type: AccountTypes.quantum,
+            custody: { kind: 'local', seed: 'quantum' },
             address: 'ADDR',
             keyPairId: 'kp-quantum-unbacked',
         }
@@ -94,7 +97,7 @@ describe('useRequiresMnemonicBackup', () => {
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'ADDR',
         }
 

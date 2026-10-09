@@ -31,6 +31,7 @@ const fixtureAdapter: DappRequestChainAdapter = {
     },
     resolveReportedNetwork: scope =>
         scope.networkId === 'custom' ? undefined : scope.networkId,
+    emptySignaturesFor: () => ({}),
     walletConnect: {
         namespace: 'algorand',
         caip2ChainIdFor: networkId =>

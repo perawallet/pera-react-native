@@ -25,6 +25,7 @@ import { useMultisigCreationStore } from '@modules/multisig'
 import {
     useAccountsStore,
     type MultiSigAccount,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
@@ -158,7 +159,7 @@ describe('Flow: Create a multisig account from scratch', () => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1),
         )
         const saved = useAccountsStore.getState().accounts[0] as MultiSigAccount
-        expect(saved.type).toBe('multisig')
+        expect(accountType(saved)).toBe('multisig')
         expect(saved.name).toBe('Team treasury')
         expect(saved.multisigDetails).toEqual({
             threshold: 2,

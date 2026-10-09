@@ -10,14 +10,26 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { vi, beforeEach } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 // Patches BigInt.prototype.microAlgo() globally; the patch outlives a spec's own
 // mock of algokit-utils, which the transaction builders rely on.
 import '@algorandfoundation/algokit-utils'
 
-// The blockchain barrel reaches the platform provider, whose storage is a
+// The Algorand runtime reaches the platform provider, whose storage is a
 // native module that the test runtime cannot load.
 const store = new Map<string, string>()
+
+// The network store resolves its `network` shim through the chain registry.
+const chains = createChainRegistry()
+
+// Persisted state from one test would otherwise rehydrate into the next, e.g.
+// a `setNetwork('testnet')` in test A is still in storage when test B
+// re-imports the store.
+beforeEach(() => {
+    store.clear()
+    chains.reset()
+})
 
 const keyValueStorage = {
     getItem: (key: string) => store.get(key) ?? null,
@@ -40,7 +52,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({ keyValueStorage }),
+    // Specs hold no keystore, so a scheme read falls back to custody.
+    getKeystoreStore: () => ({ state: { keys: [] } }),
+    getProvider: () => ({ keyValueStorage, chains }),
 }))
 
 // The signing dist is minified, which mangles the `constructor.name` its

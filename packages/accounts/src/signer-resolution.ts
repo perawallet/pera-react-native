@@ -11,16 +11,23 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { MultiSigAccount, WalletAccount } from './models'
-import { isMultisigAccount, isQuantumAccount, isRekeyedAccount } from './utils'
-import { RekeyTargetNotFoundError } from './errors'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { authorityOf } from './credentials'
+import type { AccountType, MultiSigAccount, WalletAccount } from './models'
+import {
+    accountType,
+    isMultisigAccount,
+    isQuantumAccount,
+    isRekeyedAccount,
+} from './utils'
+import { DelegationTargetNotFoundError } from './errors'
 import { accountsChainAdapters } from './chain-adapter'
 
 /**
  * Every "who signs for this account" question derives from this resolution.
  * An account can span chains, so `chainId` names the chain the question is
  * asked on (the transaction's, or the active network's), and that chain's
- * adapter decides.
+ * adapter decides. It is answered on the chain's selected network.
  */
 export type SignerResolution =
     | { kind: 'ok'; signer: WalletAccount }
@@ -29,7 +36,7 @@ export type SignerResolution =
     | {
           kind: 'authMissing'
           account: WalletAccount
-          authAddress: string
+          authorityAddress: string
       }
     | { kind: 'authIsWatch'; account: WalletAccount; auth: WalletAccount }
     | {
@@ -45,7 +52,9 @@ export const resolveSignerForAccount = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): SignerResolution =>
-    accountsChainAdapters.get(chainId).resolveSigner(account, accounts)
+    accountsChainAdapters
+        .get(chainId)
+        .resolveSigner(account, accounts, getSelectedScope(chainId))
 
 export const resolveSignerFor = (
     address: string,
@@ -84,11 +93,13 @@ export const getAuthAccount = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): WalletAccount | null =>
-    accountsChainAdapters.get(chainId).getAuthAccount(account, accounts)
+    accountsChainAdapters
+        .get(chainId)
+        .getAuthAccount(account, accounts, getSelectedScope(chainId))
 
 /**
  * Throwing form of {@link getAuthAccount}, for the signing path: throws
- * `RekeyTargetNotFoundError`, which the signing UI maps to a specific message.
+ * `DelegationTargetNotFoundError`, which the signing UI maps to a specific message.
  */
 export const resolveAuthAccount = (
     account: WalletAccount,
@@ -97,7 +108,9 @@ export const resolveAuthAccount = (
 ): WalletAccount => {
     const auth = getAuthAccount(account, accounts, chainId)
     if (auth) return auth
-    throw new RekeyTargetNotFoundError(account.rekeyAddress ?? '')
+    throw new DelegationTargetNotFoundError(
+        authorityOf(account, getSelectedScope(chainId)) ?? '',
+    )
 }
 
 /**
@@ -131,32 +144,24 @@ export const isMultisigUnsignable = (
 ): boolean =>
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
-/**
- * Aliases `canSignWith` — the rekey txn itself must be signed by the current
- * auth chain — under an intent-revealing name.
- */
-export const canInitiateRekey = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-    chainId: ChainId,
-): boolean => canSignWith(account, accounts, chainId)
-
-export type RekeyTransition = {
-    /** Raw type of the rekeyed account itself. */
-    from: WalletAccount['type']
-    /** Raw type of the account it is now rekeyed to. */
-    to: WalletAccount['type']
+export type DelegateTransition = {
+    /** Type of the rekeyed account itself, not followed through the rekey. */
+    from: AccountType
+    /** Type of the account it is now rekeyed to. */
+    to: AccountType
 }
 
 /** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
-export const rekeyTransitionFor = (
+export const delegateTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): RekeyTransition | null => {
+): DelegateTransition | null => {
     if (!isRekeyedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
-    return r.kind === 'ok' ? { from: account.type, to: r.signer.type } : null
+    return r.kind === 'ok'
+        ? { from: accountType(account), to: accountType(r.signer) }
+        : null
 }
 
 /**
@@ -176,7 +181,7 @@ const hasQuantumAuthority = (
  * Compares *effective* authority (one rekey hop), not raw account type,
  * because that is where the protection lives:
  * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
- *   back to Ed25519, even though its own `type` is still `algo25`.
+ *   back to Ed25519, even though it is still a standalone account.
  * - A quantum-typed account already rekeyed away to Ed25519 has no protection
  *   left, so rekeying it further is NOT a downgrade.
  */

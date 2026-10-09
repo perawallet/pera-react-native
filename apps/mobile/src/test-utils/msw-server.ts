@@ -15,8 +15,9 @@ import { isCommonAssetRequest } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     mockAlgodPendingTransaction,
+    mockAlgodSimulate,
     mockAlgodStatusAfterBlock,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
@@ -61,6 +62,10 @@ export const server = setupServer(
     // exercise confirmation override both via server.use.
     mockAlgodPendingTransaction(),
     mockAlgodStatusAfterBlock(),
+    // Every WalletConnect transaction request is simulated before review, to
+    // decline a group already on chain. Unhandled, that is a real node
+    // round-trip holding each review sheet back by up to the check's timeout.
+    mockAlgodSimulate(),
 )
 
 export type UnhandledRequestMode = 'warn' | 'bypass'

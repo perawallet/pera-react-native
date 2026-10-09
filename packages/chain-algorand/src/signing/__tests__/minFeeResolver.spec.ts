@@ -10,19 +10,20 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { resolveMinFeeForSender } from '../minFeeResolver'
 
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
         address: 'QADDR',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -31,7 +32,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
         address: 'AADDR',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-algo25',
         ...overrides,
     }) as WalletAccount
@@ -40,7 +41,7 @@ const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'w1',
         address: 'WADDR',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         ...overrides,
     }) as WalletAccount
 
@@ -51,6 +52,10 @@ const baseParams = {
 }
 
 describe('resolveMinFeeForSender', () => {
+    beforeEach(() => {
+        useAccountChainStateStore.getState().resetState()
+    })
+
     it('charges the multiplied fee for a quantum sender', () => {
         const fee = resolveMinFeeForSender({
             ...baseParams,
@@ -70,19 +75,21 @@ describe('resolveMinFeeForSender', () => {
     })
 
     it('follows the rekey: ed25519 sender rekeyed to quantum auth pays PQ fee', () => {
+        seedAuthority('AADDR', 'QADDR')
         const fee = resolveMinFeeForSender({
             ...baseParams,
             senderAddress: 'AADDR',
-            accounts: [algo25({ rekeyAddress: 'QADDR' }), quantum()],
+            accounts: [algo25(), quantum()],
         })
         expect(fee).toBe(3000n)
     })
 
     it('follows the rekey: quantum sender rekeyed to ed25519 auth pays base fee', () => {
+        seedAuthority('QADDR', 'AADDR')
         const fee = resolveMinFeeForSender({
             ...baseParams,
             senderAddress: 'QADDR',
-            accounts: [quantum({ rekeyAddress: 'AADDR' }), algo25()],
+            accounts: [quantum(), algo25()],
         })
         expect(fee).toBe(1000n)
     })

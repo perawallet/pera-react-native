@@ -31,14 +31,13 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
-import { sendShouldRefreshRequest } from '../polling'
+import { sendShouldRefreshRequest, type AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
 import {
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
     syncTransactionsPhase,
-    type AssetSyncKind,
     type SyncPhaseResult,
 } from './sync-phases'
 
@@ -82,11 +81,6 @@ export class SyncService {
     // start()/restart() so a rebuilt or reconfigured session recovers.
     private hasAuthError = false
     private currentInterval: number
-    // Per-network timestamps of the last asset-metadata / price passes, so the
-    // expensive whole-portfolio reads only run when holdings changed or the
-    // coarse interval elapsed — not on every poll tick.
-    private lastAssetSyncAt = new Map<Network, number>()
-    private lastPriceSyncAt = new Map<Network, number>()
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
     // mounted balance/summary/list query (a wide read each), so firing it
     // repeatedly in quick succession (back-to-back phases, rapid ticks) stacks
@@ -516,11 +510,7 @@ export class SyncService {
                 // Only on success, so a failed pass retries next tick instead of
                 // waiting out the interval.
                 for (const kind of assetPass.succeededKinds) {
-                    const lastSyncAt =
-                        kind === 'assets'
-                            ? this.lastAssetSyncAt
-                            : this.lastPriceSyncAt
-                    lastSyncAt.set(network, nowMs)
+                    this.deps.stores.setLastSyncAt(network, kind, nowMs)
                 }
                 // Skipped when every batch was rejected. Account queries go too:
                 // the balance/holdings read joins in metadata + price, and any
@@ -563,26 +553,24 @@ export class SyncService {
 
     // The whole-portfolio asset reads are expensive, so each kind runs on a
     // holdings change or once its coarse interval has elapsed, not every tick.
+    // The timestamps are persisted per scope, so a relaunch or a network
+    // switch back resumes the interval rather than re-pricing straight away.
     private dueAssetKinds(
         network: Network,
         nowMs: number,
         hasHoldingsChanged: boolean,
     ): AssetSyncKind[] {
+        const isDue = (kind: AssetSyncKind, intervalMs: number): boolean => {
+            if (hasHoldingsChanged) return true
+            const elapsedMs =
+                nowMs - (this.deps.stores.getLastSyncAt(network, kind) ?? 0)
+            // Negative when the device clock moved back past a persisted
+            // timestamp; without this the pass stalls until the clock catches up.
+            return elapsedMs < 0 || elapsedMs >= intervalMs
+        }
         const kinds: AssetSyncKind[] = []
-        if (
-            hasHoldingsChanged ||
-            nowMs - (this.lastAssetSyncAt.get(network) ?? 0) >=
-                ASSET_RESYNC_INTERVAL_MS
-        ) {
-            kinds.push('assets')
-        }
-        if (
-            hasHoldingsChanged ||
-            nowMs - (this.lastPriceSyncAt.get(network) ?? 0) >=
-                PRICE_RESYNC_INTERVAL_MS
-        ) {
-            kinds.push('prices')
-        }
+        if (isDue('assets', ASSET_RESYNC_INTERVAL_MS)) kinds.push('assets')
+        if (isDue('prices', PRICE_RESYNC_INTERVAL_MS)) kinds.push('prices')
         return kinds
     }
 

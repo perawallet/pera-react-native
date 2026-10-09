@@ -10,9 +10,15 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64, type Network } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    authorityOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     multisigAdapterFor,
     type MultisigSignRequest,
@@ -58,7 +64,11 @@ export const buildMultisigCosignRequest = ({
     const jointAuthorizedSenders = new Set([
         address,
         ...localAccounts
-            .filter(account => account.rekeyAddress === address)
+            .filter(
+                account =>
+                    authorityOf(account, scopeForLegacyNetwork(network)) ===
+                    address,
+            )
             .map(account => account.address),
     ])
     const validation = multisigAdapterFor(network).validateSignRequest(

@@ -116,7 +116,14 @@ describe('useDataSigningHandler', () => {
         vi.clearAllMocks()
         mockAddSignRequest.mockImplementation(() => {})
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'addr1', type: 'hdWallet' },
+            {
+                address: 'addr1',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            },
         ] as never)
         vi.mocked(canSignArbitraryData).mockReturnValue(true)
         vi.mocked(canSignArc60).mockReturnValue(true)

@@ -40,7 +40,7 @@ import {
 } from '@modules/cloud-backup'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
-import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
+import { SettingsDebugToolsScreen } from '../screens/developer/SettingsDebugToolsScreen/SettingsDebugToolsScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
 import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
@@ -54,7 +54,7 @@ import type { GalleryCategoryId } from '@modules/settings/screens/developer/gall
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
     NodeSettings: undefined
-    DevMenu: undefined
+    DebugTools: undefined
     FeatureFlags: undefined
     ManageCache: undefined
     AppIntegrity: undefined
@@ -99,11 +99,11 @@ const DeveloperSettingsStackNavigator = () => {
                 component={SettingsDeveloperNodeSettingsScreen}
             />
             <DeveloperSettingsStack.Screen
-                name='DevMenu'
+                name='DebugTools'
                 options={{
-                    title: 'screens.developer_menu',
+                    title: 'screens.debug_tools',
                 }}
-                component={SettingsDeveloperMenuScreen}
+                component={SettingsDebugToolsScreen}
             />
             <DeveloperSettingsStack.Screen
                 name='FeatureFlags'

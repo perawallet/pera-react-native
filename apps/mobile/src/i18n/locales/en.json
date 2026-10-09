@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
             "request_origin": "Request came from {{origin}}",
-            "requester_verified_label": "Verified tab",
+            "requester_verified_label": "Verified tab: {{origin}}",
+            "requester_mismatch": "This request came from {{origin}}, not {{claimed}}.",
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Show Address",
         "view_passphrase_hd": "View root wallet recovery passphrase",
         "view_passphrase_algo25": "View recovery passphrase",
-        "view_passphrase_quantum": "View Quantum account recovery passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Paste your encryption key",
             "encryption_key_restore": "Restore backup",
             "restoring": "Restoring your backup…",
+            "progress_unlocking": "Unlocking your backup…",
+            "progress_downloading": "Downloading your backup…",
+            "progress_importing": "Restoring accounts: {{done}} of {{total}}",
+            "progress_finishing": "Finishing up…",
+            "progress_hint": "This can take over a minute for backups with many accounts. Keep Pera open until it’s done.",
             "error_not_found": "No backup found for these credentials.",
             "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
             "error_unknown": "Something went wrong. Please try again.",
@@ -874,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "Not available on this network",
-            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet."
+            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet.",
+            "generic_body": "This feature isn't available right now."
         },
         "yes": "Yes",
         "no": "No",
@@ -1048,6 +1054,37 @@
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Smart contract rejected the transaction",
+                "body": "The smart contract rejected this transaction without giving a reason. Check the details and try again."
+            },
+            "reverted_with_reason": {
+                "title": "Smart contract rejected the transaction",
+                "body": "The contract returned: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Not enough gas",
+                "body": "This transaction needs more gas than its limit allows. Please try again and contact support if the issue persists."
+            },
+            "nonce_too_low": {
+                "title": "Transaction out of order",
+                "body": "Another transaction from this account was processed first. Please try again."
+            },
+            "replacement_underpriced": {
+                "title": "Network fee too low",
+                "body": "A pending transaction from this account can only be replaced with a higher network fee. Wait for it to complete, or try again with a higher fee."
+            },
+            "insufficient_funds": {
+                "title": "Insufficient ETH",
+                "body": "This account doesn't have enough ETH to cover the amount and the network fee. Add more ETH and try again."
+            },
+            "rate_limited": {
+                "title": "Network busy",
+                "body": "The network is receiving too many requests right now. Please wait a moment and try again."
+            },
+            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x."
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Transaction status unknown",
@@ -1214,8 +1251,8 @@
             "funding_account": "Funding Account",
             "no_funding_account": "No account connected",
             "connect": "Connect",
-            "change": "Change",
-            "funding_type_label": "Funding Type",
+            "funding_type_enabled_auto": "Auto Funding enabled",
+            "funding_type_enabled_manual": "Manual Funding enabled",
             "funding_type_sheet_title": "Select Funding Type",
             "funding_type_sheet_description": "Choose how your card is funded.",
             "funding_type_apply": "Apply",
@@ -2001,6 +2038,11 @@
                 "paste_passphrase": "Paste Full Passphrase",
                 "scan_qr": "Scan QR Code",
                 "learn_more": "Learn More"
+            },
+            "quantum_detected": {
+                "title": "This is a Quantum account passphrase",
+                "body": "These words belong to a Quantum account that already exists. Importing them as a regular account would add a different, empty account.",
+                "import_button": "Import Quantum Account"
             }
         },
         "searching_accounts": {
@@ -2542,9 +2584,9 @@
         "theme": "Theme",
         "language": "Language",
         "developer_settings": "Developer Settings",
-        "node_settings": "Node Settings",
+        "node_settings": "Developer Mode",
         "feature_flags": "Feature Flags",
-        "developer_menu": "Developer Options",
+        "debug_tools": "Debug Tools",
         "manage_cache": "Manage Cache",
         "app_integrity": "App Integrity",
         "messages": "Messages"
@@ -2649,7 +2691,7 @@
             "error_title": "Something went wrong",
             "error_body": "An unexpected error has occurred. Please try again.",
             "inbox_unavailable_title": "Asset Inbox unavailable",
-            "inbox_unavailable_body": "The recipient hasn't opted in to this asset, and Asset Inbox isn't available on this network. Switch to MainNet or TestNet to send it.",
+            "inbox_unavailable_body": "The recipient hasn't opted in to this asset, and Asset Inbox isn't available right now, so it can't be sent.",
             "nfd_mismatch_title": "Name doesn't match on-chain",
             "nfd_mismatch_body": "The NFD contract for {{name}} doesn't list this address. Paste the address directly if you trust it.",
             "nfd_unavailable_title": "Couldn't verify {{name}}",
@@ -2798,16 +2840,17 @@
             "body": "Tell us how your experience has been?"
         },
         "developer": {
-            "node_settings_title": "Node Settings",
+            "node_settings_title": "Developer Mode",
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
-                "network_label": "{{chain}} {{network}}",
+                "developer_mode_title": "Developer mode",
+                "developer_mode_body": "Switches Pera to TestNet, or to the network you choose below. Turn it off to go back to MainNet.",
+                "default_network_label": "{{network}} (default)",
                 "custom_label": "Custom network",
-                "chain_networks_title": "Network per chain",
                 "non_mainnet_warning_title": "Limited support outside MainNet",
                 "non_mainnet_warning_body": "MainNet is the only fully supported network. Features that rely on Pera services — asset details, swap, buy, card, staking and inbox — are limited on TestNet, and unavailable on BetaNet and custom nodes.",
-                "enable_mainnet": "Enable MainNet",
-                "enable_testnet": "Enable TestNet",
+                "enable_developer_mode": "Enable developer mode",
+                "disable_developer_mode": "Disable developer mode",
                 "custom_sheet_title": "Configure custom network",
                 "algod_url_label": "Algod URL",
                 "indexer_url_label": "Indexer URL",
@@ -2855,8 +2898,8 @@
             "clear_one_time_flags": "Clear one-time flags",
             "clear_one_time_flags_success_title": "One-time flags cleared",
             "clear_one_time_flags_success_body": "First-run prompts and disclaimers will show again.",
-            "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
-            "developer_menu_enabled": "Developer menu enabled",
+            "taps_to_notify": "Debug tools will enable in {{remaining}} taps",
+            "debug_tools_enabled": "Debug tools enabled",
             "overridden": "Overridden",
             "enabled": "Enabled",
             "disabled": "Disabled"
@@ -3047,7 +3090,7 @@
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
             "siwa_invalid": "This authentication request is malformed and cannot be signed.",
-            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
+            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Pera blocked this request to protect your account.",
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
@@ -4104,6 +4147,10 @@
             "confirm_button": "Reset Wallet",
             "error": "Couldn't reset the wallet. Please try again."
         },
+        "database_reset": {
+            "title": "Wallet data refreshed",
+            "body": "We rebuilt the balances and history saved in this browser. They'll reload in a moment. Your accounts aren't affected."
+        },
         "security": {
             "autolock_title": "Auto-lock after",
             "autolock_minutes": "{{minutes}} minutes",
@@ -4148,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet check"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Help improve Pera",
+            "body": "Allow Pera to collect anonymous app usage data. It helps us improve the product. You can change your choice in Settings anytime.",
+            "allow": "Allow",
+            "decline": "Don’t allow"
+        },
+        "settings_label": "Share usage analytics"
     }
 }

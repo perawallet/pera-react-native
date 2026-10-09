@@ -20,7 +20,7 @@ const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -44,7 +44,7 @@ const makeDeps = (): SigningMachineDeps =>
         signArbitraryData: vi.fn(),
         signAuthData: vi.fn(),
         createTransport: vi.fn(),
-        network: 'mainnet',
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as never
 
@@ -71,7 +71,7 @@ describe('createSigningMachine', () => {
         expect(ctx.deps.signAuthData).toBe(deps.signAuthData)
         expect(ctx.deps.createTransport).toBe(deps.createTransport)
         expect(ctx.deps.encodeTransaction).toBe(deps.encodeTransaction)
-        expect(ctx.deps.network).toBe(deps.network)
+        expect(ctx.deps.scope).toBe(deps.scope)
         actor.stop()
     })
 

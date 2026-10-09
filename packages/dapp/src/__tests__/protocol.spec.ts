@@ -29,6 +29,7 @@ describe('dapp protocol constants', () => {
             'connect',
             'disconnect',
             'getAddresses',
+            'getEmptySignatures',
             'requestTransactionSigning',
             'requestDataSigning',
         ])

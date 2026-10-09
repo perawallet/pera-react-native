@@ -12,7 +12,11 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+    type AccountType,
+} from '@perawallet/wallet-core-accounts'
 
 // The global setup stubs the account-type helpers with looser shapes — use
 // the real ones so the eligibility filter is tested for real.
@@ -67,32 +71,35 @@ import {
     isSigningCapableFundingSource,
     useCardFundingSourcePicker,
 } from '../useCardFundingSourcePicker'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
+import { custodyForType } from '@test-utils/accountCustody'
 
 const account = (
     address: string,
-    type: WalletAccount['type'],
+    type: AccountType,
     extra: Partial<WalletAccount> = {},
-): WalletAccount => ({ address, type, ...extra }) as WalletAccount
+): WalletAccount =>
+    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
 
 beforeEach(() => {
     registerAlgorandAccountsAdapter()
+    useAccountChainStateStore.getState().resetState()
     vi.clearAllMocks()
     mockConnectedAddress = null
 })
 
 describe('isEligibleFundingSource', () => {
     it('accepts standard / HD / Ledger and rejects watch, multisig, rekeyed', () => {
-        expect(isEligibleFundingSource(account('A', 'algo25'))).toBe(true)
+        expect(isEligibleFundingSource(account('A', 'standalone'))).toBe(true)
         expect(isEligibleFundingSource(account('B', 'hdWallet'))).toBe(true)
         expect(isEligibleFundingSource(account('C', 'hardware'))).toBe(true)
         expect(isEligibleFundingSource(account('D', 'watch'))).toBe(false)
         expect(isEligibleFundingSource(account('E', 'multisig'))).toBe(false)
-        expect(
-            isEligibleFundingSource(
-                account('F', 'algo25', { rekeyAddress: 'X' }),
-            ),
-        ).toBe(false)
+        seedAuthority('F', 'X')
+        expect(isEligibleFundingSource(account('F', 'standalone'))).toBe(false)
     })
 })
 
@@ -100,7 +107,7 @@ describe('isSigningCapableFundingSource', () => {
     it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
-                account('A', 'algo25', { keyPairId: 'k1' }),
+                account('A', 'standalone', { keyPairId: 'k1' }),
             ),
         ).toBe(true)
         expect(
@@ -113,7 +120,7 @@ describe('isSigningCapableFundingSource', () => {
             true,
         )
         // A local-key type with no keyPairId can't sign at all.
-        expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
+        expect(isSigningCapableFundingSource(account('D', 'standalone'))).toBe(
             false,
         )
         expect(isSigningCapableFundingSource(account('E', 'watch'))).toBe(false)
@@ -122,15 +129,15 @@ describe('isSigningCapableFundingSource', () => {
 
 describe('canAutoFund', () => {
     it('allows local-key accounts and rejects Ledger (cannot sign the LSig)', () => {
-        expect(canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }))).toBe(
-            true,
-        )
+        expect(
+            canAutoFund(account('A', 'standalone', { keyPairId: 'k1' })),
+        ).toBe(true)
         expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }))).toBe(
             true,
         )
         // Ledger creates cards but can never sign an LSig.
         expect(canAutoFund(account('C', 'hardware'))).toBe(false)
-        expect(canAutoFund(account('D', 'algo25'))).toBe(false)
+        expect(canAutoFund(account('D', 'standalone'))).toBe(false)
     })
 })
 

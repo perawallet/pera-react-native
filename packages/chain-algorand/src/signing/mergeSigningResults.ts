@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SigningResult } from '@perawallet/wallet-core-signing'
 
 /**

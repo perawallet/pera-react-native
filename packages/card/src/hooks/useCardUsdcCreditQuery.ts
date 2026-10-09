@@ -13,8 +13,12 @@
 import { useCallback } from 'react'
 import { QueryObserver, useQueryClient } from '@tanstack/react-query'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
 import { cardQueryKeys } from './querykeys'
@@ -69,19 +73,20 @@ export type UseCardUsdcCreditQueryResult = {
  */
 export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
     const queryClient = useQueryClient()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const readUsdcBalance = useCallback(
         (address: string): Promise<bigint> =>
             queryClient.fetchQuery({
-                queryKey: cardQueryKeys.usdcBalance(network, address),
+                queryKey: cardQueryKeys.usdcBalance(scope, address),
                 queryFn: () => fetchUsdcBalance(network, address),
                 // A baseline for the next credit: never a cached figure.
                 staleTime: 0,
                 gcTime: 0,
                 retry: false,
             }),
-        [queryClient, network],
+        [queryClient, scope, network],
     )
 
     const waitForUsdcCredit = useCallback(
@@ -92,7 +97,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
         }: WaitForUsdcCreditParams): Promise<bigint> => {
             const deadline = Date.now() + USDC_CREDIT_TIMEOUT_MS
             const observer = new QueryObserver<Nullable<bigint>>(queryClient, {
-                queryKey: cardQueryKeys.usdcCredit(network, {
+                queryKey: cardQueryKeys.usdcCredit(scope, {
                     address,
                     before,
                     minimum,
@@ -134,7 +139,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
                 })
             })
         },
-        [queryClient, network],
+        [queryClient, scope, network],
     )
 
     return { readUsdcBalance, waitForUsdcCredit }

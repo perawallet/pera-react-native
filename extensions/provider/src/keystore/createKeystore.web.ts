@@ -18,6 +18,7 @@ import { createIndexedDBDriver } from '@algorandfoundation/keystore-web'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { PeraKeystoreDeps } from './createKeystore'
 import { resolveEngineKey } from './engineKeySource'
+import { secp256k1Shim } from './shims/secp256k1'
 
 /**
  * Web build of {@link createPeraKeystore}, picked by Metro's `.web.ts`
@@ -54,30 +55,24 @@ import { resolveEngineKey } from './engineKeySource'
 export const createPeraKeystore = (
     deps: PeraKeystoreDeps,
 ): ReactNativeKeyStore => {
+    // Resolved per operation; the driver then never touches its own
+    // auto-generated `__keystore.master__`, which a copied profile could use
+    // without a password. A provider also turns `nativeCryptoKey` off, so
+    // Ed25519 children persist as sealed PKCS#8 bytes, the React Native layout,
+    // rather than as CryptoKeys a copied profile could use.
     const driver = createIndexedDBDriver({
         host: globalThis.crypto.subtle,
-        // Resolved per operation; the driver then never touches its own
-        // auto-generated `__keystore.master__`, which a copied profile could
-        // use without a password.
         masterKey: resolveEngineKey,
     })
-    // With the native capability on, core stores Ed25519 children as
-    // non-extractable CryptoKeys that the driver never seals — usable from a
-    // copied profile with no password. Off, they persist as sealed PKCS#8
-    // bytes, the same layout as the React Native driver.
-    const sealedDriver = {
-        ...driver,
-        capabilities: { ...driver.capabilities, nativeCryptoKey: false },
-    }
     const gatedDriver = deps.before
-        ? { ...sealedDriver, ready: deps.before.then(() => driver.ready) }
-        : sealedDriver
+        ? { ...driver, ready: deps.before.then(() => driver.ready) }
+        : driver
 
     const keystore = createKeyStore({
         driver: gatedDriver,
         store: deps.store,
         hooks: deps.hooks,
-        shims: () => createDefaultShims(),
+        shims: async () => [...(await createDefaultShims()), secp256k1Shim()],
     }) as unknown as ReactNativeKeyStore
 
     // A caller is free to never await `ready`; without this, a migrations

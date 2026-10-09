@@ -13,22 +13,20 @@
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useToast } from '@hooks/useToast'
-import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { logger, microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { DeeplinkType, type LinkSource } from '../types'
 import {
-    AccountTypes,
+    isHDWalletAccount,
     useAccountsStore,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
-import {
-    isValidAlgorandAddress,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
@@ -36,8 +34,9 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
 import {
@@ -69,6 +68,8 @@ type HandleDeepLink = (
 
 type UseDeepLinkResult = {
     isValidDeepLink: (url: string) => boolean
+    /** False when the link parses to a type whose capability is off. */
+    isDeepLinkAvailable: (url: string) => boolean
     handleDeepLink: HandleDeepLink
     parseDeeplink: typeof parseDeeplink
     buildAccountDeeplink: typeof buildAccountDeeplink
@@ -90,6 +91,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
+    const isAllowed = useCapabilityCheck()
+
+    // CARDS and SELL gate on flag hooks that already fold in their capability.
+    const isTypeAvailable = (type: DeeplinkType): boolean => {
+        if (type === DeeplinkType.CARDS) return isPeraCardEnabled
+        if (type === DeeplinkType.SELL) return isGiftCardsEnabled
+        const requirement = capabilityRequirementForDeeplink(type)
+        return !requirement || isAllowed(requirement)
+    }
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -101,6 +111,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
+    const nativeAsset = useNativeAsset()
 
     /**
      * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app
@@ -156,6 +167,21 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 logger.warn('Blocked notification deeplink', {
                     type: parsedData.type,
                 })
+                onError?.()
+                return
+            }
+
+            if (!isTypeAvailable(parsedData.type)) {
+                logger.warn('Blocked deeplink for an unavailable capability', {
+                    type: parsedData.type,
+                })
+                // A notification refusal stays silent, like the policy above.
+                if (source !== 'notification') {
+                    errorToast(
+                        t('common.network_unavailable.title'),
+                        t('common.network_unavailable.generic_body'),
+                    )
+                }
                 onError?.()
                 return
             }
@@ -221,7 +247,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ALGO_TRANSFER: {
                     openSendFunds({
-                        assetId: ALGO_ASSET_ID,
+                        assetId: nativeAsset.assetId,
                         destination: parsedData.receiverAddress,
                         // Wire is microAlgos; the store holds display units.
                         amount: parsedData.amount
@@ -343,13 +369,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    // The PeraCard navigator is only registered when the remote-config
-                    // flag is on. `onError`, not a bare return: the QR scanner locks
-                    // until one of its callbacks fires. Same below for SELL.
-                    if (!isPeraCardEnabled || !routeCapabilities.peraCard) {
-                        onError?.()
-                        return
-                    }
                     navigateToScreen(replaceCurrentScreen, 'PeraCard', {
                         screen: 'PeraCardIntro',
                     })
@@ -390,10 +409,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 case DeeplinkType.SELL: {
                     // The same Bidali sheet and gate as the Menu's "Buy Gift Card"
                     // button, inheriting its bidaliProvider JS bridge wiring.
-                    if (!isGiftCardsEnabled) {
-                        onError?.()
-                        return
-                    }
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
@@ -411,12 +426,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-                    // `onError` rather than a bare return: the QR scanner stays
-                    // locked until one of its callbacks fires.
-                    if (!routeCapabilities.sharedAccounts) {
-                        onError?.()
-                        return
-                    }
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },
@@ -445,10 +454,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         // assert nothing to sign with. Explain rather than dead-end in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
-                            .accounts.some(
-                                account =>
-                                    account.type === AccountTypes.hdWallet,
-                            )
+                            .accounts.some(isHDWalletAccount)
                         if (!hasHDWallet) {
                             void requestByType('passkey-hd-wallet-required', {})
                             // Close the QR scanner (when present) so the sheet,
@@ -535,8 +541,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
         [],
     )
 
+    // For callers with their own refusal UI (or none), so the dispatcher's toast never doubles it.
+    const isTypeAvailableRef = useRef(isTypeAvailable)
+    isTypeAvailableRef.current = isTypeAvailable
+    const isDeepLinkAvailable = useCallback((url: string): boolean => {
+        const parsed = parseDeeplink(url)
+        return !parsed || isTypeAvailableRef.current(parsed.type)
+    }, [])
+
     return {
         isValidDeepLink,
+        isDeepLinkAvailable,
         handleDeepLink,
         parseDeeplink,
         buildAccountDeeplink,

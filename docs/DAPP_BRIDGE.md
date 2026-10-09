@@ -34,14 +34,32 @@ governs injection and the worker governs authorization.
 
 `window.pera.version` is the negotiation signal (`'1'`).
 
-| Method                                               | Wire method                                                        | Result                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------- |
-| `connect({ name?, description?, icons?, network? })` | `connect`                                                          | `{ accounts: { address, name }[], network }`  |
-| `disconnect()`                                       | `disconnect`                                                       | `void` on the page, `null` on the wire        |
-| `getAddresses()`                                     | `getAddresses`                                                     | `{ address, name }[]` (the approved accounts) |
-| `signTransactions(txns, opts?)`                      | `requestTransactionSigning` `{ txns, opts? }`                      | `(base64 \| null)[]` — ARC-0001               |
-| `signData(payload)`                                  | `requestDataSigning` — an ARC-60 wire object, or `{ data: [...] }` | `base64[]`                                    |
-| `on(event, handler)`                                 | —                                                                  | unsubscribe function                          |
+| Method                                               | Wire method                                                        | Result                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `connect({ name?, description?, icons?, network? })` | `connect`                                                          | `{ accounts: { address, name }[], network, emptySignatures }` |
+| `disconnect()`                                       | `disconnect`                                                       | `void` on the page, `null` on the wire                        |
+| `getAddresses()`                                     | `getAddresses`                                                     | `{ address, name }[]` (the approved accounts)                 |
+| `getEmptySignatures({ network? })`                   | `getEmptySignatures`                                               | `{ [address]: base64 }`, the same map `connect` returns       |
+| `signTransactions(txns, opts?)`                      | `requestTransactionSigning` `{ txns, opts? }`                      | `(base64 \| null)[]` — ARC-0001                               |
+| `signData(payload)`                                  | `requestDataSigning` — an ARC-60 wire object, or `{ data: [...] }` | `base64[]`                                                    |
+| `on(event, handler)`                                 | —                                                                  | unsubscribe function                                          |
+
+`emptySignatures` maps each returned address to its empty signature in
+[use-wallet's format](https://github.com/TxnLab/use-wallet/pull/465): base64 of
+the canonical msgpack `SignedTransaction` minus `txn`, with placeholder
+signature bytes. A dApp simulates with it to price fees for the account's real
+signature type (a Falcon `pqsig` costs a multiple of an ed25519 one). An address
+left out is of unknown type. It is the same data WalletConnect serves as
+`algo_getEmptySignatures`, delivered with the accounts so it costs the page no
+second request. `getEmptySignatures()` returns it again without a prompt, so a
+page can refresh it after a rekey, and an SDK can send the same request it sends
+over WalletConnect. Either way it is built fresh, and only for the active
+network: a `network` other than the wallet's is refused with
+`NetworkNotSupported`.
+
+The offscreen document that answers the page cannot open the keystore, so a
+post-quantum account's public key is also stored on the account record, and is
+used only when it derives the account's own address.
 
 A `txns` entry is an ARC-0001 wallet transaction,
 `{ txn, signers?, authAddr?, msig?, stxn?, message? }`, with `txn` base64.

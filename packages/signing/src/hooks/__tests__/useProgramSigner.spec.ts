@@ -11,9 +11,12 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
+import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
 import { renderHook, act } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     useProgramSigner,
@@ -32,7 +35,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 const hdAccount = {
     address: 'HD_ADDR',
     keyPairId: 'key-hd-child',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -51,6 +54,7 @@ const programPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
         mockSignDataWithKey.mockResolvedValue([SIG])
         registerFakePlannerAdapter({ programPayload })
     })
@@ -74,7 +78,7 @@ describe('useProgramSigner', () => {
     test('rejects watch accounts with the typed error', async () => {
         const watchAccount = {
             address: 'WATCH_ADDR',
-            type: 'watch',
+            custody: { kind: 'watch' },
         } as unknown as WalletAccount
 
         const { result } = renderHook(() => useProgramSigner())
@@ -90,10 +94,8 @@ describe('useProgramSigner', () => {
     // A rekeyed account's own key would produce a signature the chain checks
     // against the auth-addr and rejects at draw time — refuse it up front.
     test('rejects rekeyed accounts with the typed error', async () => {
-        const rekeyedAccount = {
-            ...hdAccount,
-            rekeyAddress: 'AUTH_ADDR',
-        } as unknown as WalletAccount
+        const rekeyedAccount = hdAccount
+        seedAuthority(hdAccount.address, 'AUTH_ADDR')
 
         const { result } = renderHook(() => useProgramSigner())
 
@@ -108,7 +110,16 @@ describe('useProgramSigner', () => {
     test('rejects hardware wallet accounts with the typed error', async () => {
         const hwAccount = {
             address: 'HW_ADDR',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd',
+                    deviceName: 'L',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'd',

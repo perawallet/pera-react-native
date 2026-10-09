@@ -38,6 +38,7 @@ vi.mock('../swap-asset-facts-backfill', () => ({
 }))
 
 import { fetchAndPersistTransactions } from '../transaction-syncer'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const ADDRESS = 'ADDR'
 const NETWORK = 'mainnet' as const
@@ -64,7 +65,7 @@ describe('fetchAndPersistTransactions', () => {
 
         expect(mocks.getLatestTransactionRoundTime).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
         expect(mocks.fetchTransactionHistory).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
@@ -74,7 +75,7 @@ describe('fetchAndPersistTransactions', () => {
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx1' }],
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
     })
 
@@ -98,7 +99,7 @@ describe('fetchAndPersistTransactions', () => {
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx2' }],
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
     })
 

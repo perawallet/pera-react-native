@@ -35,10 +35,11 @@ const mockBuild = vi.fn()
 const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: mockAssignFeeToGroup,
@@ -58,9 +59,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistAssets(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 
 describe('useAssetOptInMutation', () => {
@@ -87,11 +87,10 @@ describe('useAssetOptInMutation', () => {
             }),
         )
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetMbr: 100000n,
-            baseAccountMbr: 100000n,
+            assetOptInMinBalance: 100000n,
         })
     })
 
@@ -179,7 +178,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('reports the ALGO shortfall so the toast can say how much is missing', async () => {
-        // 100000 minBalance + 100000 assetMbr + 1000 fee = 201000 needed;
+        // 100000 minBalance + 100000 assetOptInMinBalance + 1000 fee = 201000 needed;
         // 100000 held leaves 101000 microAlgos short.
         mockAccountInformation.mockResolvedValueOnce({
             amount: 100000n,
@@ -204,11 +203,10 @@ describe('useAssetOptInMutation', () => {
         // Non-default asset MBR (200000). Balance 250000 clears the old
         // threshold (100000 + 100000 + 1000 = 201000) but not the new one
         // (100000 + 200000 + 1000 = 301000), so the opt-in must be rejected.
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetMbr: 200000n,
-            baseAccountMbr: 100000n,
+            assetOptInMinBalance: 200000n,
         })
         mockAccountInformation.mockResolvedValueOnce({
             amount: 250000n,
@@ -264,7 +262,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('balance check uses the raised PQ fee, not the base minimum', async () => {
-        // 100000 minBalance + 100000 assetMbr leaves 2000 spare. That clears a
+        // 100000 minBalance + 100000 assetOptInMinBalance leaves 2000 spare. That clears a
         // 1000 base fee but not the 3000 a quantum signer actually pays, so the
         // opt-in must be rejected before anything is signed.
         mockAssignFeeToGroup.mockResolvedValueOnce({

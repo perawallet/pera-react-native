@@ -13,22 +13,28 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { splitLocalUnsignedSigners } from '../splitLocalUnsignedSigners'
 
 const algo25 = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const hardware = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

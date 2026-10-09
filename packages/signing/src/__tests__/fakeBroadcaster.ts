@@ -12,7 +12,7 @@
 
 import { vi } from 'vitest'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { concatBytes } from '@perawallet/wallet-core-shared'
+import { AppError, concatBytes } from '@perawallet/wallet-core-shared'
 import {
     broadcasterChainAdapters,
     type BroadcasterChainAdapter,
@@ -57,6 +57,7 @@ export const fakeBroadcasterAdapter = (
     })),
     submitAndAutoRefresh: vi.fn(async () => []),
     isRequestGroupAlreadySubmitted: vi.fn(async () => false),
+    findStaleGroupReason: vi.fn(async () => null),
     reconcileOpenSubmissions: vi.fn(async () => ({
         probed: 0,
         confirmed: 0,
@@ -65,6 +66,9 @@ export const fakeBroadcasterAdapter = (
     deriveSubmissionAttemptFromBytes: vi.fn(() => ({ txIds: [] })),
     setOnConfirmedHandler: vi.fn(),
     setSubmissionSettledHandler: vi.fn(),
+    submitTimeoutError: vi.fn(
+        () => new AppError('fake submit timeout', { retryable: true }),
+    ),
     ...overrides,
 })
 

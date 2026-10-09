@@ -16,8 +16,10 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 import {
     DEVELOPER_GALLERY_MODULES,
+    ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     readBakedAppEnvironment,
+    readBakedChainIds,
     toStubMap,
 } from '../metro-build-gates'
 
@@ -54,6 +56,26 @@ describe('readBakedAppEnvironment', () => {
     })
 })
 
+describe('readBakedChainIds', () => {
+    it('reads the comma list generate-config.sh baked, trimmed', () => {
+        const file = writeGeneratedEnv('  chainIds: "algorand, ethereum",\n')
+
+        expect(readBakedChainIds(file)).toEqual(['algorand', 'ethereum'])
+    })
+
+    it('is undefined when CHAINS was unset at generate time', () => {
+        const file = writeGeneratedEnv('  releaseTag: "v1.0.0",\n')
+
+        expect(readBakedChainIds(file)).toBeUndefined()
+    })
+
+    it('is undefined when the file was never generated', () => {
+        expect(
+            readBakedChainIds(path.join(tmpdir(), 'missing', 'env.ts')),
+        ).toBeUndefined()
+    })
+})
+
 describe('isDeveloperGalleryIncluded', () => {
     it.each([
         [undefined, undefined],
@@ -75,6 +97,19 @@ describe('isDeveloperGalleryIncluded', () => {
         expect(
             isDeveloperGalleryIncluded({ bakedAppEnvironment: baked, appEnv }),
         ).toBe(false)
+    })
+})
+
+describe('ethereum chain module stubs', () => {
+    it('maps the gated module to an existing stub beside it', () => {
+        const stubs = toStubMap(PROJECT_ROOT, ETHEREUM_CHAIN_MODULES)
+
+        expect(Object.keys(stubs)).toHaveLength(ETHEREUM_CHAIN_MODULES.length)
+        for (const [real, stub] of Object.entries(stubs)) {
+            expect(existsSync(real)).toBe(true)
+            expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
+            expect(existsSync(stub)).toBe(true)
+        }
     })
 })
 

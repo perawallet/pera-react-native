@@ -10,20 +10,24 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
 import type {
     AnalyzedSignableGroup,
     LocalKeySignerInput,
 } from '@perawallet/wallet-core-signing'
 import { signLocalKeyGroups } from '../signLocalKeyGroups'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAlgo25Account: WalletAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -57,7 +61,7 @@ const buildInput = (
     signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     ...overrides,
 })
 
@@ -81,6 +85,7 @@ describe('signLocalKeyGroups', () => {
                 mockGroup.data.transactions,
                 mockGroup.data.indicesToSign,
                 mockAlgo25Account,
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
         }
     })
@@ -98,7 +103,7 @@ describe('signLocalKeyGroups', () => {
         const multisigAddress =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
         const accountWithoutKeys: WalletAccount = {
-            type: 'multisig',
+            custody: { kind: 'multisig' },
             address: multisigAddress,
         } as unknown as WalletAccount
 
@@ -136,14 +141,18 @@ describe('signLocalKeyGroups', () => {
             'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
         const participantAccount: WalletAccount = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             address: PARTICIPANT,
             keyPairId: 'key-participant',
-            rekeyAddress: AUTH,
         } as unknown as WalletAccount
 
+        beforeEach(() => {
+            useAccountChainStateStore.getState().resetState()
+            seedAuthority(PARTICIPANT, AUTH)
+        })
+
         const authAccount: WalletAccount = {
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             address: AUTH,
             keyPairId: 'key-auth',
         } as unknown as WalletAccount

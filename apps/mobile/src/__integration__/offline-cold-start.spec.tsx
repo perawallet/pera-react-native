@@ -50,7 +50,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountBalancesQuery,
@@ -80,7 +79,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'offline-cold-start-key',
     name: 'Synced',
@@ -129,7 +128,7 @@ const seedPreviouslySyncedAccount = async () => {
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: ACCOUNT.address,
@@ -144,7 +143,7 @@ const seedPreviouslySyncedAccount = async () => {
     await upsertTransactions({
         items: [CACHED_TX],
         accountAddress: ACCOUNT.address,
-        network: NETWORK,
+        scope: scopeForLegacyNetwork(NETWORK),
     })
 }
 
@@ -258,7 +257,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: ACCOUNT.address,
@@ -350,7 +349,7 @@ describe('Flow: Cold start with no connectivity', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         onlineManager.setOnline(false)

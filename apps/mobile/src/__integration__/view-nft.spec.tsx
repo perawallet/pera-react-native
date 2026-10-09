@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountsStore,
@@ -48,17 +47,15 @@ import { TransactionProcessingScreen } from '@modules/transactions/screens/send-
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import { useSendFundsStore } from '@modules/transactions'
 import {
-    mockAssetDetails,
-    mockIndexerAssetDetails,
-    mockPublicAssetDetails,
-} from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
+    mockAssetDetails,
+    mockIndexerAssetDetails,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+    mockPublicAssetDetails,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
@@ -79,7 +76,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 // the transfer; the view-only test uses a placeholder `keyPairId`.
 const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     id: 'holder-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'holder-key',
     name: 'NFT Holder',
@@ -99,7 +96,7 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
     })
     const holder: WalletAccount = {
         id: 'holder-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'NFT Holder',
@@ -154,7 +151,7 @@ describe('Flow: View NFT collectible detail', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         server.use(

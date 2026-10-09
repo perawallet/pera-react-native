@@ -69,6 +69,9 @@
       "@perawallet/wallet-core-chain-algorand/test-handlers": [
         "../../packages/chain-algorand/src/test-handlers.ts"
       ],
+      "@perawallet/wallet-core-chain-ethereum/test-handlers": [
+        "../../packages/chain-ethereum/src/test-handlers.ts"
+      ],
       "@perawallet/wallet-core-swaps/test-handlers": [
         "../../packages/swaps/src/test-handlers.ts"
       ],
@@ -93,17 +96,11 @@
       "@perawallet/wallet-core-transactions/test-handlers": [
         "../../packages/transactions/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-core-chain-algorand/test-handlers": [
-        "../../packages/chain-algorand/src/test-handlers.ts"
-      ],
       "@perawallet/wallet-core-background/test-handlers": [
         "../../packages/background/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-device/test-handlers": [
         "../../packages/device/src/test-handlers.ts"
-      ],
-      "@perawallet/wallet-core-blockchain/test-handlers": [
-        "../../packages/blockchain/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-backup/test-handlers": [
         "../../packages/backup/src/test-handlers.ts"

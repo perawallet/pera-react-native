@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
+    isSignRequestAwaitingPreflight,
     useSigningPipeline,
     useSigningRequest,
     type SignRequest,
@@ -49,6 +50,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         ...actual,
         useSigningRequest: vi.fn(),
         useSigningPipeline: vi.fn(),
+        isSignRequestAwaitingPreflight: vi.fn(() => false),
     }
 })
 
@@ -84,6 +86,7 @@ const mockQueue = (
 describe('useSignRequestDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.mocked(isSignRequestAwaitingPreflight).mockReturnValue(false)
         hostCountState.current = 1
     })
 
@@ -96,6 +99,15 @@ describe('useSignRequestDriver', () => {
         expect(requestBottomSheetMock).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'wc-request' }),
         )
+    })
+
+    it('holds the sheet back while the request is still in its chain check', () => {
+        vi.mocked(isSignRequestAwaitingPreflight).mockReturnValue(true)
+        mockQueue([wcRequest])
+
+        renderHook(() => useSignRequestDriver())
+
+        expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
     it('skips headless requests at the queue head', () => {

@@ -12,8 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '../../models'
-import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 
 const mockSigningRequest = {
     currentRequest: undefined as unknown,
@@ -27,12 +27,12 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => mockSigningRequest,
 }))
 
-const mockAllAccounts = vi.fn<() => Array<{ address: string; type: string }>>(
-    () => [
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
-    ],
-)
+const mockAllAccounts = vi.fn<
+    () => Array<{ address: string; custody: { kind: string; seed?: string } }>
+>(() => [
+    { address: 'ADDR_A', custody: { kind: 'local', seed: null } },
+    { address: 'ADDR_B', custody: { kind: 'local', seed: null } },
+])
 const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
     () => true,
 )
@@ -50,30 +50,25 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        mapToDisplayableTransaction: (tx: unknown) => mockMapToDisplayable(tx),
-    }
-})
-
+import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 import {
     useSigningPipeline,
     __resetDisplayDataCacheForTests,
 } from '../useSigningPipeline'
 
 beforeEach(() => {
+    registerFakeReviewerAdapter({
+        toDisplayableTransaction: tx =>
+            mockMapToDisplayable(tx) as PeraDisplayableTransaction,
+    })
     mockSigningRequest.currentRequest = undefined
     mockSigningRequest.currentActorRef = null
     mockSigningRequest.signAndSendRequest.mockReset()
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
     mockAllAccounts.mockReturnValue([
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
+        { address: 'ADDR_A', custody: { kind: 'local', seed: null } },
+        { address: 'ADDR_B', custody: { kind: 'local', seed: null } },
     ])
     mockCanSignWith.mockReturnValue(true)
     mockMapToDisplayable.mockClear()
@@ -343,9 +338,9 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses contains only accounts where canSignWith returns true', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'SIGNER', type: 'algo25' },
-            { address: 'WATCH', type: 'watch' },
-            { address: 'REKEYED_UNSIGNABLE', type: 'watch' },
+            { address: 'SIGNER', custody: { kind: 'local', seed: null } },
+            { address: 'WATCH', custody: { kind: 'watch' } },
+            { address: 'REKEYED_UNSIGNABLE', custody: { kind: 'watch' } },
         ])
         mockCanSignWith.mockImplementation(a => a.address === 'SIGNER')
 
@@ -369,8 +364,8 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses is empty when no accounts pass canSignWith', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'A', type: 'watch' },
-            { address: 'B', type: 'watch' },
+            { address: 'A', custody: { kind: 'watch' } },
+            { address: 'B', custody: { kind: 'watch' } },
         ])
         mockCanSignWith.mockReturnValue(false)
 
@@ -414,7 +409,9 @@ describe('useSigningPipeline', () => {
                 matches: (s: string) => s === 'signing',
                 context: {
                     error: null,
-                    groupSignerTypes: new Map([['g0', 'localKey']]),
+                    groupSigners: new Map([
+                        ['g0', { custody: 'local', scheme: 'ed25519' }],
+                    ]),
                 },
             })
         })
@@ -429,8 +426,15 @@ describe('useSigningPipeline', () => {
             matches: (s: string) => s === 'awaiting_user',
             context: {
                 signerAddress: 'A123',
-                allAccounts: [{ address: 'A123', type: 'algo25' }],
-                groupSignerTypes: new Map([['A123', 'localKey']]),
+                allAccounts: [
+                    {
+                        address: 'A123',
+                        custody: { kind: 'local', seed: null },
+                    },
+                ],
+                groupSigners: new Map([
+                    ['A123', { custody: 'local', scheme: 'ed25519' }],
+                ]),
                 request: {
                     id: 'r1',
                     type: 'transactions',
@@ -454,7 +458,7 @@ describe('useSigningPipeline', () => {
         const { result } = renderHook(() => useSigningPipeline())
 
         expect(result.current.resolved).not.toBeNull()
-        expect(result.current.resolved!.signerType).toBe('localKey')
+        expect(result.current.resolved!.signerType).toBe('local')
         expect(result.current.resolved!.kind).toMatchObject({
             type: 'transactions',
             isMultisigCosign: false,

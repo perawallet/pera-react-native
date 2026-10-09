@@ -13,24 +13,23 @@
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
+    LEGACY_SCOPES,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
 import { nativeAssetFor } from '../chain-adapter'
 import { DEFAULT_ASSET_METADATA } from '../models'
 import { upsertAssets } from './metadataRepository'
 
 /**
- * Seeds the native asset row for EVERY network.
+ * Seeds the native asset row for EVERY scope of the legacy chain.
  *
- * Derived from `Networks` rather than a hand-written list: this seed previously
+ * Derived from `LEGACY_SCOPES` rather than a hand-written list: this seed previously
  * named mainnet and testnet literally, so when betanet and the runtime-
  * configurable custom slot were added the row was silently missing for them.
  * `useAssetsQuery` reads assets from this table (network-scoped) and only hits
  * the network when explicitly asked to `fetchMissing`, so a missing native row
  * is not merely cosmetic — `InputScreen` gates its whole form on `!asset` and
  * renders a spinner forever, making Send permanently unusable on the affected
- * network. Iterating the enum means a future network cannot reintroduce that.
+ * network. Iterating every scope means a future network cannot reintroduce that.
  *
  * The native asset's metadata comes from the chain adapter, so this needs no
  * Pera service and is correct even on a network with no Pera deployment. The
@@ -56,11 +55,7 @@ export async function seedNativeAssets(db: Database): Promise<void> {
         },
     ]
 
-    for (const network of Object.values(Networks)) {
-        await upsertAssets({
-            db,
-            items,
-            scope: scopeForLegacyNetwork(network),
-        })
+    for (const scope of LEGACY_SCOPES) {
+        await upsertAssets({ db, items, scope })
     }
 }

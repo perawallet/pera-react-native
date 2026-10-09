@@ -17,13 +17,14 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
+    isStandaloneAccount,
+    isHDWalletAccount,
+    isQuantumAccount,
     useAccountDiscovery,
+    useAllAccounts,
+    useCreateAccount,
     useHDImportSession,
     useSelectedAccountAddress,
-    useCreateAccount,
-    useAllAccounts,
-    isHDWalletAccount,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -142,12 +143,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const walletKeyId = seedIdOf(account.keyPairId) ?? account.keyPairId
             if (!walletKeyId) return
 
-            if (account.type === AccountTypes.hdWallet) {
-                const derivationType = account.hdWalletDetails.derivationType
-
+            if (isHDWalletAccount(account)) {
                 const discoveredAccounts = await discoverAccounts({
                     walletKeyId,
-                    derivationType,
                 })
 
                 if (!discoveredAccounts) return
@@ -215,8 +213,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     })
                 }
             } else if (
-                account.type === AccountTypes.algo25 ||
-                account.type === AccountTypes.quantum
+                isStandaloneAccount(account) ||
+                isQuantumAccount(account)
             ) {
                 // Quantum accounts are flat single-key accounts like algo25:
                 // discovery is an address-only rekey scan (no derivation), and

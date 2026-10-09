@@ -17,7 +17,6 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -38,7 +37,7 @@ const DEVICE_ID = 'test-device-id'
 // account (its addresses scope the request) and a device id is registered.
 const SIGNER: WalletAccount = {
     id: 'signer-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'signer-key',
     name: 'Trading',

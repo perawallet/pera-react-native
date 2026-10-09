@@ -58,8 +58,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
@@ -114,7 +114,7 @@ const account: WalletAccount = {
     address: 'ADDR1',
     name: 'Account 1',
     id: '1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     canSign: true,
 } as WalletAccount
 

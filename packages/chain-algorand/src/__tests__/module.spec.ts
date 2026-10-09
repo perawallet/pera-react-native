@@ -38,6 +38,9 @@ import {
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { messageSignerChainAdapters } from '@perawallet/wallet-core-signing'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
+import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import { chainModule } from '..'
 import { algorandDappRequestAdapter } from '../connect'
 import {
@@ -50,6 +53,11 @@ import { algorandAssetsAdapter } from '../assets'
 import { algorandNameServiceAdapter } from '../nfd'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
+import { algorandMessageSignerAdapter } from '../signing'
+import { algorandMultisigAdapter } from '../multisig'
+import { algorandBackupAdapter } from '../backup'
+import { algorandPinnedHosts } from '../blockchain/pinned-hosts'
+import { algorandRemoteConfigDefaults } from '../blockchain/remote-config'
 
 // register ignores its context: the adapters are module-level instances.
 const stubCtx = {} as ChainContext
@@ -68,6 +76,9 @@ const resetAdapters = () => {
     nameServiceChainAdapters.reset()
     cardChainAdapters.reset()
     rampChainAdapters.reset()
+    messageSignerChainAdapters.reset()
+    multisigChainAdapters.reset()
+    backupChainAdapters.reset()
 }
 
 const expectAdaptersRegistered = () => {
@@ -86,6 +97,11 @@ const expectAdaptersRegistered = () => {
     )
     expect(cardChainAdapters.get('algorand')).toBe(algorandCardAdapter)
     expect(rampChainAdapters.get('algorand')).toBe(algorandRampAdapter)
+    expect(messageSignerChainAdapters.get('algorand')).toBe(
+        algorandMessageSignerAdapter,
+    )
+    expect(multisigChainAdapters.get('algorand')).toBe(algorandMultisigAdapter)
+    expect(backupChainAdapters.get('algorand')).toBe(algorandBackupAdapter)
 }
 
 describe('chainModule', () => {
@@ -93,6 +109,13 @@ describe('chainModule', () => {
 
     it('is typed as a ChainModule', () => {
         expectTypeOf(chainModule).toEqualTypeOf<ChainModule>()
+    })
+
+    it('declares its remote-config defaults and pinned node hosts', () => {
+        expect(chainModule.remoteConfigDefaults).toBe(
+            algorandRemoteConfigDefaults,
+        )
+        expect(chainModule.pinnedHosts).toBe(algorandPinnedHosts)
     })
 
     it('registers the descriptor and every adapter through the chain setup', () => {
@@ -106,7 +129,12 @@ describe('chainModule', () => {
                 .id,
         ).toBe('mainnet')
         expect(chains.capabilities('algorand')).toEqual(
-            Object.fromEntries(CHAIN_CAPABILITIES.map(c => [c, true])),
+            Object.fromEntries(
+                CHAIN_CAPABILITIES.map(c => [
+                    c,
+                    c !== 'privateKeys' && c !== 'contractDecoding',
+                ]),
+            ),
         )
         expectAdaptersRegistered()
     })
@@ -156,5 +184,8 @@ describe('capability-to-adapter parity (algorand)', () => {
         ramp: rampChainAdapters,
         'dapp-request': dappRequestChainAdapters,
         'ledger app driver': ledgerAppDriverRegistry,
+        'message signer': messageSignerChainAdapters,
+        multisig: multisigChainAdapters,
+        backup: backupChainAdapters,
     })
 })

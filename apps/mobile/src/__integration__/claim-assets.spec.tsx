@@ -43,7 +43,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -57,7 +56,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useClaimAssetsStore } from '@modules/transactions/hooks/claim-assets/useClaimAssets'
 import {
     AssetTransferRequestsScreen,
@@ -193,7 +192,7 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
 
     const account: WalletAccount = {
         id: 'claimer-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Claimer',

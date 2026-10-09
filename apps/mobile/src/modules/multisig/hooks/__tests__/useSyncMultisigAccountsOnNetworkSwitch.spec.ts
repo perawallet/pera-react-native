@@ -36,7 +36,7 @@ const {
 
 // Faithful re-implementation of the real useOnNetworkSwitch (effect-timed,
 // fires once per real switch) driven by the same mocked network value.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-shared', async () => {
     const { useEffect, useRef } = await import('react')
     return {
         useNetwork: () => ({ network: networkMock.current }),
@@ -60,13 +60,8 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
+    isMultisigAccount: (account: { custody?: { kind: string } }) =>
+        account.custody?.kind === 'multisig',
     useAllAccounts: () => accountsMock.current,
 }))
 
@@ -91,7 +86,7 @@ const multisigAccount = (
     multisigDetails: MultiSigDetails = DETAILS,
 ): MultiSigAccount => ({
     id: `multisig-${address}`,
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address,
     name: address,
     multisigDetails,
@@ -99,7 +94,7 @@ const multisigAccount = (
 
 const watchAccount = (address: string): WatchAccount => ({
     id: `watch-${address}`,
-    type: 'watch',
+    custody: { kind: 'watch' },
     address,
 })
 

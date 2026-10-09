@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchWalletBalance } from '../api/wallet-balance'
@@ -33,11 +37,12 @@ export type UseCardWalletBalanceQueryResult = {
 export const useCardWalletBalanceQuery = (
     kind: CardWalletKind,
 ): UseCardWalletBalanceQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 
     const query = useQuery({
-        queryKey: cardQueryKeys.walletBalance(network, kind),
+        queryKey: cardQueryKeys.walletBalance(scope, kind),
         queryFn: ({ signal }) => fetchWalletBalance({ kind, network, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
         // The wallet routes require a Baanx session; stay idle otherwise.

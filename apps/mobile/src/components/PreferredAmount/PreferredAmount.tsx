@@ -17,10 +17,9 @@ import {
 } from '@components/CurrencyAmount'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferredAmount } from './usePreferredAmount'
-import {
-    displayCurrencyToAssetId,
-    type Maybe,
-} from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
+import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * How precisely a preferred-currency value (fiat or ALGO) is rendered:
@@ -83,7 +82,7 @@ const ConvertedPreferredAmount = ({
             currency={displayCurrency}
             // The preferred/fallback currency is a settings value, so its ALGO
             // ticker is trusted — translate it into the id-keyed identity.
-            assetId={displayCurrencyToAssetId(displayCurrency)}
+            assetId={displayCurrencyToAssetId(displayCurrency, LEGACY_CHAIN_ID)}
             value={convertedValue}
             {...displayProps}
             isLoading={isPending || displayProps.isLoading}
@@ -102,7 +101,10 @@ const PrecomputedPreferredAmount = ({
     return (
         <CurrencyAmount
             currency={preferredCurrency}
-            assetId={displayCurrencyToAssetId(preferredCurrency)}
+            assetId={displayCurrencyToAssetId(
+                preferredCurrency,
+                LEGACY_CHAIN_ID,
+            )}
             value={value}
             {...displayProps}
             precision={precisionFor(density)}

@@ -14,7 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 import type {
     AuthData,
     AuthDataMetadata,
@@ -37,7 +41,7 @@ const MATCHING_HD_PATH = "m/44'/283'/0'/0/1"
 const hdAccount = {
     address: 'HD_ADDR',
     keyPairId: 'key-hd-child',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -49,12 +53,21 @@ const hdAccount = {
 const algo25Account = {
     address: 'ALGO25_ADDR',
     keyPairId: 'key-algo25-ed25519',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 const hardwareAccount = {
     address: 'HW_ADDR',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'd',
+            deviceName: 'L',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'd',
@@ -67,7 +80,7 @@ const hardwareAccount = {
 const quantumAccount = {
     address: 'QUANTUM_ADDR',
     keyPairId: 'key-quantum-falcon',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
 } as unknown as WalletAccount
 
 const domain = 'arc60.io'
@@ -115,6 +128,7 @@ const sign = (
 describe('signArc60AuthRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
         signPayloads.mockResolvedValue([new Uint8Array([0])])
     })
 
@@ -230,8 +244,8 @@ describe('signArc60AuthRequest', () => {
         const original = {
             ...algo25Account,
             address: 'ORIG_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
+        seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 
         await expect(
             sign(
@@ -251,9 +265,9 @@ describe('signArc60AuthRequest', () => {
     test('rejects a watch-rekeyed account even when the auth has keys', async () => {
         const watchSource = {
             address: 'WATCH_ADDR',
-            type: 'watch',
-            rekeyAddress: 'AUTH_ADDR',
+            custody: { kind: 'watch' },
         } as unknown as WalletAccount
+        seedAuthority('WATCH_ADDR', 'AUTH_ADDR')
 
         await expect(
             sign(watchSource, {
@@ -305,8 +319,8 @@ describe('signArc60AuthRequest', () => {
         const rekeyed = {
             ...algo25Account,
             address: 'ORIG_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
+        seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 
         // The message names ORIG_ADDR but the dApp asks AUTH_ADDR to sign, so
         // the rekey cross-check must confirm AUTH_ADDR is ORIG_ADDR's authority.
@@ -319,10 +333,9 @@ describe('signArc60AuthRequest', () => {
         await sign(rekeyed, sigData, validMetadata, [rekeyed])
         expect(signPayloads).toHaveBeenCalledTimes(1)
 
+        seedAuthority('ORIG_ADDR', null)
         await expect(
-            sign(rekeyed, sigData, validMetadata, [
-                { ...rekeyed, rekeyAddress: undefined },
-            ]),
+            sign(rekeyed, sigData, validMetadata, [rekeyed]),
         ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
         expect(signPayloads).toHaveBeenCalledTimes(1)
     })

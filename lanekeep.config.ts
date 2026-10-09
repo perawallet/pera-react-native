@@ -32,6 +32,7 @@ import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
 import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
+import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
@@ -95,6 +96,7 @@ export default defineConfig({
         noUnusedTranslationKeys,
         noI18nIntegritySuppressions,
         pqLibrarySeam,
+        secp256k1LibrarySeam,
         noKeystoreMetaPackage,
         noRetiredQuantumCustody,
         specFileSuffix,

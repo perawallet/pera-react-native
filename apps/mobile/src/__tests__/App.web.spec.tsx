@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     runOffscreenApp: vi.fn(() => Promise.resolve()),
     registerHardwareWalletTransports: vi.fn(),
     registerChainAdapters: vi.fn(),
+    markDatabaseResetNoticePending: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome/bootstrap', () => ({
@@ -33,6 +34,9 @@ vi.mock('@browser/offscreen/runOffscreenApp', () => ({
 }))
 vi.mock('../bootstrap/hardware-wallet-transports', () => ({
     registerHardwareWalletTransports: mocks.registerHardwareWalletTransports,
+}))
+vi.mock('../bootstrap/databaseResetNotice', () => ({
+    markDatabaseResetNoticePending: mocks.markDatabaseResetNoticePending,
 }))
 vi.mock('../bootstrap/chain-adapters', () => ({
     registerChainAdapters: mocks.registerChainAdapters,
@@ -47,6 +51,7 @@ describe('App (web) on the offscreen surface', () => {
         )
         expect(mocks.runOffscreenApp).toHaveBeenCalledWith({
             registerChainAdapters: mocks.registerChainAdapters,
+            onDatabaseReset: mocks.markDatabaseResetNoticePending,
         })
         expect(mocks.hydratePlatform.mock.invocationCallOrder[0]).toBeLessThan(
             mocks.runOffscreenApp.mock.invocationCallOrder[0],

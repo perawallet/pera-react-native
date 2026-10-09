@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Query } from '@tanstack/react-query'
 
 export const BANNERS_MODULE_PREFIX = 'banners'
 
-export const getBannersQueryKey = (network: Network, deviceID: string) => [
+export const getBannersQueryKey = (scope: ChainScope, deviceID: string) => [
     BANNERS_MODULE_PREFIX,
     'list',
-    { network, deviceID },
+    { scope, deviceID },
 ]
 
-export const getSpotBannersQueryKey = (network: Network, deviceID: string) => [
+export const getSpotBannersQueryKey = (scope: ChainScope, deviceID: string) => [
     BANNERS_MODULE_PREFIX,
     'spot-list',
-    { network, deviceID },
+    { scope, deviceID },
 ]
 
 export const invalidateAllBannersPredicate = (query: Query) =>

@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockUseAccountsStore = vi.fn()
 
@@ -34,6 +31,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             getItem: async () => null,
             setItem: async () => {},
             removeItem: async () => {},
+        },
+        chains: {
+            has: () => true,
+            get: () => ({
+                descriptor: { signing: { standaloneSecret: 'mnemonic' } },
+            }),
         },
     }),
 }))
@@ -62,7 +65,7 @@ describe('useMarkMnemonicBackupComplete', () => {
             await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR',
             keyPairId: 'kp-1',
         }
@@ -91,19 +94,31 @@ describe('useMarkMnemonicBackupComplete', () => {
             derivationType: 9 as const,
         }
         const a1: WalletAccount = {
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'HD1',
             keyPairId: 'kp-shared',
             hdWalletDetails: hdDetails,
         }
         const a2: WalletAccount = {
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 1 },
+            },
             address: 'HD2',
             keyPairId: 'kp-shared',
             hdWalletDetails: { ...hdDetails, keyIndex: 1 },
         }
         const a3: WalletAccount = {
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'HD3',
             keyPairId: 'kp-other',
             hdWalletDetails: hdDetails,
@@ -127,7 +142,7 @@ describe('useMarkMnemonicBackupComplete', () => {
             await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'WATCH',
         }
 

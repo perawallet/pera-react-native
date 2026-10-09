@@ -11,7 +11,10 @@
  */
 
 import {
-    AccountTypes,
+    isStandaloneAccount,
+    standaloneSecretOf,
+    isHDWalletAccount,
+    isQuantumAccount,
     type HDWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -47,19 +50,26 @@ export const serializeAccountForBackup = async (
     account: WalletAccount,
     { updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
 ): Promise<SerializedAccount | null> => {
-    if (account.type === AccountTypes.hdWallet) {
+    if (isHDWalletAccount(account)) {
         return serializeHdAccount(account, updatedAt, hashAddress, resolveHd)
     }
 
     let secrets: SecretsBackupPayload | null = null
     if (
-        account.type === AccountTypes.algo25 ||
-        account.type === AccountTypes.quantum
+        (isStandaloneAccount(account) &&
+            standaloneSecretOf(account) === 'mnemonic') ||
+        isQuantumAccount(account)
     ) {
         if (!resolveMnemonic) return null
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = { type: account.type, mnemonic, address: account.address }
+        secrets = {
+            type: isQuantumAccount(account)
+                ? BackupAccountType.quantum
+                : BackupAccountType.algo25,
+            mnemonic,
+            address: account.address,
+        }
     }
     return serializeAccountItems(account, { updatedAt, secrets, hashAddress })
 }

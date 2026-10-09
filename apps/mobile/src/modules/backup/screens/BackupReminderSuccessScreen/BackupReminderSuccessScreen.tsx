@@ -36,6 +36,7 @@ export const BackupReminderSuccessScreen = () => {
 
     return (
         <PWInfoView
+            testID='backup_success_screen'
             illustration={ShieldCheckImage}
             title={t('backup.success.title')}
             body={t('backup.success.body')}

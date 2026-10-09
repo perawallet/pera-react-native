@@ -11,12 +11,15 @@
  */
 
 import { useMemo } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
     type TransactionWarning,

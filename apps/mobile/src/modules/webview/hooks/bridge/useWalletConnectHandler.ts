@@ -14,6 +14,7 @@ import { useCallback, useRef } from 'react'
 import type WebView from 'react-native-webview'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { parseWalletConnectUri } from '@perawallet/wallet-core-walletconnect'
+import { useCapability } from '@hooks/useCapability'
 import { useConnectionPairing } from '@modules/connections'
 import { useNetworkStatus } from '@modules/network'
 import { JsonRpcErrorCode, safeOrigin, sendErrorToWebview } from '../handlers'
@@ -34,6 +35,9 @@ export const useWalletConnectHandler = (
     const { hasInternet } = useNetworkStatus()
     const { pair, describeUri } = useConnectionPairing()
     const hasRequiredParams = useRequiredParams(webview)
+    // The only bridge method a third-party page reaches; the rest serve Pera's
+    // own pages (Discover, Staking), which keep working while dApps are off.
+    const canConnectDapps = useCapability({ anyChain: 'dappConnect' })
 
     // Keyed by origin: an in-place navigation must not let one site's connect
     // throttle the next site's, and each origin gets its own budget.
@@ -41,6 +45,15 @@ export const useWalletConnectHandler = (
 
     return useCallback(
         message => {
+            if (!canConnectDapps) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.Unauthorized,
+                    'dApp connections are unavailable',
+                    webview,
+                )
+                return
+            }
             if (!hasRequiredParams(['uri'], message)) {
                 return
             }
@@ -135,6 +148,14 @@ export const useWalletConnectHandler = (
                 // the decision through the approve/reject path, never from here.
             })()
         },
-        [pair, describeUri, hasRequiredParams, webview, hasInternet, sourceUrl],
+        [
+            canConnectDapps,
+            pair,
+            describeUri,
+            hasRequiredParams,
+            webview,
+            hasInternet,
+            sourceUrl,
+        ],
     )
 }

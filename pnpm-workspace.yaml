@@ -7,11 +7,11 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore-core": 1.0.0-canary.4
-  "@algorandfoundation/keystore-web": 1.0.0-canary.4
+  "@algorandfoundation/keystore-core": 1.0.0-canary.5
+  "@algorandfoundation/keystore-web": 1.0.0-canary.6
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.20
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.21
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
@@ -25,6 +25,7 @@ catalog:
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.3.0
+  "@noble/secp256k1": ^3.2.0
   "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
   "@playwright/test": ^1.53.0
@@ -38,6 +39,11 @@ catalog:
   # a core it was never built against. Bump the two together.
   "@reown/walletkit": 1.6.0
   "@scure/base": 2.4.0
+  # Pinned exactly: 2.3.0 pins @noble/hashes 2.3.0, the version the tree
+  # already resolves. 2.4.0 pins hashes 2.4.0, which moves jsdom's optional
+  # peer, renames vitest's store path and flips which @types/react copy the
+  # mobile typecheck picks for jsx-runtime.
+  "@scure/bip32": 2.3.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
@@ -66,7 +72,7 @@ catalog:
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
   # and type-checks, it just silently cannot sign a quantum account — so
   # tools/check-single-algosdk.mjs enforces this range against the *resolved*
-  # version, and packages/blockchain/src/pq/__tests__/algosdkPqSupport.spec.ts
+  # version, and packages/chain-algorand/src/blockchain/pq/__tests__/algosdkPqSupport.spec.ts
   # asserts the surface itself.
   algosdk: ^3.7.0
   before-after-hook: ^4.0.0
@@ -102,6 +108,9 @@ catalog:
   typescript: ^7.0.2
   util: ^0.12.5
   uuid: 14.0.2
+  # Metro, Hermes and the extension bundles were verified against this exact
+  # version; re-run those checks before a bump.
+  viem: 2.57.0
   vite: ^8.2.1
   vitest: ^4.1.9
   xstate: ^5.28.0
@@ -188,6 +197,10 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
+  # 1.2.2 is the GHSA-68fv-2mgg-jv7q fix and is younger than the 7-day gate.
+  # Same sole maintainer and publisher (7rulnik) as 1.2.1, no install scripts,
+  # and the code diff is the fix. Scoped to that version; drop once it ages out.
+  - source-map-js@1.2.2
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -204,18 +217,24 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
-  # `getMasterKey` read-then-generates the vault master key with no locking, so
-  # every context that builds a driver (service worker, offscreen document,
-  # each extension page — all of which construct one within milliseconds at
-  # first run) can miss the read, generate its own AES-GCM key, and race the
-  # `put`. Last write wins the record while each context keeps the key IT made
-  # cached in the driver closure, so material sealed by one can never be opened
-  # by another. It surfaces as a bare `OperationError` with no message —
-  # "Pera couldn't read this request" on a legitimate dApp signing request, and
-  # the intermittent half of apps/browser/e2e/dapp-sign.spec.ts. Creation now
-  # happens under a Web Lock with a re-read once held, so the first caller
-  # creates and the rest read what it wrote. Drop once upstream takes it.
-  "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
+  # The engine has no secp256k1 path: `deriveFromSeed` only derives
+  # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
+  # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
+  # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
+  # signing opens only that child, and imported raw keys are sealed too, and
+  # released by `export` only when imported extractable; derived children never
+  # are. Drop once upstream takes these branches.
+  "@algorandfoundation/keystore-core@1.0.0-canary.5": patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
+  # `shims` is typed as an array, though it is handed unchanged to keystore-core's
+  # `createKeyStore`, which also takes a lazy function. The provider needs the
+  # lazy form to fold the asynchronously loaded native Falcon binding in next to
+  # the secp256k1 shim. Type-only; drop once upstream widens it.
+  # Some StrongBox chips take about a second per AES operation, and every
+  # master-key read costs two, so a slow read gets a TEE-held copy of the same
+  # master key that later reads prefer; the StrongBox copy is never removed.
+  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
+  # keep a key out of StrongBox.
+  "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
   # Four unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
@@ -232,12 +251,6 @@ patchedDependencies:
   #   anything, and one credential's sealed `m/` material is opened only after
   #   the user selects it. Upstream lists flat records by opening each one.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
-  # Some StrongBox chips take about a second per AES operation, and every
-  # master-key read costs two, so a slow read gets a TEE-held copy of the same
-  # master key that later reads prefer; the StrongBox copy is never removed.
-  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
-  # keep a key out of StrongBox.
-  "@algorandfoundation/react-native-keystore@1.0.0-canary.20": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.20.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
@@ -280,9 +293,9 @@ overrides:
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.
-  '@algorandfoundation/keystore-core': 1.0.0-canary.4
-  '@algorandfoundation/keystore-web': 1.0.0-canary.4
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.20
+  '@algorandfoundation/keystore-core': 1.0.0-canary.5
+  '@algorandfoundation/keystore-web': 1.0.0-canary.6
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.21
   # Four upstream packages (keystore-core, keystore@canary.17,
   # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
   # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
@@ -344,6 +357,9 @@ overrides:
   brace-expansion@3: 5.0.12
   brace-expansion@4: 5.0.12
   brace-expansion@5: 5.0.12
+  # GHSA-vc2v-76pw-4v95 (memory DoS: zlib streams outlive a disconnected
+  # client). Dev-server only, via @expo/cli.
+  compression@<1.8.2: 1.8.2
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -400,7 +416,10 @@ overrides:
   react-native-nitro-modules: 0.36.5
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
-  shell-quote@<1.9.0: 1.9.0
+  shell-quote@<1.11.0: 1.11.0
+  # GHSA-68fv-2mgg-jv7q (event-loop DoS). Build tooling only, via postcss,
+  # css-tree and magicast.
+  source-map-js@<1.2.2: 1.2.2
   # Stay on the v3 line: @svgr/plugin-svgo declares svgo ^3.0.2 and configures
   # `removeViewBox`, which svgo v4 dropped from preset-default. An open
   # `>=3.3.4` here resolved to 4.x and made every SVG import log a

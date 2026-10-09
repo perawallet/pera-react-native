@@ -14,10 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>()
 const mockFetchRekeyedAddresses = vi.fn()
@@ -35,16 +32,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
 
 const mockGetKey = vi.fn()
 
@@ -57,14 +52,14 @@ import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
 
 const legacyAccount = (id: string, address: string): WalletAccount => ({
     id,
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address,
     keyPairId: `${id}-quantum`,
 })
 
 const canonicalAccount = (id: string, address: string): WalletAccount => ({
     id,
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address,
     keyPairId: `${id}-quantum-pqk1`,
 })

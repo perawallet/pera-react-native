@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
@@ -201,6 +202,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     nativeAssetFor: () => nativeAsset,
     isNativeAssetId: (_chainId: string, assetId: string) =>
         assetId === nativeAsset.assetId,
+    useIsNativeAssetId:
+        () => (assetId: string | number | bigint | null | undefined) =>
+            assetId != null && String(assetId) === nativeAsset.assetId,
+    displayCurrencyToAssetId: (code: string) =>
+        code === 'ALGO' ? nativeAsset.assetId : null,
     PeraAssetType: {
         algo: 'algo',
         standard_asset: 'standard_asset',
@@ -306,7 +312,25 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 
 // Mock @perawallet/wallet-core-accounts
 vi.mock('@perawallet/wallet-core-accounts', () => {
+    // Mirrors `accountType()`: the kind is read from custody alone.
+    const kindOf = (account: any): string | undefined => {
+        const custody = account?.custody
+        if (!custody) return undefined
+        if (custody.kind !== 'local') return custody.kind
+        if (custody.seed === null) return 'standalone'
+        return custody.seed === 'bip39' ? 'hdWallet' : custody.seed
+    }
+    // The one source every rekey answer below derives from; a spec seeds a
+    // rekeyed account with `vi.mocked(authorityOf).mockImplementation(...)`.
+    const authorityOf = vi.fn(
+        (_account: any, _scope?: any): string | null => null,
+    )
     return {
+        authorityOf,
+        useAuthorityOf: vi.fn((account: any, scope?: any) =>
+            account ? authorityOf(account, scope) : null,
+        ),
+        accountType: vi.fn(kindOf),
         useAllAccounts: vi.fn(() => []),
         useAccountDiscovery: vi.fn(() => ({
             discoverRekeyedAccounts: vi.fn(),
@@ -335,43 +359,54 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         getAccountDisplayName: vi.fn(a => a?.name || ''),
         // Account type functions with actual implementations
         isHardwareWalletAccount: vi.fn(
-            (account: any) => account?.type === 'hardware',
+            (account: any) => kindOf(account) === 'hardware',
         ),
         isLedgerAccount: vi.fn(
             (account: any) =>
-                account?.type === 'hardware' &&
+                kindOf(account) === 'hardware' &&
                 account?.hardwareDetails?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
-        isHDWalletAccount: vi.fn((account: any) => !!account?.hdWalletDetails),
-        isAlgo25Account: vi.fn((account: any) => account?.type === 'algo25'),
-        isWatchAccount: vi.fn((account: any) => account?.type === 'watch'),
+        isRekeyedAccount: vi.fn(
+            (account: any) => !!account && !!authorityOf(account),
+        ),
+        isHDWalletAccount: vi.fn(
+            (account: any) => kindOf(account) === 'hdWallet',
+        ),
+        isStandaloneAccount: vi.fn(
+            (account: any) => kindOf(account) === 'standalone',
+        ),
+        standaloneSecretOf: vi.fn((account: any) =>
+            kindOf(account) === 'standalone' ? 'mnemonic' : undefined,
+        ),
+        isQuantumAccount: vi.fn(
+            (account: any) => kindOf(account) === 'quantum',
+        ),
+        isWatchAccount: vi.fn((account: any) => kindOf(account) === 'watch'),
         isMultisigAccount: vi.fn(
-            (account: any) => account?.type === 'multisig',
+            (account: any) => kindOf(account) === 'multisig',
         ),
         hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
         canSignWith: vi.fn((account: any) => !!account?.keyPairId),
         canSignArbitraryData: vi.fn(
             (account: any) =>
-                !!account?.keyPairId && account?.type !== 'hardware',
+                !!account?.keyPairId && kindOf(account) !== 'hardware',
         ),
         // Mirrors the real predicate: account-local (no rekey hop), non-multisig
         // with a local key, or hardware.
         canSignArc60: vi.fn(
             (account: any) =>
                 !!account &&
-                account.type !== 'multisig' &&
-                (!!account.keyPairId || account.type === 'hardware'),
+                kindOf(account) !== 'multisig' &&
+                (!!account.keyPairId || kindOf(account) === 'hardware'),
         ),
         canSignProgram: vi.fn(
             (account: any) =>
-                account?.type !== 'hardware' &&
-                !account?.rekeyAddress &&
+                kindOf(account) !== 'hardware' &&
+                !authorityOf(account) &&
                 !!account?.keyPairId,
         ),
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),
-        canInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         getRekeyAccount: vi.fn(() => null),
         getSignerFor: vi.fn(
             (address: string, accs: any[] = []) =>
@@ -387,7 +422,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 : { kind: 'watch', account },
         ),
         useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
-        useRekeyAccount: vi.fn(() => null),
+        useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
@@ -398,10 +433,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getOnChainAccountInformationQueryKey: vi.fn(
-            (address: string, network: string) => [
+            (address: string, scope: ChainScope) => [
                 'accounts',
                 'on-chain-account-information',
-                { address, network },
+                { address, scope },
             ],
         ),
         invalidateAccountQueriesForAddresses: vi.fn(),
@@ -412,9 +447,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useArbitraryDataSigner: vi.fn(() => ({
             signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
-        ALGO_ASSET_ID: '0',
         AccountTypes: {
-            algo25: 'algo25',
+            standalone: 'standalone',
             hdWallet: 'hdWallet',
             hardware: 'hardware',
             multisig: 'multisig',
@@ -512,7 +546,17 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     }
 })
 
-// Mock @perawallet/wallet-core-blockchain
+// Source-aliased code and the dist-resolved packages (app-integrity,
+// background, projects, card/nfd roots) all reach useNetwork through here.
+// Everything else, including the network store, stays real.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
+
+// Mock @perawallet/wallet-core-chain-algorand/blockchain
 class MockAlgodError extends Error {
     constructor(
         public readonly code: string,
@@ -524,25 +568,25 @@ class MockAlgodError extends Error {
     }
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     // Real custom-network functions (backed by the real network store) so
-    // subscribed hooks re-render on change. Imported by module path, not a
-    // package barrel, to keep utils/algorandClient's module-level side effects
-    // out of every test in the suite.
+    // subscribed hooks re-render on change. Imported by module path, not the
+    // blockchain barrel, to keep utils/algorandClient's module-level side
+    // effects out of every test in the suite.
     const {
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
         setCustomNetwork,
         clearCustomNetwork,
     } = await vi.importActual<
-        typeof import('@packages/chain-shared/src/store/network-store')
-    >('@packages/chain-shared/src/store/network-store')
+        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
+    >('@packages/chain-algorand/src/blockchain/store/custom-network')
     // Real ARC-0001 module: `packages/connections` composes its request
     // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
     // stand-in would silently disarm the resolver's own refusals.
     const arc0001 = await vi.importActual<
-        typeof import('@packages/blockchain/src/arc0001')
-    >('@packages/blockchain/src/arc0001')
+        typeof import('@packages/chain-algorand/src/blockchain/arc0001')
+    >('@packages/chain-algorand/src/blockchain/arc0001')
 
     return {
         ...arc0001,
@@ -556,33 +600,17 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
         }),
         encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-        useNetwork: vi.fn(() => ({
-            network: 'mainnet',
-        })),
+        // Referenced eagerly by the chain-algorand signing adapter's member table.
+        encodeTransactionRaw: vi.fn(),
+        mapToDisplayableTransaction: vi.fn(),
         useMinimumFeeConfig: vi.fn(() => ({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
             assetMbr: 100_000n,
             baseAccountMbr: 100_000n,
         })),
-        useNetworkStore: Object.assign(
-            vi.fn(() => 'mainnet'),
-            {
-                getState: vi.fn(() => ({
-                    network: 'mainnet',
-                    globalNetwork: 'mainnet',
-                    selectedNetworkByChain: { algorand: 'mainnet' },
-                    customNetworksByChain: { algorand: [] },
-                    setGlobalNetwork: vi.fn(),
-                    setNetwork: vi.fn(),
-                    selectNetwork: vi.fn(),
-                    resetState: vi.fn(),
-                })),
-                // The accounts barrel subscribes at load to mirror per-network
-                // rekey state on switches.
-                subscribe: vi.fn(() => () => {}),
-            },
-        ),
+        // The Algorand planner adapter binds this member at module load.
+        useFetchSuggestedMinFee: vi.fn(() => async () => 1000n),
         // Error-translation exports. Tests that need the real parser should use
         // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,
@@ -604,35 +632,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
                     err instanceof Error ? err : undefined,
                 ),
         ),
-        microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Decimal } = require('decimal.js')
-            return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-        }),
-        toBigInt: vi.fn(
-            (decimal: { toFixed: (dp: number, rm: number) => string }) => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const { Decimal } = require('decimal.js')
-                return BigInt(decimal.toFixed(0, Decimal.ROUND_DOWN))
-            },
-        ),
-        baseUnitsToDisplayUnits: vi.fn(
-            (baseUnits: bigint | number | string, decimals: number) => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const { Decimal } = require('decimal.js')
-                return new Decimal(baseUnits.toString()).dividedBy(
-                    new Decimal(10).pow(decimals),
-                )
-            },
-        ),
-        percentChange: vi.fn((first: unknown, last: unknown) => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Decimal } = require('decimal.js')
-            const firstDp = new Decimal(String(first))
-            const lastDp = new Decimal(String(last))
-            if (firstDp.isZero()) return new Decimal(0)
-            return lastDp.minus(firstDp).div(firstDp).mul(100)
-        }),
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
         setCustomNetwork,

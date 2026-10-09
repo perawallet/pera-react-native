@@ -22,6 +22,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findDiscoverFrame } from './bridge-frames'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 import {
     expectApprovalSurfaceUrl,
@@ -237,9 +238,7 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     )
     await passAgeGateIfOffered(discoverPage)
 
-    const frame = discoverPage
-        .frames()
-        .find(candidate => candidate.url().includes('peraBridgeToken='))
+    const frame = findDiscoverFrame(discoverPage)
     // test.skip throws to abort, so discoverPage is left for afterAll to reap.
     test.skip(frame == null, 'discover frame did not load (networkless run)')
 
@@ -479,13 +478,15 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         expect(context.pages()).toHaveLength(0)
 
         // A real unsigned ARC-0001 transaction (0-microAlgo self-payment) so the
-        // wallet's decoder has something genuine to decode.
+        // wallet's decoder has something genuine to decode. Its window is far
+        // ahead of mainnet: a window already behind the chain is declined as
+        // expired before any review opens.
         const genesisHash = getNetworkConfig(Networks.mainnet).genesisHash
         const suggestedParams = {
             fee: 1000n,
             minFee: 1000n,
-            firstValid: 1000n,
-            lastValid: 2000n,
+            firstValid: 1_000_000_000n,
+            lastValid: 1_000_001_000n,
             genesisID: 'mainnet-v1.0',
             genesisHash: new Uint8Array(Buffer.from(genesisHash, 'base64')),
             flatFee: true,

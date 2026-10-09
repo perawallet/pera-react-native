@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, test, expect } from 'vitest'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     accountType,
     canSignArbitraryData,
@@ -20,8 +21,9 @@ import {
     findAccountByKey,
     getAccountDisplayName,
     hasSigningKeys,
-    isAlgo25Account,
+    isStandaloneAccount,
     isQuantumAccount,
+    isHardwareWalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -30,19 +32,22 @@ import {
     matchesAccountKey,
     resolveImportAccountType,
 } from '../utils'
-import { withCustody } from '../credentials'
 import {
     AccountTypes,
     DerivationTypes,
     type AccountType,
     type WalletAccount,
 } from '../models'
+import { useAccountChainStateStore } from '../store'
 import { MNEMONIC_WORD_COUNT } from '../constants'
 import { buildTestAccount } from './accountFactory'
 import {
     FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from './fakeAccountsChain'
 
 vi.mock('tweetnacl', () => ({
@@ -57,20 +62,25 @@ vi.mock('tweetnacl', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
-}))
-
 describe('services/accounts/utils - canSignViaParticipants', () => {
     const signable = {
         address: 'P1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
     } as WalletAccount
-    const watch = { address: 'P2', type: AccountTypes.watch } as WalletAccount
+    const watch = { address: 'P2', custody: { kind: 'watch' } } as WalletAccount
     const hardware = {
         address: 'P3',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
     } as WalletAccount
 
     test('true when a held participant can sign with its own key', () => {
@@ -96,7 +106,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns account name when present', () => {
         const acc = {
             id: '1',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'Named',
             canSign: true,
@@ -107,7 +121,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns "No Address Found" when address is missing or empty', () => {
         const acc = {
             id: '2',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: '',
             canSign: false,
         } as any
@@ -117,7 +135,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns address unchanged when length <= 11', () => {
         const acc1 = {
             id: '3',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'SHORT',
             canSign: true,
         } as any
@@ -125,7 +147,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
         const acc2 = {
             id: '4',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJK',
             canSign: true,
         } as any
@@ -135,7 +161,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('truncates long addresses to 5 prefix and suffix characters', () => {
         const acc1 = {
             id: '5',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKL',
             canSign: true,
         } as any
@@ -143,7 +173,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
         const acc2 = {
             id: '6',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             canSign: true,
         } as any
@@ -153,7 +187,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('falls back to the truncated address when the name is the full address', () => {
         const acc = {
             id: '7',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             canSign: true,
@@ -164,7 +202,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('falls back to the truncated address when the name is the truncated address', () => {
         const acc = {
             id: '8',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'ABCDE...VWXYZ',
             canSign: true,
@@ -177,7 +219,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
         // migration carries over verbatim.
         const acc = {
             id: '9',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'ABCDEF...UVWXYZ',
             canSign: true,
@@ -188,7 +234,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('falls back to the truncated address when the name truncates the address with a unicode ellipsis', () => {
         const acc = {
             id: '10',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'ABCDEF…UVWXYZ',
             canSign: true,
@@ -199,7 +249,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('keeps a custom name that only looks like a truncation but does not match the address', () => {
         const acc = {
             id: '11',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'ABCDEF...WRONG',
             canSign: true,
@@ -215,7 +269,11 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 describe('services/accounts/utils - account type checks', () => {
     const baseAccount = {
         id: '1',
-        type: 'hdWallet',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'ADDR1',
         keyPairId: 'pk1',
     } as any
@@ -225,7 +283,7 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isHDWalletAccount({
                 ...baseAccount,
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
             } as any),
         ).toBe(false)
     })
@@ -235,7 +293,16 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isLedgerAccount({
                 ...baseAccount,
-                type: 'hardware',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: {
                     manufacturer: 'ledger',
                     deviceId: 'test-device',
@@ -248,30 +315,43 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isLedgerAccount({
                 ...baseAccount,
-                type: 'hardware',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'other' as any,
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: { manufacturer: 'other' as any },
             } as any),
         ).toBe(false)
     })
 
-    test('isAlgo25Account returns true if type is algo25', () => {
-        expect(isAlgo25Account(baseAccount)).toBe(false)
+    test('isStandaloneAccount returns true for a seedless local custody', () => {
+        expect(isStandaloneAccount(baseAccount)).toBe(false)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
             } as any),
         ).toBe(true)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
             } as any),
         ).toBe(false)
         expect(
-            isAlgo25Account({
+            isStandaloneAccount({
                 ...baseAccount,
-                type: 'watch',
+                custody: { kind: 'watch' },
             } as any),
         ).toBe(false)
     })
@@ -281,7 +361,7 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isWatchAccount({
                 ...baseAccount,
-                type: 'watch',
+                custody: { kind: 'watch' },
             } as any),
         ).toBe(true)
     })
@@ -291,10 +371,30 @@ describe('services/accounts/utils - account type checks', () => {
         expect(
             isMultisigAccount({
                 ...baseAccount,
-                type: 'multisig',
+                custody: { kind: 'multisig' },
             } as any),
         ).toBe(true)
     })
+
+    const guards: Record<AccountType, (account: WalletAccount) => boolean> = {
+        standalone: isStandaloneAccount,
+        quantum: isQuantumAccount,
+        hdWallet: isHDWalletAccount,
+        hardware: isHardwareWalletAccount,
+        multisig: isMultisigAccount,
+        watch: isWatchAccount,
+    }
+
+    test.each(Object.values(AccountTypes))(
+        'the %s guard matches only an account of its own kind',
+        type => {
+            const account = buildTestAccount(type)
+
+            for (const [kind, guard] of Object.entries(guards)) {
+                expect(guard(account)).toBe(kind === type)
+            }
+        },
+    )
 
     test('hasSigningKeys checks keyPairId', () => {
         expect(hasSigningKeys(baseAccount)).toBe(true)
@@ -309,12 +409,25 @@ describe('services/accounts/utils - account type checks', () => {
 
 describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () => {
     const localKey = {
-        type: 'hdWallet',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'HD',
         keyPairId: 'pk1',
     } as any
     const hardware = {
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address: 'HW',
         hardwareDetails: {
             manufacturer: 'ledger',
@@ -324,9 +437,9 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
             transportType: 'ble',
         },
     } as any
-    const watch = { type: 'watch', address: 'WATCH' } as any
+    const watch = { custody: { kind: 'watch' }, address: 'WATCH' } as any
     const multisig = {
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address: 'MS',
         multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
     } as any
@@ -350,22 +463,22 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
     // matter what its auth account could do, and a rekeyed signer that still
     // holds its key signs with that key.
     describe('canSignArc60 - rekeyed signers', () => {
+        beforeEach(() => {
+            registerFakeAccountsChain()
+            useAccountChainStateStore.getState().resetState()
+        })
+
         test('rejects a keyless rekeyed account even when its auth account could sign', () => {
-            const rekeyedToLocalKey = {
-                ...watch,
-                rekeyAddress: localKey.address,
-            } as any
-            const rekeyedToHardware = {
-                ...watch,
-                rekeyAddress: hardware.address,
-            } as any
-            expect(canSignArc60(rekeyedToLocalKey)).toBe(false)
-            expect(canSignArc60(rekeyedToHardware)).toBe(false)
+            seedAuthority(watch.address, localKey.address)
+            expect(canSignArc60(watch)).toBe(false)
+
+            seedAuthority(watch.address, hardware.address)
+            expect(canSignArc60(watch)).toBe(false)
         })
 
         test('accepts a rekeyed account that still holds its own key', () => {
-            const rekeyed = { ...localKey, rekeyAddress: watch.address } as any
-            expect(canSignArc60(rekeyed)).toBe(true)
+            seedAuthority(localKey.address, watch.address)
+            expect(canSignArc60(localKey)).toBe(true)
         })
     })
 })
@@ -383,13 +496,13 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 
-    test('25-word mnemonic still auto-resolves to algo25, never quantum', () => {
+    test('25-word mnemonic still auto-resolves to standalone, never quantum', () => {
         // Product decision: a 25-word quantum mnemonic is indistinguishable
-        // from legacy algo25 by word count. Auto-detection deliberately keeps
-        // resolving 25 words to algo25; quantum import only happens through
+        // from a standard one by word count. Auto-detection deliberately keeps
+        // resolving 25 words to standalone; quantum import only happens through
         // its dedicated explicit entrypoint.
         const result = resolveImportAccountType(words(25))
-        expect(result).toEqual({ success: true, accountType: 'algo25' })
+        expect(result).toEqual({ success: true, accountType: 'standalone' })
     })
 
     test('returns failure for 23-word mnemonic', () => {
@@ -409,7 +522,7 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
 
     test('handles leading and trailing whitespace', () => {
         const result = resolveImportAccountType(`  ${words(25)}  `)
-        expect(result).toEqual({ success: true, accountType: 'algo25' })
+        expect(result).toEqual({ success: true, accountType: 'standalone' })
     })
 
     test('handles extra whitespace between words', () => {
@@ -461,7 +574,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount
@@ -470,7 +583,11 @@ const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'h',
         address: overrides.address ?? 'H',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         keyPairId: 'kp-hd',
         hdWalletDetails: {
             account: 0,
@@ -485,7 +602,16 @@ const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'l',
         address: overrides.address ?? 'L',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
         ...overrides,
     }) as WalletAccount
@@ -494,7 +620,7 @@ const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'w',
         address: overrides.address ?? 'W',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         ...overrides,
     }) as WalletAccount
 
@@ -502,7 +628,7 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'm',
         address: overrides.address ?? 'M',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['P1', 'P2', 'P3'],
@@ -515,7 +641,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'f',
         address: overrides.address ?? 'F',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -531,7 +657,7 @@ describe('services/accounts/utils - quantum accounts', () => {
     })
 
     test('other type guards reject quantum accounts', () => {
-        expect(isAlgo25Account(quantum())).toBe(false)
+        expect(isStandaloneAccount(quantum())).toBe(false)
         expect(isHDWalletAccount(quantum())).toBe(false)
         expect(isWatchAccount(quantum())).toBe(false)
         expect(isMultisigAccount(quantum())).toBe(false)
@@ -559,6 +685,7 @@ describe('services/accounts/utils - authority wrappers', () => {
     } as WalletAccount
 
     beforeEach(() => {
+        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain({
             authority: {
                 isDelegated: vi.fn(() => true),
@@ -574,8 +701,31 @@ describe('services/accounts/utils - authority wrappers', () => {
 
         expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(true)
         expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(true)
-        expect(authority?.isDelegated).toHaveBeenCalledWith(account)
-        expect(authority?.canSignProgram).toHaveBeenCalledWith(account)
+        expect(authority?.isDelegated).toHaveBeenCalledWith(
+            account,
+            MAINNET_SCOPE,
+        )
+        expect(authority?.canSignProgram).toHaveBeenCalledWith(
+            account,
+            MAINNET_SCOPE,
+        )
+    })
+
+    test('ask the chain on the selected network', () => {
+        const { authority } = fakeAccountsChain().adapter
+        useNetworkStore.getState().setNetwork('testnet')
+
+        isRekeyedAccount(account, FAKE_CHAIN_ID)
+        canSignProgram(account, FAKE_CHAIN_ID)
+
+        expect(authority?.isDelegated).toHaveBeenCalledWith(
+            account,
+            TESTNET_SCOPE,
+        )
+        expect(authority?.canSignProgram).toHaveBeenCalledWith(
+            account,
+            TESTNET_SCOPE,
+        )
     })
 
     test('fail closed on a chain without an authority', () => {
@@ -597,7 +747,16 @@ describe('services/accounts/utils - accountType', () => {
         ({
             id: `h-${transportType}`,
             address: `LEDGER-${transportType}-ADDR`,
-            type: AccountTypes.hardware,
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: `${transportType}-1`,
+                    deviceName: 'Nano X',
+                    transportType: transportType,
+                },
+                accountIndex: 2,
+            },
             hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: `${transportType}-1`,
@@ -609,11 +768,11 @@ describe('services/accounts/utils - accountType', () => {
 
     // Keyed by type so a new AccountTypes member without a fixture fails typecheck.
     const legacyFixtures: Record<AccountType, WalletAccount[]> = {
-        algo25: [
+        standalone: [
             {
                 id: 'a',
                 address: 'ALGO25-ADDR',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'seed-ed25519',
             },
         ],
@@ -621,14 +780,18 @@ describe('services/accounts/utils - accountType', () => {
             {
                 id: 'q',
                 address: 'QUANTUM-ADDR',
-                type: AccountTypes.quantum,
+                custody: { kind: 'local', seed: 'quantum' },
                 keyPairId: 'seed-quantum',
             },
         ],
         hdWallet: Object.values(DerivationTypes).map(derivationType => ({
             id: `hd-${derivationType}`,
             address: `HD-${derivationType}-ADDR`,
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 3 },
+            },
             keyPairId: `seed-dt${derivationType}`,
             hdWalletDetails: {
                 account: 0,
@@ -642,7 +805,7 @@ describe('services/accounts/utils - accountType', () => {
             {
                 id: 'm',
                 address: 'MSIG-ADDR',
-                type: AccountTypes.multisig,
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['P1', 'P2', 'P3'],
@@ -650,59 +813,33 @@ describe('services/accounts/utils - accountType', () => {
                 },
             },
         ],
-        watch: [{ id: 'w', address: 'WATCH-ADDR', type: AccountTypes.watch }],
+        watch: [{ id: 'w', address: 'WATCH-ADDR', custody: { kind: 'watch' } }],
     }
 
-    const backfilledCases = Object.values(legacyFixtures)
-        .flat()
-        .map(account => [account.id, account] as const)
+    const fixtureCases = Object.entries(legacyFixtures).flatMap(
+        ([kind, accounts]) =>
+            accounts.map(account => [account.id, account, kind] as const),
+    )
 
-    const rekeyed = (account: WalletAccount): WalletAccount => ({
-        ...account,
-        rekeyAddress: 'AUTH-ADDR',
-        rekeyAddressByNetwork: { mainnet: 'AUTH-ADDR', testnet: 'OTHER-AUTH' },
-    })
-
-    test.each(backfilledCases)(
-        'a backfilled %s account derives its stored type',
-        (_, legacy) => {
-            const backfilled = withCustody(legacy)
-
-            expect(backfilled.provenance).toBeDefined()
-            expect(accountType(backfilled)).toBe(legacy.type)
+    test.each(fixtureCases)(
+        'the %s fixture reads as its kind',
+        (_, account, kind) => {
+            expect(accountType(account)).toBe(kind)
         },
     )
 
-    test.each(allTypes)('a built %s account derives its stored type', type => {
+    test.each(allTypes)('a built %s account reads as its kind', type => {
         const account = buildTestAccount(type)
 
         expect(accountType(account)).toBe(type)
-        expect(accountType(account)).toBe(account.type)
+        expect(account).not.toHaveProperty('type')
     })
 
     test.each(allTypes)('a rekeyed %s account keeps its own type', type => {
-        const account = rekeyed(buildTestAccount(type))
+        registerFakeAccountsChain()
+        const account = buildTestAccount(type)
+        seedAuthority(account.address, 'AUTH-ADDR')
 
         expect(accountType(account)).toBe(type)
-    })
-
-    test('provenance decides when it disagrees with the stored type', () => {
-        const account = {
-            ...buildTestAccount(AccountTypes.watch),
-            type: AccountTypes.algo25,
-        } as WalletAccount
-
-        expect(accountType(account)).toBe(AccountTypes.watch)
-    })
-
-    test('a record the backfill skips falls back to its stored type', () => {
-        const malformed = withCustody({
-            id: 'm',
-            address: 'MSIG-ADDR',
-            type: AccountTypes.multisig,
-        } as WalletAccount)
-
-        expect(malformed.provenance).toBeUndefined()
-        expect(accountType(malformed)).toBe(AccountTypes.multisig)
     })
 })

@@ -23,4 +23,4 @@ export {
     setCardTransport,
     resetCardTransport,
 } from './registry'
-export { setRefreshHandler } from './default-transport'
+export { setRefreshHandler, setSessionLostHandler } from './default-transport'

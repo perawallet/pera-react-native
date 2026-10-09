@@ -12,14 +12,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    microAlgosToAlgos,
-    useMinimumFeeConfig,
-    useNetwork,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
+    resolveMinFeeForSender,
+    useFeeConfig,
+    useSuggestedMinFeeQuery,
+} from '@perawallet/wallet-core-signing'
 import { sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
@@ -47,32 +47,34 @@ export const useRekeyTransactionFeeQuery = (
     sourceAddress: string,
     rekeyToAddress: string,
 ): UseRekeyTransactionFeeQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
     // Shared cached query instead of a private getSuggestedParams() fetch —
     // the send flow has usually populated it already.
-    const { data: suggestedParams, isError: isParamsError } =
-        useSuggestedParametersQuery()
+    const {
+        suggestedMinFee: loadedSuggestedMinFee,
+        isError: isSuggestedMinFeeError,
+    } = useSuggestedMinFeeQuery(LEGACY_CHAIN_ID)
     // Fall back to the config floor when the shared query errors (offline /
     // algod down — it fails fast, networkMode 'always'): staying disabled
     // would leave this query pending forever and the confirm CTA dead.
     // resolveMinFeeForSender already guards with max(suggested, config).
     const suggestedMinFee =
-        suggestedParams !== undefined
-            ? BigInt(suggestedParams.minFee)
-            : isParamsError
+        loadedSuggestedMinFee !== undefined
+            ? loadedSuggestedMinFee
+            : isSuggestedMinFeeError
               ? minTxnFee
               : null
 
     const query = useQuery({
-        // Network is part of the key — feePerByte differs between mainnet
+        // Scope is part of the key — feePerByte differs between mainnet
         // and testnet, so a cached fee from one must not satisfy the other.
         // suggestedMinFee too: the queryFn reads it from the closure, so a
         // refreshed value must produce a new cache entry.
         queryKey: [
             'rekey-transaction-fee',
-            network,
+            scope,
             sourceAddress,
             rekeyToAddress,
             String(suggestedMinFee),
@@ -93,7 +95,6 @@ export const useRekeyTransactionFeeQuery = (
             })
             // Built through the same adapter call the submit mutation uses,
             // so the fee shown is the fee paid.
-            const scope = scopeForLegacyNetwork(network)
             const txn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
                 scope,
                 sourceAddress,

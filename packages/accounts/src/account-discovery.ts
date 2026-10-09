@@ -10,18 +10,12 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
-import type {
-    DerivationType,
-    HDWalletAccount,
-    WalletAccount,
-} from './models/accounts'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { HDWalletAccount, WalletAccount } from './models/accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { buildAccount } from './credentials'
+import { recordAuthority } from './store/recordAuthority'
 import {
     accountsAdapterFor,
     addressCodecFor,
@@ -35,7 +29,6 @@ const KEY_INDEX_GAP_LIMIT = 5
 
 type DiscoverAccountsParams = {
     getPublicKey: GetPublicKey
-    derivationType: DerivationType
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
@@ -46,7 +39,6 @@ type ScanAccountKeysParams = {
     keyIndexGapLimit: number
     getPublicKey: GetPublicKey
     walletKeyId: string
-    derivationType: DerivationType
 }
 
 type ScanResult = {
@@ -59,7 +51,6 @@ async function scanAccountKeys({
     keyIndexGapLimit,
     getPublicKey,
     walletKeyId,
-    derivationType,
 }: ScanAccountKeysParams): Promise<ScanResult> {
     const network = useNetworkStore.getState().network
     const adapter = accountsAdapterFor(network)
@@ -79,32 +70,17 @@ async function scanAccountKeys({
             const currentKeyIdx = keyIdx + i
             keyIndices.push(currentKeyIdx)
 
-            const addressBytes = await getPublicKey({
-                account: accountIdx,
-                keyIndex: currentKeyIdx,
-                derivationType,
-            })
+            const hd = { account: accountIdx, keyIndex: currentKeyIdx }
+            const addressBytes = await getPublicKey(hd)
             const address = codec.fromPublicKey(addressBytes, deriveOpts)
 
             const accountData = buildAccount({
-                address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: {
-                        account: accountIdx,
-                        change: 0,
-                        keyIndex: currentKeyIdx,
-                        derivationType,
-                    },
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: {
-                        keyPairId: adapter.hdKeyPairId(walletKeyId, {
-                            account: accountIdx,
-                            keyIndex: currentKeyIdx,
-                            derivationType,
-                        }),
+                custody: { kind: 'local', seed: 'bip39', hd },
+                chainId: adapter.chainId,
+                chains: {
+                    [adapter.chainId]: {
+                        address,
+                        keyPairId: adapter.hdKeyPairId(walletKeyId, hd),
                     },
                 },
             })
@@ -144,7 +120,6 @@ async function scanAccountKeys({
 
 export async function discoverAccounts({
     getPublicKey,
-    derivationType,
     walletKeyId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
@@ -166,7 +141,6 @@ export async function discoverAccounts({
                     keyIndexGapLimit,
                     getPublicKey,
                     walletKeyId,
-                    derivationType,
                 }),
             )
         }
@@ -233,17 +207,20 @@ export async function discoverRekeyedAccounts({
     accountAddresses,
 }: DiscoverRekeyedAccountsParams): Promise<WalletAccount[]> {
     const network = useNetworkStore.getState().network
+    const { chainId } = accountsAdapterFor(network)
+    const scope = scopeForLegacyNetwork(network)
 
     const tasks = accountAddresses.map(async address => {
         const rekeyedAddresses = await fetchRekeyedAddresses(address, network)
 
-        return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
-            buildAccount({
-                address: rekeyedAddress,
-                provenance: { kind: 'watch' },
-                rekeyAddress: address,
-            }),
-        )
+        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => {
+            recordAuthority(scope, rekeyedAddress, address)
+            return buildAccount({
+                custody: { kind: 'watch' },
+                chainId,
+                chains: { [chainId]: { address: rekeyedAddress } },
+            })
+        })
     })
 
     const results = await Promise.all(tasks)

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { encodeAlgorandAddress } from '../blockchain'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 
 export const aggregateTransactionWarnings = (
@@ -69,11 +69,11 @@ export const aggregateTransactionWarnings = (
         // multisig-with-local-participant). Watch-only accounts and dApp
         // escrow/contract accounts (Folks Finance, Tinyman) are excluded.
         if (signableAddresses.has(authorizer) && tx.rekeyTo?.publicKey) {
-            const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
+            const rekeyTarget = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
                 type: 'rekey',
                 senderAddress: tx.sender,
-                targetAddress: rekeyAddress,
+                targetAddress: rekeyTarget,
             })
         }
     }

@@ -55,22 +55,34 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => [
-            { address: LOCAL_ALGO_ADDR, type: actual.AccountTypes.algo25 },
-            { address: LOCAL_WATCH_ADDR, type: actual.AccountTypes.watch },
-            { address: LOCAL_QUANTUM_ADDR, type: actual.AccountTypes.quantum },
+            {
+                address: LOCAL_ALGO_ADDR,
+                custody: { kind: 'local', seed: null },
+            },
+            { address: LOCAL_WATCH_ADDR, custody: { kind: 'watch' } },
+            {
+                address: LOCAL_QUANTUM_ADDR,
+                custody: { kind: 'local', seed: 'quantum' },
+            },
         ],
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
+    useAccountSigTypeQuery: () => sigTypeCheckState,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'testnet' }),
-    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
-    useAccountSigTypeQuery: () => sigTypeCheckState,
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {

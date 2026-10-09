@@ -32,22 +32,19 @@ const mintedOf = (address: string, seedKeyId = 'SEED1'): MintedAccount => ({
     account: {
         id: `ACC-${address}`,
         address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         keyPairId: `${seedKeyId}-ed25519`,
     },
     seedKeyId,
     isNewSeed: true,
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
-    return {
-        ...actual,
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -156,7 +153,6 @@ describe('useImportAccount', () => {
 
         expect(imported.type).toBe('hdWallet')
         expect(imported.walletKeyId).toBe('WALLET1')
-        expect(imported.derivationType).toBe(9)
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         expect(importOp()).not.toHaveBeenCalled()
@@ -284,7 +280,7 @@ describe('useImportAccount', () => {
         const sibling: WalletAccount = {
             id: 'SIBLING',
             address: 'SIBLING_ADDR',
-            type: 'quantum',
+            custody: { kind: 'local', seed: 'quantum' },
             keyPairId: 'SEED1-quantum-pqk1',
         }
         useAccountsStore.setState({

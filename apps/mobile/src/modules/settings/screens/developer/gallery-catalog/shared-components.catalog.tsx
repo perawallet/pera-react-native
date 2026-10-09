@@ -12,7 +12,8 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { PWButton, PWText } from '@components/core'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -128,7 +129,7 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='ALGO'
-                            assetId={ALGO_ASSET_ID}
+                            assetId={nativeAssetFor(LEGACY_CHAIN_ID).assetId}
                             value={new Decimal('42.500000')}
                             precision='assetFull'
                             assetDecimals={6}

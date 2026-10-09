@@ -30,7 +30,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AccountDisplay } from '@components/AccountDisplay'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { isCollectible } from '@perawallet/wallet-core-assets'
 import { EmptyView } from '@components/EmptyView'
 import { InfoCallout } from '@components/InfoCallout'
@@ -45,6 +45,7 @@ export const AssetClaimDetailScreen = () => {
         isClaimBlocked,
         isRejectBlocked,
         handleClaim,
+        canBuy,
         handleAddFunds,
         handleRejectPress,
         handleCopyAssetId,
@@ -103,15 +104,17 @@ export const AssetClaimDetailScreen = () => {
                                 )}
                                 testID='arc59_claim_insufficient_algo'
                             />
-                            <PWButton
-                                variant='secondary'
-                                title={t(
-                                    'messages.claim.insufficient_algo_cta',
-                                )}
-                                onPress={handleAddFunds}
-                                style={styles.addFundsButton}
-                                testID='arc59_claim_add_funds'
-                            />
+                            {canBuy && (
+                                <PWButton
+                                    variant='secondary'
+                                    title={t(
+                                        'messages.claim.insufficient_algo_cta',
+                                    )}
+                                    onPress={handleAddFunds}
+                                    style={styles.addFundsButton}
+                                    testID='arc59_claim_add_funds'
+                                />
+                            )}
                         </PWView>
                     )}
                     <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>

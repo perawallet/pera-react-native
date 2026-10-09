@@ -25,14 +25,17 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    authorityOf,
     canSignWith,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
 import { isElementDisabled } from '@test-utils/rnw'
@@ -152,9 +155,15 @@ describe('Flow: Ledger rekeyed-account import', () => {
                 const accounts = useAccountsStore.getState().accounts
                 const watch = accounts.find(a => a.address === REKEYED_ADDRESS)
                 const hw = accounts.find(a => a.address === LEDGER_ADDRESS)
-                expect(watch?.type).toBe(AccountTypes.watch)
-                expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
-                expect(hw?.type).toBe(AccountTypes.hardware)
+                expect(watch ? accountType(watch) : undefined).toBe(
+                    AccountTypes.watch,
+                )
+                expect(
+                    authorityOf(watch!, getSelectedScope(LEGACY_CHAIN_ID)),
+                ).toBe(LEDGER_ADDRESS)
+                expect(hw ? accountType(hw) : undefined).toBe(
+                    AccountTypes.hardware,
+                )
                 expect(canSignWith(watch!, accounts, LEGACY_CHAIN_ID)).toBe(
                     true,
                 )

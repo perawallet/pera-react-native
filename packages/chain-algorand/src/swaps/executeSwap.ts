@@ -13,11 +13,13 @@
 import { Decimal } from 'decimal.js'
 import {
     mapToDisplayableTransaction,
-    type PeraDisplayableTransaction,
-    type PeraSignedTransaction,
-    type PeraTransaction,
     type getAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
+import type {
+    PeraDisplayableTransaction,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAssetFrozen,
     isMultisigAccount,
@@ -27,8 +29,8 @@ import {
     STALE_OPEN_ATTEMPT_MS,
 } from '@perawallet/wallet-core-signing'
 import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
+import { isAlgorandNativeAssetId } from '../descriptor'
 import {
-    ALGO_ASSET_ID,
     encodeToBase64,
     logger,
     type Network,
@@ -104,7 +106,6 @@ export const executeAlgorandSwap = async (
     }: ExecuteSwapParams,
     {
         scope,
-        network,
         algorandClient,
         assetMbr,
         deviceId,
@@ -168,7 +169,7 @@ export const executeAlgorandSwap = async (
                 .accountInformation(account.address)
                 .do()
             const holdsAssetOut =
-                quote.assetOut.assetId === ALGO_ASSET_ID ||
+                isAlgorandNativeAssetId(quote.assetOut.assetId) ||
                 (info.assets ?? []).some(
                     holding =>
                         String(holding.assetId) === quote.assetOut.assetId,
@@ -230,7 +231,7 @@ export const executeAlgorandSwap = async (
         let blocked: boolean
         try {
             const openAttempts = await getOpenSubmissionAttempts({
-                network,
+                scope,
                 sender: swapSender,
                 flows: ['swap', 'cosign'],
                 unevaluatableBefore,
@@ -312,7 +313,7 @@ export const executeAlgorandSwap = async (
                     registerHandoff({
                         swapIdStr,
                         signRequestId,
-                        network,
+                        scope,
                         multisigAddress,
                         deviceId: deviceId ?? '',
                         msigMetadata: {

@@ -11,7 +11,7 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     restoreCloudBackup,
@@ -20,6 +20,7 @@ import {
 import type { Argon2idConfig } from '../models'
 import { applyBackupSettings } from '../sync/backupSettingsStores'
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
+import { useCloudBackupRestoreProgressStore } from '../store/restoreProgressStore'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
 import { useCloudBackupContactImport } from './useCloudBackupContactImport'
@@ -51,6 +52,9 @@ export const useRestoreCloudBackupMutation = (
     const deviceId = useDeviceID(network)
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
+    const setProgress = useCloudBackupRestoreProgressStore(
+        state => state.setProgress,
+    )
     const { importAccounts } = useCloudBackupImport()
     const { importContacts } = useCloudBackupContactImport()
     const { importPasskeys } = useCloudBackupPasskeyImport(
@@ -72,17 +76,23 @@ export const useRestoreCloudBackupMutation = (
             if (!mnemonic) {
                 throw new Error('Cloud backup restore phrase is missing')
             }
-            const result = await restoreCloudBackup({
-                mnemonic,
-                salt,
-                argon2id,
-                deviceId,
-                network,
-                importAccounts,
-                importContacts,
-                importPasskeys,
-                importSettings: applyBackupSettings,
-            })
+            let result: RestoreCloudBackupResult
+            try {
+                result = await restoreCloudBackup({
+                    mnemonic,
+                    salt,
+                    argon2id,
+                    deviceId,
+                    network,
+                    importAccounts,
+                    importContacts,
+                    importPasskeys,
+                    importSettings: applyBackupSettings,
+                    onProgress: setProgress,
+                })
+            } finally {
+                setProgress(null)
+            }
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.
             setConfigured({ backupId: result.backupId, salt, deviceId })

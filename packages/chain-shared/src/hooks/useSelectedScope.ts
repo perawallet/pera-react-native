@@ -13,13 +13,21 @@
 import { useMemo } from 'react'
 import type {
     ChainId,
+    ChainMode,
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { selectChainNetworkId, useNetworkStore } from '../store/network-store'
+import {
+    selectChainMode,
+    selectChainNetworkId,
+    useNetworkStore,
+} from '../store/network-store'
 
 export const useSelectedNetworkId = (chainId: ChainId): NetworkId =>
     useNetworkStore(state => selectChainNetworkId(state, chainId))
+
+export const useSelectedChainMode = (chainId: ChainId): ChainMode =>
+    useNetworkStore(state => selectChainMode(state, chainId))
 
 export const useSelectedScope = (chainId: ChainId): ChainScope => {
     const networkId = useSelectedNetworkId(chainId)

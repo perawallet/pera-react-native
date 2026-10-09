@@ -54,8 +54,19 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
@@ -120,7 +131,7 @@ import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
 
 const connectedAccount = {
     address: 'ADDR1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
@@ -331,7 +342,16 @@ describe('useSelectFundingTypeSheet', () => {
         mockAccounts = [
             {
                 address: 'ADDR1',
-                type: 'hardware',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: { manufacturer: 'ledger' },
             } as unknown as WalletAccount,
         ]

@@ -13,7 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupTransactionListScreen } from '../useGroupTransactionListScreen'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupId: 'GROUP_ABC' }
@@ -32,7 +32,7 @@ const mockTx2 = { id: 'tx-2', sender: 'ADDR2' } as PeraDisplayableTransaction
 
 const mockUseGroupTransactionsQuery = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useGroupTransactionsQuery: (...args: unknown[]) =>
         mockUseGroupTransactionsQuery(...args),
 }))

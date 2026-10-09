@@ -28,6 +28,8 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets'
@@ -64,7 +66,11 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const canOptIn = useCanSignWith(account)
+    const canSign = useCanSignWith(account)
+    const canManageAssets = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'manageAssets' },
+    })
+    const canOptIn = canSign && canManageAssets
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(

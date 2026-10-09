@@ -12,9 +12,10 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useLedgerAccountPreview,
-    AccountTypes,
+    buildAccount,
     type AssetWithAccountBalance,
     type WalletAccount,
     type HardwareWalletAccount,
@@ -44,7 +45,7 @@ export type LedgerInfoListItem =
           hasKnownDecimals: boolean
       }
     | {
-          kind: 'rekeyAddress'
+          kind: 'authorityAccount'
           key: string
           account: WalletAccount
           displayStateOverride?: AccountDisplayState
@@ -57,6 +58,34 @@ type UseLedgerAccountInfoContentResult = {
     isError: boolean
     refetch: () => void
 }
+
+const ledgerDisplayAccount = (
+    address: string,
+    accountIndex: number,
+): HardwareWalletAccount =>
+    buildAccount({
+        id: address,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: '',
+                deviceName: '',
+                transportType: 'ble',
+            },
+            accountIndex,
+        },
+        chainId: LEGACY_CHAIN_ID,
+        chains: { [LEGACY_CHAIN_ID]: { address } },
+    })
+
+const watchDisplayAccount = (address: string): WatchAccount =>
+    buildAccount({
+        id: address,
+        custody: { kind: 'watch' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: { [LEGACY_CHAIN_ID]: { address } },
+    })
 
 export const useLedgerAccountInfoContent = (
     address: string,
@@ -73,29 +102,12 @@ export const useLedgerAccountInfoContent = (
 
         // Build the synth account for the sheet's own address.
         // If the account is rekeyed to an auth address, render it as a watch
-        // account with rekeyAddress set. Otherwise render it as a hardware
+        // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
-            preview.rekey.kind === 'rekeyedTo'
-                ? ({
-                      // Display-only synth account, keyed by its address.
-                      id: preview.address,
-                      type: AccountTypes.watch,
-                      address: preview.address,
-                      rekeyAddress: preview.rekey.authAddress,
-                  } satisfies WatchAccount)
-                : ({
-                      id: preview.address,
-                      type: AccountTypes.hardware,
-                      address: preview.address,
-                      hardwareDetails: {
-                          manufacturer: 'ledger',
-                          deviceId: '',
-                          deviceName: '',
-                          accountIndex,
-                          transportType: 'ble',
-                      },
-                  } satisfies HardwareWalletAccount)
+            preview.rekey.kind === 'delegatedTo'
+                ? watchDisplayAccount(preview.address)
+                : ledgerDisplayAccount(preview.address, accountIndex)
 
         // Extract usdPrice from the ALGO preview asset for the account row.
         const algoPreviewAsset = preview.assets.find(a => a.isAlgo)
@@ -117,7 +129,7 @@ export const useLedgerAccountInfoContent = (
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
                 // already yields the right icon, no override needed.
-                ...(preview.rekey.kind === 'rekeyedTo'
+                ...(preview.rekey.kind === 'delegatedTo'
                     ? { displayStateOverride: 'rekeyedSignable' as const }
                     : {}),
             },
@@ -145,22 +157,14 @@ export const useLedgerAccountInfoContent = (
             })),
         ]
 
-        if (preview.rekey.kind === 'rekeyedTo') {
+        if (preview.rekey.kind === 'delegatedTo') {
             // Build a synth hardware account for the auth address (it's a Ledger
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
-            // only reads type/address/name for display.
-            const authSynthAccount: HardwareWalletAccount = {
-                id: preview.rekey.authAddress,
-                type: AccountTypes.hardware,
-                address: preview.rekey.authAddress,
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: '',
-                    deviceName: '',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
-            }
+            // only reads kind/address/name for display.
+            const authSynthAccount = ledgerDisplayAccount(
+                preview.rekey.authorityAddress,
+                0,
+            )
             list.push(
                 {
                     kind: 'sectionHeader',
@@ -168,8 +172,8 @@ export const useLedgerAccountInfoContent = (
                     title: t('ledger.account_info.can_be_signed_by'),
                 },
                 {
-                    kind: 'rekeyAddress',
-                    key: `rekey-${preview.rekey.authAddress}`,
+                    kind: 'authorityAccount',
+                    key: `rekey-${preview.rekey.authorityAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
                 },
@@ -182,13 +186,9 @@ export const useLedgerAccountInfoContent = (
             })
             preview.rekey.addresses.forEach(addr => {
                 // These rekeyed addresses are watch accounts (no key on this device).
-                const watchSynth: WatchAccount = {
-                    id: addr,
-                    type: AccountTypes.watch,
-                    address: addr,
-                }
+                const watchSynth = watchDisplayAccount(addr)
                 list.push({
-                    kind: 'rekeyAddress',
+                    kind: 'authorityAccount',
                     key: `rekey-${addr}`,
                     account: watchSynth,
                     // Address is rekeyed to this Ledger — display as

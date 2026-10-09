@@ -19,8 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
-// A cast: `CHAIN_IDS` lists shipped chains only.
-export const ETHEREUM_CHAIN_ID = 'ethereum' as ChainId
+export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
 
 export const allCapabilities = (isEnabled: boolean): ChainCapabilities =>
     Object.fromEntries(
@@ -46,6 +45,7 @@ export const fixtureEthereumDescriptor: ChainDescriptor = {
     ...algorandDescriptor,
     id: ETHEREUM_CHAIN_ID,
     displayName: 'Ethereum',
+    uriSchemes: ['ethereum'],
     networks: [
         ethereumNetwork({
             id: 'mainnet',

@@ -15,7 +15,9 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAccountsStore } from '../store'
+import { isKeyReferenced } from '../credentials'
 import { cleanupRemovedAccountData } from '../cleanup'
+import { isStandaloneAccount } from '../utils'
 import {
     invalidateAccountQueries,
     removeAccountQueriesForAddresses,
@@ -50,6 +52,12 @@ export const useRemoveAccountByAddress = () => {
                 if (!sharedSeed) {
                     await removeKeyAndChildren(seedId)
                 }
+            } else if (
+                isStandaloneAccount(account) &&
+                !isKeyReferenced(remaining, account.keyPairId)
+            ) {
+                // A raw key has no seed above it, so nothing else would sweep it.
+                await deleteKey(account.keyPairId)
             }
         }
 

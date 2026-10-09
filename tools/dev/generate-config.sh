@@ -78,6 +78,27 @@ if [ "${APP_ENV:-}" == "production" ]; then
   fi
 fi
 
+# Ethereum's RPC endpoints have no committed default, so in any channel a build
+# that ships the chain without them would only fail once the app reads chain state.
+# An allowlist that bakes the chain list but drops a URL ships the same way.
+is_allowlisted() {
+  [ -z "${CONFIG_ALLOWLIST:-}" ] || [[ " $CONFIG_ALLOWLIST " == *" $1 "* ]]
+}
+if [[ ",${CHAINS//[[:space:]]/}," == *",ethereum,"* ]] && is_allowlisted chainIds; then
+  for pair in ETHEREUM_MAINNET_RPC_URL:ethereumMainnetRpcUrl ETHEREUM_SEPOLIA_RPC_URL:ethereumSepoliaRpcUrl; do
+    var="${pair%%:*}"
+    key="${pair#*:}"
+    if [ -z "${!var:-}" ]; then
+      echo "ERROR: $var is unset but CHAINS ships ethereum." >&2
+      exit 1
+    fi
+    if ! is_allowlisted "$key"; then
+      echo "ERROR: CONFIG_ALLOWLIST drops $key but CHAINS ships ethereum." >&2
+      exit 1
+    fi
+  done
+fi
+
 echo "Generating configuration from environment variables..."
 
 # Start the file content
@@ -89,6 +110,26 @@ cat <<EOF > "$OUTPUT_FILE"
 
 export const generatedEnv = {
 EOF
+
+# A value is emitted as a TypeScript string literal, never pasted in raw: a
+# `"`, a backslash or a newline in an env value would otherwise end the literal
+# and run as code in generated-env.ts, which is compiled into every bundle.
+# Only those values pay for a node call; JSON.stringify output is a valid TS
+# string literal, control characters included.
+ts_string_literal() {
+  local value="$1"
+  case "$value" in
+    *[\\\"]*|*[[:cntrl:]]*)
+      # Passed through the environment so a value starting with `-` can't
+      # read as a node option.
+      TS_LITERAL_VALUE="$value" node -e \
+        'process.stdout.write(JSON.stringify(process.env.TS_LITERAL_VALUE))'
+      ;;
+    *)
+      printf '"%s"' "$value"
+      ;;
+  esac
+}
 
 # Function to append config if variable exists
 # Usage: append_config "ENV_VAR_NAME" "configKey" "type"
@@ -108,15 +149,19 @@ append_config() {
   
   if [ -n "$value" ]; then
     if [ "$type" == "string" ]; then
-      echo "  $config_key: \"$value\"," >> "$OUTPUT_FILE"
+      printf '  %s: %s,\n' "$config_key" "$(ts_string_literal "$value")" >> "$OUTPUT_FILE"
     elif [ "$type" == "boolean" ]; then
       if [ "$value" == "true" ]; then
-        echo "  $config_key: true," >> "$OUTPUT_FILE"
+        printf '  %s: true,\n' "$config_key" >> "$OUTPUT_FILE"
       else
-        echo "  $config_key: false," >> "$OUTPUT_FILE"
+        printf '  %s: false,\n' "$config_key" >> "$OUTPUT_FILE"
       fi
     elif [ "$type" == "number" ]; then
-      echo "  $config_key: $value," >> "$OUTPUT_FILE"
+      if ! [[ "$value" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "ERROR: $env_var must be a number, got: $value" >&2
+        exit 1
+      fi
+      printf '  %s: %s,\n' "$config_key" "$value" >> "$OUTPUT_FILE"
     fi
   fi
 }
@@ -239,6 +284,14 @@ append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 # shell can't enumerate chain ids, so each chain gets its own line.
 append_config "CHAINS" "chainIds" "string"
 append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
+append_config "CHAIN_ETHEREUM_CAPABILITIES" "chainEthereumCapabilities" "string"
+
+# Ethereum: public JSON-RPC endpoints per network, and per network the comma
+# list of Pera services the backend serves for it (empty means none).
+append_config "ETHEREUM_MAINNET_RPC_URL" "ethereumMainnetRpcUrl" "string"
+append_config "ETHEREUM_SEPOLIA_RPC_URL" "ethereumSepoliaRpcUrl" "string"
+append_config "ETHEREUM_MAINNET_PERA_SERVICES" "ethereumMainnetPeraServices" "string"
+append_config "ETHEREUM_SEPOLIA_PERA_SERVICES" "ethereumSepoliaPeraServices" "string"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

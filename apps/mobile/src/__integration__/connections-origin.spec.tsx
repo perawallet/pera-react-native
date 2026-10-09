@@ -29,7 +29,6 @@ import { render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -53,14 +52,14 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'origin-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'origin-a-key',
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'origin-b',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: HD_TEST_ADDRESS,
     keyPairId: 'origin-b-key',
     name: 'DeFi',

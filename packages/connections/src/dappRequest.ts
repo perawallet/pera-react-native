@@ -73,6 +73,13 @@ export interface DappRequestChainAdapter {
         scope: ChainScope,
         customGenesisHash: string | undefined,
     ): NetworkId | undefined
+    /**
+     * Each address's empty signature on the active network: public data every
+     * transport hands a dApp unprompted (WalletConnect's
+     * `algo_getEmptySignatures`, the injected provider's connect result). An
+     * address left out is unknown.
+     */
+    emptySignaturesFor(addresses: readonly string[]): Record<string, string>
     /** What WalletConnect (v1 and v2) needs to route and validate this chain's requests. */
     readonly walletConnect: {
         /** CAIP-2 namespace, v2 only. */

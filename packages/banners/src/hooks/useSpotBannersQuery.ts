@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -31,11 +35,12 @@ export type UseSpotBannersQueryResult = {
 }
 
 export const useSpotBannersQuery = (): UseSpotBannersQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network)
 
     const query = useQuery({
-        queryKey: getSpotBannersQueryKey(network, deviceID ?? ''),
+        queryKey: getSpotBannersQueryKey(scope, deviceID ?? ''),
         queryFn: () => fetchSpotBanners(network, deviceID ?? ''),
         enabled: !!deviceID?.length,
         staleTime: config.reactQueryShortLivedStaleTime,

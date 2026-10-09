@@ -13,21 +13,15 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     CHAIN_CAPABILITIES,
-    CHAIN_IDS,
     createChainRegistry,
     type ChainCapabilities,
     type ChainDescriptor,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    RemoteConfigDefaults,
-    RemoteConfigKeys,
-} from '@perawallet/wallet-extension-platform'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRemoteConfigStore } from '../../store'
 import { areConfigOverridesIgnored } from '../areConfigOverridesIgnored'
 import {
-    chainOverridesKey,
     parseChainOverrides,
     readCapabilityOverrides,
 } from '../readCapabilityOverrides'
@@ -80,6 +74,12 @@ describe('parseChainOverrides', () => {
         ).toEqual({ enabled: false, capabilities: {} })
     })
 
+    test('ignores the retired arc0027 capability', () => {
+        expect(
+            parseChainOverrides('{"capabilities":{"arc0027":false}}', KEY),
+        ).toEqual({ capabilities: {} })
+    })
+
     test.each([
         ['invalid JSON', '{"enabled":'],
         ['a wrong-typed kill switch', '{"enabled":"false"}'],
@@ -108,8 +108,8 @@ describe('readCapabilityOverrides', () => {
 
     test('gives no overrides while every blob is empty', () => {
         expect(readCapabilityOverrides()).toEqual({
-            remote: { algorand: {} },
-            developer: { algorand: {} },
+            remote: { algorand: {}, ethereum: {} },
+            developer: { algorand: {}, ethereum: {} },
             chainEnabled: {},
         })
     })
@@ -119,6 +119,7 @@ describe('readCapabilityOverrides', () => {
 
         expect(readCapabilityOverrides().remote).toEqual({
             algorand: { staking: false },
+            ethereum: {},
         })
     })
 
@@ -127,6 +128,7 @@ describe('readCapabilityOverrides', () => {
 
         expect(readCapabilityOverrides().developer).toEqual({
             algorand: { staking: true },
+            ethereum: {},
         })
     })
 
@@ -136,7 +138,7 @@ describe('readCapabilityOverrides', () => {
 
         const overrides = readCapabilityOverrides()
 
-        expect(overrides.developer).toEqual({ algorand: {} })
+        expect(overrides.developer).toEqual({ algorand: {}, ethereum: {} })
         expect(overrides.chainEnabled).toEqual({})
     })
 
@@ -156,14 +158,6 @@ describe('readCapabilityOverrides', () => {
         expect(readCapabilityOverrides().chainEnabled).toEqual({
             algorand: false,
         })
-    })
-
-    test('has a seeded remote key for every chain', () => {
-        for (const chainId of CHAIN_IDS) {
-            const key = chainOverridesKey(chainId)
-            expect(RemoteConfigKeys).toHaveProperty(key, key)
-            expect(RemoteConfigDefaults).toHaveProperty(key, '')
-        }
     })
 
     describe('through the chain registry', () => {

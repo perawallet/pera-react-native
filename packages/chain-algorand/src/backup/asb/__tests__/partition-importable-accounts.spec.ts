@@ -11,10 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     AsbAccountKind,
     type AsbBackupAccount,
@@ -43,7 +40,7 @@ const watch = (address: string): AsbBackupAccount => ({
 const algo25 = (address: string): WalletAccount => ({
     id: address,
     address,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     keyPairId: 'k',
 })
 

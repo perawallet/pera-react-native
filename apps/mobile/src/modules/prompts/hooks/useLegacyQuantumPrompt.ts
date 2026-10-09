@@ -18,7 +18,11 @@ import {
     isQuantumAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { isLegacyQuantumChild } from '@modules/accounts'
 
@@ -38,7 +42,8 @@ export type UseLegacyQuantumPromptResult = {
 export const useLegacyQuantumPrompt = (): UseLegacyQuantumPromptResult => {
     const accounts = useAllAccounts()
     const { getKey } = useKMS()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const legacyAddresses = useMemo(
         () =>
@@ -54,7 +59,7 @@ export const useLegacyQuantumPrompt = (): UseLegacyQuantumPromptResult => {
     // instead of doubling the indexer round-trip.
     const lookups = useQueries({
         queries: legacyAddresses.map(address => ({
-            queryKey: getRekeyedAddressesQueryKey(address, network),
+            queryKey: getRekeyedAddressesQueryKey(address, scope),
             queryFn: () => fetchRekeyedAddresses(address, network),
             staleTime: 30_000,
         })),

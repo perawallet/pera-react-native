@@ -32,13 +32,14 @@ vi.mock('../../sync/account-syncer', () => ({
         mockEnsureAccountFetched(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: (...args: unknown[]) =>
         mockUseAssetPricesQuery(...args),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 const createWrapper = () => {
@@ -58,7 +59,7 @@ const makeAccount = (address: string): WalletAccount =>
         address,
         name: address,
         id: address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         canSign: true,
     }) as WalletAccount
 

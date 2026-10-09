@@ -12,6 +12,7 @@
 
 import type { MigrationChainAdapter } from '@perawallet/wallet-core-migrate'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { recordLegacyAuthority } from './buildKeylessAccount'
 import {
     classifyLegacyAccountRoute,
     isKeylessLegacyAccount,
@@ -23,4 +24,5 @@ export const algorandMigrationAdapter: MigrationChainAdapter = {
     migrateAccount: migrateLegacyAccount,
     isKeylessAccount: isKeylessLegacyAccount,
     classifyAccountRoute: classifyLegacyAccountRoute,
+    recordLegacyAuthority,
 }

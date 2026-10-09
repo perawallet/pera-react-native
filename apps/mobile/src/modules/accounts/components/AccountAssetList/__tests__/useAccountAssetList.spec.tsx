@@ -16,6 +16,8 @@ import { Decimal } from 'decimal.js'
 import { useAccountAssetList } from '../useAccountAssetList'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockAccount = {
     address: 'test-address',
@@ -114,6 +116,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
+        useIsNativeAssetId: () => (id: unknown) =>
+            id != null && String(id) === NATIVE_ASSET.assetId,
         useNativeAsset: () => NATIVE_ASSET,
         nativeAssetFor: () => NATIVE_ASSET,
         isNativeAssetId: (_chainId: string, assetId: string) =>
@@ -158,10 +162,24 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useAccountAssetList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockAssetsQuery.holdings = [makeHolding('123')]
         mockAssetsQuery.isPending = false
         mockAssetsQuery.isPlaceholderData = false
         mockPreferences.assetSortMode = 'balanceDesc'
+    })
+
+    it('offers asset management only while the manageAssets capability is on', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+        expect(result.current.canManageAssets).toBe(true)
+        expect(result.current.renderItemProps.canManageAssets).toBe(true)
+
+        act(() => setCapabilityOverrides({ manageAssets: false }))
+
+        expect(result.current.canManageAssets).toBe(false)
+        expect(result.current.renderItemProps.canManageAssets).toBe(false)
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {

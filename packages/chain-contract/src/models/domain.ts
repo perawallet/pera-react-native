@@ -39,18 +39,40 @@ export const isNativeAsset = (
     ref.chainId === descriptor.id &&
     ref.assetId === descriptor.nativeAsset.ref.assetId
 
-export type SigningScheme = 'ed25519' | 'falcon-1024'
+export type SigningScheme = 'ed25519' | 'falcon-1024' | 'secp256k1'
 
-export type AccountChainState = {
+/**
+ * Account data only its own chain reads, persisted on the account's chain
+ * entry. A chain package adds its member, discriminated by `family`.
+ */
+export type ChainAccountNative = {
     family: 'algorand'
-    authAddress?: string
-    /** microAlgos. */
-    minBalance: Decimal
-    status: 'Offline' | 'Online' | 'NotParticipating'
-    totalAssetsOptedIn: number
-    totalCreatedAssets: number
-    totalAppsOptedIn: number
+    /** Present on a multisig account; Algorand derives the address from it. */
+    multisig?: { version: number; threshold: number; addresses: string[] }
+    /**
+     * Present on a post-quantum account; `publicKey` is base64. Kept on the
+     * record because a realm that can't open the keystore (the extension's
+     * offscreen document) still has to describe the account's signature.
+     */
+    pq?: { scheme: Extract<SigningScheme, 'falcon-1024'>; publicKey: string }
 }
+
+export type AccountChainState =
+    | {
+          family: 'algorand'
+          authAddress?: string
+          /** microAlgos. */
+          minBalance: Decimal
+          status: 'Offline' | 'Online' | 'NotParticipating'
+          totalAssetsOptedIn: number
+          totalCreatedAssets: number
+          totalAppsOptedIn: number
+      }
+    | {
+          family: 'evm'
+          /** Transaction count; `pending` includes transactions still in the mempool. */
+          nonce: { latest: number; pending: number }
+      }
 
 export interface AccountState {
     address: string
@@ -104,13 +126,15 @@ export interface TransactionSummary {
     icon: TransactionIconKind
 }
 
-export type ChainTransactionData = {
-    family: 'algorand'
-    /** Base64. */
-    groupId?: string
-    rekeyTo?: string
-    closeRemainderTo?: string
-}
+export type ChainTransactionData =
+    | {
+          family: 'algorand'
+          /** Base64. */
+          groupId?: string
+          rekeyTo?: string
+          closeRemainderTo?: string
+      }
+    | { family: 'evm' }
 
 export interface UnsignedTransaction {
     scope: ChainScope
@@ -205,6 +229,8 @@ export interface PaymentUriOpts {
     amount?: Decimal
     label?: string
     note?: string
+    /** Unset in a parsed URI that names no network; the current network applies. A chain whose URIs carry no network ignores it. */
+    networkId?: NetworkId
 }
 
 export interface MessageSummary {

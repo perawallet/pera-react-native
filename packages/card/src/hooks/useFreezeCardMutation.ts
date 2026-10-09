@@ -11,7 +11,11 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { freezeCard } from '../api/card'
 import { CardStatus, type Card } from '../models/card'
 import { cardMutationKeys, cardQueryKeys } from './querykeys'
@@ -20,7 +24,8 @@ import { toCardMutationResult, type CardMutationResult } from './types'
 export type UseFreezeCardMutationResult = CardMutationResult<void>
 
 export const useFreezeCardMutation = (): UseFreezeCardMutationResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
@@ -32,11 +37,11 @@ export const useFreezeCardMutation = (): UseFreezeCardMutationResult => {
             // (the Card Frozen banner) updates immediately; the invalidation
             // then reconciles with the server.
             queryClient.setQueryData<Card | null>(
-                cardQueryKeys.status(network),
+                cardQueryKeys.status(scope),
                 prev => (prev ? { ...prev, status: CardStatus.Frozen } : prev),
             )
             void queryClient.invalidateQueries({
-                queryKey: cardQueryKeys.status(network),
+                queryKey: cardQueryKeys.status(scope),
             })
         },
     })

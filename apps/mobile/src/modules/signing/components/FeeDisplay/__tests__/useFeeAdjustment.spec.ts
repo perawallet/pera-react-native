@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useFeeAdjustment } from '../useFeeAdjustment'
 

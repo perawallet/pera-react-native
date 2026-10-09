@@ -12,10 +12,7 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     applyDeltas,
     buildLocalItems,
@@ -360,7 +357,7 @@ describe('areKeysDeletedFromBackup', () => {
 
 const algo25 = {
     id: '1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'kp-1',
     name: 'Main',
@@ -369,7 +366,11 @@ const algo25 = {
 const hdChild = (address: string, keyIndex: number) =>
     ({
         id: address,
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: keyIndex },
+        },
         address,
         keyPairId: `kp-${address}`,
         name: address,

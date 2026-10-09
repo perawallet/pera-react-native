@@ -10,24 +10,19 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
-import {
-    type DerivationType,
-    type ImportAccountType,
-    type WalletAccount,
-} from '../models'
+import { type ImportAccountType, type WalletAccount } from '../models'
 import { DuplicateAccountError } from '../errors'
 import { accountsAdapterFor, requireSingleKeyAccounts } from '../chain-adapter'
 
 export type ImportHDPendingResult = {
     type: 'hdWallet'
     walletKeyId: string
-    derivationType: DerivationType
 }
 
 export type ImportAccountResult =
@@ -84,10 +79,10 @@ export const useImportAccount = () => {
         type: ImportAccountType
     }): Promise<ImportAccountResult> => {
         if (type === 'hdWallet') {
-            const { walletKeyId, derivationType } = await prepareImport({
+            const { walletKeyId } = await prepareImport({
                 mnemonicIndices,
             })
-            return { type: 'hdWallet', walletKeyId, derivationType }
+            return { type: 'hdWallet', walletKeyId }
         }
 
         return requireSingleKeyAccounts(

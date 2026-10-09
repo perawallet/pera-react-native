@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import type {
-    ChainDescriptor,
-    ChainNetwork,
-    NetworkId,
+import {
+    isNativeAsset,
+    type ChainDescriptor,
+    type ChainNetwork,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
@@ -92,6 +93,8 @@ export const algorandDescriptor: ChainDescriptor = {
             ed25519: (account, keyIndex) =>
                 `m/44'/283'/${account}'/0/${keyIndex}`,
         },
+        rawKeySchemes: ['ed25519'],
+        standaloneSecret: 'mnemonic',
     },
     protocol: {
         feeModel: 'flat',
@@ -102,6 +105,7 @@ export const algorandDescriptor: ChainDescriptor = {
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
+        hasTokenApproval: false,
         multipleAddressesPerAccount: false,
     },
     explorer: {
@@ -110,8 +114,23 @@ export const algorandDescriptor: ChainDescriptor = {
         assetUrl: explorerLink('asset'),
     },
     finality: { kind: 'instant' },
+    uriSchemes: ['algorand'],
 }
+
+// Indexer, AlgoKit and Pera API ids arrive as strings, numbers or bigints; a
+// raw `=== '0'` would miss `0n`.
+export const isAlgorandNativeAssetId = (
+    assetId: string | number | bigint | null | undefined,
+): boolean =>
+    assetId != null &&
+    isNativeAsset(
+        { chainId: ALGORAND_CHAIN_ID, assetId: String(assetId) },
+        algorandDescriptor,
+    )
 
 // A subpath free of the adapter graph, so a consumer's tests can read the
 // descriptor without resolving the native modules the adapters pull in.
-export { algorandCapabilityDefaults } from '../capability-defaults'
+export {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '../capability-defaults'

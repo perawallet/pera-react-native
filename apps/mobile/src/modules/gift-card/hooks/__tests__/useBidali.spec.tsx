@@ -19,7 +19,7 @@ const mockAccount: WalletAccount = {
     id: 'bidali-account',
     address: 'TESTADDRESS123',
     name: 'Test Account',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'test-key-pair-id',
 }
 

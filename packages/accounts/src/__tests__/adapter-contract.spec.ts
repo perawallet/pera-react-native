@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import type { AccountsChainAdapter } from '../chain-adapter'
 import { InvalidBip44PathError } from '../errors'
-import { AccountTypes, DerivationTypes, type WalletAccount } from '../models'
+import { DerivationTypes, type WalletAccount } from '../models'
 import { canSignDirectly } from '../utils'
 import { accountsContractTests } from './adapter-contract'
 
@@ -45,14 +45,15 @@ const HD_PATH = /^m\/44'\/9999'\/(\d+)'\/0\/(\d+)$/
 
 const fixtureAdapter: AccountsChainAdapter = {
     chainId: FIXTURE_CHAIN_ID,
-    hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: async address => {
         const account = await getAccount(address)
         if (!account) throw new Error('no such account')
         return {
             nativeBalance: new Decimal(account.balance),
+            nativeBalanceBaseUnits: new Decimal(account.balance),
             minBalance: new Decimal(0),
-            authAddress: null,
+            authorityAddress: null,
+            chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
             holdings: [
                 {
                     assetId: NATIVE_ASSET_ID,
@@ -67,6 +68,9 @@ const fixtureAdapter: AccountsChainAdapter = {
             ],
             observedRound: null,
         }
+    },
+    toAccountInformationAddress: () => {
+        throw new Error('read deferred with the chain state model')
     },
     fetchAccountInformation: () =>
         Promise.reject(new Error('read deferred with the chain state model')),
@@ -90,8 +94,8 @@ const fixtureAdapter: AccountsChainAdapter = {
         rootKey =>
         async ({ account, keyIndex }) =>
             Uint8Array.from([account, keyIndex, ...rootKey.subarray(0, 30)]),
-    hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
-        `${seedKeyId}-fx-${account}-${keyIndex}-${derivationType}`,
+    hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
+        `${seedKeyId}-fx-${account}-${keyIndex}`,
     resolveSigner: (account, _accounts) =>
         canSignDirectly(account)
             ? { kind: 'ok', signer: account }
@@ -125,11 +129,11 @@ const walletAccount = (
     type: 'algo25' | 'watch',
 ): WalletAccount =>
     type === 'watch'
-        ? { id, address, type: AccountTypes.watch }
+        ? { id, address, custody: { kind: 'watch' } }
         : {
               id,
               address,
-              type: AccountTypes.algo25,
+              custody: { kind: 'local', seed: null },
               keyPairId: `${id}-key`,
           }
 

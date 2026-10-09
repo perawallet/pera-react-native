@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
-import type {
-    ResolvedSignerType,
-    SigningMachineContext,
-} from '../machine/context'
+import type { SigningMachineContext } from '../machine/context'
+import type { SignerCustody } from '../machine/utils/resolveSignerCredential'
 import type {
     FeeAdjustment,
     PipelineStage,
@@ -44,7 +42,7 @@ export const deriveStage = (snapshot: MachineSnapshot): PipelineStage => {
     if (snapshot.matches('rejected')) return 'rejected'
     if (snapshot.matches('failed')) return 'failed'
     if (snapshot.matches('transporting')) return 'transporting'
-    // 'signing' parent state covers routing, localKey, hardware, multisig substates
+    // 'signing' parent state covers dispatching, local, hardware, multisig substates
     if (snapshot.matches('signing')) return 'signing'
     if (snapshot.matches('awaiting_user')) return 'awaiting_user'
     if (snapshot.matches('validating')) return 'validating'
@@ -59,13 +57,13 @@ export const isRetryableError = (error: Nullable<Error>): boolean => {
 
 export const derivePrimarySignerType = (
     context: SigningMachineContext,
-): Nullable<ResolvedSignerType> => {
-    const { groupSignerTypes } = context
-    if (!groupSignerTypes) return null
-    const types = [...groupSignerTypes.values()]
-    if (types.includes('hardware')) return 'hardware'
-    if (types.includes('multisig')) return 'multisig'
-    if (types.includes('localKey')) return 'localKey'
+): Nullable<SignerCustody> => {
+    const { groupSigners } = context
+    if (!groupSigners) return null
+    const custodies = [...groupSigners.values()].map(signer => signer.custody)
+    if (custodies.includes('hardware')) return 'hardware'
+    if (custodies.includes('multisig')) return 'multisig'
+    if (custodies.includes('local')) return 'local'
     return null
 }
 

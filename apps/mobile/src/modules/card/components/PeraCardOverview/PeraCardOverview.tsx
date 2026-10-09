@@ -23,6 +23,8 @@ export const PeraCardOverview = () => {
     const styles = useStyles()
     const {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency,
         balance,
         isBalanceLoading,
@@ -33,6 +35,7 @@ export const PeraCardOverview = () => {
         onWithdraw,
         onAddFunds,
         onFundLinkedAccount,
+        canFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
@@ -46,6 +49,8 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
+                fundingTypeLabel={fundingTypeLabel}
+                onChangeFundingType={onChangeFundingType}
             />
 
             <PeraCardActionButtons
@@ -54,6 +59,7 @@ export const PeraCardOverview = () => {
                 onWithdraw={onWithdraw}
                 onAddFunds={onAddFunds}
                 onFundLinkedAccount={onFundLinkedAccount}
+                canFundLinkedAccount={canFundLinkedAccount}
             />
 
             <PeraCardCreditsSection

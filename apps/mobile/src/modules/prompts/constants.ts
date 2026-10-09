@@ -23,6 +23,11 @@
 export const PromptPriority = {
     /** Legally mandatory — must be answered before anything else. */
     termsAcceptance: 400,
+    /**
+     * Must be answered for analytics to run at all, and is better asked right
+     * after the terms than behind a banner or nudge.
+     */
+    analyticsConsent: 350,
     /** May carry a forced update notice, so it outranks every nudge. */
     forcedBanner: 300,
     /** A nudge; the user can carry on without answering. */

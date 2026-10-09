@@ -50,6 +50,7 @@ export const ConnectionApprovalView = ({
         handleAccountPress,
         handleConnect,
         handleCancel,
+        peerName,
         peerUrlLabel,
         canOpenPeerUrl,
         handlePressUrl,
@@ -77,6 +78,7 @@ export const ConnectionApprovalView = ({
                 ListHeaderComponent={
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
+                        peerName={peerName}
                         // Only Algorand reports networks today, so this is
                         // still one of the legacy values the badge i18n keys
                         // are named after.

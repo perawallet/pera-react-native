@@ -25,6 +25,9 @@ const MEASUREMENT_PROTOCOL_URL = 'https://www.google-analytics.com/mp/collect'
  */
 export class ChromeAnalyticsService implements AnalyticsService {
     private clientIdPromise: Promise<string> | null = null
+    // ponytail: on by default because the extension does not ask for analytics
+    // consent yet; default it off once it does, as the mobile app is.
+    private isCollectionEnabled = true
 
     initializeAnalytics(): void {
         // No SDK/session to stand up — client_id is resolved lazily per
@@ -32,10 +35,20 @@ export class ChromeAnalyticsService implements AnalyticsService {
     }
 
     logEvent(key: string, payload?: Record<string, unknown>): void {
-        if (!config.firebaseMeasurementId || !config.gaMeasurementApiSecret) {
+        if (
+            !this.isCollectionEnabled ||
+            !config.firebaseMeasurementId ||
+            !config.gaMeasurementApiSecret
+        ) {
             return
         }
         void this.send(key, payload)
+    }
+
+    // Measurement Protocol keeps nothing on the device, so there is no stored
+    // analytics data to clear when collection is turned off.
+    setCollectionEnabled(isEnabled: boolean): void {
+        this.isCollectionEnabled = isEnabled
     }
 
     private async send(

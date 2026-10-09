@@ -11,11 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useStyles } from './styles'
 import {
     PWButton,
     PWFlatList,
+    PWLoadingIndicator,
     PWRefreshControl,
     PWText,
     PWView,
@@ -159,7 +159,7 @@ export const AssetTransactionList = ({
                 ListFooterComponent={
                     !isFetchingNextPage ? null : (
                         <PWView style={styles.loadingFooter}>
-                            <ActivityIndicator size='small' />
+                            <PWLoadingIndicator size='sm' />
                         </PWView>
                     )
                 }

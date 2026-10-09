@@ -18,6 +18,7 @@ import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('../../store', () => ({
     useAccountsStore: vi.fn(),
+    useAccountChainStateStore: (selector: any) => selector({ states: {} }),
 }))
 
 describe('useSigningAccounts', () => {
@@ -30,13 +31,17 @@ describe('useSigningAccounts', () => {
         const mockAccounts = [
             {
                 address: 'addr1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
-            { address: 'addr2', type: 'watch' },
+            { address: 'addr2', custody: { kind: 'watch' } },
             {
                 address: 'addr3',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'pk3',
             },
         ]
@@ -50,12 +55,16 @@ describe('useSigningAccounts', () => {
         expect(result.current).toEqual([
             {
                 address: 'addr1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
             {
                 address: 'addr3',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'pk3',
             },
         ])
@@ -63,8 +72,8 @@ describe('useSigningAccounts', () => {
 
     it('should return empty array if no accounts can sign', () => {
         const mockAccounts = [
-            { address: 'addr1', type: 'watch' },
-            { address: 'addr2', type: 'watch' },
+            { address: 'addr1', custody: { kind: 'watch' } },
+            { address: 'addr2', custody: { kind: 'watch' } },
         ]
 
         ;(useAccountsStore as any).mockImplementation((selector: any) =>

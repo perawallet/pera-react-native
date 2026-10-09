@@ -12,11 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
-import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
@@ -26,7 +22,12 @@ import {
     initializeDatabase,
     getDatabase,
 } from '@perawallet/wallet-core-database'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    parseTypedJson,
+    stringifyTypedJson,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
     RemoteConfigKeys,
@@ -35,7 +36,11 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    backfillAccountRecords,
+    hydrateAccountChainStates,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     getProvider,
     KeystoreHydrationError,
@@ -229,6 +234,12 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     launchAccountBranch,
                 ])
 
+                // Needs the hydrated keystore and accounts store, both awaited above.
+                backfillAccountRecords()
+
+                // Runs before the splash lifts so signing never reads an unhydrated slice.
+                await hydrateAccountChainStates()
+
                 initializeSyncService({
                     queryClient,
                     stores: createSyncStorePorts(),
@@ -240,8 +251,8 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: provider.keyValueStorage,
-                    serialize: algorandSafeQuerySerialize,
-                    deserialize: algorandSafeQueryParse,
+                    serialize: stringifyTypedJson,
+                    deserialize: parseTypedJson,
                 })
 
                 setPersister(reactQueryPersistor)

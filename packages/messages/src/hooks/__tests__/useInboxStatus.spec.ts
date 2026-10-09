@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { config, Networks } from '@perawallet/wallet-core-config'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useInboxStatus } from '../useInboxStatus'
 import {
     fetchMessageStatus,
@@ -22,6 +21,25 @@ import {
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
+                'mainnet',
+        ),
+    ),
+    useSelectedScope: vi
+        .fn()
+        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
 
 vi.mock('../../api/notifications', () => ({
     fetchMessageStatus: vi.fn(),
@@ -41,10 +59,6 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
-
 const mockInbox = (items: number) =>
     vi.mocked(useInboxQuery).mockReturnValue({
         data: Array.from({ length: items }, () => ({})),
@@ -54,9 +68,9 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-        } as ReturnType<typeof useNetwork>)
+        vi.mocked(useSelectedScope).mockReturnValue(
+            scopeForLegacyNetwork('mainnet'),
+        )
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -195,9 +209,9 @@ describe('useInboxStatus', () => {
         it.each([Networks.betanet, Networks.custom])(
             'returns zeroed-out defaults and flags isUnavailableOnNetwork on %s without polling',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(() => useInboxStatus(), {
                     wrapper: createWrapper(),
@@ -210,6 +224,10 @@ describe('useInboxStatus', () => {
                 expect(result.current.hasUnreadNotifications).toBe(false)
                 expect(result.current.unreadInboxCount).toBe(0)
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'notifications',
+                )
             },
         )
     })

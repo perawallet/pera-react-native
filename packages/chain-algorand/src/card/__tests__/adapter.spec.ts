@@ -18,8 +18,8 @@ const { getAlgorandClient, waitForTransactionConfirmation } = vi.hoisted(
         waitForTransactionConfirmation: vi.fn(),
     }),
 )
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('../../blockchain', async () => ({
+    ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
     waitForTransactionConfirmation,
 }))

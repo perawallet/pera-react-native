@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandClient } from '../blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
 import {
     fetchAccountAssetOptInRounds,

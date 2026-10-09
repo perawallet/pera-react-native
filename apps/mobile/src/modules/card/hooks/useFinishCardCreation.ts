@@ -17,6 +17,7 @@ import {
     useCardStore,
     type FundingType,
 } from '@perawallet/wallet-core-card'
+import { EXTENDED_TOAST_DURATION_MS } from '@constants/ui'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -27,11 +28,11 @@ const SUCCESS_DISPLAY_MS = 1500
 
 export type UseFinishCardCreationResult = {
     /**
-     * Persists the resolved funding type, invalidates card queries, shows the
-     * success (or degraded) toast, and redirects to the card dashboard after
-     * a brief delay. Shared by the last step of both funding-type paths:
-     * Manual finishes after Step 2 (create + approve); Auto finishes after
-     * Step 3 (LSig authorization).
+     * Persists the resolved funding type, invalidates card queries, and after
+     * a brief delay redirects to the card dashboard and shows the success (or
+     * degraded) toast there. Shared by the last step of both funding-type
+     * paths: Manual finishes after Step 2 (create + approve); Auto finishes
+     * after Step 3 (LSig authorization).
      */
     finish: (fundingType: FundingType, autoFundingDegraded: boolean) => void
 }
@@ -40,25 +41,13 @@ export const useFinishCardCreation = (): UseFinishCardCreationResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const queryClient = useQueryClient()
-    const { successToast, infoToast } = useToast()
+    const { successToast, showToast } = useToast()
     const { schedule } = useRunAfterDelay()
 
     const finish = useCallback(
         (fundingType: FundingType, autoFundingDegraded: boolean) => {
             useCardStore.getState().setSelectedFundingType(fundingType)
             invalidateCardQueries(queryClient)
-
-            if (autoFundingDegraded) {
-                infoToast(
-                    t('peraCard.setup_status.auto_funding_degraded_title'),
-                    t('peraCard.setup_status.auto_funding_degraded_body'),
-                )
-            } else {
-                successToast(
-                    t('peraCard.setup_status.create_card_success_title'),
-                    t('peraCard.setup_status.create_card_success_body'),
-                )
-            }
 
             schedule(() => {
                 // Popping the root back to the tab bar also dismisses the
@@ -67,9 +56,30 @@ export const useFinishCardCreation = (): UseFinishCardCreationResult => {
                     screen: 'Home',
                     params: { screen: 'PeraCardAccount' },
                 })
+                // Shown after the pop: fired before it, the toast spent most of
+                // its 3s default under the screen transition and was unreadable.
+                if (autoFundingDegraded) {
+                    showToast(
+                        {
+                            title: t(
+                                'peraCard.setup_status.auto_funding_degraded_title',
+                            ),
+                            body: t(
+                                'peraCard.setup_status.auto_funding_degraded_body',
+                            ),
+                            type: 'info',
+                        },
+                        { duration: EXTENDED_TOAST_DURATION_MS },
+                    )
+                    return
+                }
+                successToast(
+                    t('peraCard.setup_status.create_card_success_title'),
+                    t('peraCard.setup_status.create_card_success_body'),
+                )
             }, SUCCESS_DISPLAY_MS)
         },
-        [queryClient, infoToast, successToast, t, schedule, navigation],
+        [queryClient, showToast, successToast, t, schedule, navigation],
     )
 
     return { finish }

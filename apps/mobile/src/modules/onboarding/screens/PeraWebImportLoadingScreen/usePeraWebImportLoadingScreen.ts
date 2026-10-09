@@ -20,11 +20,11 @@ import {
     usePeraWebAccountImport,
 } from '@perawallet/wallet-core-backup'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
@@ -46,6 +46,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
     const { errorToast } = useToast()
     const { t } = useLanguage()
     const { network } = useNetwork()
+    const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
     const { importAccount } = usePeraWebAccountImport()
     const setPayload = usePeraWebImportFlowStore(state => state.setPayload)
     const reset = usePeraWebImportFlowStore(state => state.reset)
@@ -62,6 +63,8 @@ export const usePeraWebImportLoadingScreen = (): void => {
     setPayloadRef.current = setPayload
     const resetRef = useRef(reset)
     resetRef.current = reset
+    const canImportPeraWebRef = useRef(canImportPeraWeb)
+    canImportPeraWebRef.current = canImportPeraWeb
 
     const startedRef = useRef(false)
 
@@ -78,13 +81,12 @@ export const usePeraWebImportLoadingScreen = (): void => {
                 return
             }
 
-            // The deeplink handler jumps here straight from a QR scan,
-            // bypassing the disabled menu row on the options screen, so
-            // the network needs its own check here too.
-            if (!isPeraBackedNetwork(network)) {
+            // A stale navigation can still land here after the capability
+            // went off, so the screen refuses on its own too.
+            if (!canImportPeraWebRef.current) {
                 errorToastRef.current(
                     tRef.current('common.network_unavailable.title'),
-                    tRef.current('common.network_unavailable.body'),
+                    tRef.current('common.network_unavailable.generic_body'),
                 )
                 navigationRef.current.goBack()
                 return

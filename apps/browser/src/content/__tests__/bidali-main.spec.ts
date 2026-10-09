@@ -106,7 +106,10 @@ describe('bidali-main content script', () => {
     })
 
     it('installs window.bidaliProvider with key from the URL and native-parity fields', async () => {
-        setUrl({ key: 'my-api-key' })
+        setUrl({
+            key: 'my-api-key',
+            peraBidaliCurrencies: JSON.stringify(['algorand', 'usdcalgorand']),
+        })
         await loadScript()
         expect(window.bidaliProvider).toBeDefined()
         expect(window.bidaliProvider?.key).toBe('my-api-key')
@@ -118,6 +121,19 @@ describe('bidali-main content script', () => {
         expect(typeof window.bidaliProvider?.onPaymentRequest).toBe('function')
         expect(typeof window.bidaliProvider?.openUrl).toBe('function')
     })
+
+    it.each([
+        ['missing', undefined],
+        ['malformed', '{not-json'],
+        ['not an array', '{"algorand":true}'],
+    ])(
+        'offers no payment currencies when peraBidaliCurrencies is %s',
+        async (_case, raw) => {
+            setUrl(raw === undefined ? {} : { peraBidaliCurrencies: raw })
+            await loadScript()
+            expect(window.bidaliProvider?.paymentCurrencies).toEqual([])
+        },
+    )
 
     it('parses balances from peraBidaliBalances', async () => {
         const balances = { algorand: '12.5', usdcalgorand: '3' }

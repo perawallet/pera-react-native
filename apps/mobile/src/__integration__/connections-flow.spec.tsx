@@ -43,14 +43,15 @@ import {
     encodeTransaction,
     encodeTransactionRaw,
     rawTransactionsMatch,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
+    mockAlgodSimulate,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -79,7 +80,6 @@ import {
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -134,14 +134,14 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'conn-a-key',
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'conn-b',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: HD_TEST_ADDRESS,
     keyPairId: 'conn-b-key',
     name: 'DeFi',
@@ -150,7 +150,7 @@ const OTHER_ACCOUNT: WalletAccount = {
 // No key behind it: the approval gate only asks which account TYPE is selected.
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'conn-q',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'conn-q-key',
     name: 'Falcon',
@@ -653,10 +653,6 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     })
 
     it('Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it', async () => {
-        await useRemoteConfigStore.persist.rehydrate()
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride('enable_quantum_accounts', true)
         // The acknowledgement is a persisted preference on a singleton
         // store, so a prior test's Continue would hide the warning here.
         useSettingsStore
@@ -815,6 +811,125 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 ),
             ).toBe(true)
             expect(connector.rejectRequestCalls).toHaveLength(0)
+        })
+
+        it('Given a request the user already signed, when the bridge delivers it again, then no review sheet appears and the peer is answered only once', async () => {
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Replaying dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
+            // Pera Connect's id shape (`Date.now() * 1000` plus a suffix):
+            // only a send-time id is remembered across redeliveries.
+            const frame = {
+                id: 1_728_000_000_000_305,
+                method: 'algo_signTxn',
+                params: [
+                    [
+                        {
+                            txn: encodeToBase64(
+                                encodeTransactionRaw(
+                                    buildPaymentTransaction({
+                                        sender: signer.address,
+                                        receiver: HD_TEST_ADDRESS,
+                                        amount: 1_000_000n,
+                                    }),
+                                ),
+                            ),
+                        },
+                    ],
+                ],
+            }
+            act(() => {
+                connector.fire('algo_signTxn', null, frame)
+            })
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+            await waitFor(
+                () => {
+                    expect(connector.approveRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000 },
+            )
+            await waitFor(() => {
+                expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
+            })
+
+            act(() => {
+                connector.fire('algo_signTxn', null, frame)
+            })
+            // Long enough for a stale-check and review sheet to have shown.
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+            expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
+            expect(connector.approveRequestCalls).toHaveLength(1)
+            expect(connector.rejectRequestCalls).toHaveLength(0)
+        })
+
+        it('Given a request whose group algod already holds, when the dApp requests a signature, then it is declined without a review sheet', async () => {
+            server.use(
+                mockAlgodSimulate({
+                    failureMessage: request =>
+                        `transaction already in ledger: ${request.txnGroups[0].txns[0].txn.txID()}`,
+                }),
+            )
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Stale dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
+            const requestId = 9306
+
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [
+                        [
+                            {
+                                txn: encodeToBase64(
+                                    encodeTransactionRaw(
+                                        buildPaymentTransaction({
+                                            sender: signer.address,
+                                            receiver: HD_TEST_ADDRESS,
+                                            amount: 1_000_000n,
+                                        }),
+                                    ),
+                                ),
+                            },
+                        ],
+                    ],
+                })
+            })
+
+            let sheetOpened = false
+            await waitFor(
+                () => {
+                    // Polled with the decline, so a sheet that flashed open
+                    // during the chain check is caught too.
+                    if (screen.queryByTestId('sign-request-view')) {
+                        sheetOpened = true
+                    }
+                    expect(connector.rejectRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000, interval: 10 },
+            )
+            expect(sheetOpened).toBe(false)
+            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+            expect(connector.rejectRequestCalls[0].error?.message).toBe(
+                'This transaction group was already submitted or has expired',
+            )
+            expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
+            expect(connector.approveRequestCalls).toHaveLength(0)
         })
 
         it('Given a mainnet session, when the dApp requests a signature over a transaction carrying the testnet genesis hash, then the peer is rejected for the genesis-hash mismatch and no signature is produced', async () => {

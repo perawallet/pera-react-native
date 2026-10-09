@@ -11,13 +11,21 @@
  */
 
 import { beforeEach, describe, it, expect, vi, type Mock } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
-const { mockCapabilities, mockLock } = vi.hoisted(() => ({
+const { mockCapabilities, mockLock, restart } = vi.hoisted(() => ({
     mockCapabilities: { developerGallery: true },
     mockLock: { fn: null as null | (() => Promise<void>) },
+    restart: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: () => ({ restart }),
 }))
 
 vi.mock('../lockWallet', () => ({
@@ -36,10 +44,10 @@ vi.mock('@routes/capabilities', () => ({
 
 import { useAccountHeaderMenu } from '../useAccountHeaderMenu'
 
-const enableDeveloperMenu = () => {
+const enableDebugTools = () => {
     ;(usePreferences as Mock).mockReturnValue({
         getPreference: (key: string) =>
-            key === UserPreferences.developerMenuEnabled,
+            key === UserPreferences.debugToolsEnabled,
         setPreference: vi.fn(),
     })
 }
@@ -51,6 +59,20 @@ describe('useAccountHeaderMenu', () => {
         ;(usePreferences as Mock).mockReset()
         mockCapabilities.developerGallery = true
         mockLock.fn = null
+        restart.mockClear()
+        useNetworkStore.getState().resetState()
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('offers search at the Algorand defaults and drops it when assetSearch is off', () => {
+        const { result } = renderHook(() => useAccountHeaderMenu())
+        expect(result.current.items.map(i => i.label)).toContain('search.title')
+
+        act(() => setCapabilityOverrides({ assetSearch: false }))
+
+        expect(result.current.items.map(i => i.label)).not.toContain(
+            'search.title',
+        )
     })
 
     it('leads with the chart toggle by default', () => {
@@ -70,7 +92,7 @@ describe('useAccountHeaderMenu', () => {
     })
 
     it('adds the gallery shortcut to the developer items where the build includes it', () => {
-        enableDeveloperMenu()
+        enableDebugTools()
 
         const { result } = renderHook(() => useAccountHeaderMenu())
 
@@ -81,7 +103,7 @@ describe('useAccountHeaderMenu', () => {
 
     it('keeps the other developer items but drops the gallery shortcut where the build excludes it', () => {
         mockCapabilities.developerGallery = false
-        enableDeveloperMenu()
+        enableDebugTools()
 
         const { result } = renderHook(() => useAccountHeaderMenu())
 
@@ -114,5 +136,60 @@ describe('useAccountHeaderMenu', () => {
 
         expect(item).toBeDefined()
         expect(lock).toHaveBeenCalledTimes(1)
+    })
+
+    describe('the developer mode item', () => {
+        const developerModeItem = (
+            items: ReturnType<typeof useAccountHeaderMenu>['items'],
+        ) => items.find(item => item.label.endsWith('_developer_mode'))
+
+        it('enables developer mode and restarts sync once', () => {
+            enableDebugTools()
+            const { result } = renderHook(() => useAccountHeaderMenu())
+            const item = developerModeItem(result.current.items)
+
+            expect(item?.label).toBe(
+                'settings.developer.node_settings.enable_developer_mode',
+            )
+            act(() => item?.onPress())
+
+            expect(useNetworkStore.getState().mode).toBe('developer')
+            expect(restart).toHaveBeenCalledOnce()
+        })
+
+        it('toggles back to live while keeping the stored BetaNet override', () => {
+            enableDebugTools()
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
+            const { result } = renderHook(() => useAccountHeaderMenu())
+            const item = developerModeItem(result.current.items)
+
+            expect(item?.label).toBe(
+                'settings.developer.node_settings.disable_developer_mode',
+            )
+            act(() => item?.onPress())
+
+            const live = useNetworkStore.getState()
+            expect(live.mode).toBe('live')
+            expect(live.network).toBe('mainnet')
+            expect(live.selectedNetworkByChain.algorand).toBe('betanet')
+
+            act(() => developerModeItem(result.current.items)?.onPress())
+
+            expect(useNetworkStore.getState().network).toBe('betanet')
+        })
+
+        it('still toggles when the sync service is not initialized', () => {
+            restart.mockImplementation(() => {
+                throw new Error('SyncService not yet initialized')
+            })
+            enableDebugTools()
+            const { result } = renderHook(() => useAccountHeaderMenu())
+
+            act(() => developerModeItem(result.current.items)?.onPress())
+
+            expect(useNetworkStore.getState().mode).toBe('developer')
+            restart.mockReset()
+        })
     })
 })

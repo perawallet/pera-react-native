@@ -29,7 +29,7 @@ const buildHandoff = (
     },
     expectedRawTransactionsBase64: [btoa('raw-tx-1')],
     deviceId: 'device-1',
-    network: 'testnet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     callbacks: {
         approveSignedBytes: vi.fn(),
         error: vi.fn(),

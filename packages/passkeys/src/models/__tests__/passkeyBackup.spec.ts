@@ -177,19 +177,20 @@ describe('passkeyBackupInputs', () => {
         )
     })
 
-    // IMPORTANT 6: iOS writes `createdAt` in seconds
+    // IMPORTANT 6: iOS writes `createdAt` in fractional seconds
     // (`CredentialProviderViewController.swift`'s
     // `Date().timeIntervalSince1970`), so the seconds branch of
     // `normalizeTimestamp` is the live one for a real iOS-written record.
-    it('normalises a seconds-range createdAt to milliseconds', async () => {
+    // The backup schema requires an integer, so the fraction must not survive.
+    it('normalises a fractional seconds-range createdAt to whole milliseconds', async () => {
         const key = await buildReproducibleKey('alice', {
             userName: 'alice',
-            createdAt: 1_700_000_000,
+            createdAt: 1_700_000_000.123456,
         })
 
         const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
 
-        expect(inputs?.createdAt).toBe(1_700_000_000_000)
+        expect(inputs?.createdAt).toBe(1_700_000_000_123)
     })
 
     it('picks the user-handle candidate when that is what derived the key', async () => {

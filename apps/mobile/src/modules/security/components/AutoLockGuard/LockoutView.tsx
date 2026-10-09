@@ -28,7 +28,10 @@ export const LockoutView = ({
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.lockoutContainer}>
+        <PWView
+            style={styles.lockoutContainer}
+            testID='security_lockout_view'
+        >
             <PWView style={styles.lockoutContent}>
                 <PWView style={styles.lockoutIconContainer}>
                     <PWIcon
@@ -55,7 +58,12 @@ export const LockoutView = ({
                 >
                     {t('security.lockout.tryagain_in')}
                 </PWText>
-                <PWText variant='h1'>{formatTime(remainingSeconds)}</PWText>
+                <PWText
+                    variant='h1'
+                    testID='security_lockout_countdown'
+                >
+                    {formatTime(remainingSeconds)}
+                </PWText>
             </PWView>
 
             {onResetData && (
@@ -64,6 +72,7 @@ export const LockoutView = ({
                         variant='secondary'
                         title={t('security.lockout.reset_button')}
                         onPress={onResetData}
+                        testID='security_lockout_reset_button'
                     />
                 </PWView>
             )}

@@ -19,8 +19,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const nav = vi.hoisted(() => {
     const listeners = new Map<string, () => void>()
     const navigate = vi.fn()
+    const goBack = vi.fn()
     return {
         navigate,
+        goBack,
         addListener: (event: string, cb: () => void) => {
             listeners.set(event, cb)
             return () => listeners.delete(event)
@@ -29,6 +31,7 @@ const nav = vi.hoisted(() => {
         reset: () => {
             listeners.clear()
             navigate.mockClear()
+            goBack.mockClear()
         },
     }
 })
@@ -42,11 +45,12 @@ const executeWithMnemonic = vi.hoisted(() =>
         return Promise.resolve()
     }),
 )
-const checkPinEnabled = vi.hoisted(() => vi.fn(() => Promise.resolve(false)))
-const mockRouteCapabilities = vi.hoisted(() => ({ pin: true }))
+const requirePinVerification = vi.hoisted(() =>
+    vi.fn(() => Promise.resolve(true)),
+)
 
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockRouteCapabilities,
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({ requirePinVerification }),
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -65,10 +69,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-security', () => ({
-    usePinCode: () => ({ checkPinEnabled }),
-}))
-
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
@@ -82,28 +82,40 @@ import { useBackupReminderMnemonicScreen } from '../useBackupReminderMnemonicScr
 describe('useBackupReminderMnemonicScreen', () => {
     beforeEach(() => {
         nav.reset()
-        mockRouteCapabilities.pin = true
-        checkPinEnabled.mockResolvedValue(false)
+        executeWithMnemonic.mockClear()
+        requirePinVerification.mockResolvedValue(true)
     })
 
-    it('asks for the PIN before revealing when one is set', async () => {
-        checkPinEnabled.mockResolvedValue(true)
+    it('does not fetch the mnemonic until the PIN or password prompt verifies', async () => {
+        let resolvePrompt: (isVerified: boolean) => void = () => {}
+        requirePinVerification.mockReturnValue(
+            new Promise<boolean>(resolve => {
+                resolvePrompt = resolve
+            }),
+        )
 
         const { result } = renderHook(() => useBackupReminderMnemonicScreen())
 
-        await waitFor(() => expect(result.current.isPinVisible).toBe(true))
+        expect(requirePinVerification).toHaveBeenCalledTimes(1)
         expect(result.current.isPinGateResolved).toBe(false)
+        expect(executeWithMnemonic).not.toHaveBeenCalled()
+
+        await act(async () => {
+            resolvePrompt(true)
+        })
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        expect(executeWithMnemonic).toHaveBeenCalledTimes(1)
     })
 
-    it('skips a leftover PIN where the platform has no PIN', async () => {
-        mockRouteCapabilities.pin = false
-        checkPinEnabled.mockResolvedValue(true)
+    it('leaves the screen without revealing when the prompt is dismissed', async () => {
+        requirePinVerification.mockResolvedValue(false)
 
         const { result } = renderHook(() => useBackupReminderMnemonicScreen())
 
-        await waitFor(() => expect(result.current.isPinGateResolved).toBe(true))
-        expect(result.current.isPinVisible).toBe(false)
-        expect(checkPinEnabled).not.toHaveBeenCalled()
+        await waitFor(() => expect(nav.goBack).toHaveBeenCalledTimes(1))
+        expect(result.current.isPinGateResolved).toBe(false)
+        expect(executeWithMnemonic).not.toHaveBeenCalled()
     })
 
     it('re-reveals the mnemonic when the user returns from the verification screen', async () => {

@@ -11,17 +11,25 @@
  */
 
 import {
-    AccountTypes,
+    authorityOf,
     canSignViaParticipants,
     hasSigningKeys,
+    isStandaloneAccount,
     isHardwareWalletAccount,
+    isHDWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     type AccountAuthorityOps,
     type AuthorityTargetKind,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_SCOPES,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
-const isDelegated = (account: WalletAccount): boolean => !!account.rekeyAddress
+const isDelegated = (account: WalletAccount, scope: ChainScope): boolean =>
+    !!authorityOf(account, scope)
 
 /**
  * Rekeying to self or to the current auth are both fee-burning no-ops, so
@@ -30,8 +38,10 @@ const isDelegated = (account: WalletAccount): boolean => !!account.rekeyAddress
 const isCurrentOrSelf = (
     target: WalletAccount,
     source: WalletAccount,
+    scope: ChainScope,
 ): boolean =>
-    target.address === source.address || target.address === source.rekeyAddress
+    target.address === source.address ||
+    target.address === authorityOf(source, scope)
 
 /**
  * Mirrors Android
@@ -43,15 +53,12 @@ const isCurrentOrSelf = (
 const isEligibleStandardTarget = (
     target: WalletAccount,
     source: WalletAccount,
+    scope: ChainScope,
 ): boolean => {
-    if (isCurrentOrSelf(target, source)) return false
-    if (
-        target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet
-    )
-        return false
+    if (isCurrentOrSelf(target, source, scope)) return false
+    if (!isStandaloneAccount(target) && !isHDWalletAccount(target)) return false
     if (!hasSigningKeys(target)) return false
-    if (isDelegated(target)) return false
+    if (isDelegated(target, scope)) return false
     return true
 }
 
@@ -65,23 +72,25 @@ const isEligibleStandardTarget = (
 const isEligibleQuantumTarget = (
     target: WalletAccount,
     source: WalletAccount,
+    scope: ChainScope,
     isQuantumTargetEnabled: boolean,
 ): boolean => {
     if (!isQuantumTargetEnabled) return false
-    if (isCurrentOrSelf(target, source)) return false
-    if (target.type !== AccountTypes.quantum) return false
+    if (isCurrentOrSelf(target, source, scope)) return false
+    if (!isQuantumAccount(target)) return false
     if (!hasSigningKeys(target)) return false
-    if (isDelegated(target)) return false
+    if (isDelegated(target, scope)) return false
     return true
 }
 
 const isEligibleHardwareTarget = (
     target: WalletAccount,
     source: WalletAccount,
+    scope: ChainScope,
 ): boolean => {
-    if (isCurrentOrSelf(target, source)) return false
-    if (target.type !== AccountTypes.hardware) return false
-    if (isDelegated(target)) return false
+    if (isCurrentOrSelf(target, source, scope)) return false
+    if (!isHardwareWalletAccount(target)) return false
+    if (isDelegated(target, scope)) return false
     return true
 }
 
@@ -94,10 +103,11 @@ const isEligibleSharedTarget = (
     target: WalletAccount,
     source: WalletAccount,
     accounts: WalletAccount[],
+    scope: ChainScope,
 ): boolean => {
-    if (isCurrentOrSelf(target, source)) return false
+    if (isCurrentOrSelf(target, source, scope)) return false
     if (!isMultisigAccount(target)) return false
-    if (isDelegated(target)) return false
+    if (isDelegated(target, scope)) return false
     return canSignViaParticipants(target.multisigDetails.addresses, accounts)
 }
 
@@ -122,17 +132,15 @@ const isEligibleSharedTarget = (
  *   `canSignArbitraryData` deliberately ignores rekeys because off-chain data
  *   has no auth-addr lookup.
  */
-const canSignProgram = (account: WalletAccount): boolean =>
+const canSignProgram = (account: WalletAccount, scope: ChainScope): boolean =>
     !isHardwareWalletAccount(account) &&
     !isMultisigAccount(account) &&
-    !isDelegated(account) &&
+    !isDelegated(account, scope) &&
     hasSigningKeys(account)
 
 /**
- * Looks at every network the wallet has observed, not just the active-network
- * `rekeyAddress` mirror: a mainnet rekey still strands the mainnet account
- * while the user is browsing testnet. The legacy mirror is kept in the check
- * for accounts persisted before `rekeyAddressByNetwork` existed.
+ * Looks across every Algorand scope, not just the selected one: a mainnet
+ * rekey still strands the mainnet account while the user is browsing testnet.
  */
 const accountsDelegatedTo = (
     address: string,
@@ -141,8 +149,7 @@ const accountsDelegatedTo = (
     accounts.filter(
         a =>
             a.address !== address &&
-            (a.rekeyAddress === address ||
-                Object.values(a.rekeyAddressByNetwork ?? {}).includes(address)),
+            LEGACY_SCOPES.some(scope => authorityOf(a, scope) === address),
     )
 
 const isEligibleTarget = (
@@ -150,24 +157,26 @@ const isEligibleTarget = (
     target: WalletAccount,
     source: WalletAccount,
     accounts: WalletAccount[],
+    scope: ChainScope,
     { isQuantumTargetEnabled }: { isQuantumTargetEnabled: boolean },
 ): boolean => {
     switch (kind) {
         case 'standard': {
-            return isEligibleStandardTarget(target, source)
+            return isEligibleStandardTarget(target, source, scope)
         }
         case 'quantum': {
             return isEligibleQuantumTarget(
                 target,
                 source,
+                scope,
                 isQuantumTargetEnabled,
             )
         }
         case 'hardware': {
-            return isEligibleHardwareTarget(target, source)
+            return isEligibleHardwareTarget(target, source, scope)
         }
         case 'shared': {
-            return isEligibleSharedTarget(target, source, accounts)
+            return isEligibleSharedTarget(target, source, accounts, scope)
         }
     }
 }

@@ -15,7 +15,10 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    type AccountType,
+} from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -81,8 +84,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-// Keep the real account-type helpers (they read `type`/`rekeyAddress` off the
-// account) and only stub the accounts list so the eligibility filter is real.
+// Keep the real account-type helpers (they read `type` off the account) and only stub the accounts list so the eligibility filter is real.
 let mockAccounts: WalletAccount[] = []
 let mockSelectedAddress: string | null = null
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -200,12 +202,14 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 }))
 
 import { useCardOnboardingStatusScreen } from '../useCardOnboardingStatusScreen'
+import { custodyForType } from '@test-utils/accountCustody'
 
 const account = (
     address: string,
-    type: WalletAccount['type'],
+    type: AccountType,
     extra: Partial<WalletAccount> = {},
-): WalletAccount => ({ address, type, ...extra }) as WalletAccount
+): WalletAccount =>
+    ({ address, custody: custodyForType(type), ...extra }) as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -443,7 +447,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('resolves the connected funding source from the wallet', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25', { name: 'Spending' })]
+        mockAccounts = [account('ADDR1', 'standalone', { name: 'Spending' })]
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.isFundsConnected).toBe(true)
@@ -622,7 +626,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('navigates to the signing screen with the selected funding type when the account can sign', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -719,7 +723,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('flags auto funding unavailable when the kill-switch flag is off', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         mockIsAutoFundingEnabled = false
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
@@ -730,7 +734,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('migrates the Auto default to Manual when the kill-switch flag is off', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAccounts = [account('ADDR1', 'standalone')]
         mockIsAutoFundingEnabled = false
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 

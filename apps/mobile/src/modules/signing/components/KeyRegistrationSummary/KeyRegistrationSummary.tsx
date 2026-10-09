@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { getKeyRegType } from '@modules/transactions'
 import { useStyles } from './styles'

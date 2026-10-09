@@ -11,13 +11,16 @@
  */
 
 import {
+    AlgodError,
     encodeSignedTransactions,
     createWalletAlgorandClient,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../legacy-network'
 import { createAlgodTransport } from './transports/createAlgodTransport'
+import { findStaleGroupReason } from './staleRequestGuard'
 import { setOnConfirmedHandler, submitAndAutoRefresh } from './submission'
 import {
     deriveSubmissionAttemptFromBytes,
@@ -28,11 +31,11 @@ import {
 
 export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    createSubmitTransport: network =>
+    createSubmitTransport: scope =>
         createAlgodTransport(
-            createWalletAlgorandClient(network),
+            createWalletAlgorandClient(algorandNetworkOf(scope)),
             encodeSignedTransactions,
-            network,
+            scope,
         ),
     submitAndAutoRefresh: (signedTxns, options) =>
         submitAndAutoRefresh(
@@ -42,9 +45,16 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
             options,
         ),
     isRequestGroupAlreadySubmitted,
+    findStaleGroupReason: request => findStaleGroupReason(request),
     // The test-only params stay off the adapter.
     reconcileOpenSubmissions: () => reconcileOpenSubmissions(),
     deriveSubmissionAttemptFromBytes,
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
+    submitTimeoutError: timeoutMs =>
+        new AlgodError(
+            'network_unavailable',
+            {},
+            new Error(`Transaction submit timed out after ${timeoutMs}ms`),
+        ),
 }

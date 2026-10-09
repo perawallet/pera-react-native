@@ -24,7 +24,16 @@ vi.mock('../useAllAccounts', () => ({
 const ledgerDevice1Account0: WalletAccount = {
     id: 'ledger-1-0',
     address: 'LEDGER_DEV1_ADDR_0',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Cold Wallet',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'device-1',
@@ -37,7 +46,16 @@ const ledgerDevice1Account0: WalletAccount = {
 const ledgerDevice1Account2: WalletAccount = {
     id: 'ledger-1-2',
     address: 'LEDGER_DEV1_ADDR_2',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Cold Wallet',
+            transportType: 'ble',
+        },
+        accountIndex: 2,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'device-1',
@@ -50,7 +68,16 @@ const ledgerDevice1Account2: WalletAccount = {
 const ledgerDevice1Account1: WalletAccount = {
     id: 'ledger-1-1',
     address: 'LEDGER_DEV1_ADDR_1',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Cold Wallet',
+            transportType: 'ble',
+        },
+        accountIndex: 1,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'device-1',
@@ -63,7 +90,16 @@ const ledgerDevice1Account1: WalletAccount = {
 const ledgerDevice2Account0: WalletAccount = {
     id: 'ledger-2-0',
     address: 'LEDGER_DEV2_ADDR_0',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-2',
+            deviceName: 'Backup Ledger',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: {
         manufacturer: 'ledger',
         deviceId: 'device-2',
@@ -76,7 +112,16 @@ const ledgerDevice2Account0: WalletAccount = {
 const otherHardware: WalletAccount = {
     id: 'other-1',
     address: 'OTHER_HARDWARE_ADDR',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'other',
+            deviceId: 'other-device',
+            deviceName: 'Other Device',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: {
         manufacturer: 'other',
         deviceId: 'other-device',
@@ -89,7 +134,7 @@ const otherHardware: WalletAccount = {
 const hdAccount: WalletAccount = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -102,20 +147,20 @@ const hdAccount: WalletAccount = {
 const watchAccount: WalletAccount = {
     id: 'watch-1',
     address: 'WATCH_ADDRESS',
-    type: 'watch',
+    custody: { kind: 'watch' },
 }
 
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
     address: 'ALGO25_ADDRESS',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'algo25-key-1',
 }
 
 const multisigAccount: WalletAccount = {
     id: 'multisig-1',
     address: 'MULTISIG_ADDRESS',
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     multisigDetails: {
         threshold: 2,
         addresses: ['A', 'B', 'C'],

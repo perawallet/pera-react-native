@@ -11,8 +11,14 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchArc59AssetRequests, type Arc59AssetRequest } from '../api'
 import { getArc59AssetRequestsQueryKey } from './querykeys'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -29,11 +35,15 @@ export type UseArc59AssetRequestsQueryResult = {
 export const useArc59AssetRequestsQuery = (
     address: Nullable<string>,
 ): UseArc59AssetRequestsQueryResult => {
-    const { network } = useNetwork()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'assetInbox',
+    )
 
     const query = useQuery({
-        queryKey: getArc59AssetRequestsQueryKey(address ?? '', network),
+        queryKey: getArc59AssetRequestsQueryKey(address ?? '', scope),
         queryFn: () => fetchArc59AssetRequests(network, address!),
         enabled: !!address && !isUnavailableOnNetwork,
     })

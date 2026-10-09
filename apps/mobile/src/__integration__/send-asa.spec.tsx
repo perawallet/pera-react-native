@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountsStore,
@@ -54,7 +53,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
@@ -84,7 +83,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     })
     const sender: WalletAccount = {
         id: 'sender-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Sender',
@@ -176,7 +175,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
@@ -256,7 +255,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
     }
 
@@ -403,7 +402,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         const InputAmountStub = () => <View testID='input-amount-stub' />

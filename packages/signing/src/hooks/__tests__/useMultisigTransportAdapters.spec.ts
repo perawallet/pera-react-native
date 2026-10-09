@@ -23,7 +23,12 @@ import type { DraftProposeContext } from '../../chain-adapter'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    scopeForLegacyNetwork,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
@@ -38,22 +43,20 @@ const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
     useNetwork: vi.fn(),
-    encodeTransactionRaw: vi.fn(),
+    encodeUnsignedTransaction: vi.fn(),
     useAllAccounts: vi.fn(),
     useDeviceID: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => mocks.useNetwork(),
-    useTransactionEncoder: () => ({
-        encodeTransactionRaw: mocks.encodeTransactionRaw,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mocks.useAllAccounts(),
-    isMultisigAccount: (a: { type?: string } | null | undefined) =>
-        a?.type === 'multisig',
+    isMultisigAccount: (
+        a: { custody?: { kind?: string } } | null | undefined,
+    ) => a?.custody?.kind === 'multisig',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -142,7 +145,7 @@ describe('useMultisigTransportAdapters', () => {
         mocks.useNetwork.mockReturnValue({ network: 'testnet' })
         mocks.useAllAccounts.mockReturnValue([
             {
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 address: 'MSIG',
                 multisigDetails: {
                     version: 1,
@@ -153,10 +156,13 @@ describe('useMultisigTransportAdapters', () => {
         ])
         mocks.useDeviceID.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
-        mocks.encodeTransactionRaw.mockImplementation(
+        mocks.encodeUnsignedTransaction.mockImplementation(
             (txn: { tag: string }) =>
                 new Uint8Array([txn.tag === 'TXN_1' ? 0xa1 : 0xa2]),
         )
+        registerFakePlannerAdapter({
+            encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+        })
     })
 
     describe('proposeSignRequest', () => {
@@ -314,7 +320,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 // The adapter backfills `proposer_address` from the
                 // proposer we just sent in case the backend response omits
@@ -344,7 +350,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -457,7 +463,7 @@ describe('useMultisigTransportAdapters', () => {
                     'multisig',
                     'sign-request-detail',
                     {
-                        network: 'testnet',
+                        scope: TESTNET,
                         signRequestId: 'sr-99',
                     },
                 ],
@@ -477,7 +483,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -495,7 +501,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -543,7 +549,10 @@ describe('useMultisigTransportAdapters', () => {
                 draftProposeContexts.delete(draftLocalId)
                 return context
             })
-            registerFakePlannerAdapter({ takeDraftProposeContext })
+            registerFakePlannerAdapter({
+                takeDraftProposeContext,
+                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            })
         })
 
         test('registers the sync handoff under the real id and fires onProposed', async () => {
@@ -603,7 +612,10 @@ describe('useMultisigTransportAdapters', () => {
             expect(handoff?.expectedRawTransactionsBase64).toEqual(['cmF3MQ=='])
             // The hook's live device id wins; the stashed one is the fallback.
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.sourceType).toBe('walletconnect')
             expect(handoff?.proposerAddress).toBe('A')
             expect(handoff?.callbacks?.approveSignedBytes).toBe(

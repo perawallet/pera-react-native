@@ -45,7 +45,11 @@ import {
     type WatchAddressPayload,
 } from '../models'
 import type { PulledAccount } from '../restore/pullBackupItems'
-import type { ImportSummary, SyncImportFn } from '../sync/types'
+import type {
+    ImportProgressFn,
+    ImportSummary,
+    SyncImportFn,
+} from '../sync/types'
 
 type ImportFailure = ImportSummary['failed'][number]
 
@@ -89,8 +93,7 @@ const buildHardwareAccount = (
 ): HardwareWalletAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: {
+        custody: {
             kind: 'hardware',
             device: {
                 manufacturer: payload.manufacturer,
@@ -100,6 +103,8 @@ const buildHardwareAccount = (
             },
             accountIndex: payload.accountIndex,
         },
+        chainId: context.adapter.chainId,
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -110,8 +115,9 @@ const buildWatchAccount = (
 ): WatchAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'watch' },
+        custody: { kind: 'watch' },
+        chainId: context.adapter.chainId,
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -131,12 +137,20 @@ const buildMultisigAccount = (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: {
-            kind: 'multisig',
-            threshold: payload.threshold,
-            members: payload.participantAddresses,
-            version: payload.version,
+        custody: { kind: 'multisig' },
+        chainId: adapter.chainId,
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: payload.version,
+                        threshold: payload.threshold,
+                        addresses: payload.participantAddresses,
+                    },
+                },
+            },
         },
         ...nameField(payload.customName),
     })
@@ -167,10 +181,17 @@ const buildHdWalletAccount = async (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
-        credentials: {
-            [adapter.chainId]: { keyPairId: derived.keyPairId },
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: payload.account, keyIndex: payload.keyIndex },
+        },
+        chainId: adapter.chainId,
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                keyPairId: derived.keyPairId,
+            },
         },
         ...nameField(payload.customName),
     })
@@ -199,7 +220,10 @@ const importFromMnemonic = async (
     }
     let result
     try {
-        result = await importAccount({ mnemonicIndices, type })
+        result = await importAccount({
+            mnemonicIndices,
+            type: type === BackupAccountType.quantum ? 'quantum' : 'standalone',
+        })
     } finally {
         zeroBytes(mnemonicIndices)
     }
@@ -437,7 +461,10 @@ const dedupeFailuresByAddress = (
 const importBatch = async (
     context: ImportContext,
     accounts: PulledAccount[],
+    onProgress?: ImportProgressFn,
 ): Promise<ImportSummary> => {
+    const total = accounts.length
+    onProgress?.(0, total)
     const { seedKeyIdByFirstDerivedAddress, failures } = await importSeeds(
         context,
         accounts,
@@ -448,7 +475,7 @@ const importBatch = async (
         failed: [...failures],
     }
 
-    for (const account of accounts) {
+    for (const [index, account] of accounts.entries()) {
         try {
             summary.imported += await importOneAccount(
                 context,
@@ -458,15 +485,16 @@ const importBatch = async (
         } catch (error) {
             if (error instanceof DuplicateAccountError) {
                 summary.skippedDuplicate += 1
-                continue
+            } else {
+                const reason = toFailureReason(error)
+                logger.warn('useCloudBackupImport: failed to import account', {
+                    address: account.address,
+                    reason,
+                })
+                summary.failed.push({ address: account.address, reason })
             }
-            const reason = toFailureReason(error)
-            logger.warn('useCloudBackupImport: failed to import account', {
-                address: account.address,
-                reason,
-            })
-            summary.failed.push({ address: account.address, reason })
         }
+        onProgress?.(index + 1, total)
     }
 
     summary.failed = dedupeFailuresByAddress(summary.failed)
@@ -512,8 +540,12 @@ export const useCloudBackupImport = (): UseCloudBackupImportResult => {
     // Resolved before the seed pre-pass so a build without the chain's adapter
     // refuses the whole restore instead of half-importing it.
     const importAccounts = useCallback(
-        async (accounts: PulledAccount[]) =>
-            importBatch({ ...context, adapter: backupAdapterFor() }, accounts),
+        async (accounts: PulledAccount[], onProgress?: ImportProgressFn) =>
+            importBatch(
+                { ...context, adapter: backupAdapterFor() },
+                accounts,
+                onProgress,
+            ),
         [context],
     )
 

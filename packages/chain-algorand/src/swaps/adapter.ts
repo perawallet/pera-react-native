@@ -15,12 +15,14 @@ import {
     decodeTransaction,
     encodeSignedTransactions,
     getAlgorandClient,
-    type PeraSignedTransaction,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+} from '../blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
 import { submitRawSignedTransactionGroup } from '../signing'
 import { executeAlgorandSwap } from './executeSwap'
@@ -29,7 +31,7 @@ import { executeAlgorandSwap } from './executeSwap'
 // account state and submits; it never builds or signs with its own defaults.
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    nativeAssetId: ALGO_ASSET_ID,
+    nativeAssetId: algorandDescriptor.nativeAsset.ref.assetId,
     executeSwap: (params, { assetOptInMinBalance, scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,

@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         mockInvalidate(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 

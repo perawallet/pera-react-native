@@ -11,10 +11,17 @@
  */
 
 import { isAndroid } from '@utils/platform'
-import type { RouteCapabilities } from './capabilities-types'
+import type {
+    RouteCapabilities,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 import { isDeveloperGalleryIncluded } from './developer-gallery'
 
-export type { RouteCapabilities } from './capabilities-types'
+export type {
+    RouteCapabilities,
+    RouteCapability,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
     discoverTab: true,
@@ -34,6 +41,7 @@ export const routeCapabilities: RouteCapabilities = {
     accountDrawer: true,
     storeRating: true,
     confirmationModeSetting: true,
+    analyticsConsent: true,
     developerSettings: true,
     developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: false,
@@ -44,3 +52,5 @@ export const routeCapabilities: RouteCapabilities = {
     // Native lists WalletConnect sessions under its own menu entry instead.
     connectionsSettings: false,
 }
+
+export const routeCapabilityRestrictions: RouteCapabilityRestrictions = {}

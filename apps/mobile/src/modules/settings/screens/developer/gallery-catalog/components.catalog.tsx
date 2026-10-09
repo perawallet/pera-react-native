@@ -28,6 +28,7 @@ import {
     PWInfoView,
     PWInput,
     PWListItem,
+    PWLoadingIndicator,
     PWLoadingOverlay,
     PWLottie,
     PWNumpad,
@@ -983,6 +984,19 @@ registerPreview({
 })
 
 registerPreview({
+    id: 'comp-pw-loading-indicator',
+    render: () => (
+        <VariantPreview
+            items={[
+                { label: 'sm', node: <PWLoadingIndicator /> },
+                { label: 'lg', node: <PWLoadingIndicator size='lg' /> },
+                { label: 'xl', node: <PWLoadingIndicator size='xl' /> },
+            ]}
+        />
+    ),
+})
+
+registerPreview({
     id: 'comp-pw-skeleton',
     render: () => (
         <VariantPreview
@@ -1451,6 +1465,11 @@ export const getComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-pw-image',
                 label: 'PWImage',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-loading-indicator',
+                label: 'PWLoadingIndicator',
                 launch: { kind: 'preview' },
             },
             {

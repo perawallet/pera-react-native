@@ -26,13 +26,12 @@ import { createTestQueryClient } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     useAccountsStore,
     type AccountBalances,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { mockAlgodTransactionParams } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodTransactionParams } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { BidaliAccountSelectionScreen } from '@modules/gift-card/screens/BidaliAccountSelectionScreen'
 import { useBidali } from '@modules/gift-card/hooks/useBidali'
 import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
@@ -42,7 +41,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const ACCOUNT_A: WalletAccount = {
     id: 'gift-card-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'gift-card-a-key',
     name: 'Spending',
@@ -50,7 +49,7 @@ const ACCOUNT_A: WalletAccount = {
 
 const ACCOUNT_B: WalletAccount = {
     id: 'gift-card-b',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: HD_TEST_ADDRESS,
     name: 'Vault',
 }

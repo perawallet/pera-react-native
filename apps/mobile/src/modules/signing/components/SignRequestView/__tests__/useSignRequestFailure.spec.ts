@@ -12,7 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import type { SignRequestStatus } from '@perawallet/wallet-core-multisig'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { useSignRequestFailure } from '../useSignRequestFailure'
@@ -28,24 +28,33 @@ vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
 // The global mock in vitest.setup.ts omits this class, and `instanceof` needs
 // the same identity the hook imports — so re-mock the module here.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    RekeyTargetNotFoundError: class RekeyTargetNotFoundError extends Error {
-        readonly metadata: { params: { rekeyAddress: string } }
-        constructor(rekeyAddress: string) {
-            super(`Rekey target ${rekeyAddress} not found`)
-            this.metadata = { params: { rekeyAddress } }
+    DelegationTargetNotFoundError: class DelegationTargetNotFoundError extends Error {
+        readonly metadata: { params: { authorityAddress: string } }
+        constructor(authorityAddress: string) {
+            super(`Rekey target ${authorityAddress} not found`)
+            this.metadata = { params: { authorityAddress } }
         }
     },
 }))
 
-vi.mock('@hooks/useLanguage')
+const mockT = vi.hoisted(() => vi.fn((key: string) => key))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
 
 // resolveErrorCopy (exercised via the SubmissionError branch below) does an
 // `instanceof AlgodError` check, so the mock needs a real class identity too
 // — importActual pulls in the network store's own module deps, so stub instead.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     AlgodError: class AlgodError extends Error {},
     toAlgodError: (err: unknown) => err,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -53,9 +62,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    getSignRequestDetailQueryKey: (network: string, id: string) => [
+    getSignRequestDetailQueryKey: (scope: unknown, id: string) => [
         'signRequestDetail',
-        network,
+        scope,
         id,
     ],
     useSignRequestDetailQuery: (params: unknown) =>
@@ -74,7 +83,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         constructor(
             readonly txIds: string[],
             readonly classification: string,
-            readonly algodError: unknown,
+            readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
         }
@@ -168,7 +177,11 @@ describe('useSignRequestFailure', () => {
         )
 
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({
-            queryKey: ['signRequestDetail', 'mainnet', 'sr-1'],
+            queryKey: [
+                'signRequestDetail',
+                { chainId: 'algorand', networkId: 'mainnet' },
+                'sr-1',
+            ],
         })
     })
 
@@ -197,12 +210,16 @@ describe('useSignRequestFailure', () => {
         const { result } = renderHook(() =>
             useSignRequestFailure(
                 WALLETCONNECT_REQUEST,
-                new RekeyTargetNotFoundError('AUTH_ADDR'),
+                new DelegationTargetNotFoundError('AUTH_ADDR'),
             ),
         )
 
         expect(result.current.body).toBe(
             'signing.cannot_sign.rekeyed_auth_missing_body',
+        )
+        expect(mockT).toHaveBeenCalledWith(
+            'signing.cannot_sign.rekeyed_auth_missing_body',
+            { authAddress: 'AUTH_ADDR' },
         )
     })
 
@@ -238,7 +255,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',
@@ -263,7 +280,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(['TXID'], 'rejected-by-node', new Error('overspend'))
 
         const { result } = renderHook(() =>
@@ -280,7 +297,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',

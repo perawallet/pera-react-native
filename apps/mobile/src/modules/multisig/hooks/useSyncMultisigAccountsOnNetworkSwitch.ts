@@ -12,14 +12,13 @@
 
 import { useEffect, useRef } from 'react'
 import {
-    AccountTypes,
+    isMultisigAccount,
     useAllAccounts,
-    type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     useNetwork,
     useOnNetworkSwitch,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
 import {
@@ -63,10 +62,7 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
 
         pendingNetworkRef.current = null
 
-        const multisigAccounts = accountsRef.current.filter(
-            (account): account is MultiSigAccount =>
-                account.type === AccountTypes.multisig,
-        )
+        const multisigAccounts = accountsRef.current.filter(isMultisigAccount)
         if (multisigAccounts.length === 0) return
 
         const run = async () => {

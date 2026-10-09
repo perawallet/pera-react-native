@@ -66,6 +66,13 @@ export class CloudBackupRestoreError extends Error {
     }
 }
 
+export type RestoreProgress =
+    | { phase: 'unlocking' }
+    | { phase: 'downloading' }
+    // Counts backup entries, not wallet accounts: a quantum entry adds two.
+    | { phase: 'importing'; done: number; total: number }
+    | { phase: 'finishing' }
+
 type RestoreCloudBackupParams = {
     mnemonic: string[]
     /** Base64 salt the UI calls the "encryption key". */
@@ -85,6 +92,7 @@ type RestoreCloudBackupParams = {
     importPasskeys: PasskeyImportFn
     /** Runs last, so a pinned launch account is already in the wallet. */
     importSettings: SettingsImportFn
+    onProgress?: (progress: RestoreProgress) => void
 }
 
 export type RestoreCloudBackupResult = {
@@ -304,11 +312,14 @@ export const restoreCloudBackup = async ({
     importContacts,
     importPasskeys,
     importSettings,
+    onProgress,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
+    onProgress?.({ phase: 'unlocking' })
     const { backupId, encryptionKey, authSecretKey, itemKey } =
         await deriveKeys(mnemonic, salt, argon2id)
 
     try {
+        onProgress?.({ phase: 'downloading' })
         await persistBackupKeys({
             encryptionKey,
             authSecretKey,
@@ -337,7 +348,10 @@ export const restoreCloudBackup = async ({
             throw new CloudBackupRestoreError('UNKNOWN')
         }
 
-        const summary = await importAccounts(pull.accounts)
+        const summary = await importAccounts(pull.accounts, (done, total) =>
+            onProgress?.({ phase: 'importing', done, total }),
+        )
+        onProgress?.({ phase: 'finishing' })
         const contactSummary = await importContactsSafely(
             importContacts,
             pull.contacts,

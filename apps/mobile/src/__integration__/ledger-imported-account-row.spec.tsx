@@ -23,7 +23,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -31,7 +30,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
@@ -55,7 +54,16 @@ describe('Flow: Ledger imported account row checkbox', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'hw-ledger-1',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'd',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 address: LEDGER_ADDRESS,
                 hardwareDetails: {
                     manufacturer: 'ledger',

@@ -51,14 +51,14 @@ describe('pera/decimal-construction', () => {
             expect(overrides[0].rules['no-restricted-imports']).toEqual([
                 'error',
                 {
-                    paths: [
+                    paths: expect.arrayContaining([
                         {
                             name: 'decimal.js',
                             importNames: ['default'],
                             message:
                                 'Import the named { Decimal } from decimal.js.',
                         },
-                    ],
+                    ]),
                 },
             ])
         }

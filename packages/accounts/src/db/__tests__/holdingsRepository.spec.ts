@@ -868,7 +868,7 @@ describe('account holdings repository', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal('0.1'),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         it('getHeldAssetIdsByAccount returns the account holdings across networks', async () => {
@@ -906,9 +906,9 @@ describe('account holdings repository', () => {
                     ),
                 ),
             ).toEqual([
-                { assetId: '100', network: 'mainnet' },
-                { assetId: '200', network: 'mainnet' },
-                { assetId: '300', network: 'testnet' },
+                { assetId: '100', network: 'algorand/mainnet' },
+                { assetId: '200', network: 'algorand/mainnet' },
+                { assetId: '300', network: 'algorand/testnet' },
             ])
         })
 
@@ -944,7 +944,9 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR2',
             })
-            expect(addr2).toEqual([{ assetId: '100', network: 'mainnet' }])
+            expect(addr2).toEqual([
+                { assetId: '100', network: 'algorand/mainnet' },
+            ])
         })
 
         it('deleteAccountBalance removes the account balance row(s)', async () => {

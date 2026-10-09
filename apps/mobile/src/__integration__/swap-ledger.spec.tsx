@@ -31,6 +31,7 @@ import { Decimal } from 'decimal.js'
 import { decodeSignedTransaction } from 'algosdk'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -50,13 +51,13 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     useAccountsStore,
     type HardwareWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { encodeTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { SigningOverlays } from '@modules/signing/shell'
@@ -96,7 +97,16 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device-id',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -229,6 +239,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         // execute() runs a balance preflight against algod before prepare;
         // fund the senders so the 1-ALGO quote (plus fees and the receive
         // asset's opt-in MBR) clears it.
@@ -324,11 +335,11 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         const authSigner = await seedAlgo25Signer()
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-swapper',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: LEDGER_ADDRESS,
-            rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed swapper',
         }
+        seedAuthority(LEDGER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
         useAccountsStore
             .getState()

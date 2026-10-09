@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -30,7 +27,7 @@ describe('useBackupFlowLauncher', () => {
 
         const account: WalletAccount = {
             id: 'algo25-account',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_1',
             keyPairId: 'kp',
         }

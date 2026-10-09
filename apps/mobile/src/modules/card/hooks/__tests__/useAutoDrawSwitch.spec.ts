@@ -12,10 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
     compileAutoDrawProgram,
@@ -60,8 +57,19 @@ vi.mock('@perawallet/wallet-core-chain-algorand/fee-delegation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
@@ -69,14 +77,23 @@ import { useAutoDrawSwitch } from '../useAutoDrawSwitch'
 
 const localAccount: WalletAccount = {
     id: 'a1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: 'FUNDINGADDR',
     keyPairId: 'kp1',
 } as WalletAccount
 
 const ledgerAccount: WalletAccount = {
     id: 'a2',
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'LEDGERADDR',
 } as WalletAccount
 

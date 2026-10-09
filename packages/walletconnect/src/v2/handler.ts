@@ -44,6 +44,10 @@ import {
     WalletConnectPermissionError,
     WalletConnectRequestExpiredError,
 } from '../shared/errors'
+import {
+    emptySignaturesResult,
+    GET_EMPTY_SIGNATURES_METHOD,
+} from '../shared/emptySignatures'
 import { toPeer } from '../shared/peer'
 import {
     walletConnectSupportFor,
@@ -73,7 +77,7 @@ import { loadWalletConnectSdk, type WalletConnectSdk } from './sdk'
 import { createWalletConnectV2Storage } from './storage'
 
 /**
- * The methods Pera answers over v2, one per signing operation, the same pair
+ * The signing methods Pera answers over v2, one per operation, the same pair
  * v1 serves. v1's third permission (get-accounts) has no v2 equivalent: a v2
  * session discloses its accounts in the namespace itself.
  */
@@ -83,7 +87,14 @@ const OPERATION_TYPE_BY_METHOD: Readonly<Record<string, WalletOperationType>> =
         [AlgorandPermission.DATA_PERMISSION]: 'sign-data',
     }
 
-const PERA_V2_METHODS: readonly string[] = Object.keys(OPERATION_TYPE_BY_METHOD)
+const PERA_V2_SIGNING_METHODS: readonly string[] = Object.keys(
+    OPERATION_TYPE_BY_METHOD,
+)
+
+const PERA_V2_METHODS: readonly string[] = [
+    ...PERA_V2_SIGNING_METHODS,
+    GET_EMPTY_SIGNATURES_METHOD,
+]
 
 /**
  * JSON-RPC's server-error code, which is what v1's connector sends for a
@@ -204,7 +215,7 @@ const screenRequiredNamespaces = (
 export type CreateWalletConnectV2HandlerOptions = {
     /**
      * The injection point for anything chain-shaped, mirroring v1: a store
-     * default would drag the blockchain package into every importer's module
+     * default would drag the Algorand runtime into every importer's module
      * graph, `apps/browser` included. A v2 session is approved for every chain
      * the dApp asked for that the wallet knows, so this is what decides which
      * of them may sign: a request naming any other chain is refused to the
@@ -420,7 +431,7 @@ export const createWalletConnectV2Handler = (
         const { method } = event.params.request
 
         const type = OPERATION_TYPE_BY_METHOD[method]
-        if (!type) {
+        if (!type && method !== GET_EMPTY_SIGNATURES_METHOD) {
             refuseRequest(
                 topic,
                 id,
@@ -465,12 +476,21 @@ export const createWalletConnectV2Handler = (
             return
         }
 
+        // Typed `any` on the event; nothing here reads into it.
+        const rawParams: unknown = event.params.request.params
+
+        if (!type) {
+            answerEmptySignatures(
+                topic,
+                id,
+                emptySignaturesResult(rawParams, record.accounts, network),
+            )
+            return
+        }
+
         // Without this the settings list, which sorts on `lastActiveAt`, stays
         // in approval order for the life of the session.
         recordActivity(topic)
-
-        // Typed `any` on the event; nothing here reads into it.
-        const rawParams: unknown = event.params.request.params
 
         const respond = async (
             response: WalletKitJsonRpcResponse,
@@ -514,6 +534,34 @@ export const createWalletConnectV2Handler = (
                     },
                 }),
         })
+    }
+
+    // Never surfaced to the user: the dApp asks unprompted right after
+    // connecting, and a refusal only leaves its accounts unknown.
+    const answerEmptySignatures = (
+        topic: string,
+        id: number,
+        result: Nullable<Record<string, string>>,
+    ): void => {
+        if (!client || !sdk) return
+        void client
+            .respondSessionRequest({
+                topic,
+                response: result
+                    ? { id, jsonrpc: '2.0', result }
+                    : {
+                          id,
+                          jsonrpc: '2.0',
+                          error: sdk.getSdkError('UNSUPPORTED_CHAINS'),
+                      },
+            })
+            .catch((deliveryError: unknown) => {
+                logger.warn('[WC v2] empty signatures delivery failed', {
+                    connectionId: topic,
+                    correlationId: String(id),
+                    error: deliveryError,
+                })
+            })
     }
 
     /**
@@ -814,10 +862,11 @@ export const createWalletConnectV2Handler = (
             return
         }
 
+        // Empty signatures are public data, not a permission to show.
         const methods = dedupe([
             ...requestedMethods(support, params.requiredNamespaces),
             ...requestedMethods(support, params.optionalNamespaces),
-        ]).filter(method => PERA_V2_METHODS.includes(method))
+        ]).filter(method => PERA_V2_SIGNING_METHODS.includes(method))
         const peer: ConnectionPeer = toPeer(params.proposer.metadata)
 
         // Before the proposal is tracked: a torn-down handler has nobody to

@@ -11,7 +11,11 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory } from '../api'
 import type { SwapHistoryItem } from '../models'
@@ -49,10 +53,11 @@ export const useSwapHistoryInfiniteQuery = (
     statuses?: string,
     enabled: boolean = true,
 ): UseSwapHistoryInfiniteQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(address, statuses, network),
+        queryKey: swapQueryKeys.historyInfinite(address, statuses, scope),
         queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
             fetchSwapHistory(address, network, statuses, pageParam, PAGE_SIZE),
         initialPageParam: undefined as Optional<string>,

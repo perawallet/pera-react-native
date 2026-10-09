@@ -71,6 +71,7 @@ const fixture: ChainDescriptor = {
             ed25519: (account, keyIndex) =>
                 `m/44'/283'/${account}'/0'/${keyIndex}'`,
         },
+        rawKeySchemes: [],
     },
     protocol: {
         feeModel: 'flat',
@@ -81,6 +82,7 @@ const fixture: ChainDescriptor = {
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
+        hasTokenApproval: false,
         multipleAddressesPerAccount: false,
     },
     explorer: {
@@ -92,6 +94,7 @@ const fixture: ChainDescriptor = {
             explorerUrl(networkId, `asset/${assetId}`),
     },
     finality: { kind: 'instant' },
+    uriSchemes: ['algorand'],
 }
 
 const defaults = Object.fromEntries(
@@ -185,6 +188,25 @@ describe('descriptorContractViolations', () => {
             'explorer.accountUrl returned no URL for network "mainnet"',
             'explorer.accountUrl returned no URL for network "testnet"',
             'explorer.accountUrl returned no URL for network "betanet"',
+        ])
+    })
+
+    it('names a descriptor with no URI scheme', () => {
+        const descriptor: ChainDescriptor = { ...fixture, uriSchemes: [] }
+
+        expect(descriptorContractViolations(descriptor, defaults)).toEqual([
+            'uriSchemes is empty',
+        ])
+    })
+
+    it('names a URI scheme written with its colon', () => {
+        const descriptor: ChainDescriptor = {
+            ...fixture,
+            uriSchemes: ['fixture:'],
+        }
+
+        expect(descriptorContractViolations(descriptor, defaults)).toEqual([
+            'uri scheme "fixture:" is not a bare lower-case scheme',
         ])
     })
 

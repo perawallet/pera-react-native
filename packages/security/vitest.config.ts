@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -42,5 +43,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

@@ -97,6 +97,75 @@ describe('parseActiveNetwork across store versions', () => {
     })
 })
 
+describe('parseActiveNetwork across v2 and v3', () => {
+    const v3 = (
+        mode: string,
+        network: string,
+        selectedNetworkByChain: Record<string, string> = {},
+    ) =>
+        JSON.stringify({
+            state: {
+                mode,
+                network,
+                selectedNetworkByChain,
+                customNetworksByChain: { algorand: [] },
+            },
+            version: 3,
+        })
+    const v2 = (globalNetwork: string, entry: string) =>
+        JSON.stringify({
+            state: {
+                globalNetwork,
+                selectedNetworkByChain: {
+                    algorand: entry,
+                    ethereum: 'sepolia',
+                },
+                customNetworksByChain: { algorand: [] },
+            },
+            version: 2,
+        })
+
+    it.each([
+        [
+            'live mode ignores a stored Algorand override',
+            v3('live', 'mainnet', { algorand: 'betanet' }),
+            'mainnet',
+        ],
+        ['developer with no override', v3('developer', 'testnet'), 'testnet'],
+        [
+            'developer with a betanet override',
+            v3('developer', 'betanet', { algorand: 'betanet' }),
+            'betanet',
+        ],
+        [
+            'developer with custom',
+            v3('developer', 'custom', { algorand: 'custom' }),
+            'custom',
+        ],
+    ])('v3: %s', (_label, raw, expected) => {
+        expect(parseActiveNetwork(raw)).toBe(expected)
+    })
+
+    // Each v2 blob paired with the v3 blob the store migrates it to.
+    it.each([
+        [v2('mainnet', 'mainnet'), v3('live', 'mainnet')],
+        [v2('testnet', 'testnet'), v3('developer', 'testnet')],
+        [
+            v2('testnet', 'betanet'),
+            v3('developer', 'betanet', { algorand: 'betanet' }),
+        ],
+        [
+            v2('custom', 'custom'),
+            v3('developer', 'custom', { algorand: 'custom' }),
+        ],
+    ])(
+        'a v2 blob and its v3 migration advertise the same network',
+        (before, after) => {
+            expect(parseActiveNetwork(after)).toBe(parseActiveNetwork(before))
+        },
+    )
+})
+
 describe('readActiveNetwork', () => {
     it('reads a v2 envelope from chrome.storage.local', async () => {
         const fake = createLocalChromeFake()

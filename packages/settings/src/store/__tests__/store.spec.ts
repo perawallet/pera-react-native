@@ -228,16 +228,50 @@ describe('services/settings/store - migrateSettingsState', () => {
         })
     })
 
-    test('passes through state already at v2 unchanged', async () => {
+    test('passes through state already at v3 unchanged', async () => {
         const { migrateSettingsState } = await import('../store')
 
         const state = {
             theme: 'light',
             privacyMode: false,
-            preferences: {},
+            preferences: { 'developer-menu-enabled': true },
             language: 'de',
         }
 
-        expect(migrateSettingsState(state, 2)).toEqual(state)
+        expect(migrateSettingsState(state, 3)).toEqual(state)
+    })
+
+    test('carries the developer menu unlock over to the debug tools key', async () => {
+        const { migrateSettingsState } = await import('../store')
+
+        const migrated = migrateSettingsState(
+            {
+                theme: 'light',
+                language: 'de',
+                preferences: { 'developer-menu-enabled': true, a: '1' },
+            },
+            2,
+        )
+
+        expect(migrated.preferences).toEqual({
+            'debug-tools-enabled': true,
+            a: '1',
+        })
+    })
+
+    test('keeps an existing debug tools value over the old key', async () => {
+        const { migrateSettingsState } = await import('../store')
+
+        const migrated = migrateSettingsState(
+            {
+                preferences: {
+                    'developer-menu-enabled': true,
+                    'debug-tools-enabled': false,
+                },
+            },
+            2,
+        )
+
+        expect(migrated.preferences).toEqual({ 'debug-tools-enabled': false })
     })
 })

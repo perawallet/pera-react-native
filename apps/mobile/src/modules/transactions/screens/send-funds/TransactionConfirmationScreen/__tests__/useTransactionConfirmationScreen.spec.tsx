@@ -20,7 +20,6 @@ import {
     useOnChainAccountInformationQuery,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -29,6 +28,7 @@ import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
 
@@ -75,13 +75,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountAssetBalanceQuery: vi.fn(),
     useOnChainAccountInformationQuery: vi.fn(),
     useSignerFor: vi.fn(),
-    isQuantumAccount: (account: { type?: string } | null | undefined) =>
-        account?.type === 'quantum',
+    isQuantumAccount: (
+        account: { custody?: { seed?: string } } | null | undefined,
+    ) => account?.custody?.seed === 'quantum',
 }))
 
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: vi.fn(),
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useLocalKeyTransactionSigner: vi.fn(),
@@ -91,6 +92,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
     useNativeAsset: () => NATIVE_ASSET,
@@ -108,22 +111,24 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         ),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    displayUnitsToBaseUnits: (value: Decimal, decimals: number) =>
-        new Decimal(value).mul(new Decimal(10).pow(decimals)),
-}))
-
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    DEFAULT_PRECISION: 2,
-    formatCurrency: vi.fn(() => '10.00'),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        DEFAULT_PRECISION: 2,
+        formatCurrency: vi.fn(() => '10.00'),
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
@@ -200,7 +205,7 @@ describe('useTransactionConfirmationScreen', () => {
         })
         ;(useSendFunds as Mock).mockReturnValue(mockSendFundsState)
         ;(useSignerFor as Mock).mockReturnValue(null)
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
+        capabilityState.reset()
     })
 
     describe('isReady state', () => {
@@ -782,7 +787,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('flags a quantum fee when the signer is a quantum account', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,
@@ -800,7 +805,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('does not flag a quantum fee for a standard signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'STANDARD_ADDRESS',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 1000n,
@@ -818,7 +823,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('flags a quantum fee when a standard sender is rekeyed to a quantum signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_AUTH_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,
@@ -833,11 +838,11 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.isQuantumFee).toBe(true)
         })
 
-        it('does not flag a quantum fee when the feature flag is disabled', () => {
-            ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+        it('still flags the quantum fee an existing account pays after quantumAccounts is switched off', () => {
+            capabilityState.turnOff('quantumAccounts')
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
-                type: 'quantum',
+                custody: { kind: 'local', seed: 'quantum' },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 3000n,
@@ -848,7 +853,7 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.isQuantumFee).toBe(false)
+            expect(result.current.isQuantumFee).toBe(true)
         })
     })
 })

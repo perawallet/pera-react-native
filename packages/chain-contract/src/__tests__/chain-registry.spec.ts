@@ -26,7 +26,7 @@ import {
     type ChainCapabilities,
 } from '../models/capabilities'
 import type { ChainDescriptor } from '../models/descriptor'
-import type { ChainId, ChainNetwork } from '../models/identity'
+import type { ChainId, ChainMode, ChainNetwork } from '../models/identity'
 import type { ChainContext, ChainModule } from '../models/module'
 import { descriptorContractViolations } from './descriptor-contract'
 
@@ -66,7 +66,7 @@ const descriptor: ChainDescriptor = {
         name: 'Algo',
         decimals: 6,
     },
-    signing: { schemes: ['ed25519'], derivationPaths: {} },
+    signing: { schemes: ['ed25519'], derivationPaths: {}, rawKeySchemes: [] },
     protocol: {
         feeModel: 'flat',
         hasAccountNonce: false,
@@ -76,6 +76,7 @@ const descriptor: ChainDescriptor = {
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
+        hasTokenApproval: false,
         multipleAddressesPerAccount: false,
     },
     explorer: {
@@ -87,6 +88,7 @@ const descriptor: ChainDescriptor = {
             explorerUrl(networkId, `asset/${assetId}`),
     },
     finality: { kind: 'instant' },
+    uriSchemes: ['algorand'],
 }
 
 const build = {
@@ -103,6 +105,8 @@ const allFalse = Object.fromEntries(
 const context: ChainContext = {
     getScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     getEndpoints: () => ({}),
+    getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
+    timeouts: { readMs: 10_000, submitMs: 30_000 },
     http: { request: vi.fn() },
     kms: {} as ChainContext['kms'],
 }
@@ -162,6 +166,53 @@ describe('createChainRegistry', () => {
         }))
 
         expect(registry.capabilities('algorand').staking).toBe(true)
+    })
+
+    describe('mode restrictions', () => {
+        const swapOn = { ...build, swap: true }
+        let mode: ChainMode | undefined
+
+        beforeEach(() => {
+            mode = undefined
+            registry.register(descriptor, swapOn, {
+                swap: ['developer', 'developer-override'],
+            })
+            registry.setCapabilityOverrides(() => ({
+                chainMode: mode ? { algorand: mode } : undefined,
+            }))
+        })
+
+        it('switches the capability off in a restricted mode and back on in live, without re-registering', () => {
+            mode = 'developer'
+            expect(registry.capabilities('algorand').swap).toBe(false)
+
+            mode = 'live'
+            expect(registry.capabilities('algorand').swap).toBe(true)
+
+            mode = 'developer-override'
+            expect(registry.capabilities('algorand').swap).toBe(false)
+        })
+
+        it('restricts nothing when the reader gives no chainMode', () => {
+            expect(registry.capabilities('algorand')).toEqual(swapOn)
+        })
+
+        it('leaves an unrestricted capability alone in a developer mode', () => {
+            mode = 'developer'
+
+            expect(registry.capabilities('algorand').staking).toBe(false)
+            expect(registry.capabilities('algorand').swap).toBe(false)
+        })
+
+        it('lets Feature Flags force the capability on in a restricted mode', () => {
+            mode = 'developer'
+            registry.setCapabilityOverrides(() => ({
+                chainMode: { algorand: 'developer' },
+                developer: { algorand: { swap: true } },
+            }))
+
+            expect(registry.capabilities('algorand').swap).toBe(true)
+        })
     })
 
     it('reports every capability false while the chain is switched off', () => {
@@ -318,6 +369,20 @@ describe('registerChainSetup', () => {
         expect(module.register).toHaveBeenCalledTimes(1)
         expect(module.register).toHaveBeenCalledWith(context)
     })
+
+    it('forwards the module capability restrictions to the registry', () => {
+        const module = moduleWith({
+            capabilityDefaults: { ...build, swap: true },
+            capabilityRestrictions: { swap: ['developer'] },
+        })
+        chains.setCapabilityOverrides(() => ({
+            chainMode: { algorand: 'developer' },
+        }))
+
+        registerChainSetup([entryWith({ module })], chains, () => context)
+
+        expect(chains.capabilities('algorand').swap).toBe(false)
+    })
 })
 
 describe('buildChainSetup', () => {
@@ -332,7 +397,9 @@ describe('buildChainSetup', () => {
         const other = moduleWith({
             descriptor: { ...descriptor, id: 'other' as ChainId },
         })
-        const modules = { algorand, other } as Record<ChainId, ChainModule>
+        const modules = { algorand, other } as Partial<
+            Record<ChainId, ChainModule>
+        >
 
         const setup = buildChainSetup(
             { enabled: ['algorand'], capabilities: {} },
@@ -377,9 +444,24 @@ describe('buildChainSetup', () => {
 
     it('throws when an enabled chain has no module', () => {
         expect(() =>
+            buildChainSetup({ enabled: ['algorand'], capabilities: {} }, {}),
+        ).toThrow(/no chain module/)
+    })
+
+    it('skips a chain whose module is undefined', () => {
+        const setup = buildChainSetup(
+            { enabled: ['algorand'], capabilities: {} },
+            { algorand: moduleWith(), ethereum: undefined },
+        )
+
+        expect(setup.map(entry => entry.chainId)).toEqual(['algorand'])
+    })
+
+    it('throws when an enabled chain maps to an undefined module', () => {
+        expect(() =>
             buildChainSetup(
-                { enabled: ['algorand'], capabilities: {} },
-                {} as Record<ChainId, ChainModule>,
+                { enabled: ['algorand', 'ethereum'], capabilities: {} },
+                { algorand: moduleWith(), ethereum: undefined },
             ),
         ).toThrow(/no chain module/)
     })

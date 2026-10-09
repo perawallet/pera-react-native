@@ -25,6 +25,7 @@ import { TransactionsSchema } from '../db/schema'
 // Side-effect import: registers the real transactions cleanup handler with the
 // shared registry, exactly as loading the package does at runtime.
 import '../register-account-cleanup'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -83,13 +84,13 @@ describe('account removal prunes transactions end to end', () => {
             db,
             items: [makeTx('TX_A_ONLY'), makeTx('TX_SHARED')],
             accountAddress: 'ACCT_A',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_B_ONLY')],
             accountAddress: 'ACCT_B',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         await runAccountCleanups({ db, accountAddress: 'ACCT_A' })
@@ -99,7 +100,7 @@ describe('account removal prunes transactions end to end', () => {
             await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT_A',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             }),
         ).toEqual([])
 
@@ -107,7 +108,7 @@ describe('account removal prunes transactions end to end', () => {
         const remaining = await getTransactionHistory({
             db,
             accountAddress: 'ACCT_B',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(remaining.map(tx => tx.id).sort()).toEqual([
             'TX_B_ONLY',

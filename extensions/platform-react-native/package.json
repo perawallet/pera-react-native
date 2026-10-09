@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@expensify/react-native-wallet": "^0.1.22",
+    "@expensify/react-native-wallet": "^0.1.25",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",

@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../../blockchain'
+import {
+    scopeFromNetworkColumn,
+    toScopeKey,
+    type ChainScope,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isNotFoundError,
     logger,
@@ -26,6 +32,7 @@ import {
     type SubmissionAttempt,
     type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
+import { algorandNetworkOf } from '../../legacy-network'
 import { getSubmissionSettledHandler } from './settle-registry'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
@@ -36,12 +43,12 @@ const DEFAULT_PASS_LIMIT = 20
  * probe surface is a deliberate narrowing of it, so the cast is confined here
  * rather than widened across the factory's signature.
  */
-const defaultProbeClient = (network: Network): SubmissionProbeClient =>
-    getAlgorandClient(network) as unknown as SubmissionProbeClient
+const defaultProbeClient = (scope: ChainScope): SubmissionProbeClient =>
+    getAlgorandClient(scope) as unknown as SubmissionProbeClient
 
 /**
  * Client surface the reconciler probes. Structured so unit tests can inject
- * fakes without touching the blockchain package.
+ * fakes without touching the Algorand runtime.
  */
 export type SubmissionProbeClient = {
     client: {
@@ -67,10 +74,10 @@ export type ReconcileOpenSubmissionsParams = {
     /** Age past which terminally-resolved rows are swept. */
     retentionMs?: number
     /**
-     * Injectable client factory (tests); defaults to the network-resolved
-     * AlgorandClient from the blockchain package.
+     * Injectable client factory (tests); defaults to the scope-resolved
+     * AlgorandClient from the Algorand runtime.
      */
-    getClient?: (network: Network) => SubmissionProbeClient
+    getClient?: (scope: ChainScope) => SubmissionProbeClient
 }
 
 /**
@@ -114,17 +121,21 @@ export const reconcileOpenSubmissions = async ({
         return { probed: 0, confirmed: 0, failed: 0 }
     }
 
-    // One client per network — cheap reads, so reuse within the pass.
-    const clients = new Map<Network, SubmissionProbeClient>()
+    // One client per scope — cheap reads, so reuse within the pass. Keyed by
+    // scope key because every row decodes to a fresh scope object.
+    const clients = new Map<ChainScopeKey, SubmissionProbeClient>()
     const summary: ReconcileSummary = { probed: 0, confirmed: 0, failed: 0 }
 
     for (const attempt of open) {
-        const network = attempt.network as Network
         try {
-            let client = clients.get(network)
+            const scope = scopeFromNetworkColumn(attempt.network)
+            // Throws for a non-Algorand scope, so the row is left open.
+            const network = algorandNetworkOf(scope)
+            const scopeKey = toScopeKey(scope)
+            let client = clients.get(scopeKey)
             if (!client) {
-                client = getClient(network)
-                clients.set(network, client)
+                client = getClient(scope)
+                clients.set(scopeKey, client)
             }
             summary.probed++
             const outcome = await probeSubmissionAttempt(attempt, client)
@@ -133,7 +144,7 @@ export const reconcileOpenSubmissions = async ({
             // or that throws, must leave the row open so a later pass can
             // retry. Resolving first makes the row terminal and the settle
             // event is then lost for good.
-            if (!(await notifySettled(attempt, outcome))) {
+            if (!(await notifySettled(attempt, network, outcome))) {
                 // Deferring forever would re-probe this row every tick for
                 // the life of the install. Past the stale bound the handoff
                 // is unrecoverable anyway, so stop holding the row for it.
@@ -289,6 +300,7 @@ const FLOWS_REQUIRING_SETTLE_HANDLER: readonly SubmissionFlow[] = ['cosign']
 
 const notifySettled = async (
     attempt: SubmissionAttempt,
+    network: Network,
     status: 'confirmed' | 'failed',
 ): Promise<boolean> => {
     const handler = getSubmissionSettledHandler(attempt.flow)
@@ -296,7 +308,7 @@ const notifySettled = async (
         return !FLOWS_REQUIRING_SETTLE_HANDLER.includes(attempt.flow)
     }
     try {
-        await handler(attempt.txIds, attempt.network, status)
+        await handler(attempt.txIds, network, status)
         return true
     } catch (error) {
         logger.warn('reconcile: settled handler failed', {

@@ -16,6 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import React from 'react'
 
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import { useAccountInformationQuery } from '../useAccountInformationQuery'
 
 const mockGetAccountBalance = vi.hoisted(() => vi.fn())
@@ -26,19 +27,12 @@ vi.mock('../../db', () => ({
     getAccountHoldings: mockGetAccountHoldings,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const { algosToMicroAlgosBigInt, toBigInt } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-shared')
-    >('@perawallet/wallet-core-shared')
-    return {
-        useNetwork: () => ({ network: 'mainnet' }),
-        Address: {
-            fromString: (addr: string) => addr,
-        },
-        algosToMicroAlgosBigInt,
-        toBigInt,
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 describe('useAccountInformationQuery', () => {
     let queryClient: QueryClient
@@ -73,7 +67,7 @@ describe('useAccountInformationQuery', () => {
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
-            authAddress: null,
+            authorityAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([
             { assetId: '123', amount: new Decimal(500), isFrozen: true },
@@ -95,6 +89,9 @@ describe('useAccountInformationQuery', () => {
             assets: [{ assetId: 123n, amount: 500n, isFrozen: true }],
         })
 
+        expect(
+            fakeAccountsChain().adapter.toAccountInformationAddress,
+        ).toHaveBeenCalledWith(mockAddress)
         expect(mockGetAccountBalance).toHaveBeenCalledWith({
             accountAddress: mockAddress,
             scope: { chainId: 'algorand', networkId: 'mainnet' },
@@ -150,7 +147,7 @@ describe('useAccountInformationQuery', () => {
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
-            authAddress: null,
+            authorityAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([])
 

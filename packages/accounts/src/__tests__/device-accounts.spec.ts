@@ -11,14 +11,25 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { buildAccount } from '../credentials'
 import {
     buildDeviceAccountRegistrations,
     toDeviceAccountType,
 } from '../device-accounts'
-import { AccountTypes, type WalletAccount } from '../models'
+import {
+    AccountTypes,
+    DerivationTypes,
+    type AccountChains,
+    type AccountType,
+    type WalletAccount,
+} from '../models'
+import { buildTestAccount } from './accountFactory'
 
-const account = (address: string, type: WalletAccount['type']): WalletAccount =>
-    ({ id: address, address, type, keyPairId: 'kp' }) as WalletAccount
+const account = (address: string, type: AccountType): WalletAccount => ({
+    ...buildTestAccount(type),
+    id: address,
+    address,
+})
 
 describe('toDeviceAccountType', () => {
     it('maps every account type onto its wire value', () => {
@@ -61,8 +72,8 @@ describe('buildDeviceAccountRegistrations', () => {
     it('marks muted addresses as not receiving notifications', () => {
         const result = buildDeviceAccountRegistrations(
             [
-                account('ADDR_A', AccountTypes.algo25),
-                account('ADDR_B', AccountTypes.algo25),
+                account('ADDR_A', AccountTypes.standalone),
+                account('ADDR_B', AccountTypes.standalone),
             ],
             ['ADDR_B'],
         )
@@ -75,5 +86,197 @@ describe('buildDeviceAccountRegistrations', () => {
 
     it('returns an empty array for an empty account list', () => {
         expect(buildDeviceAccountRegistrations([], ['ADDR_A'])).toEqual([])
+    })
+
+    it('registers accounts with an extra chain entry exactly as their address-only twins', () => {
+        // An entry a later chain adds must not change what the devices API is
+        // told. It isn't a `ChainId` member, hence the widening cast.
+        const withOtherChain = (
+            address: string,
+            keyPairId?: string,
+        ): AccountChains =>
+            ({
+                'fixture-chain': {
+                    address: `fixture-${address}`,
+                    ...(keyPairId ? { keyPairId: `fixture-${keyPairId}` } : {}),
+                },
+            }) as unknown as AccountChains
+        const hd = { account: 0, keyIndex: 1 }
+        const ledger = {
+            manufacturer: 'ledger',
+            deviceId: 'ble-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        } as const
+        const credentialBearing: WalletAccount[] = [
+            buildAccount({
+                custody: { kind: 'local', seed: null },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('ALGO25ADDR', 'algo25-key'),
+                    algorand: {
+                        address: 'ALGO25ADDR',
+                        keyPairId: 'algo25-key',
+                    },
+                },
+            }),
+            buildAccount({
+                custody: { kind: 'local', seed: 'bip39', hd },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('HDADDR', 'hd-key'),
+                    algorand: { address: 'HDADDR', keyPairId: 'hd-key' },
+                },
+            }),
+            buildAccount({
+                custody: {
+                    kind: 'hardware',
+                    device: ledger,
+                    accountIndex: 0,
+                },
+                chainId: 'algorand',
+                chains: { algorand: { address: 'LEDGERADDR' } },
+            }),
+            buildAccount({
+                custody: { kind: 'multisig' },
+                chainId: 'algorand',
+                chains: {
+                    algorand: {
+                        address: 'MSIGADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                version: 1,
+                                threshold: 1,
+                                addresses: ['MEMBERA', 'MEMBERB'],
+                            },
+                        },
+                    },
+                },
+            }),
+            buildAccount({
+                custody: { kind: 'watch' },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('WATCHADDR'),
+                    algorand: { address: 'WATCHADDR' },
+                },
+            }),
+            buildAccount({
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('QUANTUMADDR', 'quantum-key'),
+                    algorand: {
+                        address: 'QUANTUMADDR',
+                        keyPairId: 'quantum-key',
+                    },
+                },
+            }),
+        ]
+        const addressOnly: WalletAccount[] = [
+            account('ALGO25ADDR', AccountTypes.standalone),
+            {
+                ...account('HDADDR', AccountTypes.hdWallet),
+                hdWalletDetails: {
+                    ...hd,
+                    change: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
+            } as WalletAccount,
+            {
+                id: 'LEDGERADDR',
+                address: 'LEDGERADDR',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+                hardwareDetails: { ...ledger, accountIndex: 0 },
+            },
+            {
+                id: 'MSIGADDR',
+                address: 'MSIGADDR',
+                custody: { kind: 'multisig' },
+                multisigDetails: {
+                    threshold: 1,
+                    addresses: ['MEMBERA', 'MEMBERB'],
+                    version: 1,
+                },
+            },
+            {
+                id: 'WATCHADDR',
+                address: 'WATCHADDR',
+                custody: { kind: 'watch' },
+            },
+            account('QUANTUMADDR', AccountTypes.quantum),
+        ]
+
+        const result = buildDeviceAccountRegistrations(credentialBearing, [
+            'WATCHADDR',
+        ])
+
+        expect(result).toEqual(
+            buildDeviceAccountRegistrations(addressOnly, ['WATCHADDR']),
+        )
+        expect(result).toEqual([
+            {
+                address: 'ALGO25ADDR',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+            {
+                address: 'HDADDR',
+                accountType: 'hdWallet',
+                receiveNotifications: true,
+            },
+            {
+                address: 'LEDGERADDR',
+                accountType: 'hardware',
+                receiveNotifications: true,
+            },
+            {
+                address: 'MSIGADDR',
+                accountType: 'multisig',
+                receiveNotifications: true,
+            },
+            {
+                address: 'WATCHADDR',
+                accountType: 'watch',
+                receiveNotifications: false,
+            },
+            {
+                address: 'QUANTUMADDR',
+                accountType: 'quantum',
+                receiveNotifications: true,
+            },
+        ])
+    })
+
+    it('leaves out an account with no Algorand entry', () => {
+        const onEthereum = {
+            id: 'e',
+            address: '0xabc',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc', keyPairId: 'raw-key' } },
+        } as WalletAccount
+
+        const result = buildDeviceAccountRegistrations(
+            [onEthereum, account('SADDR', AccountTypes.standalone)],
+            [],
+        )
+
+        expect(result).toEqual([
+            {
+                address: 'SADDR',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+        ])
     })
 })

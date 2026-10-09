@@ -34,11 +34,14 @@ describe('isExpectedError', () => {
         expect(isExpectedError(appErrorWith(false))).toBe(false)
     })
 
-    test.each(['TimeoutError', 'AbortError'])('is true for a raw %s', name => {
-        const error = new Error('aborted')
-        error.name = name
-        expect(isExpectedError(error)).toBe(true)
-    })
+    test.each(['TimeoutError', 'AbortError', 'ScopeChangedError'])(
+        'is true for a raw %s',
+        name => {
+            const error = new Error('aborted')
+            error.name = name
+            expect(isExpectedError(error)).toBe(true)
+        },
+    )
 
     test.each([
         'fetch failed',

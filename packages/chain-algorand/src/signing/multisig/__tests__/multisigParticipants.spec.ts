@@ -39,24 +39,25 @@ import {
     getLocalParticipants,
     getProposeParticipants,
 } from '../multisigParticipants'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     ({
-        type: 'multisig',
+        custody: { kind: 'multisig' },
         address: 'MSIG',
         multisigDetails: { version: 1, threshold, addresses },
     }) as unknown as WalletAccount
 
 const makeAccount = (address: string): WalletAccount =>
     ({
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: `key-${address}`,
     }) as unknown as WalletAccount
 
 const makeQuantumAccount = (address: string): WalletAccount =>
     ({
-        type: 'quantum',
+        custody: { kind: 'local', seed: 'quantum' },
         address,
         keyPairId: `key-${address}`,
     }) as unknown as WalletAccount
@@ -71,7 +72,9 @@ beforeEach(() => {
     mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
     mocks.isQuantumAccount
         .mockReset()
-        .mockImplementation((acc: WalletAccount) => acc.type === 'quantum')
+        .mockImplementation(
+            (acc: WalletAccount) => accountType(acc) === 'quantum',
+        )
 })
 
 describe('getLocalParticipants', () => {

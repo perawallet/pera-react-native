@@ -32,6 +32,8 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
 }))
 
 import {
+    LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerDeviceBusyError,
     LedgerSigningError,
     LedgerUserRejectedError,
@@ -96,7 +98,7 @@ describe('algorandLedgerAppDriver', () => {
         expect(algorandGetAddressMock).toHaveBeenCalledWith(3, true)
     })
 
-    test('getAddress translates app errors through classifyLedgerError', async () => {
+    test("getAddress classifies the Algorand app's reject code as a user rejection", async () => {
         algorandGetAddressMock.mockRejectedValue({ statusCode: 0x6986 })
 
         await expect(open().getAddress(0)).rejects.toBeInstanceOf(
@@ -172,7 +174,7 @@ describe('algorandLedgerAppDriver', () => {
         ).rejects.toBeInstanceOf(LedgerSigningError)
     })
 
-    test('signTransaction translates app errors through classifyLedgerError', async () => {
+    test("signTransaction classifies the Algorand app's reject code as a user rejection", async () => {
         algorandSignMock.mockRejectedValue({ returnCode: 0x6986 })
 
         await expect(
@@ -195,7 +197,7 @@ describe('algorandLedgerAppDriver', () => {
         })
     })
 
-    test('getAppVersion translates app errors through classifyLedgerError', async () => {
+    test("getAppVersion classifies the Algorand app's reject code as a user rejection", async () => {
         algorandGetVersionMock.mockRejectedValue({ returnCode: 0x6986 })
 
         await expect(open().getAppVersion()).rejects.toBeInstanceOf(
@@ -228,7 +230,7 @@ describe('algorandLedgerAppDriver', () => {
         expect(Array.from(sig)).toEqual([9, 8, 7])
     })
 
-    test('signData translates app errors through classifyLedgerError', async () => {
+    test("signData classifies the Algorand app's reject code as a user rejection", async () => {
         algorandSignDataMock.mockRejectedValue({ returnCode: 0x6986 })
 
         await expect(
@@ -244,6 +246,72 @@ describe('algorandLedgerAppDriver', () => {
         await expect(
             open().signData(arbitrarySignRequest),
         ).rejects.toBeInstanceOf(LedgerSigningError)
+    })
+
+    test('names the Algorand app when it is not open', async () => {
+        algorandGetAddressMock.mockRejectedValue({ statusCode: 0x6e00 })
+
+        const error = await open()
+            .getAddress(0)
+            .catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(LedgerAppNotOpenError)
+        expect((error as Error).message).toBe(
+            'Algorand app is not open on the Ledger device',
+        )
+    })
+
+    test('names the Algorand app when it lacks the instruction', async () => {
+        algorandSignDataMock.mockRejectedValue({ returnCode: 0x6d00 })
+
+        const error = await open()
+            .signData(arbitrarySignRequest)
+            .catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(LedgerAppOutdatedError)
+        expect((error as Error).message).toBe(
+            'The Ledger Algorand app must be updated to sign this request',
+        )
+    })
+
+    test('assertCanSignData rejects an app older than 2.0.0 with the version it needs', async () => {
+        algorandGetVersionMock.mockResolvedValue({
+            major: 1,
+            minor: 9,
+            patch: 9,
+        })
+
+        const error = await open()
+            .assertCanSignData()
+            .catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(LedgerAppOutdatedError)
+        expect((error as Error).message).toBe(
+            'The Ledger Algorand app must be updated to sign this request',
+        )
+        expect((error as LedgerAppOutdatedError).requiredVersion).toEqual({
+            major: 2,
+            minor: 0,
+            patch: 0,
+        })
+    })
+
+    test('assertCanSignData accepts 2.0.0', async () => {
+        algorandGetVersionMock.mockResolvedValue({
+            major: 2,
+            minor: 0,
+            patch: 0,
+        })
+
+        await expect(open().assertCanSignData()).resolves.toBeUndefined()
+    })
+
+    test('assertCanSignData classifies a failed version read', async () => {
+        algorandGetVersionMock.mockRejectedValue({ returnCode: 0x6e00 })
+
+        await expect(open().assertCanSignData()).rejects.toBeInstanceOf(
+            LedgerAppNotOpenError,
+        )
     })
 
     test('disconnect closes the underlying transport', async () => {

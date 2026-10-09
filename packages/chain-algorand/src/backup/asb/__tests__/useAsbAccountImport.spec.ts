@@ -11,9 +11,9 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import {
-    AccountTypes,
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -32,14 +32,17 @@ const mockZeroBytes = vi.fn()
 
 let storeAccounts: WalletAccount[] = []
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../../blockchain', () => ({
+    isValidAlgorandAddress: (...args: unknown[]) =>
+        mockIsValidAlgorandAddress(...args),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: (...args: unknown[]) =>
-        mockIsValidAlgorandAddress(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -107,7 +110,7 @@ const watchAccount = (
 const algo25Account = (address: string): WalletAccount => ({
     id: address,
     address,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-1',
 })
 
@@ -178,7 +181,7 @@ describe('useAsbAccountImport', () => {
 
         expect(mockImportAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            type: 'standalone',
         })
         // No `name` on the asb row, so updateAccount must not be called.
         expect(mockUpdateAccount).not.toHaveBeenCalled()
@@ -260,13 +263,12 @@ describe('useAsbAccountImport', () => {
         expect(written[0]).toBe(existing)
         expect(written[1]).toMatchObject({
             address: VALID_ADDRESS_B,
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
         })
         expect(returned).toMatchObject({
             address: VALID_ADDRESS_B,
-            type: AccountTypes.watch,
-            provenance: { kind: 'watch' },
-            credentials: {},
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: VALID_ADDRESS_B } },
         })
         // Watch accounts never touch KMS or the backup-complete signal.
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()
@@ -285,7 +287,7 @@ describe('useAsbAccountImport', () => {
 
     test('throws DuplicateAccountError when the watch address already exists', async () => {
         storeAccounts = [
-            { ...algo25Account(VALID_ADDRESS_B), type: AccountTypes.watch },
+            { ...algo25Account(VALID_ADDRESS_B), custody: { kind: 'watch' } },
         ]
 
         const useAsbAccountImport = await importHook()

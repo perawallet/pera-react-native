@@ -22,12 +22,13 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { getKnownAssetId, useNativeAsset } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
@@ -36,6 +37,9 @@ import {
     useIsCardAutoFundingActive,
     useCardWithdraw,
 } from '../../hooks'
+// Imported directly (not via the hooks barrel) to avoid an import cycle: it
+// pulls in a sheet component that imports from that barrel.
+import { useOpenFundingTypeSheet } from '../../hooks/useOpenFundingTypeSheet'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -52,6 +56,9 @@ export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
 
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
+    /** Localised "Auto/Manual Funding enabled" status shown under the balance. */
+    fundingTypeLabel: string
+    onChangeFundingType: () => void
     currency: string
     /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
@@ -66,6 +73,8 @@ type UsePeraCardOverviewResult = {
     onAddFunds: () => void
     /** Auto funding: top up the linked account itself, via the Fund tab. */
     onFundLinkedAccount: () => void
+    /** Funding the linked account needs a swap or a purchase; with neither the button is removed. */
+    canFundLinkedAccount: boolean
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
     onCreditPress: (kind: CardWalletKind) => void
@@ -76,7 +85,15 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
     const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
+    const { t } = useLanguage()
     const isAutoFunding = useIsCardAutoFundingActive()
+    const fundingTypeLabel = isAutoFunding
+        ? t('peraCard.account.funding_type_enabled_auto')
+        : t('peraCard.account.funding_type_enabled_manual')
+    const onChangeFundingType = useOpenFundingTypeSheet()
+    const canSwap = useCapability({ anyChain: 'swap' })
+    const canBuy = useCapability({ anyChain: 'onramp' })
     const { transactions, isLoading } = useCardTransactionsQuery()
 
     const transactionSections = useMemo(
@@ -106,10 +123,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // Add Funds can swap into USDC or has to buy it.
     const { data: linkedAlgo } = useAccountAssetBalanceQuery(
         isAutoFunding ? (fundingAccount ?? undefined) : undefined,
-        ALGO_ASSET_ID,
+        nativeAsset.assetId,
     )
     const hasLinkedAlgo =
         canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
+    const canSwapToUsdc = hasLinkedAlgo && canSwap
+    const canFundLinkedAccount = canSwapToUsdc || canBuy
 
     // Both live in their own Baanx wallets, null until something is credited.
     const { wallet: rewardWallet } = useCardWalletBalanceQuery(
@@ -156,16 +175,16 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     }, [navigation, pendingWithdrawal])
 
     const onFundLinkedAccount = useCallback(() => {
-        if (fundingAccount === null) return
+        if (fundingAccount === null || !canFundLinkedAccount) return
         trackEvent(CardEvent.HomeGetUsdc)
         // Both tabs work on the selected account, so make it the linked one
         // first or the USDC lands wherever the user last was.
         setSelectedAccountAddress(fundingAccount.address)
-        if (hasLinkedAlgo) {
+        if (canSwapToUsdc) {
             navigation.navigate('TabBar', {
                 screen: 'Swap',
                 params: {
-                    assetInId: ALGO_ASSET_ID,
+                    assetInId: nativeAsset.assetId,
                     assetOutId: usdcAssetId ?? undefined,
                 },
             })
@@ -177,7 +196,9 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         })
     }, [
         fundingAccount,
-        hasLinkedAlgo,
+        canFundLinkedAccount,
+        canSwapToUsdc,
+        nativeAsset.assetId,
         usdcAssetId,
         setSelectedAccountAddress,
         navigation,
@@ -205,6 +226,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     return {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency: DEFAULT_CARD_CURRENCY,
         balance,
         isBalanceLoading:
@@ -217,6 +240,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onWithdraw,
         onAddFunds,
         onFundLinkedAccount,
+        canFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,

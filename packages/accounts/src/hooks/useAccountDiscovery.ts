@@ -11,16 +11,18 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
 } from '../account-discovery'
 import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
-import type { DerivationType } from '../models'
+import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 
 export const useAccountDiscovery = () => {
     const { network } = useNetwork()
+    const isRekeyAvailable = useIsRekeyAvailable(LEGACY_CHAIN_ID)
 
     const sessionGetPublicKey = useCallback(
         async (
@@ -36,7 +38,6 @@ export const useAccountDiscovery = () => {
     const discoverAccounts = useCallback(
         async (params: {
             walletKeyId: string
-            derivationType: DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {
@@ -50,10 +51,12 @@ export const useAccountDiscovery = () => {
         [sessionGetPublicKey],
     )
 
+    // Resolves empty rather than rejecting, so a caller's rekey step is skipped
+    // without a failure notice while the capability is off.
     const discoverRekeyedAccounts = useCallback(
         async (params: { accountAddresses: string[] }) =>
-            baseDiscoverRekeyedAccounts(params),
-        [],
+            isRekeyAvailable ? baseDiscoverRekeyedAccounts(params) : [],
+        [isRekeyAvailable],
     )
 
     return {

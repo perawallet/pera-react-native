@@ -37,7 +37,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     DerivationTypes,
     useAccountsStore,
     type WalletAccount,
@@ -107,7 +106,7 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'algo25-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
@@ -145,7 +144,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
 
     const rootAccount: WalletAccount = {
         id: 'hd-root',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: HD_TEST_ADDRESS,
         keyPairId: rootKeyId,
         name: 'HD Root',
@@ -158,7 +161,11 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     }
     const derivedAccount: WalletAccount = {
         id: 'hd-derived-1',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 1 },
+        },
         address: derivedAddress,
         keyPairId: rootKeyId,
         name: 'HD Derived #1',

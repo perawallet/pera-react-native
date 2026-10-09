@@ -48,21 +48,42 @@ pnpm test:conformance   # from the repo root, or `pnpm exec vitest run` from her
 `src/harness/localnet.ts` fails fast with a clear message if LocalNet isn't
 reachable at `http://localhost:4001`.
 
+Two vitest projects share the run: `chain` stubs the accounts barrel's persisted
+store, and `store-migration` loads it for real. `vitest --project <name>` runs
+one.
+
+## Store migrations
+
+A migration must leave equivalent state durably present, in the same write
+that removes the old field, so no account loses a capability even until the
+next sync. `src/suites/store-migration/` holds the `accounts-store` payload
+each past version wrote and replays each one through the real rehydrate and
+`hydrateAccountChainStates` path, then through two cold starts with no synced
+rows. After every step each local key must sign for itself, the rekeyed
+account must sign through its authority, and LocalNet must accept both.
+
+Any change to `migrateAccountsState` or the store's `merge`, and any
+`STORE_VERSION` bump, adds the outgoing version's payload to `fixtures.ts`,
+written as plain JSON the way that version persisted it. A lanekeep rule could
+enforce this by failing a diff that touches `STORE_VERSION`,
+`migrateAccountsState` or `merge` in `packages/accounts/src/store/store.ts`
+without touching `fixtures.ts`; nothing enforces it yet.
+
 ## `dist/` dependency (CI-relevant)
 
 Every workspace package this suite imports is aliased in `vitest.config.ts`'s
-`resolve.alias`. `@perawallet/wallet-core-blockchain` maps to
-`packages/blockchain/src`, and Vite's prefix replacement means both the bare
-specifier and any deep import hit `src`, never `dist`. That is not where the
+`resolve.alias`. `@perawallet/wallet-core-chain-algorand` maps to `packages/chain-algorand/src`,
+and Vite's prefix replacement means the bare specifier, `/blockchain` and any
+deep import under it hit `src`, never `dist`. That is not where the
 problem is.
 
 `src/suites/submission/chokepoint.spec.ts` imports `submitAndAutoRefreshCore`
 from `@perawallet/wallet-core-chain-algorand`'s signing module, and that file also imports the full
-`@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
+`@perawallet/wallet-core-chain-algorand/blockchain` barrel (for real `toAlgodError`
 classification logic the suite exercises). The barrel itself resolves fine, but
 its own source has non-aliased dependencies one level out:
 `fees/useMinimumFeeConfig.ts` imports `@perawallet/wallet-core-remote-config`,
-and `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
+and chain-shared's `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
 Neither of those is in `vitest.config.ts`'s alias list, so each resolves
 through its own `package.json` `main` or `exports` field, meaning its built
 `dist/`, and remote-config transitively pulls in `wallet-extension-platform` and
@@ -116,7 +137,7 @@ comparison as an independent oracle, never on both.
 | Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey`, the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                         |
 | Signature-scheme decision                                             | `resolvePQSigningInfo`, reading a live keystore snapshot                                                                                       |
 | Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                       |
-| Signer dispatch and rekey resolution                                  | `buildGroupSignerTypeMap`, `resolveSigningAccount`                                                                                             |
+| Signer dispatch and rekey resolution                                  | `buildGroupSignerMap`, `resolveSigningAccount`                                                                                                 |
 | Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                            |
 | Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                                |
 | Address derivation                                                    | `algorandAddressCodec`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
@@ -251,7 +272,7 @@ an open follow-up, not an oversight this doc is hiding.
 
 ## Shape-based algod error parsing
 
-`packages/blockchain/src/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
+`packages/chain-algorand/src/blockchain/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
 never on how algod renders the numbers in them. Algod changes those renderings between versions, and
 a regex written against one rendering silently stops matching: overspend has been rendered both as
 `MicroAlgos:{Raw:300000}` and as `MicroAlgos:300mA`, an expired-transaction round range has used both

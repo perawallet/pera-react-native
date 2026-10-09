@@ -11,18 +11,23 @@
  */
 
 import { vi } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
     keyDerivations,
     type AddressCodec,
     type ChainId,
+    type ChainScope,
     type KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import { authorityOf } from '../credentials/accessors'
+import { AccountError } from '../errors'
 import { DerivationTypes } from '../models'
+import { useAccountChainStateStore } from '../store/accountChainState'
 import { canSignDirectly } from '../utils'
 
 // Every legacy `Network` resolves to this id, so the fakes register under it.
@@ -36,8 +41,8 @@ export const fakeEncode = (publicKey: Uint8Array): string =>
 
 const fakeHdKeyPairId: AccountsChainAdapter['hdKeyPairId'] = (
     seedKeyId,
-    { account, keyIndex, derivationType },
-) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`
+    { account, keyIndex },
+) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt9`
 
 const BASE32_ADDRESS = /^[A-Z2-7]{58}$/
 
@@ -62,11 +67,7 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
     deriveAccount: vi.fn(async (_kms, seedRef, account, keyIndex) => {
         const publicKey = new Uint8Array([account, keyIndex, 0xfa, 0xce])
         return {
-            keyPairId: fakeHdKeyPairId(seedRef, {
-                account,
-                keyIndex,
-                derivationType: DerivationTypes.Peikert,
-            }),
+            keyPairId: fakeHdKeyPairId(seedRef, { account, keyIndex }),
             publicKey,
             address: fakeEncode(publicKey),
         }
@@ -77,8 +78,22 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
 
 const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     chainId: FAKE_CHAIN_ID,
-    hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: vi.fn(),
+    toChainState: vi.fn(observed => ({
+        family: 'algorand' as const,
+        minBalance: observed.minBalance ?? new Decimal(0),
+        status: 'Offline' as const,
+        totalAssetsOptedIn: 0,
+        totalCreatedAssets: 0,
+        totalAppsOptedIn: 0,
+        ...(observed.authorityAddress
+            ? { authAddress: observed.authorityAddress }
+            : {}),
+    })),
+    toAccountInformationAddress: vi.fn(
+        ((address: string) =>
+            address) as unknown as AccountsChainAdapter['toAccountInformationAddress'],
+    ),
     fetchAccountInformation: vi.fn(),
     fetchAssetOptInRounds: vi.fn(async () => new Map<string, number>()),
     accountExists: vi.fn(async () => false),
@@ -89,22 +104,43 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     createPublicKeyGetter: vi.fn(() => async () => new Uint8Array(32)),
     hdKeyPairId: vi.fn(fakeHdKeyPairId),
     assertHdPathMatches: vi.fn(),
+    legacyDetails: (custody, entry) => {
+        if (custody.kind === 'local' && custody.seed === 'bip39') {
+            return {
+                hdWalletDetails: {
+                    ...custody.hd,
+                    change: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
+            }
+        }
+        if (custody.kind === 'multisig') {
+            const multisig = entry.native?.multisig
+            if (!multisig) throw new AccountError('multisig missing')
+            return { multisigDetails: { ...multisig } }
+        }
+        return {}
+    },
     quantum: {
         deriveKeygenSeed: vi.fn((entropy: Uint8Array) => entropy.slice()),
         addressFromPublicKey: vi.fn((publicKey: Uint8Array) =>
             fakeEncode(publicKey),
         ),
     },
-    singleKeyAccounts: { create: vi.fn(), importMnemonic: vi.fn() },
+    singleKeyAccounts: {
+        create: vi.fn(),
+        importMnemonic: vi.fn(),
+        findQuantumAccountForMnemonic: vi.fn(),
+    },
     fetchRekeyedAddresses: vi.fn(async () => []),
-    resolveSigner: vi.fn((account, _accounts) =>
+    resolveSigner: vi.fn((account, _accounts, _scope) =>
         canSignDirectly(account)
             ? { kind: 'ok' as const, signer: account }
             : { kind: 'watch' as const, account },
     ),
     getAuthAccount: vi.fn(account => account),
     authority: {
-        isDelegated: vi.fn(account => !!account.rekeyAddress),
+        isDelegated: vi.fn((account, scope) => !!authorityOf(account, scope)),
         accountsDelegatedTo: vi.fn(() => []),
         isEligibleTarget: vi.fn(() => false),
         canSignProgram: vi.fn(() => false),
@@ -135,3 +171,17 @@ export const fakeAccountsChain = (): FakeAccountsChain => {
     if (!current) throw new Error('registerFakeAccountsChain has not run')
     return current
 }
+
+/** Records `authorityAddress` as `address`'s authority on `scope`; `null` is an observed "signs for itself". */
+export const seedAuthority = (
+    address: string,
+    authorityAddress: string | null,
+    scope: ChainScope = MAINNET_SCOPE,
+): void =>
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(
+            scope,
+            address,
+            fakeAccountsChain().adapter.toChainState({ authorityAddress }),
+        )

@@ -12,12 +12,26 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
+    ),
+    useSelectedScope: () => ({
+        chainId: 'algorand',
+        networkId: mockNetwork.network,
+    }),
+}))
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -28,11 +42,7 @@ vi.mock('../endpoints', () => ({
     fetchAccountsBalanceHistory: mocks.fetchAccountsBalanceHistory,
 }))
 
-// Mock network extension
 const mockNetwork = { network: 'mainnet' }
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mockNetwork,
-}))
 
 // Mock currencies
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(1.5))
@@ -71,16 +81,16 @@ describe('useAccountBalancesHistoryQuery', () => {
         it('generates correct query key', () => {
             const addresses = ['ADDR1', 'ADDR2']
             const period = 'one-day'
-            const network = 'mainnet'
+            const scope = scopeForLegacyNetwork('mainnet')
             const key = getAccountBalancesHistoryQueryKey(
                 addresses,
                 period,
-                network,
+                scope,
             )
             expect(key).toEqual([
                 'accounts',
                 'balance-history',
-                { period, addresses, network },
+                { period, addresses, scope },
             ])
         })
     })
@@ -169,7 +179,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.error).toEqual(new Error('Network error'))
         })
 
-        it('uses correct network from useNetwork hook', async () => {
+        it('fetches with the legacy network of the selected scope', async () => {
             mockNetwork.network = 'testnet'
             mocks.fetchAccountsBalanceHistory.mockResolvedValue({ results: [] })
 
@@ -198,6 +208,10 @@ describe('useAccountBalancesHistoryQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'balanceHistory',
+                )
                 expect(mocks.fetchAccountsBalanceHistory).not.toHaveBeenCalled()
             },
         )

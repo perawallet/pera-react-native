@@ -16,7 +16,7 @@ import {
     useUpdateAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '../blockchain'
 import {
     ALGO25_SEED_LENGTH,
     algo25SeedToIndices,
@@ -90,7 +90,7 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
                     mnemonicIndices,
-                    type: 'algo25',
+                    type: 'standalone',
                 })
 
                 // Algo25 imports always return a WalletAccount; the HD

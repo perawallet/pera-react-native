@@ -12,14 +12,16 @@
 
 import {
     scopeForLegacyNetwork,
+    type ChainId,
     type ChainScope,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
 import { type Network, Networks } from './models/network'
 import { config } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
-export type ChainConfig = {
+export type AlgorandChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
@@ -29,6 +31,20 @@ export type ChainConfig = {
     indexerToken: string
     dispenserUrl: string
 }
+
+export type EthereumChainConfig = {
+    /** Public JSON-RPC endpoint; reads go direct, with no API key. */
+    rpcUrl: string
+}
+
+// Indexed by `C extends ChainId`, so a chain id without an entry stops
+// getChainConfig compiling.
+type ChainConfigByChain = {
+    algorand: AlgorandChainConfig
+    ethereum: EthereumChainConfig
+}
+
+export type ChainConfig = ChainConfigByChain[ChainId]
 
 /** Empty outside `PeraBackedNetwork`s — never borrowed from another network. */
 export type PeraServices = {
@@ -53,7 +69,7 @@ export type PeraServices = {
     cardUsdcAssetId: string
 }
 
-export type NetworkConfig = ChainConfig &
+export type NetworkConfig = AlgorandChainConfig &
     PeraServices & {
         network: Network
         isTestnet: boolean
@@ -74,7 +90,7 @@ export type PeraService = (typeof PERA_SERVICES)[number]
 
 /** What a saved custom node supplies; its explorer and dispenser stay empty. */
 export type CustomNetworkEndpoints = Pick<
-    ChainConfig,
+    AlgorandChainConfig,
     | 'algodUrl'
     | 'indexerUrl'
     | 'algodToken'
@@ -83,6 +99,34 @@ export type CustomNetworkEndpoints = Pick<
     | 'genesisId'
 >
 
+/**
+ * The node as the user saved it; the tokens are optional there. Saved as a
+ * single unit, never merged: a half-updated config (new host, stale genesis
+ * hash) would fail every signing attempt with a confusing cross-network
+ * mismatch rather than anything pointing at the real cause.
+ */
+export type CustomNetworkConfig = Omit<
+    CustomNetworkEndpoints,
+    'algodToken' | 'indexerToken'
+> & {
+    algodToken?: string
+    indexerToken?: string
+}
+
+/** Persisted configs are untyped; one missing a required field is not a usable node. */
+export const isCustomNetworkConfig = (
+    value: unknown,
+): value is CustomNetworkConfig => {
+    if (typeof value !== 'object' || value === null) return false
+    const entry = value as Record<string, unknown>
+    return (
+        typeof entry.algodUrl === 'string' &&
+        typeof entry.indexerUrl === 'string' &&
+        typeof entry.genesisHash === 'string' &&
+        typeof entry.genesisId === 'string'
+    )
+}
+
 export type CustomNetworkSource = (
     scope: ChainScope,
 ) => CustomNetworkEndpoints | undefined
@@ -90,7 +134,7 @@ export type CustomNetworkSource = (
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
 
-const chainConfigByNetwork: Record<Network, ChainConfig> = {
+const chainConfigByNetwork: Record<Network, AlgorandChainConfig> = {
     [Networks.mainnet]: {
         algodUrl: config.mainnetAlgodUrl,
         indexerUrl: config.mainnetIndexerUrl,
@@ -220,21 +264,62 @@ const peraServiceNamesByNetwork: Record<Network, readonly PeraService[]> = {
     [Networks.custom]: [],
 }
 
-type ScopeConfig = {
-    scope: ChainScope
-    chain: ChainConfig
+type ScopeConfigOf<C extends ChainId> = {
+    scope: ChainScope & { chainId: C }
+    /** Absent while the build carries no endpoint for the scope. */
+    chain: ChainConfigByChain[C] | undefined
     peraServices: PeraServices
     services: ReadonlySet<PeraService>
 }
 
-const SCOPE_CONFIGS: readonly ScopeConfig[] = Object.values(Networks).map(
-    network => ({
+type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
+
+const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] =
+    Object.values(Networks).map(network => ({
         scope: scopeForLegacyNetwork(network),
         chain: chainConfigByNetwork[network],
         peraServices: peraServicesByNetwork[network],
         services: new Set(peraServiceNamesByNetwork[network]),
-    }),
-)
+    }))
+
+const ethereumScopeConfig = (
+    networkId: NetworkId,
+    rpcUrl: string,
+    peraBackendUrl: string,
+    services: readonly PeraService[],
+): ScopeConfigOf<'ethereum'> => ({
+    scope: { chainId: 'ethereum', networkId },
+    chain: rpcUrl === '' ? undefined : { rpcUrl },
+    // An empty list empties backendUrl too: the query client refuses every Pera
+    // request for a scope without one, including requests that name no service.
+    peraServices: {
+        ...EMPTY_PERA_SERVICES,
+        backendUrl: services.length > 0 ? peraBackendUrl : '',
+    },
+    services: new Set(services),
+})
+
+// The Pera backend serves Ethereum from the same host as the Algorand network
+// of the same tier.
+const ETHEREUM_SCOPE_CONFIGS: readonly ScopeConfigOf<'ethereum'>[] = [
+    ethereumScopeConfig(
+        'mainnet',
+        config.ethereumMainnetRpcUrl,
+        config.mainnetBackendUrl,
+        config.ethereumMainnetPeraServices,
+    ),
+    ethereumScopeConfig(
+        'sepolia',
+        config.ethereumSepoliaRpcUrl,
+        config.testnetBackendUrl,
+        config.ethereumSepoliaPeraServices,
+    ),
+]
+
+const SCOPE_CONFIGS: readonly ScopeConfig[] = [
+    ...ALGORAND_SCOPE_CONFIGS,
+    ...ETHEREUM_SCOPE_CONFIGS,
+]
 
 // Compared field by field, not through toScopeKey: that validates the chain id
 // against the compiled-in union and throws for a test's fixture chain, and
@@ -265,19 +350,40 @@ export const registerCustomNetworkSource = (
     }
 }
 
+// Algorand only: its one consumer builds algod and indexer clients per scope.
 export const configuredScopes = (): readonly ChainScope[] =>
-    SCOPE_CONFIGS.map(row => row.scope)
+    ALGORAND_SCOPE_CONFIGS.map(row => row.scope)
 
 /**
  * Throws for a scope no row configures, rather than handing back empty
  * endpoints that fail later somewhere unrelated.
  */
-export const getChainConfig = (scope: ChainScope): ChainConfig => {
+export const getChainConfig = <C extends ChainId>(
+    scope: ChainScope & { chainId: C },
+): ChainConfigByChain[C] => {
     const row = findScopeConfig(scope)
-    if (row === undefined) {
+    if (row?.chain === undefined) {
         throw new UnconfiguredScopeError(scope)
     }
-    return { ...row.chain, ...customNetworkSource?.(scope) }
+    const chain =
+        row.scope.chainId === 'algorand'
+            ? { ...row.chain, ...customNetworkSource?.(scope) }
+            : { ...row.chain }
+    // The row matched scope.chainId, so its config is C's.
+    return chain as ChainConfigByChain[C]
+}
+
+/** For Algorand-only code holding an arbitrary scope; any other chain throws. */
+export const getAlgorandChainConfig = (
+    scope: ChainScope,
+): AlgorandChainConfig => {
+    if (scope.chainId !== 'algorand') {
+        throw new UnconfiguredScopeError(scope)
+    }
+    return getChainConfig({
+        chainId: scope.chainId,
+        networkId: scope.networkId,
+    })
 }
 
 export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({

@@ -15,6 +15,8 @@ import type { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import { AccountErrorBoundary } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import type { CapabilityRequirement } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { fullScreenLayout } from '@layouts/index'
 
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen'
@@ -186,9 +188,11 @@ export type ImportFlowStack = ReturnType<
  * `createNativeStackNavigator` is invariant in its `ParamList`, so call sites
  * must use `Stack as unknown as ImportFlowStack` until that ever becomes
  * covariant — see the call sites in `./index.tsx` and `./add-account.tsx`.
+ * A screen whose capability is off isn't registered, so no entry point reaches it.
  */
 export const renderImportFlowScreens = (
     Stack: ImportFlowStack,
+    isAllowed: (requirement: CapabilityRequirement) => boolean,
 ): React.ReactNode => (
     <>
         <Stack.Screen
@@ -222,21 +226,27 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={ImportSelectAddressesScreenWithErrorBoundary}
         />
-        <Stack.Screen
-            name='ImportRekeyedAddresses'
-            options={{ title: '' }}
-            component={ImportRekeyedAddressesScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='LedgerPair'
-            options={{ title: '' }}
-            component={LedgerPairScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='LedgerInstructions'
-            options={{ title: '' }}
-            component={LedgerInstructionsScreenWithErrorBoundary}
-        />
+        {isAllowed(REKEY_REQUIREMENT) && (
+            <Stack.Screen
+                name='ImportRekeyedAddresses'
+                options={{ title: '' }}
+                component={ImportRekeyedAddressesScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'ledger' }) && (
+            <Stack.Screen
+                name='LedgerPair'
+                options={{ title: '' }}
+                component={LedgerPairScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'ledger' }) && (
+            <Stack.Screen
+                name='LedgerInstructions'
+                options={{ title: '' }}
+                component={LedgerInstructionsScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='LedgerScan'
             options={{ title: '' }}
@@ -263,32 +273,42 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={LedgerTroubleshootingScreenWithErrorBoundary}
         />
-        <Stack.Screen
-            name='AsbImportInfo'
-            options={{ title: '' }}
-            component={AsbImportInfoScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportBackup'
-            options={{ title: '' }}
-            component={AsbImportBackupScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportKey'
-            options={{ title: '' }}
-            component={AsbImportKeyScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportSelectAccounts'
-            options={{ title: '' }}
-            component={AsbImportSelectAccountsScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportResult'
-            options={{ headerShown: false }}
-            layout={fullScreenLayout}
-            component={AsbImportResultScreenWithErrorBoundary}
-        />
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportInfo'
+                options={{ title: '' }}
+                component={AsbImportInfoScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportBackup'
+                options={{ title: '' }}
+                component={AsbImportBackupScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportKey'
+                options={{ title: '' }}
+                component={AsbImportKeyScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportSelectAccounts'
+                options={{ title: '' }}
+                component={AsbImportSelectAccountsScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportResult'
+                options={{ headerShown: false }}
+                layout={fullScreenLayout}
+                component={AsbImportResultScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='PeraWebImportInfo'
             options={{ title: '' }}

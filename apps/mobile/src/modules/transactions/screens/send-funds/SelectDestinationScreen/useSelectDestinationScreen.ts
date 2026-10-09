@@ -12,7 +12,7 @@
 
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'

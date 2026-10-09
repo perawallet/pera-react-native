@@ -11,9 +11,9 @@
  */
 
 import type { ReactNode } from 'react'
-import { ActivityIndicator } from 'react-native'
 import {
     PWIcon,
+    PWLoadingIndicator,
     PWText,
     PWTouchableOpacity,
     type IconName,
@@ -56,7 +56,7 @@ export const CardOptionRow = ({
             testID={testID}
         >
             {isLoading ? (
-                <ActivityIndicator />
+                <PWLoadingIndicator />
             ) : (
                 (iconElement ??
                 (icon != null ? (

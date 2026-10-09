@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
+    ChainScope,
     PeraTransaction,
     PeraSignedTransaction,
     PeraTransactionType,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
 
 export interface TransactionSignableData {
@@ -278,8 +279,14 @@ export interface SignableAnalysis {
     riskLevel: 'low' | 'medium' | 'high'
 }
 
+/** What a group does, before any warning or risk is attached. */
+export type DecodedGroup = Pick<
+    SignableAnalysis,
+    'totalFees' | 'transactionSummaries' | 'signableAddresses'
+>
+
 export interface AnalysisContext {
-    network: Network
+    scope: ChainScope
     /** All user accounts, for detecting internal transfers. */
     accounts: WalletAccount[]
     /** Known contracts/apps, for risk assessment. */
@@ -294,13 +301,6 @@ export interface ContractInfo {
 
 export interface AnalyzedSignableGroup extends SignableGroup {
     analysis: SignableAnalysis
-}
-
-export interface DataAnalyzer {
-    analyze(
-        group: SignableGroup,
-        context: AnalysisContext,
-    ): Promise<SignableAnalysis>
 }
 
 /** The UI layer maps these to i18n keys and appropriate UI treatment. */

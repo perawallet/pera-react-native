@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useSigningPipeline } from '../useSigningPipeline'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'

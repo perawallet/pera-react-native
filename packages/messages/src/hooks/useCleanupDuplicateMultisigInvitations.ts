@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { InboxResponse } from '../api/inbox'

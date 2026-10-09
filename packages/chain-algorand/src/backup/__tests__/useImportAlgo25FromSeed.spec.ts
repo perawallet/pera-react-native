@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    AccountTypes,
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -27,13 +26,16 @@ const mocks = vi.hoisted(() => ({
     zeroBytes: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
+    isValidAlgorandAddress: mocks.isValidAlgorandAddress,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: mocks.isValidAlgorandAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -66,7 +68,7 @@ const VALID_ADDRESS =
 const importedAccount: WalletAccount = {
     id: 'acc-1',
     address: VALID_ADDRESS,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     name: null,
 } as WalletAccount
 
@@ -99,7 +101,7 @@ describe('useImportAlgo25FromSeed', () => {
         )
         expect(mocks.importAlgo25).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            type: 'standalone',
         })
         expect(mocks.markBackupComplete).toHaveBeenCalledWith(importedAccount)
         expect(mocks.updateAccount).not.toHaveBeenCalled()

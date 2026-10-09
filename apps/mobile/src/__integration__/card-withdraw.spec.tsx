@@ -29,7 +29,6 @@ import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -47,7 +46,7 @@ import {
     mockAlgodStatus,
     mockAlgodStatusAfterBlock,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
@@ -214,7 +213,7 @@ const seedOwnerAccount = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'card-owner',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Main Account',

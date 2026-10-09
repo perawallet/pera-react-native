@@ -37,6 +37,7 @@ import {
     isWalletConnectV2Connection,
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
+import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { WalletConnectRequestExpiredError } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
 import {
@@ -907,6 +908,59 @@ describe('session requests', () => {
     })
 })
 
+describe('empty signatures', () => {
+    const stubEmptySignatures = () => {
+        const adapter = dappRequestAdapterFor(Networks.mainnet)
+        if (!adapter) throw new Error('no Algorand adapter registered')
+        return vi
+            .spyOn(adapter, 'emptySignaturesFor')
+            .mockReturnValue({ [ADDRESS]: 'gA==' })
+    }
+
+    it("answers with the record's accounts without prompting or reporting", async () => {
+        const emptySignaturesFor = stubEmptySignatures()
+        const { request, walletKit, context } = await openSession()
+
+        await request({
+            method: 'algo_getEmptySignatures',
+            params: { chainId: MAINNET_CHAIN_ID },
+        })
+
+        expect(emptySignaturesFor).toHaveBeenCalledWith([ADDRESS])
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                result: { [ADDRESS]: 'gA==' },
+            },
+        })
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(context.onError).not.toHaveBeenCalled()
+    })
+
+    it('refuses, silently, params naming a chain other than the active one', async () => {
+        const emptySignaturesFor = stubEmptySignatures()
+        const { request, walletKit, context } = await openSession()
+
+        await request({
+            method: 'algo_getEmptySignatures',
+            params: { chainId: TESTNET_CHAIN_ID },
+        })
+
+        expect(emptySignaturesFor).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: 5100 }),
+            },
+        })
+        expect(context.onError).not.toHaveBeenCalled()
+    })
+})
+
 describe('request expiry', () => {
     it('withdraws an unanswered request and tells the user why', async () => {
         // WalletKit has dropped the request by now, so a late answer fails
@@ -1601,6 +1655,36 @@ describe('approving a proposal', () => {
         await propose(makeNextProposal())
         const connection = await requireProposal().approve([ADDRESS])
         expect(connection.origin).toBeUndefined()
+        await registry.teardown()
+    })
+})
+
+describe('approving a proposal that asks for empty signatures', () => {
+    it('approves the method without listing it as a permission', async () => {
+        const { walletKit, requireProposal, registry } = await openProposal({
+            proposal: makeProposal({
+                optionalNamespaces: {
+                    algorand: {
+                        chains: [MAINNET_CHAIN_ID],
+                        methods: ['algo_getEmptySignatures'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+
+        expect(requireProposal().requested.methods).toEqual(['algo_signTxn'])
+        await requireProposal().approve([ADDRESS])
+
+        expect(walletKit.approveSession).toHaveBeenCalledWith(
+            expect.objectContaining({
+                namespaces: {
+                    algorand: expect.objectContaining({
+                        methods: ['algo_signTxn', 'algo_getEmptySignatures'],
+                    }),
+                },
+            }),
+        )
         await registry.teardown()
     })
 })

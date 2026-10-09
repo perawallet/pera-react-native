@@ -19,11 +19,7 @@ import type {
     HardwareWalletRegistry,
     HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type {
-    PeraTransaction,
-    PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { Address } from '@perawallet/wallet-core-blockchain'
+
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
@@ -37,14 +33,18 @@ import type {
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
-    LedgerAppOutdatedError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
-    MIN_ARBITRARY_SIGN_APP_VERSION,
-    isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { legacyPlannerAdapter } from '../../chain-adapter'
+import type {
+    ChainId,
+    PeraTransaction,
+    PeraSignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    plannerChainAdapters,
+    type PlannerChainAdapter,
+} from '../../chain-adapter'
 import {
     messageSignerFor,
     type MessageSignerChainAdapter,
@@ -59,7 +59,7 @@ import {
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
- * Injected from the hook layer (useTransactionEncoder).
+ * Injected from the hook layer (the planner's `encodeUnsignedTransaction`).
  */
 export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 
@@ -68,6 +68,7 @@ export type HardwareStrategyOptions = {
     encodeTransaction: EncodeTransactionFunction
     /** Read at auth-data sign time, for the signer / rekey cross-check. */
     getAllAccounts: () => WalletAccount[]
+    chainId: ChainId
 }
 
 /**
@@ -111,6 +112,7 @@ const signTransactions = async (
     data: TransactionSignableData,
     hwAccount: HardwareWalletAccount,
     encodeTransaction: EncodeTransactionFunction,
+    planner: PlannerChainAdapter,
     guard: DisconnectGuard,
     callbacks?: SigningCallbacks,
 ): Promise<PeraSignedTransaction[]> => {
@@ -129,7 +131,7 @@ const signTransactions = async (
         const txn = transactions[index]
 
         if (!indicesToSign.includes(index)) {
-            signed.push(legacyPlannerAdapter().assembleSignedTransaction(txn))
+            signed.push(planner.assembleSignedTransaction(txn))
             continue
         }
 
@@ -155,7 +157,7 @@ const signTransactions = async (
         )
 
         signed.push(
-            legacyPlannerAdapter().assembleSignedTransaction(txn, {
+            planner.assembleSignedTransaction(txn, {
                 sig: signature,
                 signerAddress: hwAccount.address,
             }),
@@ -168,6 +170,7 @@ const signTransactions = async (
 
 type SignTransactionsOnHardwareWalletOptions = LedgerSessionOptions & {
     encodeTransaction: EncodeTransactionFunction
+    planner: PlannerChainAdapter
 }
 
 type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
@@ -185,7 +188,7 @@ const signTransactionsOnHardwareWallet = (
     indicesToSign: number[],
     options: SignTransactionsOnHardwareWalletOptions,
 ): Promise<PeraSignedTransaction[]> => {
-    const { encodeTransaction, callbacks } = options
+    const { encodeTransaction, planner, callbacks } = options
 
     return withLedgerSession(hwAccount, options, ({ transport, guard }) =>
         signTransactions(
@@ -193,6 +196,7 @@ const signTransactionsOnHardwareWallet = (
             { type: 'transactions', transactions, indicesToSign },
             hwAccount,
             encodeTransaction,
+            planner,
             guard,
             callbacks,
         ),
@@ -214,15 +218,12 @@ const signAuthDataOnHardwareWallet = (
         options,
         async ({ transport, guard }) => {
             // Early version gate — the device-side error is the fallback.
-            const version = await withTimeout(
-                transport.getAppVersion(),
+            await withTimeout(
+                transport.assertCanSignData(),
                 LEDGER_CONNECTION_TIMEOUT_MS,
                 'Read Ledger app version',
                 ledgerTimeoutReason('Read Ledger app version'),
             )
-            if (!isAppVersionAtLeast(version, MIN_ARBITRARY_SIGN_APP_VERSION)) {
-                throw new LedgerAppOutdatedError()
-            }
 
             messageSigner.validateAuthData(authData, metadata, getAllAccounts())
 
@@ -234,8 +235,9 @@ const signAuthDataOnHardwareWallet = (
                     transport.signData({
                         accountIndex,
                         data: authData.data,
-                        signerPublicKey: Address.fromString(hwAccount.address)
-                            .publicKey,
+                        signerPublicKey: messageSigner.signerPublicKey(
+                            hwAccount.address,
+                        ),
                         domain: authData.domain,
                         authenticatorData: authData.authenticatorData,
                         requestId: authData.requestId,
@@ -261,8 +263,12 @@ const signAuthDataOnHardwareWallet = (
 export const createHardwareStrategy = (
     options: HardwareStrategyOptions,
 ): SigningStrategy => {
-    const { hardwareWalletRegistry, encodeTransaction, getAllAccounts } =
-        options
+    const {
+        hardwareWalletRegistry,
+        encodeTransaction,
+        getAllAccounts,
+        chainId,
+    } = options
 
     return {
         canSign: (account: WalletAccount): boolean => {
@@ -284,10 +290,7 @@ export const createHardwareStrategy = (
             if (group.data.type === 'auth-data') {
                 // Resolved before any Ledger session so a chain with no
                 // message signer is refused without a device prompt.
-                const messageSigner = messageSignerFor(
-                    LEGACY_CHAIN_ID,
-                    account.address,
-                )
+                const messageSigner = messageSignerFor(chainId, account.address)
                 const signature = await signAuthDataOnHardwareWallet(
                     account,
                     group.data.authData,
@@ -315,6 +318,7 @@ export const createHardwareStrategy = (
                 {
                     registry: hardwareWalletRegistry,
                     encodeTransaction,
+                    planner: plannerChainAdapters.get(chainId),
                     callbacks,
                 },
             )

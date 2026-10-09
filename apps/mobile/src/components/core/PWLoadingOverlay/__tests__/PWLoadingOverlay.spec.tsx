@@ -40,4 +40,15 @@ describe('PWLoadingOverlay', () => {
         expect(screen.queryByText('Processing...')).toBeNull()
         expect(screen.queryByTestId('activity-indicator')).toBeNull()
     })
+
+    it('renders the description when provided', () => {
+        render(
+            <PWLoadingOverlay
+                isVisible={true}
+                title='Processing...'
+                description='This can take a while.'
+            />,
+        )
+        expect(screen.getByText('This can take a while.')).toBeTruthy()
+    })
 })

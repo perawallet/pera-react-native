@@ -28,7 +28,7 @@ vi.mock('../../sync/account-syncer', () => ({
 vi.mock('../../db', () => ({
     getAccountHoldings: (...a: unknown[]) => mockGetAccountHoldings(...a),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({

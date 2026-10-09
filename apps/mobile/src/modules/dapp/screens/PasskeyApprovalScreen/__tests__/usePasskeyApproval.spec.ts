@@ -144,6 +144,21 @@ describe('usePasskeyApproval', () => {
         expect(result.current.isCreate).toBe(true)
     })
 
+    it('cleans a page-asserted rpId and userName of bidi controls before display', () => {
+        mocks.useDappRequest.mockReturnValue({
+            requestId: 'pk1',
+            approval: {
+                ...CREATE_APPROVAL,
+                rpId: 'webauthn\u202E.io',
+                userName: '\u2066alice@example.com\u2069',
+            },
+            isLoading: false,
+        })
+        const { result } = renderHook(() => usePasskeyApproval())
+        expect(result.current.rpId).toBe('webauthn.io')
+        expect(result.current.userName).toBe('alice@example.com')
+    })
+
     it('approve() on a passkey-create approval deserializes options, builds the signer from the unlocked keystore, runs createCredential with the browser-stamped origin, and resolves', async () => {
         mocks.useDappRequest.mockReturnValue({
             requestId: 'pk1',

@@ -16,20 +16,81 @@ import {
     createChainRegistry,
     type ChainCapabilityOverrides,
     type ChainContext,
+    type ChainModule,
     type ChainRegistry,
+    type ChainScope,
     type ChainSetupConfig,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    algorandCapabilityDefaults,
-    algorandDescriptor,
-} from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { UnconfiguredScopeError } from '@perawallet/wallet-core-config'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
+
+const PRODUCTION_ALGORAND_CAPABILITIES = {
+    send: true,
+    receive: true,
+    history: true,
+    assets: true,
+    pricing: true,
+    messageSigning: true,
+    dappConnect: true,
+    customNetworks: true,
+    watchAccounts: true,
+    ledger: true,
+    multisig: true,
+    rekey: true,
+    quantumAccounts: true,
+    staking: true,
+    swap: true,
+    card: true,
+    assetInbox: true,
+    nameService: true,
+    onramp: true,
+    giftCards: true,
+    discover: true,
+    feeDelegation: true,
+    liquidAuth: true,
+    notifications: true,
+    cloudBackup: true,
+    mnemonicBackup: true,
+    secureBackup: true,
+    nft: true,
+    manageAssets: true,
+    privateKeys: false,
+    contractDecoding: false,
+    priceHistory: true,
+    balanceHistory: true,
+    assetSearch: true,
+    assetFavorites: true,
+    priceAlerts: true,
+    csvExport: true,
+    peraWebImport: true,
+}
+
+const { FIXTURE_PINNED_HOSTS } = vi.hoisted(() => ({
+    FIXTURE_PINNED_HOSTS: {
+        flag: 'enable_ssl_pinning_fixture',
+        urls: ['https://node.fixture.example'],
+        domains: ['fixture.example'],
+    },
+}))
 
 const mocks = vi.hoisted(() => ({
-    provider: { chains: null as unknown as ChainRegistry },
+    // The network store resolves its shim through the registry as it loads,
+    // before beforeEach installs the real one.
+    provider: {
+        chains: { has: () => false } as unknown as ChainRegistry,
+    },
     config: {
         chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
+        algodReadTimeout: 10_000,
+        algodSubmitTimeout: 30_000,
     },
+    getChainConfig: vi.fn(),
+    getPeraServicesConfig: vi.fn(),
+    peraServicesFor: vi.fn(),
     registerModule: vi.fn(),
+    registerEthereumModule: vi.fn(),
+    ethereumChainModule: undefined as ChainModule | undefined,
     readCapabilityOverrides: vi.fn((): ChainCapabilityOverrides => ({})),
     networkGetState: vi.fn(),
     kmsCore: { deriveFromSeed: vi.fn(), importRawKey: vi.fn(), sign: vi.fn() },
@@ -44,13 +105,23 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
         typeof import('@perawallet/wallet-core-config')
     >()),
     config: mocks.config,
+    getChainConfig: mocks.getChainConfig,
+    getPeraServicesConfig: mocks.getPeraServicesConfig,
+    peraServicesFor: mocks.peraServicesFor,
 }))
 
-vi.mock('@perawallet/wallet-core-remote-config', () => ({
+vi.mock('@perawallet/wallet-core-remote-config', async () => ({
     readCapabilityOverrides: mocks.readCapabilityOverrides,
+    chainOverridesKey: (chainId: string) => `chain_${chainId}_overrides`,
+    remoteConfigDefaultsRegistry: (
+        await import('@perawallet/wallet-extension-platform')
+    ).remoteConfigDefaultsRegistry,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetworkStore: { getState: mocks.networkGetState },
 }))
 
@@ -64,24 +135,60 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
         chainModule: {
             descriptor: descriptorEntry.algorandDescriptor,
             capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,
+            capabilityRestrictions:
+                descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
             i18nKeys: () => [],
+            remoteConfigDefaults: { fixture_fee: 1000 },
+            pinnedHosts: () => FIXTURE_PINNED_HOSTS,
         },
     }
 })
 
-import { registerChainAdapters } from '../chain-adapters'
+// A getter so each test decides whether the Metro gate left the real module in.
+vi.mock('../ethereum-chain-module', () => ({
+    get ethereumChainModule() {
+        return mocks.ethereumChainModule
+    },
+}))
+
+import {
+    pinnedHostRegistry,
+    remoteConfigDefaultsRegistry,
+} from '@perawallet/wallet-extension-platform'
+import {
+    declareChainPlatformInputs,
+    registerChainAdapters,
+} from '../chain-adapters'
 
 const contextGivenToModule = (): ChainContext =>
     mocks.registerModule.mock.calls[0]?.[0] as ChainContext
 
+const contextGivenToEthereum = (): ChainContext => {
+    mocks.config.chains = {
+        enabled: ['algorand', 'ethereum'],
+        capabilities: {},
+    }
+    mocks.ethereumChainModule = {
+        ...ethereumModule,
+        register: mocks.registerEthereumModule,
+    }
+    registerChainAdapters()
+    return mocks.registerEthereumModule.mock.calls[0]?.[0] as ChainContext
+}
+
 describe('registerChainAdapters', () => {
     beforeEach(() => {
+        remoteConfigDefaultsRegistry.reset()
+        pinnedHostRegistry.reset()
         mocks.provider.chains = createChainRegistry()
         mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
+        mocks.ethereumChainModule = ethereumModule
         mocks.readCapabilityOverrides.mockReturnValue({})
         mocks.networkGetState.mockReturnValue({
-            selectedNetworkByChain: { algorand: 'mainnet' },
+            mode: 'live',
+            selectedNetworkByChain: {},
+            customNetworksByChain: { algorand: [] },
         })
     })
 
@@ -90,6 +197,40 @@ describe('registerChainAdapters', () => {
 
         expect(mocks.provider.chains.get('algorand').descriptor).toBe(
             algorandDescriptor,
+        )
+    })
+
+    it('leaves Ethereum unregistered when the build does not list it', () => {
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.has('ethereum')).toBe(false)
+    })
+
+    it('registers the Ethereum descriptor and defaults when the build lists it', () => {
+        mocks.config.chains = {
+            enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.get('ethereum').descriptor).toBe(
+            ethereumModule.descriptor,
+        )
+        expect(mocks.provider.chains.capabilities('ethereum')).toEqual(
+            ethereumModule.capabilityDefaults,
+        )
+    })
+
+    it('fails loudly when the build lists Ethereum but Metro stubbed its module', () => {
+        mocks.ethereumChainModule = undefined
+        mocks.config.chains = {
+            enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        expect(() => registerChainAdapters()).toThrow(
+            /no chain module was supplied/,
         )
     })
 
@@ -107,11 +248,11 @@ describe('registerChainAdapters', () => {
         expect(mocks.provider.chains.list()).toEqual([algorandDescriptor])
     })
 
-    it('resolves the module defaults when nothing overrides them', () => {
+    it("resolves Algorand's supported feature set for a production build with no overrides", () => {
         registerChainAdapters()
 
         expect(mocks.provider.chains.capabilities('algorand')).toEqual(
-            algorandCapabilityDefaults,
+            PRODUCTION_ALGORAND_CAPABILITIES,
         )
     })
 
@@ -160,6 +301,85 @@ describe('registerChainAdapters', () => {
         expect(capabilities.send).toBe(true)
     })
 
+    describe('platform inputs', () => {
+        it("declares an enabled chain's remote-config defaults and pinned hosts", () => {
+            registerChainAdapters()
+
+            expect(remoteConfigDefaultsRegistry.all()).toEqual(
+                expect.objectContaining({ fixture_fee: 1000 }),
+            )
+            expect(pinnedHostRegistry.all()).toEqual([FIXTURE_PINNED_HOSTS])
+        })
+
+        it('declares nothing for a chain the build leaves out', () => {
+            mocks.config.chains = { enabled: [], capabilities: {} }
+
+            registerChainAdapters()
+
+            expect(remoteConfigDefaultsRegistry.all()).not.toHaveProperty(
+                'fixture_fee',
+            )
+            expect(pinnedHostRegistry.all()).toEqual([])
+        })
+
+        it("declares every chain's overrides key, enabled or not", () => {
+            declareChainPlatformInputs([])
+
+            expect(remoteConfigDefaultsRegistry.all()).toEqual(
+                expect.objectContaining({
+                    chain_algorand_overrides: '',
+                    chain_ethereum_overrides: '',
+                }),
+            )
+        })
+
+        it('declares again without throwing when it runs twice', () => {
+            registerChainAdapters()
+
+            expect(() => registerChainAdapters()).not.toThrow()
+            expect(pinnedHostRegistry.all()).toEqual([FIXTURE_PINNED_HOSTS])
+        })
+    })
+
+    describe('mode restrictions', () => {
+        it.each([
+            ['live', {}, true],
+            ['developer', {}, false],
+            ['developer', { algorand: 'betanet' }, false],
+        ] as const)(
+            'resolves onramp in %s mode with overrides %j as %s',
+            (mode, selectedNetworkByChain, expected) => {
+                mocks.networkGetState.mockReturnValue({
+                    mode,
+                    selectedNetworkByChain,
+                    customNetworksByChain: { algorand: [] },
+                })
+                registerChainAdapters()
+
+                expect(
+                    mocks.provider.chains.capabilities('algorand').onramp,
+                ).toBe(expected)
+            },
+        )
+
+        it('follows a mode change without registering again', () => {
+            registerChainAdapters()
+            expect(mocks.provider.chains.capabilities('algorand').onramp).toBe(
+                true,
+            )
+
+            mocks.networkGetState.mockReturnValue({
+                mode: 'developer',
+                selectedNetworkByChain: {},
+                customNetworksByChain: { algorand: [] },
+            })
+
+            expect(mocks.provider.chains.capabilities('algorand').onramp).toBe(
+                false,
+            )
+        })
+    })
+
     describe('the chain context', () => {
         it('reads the selected network on every getScope call', () => {
             registerChainAdapters()
@@ -167,7 +387,9 @@ describe('registerChainAdapters', () => {
 
             const before = context.getScope()
             mocks.networkGetState.mockReturnValue({
-                selectedNetworkByChain: { algorand: 'testnet' },
+                mode: 'developer',
+                selectedNetworkByChain: { algorand: 'betanet' },
+                customNetworksByChain: { algorand: [] },
             })
             const after = context.getScope()
 
@@ -175,14 +397,15 @@ describe('registerChainAdapters', () => {
                 chainId: 'algorand',
                 networkId: 'mainnet',
             })
-            expect(after).toEqual({ chainId: 'algorand', networkId: 'testnet' })
+            expect(after).toEqual({ chainId: 'algorand', networkId: 'betanet' })
         })
 
-        it('resolves a chain with no stored entry from the global selection', () => {
+        it('resolves a chain with no override to its default test network in developer mode', () => {
             registerChainAdapters()
             mocks.networkGetState.mockReturnValue({
-                globalNetwork: 'testnet',
+                mode: 'developer',
                 selectedNetworkByChain: {},
+                customNetworksByChain: { algorand: [] },
             })
 
             expect(contextGivenToModule().getScope()).toEqual({
@@ -195,6 +418,58 @@ describe('registerChainAdapters', () => {
             registerChainAdapters()
 
             expect(contextGivenToModule().getEndpoints()).toEqual({})
+        })
+
+        it("hands over the wallet's request timeouts", () => {
+            registerChainAdapters()
+
+            expect(contextGivenToModule().timeouts).toEqual({
+                readMs: 10_000,
+                submitMs: 30_000,
+            })
+        })
+
+        it('hands Ethereum the RPC URL of every configured network, keyed by network id', () => {
+            mocks.getChainConfig.mockImplementation((scope: ChainScope) => {
+                if (scope.networkId === 'sepolia') {
+                    throw new UnconfiguredScopeError(scope)
+                }
+                return { rpcUrl: 'https://mainnet.rpc.test' }
+            })
+
+            expect(contextGivenToEthereum().getEndpoints()).toEqual({
+                mainnet: 'https://mainnet.rpc.test',
+            })
+        })
+
+        it('rethrows a config failure other than an unconfigured network', () => {
+            mocks.getChainConfig.mockImplementation(() => {
+                throw new Error('config broken')
+            })
+
+            expect(() => contextGivenToEthereum().getEndpoints()).toThrow(
+                'config broken',
+            )
+        })
+
+        it("hands over the scope's Pera backend URL and services", () => {
+            mocks.getPeraServicesConfig.mockReturnValue({
+                backendUrl: 'https://pera.test',
+            })
+            mocks.peraServicesFor.mockReturnValue(new Set(['blockFollowing']))
+            const scope: ChainScope = {
+                chainId: 'ethereum',
+                networkId: 'sepolia',
+            }
+
+            const backend = contextGivenToEthereum().getPeraBackend(scope)
+
+            expect(mocks.getPeraServicesConfig).toHaveBeenCalledWith(scope)
+            expect(mocks.peraServicesFor).toHaveBeenCalledWith(scope)
+            expect(backend).toEqual({
+                baseUrl: 'https://pera.test',
+                services: new Set(['blockFollowing']),
+            })
         })
 
         it('hands over the KMS core as the key store', () => {

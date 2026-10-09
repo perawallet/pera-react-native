@@ -13,6 +13,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRescanRekeyedAccounts } from '../useRescanRekeyedAccounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { authorityOf } from '../../credentials'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import { RekeyUnsupportedError } from '../../errors'
@@ -21,6 +23,7 @@ import {
     registerFakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
+import { accountType } from '../../utils'
 
 const mocks = {
     get fetchRekeyedAddresses() {
@@ -31,23 +34,31 @@ const mocks = {
     },
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+const rekey = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsRekeyAvailable', () => ({
+    useIsRekeyAvailable: () => rekey.isAvailable,
 }))
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
+const mainnet = scopeForLegacyNetwork('mainnet')
+
 describe('useRescanRekeyedAccounts — scan', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        rekey.isAvailable = true
         useAccountsStore.getState().resetState()
     })
 
     it('classifies discovered addresses into already-imported vs importable', async () => {
         setAccounts([
             {
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -65,6 +76,23 @@ describe('useRescanRekeyedAccounts — scan', () => {
             importedAddresses: ['IN_WALLET'],
             notImportedAddresses: ['NEW_ONE'],
         })
+    })
+
+    it('scans nothing while rekey is unavailable', async () => {
+        rekey.isAvailable = false
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+
+        expect(await result.current.scan('SOURCE')).toEqual({
+            importedAddresses: [],
+            notImportedAddresses: [],
+        })
+        expect(await result.current.scanAll(['SOURCE'])).toEqual({
+            importedAddresses: [],
+            candidates: [],
+            failedSources: [],
+        })
+        expect(mocks.fetchRekeyedAddresses).not.toHaveBeenCalled()
     })
 
     it('fails closed on a chain without rekey', async () => {
@@ -99,7 +127,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     it('fans out one indexer scan per source key and merges classified results', async () => {
         setAccounts([
             {
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 address: 'IN_WALLET',
                 keyPairId: 'k',
             } as WalletAccount,
@@ -168,7 +196,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
             // must see it as already-in-wallet.
             setAccounts([
                 {
-                    type: 'algo25',
+                    custody: { kind: 'local', seed: null },
                     address: 'LANDS_MID_SCAN',
                     keyPairId: 'k',
                 } as WalletAccount,
@@ -221,10 +249,10 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
         expect(count).toBe(3)
         const persisted = useAccountsStore.getState().accounts
         const bySource = Object.fromEntries(
-            persisted.map(a => [a.address, a.rekeyAddress]),
+            persisted.map(a => [a.address, authorityOf(a, mainnet)]),
         )
         expect(bySource).toEqual({ C1: 'S1', C2: 'S2', C3: 'S1' })
-        persisted.forEach(account => expect(account.type).toBe('watch'))
+        persisted.forEach(account => expect(accountType(account)).toBe('watch'))
     })
 })
 
@@ -284,8 +312,8 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
             'VALID_2',
         ])
         persisted.forEach(account => {
-            expect(account.type).toBe('watch')
-            expect(account.rekeyAddress).toBe('SOURCE')
+            expect(accountType(account)).toBe('watch')
+            expect(authorityOf(account, mainnet)).toBe('SOURCE')
         })
     })
 })

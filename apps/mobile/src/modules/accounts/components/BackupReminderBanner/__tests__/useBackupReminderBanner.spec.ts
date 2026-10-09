@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockLaunch = vi.fn()
 vi.mock('@modules/backup', () => ({
@@ -34,7 +31,7 @@ import { useBackupReminderBanner } from '../useBackupReminderBanner'
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'HD1',
     keyPairId: 'kp',
     hdWalletDetails: {

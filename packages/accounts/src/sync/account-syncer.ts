@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     upsertAccountBalance,
+    upsertAccountChainState,
     refreshAccountHoldings,
     getAccountBalance,
     getAccountHoldings,
@@ -24,9 +25,9 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
-import { useAccountsStore } from '../store'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { accountsAdapterFor } from '../chain-adapter'
+import { useAccountChainStateStore } from '../store/accountChainState'
 import {
     logger,
     type Network,
@@ -150,6 +151,7 @@ async function doFetchAndPersistAccount(
     // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
     const scope = scopeForLegacyNetwork(network)
+    const adapter = accountsAdapterFor(network)
     const prior = await getAccountBalance({ accountAddress: address, scope })
     const priorResourceCount = prior
         ? prior.totalAssetsOptedIn +
@@ -165,10 +167,12 @@ async function doFetchAndPersistAccount(
         totalCreatedAssets = 0,
         totalAppsOptedIn = 0,
         status = 'Offline',
-        authAddress,
+        authorityAddress,
+        nativeBalanceBaseUnits,
+        chainState,
         holdings,
         observedRound,
-    } = await accountsAdapterFor(network).fetchAccountState(address, scope, {
+    } = await adapter.fetchAccountState(address, scope, {
         priorResourceCount,
     })
 
@@ -184,7 +188,7 @@ async function doFetchAndPersistAccount(
         prior.totalAppsOptedIn !== totalAppsOptedIn ||
         prior.minBalance.toString() !== minBalance.toString() ||
         prior.status !== status ||
-        (prior.authAddress ?? null) !== authAddress
+        (prior.authorityAddress ?? null) !== authorityAddress
 
     await upsertAccountBalance({
         accountAddress: address,
@@ -195,12 +199,31 @@ async function doFetchAndPersistAccount(
         totalAppsOptedIn,
         minBalance,
         status,
-        authAddress,
+        authorityAddress,
     })
+    // A failed chain-state write must not skip the holdings refresh below;
+    // the next sync rewrites the row.
+    try {
+        await upsertAccountChainState({
+            accountAddress: address,
+            scope,
+            nativeBalance: nativeBalanceBaseUnits,
+            chainData: chainState,
+        })
+    } catch (error) {
+        logger.warn('Account chain-state write failed', {
+            address,
+            network,
+            error:
+                error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+        })
+    }
 
-    useAccountsStore
+    useAccountChainStateStore
         .getState()
-        .updateAccountRekeyAddress(address, authAddress, network)
+        .setAccountChainState(scope, address, chainState)
 
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,

@@ -242,6 +242,7 @@ export default defineConfig({
         },
     },
     test: {
+        ...poolConfig,
         // The mobile app opts out of coverage thresholds — coverage is only a
         // guard-rail for the packages/ and extensions/ tree. We still emit
         // reports when run with --coverage so the mobile numbers are visible,
@@ -358,5 +359,4 @@ export default defineConfig({
             },
         ],
     },
-    ...poolConfig,
 })

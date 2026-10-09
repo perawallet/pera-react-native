@@ -17,10 +17,14 @@ import { LedgerBluetoothDisabledError } from '@perawallet/wallet-core-ledger'
 
 const mocks = vi.hoisted(() => ({
     sign: vi.fn(),
+    createHardwareStrategy: vi.fn(),
 }))
 
 vi.mock('../../../pipeline/signing/createHardwareStrategy', () => ({
-    createHardwareStrategy: () => ({ sign: mocks.sign }),
+    createHardwareStrategy: (options: unknown) => {
+        mocks.createHardwareStrategy(options)
+        return { sign: mocks.sign }
+    },
 }))
 
 import { hardwareSignActor } from '../hardwareSignActor'
@@ -45,7 +49,16 @@ const OTHER_ADDRESS =
     'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
 
 const hardwareAccount = {
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: HARDWARE_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -57,7 +70,7 @@ const hardwareAccount = {
 } as unknown as HardwareWalletAccount
 
 const nonHardwareAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     address: OTHER_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -99,6 +112,7 @@ const makeInput = (
     allAccounts: [hardwareAccount as unknown as WalletAccount],
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     totalTxs: 1,
     deviceName: 'Nano X',
     operation: 'transaction',
@@ -346,6 +360,21 @@ describe('hardwareSignActor', () => {
         expect(types.lastIndexOf('GROUP_SIGNED')).toBeLessThan(
             types.indexOf('ALL_DONE'),
         )
+    })
+
+    it("builds the strategy and resolves the signer on the input scope's chain", async () => {
+        const { events, stop } = await runActor(
+            makeInput({ scope: { chainId: 'ethereum', networkId: 'sepolia' } }),
+        )
+        stop()
+
+        expect(mocks.createHardwareStrategy).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+        // No Ethereum accounts adapter is registered, so the rekey lookup
+        // fails instead of quietly following Algorand's rules.
+        expect(mocks.sign).not.toHaveBeenCalled()
+        expect(events.some(e => e.type === 'NON_LEDGER_ERROR')).toBe(true)
     })
 
     it('signer not in allAccounts → throws HardwareWalletError(signer_not_found) → NON_LEDGER_ERROR', async () => {

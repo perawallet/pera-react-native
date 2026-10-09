@@ -30,6 +30,10 @@ const mocks = vi.hoisted(() => ({
         .mockResolvedValue(undefined),
     getDatabase: vi.fn(() => ({ __db: true })),
     seedNativeAssets: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    hydrateAccountChainStates: vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined),
+    backfillAccountRecords: vi.fn(),
     initializeSyncService: vi.fn(),
     syncStart: vi.fn(),
     syncStop: vi.fn(),
@@ -77,6 +81,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useHasAccounts: () => mocks.hasAccounts,
+        hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
+        backfillAccountRecords: () => mocks.backfillAccountRecords(),
     }
 })
 
@@ -165,6 +171,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useWebAppShell } from '../useWebAppShell.web'
 
 describe('useWebAppShell module import', () => {
@@ -177,6 +184,9 @@ describe('useWebAppShell module import', () => {
 
 describe('useWebAppShell', () => {
     beforeEach(() => {
+        // The mocked storage never completes a rehydrate; the real extension
+        // has hydrated the accounts store long before the vault unlocks.
+        vi.spyOn(useAccountsStore.persist, 'hasHydrated').mockReturnValue(true)
         mocks.surface = 'popup'
         mocks.isInitialized = null
         mocks.isUnlocked = null
@@ -185,6 +195,7 @@ describe('useWebAppShell', () => {
         vi.clearAllMocks()
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
@@ -425,6 +436,13 @@ describe('useWebAppShell', () => {
         mocks.seedNativeAssets.mockImplementation(async () => {
             callOrder.push('seedNativeAssets')
         })
+        mocks.hydrateAccountChainStates.mockImplementation(async () => {
+            callOrder.push('hydrateAccountChainStates')
+        })
+        // Reads the keystore, and writes the keys offscreen can't open itself.
+        mocks.backfillAccountRecords.mockImplementation(() => {
+            callOrder.push('backfillAccountRecords')
+        })
 
         const { result } = renderHook(() => useWebAppShell())
 
@@ -432,8 +450,10 @@ describe('useWebAppShell', () => {
 
         expect(callOrder).toEqual([
             'keystoreReady',
+            'backfillAccountRecords',
             'initializeDatabase',
             'seedNativeAssets',
+            'hydrateAccountChainStates',
         ])
         expect(mocks.seedNativeAssets).toHaveBeenCalledWith(
             mocks.getDatabase.mock.results[0]?.value,

@@ -19,7 +19,8 @@ import { useIsQuantumDataSigningBlocked } from '../useIsQuantumDataSigningBlocke
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    isQuantumAccount: (account: { type: string }) => account.type === 'quantum',
+    isQuantumAccount: (account: { custody?: { seed?: string } }) =>
+        account.custody?.seed === 'quantum',
 }))
 
 const QUANTUM_ADDRESS = 'QUANTUMADDRESS'
@@ -45,12 +46,17 @@ describe('useIsQuantumDataSigningBlocked', () => {
         vi.clearAllMocks()
         registerAlgorandReviewerAdapter()
         ;(useAllAccounts as Mock).mockReturnValue([
-            { address: QUANTUM_ADDRESS, type: 'quantum' },
-            { address: STANDARD_ADDRESS, type: 'algo25' },
+            {
+                address: QUANTUM_ADDRESS,
+                custody: { kind: 'local', seed: 'quantum' },
+            },
+            {
+                address: STANDARD_ADDRESS,
+                custody: { kind: 'local', seed: null },
+            },
             {
                 address: REKEYED_TO_QUANTUM_ADDRESS,
-                type: 'algo25',
-                rekeyAddress: QUANTUM_ADDRESS,
+                custody: { kind: 'local', seed: null },
             },
         ])
     })

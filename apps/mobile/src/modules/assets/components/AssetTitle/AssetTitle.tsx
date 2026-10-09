@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
+import {
+    useIsNativeAssetId,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,9 +34,13 @@ export const AssetTitle = ({
     nameVariant = 'h4',
 }: AssetTitleProps) => {
     const styles = useStyles()
+    const isNativeAssetId = useIsNativeAssetId()
     const { t } = useLanguage()
 
-    const isAlgo = useMemo(() => isAlgoAssetId(asset.assetId), [asset.assetId])
+    const isAlgo = useMemo(
+        () => isNativeAssetId(asset.assetId),
+        [isNativeAssetId, asset.assetId],
+    )
 
     const isSuspicious = useMemo(
         () => asset.peraMetadata?.verificationTier === 'suspicious',

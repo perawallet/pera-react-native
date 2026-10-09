@@ -73,11 +73,22 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         error.message.includes('fee-adjusted'),
 }))
 
+const mockSelectedNetwork = vi.hoisted(() => ({ current: 'mainnet' }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockSelectedNetwork.current,
+    }),
+}))
+
 // A minimal double of `WalletAccount` — just the fields the two capability
 // checks below and the adapter's own signer lookups read.
 type MockAccount = {
     address: string
-    rekeyAddress?: string
+    authority?: string
+    /** Limits `authority` to one network; absent means every network. */
+    authorityNetwork?: string
     canSignData?: boolean
     canArc60?: boolean
 }
@@ -86,6 +97,11 @@ let mockAccounts: MockAccount[] = []
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockAccounts,
+    authorityOf: (account: MockAccount, scope: { networkId: string }) =>
+        account.authorityNetwork === undefined ||
+        account.authorityNetwork === scope.networkId
+            ? (account.authority ?? null)
+            : null,
     // Mirrors the real `canSignArbitraryData`: a flag on the account itself,
     // no rekey hop.
     canSignArbitraryData: (account: MockAccount) =>
@@ -107,6 +123,7 @@ const fixtureAdapter = (): DappRequestChainAdapter => ({
     relayableErrorNames: [],
     parseSigningParams: () => ({ ok: true, payload: [] }),
     resolveReportedNetwork: scope => scope.networkId,
+    emptySignaturesFor: () => ({}),
     walletConnect: {
         namespace: 'algorand',
         caip2ChainIdFor: () => null,
@@ -187,6 +204,7 @@ const makeRegistry = () => {
 describe('useConnectionSigningAdapter', () => {
     beforeEach(() => {
         mockAccounts = []
+        mockSelectedNetwork.current = 'mainnet'
         mockAddSignRequest.mockClear()
         mockRemoveSignRequest.mockClear()
         mockEnqueue.mockClear()
@@ -449,7 +467,8 @@ describe('useConnectionSigningAdapter', () => {
             retryable: true,
         })
 
-        lastTransport().respondWithError(timeout)
+        // `false` is what tells the enqueue to keep the request queued.
+        expect(lastTransport().respondWithError(timeout)).toBe(false)
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(reject).not.toHaveBeenCalled()
@@ -510,7 +529,7 @@ describe('useConnectionSigningAdapter', () => {
         })
         const fatal = new Error('signing failed')
 
-        lastTransport().respondWithError(fatal)
+        expect(lastTransport().respondWithError(fatal)).toBe(true)
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(reject).toHaveBeenCalledWith(fatal)
@@ -1035,7 +1054,7 @@ describe('useConnectionSigningAdapter', () => {
             // membership check, this would be wrongly rejected as an
             // unauthorized signer.
             mockAccounts = [
-                { address: REKEYED_SIGNER, rekeyAddress: PRIMARY_SIGNER },
+                { address: REKEYED_SIGNER, authority: PRIMARY_SIGNER },
                 { address: PRIMARY_SIGNER, canArc60: true },
             ]
             const { registry, send } = makeRegistry()
@@ -1062,6 +1081,44 @@ describe('useConnectionSigningAdapter', () => {
             )
         })
 
+        it('reads the rekey on the selected network', () => {
+            mockAccounts = [
+                {
+                    address: REKEYED_SIGNER,
+                    authority: PRIMARY_SIGNER,
+                    authorityNetwork: 'testnet',
+                },
+                { address: PRIMARY_SIGNER, canArc60: true },
+            ]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const request = () =>
+                signDataMessage(
+                    {
+                        type: 'auth-data',
+                        authData: {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            domain: 'example.com',
+                            authenticatorData: new Uint8Array([1, 2, 3]),
+                        },
+                        metadata: { scope: 1, encoding: 'base64' },
+                    },
+                    [REKEYED_SIGNER],
+                )
+
+            const onMainnet = request()
+            send(onMainnet)
+            expect(onMainnet.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+
+            mockSelectedNetwork.current = 'testnet'
+            send(request())
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'auth-data' }),
+            )
+        })
+
         it('refuses a keyless rekeyed signer the dApp names directly', () => {
             // PRIMARY_SIGNER is authorized but holds no key of its own, and
             // its auth account cannot sign for it: an ARC-60 signature
@@ -1070,7 +1127,7 @@ describe('useConnectionSigningAdapter', () => {
                 {
                     address: PRIMARY_SIGNER,
                     canArc60: false,
-                    rekeyAddress: REKEYED_SIGNER,
+                    authority: REKEYED_SIGNER,
                 },
                 { address: REKEYED_SIGNER, canArc60: true },
             ]

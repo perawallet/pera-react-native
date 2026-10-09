@@ -19,6 +19,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
         analytics: {
             logEvent: vi.fn(),
+            setCollectionEnabled: vi.fn(),
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
         },
@@ -139,10 +140,30 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => {
+vi.mock('@perawallet/wallet-extension-provider', async () => {
+    const { createChainRegistry } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-chain-contract')
+    >('@perawallet/wallet-core-chain-contract')
+    const { algorandDescriptor } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-chain-algorand/descriptor')
+    >('@perawallet/wallet-core-chain-algorand/descriptor')
+    const { algorandCapabilityDefaults, algorandCapabilityRestrictions } =
+        await vi.importActual<
+            typeof import('@packages/chain-algorand/src/capability-defaults')
+        >('@packages/chain-algorand/src/capability-defaults')
+    // Algorand at its shipped defaults, so a capability gate renders as it does
+    // in the app. A spec drives a gate off through the remote-config developer
+    // override, or calls `chains.reset()` to start empty.
+    const chains = createChainRegistry()
+    chains.register(
+        algorandDescriptor,
+        algorandCapabilityDefaults,
+        algorandCapabilityRestrictions,
+    )
     const providerValue = {
         analytics: {
             logEvent: vi.fn(),
+            setCollectionEnabled: vi.fn(),
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
         },
@@ -217,9 +238,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getBooleanValue: vi.fn().mockReturnValue(false),
             getNumberValue: vi.fn().mockReturnValue(0),
         },
-        // An empty registry, as production starts before `registerChainAdapters`,
-        // so a spec can register a chain through it.
-        chains: require('@perawallet/wallet-core-chain-contract').createChainRegistry(),
+        chains,
         // A real (empty) registry, as `WithHardwareWalletExtension` supplies in
         // production, so a spec can register a fake transport through it.
         hardwareWalletRegistry:

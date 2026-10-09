@@ -16,6 +16,7 @@ export const DAPP_METHODS = [
     'connect',
     'disconnect',
     'getAddresses',
+    'getEmptySignatures',
     'requestTransactionSigning',
     'requestDataSigning',
 ] as const

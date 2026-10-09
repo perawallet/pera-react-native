@@ -17,11 +17,11 @@ import { fetchAccountAssetOptInRounds } from '@perawallet/wallet-core-chain-algo
 import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,
-} from '@perawallet/wallet-core-blockchain/constants'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import {
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain/utils'
+} from '@perawallet/wallet-core-shared'
 
 import {
     createAlgo25Account,
@@ -90,7 +90,7 @@ describe('account state conformance', () => {
         // constant the app falls back to when remote config is unavailable.
         expect(info.minBalance).toBe(FALLBACK_BASE_ACCOUNT_MBR)
         expect(info.assets).toEqual([])
-        expect(info.authAddress).toBeUndefined()
+        expect(info.authorityAddress).toBeUndefined()
     })
 
     it('raises the reported MBR by exactly one asset MBR after an opt-in', async () => {

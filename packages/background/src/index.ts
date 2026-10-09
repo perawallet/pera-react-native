@@ -13,9 +13,12 @@
 import { SyncService } from './service'
 export {
     sendShouldRefreshRequest,
-    usePollingStore,
-    type LastRefreshedRounds,
-    type PollingState,
+    useSyncCursorStore,
+    type AssetSyncKind,
+    type SyncCursor,
+    type SyncCursors,
+    type SyncCursorState,
+    type SyncCursorStore,
     type ShouldRefreshResponse,
 } from './polling'
 import type { SyncServiceDeps } from './models'

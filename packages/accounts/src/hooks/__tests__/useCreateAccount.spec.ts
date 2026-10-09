@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
-import { withCustody } from '../../credentials'
+import { accountType } from '../../utils'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { SingleKeyAccountsUnsupportedError } from '../../errors'
 import type { MintedAccount } from '../../chain-adapter'
@@ -30,7 +30,7 @@ import {
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
@@ -126,7 +126,7 @@ describe('useCreateAccount', () => {
             await result.current.saveAccount({
                 id: 'ACC1',
                 address: 'ADDR1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'WALLET1-ed25519',
             })
         })
@@ -161,7 +161,7 @@ describe('useCreateAccount', () => {
         )
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
-        expect(created.type).toBe('hdWallet')
+        expect(accountType(created)).toBe('hdWallet')
         // keyPairId is the deterministic derived child id; the seed parent
         // is reachable via metadata.parentKeyId on the child.
         expect(created.keyPairId).toBe('WALLET1-acc0-idx0-dt9')
@@ -214,16 +214,19 @@ describe('useCreateAccount', () => {
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         // keyPairId is the deterministic derived child id of the existing
-        // seed at (account=1, keyIndex=0, derivationType=9).
+        // seed at (account=1, keyIndex=0), derived with the chain's Peikert type.
         expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
         expect(created.hdWalletDetails.account).toBe(1)
-        expect(created.provenance).toEqual({
+        expect(created.custody).toEqual({
             kind: 'local',
             seed: 'bip39',
-            hd: { account: 1, change: 0, keyIndex: 0, derivationType: 9 },
+            hd: { account: 1, keyIndex: 0 },
         })
-        expect(created.credentials).toEqual({
-            algorand: { keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9' },
+        expect(created.chains).toEqual({
+            algorand: {
+                address: created.address,
+                keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9',
+            },
         })
     })
 
@@ -297,7 +300,7 @@ describe('useCreateAccount', () => {
             0,
             MAINNET_ED25519,
         )
-        expect(created.type).toBe('hdWallet')
+        expect(accountType(created)).toBe('hdWallet')
         expect(created.keyPairId).toBe('IMPORTED_SEED-acc0-idx0-dt9')
     })
 
@@ -306,7 +309,7 @@ describe('useCreateAccount', () => {
             account: {
                 id: 'ACC1',
                 address: 'ADDR1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'SEED1-ed25519',
             },
             seedKeyId: 'SEED1',
@@ -322,7 +325,7 @@ describe('useCreateAccount', () => {
 
             let account: any
             await act(async () => {
-                account = await result.current.buildAlgo25WalletAccount({
+                account = await result.current.buildStandaloneAccount({
                     id: 'SEED1',
                 })
             })
@@ -330,7 +333,7 @@ describe('useCreateAccount', () => {
             expect(account).toEqual(mintedAccount(false).account)
             expect(createOp()).toHaveBeenCalledWith(
                 kmsMock,
-                { kind: 'algo25', id: 'SEED1' },
+                { kind: 'standalone', id: 'SEED1' },
                 MAINNET_SCOPE,
             )
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -366,11 +369,11 @@ describe('useCreateAccount', () => {
             const { result } = renderHook(() => useCreateAccount())
 
             await act(async () => {
-                await result.current.createAlgo25WalletAccount({})
+                await result.current.createStandaloneAccount({})
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([
-                withCustody(mintedAccount(true).account),
+                mintedAccount(true).account,
             ])
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,

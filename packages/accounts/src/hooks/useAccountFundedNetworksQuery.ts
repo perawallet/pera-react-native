@@ -11,7 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
@@ -37,10 +41,11 @@ export type UseAccountFundedNetworksResult = {
 export const useAccountFundedNetworksQuery = (
     address?: string,
 ): UseAccountFundedNetworksResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getAccountFundedNetworksQueryKey(address ?? '', network),
+        queryKey: getAccountFundedNetworksQueryKey(address ?? '', scope),
         enabled: !!address,
         staleTime: Infinity,
         // SQLite is the source of truth; run offline rather than pausing (see

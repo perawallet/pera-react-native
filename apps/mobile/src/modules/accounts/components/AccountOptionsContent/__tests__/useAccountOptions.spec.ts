@@ -15,11 +15,16 @@ import { renderHook, act } from '@testing-library/react'
 import { trackEvent, AccountOptionsEvent } from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -176,7 +181,7 @@ describe('useAccountOptions', () => {
     const algo25Account: WalletAccount = {
         id: 'acc-1',
         address: 'ALGO25ADDRESS',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'key-1',
         name: 'My Account',
     }
@@ -184,13 +189,13 @@ describe('useAccountOptions', () => {
     const watchAccount: WalletAccount = {
         id: 'acc-2',
         address: 'WATCHADDRESS',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
     }
 
     const quantumAccount: WalletAccount = {
         id: 'acc-q',
         address: 'QUANTUMADDRESS',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'key-q',
         name: 'My Quantum Account',
     }
@@ -198,22 +203,29 @@ describe('useAccountOptions', () => {
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'key-3',
-        rekeyAddress: 'AUTHADDRESS',
     }
 
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
         address: 'REKEYEDWATCHADDRESS',
-        type: AccountTypes.watch,
-        rekeyAddress: 'ALGO25ADDRESS',
+        custody: { kind: 'watch' },
     }
 
     const hardwareAccount: WalletAccount = {
         id: 'acc-4',
         address: 'HARDWAREADDRESS',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: {
             manufacturer: 'ledger',
             deviceId: 'test-device',
@@ -226,7 +238,7 @@ describe('useAccountOptions', () => {
     const multisigAccount: WalletAccount = {
         id: 'acc-6',
         address: 'MULTISIGADDRESS',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
@@ -237,6 +249,10 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority(rekeyedAccount.address, 'AUTHADDRESS')
+        seedAuthority(rekeyedWatchAccount.address, 'ALGO25ADDRESS')
+        useRemoteConfigStore.getState().resetState()
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
@@ -297,13 +313,9 @@ describe('useAccountOptions', () => {
             const passphraseOption = result.current.options.find(
                 o => o.id === 'view-passphrase',
             )
-            // Distinct label: a quantum account can share its 25 words with an
-            // algo25 twin (same mnemonic, different address). Reusing the algo25
-            // "View wallet passphrase" copy would read as a duplicate/bug, so
-            // quantum gets its own string.
             expect(passphraseOption).toBeDefined()
             expect(passphraseOption?.title).toBe(
-                'account_options.view_passphrase_quantum',
+                'account_options.view_passphrase_algo25',
             )
         })
 
@@ -389,6 +401,106 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+    })
+
+    describe('capability gating', () => {
+        const idsFor = (account: WalletAccount): string[] => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current.options.map(o => o.id)
+        }
+
+        it('hides the rekey rows when rekey is off', () => {
+            setCapabilityOverrides({ rekey: false })
+
+            const ids = idsFor(algo25Account)
+
+            expect(ids).not.toContain('rekey-account')
+            expect(ids).not.toContain('scan-rekeyed')
+            expect(ids).toContain('rename-account')
+        })
+
+        it('keeps a rekeyed account recognised and signable, with only its undo entry hidden', () => {
+            setCapabilityOverrides({ rekey: false })
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isRekeyed).toBe(true)
+            expect(result.current.authAddress).toBe('AUTHADDRESS')
+            expect(result.current.canUndoRekey).toBe(false)
+            expect(mockUseCanSignWith).toHaveReturnedWith(true)
+        })
+
+        it('hides the shared-account rows and the shared rekey when multisig is off', () => {
+            setCapabilityOverrides({ multisig: false })
+
+            const ids = idsFor(multisigAccount)
+
+            expect(ids).not.toContain('shared-account-detail')
+            expect(ids).not.toContain('export-share-account')
+            expect(ids).not.toContain('rekey-account')
+            expect(ids).toContain('scan-rekeyed')
+        })
+
+        it('hides view-passphrase for every passphrase-backed account when mnemonic backup is off', () => {
+            setCapabilityOverrides({ mnemonicBackup: false })
+
+            for (const account of [algo25Account, quantumAccount]) {
+                const ids = idsFor(account)
+
+                expect(ids).not.toContain('view-passphrase')
+                expect(ids).toContain('rename-account')
+            }
+        })
+
+        it('removes a backed-up account without the backup choice when cloud backup is off on every chain', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            setCapabilityOverrides({ cloudBackup: false })
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isCloudBackupAvailable).toBe(false)
+            await act(async () => {
+                await result.current.options
+                    .find(o => o.id === 'remove-account')
+                    ?.onPress()
+            })
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
+            await act(async () => {
+                await result.current.handleConfirmRemove()
+            })
+
+            expect(result.current.removeConfirmView).not.toBe(
+                'cloud-backup-delete',
+            )
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
+        })
+
+        it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {
+            setCapabilityOverrides({ notifications: false })
+
+            expect(idsFor(algo25Account)).toContain('toggle-notifications')
         })
     })
 
@@ -1184,10 +1296,10 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'key-rekeyed',
-                rekeyAddress: 'ALGO25ADDRESS',
             }
+            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>
@@ -1213,10 +1325,10 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'key-rekeyed',
-                rekeyAddress: 'ALGO25ADDRESS',
             }
+            seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
 
             const { result } = renderHook(() =>
@@ -1259,7 +1371,16 @@ describe('useAccountOptions', () => {
             const ledgerAccount: WalletAccount = {
                 id: 'acc-ledger',
                 address: 'LEDGERADDRESS',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: {
                     manufacturer: 'ledger',
                     deviceId: 'test-device',

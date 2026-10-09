@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { canSignArbitraryData } from '../utils'
+import { useAccountChainStateStore } from '../store'
+import { registerFakeAccountsChain, seedAuthority } from './fakeAccountsChain'
 import {
-    AccountTypes,
-    type Algo25Account,
+    type StandaloneAccount,
     type HDWalletAccount,
     type HardwareWalletAccount,
     type MultiSigAccount,
@@ -24,9 +25,9 @@ import {
 
 const algo25 = (
     address: string,
-    extra: Partial<Algo25Account> = {},
-): Algo25Account => ({
-    type: AccountTypes.algo25,
+    extra: Partial<StandaloneAccount> = {},
+): StandaloneAccount => ({
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: 'kp',
     ...extra,
@@ -36,7 +37,7 @@ const hdWallet = (
     address: string,
     extra: Partial<HDWalletAccount> = {},
 ): HDWalletAccount => ({
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address,
     keyPairId: 'kp',
     hdWalletDetails: {
@@ -52,7 +53,16 @@ const hardware = (
     address: string,
     extra: Partial<HardwareWalletAccount> = {},
 ): HardwareWalletAccount => ({
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'd',
+            deviceName: 'Ledger',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -69,16 +79,20 @@ const multisig = (
     participants: string[],
     extra: Partial<MultiSigAccount> = {},
 ): MultiSigAccount => ({
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address,
     multisigDetails: { threshold: 2, addresses: participants, version: 1 },
     ...extra,
 })
 
-const watch = (address: string, rekeyAddress?: string): WatchAccount => ({
-    type: AccountTypes.watch,
+const watch = (address: string): WatchAccount => ({
+    custody: { kind: 'watch' },
     address,
-    rekeyAddress,
+})
+
+beforeEach(() => {
+    registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
 })
 
 describe('canSignArbitraryData', () => {
@@ -111,14 +125,16 @@ describe('canSignArbitraryData', () => {
         // The dApp verifies the signature against the requested address's
         // own pubkey; the on-chain auth-addr is irrelevant for off-chain
         // data. Holding the account's own keypair is sufficient.
-        const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'S' }
+        const a: WalletAccount = algo25('A')
+        seedAuthority('A', 'S')
         expect(canSignArbitraryData(a)).toBe(true)
     })
 
     it('returns false for a watch-rekeyed account regardless of auth', () => {
         // We hold the auth account, but the dApp expects a signature from
         // the watch address's pubkey — which we never had.
-        const a = watch('A', 'S')
+        const a = watch('A')
+        seedAuthority('A', 'S')
         expect(canSignArbitraryData(a)).toBe(false)
     })
 })

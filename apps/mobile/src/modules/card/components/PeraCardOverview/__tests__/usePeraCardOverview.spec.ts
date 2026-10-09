@@ -13,6 +13,8 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -35,6 +37,7 @@ const mockState = vi.hoisted(() => ({
 const mockInfoToast = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
+const mockOpenFundingTypeSheet = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
 const mockSetSelectedAccountAddress = vi.fn()
 
@@ -130,6 +133,10 @@ vi.mock('../../../hooks', async () => ({
     useCardErrorToast: () => mockWithdrawErrorToast,
 }))
 
+vi.mock('../../../hooks/useOpenFundingTypeSheet', () => ({
+    useOpenFundingTypeSheet: () => mockOpenFundingTypeSheet,
+}))
+
 vi.mock('@analytics', async () => {
     const actual = await vi.importActual<object>('@analytics')
     return { ...actual, trackEvent: mockTrackEvent }
@@ -164,13 +171,22 @@ const tx = (id: string, dateTime: string): CardTransaction =>
 // the stored type alone is not enough — the account has to be resolvable.
 const LOCAL_ACCOUNT = {
     address: 'LINKED_ADDR',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'key-1',
 } as WalletAccount
 
 const LEDGER_ACCOUNT = {
     address: 'LINKED_ADDR',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
 
@@ -211,6 +227,7 @@ const setLinkedAlgo = (balance: Nullable<string>) => {
 describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockWithdraw.pending = null
         mockWithdraw.isReady = false
         mockWithdraw.complete.mockResolvedValue(undefined)
@@ -268,6 +285,34 @@ describe('usePeraCardOverview', () => {
         expect(result.current.isAutoFunding).toBe(true)
     })
 
+    describe('funding type status', () => {
+        it('labels manual funding as enabled by default', () => {
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.account.funding_type_enabled_manual',
+            )
+        })
+
+        it('labels auto funding as enabled when it is active', () => {
+            mockState.selectedFundingType = 'AUTO'
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.account.funding_type_enabled_auto',
+            )
+        })
+
+        it('opens the funding type sheet from the status row', () => {
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            result.current.onChangeFundingType()
+
+            expect(mockOpenFundingTypeSheet).toHaveBeenCalledTimes(1)
+        })
+    })
+
     // A Ledger can never sign the AutoDraw LSig, so a stored AUTO left over
     // from a previous account must not be treated as live: it would add a
     // linked balance the card can never actually draw.
@@ -282,6 +327,9 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(false)
+        expect(result.current.fundingTypeLabel).toBe(
+            'peraCard.account.funding_type_enabled_manual',
+        )
         expect(result.current.balance.toString()).toBe('0')
     })
 
@@ -390,6 +438,33 @@ describe('usePeraCardOverview', () => {
             screen: 'Swap',
             params: { assetInId: '0', assetOutId: '31566704' },
         })
+    })
+
+    it('falls back to the Fund tab when the linked account holds ALGO but swap is off', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('12.5')
+        setCapabilityOverrides({ swap: false })
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(result.current.canFundLinkedAccount).toBe(true)
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: 'USDC_ALGORAND' },
+        })
+    })
+
+    it('offers no way to fund the linked account when neither swap nor onramp is available', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('12.5')
+        setCapabilityOverrides({ swap: false, onramp: false })
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(result.current.canFundLinkedAccount).toBe(false)
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('does nothing when the linked account is not in the wallet', () => {

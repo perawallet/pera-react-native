@@ -25,7 +25,14 @@ export * from './db'
 export * from './cleanup'
 export * from './import-session'
 
-export { useAccountsStore } from './store'
+export {
+    backfillAccountRecords,
+    useAccountsStore,
+    useAccountChainStateStore,
+    hydrateAccountChainStates,
+    recordAuthority,
+    type AccountChainStateSlice,
+} from './store'
 export {
     fetchAndPersistAccount,
     ensureAccountFetched,

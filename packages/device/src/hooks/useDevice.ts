@@ -17,12 +17,12 @@ import {
     isPeraNetworkError,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
-import { useDeviceStore } from '../store'
+import { deviceIdFor, deviceIdOriginFor, useDeviceStore } from '../store'
 import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
 import type {
@@ -228,8 +228,10 @@ export const useDevice = () => {
                 // the origin is only needed at recreate time, and subscribing
                 // would rebuild this callback on every unrelated origin flip.
                 const isReplacingMigratedId =
-                    useDeviceStore.getState().deviceIdOrigins[targetNetwork] ===
-                    'migrated'
+                    deviceIdOriginFor(
+                        useDeviceStore.getState(),
+                        targetNetwork,
+                    ) === 'migrated'
                 await createDeviceForNetwork(targetNetwork, accounts)
                 // Replacing a migrated id orphans its device-keyed server
                 // state (Discover favorites, price alerts, banner
@@ -314,9 +316,10 @@ export const useDevice = () => {
         ): Promise<RegisterDeviceResult> => {
             const targetNetwork = network
             return enqueueRegistration(targetNetwork, async () => {
-                const currentDeviceId =
-                    useDeviceStore.getState().deviceIDs.get(targetNetwork) ??
-                    null
+                const currentDeviceId = deviceIdFor(
+                    useDeviceStore.getState(),
+                    targetNetwork,
+                )
 
                 if (!currentDeviceId) {
                     await createDeviceForNetwork(targetNetwork, accounts)
@@ -343,7 +346,7 @@ export const useDevice = () => {
      */
     const clearDevicePushToken = useCallback(
         async (targetNetwork: Network) => {
-            const targetDeviceId = deviceIDs?.get(targetNetwork)
+            const targetDeviceId = deviceIdFor({ deviceIDs }, targetNetwork)
             if (!targetDeviceId) return
             try {
                 await registerDeviceEndpoint(targetNetwork, {

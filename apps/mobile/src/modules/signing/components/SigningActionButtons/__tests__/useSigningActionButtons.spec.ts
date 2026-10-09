@@ -66,8 +66,12 @@ vi.mock('@hooks/useLanguage')
 
 // The global setup stubs toAlgodError to always return unknown_node_error;
 // the classification cases below need the real parser.
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal =>
-    importOriginal<typeof import('@perawallet/wallet-core-blockchain')>(),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal =>
+        importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >(),
 )
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -320,7 +324,7 @@ describe('useSigningActionButtons', () => {
 
         it('calls showError when the resolved signer is a local key over algod', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -339,7 +343,7 @@ describe('useSigningActionButtons', () => {
 
         it('classifies a recognized algod rejection into a typed AlgodError', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -368,7 +372,7 @@ describe('useSigningActionButtons', () => {
 
         it('passes an unrecognized error through unchanged', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -392,7 +396,7 @@ describe('useSigningActionButtons', () => {
 
         it('skips showError when transport is not algod (existing behavior preserved)', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'callback' },
                 kind: { type: 'transactions' },
             })

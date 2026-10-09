@@ -36,6 +36,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -70,6 +71,10 @@ vi.mock('../../parser', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Real enum rather than a hand-copied literal — see the note in
     // vitest.setup.ts. base.ts has no runtime imports.
     const { ErrorCategory } = await vi.importActual<
@@ -77,9 +82,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('../../../../../../../packages/shared/src/errors/base')
 
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         logger: {
             debug: vi.fn(),
             warn: vi.fn(),
@@ -90,6 +92,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
+        microAlgosToAlgos,
     }
 })
 
@@ -110,7 +113,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum sender in every fixture here — the calculator's real fast
     // path is a passthrough no-op. Real fee behavior is covered by
-    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+    // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({
@@ -149,20 +152,11 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 // Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
 // `isValidAlgorandAddress` / `useNetwork` consistent with the global
 // vitest.setup.ts contract.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) => {
         if (!address) return false
         return /^[0-9a-zA-Z]{58}$/.test(address)
     },
-    microAlgosToAlgos: (microAlgos: bigint | number | string) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-    },
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: { genesisId: 'mainnet-v1.0' },
-    }),
     getExpectedGenesisHash: () => 'mainnet-hash',
     // Identity encode/decode pair for the keyreg shape-normalization
     // step. Real impl encodes to msgpack bytes then decodes back to a
@@ -173,6 +167,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({
+        network: 'mainnet',
+        networkConfig: { genesisId: 'mainnet-v1.0' },
+    }),
+}))
+
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
@@ -180,7 +181,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
     useAllAccounts: () => [
-        { address: 'A'.repeat(58), id: 'mock', type: 'algo25' },
+        {
+            address: 'A'.repeat(58),
+            id: 'mock',
+            custody: { kind: 'local', seed: null },
+        },
     ],
     resolveAuthAccount: (account: unknown) => account,
     // The keyreg preflight resolves the signer through this; the seeded
@@ -321,7 +326,6 @@ const { mockShowSignRequest, mockIsPeraCardEnabled, mockIsGiftCardsEnabled } =
 // all-native capabilities.ts).
 const { mockRouteCapabilities } = vi.hoisted(() => ({
     mockRouteCapabilities: {
-        peraCard: true,
         giftCards: true,
         inAppWebView: true,
         // Native map has Discover registered; these tests exercise the
@@ -340,6 +344,10 @@ vi.mock('@modules/multisig', () => ({
         showSignRequest: mockShowSignRequest,
     }),
 }))
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: mockIsPeraCardEnabled,
@@ -419,7 +427,7 @@ describe('useDeepLink', () => {
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
-        mockRouteCapabilities.peraCard = true
+        capabilityState.reset()
         mockRouteCapabilities.giftCards = true
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
@@ -1329,6 +1337,118 @@ describe('useDeepLink', () => {
         },
     )
 
+    describe('capability gating', () => {
+        // The capability each gated type needs, switched off in turn.
+        it.each([
+            [DeeplinkType.DISCOVER_PATH, 'discover'],
+            [DeeplinkType.STAKING, 'staking'],
+            [DeeplinkType.SWAP, 'swap'],
+            [DeeplinkType.ADD_WATCH_ACCOUNT, 'watchAccounts'],
+            [DeeplinkType.SHARED_ACCOUNT_IMPORT, 'multisig'],
+            [DeeplinkType.SIGN_REQUEST, 'multisig'],
+            [DeeplinkType.ASSET_OPT_IN, 'manageAssets'],
+            [DeeplinkType.ASSET_INBOX, 'assetInbox'],
+            [DeeplinkType.WALLET_CONNECT, 'dappConnect'],
+            [DeeplinkType.LIQUID_AUTH, 'liquidAuth'],
+            [DeeplinkType.PERA_WEB_IMPORT, 'peraWebImport'],
+        ] as const)(
+            'refuses %s without navigating while %s is off',
+            async (type, capability) => {
+                capabilityState.turnOff(capability)
+                ;(parseDeeplink as Mock).mockReturnValue({
+                    type,
+                    sourceUrl: 'perawallet://app',
+                })
+                const onError = vi.fn()
+                const onSuccess = vi.fn()
+                const { result } = renderHook(() => useDeepLink())
+
+                await act(async () => {
+                    await result.current.handleDeepLink(
+                        'perawallet://app',
+                        false,
+                        'deeplink',
+                        onError,
+                        onSuccess,
+                    )
+                })
+
+                expect(onError).toHaveBeenCalledTimes(1)
+                expect(onSuccess).not.toHaveBeenCalled()
+                expect(mockNavigate).not.toHaveBeenCalled()
+                // A remote switch must not call a valid link invalid.
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'common.network_unavailable.title',
+                    'common.network_unavailable.generic_body',
+                )
+            },
+        )
+
+        it('reports a link as unavailable without dispatching it', () => {
+            capabilityState.turnOff('staking')
+            ;(parseDeeplink as Mock).mockReturnValueOnce({
+                type: DeeplinkType.STAKING,
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            expect(
+                result.current.isDeepLinkAvailable('perawallet://app/staking'),
+            ).toBe(false)
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('treats an unparseable input as available, leaving validation to the caller', () => {
+            ;(parseDeeplink as Mock).mockReturnValueOnce(null)
+            const { result } = renderHook(() => useDeepLink())
+
+            expect(result.current.isDeepLinkAvailable('ADDRESS')).toBe(true)
+        })
+
+        it('refuses a notification-sourced link silently', async () => {
+            capabilityState.turnOff('staking')
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.STAKING,
+                path: '/staking',
+            })
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/staking',
+                    false,
+                    'notification',
+                    onError,
+                )
+            })
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('leaves an ungated type alone while an unrelated capability is off', async () => {
+            capabilityState.turnOff('staking', 'swap', 'multisig')
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.HOME,
+            })
+            const onSuccess = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app',
+                    false,
+                    'deeplink',
+                    undefined,
+                    onSuccess,
+                )
+            })
+
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+        })
+    })
+
     it('should handle STAKING deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.STAKING,
@@ -1615,29 +1735,10 @@ describe('useDeepLink', () => {
         // staying locked forever on its handlingRef guard.
         expect(onError).toHaveBeenCalled()
         expect(onSuccess).not.toHaveBeenCalled()
-    })
-
-    it('ignores a CARDS deeplink when the peraCard capability is off', async () => {
-        mockIsPeraCardEnabled.mockReturnValue(true)
-        mockRouteCapabilities.peraCard = false
-        ;(parseDeeplink as Mock).mockReturnValue({
-            type: DeeplinkType.CARDS,
-            path: '/cards',
-        })
-        const onError = vi.fn()
-        const { result } = renderHook(() => useDeepLink())
-
-        await act(async () => {
-            await result.current.handleDeepLink(
-                'perawallet://app/cards',
-                false,
-                'deeplink',
-                onError,
-            )
-        })
-
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(onError).toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
     })
 
     it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {
@@ -1703,6 +1804,10 @@ describe('useDeepLink', () => {
 
         expect(mockRequestByType).not.toHaveBeenCalled()
         expect(onError).toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
     })
 
     it('should handle RECOVER_ADDRESS deeplink and open the pre-filled Import screen (HD) from QR', async () => {

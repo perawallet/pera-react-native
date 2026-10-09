@@ -11,10 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWRefreshControl, PWView } from '@components/core'
+import {
+    PWFlatList,
+    PWLoadingIndicator,
+    PWRefreshControl,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { ActivityIndicator } from 'react-native'
 import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
@@ -67,7 +71,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         if (isFetchingNextPage) {
             return (
                 <PWView style={styles.loadingFooter}>
-                    <ActivityIndicator size='small' />
+                    <PWLoadingIndicator size='sm' />
                 </PWView>
             )
         }

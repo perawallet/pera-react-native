@@ -50,7 +50,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 import { toDiscoverTokenDetailPath } from '@modules/discover'
 
 export type AssetMarketsProps = {
@@ -77,6 +77,10 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference } = usePreferences()
     const { t } = useLanguage()
+    const canOpenDiscover = useCapability({
+        platform: 'discoverTab',
+        anyChain: 'discover',
+    })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
 
@@ -187,7 +191,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 </PWView>
             </ExpandablePanel>
 
-            {routeCapabilities.discoverTab && (
+            {canOpenDiscover && (
                 <PWTouchableOpacity
                     style={styles.discoverButton}
                     onPress={openDiscover}

@@ -14,8 +14,8 @@ import { vi } from 'vitest'
 import { cardContractTests } from '@perawallet/wallet-core-card/testing'
 
 const { getAlgorandClient } = vi.hoisted(() => ({ getAlgorandClient: vi.fn() }))
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('../../blockchain', async () => ({
+    ...(await vi.importActual<object>('../../blockchain')),
     getAlgorandClient,
 }))
 

@@ -12,7 +12,7 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { decodeAddress } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'

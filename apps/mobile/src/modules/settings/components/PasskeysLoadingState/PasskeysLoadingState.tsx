@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWText, PWView } from '@components/core'
+import { PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -21,7 +20,7 @@ export const PasskeysLoadingState = () => {
 
     return (
         <PWView style={styles.centered}>
-            <ActivityIndicator />
+            <PWLoadingIndicator />
             <PWText
                 variant='h3'
                 style={styles.centeredText}

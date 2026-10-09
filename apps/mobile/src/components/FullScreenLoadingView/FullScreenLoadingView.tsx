@@ -25,7 +25,7 @@ export const FullScreenLoadingView = () => {
         <PWView style={styles.container}>
             <LoadingView
                 variant='circle'
-                size='lg'
+                size='xl'
             />
         </PWView>
     )

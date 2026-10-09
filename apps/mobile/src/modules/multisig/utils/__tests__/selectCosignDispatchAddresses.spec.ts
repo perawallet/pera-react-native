@@ -13,16 +13,13 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { selectCosignDispatchAddresses } from '../selectCosignDispatchAddresses'
 
 const account = (address: string): WalletAccount =>
     ({
         id: `algo25-${address}`,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: `kp-${address}`,
     }) as WalletAccount

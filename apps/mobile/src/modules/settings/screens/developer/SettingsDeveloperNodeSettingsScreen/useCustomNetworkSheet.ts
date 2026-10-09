@@ -13,13 +13,15 @@
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
-    clearCustomNetworkCache,
     fetchGenesisFromNode,
     getCustomNetworkConfig,
     setCustomNetwork,
-    shouldClearCustomCache,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import {
+    clearCustomNetworkCache,
+    shouldClearCustomCache,
+} from '@perawallet/wallet-core-chain-shared'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'

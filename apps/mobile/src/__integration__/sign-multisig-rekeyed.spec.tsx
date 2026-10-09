@@ -28,6 +28,7 @@ import {
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -46,12 +47,12 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     useAccountsStore,
     type MultiSigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
@@ -62,7 +63,7 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {
@@ -74,10 +75,9 @@ const multisigAccount: MultiSigAccount = {
 
 const rekeyedSender: WalletAccount = {
     id: 'rekeyed-to-msig',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: REKEY_TARGET_ADDRESS,
     name: 'Rekeyed to shared',
-    rekeyAddress: MSIG_ADDRESS,
 }
 
 // A schema-valid joint-accounts propose response (signRequestResponseSchema).
@@ -142,6 +142,8 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
             }),
         )
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
+        seedAuthority(rekeyedSender.address, MSIG_ADDRESS)
         // The propose transport requires a registered device id before it
         // creates the backend sign-request (handoff precondition).
         useDeviceStore.getState().resetState()

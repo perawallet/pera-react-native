@@ -17,7 +17,6 @@
 // touch the on-device DB should rely on this scaffold.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -26,6 +25,8 @@ import {
 } from '@test-utils/database-setup'
 import { getAssetsByIds } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+
+const NATIVE_ASSET_ID = '0'
 
 describe('Integration test plumbing: SQLite database', () => {
     beforeAll(setupTestDatabase)
@@ -36,12 +37,12 @@ describe('Integration test plumbing: SQLite database', () => {
         await seedAlgoAsset('mainnet')
 
         const rows = await getAssetsByIds({
-            assetIds: [ALGO_ASSET_ID],
+            assetIds: [NATIVE_ASSET_ID],
             scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(rows).toHaveLength(1)
-        expect(rows[0].assetId).toBe(ALGO_ASSET_ID)
+        expect(rows[0].assetId).toBe(NATIVE_ASSET_ID)
         expect(rows[0].unitName).toBe('ALGO')
     })
 
@@ -49,7 +50,7 @@ describe('Integration test plumbing: SQLite database', () => {
         // The beforeEach reset wipes whatever the previous test inserted.
         // No seed call here — assert empty.
         const rows = await getAssetsByIds({
-            assetIds: [ALGO_ASSET_ID],
+            assetIds: [NATIVE_ASSET_ID],
             scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(rows).toHaveLength(0)

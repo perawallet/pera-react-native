@@ -12,8 +12,14 @@
 
 import { useCallback, useMemo } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useAllAccounts,
     useSigningAccounts,
@@ -39,10 +45,14 @@ const INBOX_IN_FLIGHT_POLL_INTERVAL_MS = 10_000
  * per-observer `select` is the only thing a consumer should add.
  */
 export const useInboxQueryOptions = () => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network) ?? ''
     const signingAccounts = useSigningAccounts()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'notifications',
+    )
 
     const addresses = useMemo(
         () => signingAccounts.map(a => a.address),
@@ -52,7 +62,7 @@ export const useInboxQueryOptions = () => {
     const queryOptionsResult = useMemo(
         () =>
             queryOptions({
-                queryKey: getInboxQueryKey(network, deviceID, addresses),
+                queryKey: getInboxQueryKey(scope, deviceID, addresses),
                 queryFn: () => fetchInbox(network, deviceID, addresses),
                 enabled:
                     !!deviceID.length &&
@@ -81,7 +91,7 @@ export const useInboxQueryOptions = () => {
                 // trip ky's Error subclass via Babel's `_construct` helper.
                 retry: false,
             }),
-        [network, deviceID, addresses, isUnavailableOnNetwork],
+        [scope, network, deviceID, addresses, isUnavailableOnNetwork],
     )
 
     return { queryOptions: queryOptionsResult, isUnavailableOnNetwork }

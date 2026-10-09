@@ -122,7 +122,12 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
     useIsCloudBackupEnabled: isEnabledMock,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 import { useSecurityStore } from '@perawallet/wallet-core-security'
+import { capabilityState } from '@test-utils/capability-mock'
 import { useBackupSyncLifecycle } from '../useBackupSyncLifecycle'
 
 const setAppState = (state: string) => {
@@ -150,6 +155,7 @@ const emitPasskeyChange = () => {
 describe('useBackupSyncLifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
         isEnabledMock.mockReturnValue(true)
         backupIdRef.current = 'did:pera:abc'
         act(() => useSecurityStore.getState().setAppLockActive(false))
@@ -165,6 +171,24 @@ describe('useBackupSyncLifecycle', () => {
         // throws for a consumer that reaches it another way.
         expect(initializeMock).toHaveBeenCalledTimes(1)
         expect(managerMock.start).not.toHaveBeenCalled()
+    })
+
+    it('leaves the manager stopped while no enabled chain supports cloud backup', () => {
+        capabilityState.turnOff('cloudBackup')
+
+        renderHook(() => useBackupSyncLifecycle())
+
+        expect(managerMock.start).not.toHaveBeenCalled()
+    })
+
+    it('stops a running manager when cloud backup is switched off for every chain', () => {
+        const { rerender } = renderHook(() => useBackupSyncLifecycle())
+        expect(managerMock.start).toHaveBeenCalledTimes(1)
+
+        capabilityState.turnOff('cloudBackup')
+        rerender()
+
+        expect(managerMock.stop).toHaveBeenCalled()
     })
 
     it('leaves the manager stopped until a backup is configured', () => {

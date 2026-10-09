@@ -35,7 +35,6 @@ vi.unmock('@perawallet/wallet-extension-platform')
 import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -53,15 +52,6 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
-
-// Other quantum integration suites (rekey-quantum.spec.tsx,
-// send-from-quantum.spec.tsx, ...) gate quantum-account UI behind this
-// remote-config flag. Registration itself doesn't branch on it (see
-// `buildDeviceAccountRegistrations` in packages/accounts/src/device-accounts.ts
-// — it maps every `AccountType` unconditionally), but enabling it keeps this
-// suite's seeded quantum account consistent with how one would actually
-// reach the store in the running app.
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
 
 // Mirrors production's `DeviceRegistrar` in RootComponent.tsx: join the
 // accounts store + notification preferences into the registration payload
@@ -98,7 +88,7 @@ const resetNotificationPreferences = (): void => {
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-1',
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'quantum-1-key',
     name: 'Quantum account',
@@ -106,14 +96,14 @@ const quantumAccount: WalletAccount = {
 
 const watchedAccount: WalletAccount = {
     id: 'watch-1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: HD_TEST_ADDRESS,
     name: 'Watched account',
 }
 
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'algo25-1-key',
     name: 'Algo25 account',
@@ -125,10 +115,6 @@ describe('Device registration v3', () => {
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
-        await useRemoteConfigStore.persist.rehydrate()
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride(QUANTUM_FLAG_KEY, true)
     })
 
     // Unmount first: resetting the accounts store under a mounted registrar

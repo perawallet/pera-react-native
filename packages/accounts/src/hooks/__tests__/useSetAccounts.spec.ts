@@ -14,7 +14,6 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSetAccounts } from '../useSetAccounts'
 import { useAccountsStore } from '../../store'
-import { withCustody } from '../../credentials'
 import type { WalletAccount } from '../../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -61,7 +60,7 @@ describe('useSetAccounts', () => {
             {
                 id: '1',
                 address: 'A',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
                 name: 'A',
             },
@@ -73,8 +72,6 @@ describe('useSetAccounts', () => {
             result.current.setAccounts(accounts)
         })
 
-        expect(useAccountsStore.getState().accounts).toEqual(
-            accounts.map(withCustody),
-        )
+        expect(useAccountsStore.getState().accounts).toEqual(accounts)
     })
 })

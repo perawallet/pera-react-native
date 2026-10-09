@@ -44,7 +44,6 @@ import {
 } from '@test-utils/signing-review'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
-    AccountTypes,
     useAccountsStore,
     type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -78,7 +77,16 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device-id',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',

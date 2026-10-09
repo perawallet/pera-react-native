@@ -13,7 +13,7 @@
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AuthDataPayload,
@@ -23,7 +23,7 @@ import type {
     SourceType,
     TransportResult,
 } from '../pipeline/types'
-import type { ResolvedSignerType } from '../machine/context'
+import type { SignerCustody } from '../machine/utils/resolveSignerCredential'
 
 /**
  * Why a fee was raised. The `quantum-minimum` value predates the switch from a
@@ -182,7 +182,7 @@ export type PipelineStage =
     | 'idle' // no request or actor initializing
     | 'validating' // analyzerActor running
     | 'awaiting_user' // waiting for next() or fail()
-    | 'signing' // localKey | hardware | multisig actor running
+    | 'signing' // local | hardware | multisig actor running
     | 'transporting' // transportActor delivering signed data
     | 'completed' // terminal: signing and delivery succeeded
     | 'rejected' // terminal: user cancelled
@@ -194,11 +194,11 @@ export type SigningPipelineEvent =
           type: 'analysis_ready'
           analysis: SignableAnalysis
           /** The type that will sign once approved. */
-          signerType: Nullable<ResolvedSignerType>
+          signerType: Nullable<SignerCustody>
       }
     | {
           type: 'signing_started'
-          signerType: ResolvedSignerType
+          signerType: SignerCustody
       }
     | { type: 'transport_started' }
     | {

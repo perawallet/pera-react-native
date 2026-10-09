@@ -35,6 +35,8 @@ export type UseConnectionsSettingsScreenResult = {
     keyExtractor: (item: UnifiedConnection) => string
     /** Opens the QR-paste flow; WalletConnect is the only user-initiated kind here (a dapp connection is proposed by the page). */
     scannerState: ModalState
+    /** False while `dappConnect` is off: existing connections stay listed and revocable, but no new one starts here. */
+    canConnect: boolean
 }
 
 /** `onRevoke` is the list hook's fire-and-forget revoke with its own toast. */

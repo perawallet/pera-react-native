@@ -16,11 +16,13 @@ import { useRoute } from '@react-navigation/native'
 import { mnemonicFromSeed } from 'algosdk'
 import {
     consumePendingImportMnemonic,
+    useFindQuantumAccountForMnemonic,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockShowToast = vi.fn()
 const mockErrorToast = vi.fn()
@@ -29,6 +31,18 @@ const mockPush = vi.fn()
 const mockGoBack = vi.fn()
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
+const mockFindQuantumAccount = vi.fn()
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 vi.mock('react-native', () => ({
     Keyboard: {
@@ -58,10 +72,11 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
+    useFindQuantumAccountForMnemonic: vi.fn(),
     consumePendingImportMnemonic: vi.fn(),
     MNEMONIC_WORD_COUNT: {
         hdWallet: 24,
-        algo25: 25,
+        standalone: 25,
         quantum: 25,
     },
 }))
@@ -182,6 +197,11 @@ describe('useImportAccountScreen', () => {
             params: { accountType: 'hdWallet' },
         } as never)
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
+        vi.mocked(useFindQuantumAccountForMnemonic).mockReturnValue(
+            mockFindQuantumAccount,
+        )
+        mockFindQuantumAccount.mockResolvedValue(null)
+        setQuantumEnabled(true)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
@@ -573,7 +593,6 @@ describe('useImportAccountScreen', () => {
             mockImportAccount.mockResolvedValue({
                 type: 'hdWallet',
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
             })
 
             const { result } = renderHook(() => useImportAccountScreen())
@@ -595,7 +614,6 @@ describe('useImportAccountScreen', () => {
             expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
                 mode: 'import',
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
             })
             // markBackupComplete is NOT called yet — the user hasn't committed addresses.
             expect(mockMarkBackupComplete).not.toHaveBeenCalled()
@@ -652,12 +670,12 @@ describe('useImportAccountScreen', () => {
     describe('algo25 account type', () => {
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: 'standalone' },
             } as never)
         })
 
         it('forwards the explicit algo25 type to importAccount and uses generic copy', async () => {
-            mockImportAccount.mockResolvedValue({ type: 'algo25' })
+            mockImportAccount.mockResolvedValue({ type: 'standalone' })
             const mnemonic = new Array(25).fill('abandon').join(' ')
 
             const { result } = renderHook(() => useImportAccountScreen())
@@ -673,13 +691,110 @@ describe('useImportAccountScreen', () => {
 
             expect(mockImportAccount).toHaveBeenCalledWith({
                 mnemonicIndices: expect.any(Uint16Array),
-                type: 'algo25',
+                type: 'standalone',
             })
             expect(result.current.titleKey).toBe(
                 'onboarding.import_account.title',
             )
             expect(result.current.infoNoteKey).toBeNull()
         })
+
+        describe('when the words also control an existing quantum account', () => {
+            const submit25Words = async () => {
+                const { result } = renderHook(() => useImportAccountScreen())
+                act(() => {
+                    result.current.updateWord(
+                        new Array(25).fill('abandon').join(' '),
+                        0,
+                    )
+                })
+                await act(async () => {
+                    result.current.handleImportAccount()
+                    await new Promise(resolve => setTimeout(resolve, 0))
+                })
+                return result
+            }
+
+            const sheetProps = () =>
+                mockRequestBottomSheet.mock.calls[0][0].contents.props as {
+                    address: string
+                }
+
+            beforeEach(() => {
+                mockFindQuantumAccount.mockResolvedValue('QUANTUMADDRESS')
+            })
+
+            it('imports the quantum account when the user picks it', async () => {
+                mockRequestBottomSheet.mockResolvedValue('import-quantum')
+                mockImportAccount.mockResolvedValue([
+                    {
+                        address: 'QUANTUMADDRESS',
+                        custody: { kind: 'local', seed: 'quantum' },
+                    },
+                ])
+
+                await submit25Words()
+
+                expect(sheetProps()).toEqual({ address: 'QUANTUMADDRESS' })
+                expect(mockImportAccount).toHaveBeenCalledTimes(1)
+                expect(mockImportAccount).toHaveBeenCalledWith({
+                    mnemonicIndices: expect.any(Uint16Array),
+                    type: 'quantum',
+                })
+                expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+                    account: {
+                        address: 'QUANTUMADDRESS',
+                        custody: { kind: 'local', seed: 'quantum' },
+                    },
+                })
+            })
+
+            it('imports nothing when the user backs out', async () => {
+                const result = await submit25Words()
+
+                expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+                expect(mockImportAccount).not.toHaveBeenCalled()
+                expect(result.current.processing).toBe(false)
+            })
+
+            it('imports the standard account without checking where the platform has no quantum support', async () => {
+                setQuantumEnabled(false)
+                mockImportAccount.mockResolvedValue({ type: 'standalone' })
+
+                await submit25Words()
+
+                expect(mockFindQuantumAccount).not.toHaveBeenCalled()
+                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+                expect(mockImportAccount).toHaveBeenCalledWith({
+                    mnemonicIndices: expect.any(Uint16Array),
+                    type: 'standalone',
+                })
+            })
+        })
+    })
+
+    it('only checks for a quantum account behind a 25-word standard import', async () => {
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accountType: 'quantum' },
+        } as never)
+        mockFindQuantumAccount.mockResolvedValue('QUANTUMADDRESS')
+        mockImportAccount.mockResolvedValue([{ type: 'quantum' }])
+        const { result } = renderHook(() => useImportAccountScreen())
+        act(() => {
+            result.current.updateWord(
+                new Array(25).fill('abandon').join(' '),
+                0,
+            )
+        })
+
+        await act(async () => {
+            result.current.handleImportAccount()
+            await new Promise(resolve => setTimeout(resolve, 0))
+        })
+
+        expect(mockFindQuantumAccount).not.toHaveBeenCalled()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockImportAccount).toHaveBeenCalledTimes(1)
     })
 
     describe('wordlist gating', () => {
@@ -689,7 +804,7 @@ describe('useImportAccountScreen', () => {
 
         beforeEach(() => {
             vi.mocked(useRoute).mockReturnValue({
-                params: { accountType: 'algo25' },
+                params: { accountType: 'standalone' },
             } as never)
         })
 
@@ -723,7 +838,7 @@ describe('useImportAccountScreen', () => {
                     mnemonicIndices: Uint16Array
                 }) => {
                     submitted = Array.from(mnemonicIndices)
-                    return { type: 'algo25' }
+                    return { type: 'standalone' }
                 },
             )
             const { result } = renderHook(() => useImportAccountScreen())

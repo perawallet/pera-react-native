@@ -17,6 +17,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { createTestQueryClient } from '@test-utils/render'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -24,7 +25,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     invalidateAccountQueriesForAddresses,
     refreshAccountHoldings,
@@ -33,7 +33,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeForLegacyNetwork,
     type LegacyNetwork,
@@ -45,7 +45,7 @@ const NETWORK = 'mainnet' as const
 
 const ACCOUNT_A: WalletAccount = {
     id: 'reactivity-a',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: 'A'.repeat(58),
     keyPairId: 'reactivity-a-key',
     name: 'Funder',
@@ -53,7 +53,7 @@ const ACCOUNT_A: WalletAccount = {
 
 const ACCOUNT_B: WalletAccount = {
     id: 'reactivity-b',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'B'.repeat(58),
     keyPairId: 'reactivity-b-key',
     name: 'Needs backup',
@@ -78,7 +78,7 @@ const seedUnfunded = async (
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
     await insertAssetHolding({
         accountAddress: address,
@@ -191,13 +191,11 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
 
         // What fetchAndPersistAccount does when it sees the new auth-addr.
         act(() => {
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress(
-                    ACCOUNT_A.address,
-                    ACCOUNT_B.address,
-                    NETWORK,
-                )
+            seedAuthority(
+                ACCOUNT_A.address,
+                ACCOUNT_B.address,
+                scopeForLegacyNetwork(NETWORK),
+            )
         })
 
         await waitFor(() => expect(result.current).toBe(true))

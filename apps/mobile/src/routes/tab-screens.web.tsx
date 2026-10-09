@@ -56,6 +56,7 @@ export const tabScreens: TabScreenDescriptor[] = [
         layout: safeAreaLayout,
         options: { tabBarButtonTestID: 'tab_swap_button' },
         event: TabbarEvent.Swap,
+        requires: { platform: 'swapTab', anyChain: 'swap' },
     },
     {
         name: 'Fund',
@@ -63,6 +64,7 @@ export const tabScreens: TabScreenDescriptor[] = [
         layout: headeredLayout,
         options: { tabBarButtonTestID: 'tab_fund_button' },
         event: TabbarEvent.Fund,
+        requires: { platform: 'fundTab' },
     },
     {
         name: 'Menu',

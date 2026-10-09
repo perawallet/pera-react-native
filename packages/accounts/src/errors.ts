@@ -17,6 +17,7 @@ import {
     type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from './models'
 
 /**
  * Base account error
@@ -54,15 +55,33 @@ export class NoHDWalletError extends AccountError {
 }
 
 /**
+ * The wallet has no seed that can mint an account on the chain.
+ */
+export class WalletCannotDeriveError extends AccountError {
+    readonly walletId: string
+    readonly chainId: ChainId
+
+    constructor(walletId: string, chainId: ChainId) {
+        super(
+            `Wallet ${walletId} cannot derive an account on ${chainId}`,
+            undefined,
+            { params: { walletId, chainId } },
+        )
+        this.walletId = walletId
+        this.chainId = chainId
+    }
+}
+
+/**
  * Rekey target account not found in local accounts
  */
-export class RekeyTargetNotFoundError extends AccountError {
-    constructor(rekeyAddress: string) {
+export class DelegationTargetNotFoundError extends AccountError {
+    constructor(authorityAddress: string) {
         super(
-            `Rekey target account ${rekeyAddress} not found in local accounts`,
+            `Rekey target account ${authorityAddress} not found in local accounts`,
             undefined,
             {
-                params: { rekeyAddress },
+                params: { authorityAddress },
             },
         )
     }
@@ -86,17 +105,25 @@ export class HDImportSessionNotFoundError extends AccountError {
 /**
  * The address derived from the import flow already exists in the wallet.
  *
- * Surfaced from the algo25 import path so the UI can show a specific
+ * Surfaced from the standard-mnemonic import path so the UI can show a specific
  * "already imported" toast instead of the generic failure message. HD
  * imports get the same protection at the selection screen (already-
  * imported addresses render a chip rather than a checkbox).
  */
 export class DuplicateAccountError extends AccountError {
-    constructor(address: string) {
+    // Names the existing account by id, not its user-chosen name: the message
+    // reaches crash reports.
+    constructor(address: string, existingAccount?: Pick<WalletAccount, 'id'>) {
         super(
-            `Account with address ${address} is already in the wallet`,
+            existingAccount
+                ? `Account with address ${address} is already in the wallet as ${existingAccount.id}`
+                : `Account with address ${address} is already in the wallet`,
             undefined,
-            { params: { address } },
+            {
+                params: existingAccount
+                    ? { address, existingAccountId: existingAccount.id }
+                    : { address },
+            },
         )
     }
 }
@@ -149,6 +176,12 @@ export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
     }
 }
 
+export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Private-key import', chainId)
+    }
+}
+
 export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Post-quantum accounts', chainId)
@@ -164,5 +197,16 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
 export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(derivationType: number, chainId: ChainId) {
         super(`HD derivation type ${derivationType}`, chainId)
+    }
+}
+
+export class PrivateKeyRevealUnsupportedError extends AccountError {
+    readonly accountId: string
+
+    constructor(accountId: string) {
+        super('This account has no private key to reveal', undefined, {
+            params: { accountId },
+        })
+        this.accountId = accountId
     }
 }

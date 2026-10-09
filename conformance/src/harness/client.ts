@@ -12,8 +12,8 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain/models'
-import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-blockchain/utils/createAlgorandClient'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
+import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/createAlgorandClient'
 import { fetchOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/endpoints'
 import { mapOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/mappers'
 
@@ -71,7 +71,7 @@ export const balanceOf = async (address: string): Promise<bigint> =>
 export const authAddrOf = async (
     address: string,
 ): Promise<string | undefined> =>
-    (await accountInformationOf(address)).authAddress
+    (await accountInformationOf(address)).authorityAddress
 
 /**
  * The raw indexer JSON for an account's transactions — hyphenated keys, no

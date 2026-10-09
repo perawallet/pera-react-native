@@ -12,8 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
-import { Address, Transaction } from 'algosdk'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
     makeTestAddress,
     makeTestPaymentTx,
@@ -35,6 +34,12 @@ import {
     SigningError,
 } from '../../pipeline/errors'
 
+// assignGroupID stamps the group id in place.
+const groupTransactions = (transactions: Transaction[]): Transaction[] => {
+    assignGroupID(transactions)
+    return transactions
+}
+
 const userAddr = makeTestAddress(1)
 const dappAddr = makeTestAddress(2)
 
@@ -42,7 +47,7 @@ const makePayment = (sender: Address, amount: bigint): Transaction =>
     makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
 const userAccount = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     address: userAddr.toString(),
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -55,7 +60,7 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         signArbitraryData: vi.fn(),
         signAuthData: vi.fn(),
         createTransport: vi.fn(),
-        network: 'mainnet' as never,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as unknown as SigningMachineInput
 
@@ -408,7 +413,16 @@ describe('resolveInitialContext — auth-data requests', () => {
 
 describe('resolveInitialContext — hardware wallet registry requirement', () => {
     const hardwareAccount = {
-        type: 'hardware',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'd1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address: new Address(new Uint8Array(32).fill(3)).toString(),
         hardwareDetails: {
             manufacturer: 'ledger',
@@ -430,7 +444,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            network: 'mainnet' as never,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             encodeTransaction: vi.fn(),
             hardwareWalletRegistry: opts.hardwareWalletRegistry,
         }) as unknown as SigningMachineInput

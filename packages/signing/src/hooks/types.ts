@@ -10,17 +10,18 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 import type { SnapshotFrom } from 'xstate'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
+import type { SigningMachineContext } from '../machine/context'
 import type {
-    SigningMachineContext,
-    ResolvedSignerType,
-} from '../machine/context'
+    SignerCredential,
+    SignerCustody,
+} from '../machine/utils/resolveSignerCredential'
 import type { hardwareSigningMachine } from '../machine/children/hardwareSigningMachine'
 import type {
     FeeAdjustment,
@@ -153,9 +154,9 @@ export type ActiveSigningChild = {
 } | null
 
 export type ResolvedSignRequest = {
-    signerType: ResolvedSignerType
+    signerType: SignerCustody
     signerAccount: WalletAccount
-    groupSignerTypes: ReadonlyMap<string, ResolvedSignerType>
+    groupSigners: ReadonlyMap<string, SignerCredential>
     source: { kind: SourceKind; isInteractive: boolean }
     transport: { kind: TransportKind }
     kind: ResolvedRequestKind

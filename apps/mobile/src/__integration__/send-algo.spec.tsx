@@ -20,13 +20,13 @@ import {
     onTestFinished,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -36,7 +36,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -58,7 +58,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -66,6 +66,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -85,7 +87,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'sender-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',
@@ -125,6 +127,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
         useSendFundsStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
 
@@ -149,7 +152,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given a pre-filled send-funds store, when the user taps the confirm button, then the pipeline signs locally, POSTs to algod, and the success screen renders', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -207,7 +210,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the recipient-info lookup is still in flight, when the confirmation screen mounts, then the confirm button is disabled but not in the loading state', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -255,7 +258,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     it('Given the confirmation screen is mounted with no destination, when the user taps confirm, then an error toast is raised and submission does not happen', async () => {
         await seedAlgo25Sender()
         // Intentionally no destination.
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setSendMode('normal')
 
@@ -305,28 +308,28 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         })
         const authAccount: WalletAccount = {
             id: 'auth-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: authKey!.seedKey.id ?? '',
             name: 'Auth (signer)',
         }
         // The rekeyed account has no signing key of its own —
-        // `keyPairId` is omitted on purpose. The wallet relies on
-        // `rekeyAddress` to find the actual signer at sign time.
+        // `keyPairId` is omitted on purpose. The wallet relies on the
+        // recorded authority to find the actual signer at sign time.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender',
-            rekeyAddress: authAccount.address,
         }
+        seedAuthority(rekeyedAccount.address, authAccount.address)
         useAccountsStore.getState().setAccounts([rekeyedAccount, authAccount])
         useAccountsStore
             .getState()
             .setSelectedAccountAddress(rekeyedAccount.address)
 
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(ALGO25_TEST_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -334,10 +337,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // Override algod's account info for the rekeyed sender so
         // it reports the same `auth-addr` the wallet has on the
         // local account. `fetchAndPersistAccount` reads this on
-        // every refresh and writes it back into
-        // `account.rekeyAddress` — without it, the wallet's
-        // local rekey state gets cleared mid-send and the signing
-        // pipeline fails to resolve an auth account.
+        // every refresh and writes it back into the account's
+        // synced authority — without it, the wallet's local rekey
+        // state gets cleared mid-send and the signing pipeline
+        // fails to resolve an auth account.
         server.use(
             mockAlgodAccountInformation({
                 address: rekeyedAccount.address,
@@ -408,7 +411,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when algod rejects the submission, then the processing screen surfaces an error toast, navigates back to confirmation, and never reaches success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -473,7 +476,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -531,7 +534,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -586,7 +589,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -636,7 +639,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the keystore reports the signing key missing, when the user confirms the send, then the toast carries the KMS copy, nothing is submitted, and the flow returns to Confirm', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -700,7 +703,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the keystore throws an untyped error while signing, when the user confirms the send, then the toast carries the signing-specific copy rather than the generic banner', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -766,22 +769,22 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // Same shape as the happy-path rekey case, but the auth
         // account is intentionally NOT registered in the
         // accounts store. `resolveAuthAccount` will throw
-        // RekeyTargetNotFoundError before any signing happens —
+        // DelegationTargetNotFoundError before any signing happens —
         // surfaced as a toast, no algod traffic.
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-orphan',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: HD_TEST_ADDRESS,
             keyPairId: '',
             name: 'Rekeyed sender (orphan)',
-            rekeyAddress: ALGO25_TEST_ADDRESS,
         }
+        seedAuthority(rekeyedAccount.address, ALGO25_TEST_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedAccount])
         useAccountsStore
             .getState()
             .setSelectedAccountAddress(rekeyedAccount.address)
 
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(ALGO25_TEST_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

@@ -12,12 +12,14 @@
 
 import { useMemo } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     accountsChainAdapters,
     type AuthorityTargetKind,
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
 import { useAllAccounts } from './useAllAccounts'
+import { useSelectedChainStates } from './useSelectedChainStates'
 
 export type UseAuthorityTargetsOptions = {
     isQuantumTargetEnabled?: boolean
@@ -33,14 +35,16 @@ export const useAuthorityTargets = (
     { isQuantumTargetEnabled = false }: UseAuthorityTargetsOptions = {},
 ): WalletAccount[] => {
     const accounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
 
     return useMemo(() => {
         const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
         if (!source || !authority) return []
         return accounts.filter(target =>
-            authority.isEligibleTarget(kind, target, source, accounts, {
+            authority.isEligibleTarget(kind, target, source, accounts, scope, {
                 isQuantumTargetEnabled,
             }),
         )
-    }, [accounts, source, kind, isQuantumTargetEnabled])
+    }, [accounts, scope, chainStates, source, kind, isQuantumTargetEnabled])
 }

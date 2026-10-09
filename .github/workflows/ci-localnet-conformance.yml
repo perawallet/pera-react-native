@@ -40,6 +40,9 @@ on:
             - 'packages/chain-shared/**'
             # ChainScope, which every builder and fetcher takes.
             - 'packages/chain-contract/**'
+            # The schema and migrations the store-migration suite hydrates
+            # account chain state from.
+            - 'packages/database/**'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:
@@ -63,13 +66,27 @@ jobs:
             - name: Install pnpm
               uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
 
+            # No `cache: pnpm`, as in ci-pre-merge.yml's Setup: node_modules
+            # comes from the copy ci-cache-warm.yml keeps on main.
             - name: Setup Node
               uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version-file: '.tool-versions'
-                  cache: 'pnpm'
+
+            - name: Restore node_modules
+              id: node-modules
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: |
+                      node_modules
+                      apps/*/node_modules
+                      packages/*/node_modules
+                      extensions/*/node_modules
+                      conformance/node_modules
+                  key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
             - name: Install dependencies
+              if: steps.node-modules.outputs.cache-hit != 'true'
               run: pnpm install --frozen-lockfile
 
             # ubuntu-24.04 runners ship pipx and a running Docker daemon; algokit

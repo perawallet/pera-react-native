@@ -38,13 +38,13 @@ const {
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
     mockResolveSignerForAccount: vi.fn(
         (_account?: unknown, _accounts?: unknown) =>
-            ({ kind: 'ok' }) as { kind: string; authAddress?: string },
+            ({ kind: 'ok' }) as { kind: string; authorityAddress?: string },
     ),
     mockNetwork: { current: 'mainnet' },
     mockAssignFeeToGroup: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     // Real-ish: matches the production base32-length check well enough for
     // valid vs invalid sender discrimination in this hook.
     isValidAlgorandAddress: (address: string) =>
@@ -53,11 +53,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         encodeTransaction: mockEncodeTransaction,
         decodeTransaction: mockDecodeTransaction,
     }),
+    getExpectedGenesisHash: (network: string) => `hash-${network}`,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({
         network: mockNetwork.current,
         networkConfig: { genesisId: `${mockNetwork.current}-v1.0` },
     }),
-    getExpectedGenesisHash: (network: string) => `hash-${network}`,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -300,7 +303,7 @@ describe('useKeyregDeeplink', () => {
             seedSenderInWallet()
             mockResolveSignerForAccount.mockReturnValue({
                 kind: 'authMissing',
-                authAddress: 'AUTH',
+                authorityAddress: 'AUTH',
             })
 
             const { result } = renderHook(() => useKeyregDeeplink())
@@ -424,7 +427,7 @@ describe('useKeyregDeeplink', () => {
     describe('PQ fee floor', () => {
         // assignFeeToGroup is mocked at the signing-package boundary (its
         // own quantum/rekey/congestion logic is covered by
-        // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+        // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
         // and .../sources/__tests__/assignMinimumFeesToGroup.spec.ts). These
         // tests only verify this hook builds with the dApp fee verbatim,
         // runs the built txn through the calculator, and surfaces the delta

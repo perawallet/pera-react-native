@@ -17,4 +17,7 @@ export type {
     KmsDerivedKey,
     KmsImportRequest,
     KmsKeyScheme,
+    Secp256k1ChildRef,
+    Secp256k1DerivationRequest,
+    Secp256k1ImportRequest,
 } from './types'

@@ -23,6 +23,7 @@ export const BackupReminderWriteDownScreen = () => {
 
     return (
         <PWInfoView
+            testID='backup_write_down_screen'
             illustration={EditPenImage}
             title={t('backup.write_down.title')}
             body={t('backup.write_down.body')}

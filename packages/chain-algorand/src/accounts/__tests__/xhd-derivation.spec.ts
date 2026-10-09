@@ -14,7 +14,6 @@
 import { describe, test, expect } from 'vitest'
 import { mnemonicToSeed } from '@scure/bip39'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
 import { algorandAddressCodec } from '../address-codec'
 import { createXHDGetPublicKey } from '../discovery'
 
@@ -41,7 +40,6 @@ describe('XHD public-key getter ground truth', () => {
         const pubKey = await getPublicKey({
             account: 1,
             keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
         })
         expect(
             algorandAddressCodec.fromPublicKey(pubKey, {
@@ -59,7 +57,6 @@ describe('XHD public-key getter ground truth', () => {
         const pubKey = await getPublicKey({
             account: 0,
             keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
         })
         expect(
             algorandAddressCodec.fromPublicKey(pubKey, {
@@ -76,7 +73,6 @@ describe('XHD public-key getter ground truth', () => {
         const pubKey = await getPublicKey({
             account: 0,
             keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
         })
         expect(
             algorandAddressCodec.fromPublicKey(pubKey, {

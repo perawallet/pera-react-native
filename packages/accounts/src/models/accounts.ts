@@ -14,8 +14,16 @@ import type {
     HardwareWalletManufacturer,
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type { Network } from '@perawallet/wallet-core-shared'
-import type { AccountCredentials, AccountProvenance } from './credentials'
+import type {
+    AccountChains,
+    AccountCustody,
+    HardwareCustody,
+    LocalCustody,
+    MultisigCustody,
+    StandaloneCustody,
+    WatchCustody,
+} from './credentials'
+import type { SeedScheme } from '@perawallet/wallet-core-kms'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -26,7 +34,7 @@ export type DerivationType =
     (typeof DerivationTypes)[keyof typeof DerivationTypes]
 
 export const AccountTypes = {
-    algo25: 'algo25',
+    standalone: 'standalone',
     hdWallet: 'hdWallet',
     hardware: 'hardware',
     multisig: 'multisig',
@@ -63,12 +71,12 @@ export const ACCOUNT_TYPE_RANK = {
     quantum: 6,
     hardware: 5,
     hdWallet: 4,
-    algo25: 3,
+    standalone: 3,
     multisig: 2,
     watch: 1,
 } as const satisfies Record<AccountType, number>
 
-export type ImportAccountType = 'hdWallet' | 'algo25' | 'quantum'
+export type ImportAccountType = 'hdWallet' | 'standalone' | 'quantum'
 
 export type HDWalletDetails = {
     account: number
@@ -97,7 +105,7 @@ export type HardwareWalletDetails = {
 }
 
 export type WalletAccount =
-    | Algo25Account
+    | StandaloneAccount
     | HDWalletAccount
     | MultiSigAccount
     | HardwareWalletAccount
@@ -113,7 +121,6 @@ export type BaseWalletAccount = {
      */
     id: string
     name?: string
-    type: AccountType
     /**
      * On-chain Algorand address. Required for every account kind that exists
      * today (all of them are on-chain), so it is redeclared as required on each
@@ -123,69 +130,55 @@ export type BaseWalletAccount = {
     address?: string
     keyPairId?: string
     /**
-     * Mirror of the on-chain auth-addr for the ACTIVE network — the value
-     * badges, pickers, and signer resolution read. Re-derived from
-     * `rekeyAddressByNetwork` on every network switch and sync tick.
+     * The account's kind (`accountType()`) is read from here. A write that
+     * changes how the account is held builds it again with `buildAccount`.
      */
-    rekeyAddress?: string
-    /**
-     * Per-network auth-addr state (rekeys are per-network on-chain: a
-     * mainnet rekey does not affect testnet). Absent on accounts persisted
-     * before this field existed — for those the mirror is left as-is until
-     * a sync tick writes the map (self-healing, seconds).
-     */
-    rekeyAddressByNetwork?: Partial<Record<Network, string>>
-    /**
-     * `type` and its details stay authoritative. The store backfills these two
-     * on every write, except on a record missing the details its `type`
-     * requires (e.g. a multisig without `multisigDetails`).
-     */
-    provenance?: AccountProvenance
-    /** Keyed by chain; empty when no local key signs for the account. */
-    credentials?: AccountCredentials
+    custody: AccountCustody
+    /** Everything that varies by chain, keyed by chain id. */
+    chains?: AccountChains
 }
 
-export type Algo25Account = BaseWalletAccount & {
-    type: typeof AccountTypes.algo25
+export type StandaloneAccount = BaseWalletAccount & {
+    custody: StandaloneCustody
     address: string
     keyPairId: string
 }
 
 /**
  * Account backed by a post-quantum signature keypair. Flat and single-key
- * like {@link Algo25Account}: the key material lives in the KMS under
+ * like {@link StandaloneAccount}: the key material lives in the KMS under
  * `keyPairId`; there is no derivation path or device metadata. The concrete
  * signature scheme (Falcon today) is a KMS / signing-pipeline detail that the
  * model deliberately does not encode, so the scheme can change without a
  * data migration.
  */
 export type QuantumAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.quantum
+    custody: { kind: 'local'; seed: typeof SeedScheme.Quantum }
     address: string
     keyPairId: string
 }
 
 export type HDWalletAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.hdWallet
+    custody: Extract<LocalCustody, { seed: typeof SeedScheme.Bip39 }>
     address: string
     hdWalletDetails: HDWalletDetails
     keyPairId: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.multisig
+    custody: MultisigCustody
     address: string
     multisigDetails: MultiSigDetails
 }
 
 export type HardwareWalletAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.hardware
+    custody: HardwareCustody
     address: string
     hardwareDetails: HardwareWalletDetails
 }
 
 export type WatchAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.watch
+    custody: WatchCustody
     address: string
 }
 

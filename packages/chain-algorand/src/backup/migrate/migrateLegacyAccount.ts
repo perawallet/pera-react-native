@@ -18,6 +18,7 @@ import {
     buildLedgerAccount,
     buildMultiSigAccount,
     buildWatchAccount,
+    recordLegacyAuthority,
 } from './buildKeylessAccount'
 import { describeBytes } from './legacyKeyConversion'
 import { migrateAlgo25Account } from './migrateAlgo25Account'
@@ -29,8 +30,7 @@ export const migrateLegacyAccount = async (
 ): Promise<WalletAccount> => {
     const { account } = args
 
-    if (account.type === 'watch')
-        return addKeylessAccountToStore(buildWatchAccount(account))
+    if (account.type === 'watch') return addWatchAccount(account)
     if (account.joint !== null)
         return addKeylessAccountToStore(buildMultiSigAccount(account))
     if (account.ledger !== null)
@@ -48,7 +48,13 @@ const migrateAccountWithoutSigningMaterial = (
     logger.warn('Legacy account has no signing material; migrating as watch', {
         detail: buildUnroutableAccountError(account),
     })
-    return addKeylessAccountToStore(buildWatchAccount(account))
+    return addWatchAccount(account)
+}
+
+const addWatchAccount = (account: LegacyAccount): WalletAccount => {
+    const added = addKeylessAccountToStore(buildWatchAccount(account))
+    recordLegacyAuthority(account)
+    return added
 }
 
 export const isKeylessLegacyAccount = (account: LegacyAccount): boolean =>

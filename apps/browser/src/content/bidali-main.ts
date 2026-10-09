@@ -19,12 +19,23 @@
 // iframe) where no bridge host exists on the other side. Reuses the exact
 // handshake preamble discover-main.ts runs, via the shared
 // connectWebviewMainChannel helper (webview-main-channel.ts).
+import { BIDALI_BALANCES_PARAM, BIDALI_CURRENCIES_PARAM } from './bidali-params'
 import { connectWebviewMainChannel } from './webview-main-channel'
 
-// Mirrors SUPPORTED_CURRENCIES in useBidaliTransport.ts.
-const PAYMENT_CURRENCIES = ['algorand', 'usdcalgorand']
-
-const BALANCES_PARAM = 'peraBidaliBalances'
+const parseCurrencies = (raw: string | null): string[] => {
+    if (!raw) return []
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        return Array.isArray(parsed)
+            ? parsed.filter(
+                  (currency): currency is string =>
+                      typeof currency === 'string',
+              )
+            : []
+    } catch {
+        return []
+    }
+}
 
 const parseBalances = (raw: string | null): Record<string, string> => {
     if (!raw) return {}
@@ -61,8 +72,10 @@ if (mainChannel) {
     window.bidaliProvider = {
         key: searchParams.get('key') ?? '',
         name: 'perawallet',
-        paymentCurrencies: PAYMENT_CURRENCIES,
-        balances: parseBalances(searchParams.get(BALANCES_PARAM)),
+        paymentCurrencies: parseCurrencies(
+            searchParams.get(BIDALI_CURRENCIES_PARAM),
+        ),
+        balances: parseBalances(searchParams.get(BIDALI_BALANCES_PARAM)),
 
         onPaymentRequest: (req: unknown) => {
             if (req == null || typeof req !== 'object') return

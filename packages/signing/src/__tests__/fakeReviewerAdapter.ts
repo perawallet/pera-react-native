@@ -11,7 +11,10 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     reviewerChainAdapters,
     type ReviewerChainAdapter,
@@ -21,19 +24,24 @@ export const fakeReviewerAdapter = (
     overrides: Partial<ReviewerChainAdapter> = {},
 ): ReviewerChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
-    analyze: vi.fn(async () => ({
-        totalFees: 0n,
-        transactionSummaries: [],
-        warnings: [],
-        signableAddresses: [],
-        riskLevel: 'low' as const,
-    })),
+    decoder: {
+        decode: vi.fn(async () => ({
+            totalFees: 0n,
+            transactionSummaries: [],
+            signableAddresses: [],
+        })),
+    },
+    warnings: { detect: vi.fn(() => []) },
+    policy: { autoApproveLocal: vi.fn(() => true) },
     createTransactionListItems: vi.fn(() => []),
     classifyRequestStructure: vi.fn(() => 'single' as const),
     aggregateTransactionWarnings: vi.fn(() => []),
     resolveAllSignerAddresses: vi.fn(() => []),
     getRekeyedUnsignableReason: vi.fn(() => null),
     decodeArbitraryDataForDisplay: vi.fn(() => ({ kind: 'hex', hex: '' })),
+    toDisplayableTransaction: vi.fn(
+        tx => tx as unknown as PeraDisplayableTransaction,
+    ),
     ...overrides,
 })
 

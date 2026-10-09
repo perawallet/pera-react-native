@@ -11,11 +11,41 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { getCurrenciesQueryKey } from '../querykeys'
+import {
+    queryKeyReferencesScope,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { currencyQueryKeys, getCurrenciesQueryKey } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
 
 describe('getCurrenciesQueryKey', () => {
     it('returns correct query keys', () => {
-        const keys = getCurrenciesQueryKey('mainnet')
-        expect(keys).toEqual(['currencies', { network: 'mainnet' }])
+        const keys = getCurrenciesQueryKey(MAINNET)
+        expect(keys).toEqual(['currencies', { scope: MAINNET }])
+    })
+})
+
+describe('currencyQueryKeys', () => {
+    it('nests the ALGO/USD price under the assets prices namespace with its scope', () => {
+        expect(currencyQueryKeys.algoUsdPrice(MAINNET)).toEqual([
+            'assets',
+            'prices',
+            'algo-usd',
+            { scope: MAINNET },
+        ])
+    })
+
+    it('every key references its scope', () => {
+        for (const key of [
+            currencyQueryKeys.list(MAINNET),
+            currencyQueryKeys.price(MAINNET, 'EUR'),
+            currencyQueryKeys.algoUsdPrice(MAINNET),
+        ]) {
+            expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
+            expect(
+                queryKeyReferencesScope(key, scopeForLegacyNetwork('testnet')),
+            ).toBe(false)
+        }
     })
 })

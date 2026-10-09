@@ -60,7 +60,10 @@ let dappOrigin: string
 let quantumAddress: string
 const PASSWORD = 'e2e-quantum-account-password-1'
 
-type StoredAccount = { type: string; address: string }
+type StoredAccount = {
+    custody?: { kind: string; seed?: string }
+    address: string
+}
 
 const readStoredAccounts = async (): Promise<StoredAccount[]> => {
     const [serviceWorker] = context.serviceWorkers()
@@ -108,9 +111,6 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // The quantum option also needs `enable_quantum_accounts`, which an
-    // exported build only gets from Firebase; the developer override stands in
-    // for it so the run doesn't depend on a live Remote Config fetch.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
@@ -120,10 +120,6 @@ test.beforeAll(async () => {
                         'transaction-info-agreed': true,
                     },
                 },
-                version: 1,
-            }),
-            'kv:remote-config-store': JSON.stringify({
-                state: { configOverrides: { enable_quantum_accounts: true } },
                 version: 1,
             }),
         })
@@ -170,7 +166,7 @@ test('Add Account creates a quantum account through the web keystore', async () 
     })
 
     const quantumAccounts = (await readStoredAccounts()).filter(
-        account => account.type === 'quantum',
+        account => account.custody?.seed === 'quantum',
     )
     expect(quantumAccounts).toHaveLength(1)
     quantumAddress = quantumAccounts[0].address
@@ -210,11 +206,34 @@ test('a dApp signing request from the quantum account returns a valid Falcon pqs
         .not.toBe('')
     const connected = JSON.parse(
         (await dappPage.locator('#connect-result').textContent()) ?? '{}',
-    ) as { accounts: { address: string }[] }
+    ) as {
+        accounts: { address: string }[]
+        emptySignatures: Record<string, string>
+    }
     await connect.approvalPage.close()
     expect(connected.accounts.map(account => account.address)).toContain(
         quantumAddress,
     )
+
+    // Built in the offscreen document from the keystore's public metadata:
+    // the key must commit to the account's address and carry no signature.
+    const emptySignature = algosdk.msgpackRawDecodeAsMap(
+        Buffer.from(connected.emptySignatures[quantumAddress] ?? '', 'base64'),
+    ) as Map<string, unknown>
+    expect([...emptySignature.keys()]).toEqual(['pqsig'])
+    const emptyPqsig = emptySignature.get('pqsig') as Map<string, Uint8Array>
+    expect(emptyPqsig.has('sig')).toBe(false)
+    expect(
+        algosdk
+            .addressFromPQKey(
+                emptyPqsig.get('sch') as Uint8Array,
+                emptyPqsig.get('pk') as Uint8Array,
+            )
+            .address.toString(),
+    ).toBe(quantumAddress)
+    await expect(
+        dappPage.evaluate(() => window.pera.getEmptySignatures()),
+    ).resolves.toEqual(connected.emptySignatures)
 
     const { genesisHash } = getNetworkConfig(Networks.mainnet)
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({

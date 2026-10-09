@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
@@ -24,12 +24,12 @@ export const isTransactionQuery = (queryKey: QueryKey): boolean =>
 export const transactionQueryKeys = {
     all: [MODULE_PREFIX] as const,
 
-    history: (accountAddress: string, network: Network) =>
-        [MODULE_PREFIX, 'history', { accountAddress, network }] as const,
+    history: (accountAddress: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'history', { accountAddress, scope }] as const,
 
     historyWithFilters: (
         accountAddress: string,
-        network: Network,
+        scope: ChainScope,
         filters: {
             assetId?: string
             afterTime?: string
@@ -40,15 +40,19 @@ export const transactionQueryKeys = {
         [
             MODULE_PREFIX,
             'history',
-            { accountAddress, network, ...filters },
+            { accountAddress, scope, ...filters },
         ] as const,
 
-    paginatedHistory: (accountAddress: string, network: Network, url: string) =>
+    paginatedHistory: (
+        accountAddress: string,
+        scope: ChainScope,
+        url: string,
+    ) =>
         [
             MODULE_PREFIX,
             'history',
             'page',
-            { accountAddress, network, url },
+            { accountAddress, scope, url },
         ] as const,
 
     /**
@@ -56,8 +60,8 @@ export const transactionQueryKeys = {
      * verifying" badge set. Kept under the module prefix so
      * `invalidateTransactionQueries` also refreshes it.
      */
-    openSubmissionTxIds: (network: Network) =>
-        [MODULE_PREFIX, 'open-submission-txids', { network }] as const,
+    openSubmissionTxIds: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

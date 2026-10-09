@@ -13,15 +13,20 @@
 import { SignedTransaction } from 'algosdk'
 import {
     Address,
+    asAlgosdkTransaction,
     assemblePQSignedTransaction,
+    encodeTransaction,
     encodeAlgorandAddress,
     pqSigningDigest,
-    type PeraSignedTransaction,
-    type PeraTransaction,
-    type PeraTransactionGroup,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+    PeraTransactionGroup,
+} from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgo25Account,
+    accountType,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
     type WalletAccount,
@@ -49,7 +54,7 @@ export const assembleSignedTransaction = (
     signature?: { sig: Uint8Array; signerAddress: string },
 ): PeraSignedTransaction =>
     new SignedTransaction({
-        txn,
+        txn: asAlgosdkTransaction(txn),
         sig: signature?.sig,
         sgnr:
             signature &&
@@ -65,12 +70,12 @@ const signSingleAccountTransactions = async (
     txns: PeraTransactionGroup,
 ): Promise<PeraSignedTransaction[]> => {
     if (
-        !isAlgo25Account(account) &&
+        !isStandaloneAccount(account) &&
         !isHDWalletAccount(account) &&
         !isQuantumAccount(account)
     ) {
         return Promise.reject(
-            `Unsupported account type ${account.type} for ${account.address}`,
+            `Unsupported account type ${accountType(account)} for ${account.address}`,
         )
     }
 
@@ -95,7 +100,7 @@ const signSingleAccountTransactions = async (
         const batch = txns.slice(start, start + SIGN_BATCH_SIZE)
         const payloads = pqInfo
             ? batch.map(txn => pqSigningDigest(txn))
-            : batch.map(txn => deps.encodeTransaction(txn))
+            : batch.map(txn => encodeTransaction(txn))
         const signatures = await deps.signPayloads(account.keyPairId, payloads)
 
         batch.forEach((txn, idx) => {

@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => {
         addSignRequest: vi.fn(),
         removeSignRequest: vi.fn(),
         useSigningRequest: vi.fn(),
+        isSignRequestAwaitingPreflight: vi.fn(() => false),
         enqueueInboundRequest: vi.fn(),
         isConnectionAlive: vi.fn(() => true),
         resolveConnectionRequest: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: mocks.useSigningRequest,
+    isSignRequestAwaitingPreflight: mocks.isSignRequestAwaitingPreflight,
     GenesisHashMismatchError: mocks.GenesisHashMismatchError,
 }))
 
@@ -108,6 +110,8 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.removeSignRequest.mockReset()
         mocks.isConnectionAlive.mockReset()
         mocks.isConnectionAlive.mockReturnValue(true)
+        mocks.isSignRequestAwaitingPreflight.mockReset()
+        mocks.isSignRequestAwaitingPreflight.mockReturnValue(false)
 
         mocks.resolveConnectionRequest.mockResolvedValue(undefined)
         mocks.decodeWalletOperation.mockImplementation(
@@ -359,6 +363,24 @@ describe('useSignRequestApprovalScreen', () => {
             const { result } = renderHook(() => useSignRequestApprovalScreen())
 
             expect(result.current.request).toBeNull()
+            expect(result.current.isLoading).toBe(true)
+        })
+
+        it('stays loading while its own request is still in its chain check', () => {
+            // No actor exists yet, so the review would render empty.
+            mocks.isSignRequestAwaitingPreflight.mockReturnValue(true)
+            mocks.useSigningRequest.mockReturnValue({
+                addSignRequest: mocks.addSignRequest,
+                removeSignRequest: mocks.removeSignRequest,
+                currentRequest: {
+                    id: 'sr1',
+                    type: 'transactions',
+                    transportId: 'connection-1',
+                },
+            })
+
+            const { result } = renderHook(() => useSignRequestApprovalScreen())
+
             expect(result.current.isLoading).toBe(true)
         })
     })

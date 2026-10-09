@@ -63,7 +63,11 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 id: 'hd-1',
                 address: 'HD_ADDRESS_1',
                 name: 'My Main Wallet',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -77,7 +81,11 @@ const mockHDWalletGroups: HDWalletGroup[] = [
             id: 'hd-1',
             address: 'HD_ADDRESS_1',
             name: 'My Main Wallet',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             hdWalletDetails: {
                 account: 0,
                 change: 0,
@@ -94,7 +102,11 @@ const mockHDWalletGroups: HDWalletGroup[] = [
             {
                 id: 'hd-2',
                 address: 'HD_ADDRESS_2',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -107,7 +119,11 @@ const mockHDWalletGroups: HDWalletGroup[] = [
         firstAccount: {
             id: 'hd-2',
             address: 'HD_ADDRESS_2',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             hdWalletDetails: {
                 account: 0,
                 change: 0,
@@ -184,7 +200,11 @@ describe('useSelectHDWalletScreen', () => {
         const mockNewAccount = {
             id: 'hd-new',
             address: 'HD_NEW',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(mockNewAccount)
 
@@ -212,7 +232,11 @@ describe('useSelectHDWalletScreen', () => {
         const newAccount = {
             id: 'hd-new',
             address: 'HD_NEW',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -255,7 +279,15 @@ describe('useSelectHDWalletScreen', () => {
         expect(result.current.isCreatingWallet).toBe(true)
 
         await act(async () => {
-            resolveCreate({ id: 'new', address: 'NEW', type: 'hdWallet' })
+            resolveCreate({
+                id: 'new',
+                address: 'NEW',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            })
         })
 
         expect(result.current.isCreatingWallet).toBe(false)
@@ -265,7 +297,11 @@ describe('useSelectHDWalletScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -285,7 +321,11 @@ describe('useSelectHDWalletScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -313,7 +353,11 @@ describe('useSelectHDWalletScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -374,7 +418,11 @@ describe('useSelectHDWalletScreen', () => {
             const newAccount = {
                 id: 'x',
                 address: 'X',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
             }
             mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -408,7 +456,11 @@ describe('useSelectHDWalletScreen', () => {
             const newAccount = {
                 id: 'x',
                 address: 'X',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
             }
             mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 

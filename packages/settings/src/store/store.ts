@@ -31,21 +31,39 @@ const initialState = {
     preferences: {} as Record<string, string | boolean | number>,
 }
 
+// Carried over so a device that already unlocked the tools stays unlocked.
+const RENAMED_PREFERENCES: Readonly<Record<string, string>> = {
+    'developer-menu-enabled': 'debug-tools-enabled',
+}
+
+const withRenamedPreferences = (state: SettingsState): SettingsState => {
+    if (!state.preferences) return state
+    const preferences = { ...state.preferences }
+    for (const [from, to] of Object.entries(RENAMED_PREFERENCES)) {
+        if (!(from in preferences)) continue
+        preferences[to] ??= preferences[from]
+        delete preferences[from]
+    }
+    return { ...state, preferences }
+}
+
 /**
- * v1 persisted state has no `language` field. Exported (rather than inlined
- * in the persist options) so the migration itself is directly unit-testable.
+ * v1 persisted state has no `language` field; v2 kept preferences the app has
+ * since renamed. Exported (rather than inlined in the persist options) so the
+ * migration itself is directly unit-testable.
  */
 export const migrateSettingsState = (
     persistedState: unknown,
     version: number,
 ): SettingsState => {
+    let state = persistedState as SettingsState
     if (version < 2) {
-        return {
-            ...(persistedState as SettingsState),
-            language: 'system',
-        }
+        state = { ...state, language: 'system' }
     }
-    return persistedState as SettingsState
+    if (version < 3) {
+        state = withRenamedPreferences(state)
+    }
+    return state
 }
 
 export const useSettingsStore: UseBoundStore<
@@ -82,7 +100,7 @@ export const useSettingsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
+            version: 3,
             migrate: migrateSettingsState,
             partialize: state => ({
                 theme: state.theme,

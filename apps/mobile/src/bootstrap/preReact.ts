@@ -13,6 +13,7 @@
 import * as SplashScreen from 'expo-splash-screen'
 import { initDecimalConfig } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { syncAnalyticsConsent } from '@perawallet/wallet-core-settings'
 import { initNetworkStatus } from '@modules/network'
 import { registerAppBottomSheets } from './bottom-sheet-registrations'
 import { registerLocaleTour } from '@modules/locale-tour/register'
@@ -36,6 +37,8 @@ export const initRuntime = (): void => {
     // fire-and-fail against a dead link.
     void initNetworkStatus()
     initDecimalConfig()
+    // Before any screen view is logged, so nothing is sent without consent.
+    syncAnalyticsConsent()
     // useAppBootstrap hides it once the first layout after bootstrap lands.
     void SplashScreen.preventAutoHideAsync()
 }

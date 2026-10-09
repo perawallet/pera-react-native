@@ -12,15 +12,19 @@
 
 import { useMemo } from 'react'
 import {
-    AccountTypes,
     type AssetWithAccountBalance,
+    buildAccount,
     useAccountBalancesQuery,
+    useAuthorityOf,
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 
 import { Decimal } from 'decimal.js'
-import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount
@@ -39,16 +43,19 @@ export function useRekeyedAccountInfoContent({
 }: UseRekeyedAccountInfoContentParams): UseRekeyedAccountInfoContentResult {
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], true)
+    const isNativeAssetId = useIsNativeAssetId()
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
-        if (!account.rekeyAddress) return undefined
-        return {
+        if (!authority) return undefined
+        return buildAccount({
             // Display-only synth account, keyed by its address.
-            id: account.rekeyAddress,
-            address: account.rekeyAddress,
-            type: AccountTypes.watch,
-        }
-    }, [account.rekeyAddress])
+            id: authority,
+            custody: { kind: 'watch' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address: authority } },
+        })
+    }, [authority])
 
     const { accountBalances: authBalances, isPending: isAuthPending } =
         useAccountBalancesQuery(authAccount ? [authAccount] : [], !!authAccount)
@@ -63,8 +70,8 @@ export function useRekeyedAccountInfoContent({
         }
 
         const sorted = [...balanceData.assetBalances].sort((a, b) => {
-            if (isAlgoAssetId(a.assetId)) return -1
-            if (isAlgoAssetId(b.assetId)) return 1
+            if (isNativeAssetId(a.assetId)) return -1
+            if (isNativeAssetId(b.assetId)) return 1
             return 0
         })
 
@@ -72,7 +79,7 @@ export function useRekeyedAccountInfoContent({
             balances: sorted,
             algoValue: balanceData.algoValue,
         }
-    }, [rekeyedBalances, account.address])
+    }, [isNativeAssetId, rekeyedBalances, account.address])
 
     const authAccountAlgoValue = useMemo(() => {
         if (!authAccount) return new Decimal(0)
@@ -83,7 +90,7 @@ export function useRekeyedAccountInfoContent({
     return {
         rekeyedAccountBalances: rekeyedAccountData.balances,
         rekeyedAccountAlgoValue: rekeyedAccountData.algoValue,
-        authAddress: account.rekeyAddress,
+        authAddress: authority ?? undefined,
         authAccountAlgoValue,
         isPending: isRekeyedPending || isAuthPending,
     }

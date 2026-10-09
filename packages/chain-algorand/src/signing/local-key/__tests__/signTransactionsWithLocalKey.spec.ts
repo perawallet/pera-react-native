@@ -12,11 +12,8 @@
 
 import { describe, expect, test, vi } from 'vitest'
 import { Address } from 'algosdk'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
     SIGN_BATCH_SIZE,
@@ -35,7 +32,7 @@ const txn = (id: number): PeraTransaction =>
 
 const algo25Account = (address = SENDER): WalletAccount => ({
     id: 'acct',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: 'key-1',
 })
@@ -47,7 +44,6 @@ const deps = (
         payloads.map((_, index) => new Uint8Array([index])),
     ),
     getPQSigningInfo: () => null,
-    encodeTransaction: () => new Uint8Array([1]),
     yieldBetweenBatches: vi.fn(async () => undefined),
     ...overrides,
 })
@@ -133,29 +129,27 @@ describe('signTransactionsWithLocalKey', () => {
     })
 
     test('signs the PQ payload and fills pqsig for a quantum key', async () => {
-        const encodeTransaction = vi.fn(() => new Uint8Array([1]))
         const getPQSigningInfo = () => ({
             schemeId: 'falcon1024' as const,
             publicKey: new Uint8Array(1793).fill(10),
         })
 
-        await signTransactionsWithLocalKey(
-            deps({ encodeTransaction, getPQSigningInfo }),
+        const [signed] = await signTransactionsWithLocalKey(
+            deps({ getPQSigningInfo }),
             [txn(0)],
             [0],
-            { ...algo25Account(), type: AccountTypes.quantum },
+            { ...algo25Account(), custody: { kind: 'local', seed: 'quantum' } },
         )
 
-        // The PQ path signs `bytesToSign()` directly; reaching for the
-        // encoder here would be the double-hash closed.
-        expect(encodeTransaction).not.toHaveBeenCalled()
+        expect(signed.pqsig).toBeDefined()
+        expect(signed.sig).toBeUndefined()
     })
 
     test('rejects an account type with no local signing key', async () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
                 ...algo25Account(),
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
             } as WalletAccount),
         ).rejects.toBeTruthy()
     })
@@ -173,7 +167,7 @@ describe('signTransactionsWithLocalKey', () => {
         )
 
         expect(signPayloads).toHaveBeenCalledWith('key-for-this-account', [
-            new Uint8Array([1]),
+            new Uint8Array([2, 0]),
         ])
     })
 
@@ -181,14 +175,12 @@ describe('signTransactionsWithLocalKey', () => {
         const group = Array.from({ length: SIGN_BATCH_SIZE + 3 }, (_, i) =>
             txn(i),
         )
-        const encodeTransaction = (t: PeraTransaction) =>
-            new Uint8Array([(t as unknown as { id: number }).id])
         const signPayloads = vi.fn(async (_keyPairId, payloads: Uint8Array[]) =>
-            payloads.map(payload => new Uint8Array([payload[0] + 100])),
+            payloads.map(payload => new Uint8Array([payload[1] + 100])),
         )
 
         const result = await signTransactionsWithLocalKey(
-            deps({ signPayloads, encodeTransaction }),
+            deps({ signPayloads }),
             group,
             group.map((_, index) => index),
             algo25Account(),
@@ -203,7 +195,16 @@ describe('signTransactionsWithLocalKey', () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
                 ...algo25Account(),
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
             } as unknown as WalletAccount),
         ).rejects.toBeTruthy()
     })

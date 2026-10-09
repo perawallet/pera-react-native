@@ -12,10 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     MultisigSignRequest,
     SignRequestStatus,
@@ -51,14 +48,20 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'mainnet' }),
-    useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
 }))
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
@@ -121,14 +124,23 @@ const buildSignRequest = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

@@ -11,10 +11,8 @@
  */
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    getTransactionType,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionIconType } from '@components/TransactionIcon'
 
 /**

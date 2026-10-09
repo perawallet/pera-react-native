@@ -12,7 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import {
-    NetworkChangedError,
+    ScopeChangedError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
     TransportError,
     walletConnectHandoffs,
     type SigningResult,
@@ -22,21 +26,22 @@ import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
 import { draftProposeContexts } from '../draftProposeContexts'
 
-const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
+const ALGORAND_TESTNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'testnet',
+}
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../../blockchain', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../../blockchain')>()
     return {
         ...actual,
-        useNetworkStore: {
-            getState: () => getNetworkMock(),
-            subscribe: () => () => {},
-        },
         encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
     }
+})
+
+beforeEach(() => {
+    useNetworkStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('testnet')
 })
 
 const transactionResult: SigningResult = {
@@ -52,7 +57,7 @@ describe('createMultisigCosignTransport', () => {
         const addSignatures = vi.fn().mockResolvedValue({ status: 'ready' })
         const transport = createMultisigCosignTransport(
             addSignatures,
-            'testnet',
+            ALGORAND_TESTNET,
         )
         const source: SourceMetadata = {
             type: 'multisig-cosign',
@@ -73,19 +78,22 @@ describe('createMultisigCosignTransport', () => {
     })
 
     test('throws when signRequestId is missing', async () => {
-        const transport = createMultisigCosignTransport(vi.fn(), 'testnet')
+        const transport = createMultisigCosignTransport(
+            vi.fn(),
+            ALGORAND_TESTNET,
+        )
 
         await expect(
             transport.send(transactionResult, { type: 'multisig-cosign' }),
         ).rejects.toThrow('Sign request ID is required')
     })
 
-    test('throws NetworkChangedError when live network differs', async () => {
-        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+    test("throws ScopeChangedError when Algorand's network switches", async () => {
+        useNetworkStore.getState().setNetwork('mainnet')
         const addSignatures = vi.fn()
         const transport = createMultisigCosignTransport(
             addSignatures,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -93,7 +101,7 @@ describe('createMultisigCosignTransport', () => {
                 type: 'multisig-cosign',
                 signRequestId: 'mcs-1',
             }),
-        ).rejects.toThrow(NetworkChangedError)
+        ).rejects.toThrow(ScopeChangedError)
         expect(addSignatures).not.toHaveBeenCalled()
     })
 
@@ -101,7 +109,7 @@ describe('createMultisigCosignTransport', () => {
         const addSignatures = vi.fn().mockRejectedValue(new Error('api fail'))
         const transport = createMultisigCosignTransport(
             addSignatures,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -116,7 +124,7 @@ describe('createMultisigCosignTransport', () => {
         const addSignatures = vi.fn().mockRejectedValue('bad')
         const transport = createMultisigCosignTransport(
             addSignatures,
-            'testnet',
+            ALGORAND_TESTNET,
         )
 
         await expect(
@@ -151,7 +159,7 @@ describe('createMultisigProposeTransport', () => {
             opts.deviceId === 'omit' ? undefined : (opts.deviceId ?? 'device-1')
         return createMultisigProposeTransport(
             proposeSignRequest,
-            'testnet',
+            ALGORAND_TESTNET,
             () => msigMetadata ?? undefined,
             () => deviceId,
             opts.createDraftSignRequest,
@@ -234,14 +242,14 @@ describe('createMultisigProposeTransport', () => {
         ).rejects.toThrow('Multisig address is required')
     })
 
-    test('throws NetworkChangedError when live network differs', async () => {
-        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+    test("throws ScopeChangedError when Algorand's network switches", async () => {
+        useNetworkStore.getState().setNetwork('mainnet')
         const proposeSignRequest = vi.fn()
         const transport = buildPropose(proposeSignRequest)
 
         await expect(
             transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
-        ).rejects.toThrow(NetworkChangedError)
+        ).rejects.toThrow(ScopeChangedError)
         expect(proposeSignRequest).not.toHaveBeenCalled()
     })
 
@@ -307,7 +315,10 @@ describe('createMultisigProposeTransport', () => {
             expect(handoff).toBeDefined()
             expect(handoff?.multisigAddress).toBe('JOINT_ADDR')
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.msigMetadata).toEqual(MSIG_METADATA)
             // The bytes the adapter actually sent are pinned on the handoff
             // so the resolver can refuse mismatching poll responses.

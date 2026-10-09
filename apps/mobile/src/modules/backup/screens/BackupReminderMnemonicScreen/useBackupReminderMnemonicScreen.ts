@@ -19,9 +19,8 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
-import { routeCapabilities } from '@routes/capabilities'
+import { useRequirePinVerification } from '@modules/security'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
@@ -29,9 +28,7 @@ export type UseBackupReminderMnemonicScreenResult = {
     wordIndices: Uint16Array | null
     isLoading: boolean
     error: Error | null
-    isPinVisible: boolean
     isPinGateResolved: boolean
-    handlePinVerified: () => void
     onContinue: () => void
 }
 
@@ -50,9 +47,8 @@ export const useBackupReminderMnemonicScreen =
         const account = useAccountsStore(
             state => state.accounts.find(a => a.address === address) ?? null,
         )
-        const { checkPinEnabled } = usePinCode()
+        const { requirePinVerification } = useRequirePinVerification()
         const [isPinGateResolved, setIsPinGateResolved] = useState(false)
-        const [isPinVisible, setIsPinVisible] = useState(false)
         const { executeWithMnemonic } = useMnemonicForAddress(address, account)
         // The buffer is held in a ref as well as state because the unmount wipe
         // has to happen outside React's update queue: a `setState` updater is
@@ -66,25 +62,22 @@ export const useBackupReminderMnemonicScreen =
 
         // Defense-in-depth: if any caller reaches this screen without going
         // through BackupReminderWriteDownScreen (e.g. future deep link, new
-        // navigation entry), re-check the PIN before exposing the mnemonic.
+        // navigation entry), re-check the PIN (the vault password on web)
+        // before exposing the mnemonic.
         useEffect(() => {
             let cancelled = false
-            void (async () => {
-                // Web has no PIN, and a leftover one from an older build
-                // would raise a PIN pad the user can no longer manage.
-                const isPinEnabled =
-                    routeCapabilities.pin && (await checkPinEnabled())
+            void requirePinVerification().then(isVerified => {
                 if (cancelled) return
-                if (isPinEnabled) {
-                    setIsPinVisible(true)
-                } else {
+                if (isVerified) {
                     setIsPinGateResolved(true)
+                } else {
+                    navigation.goBack()
                 }
-            })()
+            })
             return () => {
                 cancelled = true
             }
-        }, [checkPinEnabled])
+        }, [requirePinVerification, navigation])
 
         // Zero the retained index buffer before dropping it so the phrase
         // doesn't linger in memory waiting on GC. State and ref share one
@@ -149,11 +142,6 @@ export const useBackupReminderMnemonicScreen =
         // on a detached fiber.
         useEffect(() => () => clearIndices(), [clearIndices])
 
-        const handlePinVerified = useCallback(() => {
-            setIsPinVisible(false)
-            setIsPinGateResolved(true)
-        }, [])
-
         const onContinue = useCallback(() => {
             if (!address) return
             // Zero the buffer before leaving so the phrase doesn't linger in
@@ -169,9 +157,7 @@ export const useBackupReminderMnemonicScreen =
             wordIndices: indices,
             isLoading,
             error,
-            isPinVisible,
             isPinGateResolved,
-            handlePinVerified,
             onContinue,
         }
     }

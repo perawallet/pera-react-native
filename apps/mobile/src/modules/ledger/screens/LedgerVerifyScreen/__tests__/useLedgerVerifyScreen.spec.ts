@@ -13,11 +13,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import {
+    accountType,
     AccountTypes,
+    authorityOf,
+    isHardwareWalletAccount,
     useAccountsStore,
-    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -28,6 +31,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 import { useLedgerVerifyScreen } from '../useLedgerVerifyScreen'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const {
     mockVerify,
@@ -124,14 +128,21 @@ const routeParams = vi.hoisted(() => ({
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    isValidAlgorandAddress: (address?: string) =>
+        typeof address === 'string' && !address.startsWith('!!'),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: (address?: string) =>
-        typeof address === 'string' && !address.startsWith('!!'),
 }))
 
 // Route params carry the serialized (JSON-safe) shape; the hook decodes it.
@@ -156,6 +167,7 @@ const expectedAddressFor = (accountIndex: number): string => {
 }
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
@@ -202,11 +214,11 @@ describe('useLedgerVerifyScreen', () => {
         ])
     })
 
-    it('handleAdd imports derived as hardware, rekeyed as watch+rekeyAddress, auto-includes auth, skips already-imported and invalid', async () => {
+    it('handleAdd imports derived as hardware, rekeyed as watch accounts under their Ledger authority, auto-includes auth, skips already-imported and invalid', async () => {
         const d0 = derived('LEDGER0', 0)
         useAccountsStore.getState().setAccounts([
             {
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: 'ALREADY',
             } as WalletAccount,
         ])
@@ -231,9 +243,11 @@ describe('useLedgerVerifyScreen', () => {
         const accounts = useAccountsStore.getState().accounts
         const hw = accounts.find(a => a.address === 'LEDGER0')
         const watch = accounts.find(a => a.address === 'REKEYED_A')
-        expect(hw?.type).toBe(AccountTypes.hardware)
-        expect(watch?.type).toBe(AccountTypes.watch)
-        expect(watch?.rekeyAddress).toBe('LEDGER0')
+        expect(hw ? accountType(hw) : undefined).toBe(AccountTypes.hardware)
+        expect(watch ? accountType(watch) : undefined).toBe(AccountTypes.watch)
+        expect(authorityOf(watch!, scopeForLegacyNetwork('mainnet'))).toBe(
+            'LEDGER0',
+        )
         expect(accounts.filter(a => a.address === 'ALREADY')).toHaveLength(1)
         expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
@@ -408,7 +422,7 @@ describe('useLedgerVerifyScreen', () => {
             ({
                 id: `watch-${address}`,
                 ...(name ? { name } : {}),
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address,
             }) as WalletAccount
 
@@ -438,12 +452,11 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             const upgraded = accounts[0]
-            expect(upgraded.type).toBe(AccountTypes.hardware)
+            expect(accountType(upgraded)).toBe(AccountTypes.hardware)
             expect(upgraded.name).toBe('My Cold Wallet')
             expect(upgraded.id).toBe('watch-LEDGER0')
             expect(
-                upgraded.type === AccountTypes.hardware &&
-                    upgraded.hardwareDetails,
+                isHardwareWalletAccount(upgraded) && upgraded.hardwareDetails,
             ).toEqual({
                 manufacturer: 'ledger',
                 deviceId: 'dev',
@@ -479,7 +492,7 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.watch)
+            expect(accountType(accounts[0])).toBe(AccountTypes.watch)
             // The brand-new LEDGER1 is withheld too: a declined confirmation
             // aborts the add wholesale instead of importing a partial set.
             expect(accounts.find(a => a.address === 'LEDGER1')).toBeUndefined()
@@ -511,9 +524,15 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             const auth = accounts.find(a => a.address === 'LEDGER0')
             const rekeyed = accounts.find(a => a.address === 'REKEYED_A')
-            expect(auth?.type).toBe(AccountTypes.hardware)
-            expect(rekeyed?.type).toBe(AccountTypes.watch)
-            expect(rekeyed?.rekeyAddress).toBe('LEDGER0')
+            expect(auth ? accountType(auth) : undefined).toBe(
+                AccountTypes.hardware,
+            )
+            expect(rekeyed ? accountType(rekeyed) : undefined).toBe(
+                AccountTypes.watch,
+            )
+            expect(
+                authorityOf(rekeyed!, scopeForLegacyNetwork('mainnet')),
+            ).toBe('LEDGER0')
         })
 
         it('does not add the rekeyed pair when upgrading its watch auth is declined', async () => {
@@ -540,7 +559,7 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.watch)
+            expect(accountType(accounts[0])).toBe(AccountTypes.watch)
             expect(
                 accounts.find(a => a.address === 'REKEYED_A'),
             ).toBeUndefined()
@@ -551,7 +570,16 @@ describe('useLedgerVerifyScreen', () => {
                 {
                     id: 'hw-1',
                     name: 'Ledger 1',
-                    type: AccountTypes.hardware,
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'forgotten-device',
+                            deviceName: 'Nano',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 0,
+                    },
                     address: 'LEDGER0',
                     hardwareDetails: {
                         manufacturer: 'ledger',
@@ -586,7 +614,7 @@ describe('useLedgerVerifyScreen', () => {
             expect(accounts).toHaveLength(1)
             const rebound = accounts[0]
             expect(
-                rebound.type === AccountTypes.hardware &&
+                isHardwareWalletAccount(rebound) &&
                     rebound.hardwareDetails.deviceId,
             ).toBe('dev')
             expect(rebound.name).toBe('Ledger 1')
@@ -596,7 +624,16 @@ describe('useLedgerVerifyScreen', () => {
         it('re-imports an unchanged hardware account as a pure no-op', async () => {
             const untouched = {
                 id: 'hw-1',
-                type: AccountTypes.hardware,
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'dev',
+                        deviceName: 'Nano',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 address: 'LEDGER0',
                 hardwareDetails: {
                     manufacturer: 'ledger',
@@ -626,9 +663,7 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             expect(mockSheetRequest).not.toHaveBeenCalled()
-            expect(useAccountsStore.getState().accounts).toEqual([
-                withCustody(untouched),
-            ])
+            expect(useAccountsStore.getState().accounts).toEqual([untouched])
             expect(mockSetConfetti).not.toHaveBeenCalled()
             expect(mockExit).toHaveBeenCalledTimes(1)
         })
@@ -676,7 +711,16 @@ describe('useLedgerVerifyScreen', () => {
                 {
                     id: 'hw-existing',
                     name: 'ledger.default_account_name#1',
-                    type: AccountTypes.hardware,
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'other-dev',
+                            deviceName: 'Nano S',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 0,
+                    },
                     address: 'OLDLEDGER',
                     hardwareDetails: {
                         manufacturer: 'ledger',

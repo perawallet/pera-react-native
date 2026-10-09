@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -19,10 +21,10 @@ import {
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import {
+    ALGO_ASSET_NAME,
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+} from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
@@ -30,6 +32,7 @@ import type {
     LedgerAccountRekeyRelationship,
     UseLedgerAccountPreviewResult,
 } from '../models'
+import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
 import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
 
@@ -40,6 +43,15 @@ export const useLedgerAccountPreview = (
     const onChain = useOnChainAccountInformationQuery(address)
     const rekeyed = useRekeyedAddressesQuery(address)
     const { usdToPreferred } = useCurrency()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const authorityAddress = onChain.data?.authorityAddress
+
+    // The sheet's synthetic watch row reads its rekey state from the slice.
+    useEffect(() => {
+        if (authorityAddress && authorityAddress !== address) {
+            recordAuthority(scope, address, authorityAddress)
+        }
+    }, [scope, address, authorityAddress])
 
     const assetIds = useMemo(
         () => (onChain.data?.assets ?? []).map(a => String(a.assetId)),
@@ -47,7 +59,10 @@ export const useLedgerAccountPreview = (
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
-    const priceIds = useMemo(() => [ALGO_ASSET_ID, ...assetIds], [assetIds])
+    const priceIds = useMemo(
+        () => [nativeAsset.assetId, ...assetIds],
+        [nativeAsset.assetId, assetIds],
+    )
     const { data: prices } = useAssetPricesQuery(priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
@@ -55,13 +70,13 @@ export const useLedgerAccountPreview = (
 
         const algoBalance = microAlgosToAlgos(onChain.data.amount)
         const algoUsdPrice =
-            prices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+            prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
         const previewAssets: LedgerAccountPreviewAsset[] = []
         let totalUsd = algoBalance.times(algoUsdPrice)
 
         previewAssets.push({
-            assetId: ALGO_ASSET_ID,
+            assetId: nativeAsset.assetId,
             name: nativeAsset.name ?? 'Algo',
             unitName: nativeAsset.unitName ?? ALGO_ASSET_NAME,
             decimals: nativeAsset.decimals,
@@ -106,10 +121,9 @@ export const useLedgerAccountPreview = (
             })
         }
 
-        const authAddress = onChain.data.authAddress
         let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
-        if (authAddress && authAddress !== address) {
-            rekey = { kind: 'rekeyedTo', authAddress }
+        if (authorityAddress && authorityAddress !== address) {
+            rekey = { kind: 'delegatedTo', authorityAddress }
         } else if (
             !rekeyed.isError &&
             rekeyed.rekeyedAddresses &&
@@ -127,6 +141,7 @@ export const useLedgerAccountPreview = (
         }
     }, [
         address,
+        authorityAddress,
         onChain.data,
         assets,
         prices,

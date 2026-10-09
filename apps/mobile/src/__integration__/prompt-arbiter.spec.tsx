@@ -44,6 +44,7 @@ import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 const DEVICE_ID = 'prompt-arbiter-device'
 const NETWORK = 'mainnet' as const
 const TERMS_PROMPT_ID = 'terms_acceptance_prompt'
+const ANALYTICS_CONSENT_PROMPT_ID = 'analytics-consent-prompt'
 const BANNER_PROMPT_ID = 'banner_prompt'
 
 // Stable references, like the real hook's: a new getPreference per render
@@ -51,6 +52,7 @@ const BANNER_PROMPT_ID = 'banner_prompt'
 const mocks = vi.hoisted(() => {
     const state = {
         needsTermsAcceptance: false,
+        analyticsConsent: 'granted' as 'granted' | 'denied' | null,
         isPinEnabled: false,
         preferences: {} as Record<string, unknown>,
     }
@@ -97,6 +99,10 @@ vi.mock('@perawallet/wallet-core-settings', async importOriginal => ({
         getPreference: mocks.getPreference,
         setPreference: mocks.setPreference,
     }),
+    useAnalyticsConsent: () => ({
+        consent: mocks.analyticsConsent,
+        setConsent: vi.fn(),
+    }),
 }))
 
 import { usePromptContainer } from '@modules/prompts/components/PromptContainer/usePromptContainer'
@@ -139,6 +145,7 @@ describe('Flow: prompt arbiter', () => {
         vi.useFakeTimers({ shouldAdvanceTime: true })
         useDeviceStore.getState().setDeviceID(NETWORK, DEVICE_ID)
         mocks.needsTermsAcceptance = false
+        mocks.analyticsConsent = 'granted'
         mocks.isPinEnabled = false
         mocks.preferences = {}
     })
@@ -220,6 +227,31 @@ describe('Flow: prompt arbiter', () => {
             vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
         expect(screen.queryByTestId(BANNER_PROMPT_ID)).toBeTruthy()
+    })
+
+    it('asks for analytics consent straight after the terms, before any nudge', async () => {
+        mocks.needsTermsAcceptance = true
+        mocks.analyticsConsent = null
+
+        const { result } = renderHook(() => usePromptContainer(), {
+            wrapper: buildWrapper(),
+        })
+
+        await waitFor(() =>
+            expect(result.current.nextPrompt?.id).toBe(TERMS_PROMPT_ID),
+        )
+
+        mocks.needsTermsAcceptance = false
+        await act(async () => {
+            result.current.hidePrompt(TERMS_PROMPT_ID)
+        })
+
+        await waitFor(() =>
+            expect(result.current.nextPrompt?.id).toBe(
+                ANALYTICS_CONSENT_PROMPT_ID,
+            ),
+        )
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
     })
 
     it('never lets a bottom sheet paint while the terms gate is up', async () => {

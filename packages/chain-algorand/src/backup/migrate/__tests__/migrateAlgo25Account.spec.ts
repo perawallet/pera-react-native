@@ -16,7 +16,6 @@ vi.mock('../legacyKeyConversion', () => ({
     algo25SecretKeyToIndices: vi.fn(() => new Uint16Array(25).fill(1)),
 }))
 
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { algo25SecretKeyToIndices } from '../legacyKeyConversion'
@@ -48,7 +47,7 @@ const buildArgs = (
         importedHdRoots: new Map(),
         importAccount: vi.fn().mockResolvedValue({
             id: 'imported-id',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         }),
@@ -82,7 +81,7 @@ describe('migrateAlgo25Account', () => {
     it('imports with the derived indices and algo25 type', async () => {
         const importAccount = vi.fn().mockResolvedValue({
             id: 'i',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         })
@@ -95,14 +94,14 @@ describe('migrateAlgo25Account', () => {
         )
         expect(importAccount).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            type: 'standalone',
         })
     })
 
     it('returns the created account when the imported address matches', async () => {
         const created = {
             id: 'created',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         }
@@ -120,7 +119,7 @@ describe('migrateAlgo25Account', () => {
             account: buildLegacyAccount({ address: 'ADDR_LEGACY' }),
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 address: 'ADDR_DIFFERENT',
                 keyPairId: 'kp',
             }),
@@ -148,7 +147,7 @@ describe('migrateAlgo25Account', () => {
             account: buildLegacyAccount({ secretKey }),
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 address: 'ADDR_DIFFERENT',
                 keyPairId: 'kp',
             }),

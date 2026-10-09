@@ -15,19 +15,19 @@ import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
+    type Arc0001ResolveContext,
+    type Arc0001ResolveResult,
+    type Arc0001SignTxnsRequest,
+    type PeraDisplayableTransaction,
+    type PeraSignedTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    Arc0001ResolveContext,
-    Arc0001ResolveResult,
-    Arc0001SignTxnsRequest,
-    PeraDisplayableTransaction,
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+
 import type { Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
@@ -41,10 +41,12 @@ import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequ
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     AnalysisContext,
+    AnalysisWarning,
     AnalyzedSignableGroup,
     AuthData,
     AuthDataMetadata,
     DataTransport,
+    DecodedGroup,
     SignableAnalysis,
     SignableGroup,
     SignRequestStatus,
@@ -88,13 +90,45 @@ export type ArbitraryDataDisplay =
     | { kind: 'text'; text: string }
     | { kind: 'hex'; hex: string }
 
+/**
+ * Explains a group without guessing: what the chain can't identify comes back
+ * unrecognised, never as an error. Data it can't trust throws: a transaction
+ * for another network, or bytes that don't match what was decoded.
+ */
+export interface TransactionDecoder {
+    decode(
+        group: SignableGroup,
+        context: AnalysisContext,
+    ): Promise<DecodedGroup>
+}
+
+export interface WarningDetector {
+    /**
+     * Reads the decoder's result, so warnings follow what it recognised.
+     * Transactions carry warnings only when a wallet account signs them.
+     * Synchronous: whatever it needs from the network, the decoder fetches.
+     */
+    detect(
+        group: SignableGroup,
+        decoded: DecodedGroup,
+        context: AnalysisContext,
+    ): AnalysisWarning[]
+}
+
+export interface ReviewPolicy {
+    /**
+     * Whether a request the app built itself may sign without a review screen.
+     * One it may not is refused, since a local request has no review screen.
+     */
+    autoApproveLocal(analysis: SignableAnalysis): boolean
+}
+
 /** The chain-specific legs of reviewing a sign request; registered by the chain package. */
 export interface ReviewerChainAdapter {
     chainId: ChainId
-    analyze(
-        group: SignableGroup,
-        context: AnalysisContext,
-    ): Promise<SignableAnalysis>
+    decoder: TransactionDecoder
+    warnings: WarningDetector
+    policy: ReviewPolicy
     createTransactionListItems(
         transactions: PeraDisplayableTransaction[],
         signableIndices?: ReadonlySet<number>,
@@ -114,14 +148,14 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
+    /** The review model of one unsigned transaction. */
+    toDisplayableTransaction(
+        transaction: PeraTransaction,
+    ): Nullable<PeraDisplayableTransaction>
 }
 
 export const reviewerChainAdapters =
     createChainAdapterRegistry<ReviewerChainAdapter>('reviewer')
-
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const reviewerAdapterFor = (network: Network): ReviewerChainAdapter =>
-    reviewerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
 
 export type WithChain<F extends (...args: never[]) => unknown> = (
     chainId: ChainId,
@@ -177,6 +211,8 @@ export type AssignFeeToGroupParams = {
     signableIndices?: number[]
     /** Subset-position → authorizer address (ARC-0001 `signers`) */
     signerOverrides?: Map<number, string>
+    /** A dApp set the fees, so they may already price this wallet's signers. */
+    isExternallyPriced?: boolean
 }
 
 export type AssignMinimumFeesToGroupResult = {
@@ -184,6 +220,12 @@ export type AssignMinimumFeesToGroupResult = {
     transactions: PeraTransaction[]
     /** Empty when nothing was adjusted */
     adjustments: FeeAdjustment[]
+}
+
+export type MinFeeForSenderResult = {
+    /** Native base units; undefined while fee parameters load or when there is no sender. */
+    minFee: bigint | undefined
+    isPending: boolean
 }
 
 export type AssignFeeToGroup = (
@@ -199,6 +241,15 @@ export type AssignFeeToGroupDeps = {
     /** Remote-config base minimum txn fee in native base units */
     configMinTxnFee: bigint
     pqMultiplier: bigint
+    /**
+     * Indices whose partition already pays what its signers cost on chain,
+     * asked only for externally priced groups; resolves to none when unsure.
+     */
+    findFundedIndices?: (params: {
+        transactions: PeraTransaction[]
+        signableIndices: number[]
+        signerOverrides?: Map<number, string>
+    }) => Promise<ReadonlySet<number>>
 }
 
 export type EnqueueDappRequestDeps = {
@@ -286,7 +337,6 @@ export type LocalKeySigningDeps = {
      * selection and signer selection must never be able to disagree.
      */
     getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
-    encodeTransaction: (txn: PeraTransaction) => Uint8Array
     /**
      * Yields to the event loop between batches. Injectable so a headless
      * caller can run the batching logic without React's scheduling in play.
@@ -294,10 +344,12 @@ export type LocalKeySigningDeps = {
     yieldBetweenBatches?: () => Promise<void>
 }
 
+/** `scope` picks the chain's local-key signer, which reads the scheme off the account's key. */
 export type LocalSigningFunction = (
     txnGroup: PeraSignedTransaction['txn'][],
     indexesToSign: number[],
     account: WalletAccount,
+    scope: ChainScope,
 ) => Promise<PeraSignedTransaction[]>
 
 export type LocalArbitrarySigningFunction = (
@@ -315,6 +367,7 @@ export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
+    scope: ChainScope
 }
 
 export type LocalKeySignerInput = {
@@ -323,7 +376,7 @@ export type LocalKeySignerInput = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signAuthData: LocalAuthDataSigningFunction
-    network: Network
+    scope: ChainScope
 }
 
 export type MultisigSignerInput = LocalKeySignerInput & {
@@ -498,7 +551,7 @@ export type TerminalHandoffOutcome = Exclude<
  */
 export type HandoffAssemblyContext = {
     /** Picks the chain whose multisig adapter assembles the envelopes. */
-    network: Network
+    scope: ChainScope
     multisigAddress: string
     msigMetadata: { version: number; threshold: number; addresses: string[] }
     expectedRawTransactionsBase64: string[]
@@ -619,6 +672,34 @@ export type CompleteMultisigHandoffArgs = {
 }
 
 /**
+ * `minTxnFee` and `assetOptInMinBalance` are in the native asset's base units.
+ * `pqMultiplier` multiplies the fee when the effective signer is post-quantum.
+ * `assetOptInMinBalance` is the extra balance an account must hold per asset
+ * it opts into.
+ */
+export type ChainFeeConfig = {
+    minTxnFee: bigint
+    pqMultiplier: bigint
+    assetOptInMinBalance: bigint
+}
+
+export type UseSuggestedMinFeeQueryResult = {
+    /** Native base units; `undefined` until the first successful load, kept when a later refetch fails. */
+    suggestedMinFee: Optional<bigint>
+    isPending: boolean
+    isError: boolean
+}
+
+export type FetchSuggestedMinFeeOptions = {
+    /** Returned instead of throwing when the fetch fails. */
+    fallback?: bigint
+}
+
+export type FetchSuggestedMinFee = (
+    options?: FetchSuggestedMinFeeOptions,
+) => Promise<bigint>
+
+/**
  * The chain-specific legs of planning a signature request; registered by the
  * chain package.
  */
@@ -638,14 +719,30 @@ export interface PlannerChainAdapter {
 
     minFeeForSender(params: ResolveMinFeeForSenderParams): bigint
     /**
-     * Raises underfunded fees on the signable slots and returns the group
-     * unchanged, by reference, when nothing needs raising.
+     * React hooks, run in the caller's render; the imperative fetch shares the
+     * query's cache and staleness.
+     */
+    useFeeConfig: () => ChainFeeConfig
+    useSuggestedMinFeeQuery: () => UseSuggestedMinFeeQueryResult
+    useFetchSuggestedMinFee: () => FetchSuggestedMinFee
+    /**
+     * A React hook giving the minimum fee for a transaction `senderAddress`
+     * sends, from live network fee parameters and remote config.
+     */
+    useMinFeeForSender(senderAddress: string | undefined): MinFeeForSenderResult
+    /**
+     * A React hook giving the group fee assigner. It reads accounts at call
+     * time, and its network fee fetch never throws. The assigner raises
+     * underfunded fees on the signable slots and returns the group unchanged,
+     * by reference, when nothing needs raising.
      * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
      */
-    assignGroupFees(
-        params: AssignFeeToGroupParams,
-        deps: AssignFeeToGroupDeps,
-    ): Promise<AssignMinimumFeesToGroupResult>
+    useAssignFeeToGroup(): AssignFeeToGroup
+    /**
+     * Wire bytes without the signing-domain prefix. A hardware device signs
+     * these, adding the prefix itself, and the multisig backend stores them.
+     */
+    encodeUnsignedTransaction(transaction: PeraTransaction): Uint8Array
     reviewGroupFees(
         transactions: PeraDisplayableTransaction[],
         signableAddresses: Set<string>,
@@ -698,14 +795,14 @@ export interface PlannerChainAdapter {
     signMultisigGroups(input: MultisigSignerInput): Promise<SigningResult[]>
     createMultisigProposeTransport(
         proposeSignRequest: ProposeSignRequestFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
         getMsigMetadata: GetMsigMetadataFn,
         getDeviceId: GetDeviceIdFn,
         createDraftSignRequest?: CreateDraftSignRequestFn,
     ): DataTransport
     createMultisigCosignTransport(
         addSignatures: AddSignaturesFn,
-        capturedNetwork: Network,
+        capturedScope: ChainScope,
     ): DataTransport
     /** Removes and returns the stashed context; call once, after the bootstrap propose succeeded. */
     takeDraftProposeContext(
@@ -728,7 +825,11 @@ export const plannerChainAdapters =
 
 // Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
 export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
-    plannerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    plannerAdapterForScope(scopeForLegacyNetwork(network))
+
+export const plannerAdapterForScope = (
+    scope: ChainScope,
+): PlannerChainAdapter => plannerChainAdapters.get(scope.chainId)
 
 // For callers with no network in hand: every legacy network maps to this chain.
 export const legacyPlannerAdapter = (): PlannerChainAdapter =>
@@ -756,9 +857,8 @@ export const localKeySignerChainAdapters =
     createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
 
 export const localKeySignerAdapterFor = (
-    network: Network,
-): LocalKeySignerChainAdapter =>
-    localKeySignerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    scope: ChainScope,
+): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
 export const resolveMinFeeForSender = (
     params: ResolveMinFeeForSenderParams,
@@ -781,7 +881,7 @@ export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
     context: HandoffAssemblyContext,
 ): Promise<HandoffPollOutcome> =>
-    plannerAdapterFor(context.network).classifyHandoffPoll(detail, context)
+    plannerAdapterForScope(context.scope).classifyHandoffPoll(detail, context)
 
 export const completeMultisigHandoff = (
     args: CompleteMultisigHandoffArgs,

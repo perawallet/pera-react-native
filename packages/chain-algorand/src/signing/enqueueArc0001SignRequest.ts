@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import {
-    encodeSignedTransaction,
-    encodeTransactionRaw,
-    type Arc0001ResolveResult,
-    type PeraSignedTransaction,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeSignedTransaction, encodeTransactionRaw } from '../blockchain'
+import type {
+    Arc0001ResolveResult,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     encodeToBase64,
     generateOrderedUniqueId,
@@ -68,6 +67,7 @@ export const enqueueArc0001SignRequest = async (
             signableIndices: indicesToSign,
             signerOverrides:
                 signerOverrides.size > 0 ? signerOverrides : undefined,
+            isExternallyPriced: true,
         })
     } catch (err) {
         // Incoming group was invalid as received (stale/tampered group ID).
@@ -164,8 +164,9 @@ export const enqueueArc0001SignRequest = async (
             transport.respondWithReject()
         },
         error: async (err: Error) => {
-            transport.respondWithError(err)
-            removeSignRequest(signRequest)
+            if (transport.respondWithError(err)) {
+                removeSignRequest(signRequest)
+            }
         },
     } as TransactionSignRequest
 

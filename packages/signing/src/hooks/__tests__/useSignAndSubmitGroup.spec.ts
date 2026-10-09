@@ -20,7 +20,7 @@ import {
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '../../models'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 
@@ -31,17 +31,6 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({ client: { algod: {} } }),
-    useTransactionEncoder: () => ({
-        encodeSignedTransactions: vi.fn(arr =>
-            arr.map(() => new Uint8Array([1])),
-        ),
-    }),
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
 }))
 
 const fakeTxn = {
@@ -88,6 +77,31 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('submits only the signed slots when the pipeline pads with null', async () => {
+        mockSubmitAndAutoRefresh.mockResolvedValue(['tx1'])
+        let captured: Optional<TransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+            captured = r
+        })
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                unsignedTxs: [fakeTxn, fakeTxn],
+                source: { name: 'opt-in', description: 'test' },
+            }),
+        )
+        const signed = { txn: fakeTxn, sig: new Uint8Array([1]) }
+        await captured?.approve?.([
+            signed,
+            null,
+        ] as unknown as PeraSignedTransaction[])
+
+        await promise
+        expect(mockSubmitAndAutoRefresh.mock.calls[0][0]).toEqual([signed])
     })
 
     it('rethrows a submit failure from approve so the transport fails the machine', async () => {

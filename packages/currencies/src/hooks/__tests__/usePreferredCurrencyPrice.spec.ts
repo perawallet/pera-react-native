@@ -11,22 +11,26 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getPreferredCurrencyPriceQueryKey } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 describe('getPreferredCurrencyPriceQueryKey', () => {
     it('returns correct query keys for mainnet and USD', () => {
-        const keys = getPreferredCurrencyPriceQueryKey('mainnet', 'USD')
+        const keys = getPreferredCurrencyPriceQueryKey(MAINNET, 'USD')
         expect(keys).toEqual([
             'currencies',
-            { network: 'mainnet', preferredFiatCurrency: 'USD' },
+            { scope: MAINNET, preferredFiatCurrency: 'USD' },
         ])
     })
 
     it('returns correct query keys for testnet and EUR', () => {
-        const keys = getPreferredCurrencyPriceQueryKey('testnet', 'EUR')
+        const keys = getPreferredCurrencyPriceQueryKey(TESTNET, 'EUR')
         expect(keys).toEqual([
             'currencies',
-            { network: 'testnet', preferredFiatCurrency: 'EUR' },
+            { scope: TESTNET, preferredFiatCurrency: 'EUR' },
         ])
     })
 })

@@ -13,7 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useRekeyConfirmScreen } from '../useRekeyConfirmScreen'
 
 const mockNavigate = vi.fn()
@@ -40,27 +44,25 @@ vi.mock('@modules/webview', () => ({
 const mockQuantumSource = {
     address: 'SRC',
     name: 'Quantum Source',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'kp-src',
-    rekeyAddress: undefined as string | undefined,
 }
 const mockEd25519Source = {
     address: 'SRC',
     name: 'Standard Source',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-src',
-    rekeyAddress: undefined as string | undefined,
 }
 const mockEd25519Target = {
     address: 'TGT',
     name: 'Standard Target',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'kp-tgt',
 }
 const mockQuantumTarget = {
     address: 'TGT',
     name: 'Quantum Target',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'kp-tgt',
 }
 
@@ -111,6 +113,10 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
+
 const config = {
     sourceAddress: 'SRC',
     targetAddress: 'TGT',
@@ -128,8 +134,6 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         mockRequestBottomSheet.mockReset()
         currentSource = mockQuantumSource
         currentTarget = mockEd25519Target
-        mockQuantumSource.rekeyAddress = undefined
-        mockEd25519Source.rekeyAddress = undefined
         mockIsUnderfunded = false
     })
 
@@ -225,7 +229,6 @@ describe('useRekeyConfirmScreen - underfunded preflight gate', () => {
         mockRequestBottomSheet.mockReset()
         currentSource = mockEd25519Source
         currentTarget = mockEd25519Target
-        mockEd25519Source.rekeyAddress = undefined
         mockIsUnderfunded = false
     })
 
@@ -271,7 +274,6 @@ describe('useRekeyConfirmScreen - double-tap guard', () => {
         vi.clearAllMocks()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
-        mockEd25519Source.rekeyAddress = undefined
         mockIsUnderfunded = false
     })
 
@@ -291,17 +293,42 @@ describe('useRekeyConfirmScreen - double-tap guard', () => {
     })
 })
 
+describe('useRekeyConfirmScreen - current auth', () => {
+    beforeEach(() => {
+        mockIsUnderfunded = false
+    })
+
+    it('resolves the account holding the source authority', () => {
+        currentSource = mockEd25519Source
+        currentTarget = mockEd25519Target
+        seedAuthority('SRC', 'TGT')
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        expect(result.current.currentAuth).toBe(mockEd25519Target)
+    })
+
+    it('has no current auth when the source account is gone', () => {
+        currentSource = undefined as unknown as Record<string, unknown>
+        currentTarget = mockEd25519Target
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        expect(result.current.currentAuth).toBeNull()
+    })
+})
+
 describe('useRekeyConfirmScreen - no-op rekey guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
-        mockEd25519Source.rekeyAddress = undefined
         mockIsUnderfunded = false
     })
 
     it("does not submit when the target is already the source's current auth", async () => {
-        currentSource = { ...mockEd25519Source, rekeyAddress: 'TGT' }
+        currentSource = mockEd25519Source
+        seedAuthority('SRC', 'TGT')
         currentTarget = mockEd25519Target
         // Drive past the previous-rekey warning so only the guard can block.
         mockRequestBottomSheet.mockResolvedValue(true)
@@ -316,7 +343,8 @@ describe('useRekeyConfirmScreen - no-op rekey guard', () => {
     })
 
     it('submits when a previously rekeyed source targets a different account', async () => {
-        currentSource = { ...mockEd25519Source, rekeyAddress: 'OTHER' }
+        currentSource = mockEd25519Source
+        seedAuthority('SRC', 'OTHER')
         currentTarget = mockEd25519Target
         mockRequestBottomSheet.mockResolvedValue(true)
         mockSubmitAsync.mockResolvedValueOnce(undefined)

@@ -90,6 +90,8 @@ export const OFFLINE_BANNER_COLLAPSE_TRANSLATE = 8
 
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000
+// For toasts whose body the user must act on later; the notifier default is 3s.
+export const EXTENDED_TOAST_DURATION_MS = 8000
 
 export const SEARCH_DEBOUNCE_TIME = 400
 export const SEARCH_DEBOUNCE_TIME_SHORT = 75

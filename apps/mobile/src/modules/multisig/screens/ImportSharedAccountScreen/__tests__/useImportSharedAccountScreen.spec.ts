@@ -37,7 +37,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ push: mockPush }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
@@ -64,7 +67,7 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => mockUseDeviceID(),
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -138,7 +141,10 @@ describe('useImportSharedAccountScreen', () => {
 
     it('flags when the user already holds one of the participants', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'algo25' } as WalletAccount,
+            {
+                address: 'P2',
+                custody: { kind: 'local', seed: null },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -148,7 +154,11 @@ describe('useImportSharedAccountScreen', () => {
 
     it('reports canUserSign true when a held participant has its own key', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'algo25', keyPairId: 'kp' } as WalletAccount,
+            {
+                address: 'P2',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -159,7 +169,7 @@ describe('useImportSharedAccountScreen', () => {
 
     it('reports canUserSign false when the held participant is watch-only', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'P2', type: 'watch' } as WalletAccount,
+            { address: 'P2', custody: { kind: 'watch' } } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())
@@ -180,7 +190,10 @@ describe('useImportSharedAccountScreen', () => {
 
     it('flags and disables when the shared account is already imported', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: SCANNED_ADDRESS, type: 'multisig' } as WalletAccount,
+            {
+                address: SCANNED_ADDRESS,
+                custody: { kind: 'multisig' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useImportSharedAccountScreen())

@@ -20,6 +20,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import {
     BackupAccountType,
@@ -48,7 +49,7 @@ import {
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import {
@@ -202,7 +203,9 @@ describe('Flow: Cloud backup → Restore', () => {
         const restored = useAccountsStore
             .getState()
             .accounts.find(a => a.address === ALGO25_TEST_ADDRESS)
-        expect(restored?.type).toBe(AccountTypes.algo25)
+        expect(restored ? accountType(restored) : undefined).toBe(
+            AccountTypes.standalone,
+        )
         expect(restored?.name).toBe('Restored')
 
         // The restore has to hand the sync engine the versions the server
@@ -302,8 +305,12 @@ describe('Flow: Cloud backup → Restore', () => {
         const accounts = useAccountsStore.getState().accounts
         const restoredFirst = accounts.find(a => a.address === first.address)
         const restoredSecond = accounts.find(a => a.address === second.address)
-        expect(restoredFirst?.type).toBe(AccountTypes.hdWallet)
-        expect(restoredSecond?.type).toBe(AccountTypes.hdWallet)
+        expect(restoredFirst ? accountType(restoredFirst) : undefined).toBe(
+            AccountTypes.hdWallet,
+        )
+        expect(restoredSecond ? accountType(restoredSecond) : undefined).toBe(
+            AccountTypes.hdWallet,
+        )
         expect(restoredFirst?.name).toBe('HD First')
         expect(restoredSecond?.name).toBe('HD Second')
 

@@ -14,6 +14,8 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
 import {
+    accountType,
+    type AccountType,
     AccountTypes,
     canSignWith,
     isRekeyedAccount,
@@ -40,10 +42,10 @@ type WebviewAccountType =
     | 'RekeyedUnsignable'
 
 const BASE_WEBVIEW_TYPE: Record<
-    WalletAccount['type'],
+    AccountType,
     Exclude<WebviewAccountType, 'RekeyedSignable' | 'RekeyedUnsignable'>
 > = {
-    [AccountTypes.algo25]: 'Algo25',
+    [AccountTypes.standalone]: 'Algo25',
     [AccountTypes.hdWallet]: 'HDWallet',
     [AccountTypes.hardware]: 'Hardware',
     [AccountTypes.multisig]: 'Multisig',
@@ -72,7 +74,7 @@ const toWebviewAccountType = (
             ? 'RekeyedSignable'
             : 'RekeyedUnsignable'
     }
-    return BASE_WEBVIEW_TYPE[account.type]
+    return BASE_WEBVIEW_TYPE[accountType(account)]
 }
 
 export const useGetAddressesHandler = (

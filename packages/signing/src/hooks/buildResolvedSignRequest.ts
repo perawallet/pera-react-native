@@ -82,11 +82,11 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
 export const buildResolvedSignRequest = (
     context: SigningMachineContext,
 ): ResolvedSignRequest | null => {
-    const { signerAddress, allAccounts, groupSignerTypes } = context
+    const { signerAddress, allAccounts, groupSigners } = context
 
-    if (!signerAddress || !groupSignerTypes) return null
+    if (!signerAddress || !groupSigners) return null
 
-    const signerType = groupSignerTypes.get(signerAddress)
+    const signerType = groupSigners.get(signerAddress)?.custody
     if (!signerType) return null
 
     const signerAccount = allAccounts.find(a => a.address === signerAddress)
@@ -95,7 +95,7 @@ export const buildResolvedSignRequest = (
     return {
         signerType,
         signerAccount,
-        groupSignerTypes,
+        groupSigners,
         source: {
             kind: resolveSourceKind(context.request.sourceType),
             isInteractive: isInteractiveSource(context.request.sourceType),

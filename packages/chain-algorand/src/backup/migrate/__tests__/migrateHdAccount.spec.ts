@@ -16,7 +16,6 @@ vi.mock('../legacyKeyConversion', () => ({
     hdWalletEntropyToIndices: vi.fn(() => new Uint16Array(24).fill(1)),
 }))
 
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type {
     LegacyAccount,
     LegacyHDKey,
@@ -88,7 +87,11 @@ const buildArgs = (
             overrides.createHdWalletAccount ??
             (vi.fn().mockResolvedValue({
                 id: 'created-id',
-                type: AccountTypes.hdWallet,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: account.address,
                 keyPairId: 'kp',
                 hdWalletDetails: {} as never,
@@ -207,7 +210,11 @@ describe('migrateHdAccount', () => {
         const hasSeedWithEntropy = vi.fn(() => true) as unknown as never
         const createHdWalletAccount = vi.fn().mockResolvedValue({
             id: 'c',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ADDR_CHILD',
             keyPairId: 'kp',
             hdWalletDetails: {} as never,
@@ -270,7 +277,11 @@ describe('migrateHdAccount', () => {
     it('passes seedKeyId and child indices to createHdWalletAccount', async () => {
         const createHdWalletAccount = vi.fn().mockResolvedValue({
             id: 'c',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ADDR_CHILD',
             keyPairId: 'kp',
             hdWalletDetails: {} as never,
@@ -310,7 +321,11 @@ describe('migrateHdAccount', () => {
     it('throws when the derived address does not match the legacy address', async () => {
         const createHdWalletAccount = vi.fn().mockResolvedValue({
             id: 'm',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ADDR_MISMATCH',
             keyPairId: 'kp',
             hdWalletDetails: {} as never,

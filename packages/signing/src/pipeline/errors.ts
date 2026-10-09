@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import type { AlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     AppError,
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
+    isRetryableError,
 } from '@perawallet/wallet-core-shared'
 
 /**
@@ -163,33 +163,31 @@ export type SubmissionErrorClassification =
     | 'rejected-by-node'
     | 'unknown-outcome'
 
+export type NodeSubmitError = Error & { readonly code: string }
+
 /**
  * A broadcast failure that keeps the evidence needed to be honest about it:
- * the locally derived txIds (computable before the POST) and the structured
- * algod error. `retryable` is false only for `rejected-by-node` — resending
+ * the locally derived txIds (computable before the POST) and the node's
+ * structured error. `retryable` is false only for `rejected-by-node` — resending
  * identical bytes a node already refused cannot succeed.
  */
 export class SubmissionError extends PipelineError {
     readonly txIds: string[]
     readonly classification: SubmissionErrorClassification
-    readonly algodError: AlgodError
+    readonly nodeError: NodeSubmitError
 
     constructor(
         txIds: string[],
         classification: SubmissionErrorClassification,
-        algodError: AlgodError,
+        nodeError: NodeSubmitError,
     ) {
-        super(
-            `Submission ${classification}: ${algodError.message}`,
-            algodError,
-            {
-                retryable: classification !== 'rejected-by-node',
-                params: { txIds, classification, code: algodError.code },
-            },
-        )
+        super(`Submission ${classification}: ${nodeError.message}`, nodeError, {
+            retryable: classification !== 'rejected-by-node',
+            params: { txIds, classification, code: nodeError.code },
+        })
         this.txIds = txIds
         this.classification = classification
-        this.algodError = algodError
+        this.nodeError = nodeError
     }
 }
 
@@ -225,6 +223,21 @@ export class HardwareWalletError extends PipelineError {
     }
 }
 
+/**
+ * A dApp asked for a group that can never land: algod already holds one of
+ * its transactions, or it is past its last valid round. Sent to the peer as
+ * the decline, so the message is written for the dApp.
+ */
+export class StaleSignRequestError extends PipelineError {
+    constructor() {
+        super(
+            'This transaction group was already submitted or has expired',
+            undefined,
+            { severity: ErrorSeverity.LOW },
+        )
+    }
+}
+
 export class InvalidSignableDataError extends PipelineError {
     constructor(reason: string) {
         super(`Invalid signable data: ${reason}`, undefined, {
@@ -257,11 +270,14 @@ export const FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER = 'fee-adjusted'
 /**
  * A fee-adjusted ARC-0001 response (`assignMinimumFeesToGroup`) failed to
  * deliver: "this dApp may not support the adjusted fees" rather than an ordinary
- * transport failure. Extends `TransportError` so `retryable` is unchanged.
+ * transport failure. Retryable only when the delivery failure is, or RETRY
+ * would loop on a session that can never answer.
  */
 export class FeeAdjustmentDeliveryError extends TransportError {
     constructor(message: string, options?: { cause?: Error }) {
-        super(message, options?.cause)
+        super(message, options?.cause, {
+            retryable: options?.cause ? isRetryableError(options.cause) : true,
+        })
     }
 }
 
@@ -269,20 +285,6 @@ export class FeeAdjustmentDeliveryError extends TransportError {
 export const isFeeAdjustmentDeliveryError = (error: Error): boolean =>
     error.name === FeeAdjustmentDeliveryError.name ||
     error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER)
-
-/**
- * The active network changed between actor creation and submission.
- * Aborts rather than submitting signed bytes to the wrong chain.
- */
-export class NetworkChangedError extends PipelineError {
-    constructor(expected: string, actual: string) {
-        super(
-            `Network changed during signing: expected ${expected} but active network is ${actual}`,
-            undefined,
-            { params: { expected, actual } },
-        )
-    }
-}
 
 /**
  * A transaction's genesisHash does not match the active network. Treated as
@@ -301,6 +303,21 @@ export class GenesisHashMismatchError extends PipelineError {
             `One or more of the transactions target a different Algorand network than the active one (${network}).`,
             undefined,
             { params: { network, index, expected, actual } },
+        )
+    }
+}
+
+/**
+ * A request with no review screen that its chain's policy won't sign
+ * unreviewed. Refused rather than signed, since nothing could show it to the
+ * user. Non-retryable: the same request gets the same verdict.
+ */
+export class ReviewRequiredError extends PipelineError {
+    constructor(warningTypes: string[]) {
+        super(
+            "This request can't be signed without a review, and its source has no review screen.",
+            undefined,
+            { params: { warningTypes } },
         )
     }
 }

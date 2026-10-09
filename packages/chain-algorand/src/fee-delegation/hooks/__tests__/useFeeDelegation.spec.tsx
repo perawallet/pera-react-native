@@ -30,9 +30,8 @@ const {
     requestFeeDelegationMock: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../../blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
-    useNetwork: () => ({ network: 'mainnet' }),
     compactSignedResults: (signed: unknown[]) =>
         signed.filter(tx => tx !== null),
     // Order-sensitive byte match; with deterministic base64 inputs, comparing
@@ -62,6 +61,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             txn: { id: String.fromCharCode(...bytes) },
         }),
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

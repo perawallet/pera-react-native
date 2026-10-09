@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -34,6 +35,10 @@ export default defineConfig({
             '@perawallet/wallet-core-chain-algorand/accounts': path.resolve(
                 __dirname,
                 '../chain-algorand/src/accounts/index.ts',
+            ),
+            '@perawallet/wallet-core-chain-algorand/descriptor': path.resolve(
+                __dirname,
+                '../chain-algorand/src/descriptor/index.ts',
             ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
@@ -70,16 +75,8 @@ export default defineConfig({
                 __dirname,
                 '../kms/src/index.ts',
             ),
-            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
-                __dirname,
-                '../blockchain/src/arc0001/limits.ts',
-            ),
-            '@perawallet/wallet-core-blockchain': path.resolve(
-                __dirname,
-                '../blockchain/src/index.ts',
-            ),
-            // Blockchain source re-exports chain-shared; its dist would reach a
-            // second getProvider() instance the mocks here never see.
+            // Source, not dist: the dist reaches a second getProvider()
+            // instance the mocks here never see.
             '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
                 '../chain-shared/src/index.ts',
@@ -98,5 +95,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

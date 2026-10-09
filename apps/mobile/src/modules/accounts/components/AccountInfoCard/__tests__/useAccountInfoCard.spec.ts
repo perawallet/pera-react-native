@@ -13,14 +13,18 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountInfoCard } from '../useAccountInfoCard'
-import type {
-    HDWalletAccount,
-    HardwareWalletAccount,
-    MultiSigAccount,
-    RekeyTransition,
-    WalletAccount,
+import {
+    useAccountChainStateStore,
+    type HDWalletAccount,
+    type HardwareWalletAccount,
+    type MultiSigAccount,
+    type DelegateTransition,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 
 const mockNavigate = vi.fn()
 vi.mock('@routes/navigationRef', () => ({
@@ -42,7 +46,7 @@ const mockUseAccountInformationQuery = vi.fn()
 const mockUseHDWalletGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
-const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
+const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -56,22 +60,24 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useHDWalletGroups: () => mockUseHDWalletGroups(),
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
-        useRekeyTransition: () => mockUseRekeyTransition(),
+        useDelegatedTransition: () => mockUseDelegatedTransition(),
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    microAlgosToAlgos: (v: bigint) => ({ toString: () => String(v) }),
 }))
 
 const hdAccount: HDWalletAccount = {
     id: 'hd-account',
-    type: 'hdWallet',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'HD_ADDR',
     keyPairId: 'key-1',
     hdWalletDetails: {
@@ -84,7 +90,16 @@ const hdAccount: HDWalletAccount = {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'ledger-account',
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-abc',
+            deviceName: 'My Ledger',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'LEDGER_ADDR',
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -97,13 +112,13 @@ const ledgerAccount: HardwareWalletAccount = {
 
 const watchAccount: WalletAccount = {
     id: 'watch-account',
-    type: 'watch',
+    custody: { kind: 'watch' },
     address: 'WATCH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
-    type: 'multisig',
+    custody: { kind: 'multisig' },
     address: 'MULTISIG_ADDR',
     multisigDetails: {
         threshold: 2,
@@ -114,7 +129,7 @@ const multisigAccount: MultiSigAccount = {
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-account',
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'QUANTUM_ADDR',
     keyPairId: 'key-1',
 }
@@ -122,6 +137,7 @@ const quantumAccount: WalletAccount = {
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         mockUseAccountInformationQuery.mockReturnValue({
             data: { minBalance: BigInt(100_000) },
@@ -151,7 +167,7 @@ describe('useAccountInfoCard', () => {
             hasMultipleLedgerDevices: false,
         })
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
     })
 
     test('HD wallet account: showStructure true with wallet label and wallet icon', () => {
@@ -179,7 +195,16 @@ describe('useAccountInfoCard', () => {
     test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
         const subLedgerAccount: HardwareWalletAccount = {
             id: 'ledger-sub-account',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-abc',
+                    deviceName: 'My Ledger',
+                    transportType: 'ble',
+                },
+                accountIndex: 1,
+            },
             address: 'LEDGER_SUB_ADDR',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -251,11 +276,12 @@ describe('useAccountInfoCard', () => {
 
     test('RekeyedSignable account with a transition shows the "Rekeyed (Signed by …)" label', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'algo25',
+        mockUseDelegatedTransition.mockReturnValue({
+            from: 'standalone',
             to: 'hardware',
         })
-        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
+        const rekeyed = ledgerAccount
+        seedAuthority(rekeyed.address, 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
@@ -266,8 +292,9 @@ describe('useAccountInfoCard', () => {
 
     test('RekeyedSignable account without a known auth account falls back to generic label', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
-        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
+        mockUseDelegatedTransition.mockReturnValue(null)
+        const rekeyed = ledgerAccount
+        seedAuthority(rekeyed.address, 'AUTH')
         const { result } = renderHook(() =>
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )

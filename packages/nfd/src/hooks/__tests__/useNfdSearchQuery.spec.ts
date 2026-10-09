@@ -17,13 +17,18 @@ import React from 'react'
 import { useNfdSearchQuery } from '../useNfdSearchQuery'
 
 const mockFetchNfdSearch = vi.hoisted(() => vi.fn())
+const nameService = vi.hoisted(() => ({ isEnabled: true }))
 
 vi.mock('../../api', () => ({
     fetchNfdSearch: mockFetchNfdSearch,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: () => nameService.isEnabled,
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 describe('useNfdSearchQuery', () => {
@@ -38,6 +43,7 @@ describe('useNfdSearchQuery', () => {
             },
         })
         vi.clearAllMocks()
+        nameService.isEnabled = true
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -57,6 +63,14 @@ describe('useNfdSearchQuery', () => {
         expect(mockFetchNfdSearch).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'bruno.algo' }),
         )
+    })
+
+    it('does not fetch while the nameService capability is off', () => {
+        nameService.isEnabled = false
+
+        renderHook(() => useNfdSearchQuery('bruno.algo'), { wrapper })
+
+        expect(mockFetchNfdSearch).not.toHaveBeenCalled()
     })
 
     it('does not fetch when disabled', () => {

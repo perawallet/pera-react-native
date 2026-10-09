@@ -11,14 +11,16 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 
 import {
-    AccountTypes,
-    isRekeyedAccount,
-    useCanSignWith,
-    useRekeyAccount,
+    accountType,
     type AccountType,
+    AccountTypes,
+    useAuthorityOf,
+    useCanSignWith,
+    useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { IconName } from '@components/core'
@@ -32,7 +34,7 @@ export type AccountDisplayState =
 export type AccountGlyph = { name: IconName; variant: PWRoundIconVariant }
 
 const BASE_GLYPH: Record<AccountType, AccountGlyph> = {
-    [AccountTypes.algo25]: {
+    [AccountTypes.standalone]: {
         name: 'accounts/glyph/algo25-account',
         variant: 'accountTurquoise',
     },
@@ -101,7 +103,7 @@ export type UseAccountIconOptions = {
     displayState?: AccountDisplayState
     /**
      * The type of the auth account, for callers that force `rekeyedSignable`
-     * on a synthetic account. `useRekeyAccount` can only resolve an auth
+     * on a synthetic account. `useDelegatedAccount` can only resolve an auth
      * address that is already in the store, so without this a rekeyed-to-Ledger
      * preview falls back to the turquoise standard glyph.
      */
@@ -113,14 +115,14 @@ export const useAccountIcon = (
     options: UseAccountIconOptions = {},
 ): AccountGlyph | null => {
     const { ignoreRekey, displayState, authType } = options
-    const rekeyAccount = useRekeyAccount(account?.address)
+    const rekeyAccount = useDelegatedAccount(account?.address)
     const canSign = useCanSignWith(account)
+    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     return useMemo(() => {
         if (!account) return null
 
-        const isRekeyed =
-            !ignoreRekey && isRekeyedAccount(account, LEGACY_CHAIN_ID)
+        const isRekeyed = !ignoreRekey && authority !== null
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed
@@ -133,9 +135,11 @@ export const useAccountIcon = (
             case 'rekeyedSignable': {
                 // Key off the auth account's type (what it's rekeyed *to*),
                 // not the account's own type — a standard account rekeyed to
-                // a Ledger keeps type `algo25`, so indexing by `account.type`
+                // a Ledger keeps type `algo25`, so indexing by its own type
                 // wrongly picks the standard glyph instead of the ledger one.
-                const resolvedAuthType = rekeyAccount?.type ?? authType
+                const resolvedAuthType = rekeyAccount
+                    ? accountType(rekeyAccount)
+                    : authType
                 const authGlyph = resolvedAuthType
                     ? REKEYED_SIGNABLE_GLYPH[resolvedAuthType]
                     : undefined
@@ -145,11 +149,19 @@ export const useAccountIcon = (
                 return REKEYED_UNSIGNABLE_GLYPH
             }
             case 'base': {
-                return accountGlyphForType(account.type)
+                return accountGlyphForType(accountType(account))
             }
         }
         // rekeyAccount keeps the memo invalidating when the auth account
         // changes (which can flip canSign).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, displayState, authType, canSign, rekeyAccount])
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        authType,
+        canSign,
+        rekeyAccount,
+        authority,
+    ])
 }

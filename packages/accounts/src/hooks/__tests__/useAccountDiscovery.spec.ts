@@ -24,13 +24,19 @@ vi.mock('../../account-discovery', () => ({
         mockBaseDiscoverRekeyedAccounts(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+const rekey = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsRekeyAvailable', () => ({
+    useIsRekeyAvailable: () => rekey.isAvailable,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        rekey.isAvailable = true
         mockBaseDiscoverAccounts.mockResolvedValue(['acc'])
         mockBaseDiscoverRekeyedAccounts.mockResolvedValue(['rekeyed'])
     })
@@ -43,8 +49,6 @@ describe('useAccountDiscovery', () => {
             await act(async () => {
                 discovered = await result.current.discoverAccounts({
                     walletKeyId: 'WALLET1',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    derivationType: 9 as any,
                     accountGapLimit: 3,
                     keyIndexGapLimit: 2,
                 })
@@ -57,7 +61,6 @@ describe('useAccountDiscovery', () => {
             const baseCall = mockBaseDiscoverAccounts.mock.calls[0]?.[0]
             expect(baseCall).toMatchObject({
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
                 accountGapLimit: 3,
                 keyIndexGapLimit: 2,
             })
@@ -66,7 +69,6 @@ describe('useAccountDiscovery', () => {
             const pubKey = await baseCall.getPublicKey({
                 account: 1,
                 keyIndex: 0,
-                derivationType: 9,
             })
             expect(deriveAccount).toHaveBeenCalledWith(
                 expect.anything(),
@@ -99,6 +101,21 @@ describe('useAccountDiscovery', () => {
                 accountAddresses: ['A', 'B'],
             })
             expect(discovered).toEqual(['rekeyed'])
+        })
+
+        it('finds nothing, without scanning, while rekey is unavailable', async () => {
+            rekey.isAvailable = false
+            const { result } = renderHook(() => useAccountDiscovery())
+
+            let discovered: unknown
+            await act(async () => {
+                discovered = await result.current.discoverRekeyedAccounts({
+                    accountAddresses: ['A'],
+                })
+            })
+
+            expect(discovered).toEqual([])
+            expect(mockBaseDiscoverRekeyedAccounts).not.toHaveBeenCalled()
         })
     })
 })

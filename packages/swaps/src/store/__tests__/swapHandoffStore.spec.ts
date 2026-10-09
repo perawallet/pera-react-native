@@ -25,7 +25,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useSwapHandoffStore } from '../swapHandoffStore'
+import {
+    migrateSwapHandoffState,
+    useSwapHandoffStore,
+} from '../swapHandoffStore'
 import type { SwapHandoffRecord } from '../../models'
 
 const makeRecord = (
@@ -33,7 +36,7 @@ const makeRecord = (
 ): SwapHandoffRecord => ({
     swapIdStr: '42',
     signRequestId: 'req-1',
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
@@ -149,8 +152,7 @@ describe('swaps/swapHandoffStore', () => {
         expect(result.current.handoffs).toEqual({})
     })
 
-    test('rehydrates a handoff persisted before swap execution moved into the chain package', async () => {
-        // Verbatim shape written by the pre-adapter store: same key, version 1.
+    test('replays a pending v1 testnet handoff under the Algorand testnet scope', async () => {
         const persisted = JSON.stringify({
             state: {
                 handoffs: {
@@ -191,8 +193,49 @@ describe('swaps/swapHandoffStore', () => {
 
         await useSwapHandoffStore.persist.rehydrate()
 
-        expect(useSwapHandoffStore.getState().handoffs).toEqual(
-            JSON.parse(persisted).state.handoffs,
+        const { network: _network, ...rest } =
+            JSON.parse(persisted).state.handoffs['req-9']
+        expect(useSwapHandoffStore.getState().handoffs).toEqual({
+            'req-9': {
+                ...rest,
+                scope: { chainId: 'algorand', networkId: 'testnet' },
+            },
+        })
+    })
+})
+
+describe('migrateSwapHandoffState', () => {
+    const v1Record = (signRequestId: string, network: string) => {
+        const { scope: _scope, ...rest } = makeRecord({ signRequestId })
+        return { ...rest, network }
+    }
+
+    test('moves a v1 network onto the Algorand scope, other fields unchanged', () => {
+        const migrated = migrateSwapHandoffState(
+            { handoffs: { 'req-1': v1Record('req-1', 'mainnet') } },
+            1,
         )
+
+        expect(migrated.handoffs).toEqual({ 'req-1': makeRecord() })
+    })
+
+    test('drops a v1 record whose network this build does not know', () => {
+        const migrated = migrateSwapHandoffState(
+            {
+                handoffs: {
+                    'req-1': v1Record('req-1', 'mainnet'),
+                    'req-2': v1Record('req-2', 'devnet'),
+                },
+            },
+            1,
+        )
+
+        expect(Object.keys(migrated.handoffs)).toEqual(['req-1'])
+    })
+
+    test('leaves v2 state untouched', () => {
+        const state = { handoffs: { 'req-1': makeRecord() } }
+
+        expect(migrateSwapHandoffState(state, 2)).toEqual(state)
     })
 })

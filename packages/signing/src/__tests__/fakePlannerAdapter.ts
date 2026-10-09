@@ -13,14 +13,21 @@
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     plannerChainAdapters,
+    type AssignFeeToGroup,
+    type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
 import { InvalidSignableDataError } from '../pipeline/errors'
+
+const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
 const notStubbed = (member: string) => () => {
     throw new Error(`fake planner: ${member} is not stubbed`)
@@ -49,6 +56,13 @@ const recomputeGroupIds = (transactions: PeraTransaction[]): void => {
     }
 }
 
+// Module-level so its identity is stable across renders, as the real hook's
+// `useCallback` result is.
+const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
+    transactions,
+    adjustments: [],
+})
+
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
@@ -56,10 +70,20 @@ export const fakePlannerAdapter = (
     resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
     enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
     minFeeForSender: vi.fn(() => 0n),
-    assignGroupFees: vi.fn(async ({ transactions }) => ({
-        transactions,
-        adjustments: [],
+    useFeeConfig: vi.fn(() => ({
+        minTxnFee: 0n,
+        pqMultiplier: 1n,
+        assetOptInMinBalance: 0n,
     })),
+    useSuggestedMinFeeQuery: vi.fn(() => ({
+        suggestedMinFee: undefined,
+        isPending: true,
+        isError: false,
+    })),
+    useFetchSuggestedMinFee: vi.fn(() => fetchZeroMinFee),
+    useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
+    useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
+    encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
     reviewGroupFees: vi.fn(() => ({
         totalFee: new Decimal(0),
         highFeeWarning: null,

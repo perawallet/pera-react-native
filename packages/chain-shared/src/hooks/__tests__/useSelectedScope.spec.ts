@@ -20,15 +20,18 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '../../store/network-store'
-import { useSelectedNetworkId, useSelectedScope } from '../useSelectedScope'
+import {
+    useSelectedChainMode,
+    useSelectedNetworkId,
+    useSelectedScope,
+} from '../useSelectedScope'
 
 describe('useSelectedScope', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().selectNetwork('algorand', 'mainnet')
     })
 
-    test('returns the chain scope and follows selectNetwork', () => {
+    test('returns the chain scope and follows the mode and override', () => {
         const { result } = renderHook(() => useSelectedScope('algorand'))
         expect(result.current).toEqual({
             chainId: 'algorand',
@@ -36,12 +39,13 @@ describe('useSelectedScope', () => {
         })
 
         act(() => {
-            useNetworkStore.getState().selectNetwork('algorand', 'testnet')
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
         })
 
         expect(result.current).toEqual({
             chainId: 'algorand',
-            networkId: 'testnet',
+            networkId: 'betanet',
         })
     })
 
@@ -51,7 +55,22 @@ describe('useSelectedScope', () => {
         expect(result.current).toBe('mainnet')
     })
 
-    test('a registered chain with no stored entry follows the global selection', () => {
+    test('useSelectedChainMode follows the mode and the override', () => {
+        const { result } = renderHook(() => useSelectedChainMode('algorand'))
+        expect(result.current).toBe('live')
+
+        act(() => {
+            useNetworkStore.getState().setMode('developer')
+        })
+        expect(result.current).toBe('developer')
+
+        act(() => {
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
+        })
+        expect(result.current).toBe('developer-override')
+    })
+
+    test('a registered chain with no stored entry follows the mode', () => {
         const ethereum = 'ethereum' as ChainId
         getProvider().chains.register(
             {
@@ -69,7 +88,7 @@ describe('useSelectedScope', () => {
         expect(result.current).toBe('mainnet')
 
         act(() => {
-            useNetworkStore.getState().setGlobalNetwork('testnet')
+            useNetworkStore.getState().setMode('developer')
         })
 
         expect(result.current).toBe('sepolia')

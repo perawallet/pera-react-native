@@ -82,7 +82,7 @@ const makeHandoff = (
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
     expectedRawTransactionsBase64: [RAW_TX_B64],
     deviceId: 'device-1',
-    network: 'testnet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     callbacks: {
         approveSignedBytes: vi.fn().mockResolvedValue(undefined),
         error: vi.fn().mockResolvedValue(undefined),

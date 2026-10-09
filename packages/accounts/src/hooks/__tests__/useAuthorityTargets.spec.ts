@@ -10,21 +10,25 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAuthorityTargets } from '../useAuthorityTargets'
-import { useAccountsStore } from '../../store'
-import { withCustody } from '../../credentials'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: 'k',
         ...extra,
@@ -36,6 +40,8 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useAuthorityTargets', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain()
     })
 
@@ -55,13 +61,52 @@ describe('useAuthorityTargets', () => {
             }),
         )
 
-        expect(result.current).toEqual([withCustody(good)])
+        expect(result.current).toEqual([good])
         expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
             'quantum',
-            withCustody(good),
+            good,
             source,
-            [source, good, bad].map(withCustody),
+            [source, good, bad],
+            MAINNET_SCOPE,
             { isQuantumTargetEnabled: true },
+        )
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const source = held('SRC')
+        const target = held('A')
+        setAccounts([source, target])
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.isEligibleTarget,
+        ).mockImplementation(
+            (_kind, _target, from, _accounts, scope) =>
+                authorityOf(from, scope) !== null,
+        )
+        const { result } = renderHook(() =>
+            useAuthorityTargets(source, 'standard'),
+        )
+        expect(result.current).toEqual([])
+
+        act(() => seedAuthority('SRC', 'AUTH'))
+
+        expect(result.current).toEqual([source, target])
+    })
+
+    it('asks the chain on the selected network', () => {
+        const source = held('SRC')
+        setAccounts([source, held('A')])
+        const { authority } = fakeAccountsChain().adapter
+        useNetworkStore.getState().setNetwork('testnet')
+
+        renderHook(() => useAuthorityTargets(source, 'standard'))
+
+        expect(authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'standard',
+            expect.anything(),
+            source,
+            expect.any(Array),
+            TESTNET_SCOPE,
+            { isQuantumTargetEnabled: false },
         )
     })
 

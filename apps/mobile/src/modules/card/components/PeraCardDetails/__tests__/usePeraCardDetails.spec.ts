@@ -206,16 +206,9 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 const walletAccount = (address: string): WalletAccount =>
     ({
         address,
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         keyPairId: `key-${address}`,
     }) as WalletAccount
-
-const ledgerAccount = (address: string): WalletAccount =>
-    ({
-        address,
-        type: 'hardware',
-        hardwareDetails: { manufacturer: 'ledger' },
-    }) as unknown as WalletAccount
 
 // Shared secure-view response the reveal tests resolve the token request with.
 const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
@@ -269,22 +262,6 @@ describe('usePeraCardDetails', () => {
         const { result } = renderHook(() => usePeraCardDetails())
 
         expect(result.current.fundingAddress).toBe('QKZ6ABCDEFG2IHH')
-    })
-
-    it('reports hasCard true once the status query returns a card', () => {
-        mocks.status = 'ACTIVE'
-
-        const { result } = renderHook(() => usePeraCardDetails())
-
-        expect(result.current.hasCard).toBe(true)
-    })
-
-    it('reports hasCard false when no card has been created yet', () => {
-        mocks.status = null
-
-        const { result } = renderHook(() => usePeraCardDetails())
-
-        expect(result.current.hasCard).toBe(false)
     })
 
     it('reveals, hides, and re-reveals from cache without re-fetching', async () => {
@@ -773,53 +750,6 @@ describe('usePeraCardDetails', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
-    })
-
-    describe('funding type', () => {
-        it('labels the funding type from the stored preference', () => {
-            mocks.selectedFundingType = FundingType.Auto
-            mocks.fundingAddress = 'LINKED_ADDR'
-            mocks.accounts = [walletAccount('LINKED_ADDR')]
-
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_auto_title',
-            )
-        })
-
-        // A Ledger can't sign the AutoDraw LSig, so a stored AUTO is stale and
-        // the row must not claim Auto is on.
-        it('labels Manual when the connected account is a Ledger despite a stored AUTO', () => {
-            mocks.selectedFundingType = FundingType.Auto
-            mocks.fundingAddress = 'LEDGER_ADDR'
-            mocks.accounts = [ledgerAccount('LEDGER_ADDR')]
-
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_manual_title',
-            )
-        })
-
-        it('falls back to the manual label when nothing is stored', () => {
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_manual_title',
-            )
-        })
-
-        it('opens the Select Funding Type sheet', () => {
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            act(() => {
-                result.current.onChangeFundingType()
-            })
-
-            expect(mocks.request).toHaveBeenCalledTimes(1)
-            expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
-        })
     })
 
     describe('changing the funding account', () => {

@@ -29,6 +29,7 @@ type PeraCardActionButtonsProps = {
     onAddFunds: () => void
     /** Auto funding: tops up the linked account rather than the card. */
     onFundLinkedAccount: () => void
+    canFundLinkedAccount: boolean
 }
 
 export const PeraCardActionButtons = ({
@@ -37,11 +38,13 @@ export const PeraCardActionButtons = ({
     onWithdraw,
     onAddFunds,
     onFundLinkedAccount,
+    canFundLinkedAccount,
 }: PeraCardActionButtonsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     if (isAutoFunding) {
+        if (!canFundLinkedAccount) return null
         return (
             <PWButton
                 variant='primary'

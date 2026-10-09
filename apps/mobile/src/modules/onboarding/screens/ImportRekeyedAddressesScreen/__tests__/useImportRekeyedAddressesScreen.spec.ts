@@ -18,25 +18,21 @@ import {
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
-// Real rekeyed candidates are watch accounts WITHOUT keyPairId, pointing at
-// the discovered auth address (account-discovery.ts) — LRK-022 fixture
-// realism, so shape drift in the discovery output fails loudly here.
+// Real rekeyed candidates are watch accounts WITHOUT keyPairId; the discovered
+// auth address lives in the chain-state slice, not on the account.
 const MOCK_ACCOUNTS = [
     {
         id: '1',
         address: 'ACC1',
-        type: AccountTypes.watch,
-        rekeyAddress: 'REKEY',
+        custody: { kind: 'watch' } as const,
     },
     {
         id: '2',
         address: 'ACC2',
-        type: AccountTypes.watch,
-        rekeyAddress: 'REKEY',
+        custody: { kind: 'watch' } as const,
     },
 ]
 
@@ -54,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         getState: () => ({ accounts: mockStoreAccounts.current }),
     },
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         watch: 'watch',
     },
 }))
@@ -165,15 +161,13 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
-        // Pin the persisted shape: watch + rekeyAddress, never a signer type.
+        // Pin the persisted shape: watch with no key, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
-            type: string
-            rekeyAddress?: string
+            custody: { kind: string }
             keyPairId?: string
         }>
         for (const account of persisted) {
-            expect(account.type).toBe(AccountTypes.watch)
-            expect(account.rekeyAddress).toBe('REKEY')
+            expect(account.custody.kind).toBe('watch')
             expect(account.keyPairId).toBeUndefined()
         }
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
@@ -184,7 +178,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         const concurrent = {
             id: 'c',
             address: 'CONCURRENT',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             keyPairId: 'pkc',
         }
         // Lands after render (useAllAccounts snapshot) but before the

@@ -14,6 +14,7 @@ import { createElement, type ReactNode } from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRemoveAccountByAddress } from '../useRemoveAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
@@ -69,7 +70,16 @@ const ledgerAccount = (
 ): WalletAccount => ({
     // Hardware accounts imported via the Ledger pairing flow carry no `id`
     // (they are deduped by address) — removal must still work for them.
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: accountIndex,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -115,7 +125,7 @@ describe('useRemoveAccountByAddress', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             address: 'ALICE',
             keyPairId: 'kp-alice-ed25519',
         }
@@ -137,7 +147,11 @@ describe('useRemoveAccountByAddress', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Bob',
-            type: 'hdWallet',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'BOB',
             keyPairId: 'hd-1-acc0-idx0-dt9',
             hdWalletDetails: {
@@ -167,7 +181,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '1',
                 name: 'HD-1',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: 'ADDR1',
                 keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {
@@ -180,7 +198,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '2',
                 name: 'HD-2',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 0 },
+                },
                 address: 'ADDR2',
                 keyPairId: 'hd-1-acc1-idx0-dt9',
                 hdWalletDetails: {
@@ -212,7 +234,11 @@ describe('useRemoveAccountByAddress', () => {
             {
                 id: '1',
                 name: 'HD-1',
-                type: 'hdWallet',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: 'ADDR1',
                 keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {
@@ -291,11 +317,18 @@ describe('useRemoveAccountByAddress', () => {
             predicates.some(p => p({ queryKey } as never))
 
         expect(
-            matches(['accounts', 'owned-asset-ids', { network: 'mainnet' }]),
+            matches([
+                'accounts',
+                'owned-asset-ids',
+                { scope: scopeForLegacyNetwork('mainnet') },
+            ]),
         ).toBe(true)
-        expect(matches(['assets', { assetIDs: [], network: 'mainnet' }])).toBe(
-            true,
-        )
+        expect(
+            matches([
+                'assets',
+                { assetIDs: [], scope: scopeForLegacyNetwork('mainnet') },
+            ]),
+        ).toBe(true)
 
         invalidateSpy.mockRestore()
     })
@@ -334,14 +367,20 @@ describe('useRemoveAccountByAddress', () => {
             matches([
                 'accounts',
                 'balance',
-                { address: 'LEDGER2', network: 'mainnet' },
+                {
+                    address: 'LEDGER2',
+                    scope: scopeForLegacyNetwork('mainnet'),
+                },
             ]),
         ).toBe(true)
         expect(
             matches([
                 'accounts',
                 'balance',
-                { address: 'LEDGER1', network: 'mainnet' },
+                {
+                    address: 'LEDGER1',
+                    scope: scopeForLegacyNetwork('mainnet'),
+                },
             ]),
         ).toBe(false)
 
@@ -375,5 +414,45 @@ describe('useRemoveAccountByAddress', () => {
         ).toEqual(['LEDGER1'])
 
         errorSpy.mockRestore()
+    })
+
+    describe('a standalone key with no seed above it', () => {
+        const rawKeyAccount = (id: string, address: string): WalletAccount => ({
+            id,
+            address,
+            keyPairId: 'raw-key',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address, keyPairId: 'raw-key' } },
+        })
+
+        test('deletes the key when no other account references it', async () => {
+            useAccountsStore.setState({
+                accounts: [rawKeyAccount('1', 'RAW1')],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('RAW1')
+            })
+
+            expect(deleteKeySpy).toHaveBeenCalledWith('raw-key')
+            expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
+        })
+
+        test('keeps the key while another account still references it', async () => {
+            useAccountsStore.setState({
+                accounts: [
+                    rawKeyAccount('1', 'RAW1'),
+                    rawKeyAccount('2', 'RAW2'),
+                ],
+            })
+            const { result } = renderWithClient()
+
+            await act(async () => {
+                await result.current('RAW1')
+            })
+
+            expect(deleteKeySpy).not.toHaveBeenCalled()
+        })
     })
 })

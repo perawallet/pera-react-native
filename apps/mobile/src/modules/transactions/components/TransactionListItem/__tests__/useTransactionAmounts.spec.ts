@@ -32,6 +32,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(),
+        useNativeAsset: () => ({ assetId: '0' }),
     }
 })
 

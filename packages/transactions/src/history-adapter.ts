@@ -15,8 +15,9 @@ import {
     scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,
@@ -75,6 +76,21 @@ export type FetchMoreTransactionsParams = {
     signal?: AbortSignal
 }
 
+/** Unit name and decimals as an amount renderer needs them. */
+export type AssetDisplayFacts = {
+    unitName: string
+    decimals: number
+}
+
+/**
+ * Persisted rows can hold an id as a number (written before ids became
+ * strings) and indexer rows as a bigint, so a resolver takes every shape.
+ */
+export type AssetFactsResolver = (
+    assetId: string | number | bigint | null | undefined,
+    facts: AssetDisplayFacts,
+) => AssetDisplayFacts
+
 /** The chain-specific history source; registered by the chain package. */
 export interface HistoryChainAdapter {
     chainId: ChainId
@@ -96,10 +112,23 @@ export interface HistoryChainAdapter {
     toDisplayable(
         item: TransactionHistoryItem,
     ): Nullable<PeraDisplayableTransaction>
+    /**
+     * Replaces facts the chain's backend is known to get wrong, applied when a
+     * cached row is read back: the syncer never refetches an old row.
+     */
+    resolveAssetFacts?: AssetFactsResolver
 }
 
 export const historyChainAdapters =
     createChainAdapterRegistry<HistoryChainAdapter>('transaction history')
+
+const keepFacts: AssetFactsResolver = (_assetId, facts) => facts
+
+// Not `get`: a chain with no history adapter never wrote a row to repair.
+export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
+    (historyChainAdapters.has(chainId)
+        ? historyChainAdapters.get(chainId).resolveAssetFacts
+        : undefined) ?? keepFacts
 
 const adapterFor = (
     network: Network,

@@ -16,15 +16,19 @@ import { useLedgerRekeyedScan } from '../useLedgerRekeyedScan'
 
 const mocks = vi.hoisted(() => ({
     useQueries: vi.fn(),
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
     useAllAccounts: vi.fn(),
+    useIsRekeyAvailable: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: mocks.useSelectedScope,
 }))
 vi.mock('../useAllAccounts', () => ({ useAllAccounts: mocks.useAllAccounts }))
+vi.mock('../useIsRekeyAvailable', () => ({
+    useIsRekeyAvailable: mocks.useIsRekeyAvailable,
+}))
 
 const derived = (address: string, accountIndex: number) => ({
     address,
@@ -34,11 +38,29 @@ const derived = (address: string, accountIndex: number) => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+    mocks.useSelectedScope.mockReturnValue({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })
     mocks.useAllAccounts.mockReturnValue([])
+    mocks.useIsRekeyAvailable.mockReturnValue(true)
 })
 
 describe('useLedgerRekeyedScan', () => {
+    it('finds nothing, and is not scanning, while rekey is unavailable', () => {
+        mocks.useIsRekeyAvailable.mockReturnValue(false)
+        mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
+
+        const { result } = renderHook(() =>
+            useLedgerRekeyedScan([derived('LEDGER0', 0)]),
+        )
+
+        expect(result.current).toEqual({ rekeyed: [], isScanning: false })
+        expect(mocks.useQueries.mock.calls[0]![0].queries[0].enabled).toBe(
+            false,
+        )
+    })
+
     it('maps rekeyed addresses to entries attributed to the scanned derived account', () => {
         const d0 = derived('LEDGER0', 0)
         mocks.useQueries.mockReturnValue([

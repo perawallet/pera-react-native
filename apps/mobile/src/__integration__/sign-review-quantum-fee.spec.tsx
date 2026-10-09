@@ -27,11 +27,8 @@ import {
     it,
 } from 'vitest'
 
-import { act, renderHook } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-
-import { createTestQueryClient } from '@test-utils/render'
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -42,6 +39,7 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
     renderSignReview,
     screen,
     waitFor,
@@ -50,20 +48,19 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     useAccountsStore,
     type QuantumAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
-import { QUANTUM_TEST_ADDRESS, enableQuantumFlag } from './__fixtures__/quantum'
+import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 /**
  * Seed the real algo25 signer (mints the key + registers the account exactly as
@@ -75,7 +72,7 @@ const seedQuantumSigner = async (): Promise<void> => {
     const account = await seedAlgo25Signer()
     const quantumAccount: QuantumAccount = {
         id: account.id,
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: REVIEW_SIGNER_ADDRESS,
         keyPairId: account.keyPairId ?? '',
         name: account.name,
@@ -96,12 +93,12 @@ const seedQuantumRekeyedToStandard = async (): Promise<void> => {
     const signer = await seedAlgo25Signer()
     const rekeyedQuantum: QuantumAccount = {
         id: 'rekeyed-quantum',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'unused-once-rekeyed',
         name: 'Rekeyed Quantum',
-        rekeyAddress: signer.address,
     }
+    seedAuthority(rekeyedQuantum.address, signer.address)
     useAccountsStore.getState().setAccounts([signer, rekeyedQuantum])
     useAccountsStore
         .getState()
@@ -117,38 +114,14 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     await seedQuantumSigner()
     const rekeyedWatch: WatchAccount = {
         id: 'rekeyed-watch',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         address: REVIEW_RECEIVER_ADDRESS,
         name: 'Rekeyed Watch',
-        rekeyAddress: REVIEW_SIGNER_ADDRESS,
     }
+    seedAuthority(rekeyedWatch.address, REVIEW_SIGNER_ADDRESS)
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, rekeyedWatch])
     store.setSelectedAccountAddress(rekeyedWatch.address)
-}
-
-/**
- * `renderSignReview` enqueues into a persisted store that nothing drains when a
- * test ends, so the review a later test renders is the FIRST request still
- * pending — an earlier test's. Every assertion here would then be made against
- * the wrong signer, which is exactly how the rekey cases below can pass while
- * the bug they cover is present.
- */
-const drainPendingSignRequests = (): void => {
-    const client = createTestQueryClient()
-    const { result, unmount } = renderHook(() => useSigningRequest(), {
-        wrapper: ({ children }) => (
-            <QueryClientProvider client={client}>
-                {children}
-            </QueryClientProvider>
-        ),
-    })
-    act(() => {
-        for (const request of [...result.current.pendingSignRequests]) {
-            result.current.removeSignRequest(request)
-        }
-    })
-    unmount()
 }
 
 describe('Flow: quantum-fee explainer on the signing review surface', () => {
@@ -158,6 +131,7 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     afterEach(() => {
         // Feature-flag override must not leak into other tests/files.
         useRemoteConfigStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
     })
     afterAll(async () => {
         await teardownTestDatabase()
@@ -186,7 +160,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
 
     it('renders the quantum-fee explainer when the resolved signer is a Quantum account', async () => {
         // Flag is off by default in tests (__DEV__ === false); enable it.
-        await enableQuantumFlag()
         await seedQuantumSigner()
         const { request } = buildTransactionSignRequest()
 
@@ -206,7 +179,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     })
 
     it('does not render the quantum-fee explainer for a standard (algo25) signer', async () => {
-        await enableQuantumFlag()
         await seedAlgo25Signer()
         const { request } = buildTransactionSignRequest()
 
@@ -228,7 +200,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     // the quantum boundary. The fee follows the rekeyed-to signer, so the
     // explainer has to follow the same hop or it describes the wrong signer.
     it('does not render the quantum-fee explainer when the Quantum sender is rekeyed to a standard account', async () => {
-        await enableQuantumFlag()
         await seedQuantumRekeyedToStandard()
         server.use(
             mockAlgodAccountInformation({
@@ -257,7 +228,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     })
 
     it('renders the quantum-fee explainer when a standard sender is rekeyed to a Quantum account', async () => {
-        await enableQuantumFlag()
         await seedStandardRekeyedToQuantum()
         server.use(
             mockAlgodAccountInformation({

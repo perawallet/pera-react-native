@@ -27,11 +27,13 @@ export const signLocalKeyGroups = async (
         signTransactions,
         signArbitraryData,
         signAuthData,
+        scope,
     } = input
     const strategy = createLocalKeyStrategy({
         signTransactions,
         signArbitraryData,
         signAuthData,
+        scope,
     })
 
     return signGroupsBySignerAccount(
@@ -40,7 +42,7 @@ export const signLocalKeyGroups = async (
         (group, signerAccount) => {
             // Rekey vs. multisig-cosign handling lives in
             // {@link resolveSigningAccount}. This call is defense-in-depth:
-            // the upstream dispatcher (`buildGroupSignerTypeMap`) already
+            // the upstream dispatcher (`buildGroupSignerMap`) already
             // classifies cosign groups by the participant's own type, but
             // routing through the same helper keeps signing correct if the
             // dispatch logic ever changes.
@@ -49,6 +51,7 @@ export const signLocalKeyGroups = async (
                 group.source,
                 group.data.type,
                 allAccounts,
+                scope.chainId,
             )
             return strategy.sign(group, accountForSigning)
         },

@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { extractAffectedWalletAddresses } from '../extractAffectedWalletAddresses'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const WALLET_A = 'WALLET_A'
 const WALLET_B = 'WALLET_B'

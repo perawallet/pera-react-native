@@ -32,7 +32,6 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -98,7 +97,7 @@ import {
 
 const ACCOUNT_A: WalletAccount = {
     id: 'a-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'a-key',
     name: 'Trading',
@@ -106,7 +105,7 @@ const ACCOUNT_A: WalletAccount = {
 
 const ACCOUNT_B: WalletAccount = {
     id: 'b-1',
-    type: AccountTypes.watch,
+    custody: { kind: 'watch' },
     address: HD_TEST_ADDRESS,
     name: 'Cold backup',
 }
@@ -287,7 +286,16 @@ describe('Flow: Account management', () => {
             name: string,
         ): WalletAccount => ({
             id: `hw-ledger-${accountIndex}`,
-            type: AccountTypes.hardware,
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'nano-x-1',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: accountIndex,
+            },
             address,
             name,
             hardwareDetails: {
@@ -349,7 +357,7 @@ describe('Flow: Account management', () => {
         // the seed is reachable via the child's metadata.parentKeyId.
         const algo25Account: WalletAccount = {
             id: 'signer-1',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: childKeyId,
             name: 'Signing account',

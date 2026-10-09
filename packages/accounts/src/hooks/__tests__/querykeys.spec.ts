@@ -12,7 +12,11 @@
 
 import { describe, test, expect } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
-import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
+import {
+    queryKeyReferencesScope,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
     invalidateAccountQueriesForAddresses,
@@ -20,9 +24,72 @@ import {
     getAccountBalancesQueryKey,
     getAccountAssetBalanceHistoryQueryKey,
     getAccountBalancesHistoryQueryKey,
+    getAccountCollectiblesQueryKey,
+    getAccountFundedNetworksQueryKey,
+    getAccountHoldingsPageQueryKey,
+    getAccountOptInRoundsQueryKey,
+    getAccountSummaryQueryKey,
+    getAssetHoldersQueryKey,
+    getOnChainAccountInformationQueryKey,
     getOwnedAssetIdsQueryKey,
+    getRekeyedAddressesQueryKey,
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
+
+describe('query keys', () => {
+    test.each([
+        ['balance', getAccountBalancesQueryKey('ADDR1', MAINNET)],
+        ['summary', getAccountSummaryQueryKey('ADDR1', MAINNET)],
+        ['funded-networks', getAccountFundedNetworksQueryKey('ADDR1', MAINNET)],
+        ['holdings-page', getAccountHoldingsPageQueryKey('ADDR1', MAINNET)],
+        ['collectibles', getAccountCollectiblesQueryKey('ADDR1', MAINNET)],
+        [
+            'balance-history',
+            getAccountBalancesHistoryQueryKey(['ADDR1'], 'one-day', MAINNET),
+        ],
+        [
+            'on-chain-account-information',
+            getOnChainAccountInformationQueryKey('ADDR1', MAINNET),
+        ],
+        ['opt-in-rounds', getAccountOptInRoundsQueryKey('ADDR1', MAINNET)],
+        ['rekeyed-addresses', getRekeyedAddressesQueryKey('ADDR1', MAINNET)],
+        ['owned-asset-ids', getOwnedAssetIdsQueryKey(MAINNET)],
+        ['asset-holders', getAssetHoldersQueryKey('123', MAINNET)],
+        [
+            'assets balance-history',
+            getAccountAssetBalanceHistoryQueryKey(
+                MAINNET,
+                'ADDR1',
+                '123',
+                'one-day',
+                'USD',
+            ),
+        ],
+    ])('%s carries the scope, not a bare network', (_, key) => {
+        expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
+        expect(queryKeyReferencesScope(key, TESTNET)).toBe(false)
+        expect(key.some(part => part === 'mainnet')).toBe(false)
+        expect(
+            key.some(
+                part =>
+                    typeof part === 'object' &&
+                    part !== null &&
+                    'network' in part,
+            ),
+        ).toBe(false)
+    })
+
+    test('the payload holds the scope object alongside the address', () => {
+        expect(getAccountSummaryQueryKey('ADDR1', MAINNET)).toEqual([
+            MODULE_PREFIX,
+            'summary',
+            { address: 'ADDR1', scope: MAINNET },
+        ])
+    })
+})
 
 describe('invalidateAccountQueriesForAddresses', () => {
     test('leaves multi-account balance-history aggregates alone by default', () => {
@@ -30,7 +97,7 @@ describe('invalidateAccountQueriesForAddresses', () => {
         const key = getAccountBalancesHistoryQueryKey(
             ['ADDR1', 'ADDR2'],
             'one-day',
-            'mainnet',
+            MAINNET,
         )
         queryClient.setQueryData(key, { value: 1 })
 
@@ -44,12 +111,12 @@ describe('invalidateAccountQueriesForAddresses', () => {
         const intersectingKey = getAccountBalancesHistoryQueryKey(
             ['ADDR1', 'ADDR2'],
             'one-day',
-            'mainnet',
+            MAINNET,
         )
         const disjointKey = getAccountBalancesHistoryQueryKey(
             ['ADDR3', 'ADDR4'],
             'one-day',
-            'mainnet',
+            MAINNET,
         )
         queryClient.setQueryData(intersectingKey, { value: 1 })
         queryClient.setQueryData(disjointKey, { value: 2 })
@@ -68,8 +135,8 @@ describe('invalidateAccountQueriesForAddresses', () => {
 
     test('includeMultiAccountKeys still invalidates single-account keys and spares others', () => {
         const queryClient = new QueryClient()
-        const targetKey = getAccountBalancesQueryKey('ADDR1', 'mainnet')
-        const otherKey = getAccountBalancesQueryKey('ADDR2', 'mainnet')
+        const targetKey = getAccountBalancesQueryKey('ADDR1', MAINNET)
+        const otherKey = getAccountBalancesQueryKey('ADDR2', MAINNET)
         queryClient.setQueryData(targetKey, { value: 1 })
         queryClient.setQueryData(otherKey, { value: 2 })
 
@@ -85,26 +152,24 @@ describe('invalidateAccountQueriesForAddresses', () => {
 describe('removeAccountQueriesForAddresses', () => {
     test('evicts only the targeted address queries from the cache', () => {
         const queryClient = new QueryClient()
-        queryClient.setQueryData(
-            getAccountBalancesQueryKey('ADDR1', 'mainnet'),
-            { value: 1 },
-        )
-        queryClient.setQueryData(
-            getAccountBalancesQueryKey('ADDR2', 'mainnet'),
-            { value: 2 },
-        )
+        queryClient.setQueryData(getAccountBalancesQueryKey('ADDR1', MAINNET), {
+            value: 1,
+        })
+        queryClient.setQueryData(getAccountBalancesQueryKey('ADDR2', MAINNET), {
+            value: 2,
+        })
 
         removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
 
         // ADDR1's entry is gone; ADDR2's survives.
         expect(
             queryClient.getQueryData(
-                getAccountBalancesQueryKey('ADDR1', 'mainnet'),
+                getAccountBalancesQueryKey('ADDR1', MAINNET),
             ),
         ).toBeUndefined()
         expect(
             queryClient.getQueryData(
-                getAccountBalancesQueryKey('ADDR2', 'mainnet'),
+                getAccountBalancesQueryKey('ADDR2', MAINNET),
             ),
         ).toEqual({ value: 2 })
     })
@@ -112,7 +177,7 @@ describe('removeAccountQueriesForAddresses', () => {
     test('evicts the asset balance-history key (account_address, deeper payload index)', () => {
         const queryClient = new QueryClient()
         const key = getAccountAssetBalanceHistoryQueryKey(
-            'mainnet',
+            MAINNET,
             'ADDR1',
             '123',
             'one-day',
@@ -140,7 +205,7 @@ describe('removeAccountQueriesForAddresses', () => {
         const key = getAccountBalancesHistoryQueryKey(
             ['ADDR1', 'ADDR2'],
             'one-day',
-            'mainnet',
+            MAINNET,
         )
         queryClient.setQueryData(key, { value: 1 })
 
@@ -151,30 +216,26 @@ describe('removeAccountQueriesForAddresses', () => {
 
     test('leaves network-scoped owned-asset-ids intact (search still works)', () => {
         const queryClient = new QueryClient()
-        queryClient.setQueryData(getOwnedAssetIdsQueryKey('mainnet'), [
-            '1',
-            '2',
-        ])
+        queryClient.setQueryData(getOwnedAssetIdsQueryKey(MAINNET), ['1', '2'])
 
         removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
 
         expect(
-            queryClient.getQueryData(getOwnedAssetIdsQueryKey('mainnet')),
+            queryClient.getQueryData(getOwnedAssetIdsQueryKey(MAINNET)),
         ).toEqual(['1', '2'])
     })
 
     test('is a no-op for an empty address list', () => {
         const queryClient = new QueryClient()
-        queryClient.setQueryData(
-            getAccountBalancesQueryKey('ADDR1', 'mainnet'),
-            { value: 1 },
-        )
+        queryClient.setQueryData(getAccountBalancesQueryKey('ADDR1', MAINNET), {
+            value: 1,
+        })
 
         removeAccountQueriesForAddresses(queryClient, [])
 
         expect(
             queryClient.getQueryData(
-                getAccountBalancesQueryKey('ADDR1', 'mainnet'),
+                getAccountBalancesQueryKey('ADDR1', MAINNET),
             ),
         ).toEqual({ value: 1 })
     })
@@ -185,7 +246,7 @@ describe('isAccountBalancesHistoryQuery', () => {
         const key = getAccountBalancesHistoryQueryKey(
             ['ADDR1'],
             'one-week',
-            'mainnet',
+            MAINNET,
         )
 
         expect(isAccountBalancesHistoryQuery(key)).toBe(true)
@@ -197,7 +258,7 @@ describe('isAccountBalancesHistoryQuery', () => {
         expect(
             isAccountBalancesHistoryQuery(
                 getAccountAssetBalanceHistoryQueryKey(
-                    'mainnet',
+                    MAINNET,
                     'ADDR1',
                     '123',
                     'one-day',
@@ -207,20 +268,20 @@ describe('isAccountBalancesHistoryQuery', () => {
         ).toBe(false)
         expect(
             isAccountBalancesHistoryQuery(
-                getAccountBalancesQueryKey('ADDR1', 'mainnet'),
+                getAccountBalancesQueryKey('ADDR1', MAINNET),
             ),
         ).toBe(false)
     })
 })
 
-describe('NETWORK_PARTITIONED_QUERY_MODULES (blockchain)', () => {
+describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
     test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
-        // blockchain/clearCustomNetworkCache.ts duplicates this package's
+        // chain-shared/clearCustomNetworkCache.ts duplicates this package's
         // MODULE_PREFIX rather than importing it (importing back would cycle
-        // — accounts depends on blockchain). This test is the drift guard:
+        // — accounts depends on chain-shared). This test is the drift guard:
         // if MODULE_PREFIX is ever renamed here, this fails in this package,
         // where the rename is happening, instead of silently going stale on
-        // the blockchain side.
+        // the chain-shared side.
         expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
     })
 })

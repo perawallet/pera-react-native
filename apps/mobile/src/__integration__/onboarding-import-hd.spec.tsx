@@ -29,10 +29,11 @@ import {
     AccountTypes,
     DerivationTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import {
@@ -212,7 +213,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].type).toBe(AccountTypes.hdWallet)
+        expect(accountType(accounts[0])).toBe(AccountTypes.hdWallet)
         expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
     })
 
@@ -259,7 +260,11 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-1',
-                type: AccountTypes.hdWallet,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 address: HD_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
                 hdWalletDetails: {

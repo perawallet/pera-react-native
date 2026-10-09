@@ -11,11 +11,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 
 // Same stub as buildKeylessAccount.spec.ts. Without it, the importActual of
-// buildKeylessAccount below loads the real blockchain package (algosdk), which
+// buildKeylessAccount below loads the real Algorand runtime (algosdk), which
 // under CI's coverage instrumentation takes ~5s — right at the test timeout.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
@@ -31,6 +32,7 @@ vi.mock('../buildKeylessAccount', () => ({
     buildWatchAccount: vi.fn(() => ({ kind: 'watch-built' })),
     buildLedgerAccount: vi.fn(() => ({ kind: 'ledger-built' })),
     buildMultiSigAccount: vi.fn(() => ({ kind: 'msig-built' })),
+    recordLegacyAuthority: vi.fn(),
 }))
 
 vi.mock('../legacyKeyConversion', () => ({
@@ -56,10 +58,12 @@ import {
     buildLedgerAccount,
     buildMultiSigAccount,
     buildWatchAccount,
+    recordLegacyAuthority,
 } from '../buildKeylessAccount'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -96,6 +100,7 @@ beforeEach(() => {
     vi.mocked(buildWatchAccount).mockClear()
     vi.mocked(buildLedgerAccount).mockClear()
     vi.mocked(buildMultiSigAccount).mockClear()
+    vi.mocked(recordLegacyAuthority).mockClear()
     vi.mocked(migrateAlgo25Account).mockClear()
     vi.mocked(migrateHdAccount).mockClear()
 })
@@ -112,6 +117,7 @@ describe('migrateLegacyAccount dispatch', () => {
         })
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 
     it('routes multisig (joint != null) before checking ledger/hd/secret', async () => {
@@ -133,6 +139,7 @@ describe('migrateLegacyAccount dispatch', () => {
         expect(buildLedgerAccount).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 
     it('routes ledger before hd/algo25 when ledger details exist', async () => {
@@ -149,6 +156,7 @@ describe('migrateLegacyAccount dispatch', () => {
 
         expect(buildLedgerAccount).toHaveBeenCalledWith(account)
         expect(addKeylessAccountToStore).toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
     })
@@ -193,6 +201,7 @@ describe('migrateLegacyAccount dispatch', () => {
 
         expect(buildWatchAccount).toHaveBeenCalledWith(account)
         expect(result).toEqual({ kind: 'watch-built' })
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 })
 
@@ -327,7 +336,7 @@ const { buildWatchAccount: realBuildWatchAccount } = await vi.importActual<
 >('../buildKeylessAccount')
 
 describe('migrateLegacyAccount with authAddress', () => {
-    it('migrates a keyless account with authAddress as a rekeyed watch account', async () => {
+    it('migrates a keyless account with authAddress as a watch account and records its authority', async () => {
         vi.mocked(buildWatchAccount).mockImplementationOnce(
             realBuildWatchAccount,
         )
@@ -343,7 +352,7 @@ describe('migrateLegacyAccount with authAddress', () => {
 
         const created = await migrateLegacyAccount(buildArgs(account))
 
-        expect(created.type).toBe('watch')
-        expect(created.rekeyAddress).toBe('AUTHADDR')
+        expect(accountType(created)).toBe('watch')
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 })

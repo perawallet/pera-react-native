@@ -11,5 +11,9 @@
  */
 
 export * from './store/network-store'
+export * from './store/selected-scope'
 export * from './hooks/useSelectedScope'
 export * from './hooks/useChainCapability'
+export * from './hooks/useNetwork'
+export * from './hooks/useOnNetworkSwitch'
+export * from './utils/clearCustomNetworkCache'

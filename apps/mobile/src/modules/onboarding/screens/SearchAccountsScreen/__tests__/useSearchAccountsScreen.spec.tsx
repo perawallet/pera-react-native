@@ -12,7 +12,6 @@
 
 import { renderHook, waitFor } from '@test-utils/render'
 import { vi } from 'vitest'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import type { SearchAccountsParams } from '../../../routes/types'
 
@@ -48,7 +47,11 @@ const {
             account: {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -137,12 +140,7 @@ vi.mock('../../../hooks', () => ({
     REKEY_SCAN_UNAVAILABLE: 'rekey-scan-unavailable',
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    // The accounts barrel subscribes to the network store at load.
-    useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
-        subscribe: () => () => {},
-    },
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useAlgorandClient: () => ({
         client: {
             algod: {
@@ -150,6 +148,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             },
         },
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    // The accounts barrel subscribes to the network store at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -169,7 +178,11 @@ describe('useSearchAccountsScreen', () => {
             account: {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -214,7 +227,11 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
         mockDiscoverRekeyedAccounts.mockResolvedValue([])
@@ -233,14 +250,17 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
                 address: 'REKEYED_ADDRESS',
-                type: AccountTypes.watch,
-                rekeyAddress: 'MOCK_ADDRESS',
+                custody: { kind: 'watch' },
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
@@ -260,7 +280,11 @@ describe('useSearchAccountsScreen', () => {
             account: {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -275,7 +299,11 @@ describe('useSearchAccountsScreen', () => {
             {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -289,14 +317,22 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
 
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
@@ -327,7 +363,11 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
         mockDiscoverRekeyedAccounts.mockResolvedValue([])
@@ -356,14 +396,17 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
                 address: 'REKEYED_ADDRESS',
-                type: AccountTypes.watch,
-                rekeyAddress: 'MOCK_ADDRESS',
+                custody: { kind: 'watch' },
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
@@ -385,7 +428,11 @@ describe('useSearchAccountsScreen', () => {
             account: {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -400,7 +447,11 @@ describe('useSearchAccountsScreen', () => {
             {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -414,7 +465,11 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
         mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
@@ -433,13 +488,16 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         const discovered = [
             {
                 id: '1',
                 address: 'CBLW...',
-                type: AccountTypes.hdWallet,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 0 },
+                },
                 keyPairId: 'w-1',
                 hdWalletDetails: {
                     account: 1,
@@ -468,7 +526,6 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         mockDiscoverImportAccounts.mockResolvedValue([])
 
@@ -490,7 +547,6 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         mockDiscoverImportAccounts.mockRejectedValue(new Error('boom'))
 
@@ -511,7 +567,7 @@ describe('useSearchAccountsScreen', () => {
         const algo25Account = {
             id: '1',
             address: 'PARENT_ADDRESS',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
@@ -536,15 +592,14 @@ describe('useSearchAccountsScreen', () => {
         const algo25Account = {
             id: '1',
             address: 'PARENT_ADDRESS',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             keyPairId: 'wallet-1',
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
                 address: 'REKEYED_1',
-                type: AccountTypes.algo25,
-                rekeyAddress: 'PARENT_ADDRESS',
+                custody: { kind: 'local', seed: null },
             },
         ]
         mockRouteParams.current = {
@@ -570,7 +625,7 @@ describe('useSearchAccountsScreen', () => {
         const quantumAccount = {
             id: '1',
             address: 'PARENT_ADDRESS',
-            type: AccountTypes.quantum,
+            custody: { kind: 'local', seed: 'quantum' },
             keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
@@ -594,15 +649,14 @@ describe('useSearchAccountsScreen', () => {
         const quantumAccount = {
             id: '1',
             address: 'PARENT_ADDRESS',
-            type: AccountTypes.quantum,
+            custody: { kind: 'local', seed: 'quantum' },
             keyPairId: 'wallet-1',
         }
         const rekeyedAccounts = [
             {
                 id: 'rekeyed-1',
                 address: 'REKEYED_1',
-                type: AccountTypes.algo25,
-                rekeyAddress: 'PARENT_ADDRESS',
+                custody: { kind: 'local', seed: null },
             },
         ]
         mockRouteParams.current = {
@@ -628,7 +682,7 @@ describe('useSearchAccountsScreen', () => {
         const algo25Account = {
             id: '1',
             address: 'PARENT_ADDRESS',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             keyPairId: 'wallet-1',
         }
         mockRouteParams.current = {
@@ -657,7 +711,11 @@ describe('useSearchAccountsScreen', () => {
             account: {
                 id: '1',
                 address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 keyPairId: 'wallet-1',
                 hdWalletDetails: {
                     account: 0,
@@ -672,7 +730,11 @@ describe('useSearchAccountsScreen', () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
         mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))

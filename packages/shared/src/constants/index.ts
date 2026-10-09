@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-/** Distinct from {@link ALGO_ASSET_NAME} (`'ALGO'`, the ticker). */
-export const ALGO_ASSET_ID = '0'
-
 /**
  * Asset unit name, preferred-currency id, and onramp ramp-token id all collapse
- * to this one value. Distinct from {@link ALGO_ASSET_ID} (`'0'`).
+ * to this one value.
  */
 export const ALGO_ASSET_NAME = 'ALGO'
 

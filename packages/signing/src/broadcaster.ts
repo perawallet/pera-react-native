@@ -13,9 +13,15 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type ChainScope,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
+
+import type {
+    AppError,
+    Network,
+    Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'
 import type { IntentKey, SubmissionFlow } from './db/types'
@@ -44,6 +50,8 @@ export type ReconcileSummary = {
     failed: number
 }
 
+export type StaleGroupReason = 'already-on-chain' | 'expired'
+
 export type DerivedSubmissionAttempt = {
     txIds: string[]
     /** Highest lastValid in the group, in rounds. */
@@ -63,12 +71,8 @@ export type SubmitAndAutoRefreshOptions = {
 /** The chain-specific leg of submitting signed transactions; registered by the chain package. */
 export interface BroadcasterChainAdapter {
     chainId: ChainId
-    /**
-     * @param capturedNetwork - The network active when the signing actor was
-     *   created; re-compared at send time so a mid-flow network switch aborts
-     *   instead of submitting to the wrong chain.
-     */
-    createSubmitTransport(capturedNetwork: Network): DataTransport
+    /** The transport re-checks `capturedScope` with `assertScopeUnchanged` at send time. */
+    createSubmitTransport(capturedScope: ChainScope): DataTransport
     /** Resolves with the tx ids once the node accepts; confirmation is awaited in the background. */
     submitAndAutoRefresh(
         signedTxns: PeraSignedTransaction[],
@@ -76,6 +80,14 @@ export interface BroadcasterChainAdapter {
     ): Promise<string[]>
     /** Whether the attempt journal already holds this request's group as landed or landable. */
     isRequestGroupAlreadySubmitted(request: SignRequest): Promise<boolean>
+    /**
+     * Why the chain says the request's group can never land, or `null`.
+     * Resolves `null` on any doubt and never rejects: a false positive would
+     * decline a live dApp request.
+     */
+    findStaleGroupReason(
+        request: SignRequest,
+    ): Promise<Nullable<StaleGroupReason>>
     reconcileOpenSubmissions(): Promise<ReconcileSummary>
     deriveSubmissionAttemptFromBytes(
         bytesList: readonly Uint8Array[],
@@ -85,6 +97,12 @@ export interface BroadcasterChainAdapter {
         flow: SubmissionFlow,
         handler: SubmissionSettledHandler | null,
     ): void
+    /**
+     * The error a submit fails with when there is no answer within
+     * `timeoutMs`. Must be `metadata.retryable`, or RETRY can't re-enter
+     * transporting.
+     */
+    submitTimeoutError(timeoutMs: number): AppError
 }
 
 export const broadcasterChainAdapters =

@@ -29,6 +29,8 @@ import { FakeDappTransport } from './fake-transport'
 const ORIGIN = 'https://app.example'
 const ADDR_A = 'A'.repeat(58)
 const ADDR_B = 'B'.repeat(58)
+// Approved once, but not among the wallet's current signing accounts.
+const ADDR_C = 'C'.repeat(58)
 // Captured before `vi.useFakeTimers()` installs its own: a macrotask boundary
 // that drains the handler's await chain without advancing the clock the expiry
 // cases are steering.
@@ -65,6 +67,7 @@ const fakeChainAdapter = (
         if (scope.networkId !== 'custom') return scope.networkId
         return customGenesisHash === KNOWN_GENESIS_HASH ? 'testnet' : undefined
     },
+    emptySignaturesFor: () => ({}),
     walletConnect: {
         namespace: 'algorand',
         caip2ChainIdFor: () => null,
@@ -162,9 +165,12 @@ describe('DappConnectionHandler', () => {
                 icons: ['https://app.example/icon.png'],
             })
             expect(proposal.requesterOrigin).toBe(ORIGIN)
+            // Empty signatures are served unprompted, never granted.
             expect(proposal.requested).toEqual({
                 networks: ['mainnet'],
-                methods: [...DAPP_METHODS],
+                methods: DAPP_METHODS.filter(
+                    method => method !== 'getEmptySignatures',
+                ),
             })
             expect(proposal.pairingId).toBeUndefined()
 
@@ -175,6 +181,7 @@ describe('DappConnectionHandler', () => {
             expect(resultOf(await pending)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
                 network: 'mainnet',
+                emptySignatures: {},
             })
         })
 
@@ -245,9 +252,44 @@ describe('DappConnectionHandler', () => {
             expect(resultOf(response)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
                 network: 'mainnet',
+                emptySignatures: {},
             })
             expect(proposals).toHaveLength(0)
             expect((await store.get(ORIGIN))?.lastActiveAt).toBe(1_000_000)
+        })
+
+        it("hands back the chain's empty signatures for exactly the accounts it returns, on approve and on reconnect", async () => {
+            const emptySignaturesFor = vi.fn((addresses: readonly string[]) =>
+                Object.fromEntries(addresses.map(address => [address, 'gA=='])),
+            )
+            const { transport, registry, proposals } = setup([], {
+                adapter: fakeChainAdapter({ emptySignaturesFor }),
+            })
+            await registry.initialize()
+            const pending = transport.send(ORIGIN, 'connect')
+            await flush()
+
+            // ADDR_C is no longer a signing account, so it is pruned before
+            // the chain is asked and never reaches the page.
+            await proposals[0].approve([ADDR_A, ADDR_C])
+            const reconnect = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                {
+                    hasUserActivation: false,
+                },
+            )
+
+            for (const response of [await pending, reconnect]) {
+                expect(resultOf(response)).toMatchObject({
+                    emptySignatures: { [ADDR_A]: 'gA==' },
+                })
+            }
+            expect(emptySignaturesFor.mock.calls).toEqual([
+                [[ADDR_A]],
+                [[ADDR_A]],
+            ])
         })
 
         it('rejects a second connect while one is pending for the origin', async () => {
@@ -278,6 +320,7 @@ describe('DappConnectionHandler', () => {
             expect(resultOf(await first)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
                 network: 'mainnet',
+                emptySignatures: {},
             })
             const later = await transport.send(ORIGIN, 'connect', undefined, {
                 hasUserActivation: false,
@@ -285,6 +328,7 @@ describe('DappConnectionHandler', () => {
             expect(resultOf(later)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
                 network: 'mainnet',
+                emptySignatures: {},
             })
         })
 
@@ -608,6 +652,64 @@ describe('DappConnectionHandler', () => {
                         m.connectionId === ORIGIN,
                 ),
             ).toBe(true)
+        })
+    })
+
+    describe('getEmptySignatures', () => {
+        const signaturesAdapter = () =>
+            fakeChainAdapter({
+                emptySignaturesFor: addresses =>
+                    Object.fromEntries(
+                        addresses.map(address => [address, 'gA==']),
+                    ),
+            })
+
+        it("answers a connected origin with its live accounts' empty signatures, no prompt", async () => {
+            const { transport, registry, proposals, messages } = setup(
+                [{ ...connected(), accounts: [ADDR_A, ADDR_C] }],
+                { adapter: signaturesAdapter() },
+            )
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'getEmptySignatures',
+                { network: 'mainnet' },
+                { hasUserActivation: false },
+            )
+
+            // ADDR_C is no longer a signing account, so it is never answered.
+            expect(resultOf(response)).toEqual({ [ADDR_A]: 'gA==' })
+            expect(proposals).toHaveLength(0)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('refuses an origin that is not connected', async () => {
+            const { transport, registry } = setup([], {
+                adapter: signaturesAdapter(),
+            })
+            await registry.initialize()
+
+            const response = await transport.send(ORIGIN, 'getEmptySignatures')
+
+            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
+        })
+
+        it("refuses a network other than the wallet's current one", async () => {
+            const { transport, registry } = setup([connected()], {
+                adapter: signaturesAdapter(),
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'getEmptySignatures',
+                { network: 'testnet' },
+            )
+
+            expect(errorOf(response)?.code).toBe(
+                JsonRpcErrorCode.NetworkNotSupported,
+            )
         })
     })
 

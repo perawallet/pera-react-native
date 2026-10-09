@@ -18,7 +18,6 @@ import {
 } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Decimal } from 'decimal.js'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
 const VALID_PROJECTS = [
@@ -57,17 +56,15 @@ const VALID_PROJECTS_CONFIG = JSON.stringify({ en: VALID_PROJECTS })
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
     getStringValue: vi.fn(),
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
 }))
 
 vi.mock('../endpoints', () => ({
     fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
-    baseUnitsToDisplayUnits: (v: Decimal, decimals: number) =>
-        v.div(new Decimal(10).pow(decimals)),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: mocks.useSelectedScope,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -95,7 +92,10 @@ describe('useStakingProjectsQuery', () => {
                 },
             },
         })
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         mockRemoteConfig(VALID_PROJECTS_CONFIG)
     })
 
@@ -295,7 +295,10 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('uses the active network when fetching', async () => {
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         renderHook(() => useStakingProjectsQuery(), {
@@ -309,8 +312,11 @@ describe('useStakingProjectsQuery', () => {
         )
     })
 
-    it('keys the query by the chain scope of the active network', async () => {
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+    it('keys the query by the selected chain scope', async () => {
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         renderHook(() => useStakingProjectsQuery(), {
@@ -322,7 +328,7 @@ describe('useStakingProjectsQuery', () => {
                 queryClient.getQueryData([
                     'staking',
                     'projects',
-                    { scope: 'algorand/testnet' },
+                    { scope: { chainId: 'algorand', networkId: 'testnet' } },
                 ]),
             ).toEqual({}),
         )

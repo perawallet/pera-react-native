@@ -16,6 +16,7 @@ import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { capabilityState } from '@test-utils/capability-mock'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
@@ -80,11 +81,16 @@ vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockCapabilities,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 describe('useSettingsOptions', () => {
     const mockT = vi.fn((key: string) => key)
 
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
         ;(useLanguage as Mock).mockReturnValue({
             t: mockT,
             currentLanguage: 'de',
@@ -300,6 +306,37 @@ describe('useSettingsOptions', () => {
             })
         })
 
+        it('omits the scan-rekeyed item when the rekey capability is off', () => {
+            capabilityState.turnOff('rekey')
+
+            const { result } = renderHook(() => useSettingsOptions())
+
+            expect(
+                result.current.settingsOptions[0].items.map(item => item.title),
+            ).not.toContain('settings.main.scan_rekeyed_title')
+        })
+
+        // Sessions, pushes and passkeys outlive their capability, so the
+        // screens that manage them must too.
+        it.each([
+            ['notifications', 'notifications_title'],
+            ['dappConnect', 'wallet_connect_title'],
+            ['liquidAuth', 'passkeys_title'],
+        ] as const)(
+            'keeps the item managing %s when that capability is off',
+            (capability, titleKey) => {
+                capabilityState.turnOff(capability)
+
+                const { result } = renderHook(() => useSettingsOptions())
+
+                expect(
+                    result.current.settingsOptions[0].items.map(
+                        item => item.title,
+                    ),
+                ).toContain(`settings.main.${titleKey}`)
+            },
+        )
+
         it('omits the scan-rekeyed action when rekeyFlows is off (web)', () => {
             Object.assign(mockCapabilities, { rekeyFlows: false })
 
@@ -362,6 +399,18 @@ describe('useSettingsOptions', () => {
     })
 
     it('hides the cloud backup row when the feature flag is off', () => {
+        const { result } = renderHook(() => useSettingsOptions())
+        const accountItems = result.current.settingsOptions[0].items
+
+        expect(
+            accountItems.some(item => item.route === 'CloudBackupSettings'),
+        ).toBe(false)
+    })
+
+    it('hides the cloud backup row when no enabled chain supports cloud backup', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+        capabilityState.turnOff('cloudBackup')
+
         const { result } = renderHook(() => useSettingsOptions())
         const accountItems = result.current.settingsOptions[0].items
 

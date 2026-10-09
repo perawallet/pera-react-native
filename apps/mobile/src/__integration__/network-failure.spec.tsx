@@ -27,7 +27,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
@@ -46,7 +45,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -61,7 +59,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     mockCreateQuotes,
     mockSwapProviders,
@@ -74,6 +72,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -88,7 +88,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     })
     const sender: WalletAccount = {
         id: 'failure-sender',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',
@@ -154,7 +154,7 @@ describe('Edge: Network failure paths', () => {
         )
 
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

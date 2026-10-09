@@ -11,7 +11,11 @@
  */
 
 import { useEffect, useMemo, useRef } from 'react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     generateOrderedUniqueId,
     isRetryableError,
@@ -33,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     canSignArbitraryData,
+    authorityOf,
     canSignArc60,
     useAllAccounts,
     type WalletAccount,
@@ -253,11 +258,12 @@ const isArc60AuthorizedSigner = (
     signer: string,
     authorizedAccounts: string[],
     accounts: WalletAccount[],
+    scope: ChainScope,
 ): boolean =>
     authorizedAccounts.includes(signer) ||
     accounts.some(
         account =>
-            account.rekeyAddress === signer &&
+            authorityOf(account, scope) === signer &&
             authorizedAccounts.includes(account.address),
     )
 
@@ -274,7 +280,12 @@ const enqueueArc60Request = (
     const { signer } = authData
 
     if (
-        !isArc60AuthorizedSigner(signer, message.authorizedAccounts, accounts)
+        !isArc60AuthorizedSigner(
+            signer,
+            message.authorizedAccounts,
+            accounts,
+            getSelectedScope(message.chainId),
+        )
     ) {
         declineRequest(message, new Error('Invalid signer'), onError)
         return
@@ -457,9 +468,13 @@ export const enqueueInboundRequest = (
                         forgetRequest(deps, message)
                     },
                     respondWithError: error => {
-                        if (failRequest(message, error, deps.onError)) {
-                            forgetRequest(deps, message)
-                        }
+                        const isAnswered = failRequest(
+                            message,
+                            error,
+                            deps.onError,
+                        )
+                        if (isAnswered) forgetRequest(deps, message)
+                        return isAnswered
                     },
                 },
             )

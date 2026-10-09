@@ -22,6 +22,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
@@ -80,7 +81,7 @@ describe('Flow: Add Account → Watch address', () => {
         await waitFor(() => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })
-        expect(useAccountsStore.getState().accounts[0].type).toBe(
+        expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
             AccountTypes.watch,
         )
         expect(useAccountsStore.getState().accounts[0].address).toBe(
@@ -110,7 +111,7 @@ describe('Flow: Add Account → Watch address', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-1',
-                type: AccountTypes.watch,
+                custody: { kind: 'watch' },
                 address: WATCH_TARGET_ADDRESS,
             },
         ])

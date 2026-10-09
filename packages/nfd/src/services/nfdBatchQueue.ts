@@ -11,6 +11,7 @@
  */
 
 import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistNfds } from '../sync/nfd-syncer'
 import { getNfdsByAddresses } from '../db'
@@ -35,7 +36,10 @@ export const nfdBatchQueue = new BatchQueue<string, Nullable<NfdName>, Network>(
     async (addresses, network) => {
         await fetchAndPersistNfds(addresses, network)
 
-        const rows = await getNfdsByAddresses({ addresses, network })
+        const rows = await getNfdsByAddresses({
+            addresses,
+            scope: scopeForLegacyNetwork(network),
+        })
         const map = new Map<string, Nullable<NfdName>>()
         for (const row of rows) {
             map.set(row.address, row.name)

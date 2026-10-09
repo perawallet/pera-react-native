@@ -12,10 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockRequiresBackup = vi.fn()
 vi.mock('../useRequiresMnemonicBackup', () => ({
@@ -34,8 +31,21 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...original,
         useAccountFundedNetworksQuery: (...args: unknown[]) =>
             mockFundedNetworks(...args),
-        useAccountsRekeyedTo: (...args: unknown[]) =>
+        useAccountsDelegatedTo: (...args: unknown[]) =>
             mockAccountsRekeyedTo(...args),
+    }
+})
+
+const mockCanBackUpMnemonic = vi.fn()
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-shared')
+        >()
+    return {
+        ...original,
+        useChainCapability: (...args: unknown[]) =>
+            mockCanBackUpMnemonic(...args),
     }
 })
 
@@ -43,7 +53,7 @@ import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
-    type: AccountTypes.hdWallet,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     address: 'HD1',
     keyPairId: 'kp',
     hdWalletDetails: {
@@ -67,6 +77,23 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReset()
         mockAccountsRekeyedTo.mockReset()
         mockAccountsRekeyedTo.mockReturnValue([])
+        mockCanBackUpMnemonic.mockReset()
+        mockCanBackUpMnemonic.mockReturnValue(true)
+    })
+
+    test('false when the chain has mnemonic backup off, however funded', () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+        mockCanBackUpMnemonic.mockReturnValue(false)
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD),
+        )
+        expect(result.current).toBe(false)
+        expect(mockCanBackUpMnemonic).toHaveBeenCalledWith(
+            'algorand',
+            'mnemonicBackup',
+        )
     })
 
     test('false when the account does not require backup', () => {
@@ -113,7 +140,11 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockRequiresBackup.mockReturnValue(true)
         mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
-            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+            {
+                id: 'a',
+                custody: { kind: 'local', seed: null },
+                address: 'A',
+            },
         ])
 
         const { result } = renderHook(() =>
@@ -127,7 +158,11 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockRequiresBackup.mockReturnValue(false)
         mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
-            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+            {
+                id: 'a',
+                custody: { kind: 'local', seed: null },
+                address: 'A',
+            },
         ])
 
         const { result } = renderHook(() =>

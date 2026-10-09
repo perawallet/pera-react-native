@@ -22,7 +22,7 @@ import { useNativeAsset } from '../useNativeAsset'
 
 const mocks = vi.hoisted(() => ({ useNetwork: vi.fn() }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mocks.useNetwork,
 }))
 

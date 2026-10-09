@@ -15,7 +15,7 @@ import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
 import { assembleSignedMultisigTransactions } from '@perawallet/wallet-core-chain-algorand/multisig/assemble'
-import { encodeTransaction } from '@perawallet/wallet-core-blockchain/utils/transact'
+import { encodeTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
 
 import {
     createAlgo25Account,

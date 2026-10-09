@@ -19,7 +19,11 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { upsertAccountBalance, getAccountBalance } from '../balancesRepository'
+import {
+    upsertAccountBalance,
+    getAccountBalance,
+    getAllAccountBalances,
+} from '../balancesRepository'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -39,6 +43,41 @@ describe('account balances repository', () => {
     })
 
     describe('balances', () => {
+        it('reads every row with its network', async () => {
+            const row = {
+                db,
+                algoBalance: new Decimal(1),
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                minBalance: new Decimal('0.1'),
+                status: 'Offline',
+                authorityAddress: 'AUTH',
+            }
+            await upsertAccountBalance({
+                ...row,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+            await upsertAccountBalance({
+                ...row,
+                accountAddress: 'ADDR1',
+                scope: scopeForLegacyNetwork('testnet'),
+                authorityAddress: null,
+            })
+
+            const rows = await getAllAccountBalances({ db })
+
+            expect(
+                rows
+                    .map(r => [r.accountAddress, r.network, r.authorityAddress])
+                    .sort(),
+            ).toEqual([
+                ['ADDR1', 'algorand/mainnet', 'AUTH'],
+                ['ADDR1', 'algorand/testnet', null],
+            ])
+        })
+
         it('inserts a new balance', async () => {
             await upsertAccountBalance({
                 db,
@@ -50,7 +89,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 2,
                 minBalance: 100000n,
                 status: 'Online',
-                authAddress: null,
+                authorityAddress: null,
             })
 
             const result = await getAccountBalance({
@@ -77,7 +116,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 2,
                 minBalance: 100000n,
                 status: 'Online',
-                authAddress: null,
+                authorityAddress: null,
             })
 
             await upsertAccountBalance({
@@ -90,7 +129,7 @@ describe('account balances repository', () => {
                 totalAppsOptedIn: 3,
                 minBalance: 200000n,
                 status: 'Offline',
-                authAddress: 'AUTH1',
+                authorityAddress: 'AUTH1',
             })
 
             const result = await getAccountBalance({
@@ -104,7 +143,7 @@ describe('account balances repository', () => {
             expect(result!.totalAssetsOptedIn).toBe(5)
             expect(result!.minBalance).toEqual(new Decimal(200000))
             expect(result!.status).toBe('Offline')
-            expect(result!.authAddress).toBe('AUTH1')
+            expect(result!.authorityAddress).toBe('AUTH1')
         })
 
         it('returns undefined for unknown account', async () => {

@@ -34,6 +34,24 @@ describe('ChainModule', () => {
         })
     })
 
+    it('accepts restrictions for developer modes only', () => {
+        assertType<ChainModule>({
+            descriptor,
+            capabilityDefaults,
+            capabilityRestrictions: { onramp: ['developer-override'] },
+            register,
+            i18nKeys,
+        })
+        assertType<ChainModule>({
+            descriptor,
+            capabilityDefaults,
+            // @ts-expect-error live can't be restricted
+            capabilityRestrictions: { onramp: ['live'] },
+            register,
+            i18nKeys,
+        })
+    })
+
     it('rejects a module without capabilityDefaults', () => {
         // @ts-expect-error capabilityDefaults is required
         assertType<ChainModule>({ descriptor, register, i18nKeys })
@@ -63,9 +81,14 @@ describe('ChainModule', () => {
 })
 
 describe('ChainContext', () => {
-    it('exposes only the scope, endpoints, http client and key store', () => {
+    it('exposes only the scope, endpoints, Pera backend, timeouts, http client and key store', () => {
         expectTypeOf<keyof ChainContext>().toEqualTypeOf<
-            'getScope' | 'getEndpoints' | 'http' | 'kms'
+            | 'getScope'
+            | 'getEndpoints'
+            | 'getPeraBackend'
+            | 'timeouts'
+            | 'http'
+            | 'kms'
         >()
     })
 })

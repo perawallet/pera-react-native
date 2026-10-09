@@ -12,13 +12,10 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { aggregateTransactionWarnings } from '../warnings'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../blockchain', async importOriginal => {
+    const original = await importOriginal<typeof import('../../blockchain')>()
     return {
         ...original,
         encodeAlgorandAddress: vi.fn(

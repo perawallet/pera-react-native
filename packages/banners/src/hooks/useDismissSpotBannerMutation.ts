@@ -11,14 +11,19 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'
 import { getSpotBannersQueryKey } from './querykeys'
 
 export const useDismissSpotBannerMutation = () => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network)
     const queryClient = useQueryClient()
 
@@ -27,7 +32,7 @@ export const useDismissSpotBannerMutation = () => {
         mutationFn: (spotBannerID: string) =>
             closeSpotBanner(network, deviceID ?? '', spotBannerID),
         onMutate: async spotBannerID => {
-            const key = getSpotBannersQueryKey(network, deviceID ?? '')
+            const key = getSpotBannersQueryKey(scope, deviceID ?? '')
             await queryClient.cancelQueries({ queryKey: key })
             const previous =
                 queryClient.getQueryData<SpotBannerListResponse>(key)
@@ -40,14 +45,14 @@ export const useDismissSpotBannerMutation = () => {
             return { previous }
         },
         onError: (_err, _spotBannerID, context) => {
-            const key = getSpotBannersQueryKey(network, deviceID ?? '')
+            const key = getSpotBannersQueryKey(scope, deviceID ?? '')
             if (context?.previous) {
                 queryClient.setQueryData(key, context.previous)
             }
         },
         onSettled: () => {
             void queryClient.invalidateQueries({
-                queryKey: getSpotBannersQueryKey(network, deviceID ?? ''),
+                queryKey: getSpotBannersQueryKey(scope, deviceID ?? ''),
             })
         },
     })

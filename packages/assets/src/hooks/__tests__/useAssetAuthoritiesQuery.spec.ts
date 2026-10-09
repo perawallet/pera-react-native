@@ -17,7 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAssetAuthoritiesQuery } from '../useAssetAuthoritiesQuery'
 import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -30,7 +30,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 const account = {
     address: 'ADDR',
     keyPairId: 'key-1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 describe('useArbitraryDataSigner', () => {

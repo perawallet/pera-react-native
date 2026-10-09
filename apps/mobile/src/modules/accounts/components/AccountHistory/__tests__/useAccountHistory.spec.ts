@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -52,17 +52,21 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useNetwork: vi.fn(),
-        useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     CSV_MIME_TYPE: 'text/csv',

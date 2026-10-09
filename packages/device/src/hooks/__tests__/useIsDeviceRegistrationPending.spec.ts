@@ -12,17 +12,21 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    scopeKeyForLegacyNetwork,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 import { useDeviceStore } from '../../store'
 import { useIsDeviceRegistrationPending } from '../useIsDeviceRegistrationPending'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 type SeedDeviceStoreOptions = {
-    deviceIDs?: Map<Network, string>
+    deviceIDs?: Map<ChainScopeKey, string>
     pendingRegistrationNetworks?: Network[]
 }
 
@@ -46,7 +50,9 @@ describe('device/hooks/useIsDeviceRegistrationPending', () => {
 
     test('pending when the network is marked registration-pending', () => {
         seedDeviceStore({
-            deviceIDs: new Map([['mainnet', 'DEV-1']]),
+            deviceIDs: new Map([
+                [scopeKeyForLegacyNetwork('mainnet'), 'DEV-1'],
+            ]),
             pendingRegistrationNetworks: ['mainnet'],
         })
         const { result } = renderHook(() => useIsDeviceRegistrationPending())
@@ -54,7 +60,11 @@ describe('device/hooks/useIsDeviceRegistrationPending', () => {
     })
 
     test('not pending when registered', () => {
-        seedDeviceStore({ deviceIDs: new Map([['mainnet', 'DEV-1']]) })
+        seedDeviceStore({
+            deviceIDs: new Map([
+                [scopeKeyForLegacyNetwork('mainnet'), 'DEV-1'],
+            ]),
+        })
         const { result } = renderHook(() => useIsDeviceRegistrationPending())
         expect(result.current).toBe(false)
     })

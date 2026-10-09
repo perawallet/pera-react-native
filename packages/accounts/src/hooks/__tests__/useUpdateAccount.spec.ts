@@ -21,14 +21,14 @@ const mockAccounts: WalletAccount[] = [
         address: 'ADDR1',
         id: 'id1',
         name: 'Account 1',
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         canSign: true,
     },
     {
         address: 'ADDR2',
         id: 'id2',
         name: 'Account 2',
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
         canSign: true,
     },
 ]
@@ -77,7 +77,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => mockNetwork,
 }))
 
@@ -91,14 +91,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         )
@@ -111,7 +111,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated Account 1',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -122,50 +122,44 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Updated Account 1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         ])
     })
 
-    it('re-derives the provenance from the updated details instead of keeping a stale one', () => {
+    it('writes the account as passed, keeping its custody and chains', () => {
         const device = {
             manufacturer: 'ledger' as const,
             deviceName: 'Nano X',
             transportType: 'ble' as const,
         }
-        mockAccounts.push({
+        const hardware = {
             address: 'LEDGER',
             id: 'hw',
-            type: 'hardware',
             hardwareDetails: { ...device, deviceId: 'old', accountIndex: 0 },
-            provenance: {
+            custody: {
                 kind: 'hardware',
                 device: { ...device, deviceId: 'old' },
                 accountIndex: 0,
             },
-            credentials: {},
-        })
+            chains: { algorand: { address: 'LEDGER' } },
+        } as WalletAccount
+        mockAccounts.push(hardware)
         const { result } = renderHook(() => useUpdateAccount())
 
-        result.current({
-            ...mockAccounts[2],
-            hardwareDetails: { ...device, deviceId: 'new', accountIndex: 0 },
-        } as WalletAccount)
+        result.current({ ...hardware, name: 'Renamed' })
 
         const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
-        expect(written[2].provenance).toEqual({
-            kind: 'hardware',
-            device: { ...device, deviceId: 'new' },
-            accountIndex: 0,
-        })
+        expect(written[2]).toEqual({ ...hardware, name: 'Renamed' })
+        expect(written[2]).not.toHaveProperty('type')
     })
 
     it('updates account at correct index', () => {
@@ -175,7 +169,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR2',
             id: 'id2',
             name: 'Updated Account 2',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -186,14 +180,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Updated Account 2',
-                type: 'algo25',
+                custody: { kind: 'local', seed: null },
                 canSign: true,
             },
         ])
@@ -206,7 +200,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 
@@ -222,7 +216,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR_NOT_FOUND',
             id: 'id-not-found',
             name: 'Non-existent',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
 

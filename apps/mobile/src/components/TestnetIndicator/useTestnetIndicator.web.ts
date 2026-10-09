@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useNetworkLabel } from '@hooks/useNetworkLabel'
 
 type UseTestnetIndicatorResult = {

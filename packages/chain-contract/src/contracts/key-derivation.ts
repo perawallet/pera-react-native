@@ -28,7 +28,10 @@ export interface KeyDerivationRequest {
 
 export interface KeyImportRequest {
     scheme: SigningScheme
-    /** Stored accounts reference this id, so a chain must never change its format. */
+    /**
+     * Stored accounts reference this id, so a chain must never change its format.
+     * It derives from the key bytes, so a re-import resolves to the entry it made before.
+     */
     id: string
     /** Attaches the imported key under an existing seed. */
     parentKeyId?: string

@@ -12,10 +12,8 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-    useNetwork,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     isMultisigAccount,
     useAllAccounts,
@@ -101,7 +99,6 @@ const buildResponses = (
 export const useMultisigTransportAdapters =
     (): UseMultisigTransportAdaptersResult => {
         const { network } = useNetwork()
-        const { encodeTransactionRaw } = useTransactionEncoder()
         const queryClient = useQueryClient()
         const allAccounts = useAllAccounts()
         const deviceId = useDeviceID(network)
@@ -154,11 +151,14 @@ export const useMultisigTransportAdapters =
                 // the wire pattern the backend was tested against and isolates
                 // per-signer failures from the already-succeeded propose.
                 const [proposer, ...cosigners] = signers
-                // No "TX" domain-separation prefix — the backend re-applies it
-                // when verifying, so the wire payload must be unprefixed. Same
-                // as Ledger, which adds the prefix on-device.
+                // Unprefixed: the backend re-applies the signing-domain prefix
+                // when verifying, as a hardware device does on-device.
                 const rawTransactionsBase64 = signedData.signed.map(stx =>
-                    encodeToBase64(encodeTransactionRaw(stx.txn)),
+                    encodeToBase64(
+                        plannerAdapterFor(network).encodeUnsignedTransaction(
+                            stx.txn,
+                        ),
+                    ),
                 )
 
                 const proposeParams: ProposeSignRequest = {
@@ -204,7 +204,10 @@ export const useMultisigTransportAdapters =
                 // It gates the "Cancel transaction" button, so losing it strips
                 // the user's ability to cancel their own proposal.
                 queryClient.setQueryData(
-                    getSignRequestDetailQueryKey(network, signRequestId),
+                    getSignRequestDetailQueryKey(
+                        scopeForLegacyNetwork(network),
+                        signRequestId,
+                    ),
                     {
                         ...latestResponse,
                         proposer_address:
@@ -221,7 +224,7 @@ export const useMultisigTransportAdapters =
                     proposerAddress: proposer.address,
                 }
             },
-            [encodeTransactionRaw, network, queryClient],
+            [network, queryClient],
         )
 
         const addSignatures = useCallback<AddSignaturesFn>(
@@ -258,7 +261,7 @@ export const useMultisigTransportAdapters =
                     // Backfilled for the reason given on the propose path above.
                     queryClient.setQueryData(
                         getSignRequestDetailQueryKey(
-                            network,
+                            scopeForLegacyNetwork(network),
                             proposeResponse.id,
                         ),
                         {
@@ -292,7 +295,7 @@ export const useMultisigTransportAdapters =
                                 expectedRawTransactionsBase64:
                                     draft.rawTransactionsBase64,
                                 deviceId: handoffDeviceId,
-                                network,
+                                scope: scopeForLegacyNetwork(network),
                                 sourceType: source.type,
                                 registeredAt: Date.now(),
                                 proposerAddress: proposer.address,
@@ -342,7 +345,7 @@ export const useMultisigTransportAdapters =
                 // addSignature doesn't always echo it; without this every cosign
                 // would wipe the pointer and strip the proposer's Cancel button.
                 const cacheKey = getSignRequestDetailQueryKey(
-                    network,
+                    scopeForLegacyNetwork(network),
                     signRequestId,
                 )
                 const previousCachedResponse =
@@ -368,7 +371,12 @@ export const useMultisigTransportAdapters =
                     )
                 }
                 const rawTransactionsBase64 = input.signedTransactions.map(
-                    stx => encodeToBase64(encodeTransactionRaw(stx.txn)),
+                    stx =>
+                        encodeToBase64(
+                            plannerAdapterFor(
+                                network,
+                            ).encodeUnsignedTransaction(stx.txn),
+                        ),
                 )
                 return useDraftSignRequestStore.getState().createDraft({
                     network,
@@ -382,7 +390,7 @@ export const useMultisigTransportAdapters =
                     proposeType: input.proposeType,
                 })
             },
-            [encodeTransactionRaw, msigByAddress, network],
+            [msigByAddress, network],
         )
 
         return {

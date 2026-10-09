@@ -11,7 +11,13 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    cleanup,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import {
     selectChainNetworkId,
     useNetworkStore,
@@ -36,13 +42,20 @@ const isRadioSelected = (testID: string): boolean =>
 const resolvedNetwork = (chainId: typeof ETHEREUM_CHAIN_ID | 'algorand') =>
     selectChainNetworkId(useNetworkStore.getState(), chainId)
 
+const toggleDeveloperMode = () =>
+    fireEvent.click(
+        within(
+            screen.getByTestId('node_settings_developer_mode_row'),
+        ).getByRole('switch'),
+    )
+
 const registerEthereum = () =>
     getProvider().chains.register(
         fixtureEthereumDescriptor,
         allCapabilities(false),
     )
 
-describe('Flow: Settings → Node Settings network picker', () => {
+describe('Flow: Settings → Developer Mode', () => {
     afterEach(() => {
         // Unmount first: a mounted screen re-renders on the store reset below
         // and would read a chain the registry no longer holds.
@@ -52,22 +65,18 @@ describe('Flow: Settings → Node Settings network picker', () => {
         useNetworkStore.getState().resetState()
     })
 
-    it('Given Algorand is the only chain, when the user picks TestNet, then Algorand moves to TestNet and the callout shows', async () => {
+    it('Given Algorand is the only chain, when the user switches mode and picks BetaNet, then the wallet follows and the override survives a round trip', async () => {
         renderScreen()
 
         await waitFor(() => {
             expect(screen.getByTestId('node_settings_screen')).toBeTruthy()
         })
-        expect(screen.getByTestId('node_settings_mainnet_row')).toBeTruthy()
-        expect(screen.getByTestId('node_settings_testnet_row')).toBeTruthy()
-        expect(screen.getByTestId('node_settings_custom_row')).toBeTruthy()
-        expect(screen.queryByTestId('node_settings_betanet_row')).toBeFalsy()
         expect(screen.queryByTestId('node_settings_chain_networks')).toBeFalsy()
         expect(
             screen.queryByTestId('node_settings_non_mainnet_notice'),
         ).toBeFalsy()
 
-        fireEvent.click(screen.getByTestId('node_settings_testnet_radio'))
+        toggleDeveloperMode()
 
         await waitFor(() => {
             expect(
@@ -75,45 +84,69 @@ describe('Flow: Settings → Node Settings network picker', () => {
             ).toBeTruthy()
         })
         expect(resolvedNetwork('algorand')).toBe('testnet')
-        expect(isRadioSelected('node_settings_testnet_radio')).toBe(true)
-        expect(isRadioSelected('node_settings_mainnet_radio')).toBe(false)
+        expect(useNetworkStore.getState().network).toBe('testnet')
+        expect(isRadioSelected('node_settings_algorand_testnet_radio')).toBe(
+            true,
+        )
+        expect(
+            screen.getByTestId('node_settings_algorand_betanet_row'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('node_settings_algorand_custom_row'),
+        ).toBeTruthy()
+
+        fireEvent.click(
+            screen.getByTestId('node_settings_algorand_betanet_radio'),
+        )
+
+        await waitFor(() => {
+            expect(resolvedNetwork('algorand')).toBe('betanet')
+        })
+
+        toggleDeveloperMode()
+
+        await waitFor(() => {
+            expect(
+                screen.queryByTestId('node_settings_chain_networks'),
+            ).toBeFalsy()
+        })
+        expect(resolvedNetwork('algorand')).toBe('mainnet')
+
+        toggleDeveloperMode()
+
+        await waitFor(() => {
+            expect(resolvedNetwork('algorand')).toBe('betanet')
+        })
     })
 
-    it('Given Ethereum is registered, when the user picks TestNet, then Algorand moves to TestNet and Ethereum to Sepolia', async () => {
+    it('Given Ethereum is registered, when developer mode is on, then each chain sits on its default test network', async () => {
         registerEthereum()
         renderScreen()
+
+        await waitFor(() => {
+            expect(screen.getByTestId('node_settings_screen')).toBeTruthy()
+        })
+        toggleDeveloperMode()
 
         await waitFor(() => {
             expect(
                 screen.getByTestId('node_settings_chain_networks'),
             ).toBeTruthy()
         })
-        expect(
-            screen.getByTestId('node_settings_chain_algorand_badge')
-                .textContent,
-        ).toBe('MainNet')
-        expect(
-            screen.getByTestId(`node_settings_chain_${ETHEREUM_CHAIN_ID}_badge`)
-                .textContent,
-        ).toBe('Mainnet')
-        // Algorand still offers custom networks, so the row stays.
-        expect(screen.getByTestId('node_settings_custom_row')).toBeTruthy()
-
-        fireEvent.click(screen.getByTestId('node_settings_testnet_radio'))
-
-        await waitFor(() => {
-            expect(
-                screen.getByTestId(
-                    `node_settings_chain_${ETHEREUM_CHAIN_ID}_badge`,
-                ).textContent,
-            ).toBe('Sepolia')
-        })
         expect(resolvedNetwork('algorand')).toBe('testnet')
         expect(resolvedNetwork(ETHEREUM_CHAIN_ID)).toBe('sepolia')
+        expect(
+            isRadioSelected(`node_settings_${ETHEREUM_CHAIN_ID}_sepolia_radio`),
+        ).toBe(true)
         expect(screen.queryByText('Goerli')).toBeFalsy()
+        expect(
+            screen.queryByTestId(
+                `node_settings_${ETHEREUM_CHAIN_ID}_custom_row`,
+            ),
+        ).toBeFalsy()
     })
 
-    it('Given no registered chain supports custom networks, when the screen mounts, then there is no Custom row', async () => {
+    it('Given no registered chain supports custom networks, when developer mode is on, then there is no Custom row', async () => {
         getProvider().chains.reset()
         registerEthereum()
         renderScreen()
@@ -121,7 +154,17 @@ describe('Flow: Settings → Node Settings network picker', () => {
         await waitFor(() => {
             expect(screen.getByTestId('node_settings_screen')).toBeTruthy()
         })
-        expect(screen.getByTestId('node_settings_testnet_row')).toBeTruthy()
-        expect(screen.queryByTestId('node_settings_custom_row')).toBeFalsy()
+        toggleDeveloperMode()
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId(
+                    `node_settings_${ETHEREUM_CHAIN_ID}_sepolia_row`,
+                ),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.queryByTestId('node_settings_algorand_custom_row'),
+        ).toBeFalsy()
     })
 })

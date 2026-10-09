@@ -43,27 +43,25 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
     quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { useSendFundsStore } from '@modules/transactions'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
 import {
@@ -76,8 +74,9 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -99,7 +98,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
 
     const sender: WalletAccount = {
         id: 'quantum-sender-1',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: keyResult!.signKeyId,
         name: 'Quantum sender',
@@ -161,11 +160,10 @@ describe('send from quantum account', () => {
         )
     })
 
-    it('Given the quantum flag is on and a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
-        await enableQuantumFlag()
+    it('Given a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
         await seedQuantumSender()
 
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -191,7 +189,6 @@ describe('send from quantum account', () => {
     })
 
     it('Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast', async () => {
-        await enableQuantumFlag()
         await seedQuantumSender()
 
         // A real payment from the quantum sender. Enqueued as a LOCAL

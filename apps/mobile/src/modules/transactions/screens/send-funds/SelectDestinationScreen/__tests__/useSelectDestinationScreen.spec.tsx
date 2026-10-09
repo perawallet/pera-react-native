@@ -53,13 +53,17 @@ vi.mock('@react-navigation/native', () => ({
     ) => selector({ routes: mockStackRoutes() }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     getArc59Config: mockGetArc59Config,
 }))
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
@@ -80,6 +84,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(() => ({
         data: new Map([['123', { assetId: '123', name: 'TestToken' }]]),
     })),

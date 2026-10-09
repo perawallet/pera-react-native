@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { toError, type Network } from '@perawallet/wallet-core-shared'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { toError } from '@perawallet/wallet-core-shared'
+import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import {
     isExternalCallbackSource,
-    NetworkChangedError,
     TransportError,
     walletConnectHandoffs,
     type CreateDraftSignRequestFn,
@@ -40,12 +40,12 @@ import { draftProposeContexts } from './draftProposeContexts'
  * app-side resolver polls for threshold-met and fires the callback.
  *
  *
- * `capturedNetwork` is re-checked before submission, so a mid-flow network
- * switch aborts rather than creating the backend record on the wrong chain.
+ * `capturedScope` is re-checked with `assertScopeUnchanged` before the backend
+ * record is created.
  */
 export const createMultisigProposeTransport = (
     proposeSignRequest: ProposeSignRequestFn,
-    capturedNetwork: Network,
+    capturedScope: ChainScope,
     getMsigMetadata: GetMsigMetadataFn,
     getDeviceId: GetDeviceIdFn,
     createDraftSignRequest?: CreateDraftSignRequestFn,
@@ -62,10 +62,7 @@ export const createMultisigProposeTransport = (
                 )
             }
 
-            const liveNetwork = useNetworkStore.getState().network
-            if (liveNetwork !== capturedNetwork) {
-                throw new NetworkChangedError(capturedNetwork, liveNetwork)
-            }
+            assertScopeUnchanged(capturedScope)
 
             const isExternal = isExternalCallbackSource(source.type)
             // `transportOptions.multisig.proposeMode` lets a local caller opt
@@ -171,7 +168,7 @@ export const createMultisigProposeTransport = (
                         expectedRawTransactionsBase64:
                             response.rawTransactionsBase64,
                         deviceId,
-                        network: capturedNetwork,
+                        scope: capturedScope,
                         sourceType: source.type,
                         registeredAt: Date.now(),
                         proposerAddress: response.proposerAddress,
@@ -211,7 +208,6 @@ export const createMultisigProposeTransport = (
                     sourceType: source.type,
                 }
             } catch (error) {
-                if (error instanceof NetworkChangedError) throw error
                 if (error instanceof TransportError) throw error
                 const err = toError(error)
                 throw new TransportError(err.message, err)

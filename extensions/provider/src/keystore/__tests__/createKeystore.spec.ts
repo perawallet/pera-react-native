@@ -16,17 +16,27 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
+const falconBinding = vi.hoisted(() => ({ falcon: true }))
+const defaultShim = vi.hoisted(() => () => ({}) as SubtleCrypto)
+
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     createReactNativeKeyStore: vi.fn(opts => ({
         ...opts,
         ready: Promise.resolve(),
     })),
+    loadDefaultFalconBinding: vi.fn(async () => falconBinding),
+    createDefaultShims: vi.fn(async () => [defaultShim]),
 }))
 
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
-import type { KeyStoreState } from '@algorandfoundation/keystore-core'
+import type {
+    KeyStoreState,
+    SubtleShim,
+} from '@algorandfoundation/keystore-core'
+import { createDefaultShims } from '@algorandfoundation/react-native-keystore'
 import { createPeraKeystore } from '../createKeystore'
+import { SECP256K1_ALGORITHM } from '../shims/secp256k1'
 
 const deps = () => ({
     store: new Store<KeyStoreState>({ keys: [], status: 'idle' }),
@@ -40,22 +50,31 @@ describe('createPeraKeystore', () => {
         expect(createPeraKeystore(deps())).toHaveProperty('subtle')
     })
 
-    // `falcon` must stay unset: the engine then loads
-    // `@joe-p/react-native-falcon` itself and degrades gracefully off-device.
-    // Passing an explicit binding would make bundles without the native module
-    // fail at construction instead.
-    it('leaves the Falcon binding to the engine', () => {
+    // `falcon` stays unset at construction: a binding passed there would make
+    // bundles without the native module fail immediately instead of when the
+    // lazy shim list loads it.
+    it('never passes a Falcon binding at construction', () => {
         expect(createPeraKeystore(deps())).not.toHaveProperty('falcon')
     })
 
-    // Two consequences, both silent. `createDefaultShims` wraps the bundled
-    // dp256 binding in `withSubtleDerivedMainKey` only when the caller passes
-    // no `dp256` override (keystore-core@1.0.0-canary.3 defaults.js:169), so an
-    // explicit stack is how the passkey main key ends up on the pure-JS
-    // 210,000-iteration PBKDF2; and `engine.js:205` only auto-loads Falcon when
-    // `shims` is absent. See `passkeyMainKeyDerivation.spec.ts`.
-    it('leaves the shim stack to the engine', () => {
-        expect(createPeraKeystore(deps())).not.toHaveProperty('shims')
+    // The list must be exactly the engine's own default set plus secp256k1.
+    // `createDefaultShims` wraps the bundled dp256 binding in
+    // `withSubtleDerivedMainKey` only when no `dp256` override is passed, so
+    // anything beyond `{ falcon }` would move the passkey main key onto the
+    // pure-JS 210,000-iteration PBKDF2. See `passkeyMainKeyDerivation.spec.ts`.
+    it('builds the default shims with the loaded Falcon binding, then adds secp256k1', async () => {
+        const { shims } = createPeraKeystore(deps()) as unknown as {
+            shims: () => Promise<SubtleShim[]>
+        }
+
+        const resolved = await shims()
+
+        expect(createDefaultShims).toHaveBeenCalledWith({
+            falcon: falconBinding,
+        })
+        expect(resolved).toHaveLength(2)
+        expect(resolved[0]).toBe(defaultShim)
+        expect(resolved[1].algorithm).toBe(SECP256K1_ALGORITHM)
     })
 
     it('wires the caller-owned store and hooks rather than fresh ones', () => {

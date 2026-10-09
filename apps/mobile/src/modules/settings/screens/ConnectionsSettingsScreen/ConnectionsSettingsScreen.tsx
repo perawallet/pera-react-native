@@ -102,13 +102,14 @@ export const ConnectionsSettingsScreen = () => {
         handleRevoke,
         keyExtractor,
         scannerState,
+        canConnect,
     } = useConnectionsSettingsScreen()
 
     // The header icon covers "add another" once the list is non-empty and the
     // empty state's button covers the first; never both at once.
     useNavigationHeader({
         right:
-            connections.length > 0 ? (
+            canConnect && connections.length > 0 ? (
                 <PWView testID='connections_settings_scan_button'>
                     <PWIcon
                         name='camera'
@@ -143,12 +144,16 @@ export const ConnectionsSettingsScreen = () => {
                         title={t('settings.connections.empty_title')}
                         body={t('settings.connections.empty_body')}
                         button={
-                            <PWButton
-                                title={t('walletconnect.settings.empty_button')}
-                                variant='primary'
-                                onPress={scannerState.open}
-                                testID='connections_settings_connect_button'
-                            />
+                            canConnect ? (
+                                <PWButton
+                                    title={t(
+                                        'walletconnect.settings.empty_button',
+                                    )}
+                                    variant='primary'
+                                    onPress={scannerState.open}
+                                    testID='connections_settings_connect_button'
+                                />
+                            ) : undefined
                         }
                     />
                 }

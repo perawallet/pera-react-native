@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { getKnownAssetId, nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    ALGO_ASSET_ID,
     type Network,
     type Nullable,
     type Optional,
@@ -33,11 +32,12 @@ export const resolveSwapRouteAssets = (
 ): Nullable<ResolvedSwapRouteAssets> => {
     if (!params?.assetInId && !params?.assetOutId) return null
 
-    const assetInId = params.assetInId || ALGO_ASSET_ID
+    const scope = scopeForLegacyNetwork(network)
+    const assetInId = params.assetInId || nativeAssetFor(scope.chainId).assetId
     const assetOutId =
         params.assetOutId && params.assetOutId !== assetInId
             ? params.assetOutId
-            : getKnownAssetId('USDC', scopeForLegacyNetwork(network))
+            : getKnownAssetId('USDC', scope)
 
     // No known USDC to default the output side to — no route to resolve.
     if (assetOutId === null) return null

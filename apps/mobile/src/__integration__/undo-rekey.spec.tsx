@@ -40,6 +40,7 @@ import { http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
 
 import { server } from '@test-utils/msw-server'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { NestedNavigateRedirect } from '@test-utils/nestedNavigateRedirect'
@@ -50,12 +51,14 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
+    authorityOf,
     fetchAndPersistAccount,
     upsertAccountBalance,
+    useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import {
     mockAlgodAccountInformation,
@@ -63,7 +66,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'
@@ -84,8 +87,8 @@ const WARNING_CONFIRM_KEY = 'rekey.undo.warning.confirm'
 const WARNING_CANCEL_KEY = 'rekey.undo.warning.cancel'
 
 // Mint the auth account's real KMS key and register both accounts: the
-// rekeyed source (no signing key of its own) and the auth account its
-// `rekeyAddress` points at. The signing pipeline walks that chain.
+// rekeyed source (no signing key of its own) and the auth account it is
+// rekeyed to. The signing pipeline walks that chain.
 const seedRekeyedSource = async (): Promise<{
     source: WalletAccount
     authAccount: WalletAccount
@@ -100,19 +103,19 @@ const seedRekeyedSource = async (): Promise<{
     })
     const authAccount: WalletAccount = {
         id: 'undo-auth',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Auth',
     }
     const source: WalletAccount = {
         id: 'undo-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: REKEY_TARGET_ADDRESS,
         keyPairId: '',
         name: 'Rekeyed source',
-        rekeyAddress: ALGO25_TEST_ADDRESS,
     }
+    seedAuthority(source.address, ALGO25_TEST_ADDRESS)
     useAccountsStore.getState().setAccounts([source, authAccount])
     useAccountsStore.getState().setSelectedAccountAddress(source.address)
     // The source pays the undo fee — the confirm screen's fee preflight
@@ -126,7 +129,7 @@ const seedRekeyedSource = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(0.1),
         status: 'Offline',
-        authAddress: authAccount.address,
+        authorityAddress: authAccount.address,
     })
     return { source, authAccount }
 }
@@ -157,6 +160,9 @@ describe('Flow: Undo rekey end-to-end', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
+        // The confirm screen reads the authority on the selected network.
+        useNetworkStore.getState().setNetwork('mainnet')
 
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
@@ -223,10 +229,10 @@ describe('Flow: Undo rekey end-to-end', () => {
         const body = await calls[0][0].request.arrayBuffer()
         expect(body.byteLength).toBeGreaterThan(50)
 
-        // LRK-022: the rekey badge reads the store's rekeyAddress mirror,
-        // which only a sync tick clears once algod stops reporting an
-        // auth-addr. Model the undo landing on chain, then drive the real
-        // sync path and assert the badge source clears.
+        // The rekey badge reads the chain-state slice, which only a sync tick
+        // clears once algod stops reporting an auth-addr. Model the undo
+        // landing on chain, then drive the real sync path and assert the
+        // authority clears.
         server.use(
             mockAlgodAccountInformation({
                 address: REKEY_TARGET_ADDRESS,
@@ -238,8 +244,7 @@ describe('Flow: Undo rekey end-to-end', () => {
         const synced = useAccountsStore
             .getState()
             .accounts.find(a => a.address === REKEY_TARGET_ADDRESS)
-        expect(synced?.rekeyAddress).toBeUndefined()
-        expect(synced?.rekeyAddressByNetwork?.mainnet).toBeUndefined()
+        expect(authorityOf(synced!, MAINNET_SCOPE)).toBeNull()
     })
 
     it('Given the warning sheet is open, when the user cancels it, then no transaction is submitted and the confirm screen stays mounted', async () => {

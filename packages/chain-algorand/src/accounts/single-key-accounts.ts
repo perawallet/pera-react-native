@@ -19,11 +19,9 @@ import {
     type SingleKeyAccountOps,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
+    algo25PublicKeyFromSeed,
     algo25SignKeyId,
     indicesToAlgo25Seed,
     PQ_DERIVATION_CANONICAL,
@@ -32,11 +30,15 @@ import {
     zeroBytes,
     type QuantumAddressCandidate,
 } from '@perawallet/wallet-core-kms'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
-import { algorandQuantumDerivation } from './quantum'
+import { algorandQuantumDerivation, quantumNative } from './quantum'
 
 type Save = (minted: MintedAccount) => Promise<void>
 
@@ -69,13 +71,11 @@ const createAlgo25 = async (
     try {
         return {
             account: buildAccount({
-                address: ed25519Address(publicKey, scope),
-                provenance: {
-                    kind: 'local',
-                    seed: 'algo25',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: {
+                custody: { kind: 'local', seed: null },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: ed25519Address(publicKey, scope),
                         keyPairId: algo25SignKeyId(seedKeyId),
                     },
                 },
@@ -105,13 +105,14 @@ const createQuantum = async (
     try {
         return {
             account: buildAccount({
-                address: result.address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'quantum',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: { keyPairId: result.signKeyId },
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: result.address,
+                        keyPairId: result.signKeyId,
+                        native: quantumNative(result.publicKey),
+                    },
                 },
             }),
             seedKeyId: result.seedKey.id,
@@ -194,13 +195,11 @@ const importQuantum = async (
         })
         const minted: MintedAccount = {
             account: buildAccount({
-                address: result.address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'quantum',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: {
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: result.address,
                         keyPairId:
                             candidate.derivation === PQ_DERIVATION_CANONICAL
                                 ? quantumSignKeyId(
@@ -208,6 +207,7 @@ const importQuantum = async (
                                       PQ_DERIVATION_CANONICAL,
                                   )
                                 : result.signKeyId,
+                        native: quantumNative(result.publicKey),
                     },
                 },
             }),
@@ -232,13 +232,13 @@ const importAlgo25 = async (
     })
     const minted: MintedAccount = {
         account: buildAccount({
-            address: ed25519Address(publicKey, scope),
-            provenance: {
-                kind: 'local',
-                seed: 'algo25',
-            },
-            credentials: {
-                [LEGACY_CHAIN_ID]: { keyPairId: algo25SignKeyId(seedKey.id) },
+            custody: { kind: 'local', seed: null },
+            chainId: ALGORAND_CHAIN_ID,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: ed25519Address(publicKey, scope),
+                    keyPairId: algo25SignKeyId(seedKey.id),
+                },
             },
         }),
         seedKeyId: seedKey.id,
@@ -248,9 +248,50 @@ const importAlgo25 = async (
     return minted.account
 }
 
+// Each step re-derives the entropy from the indices and zeroes it before its
+// probe, so no seed is held across a network round trip. The algo25 address is
+// probed first so a standard account with history never pays for two Falcon
+// keygens. Any failure, Falcon unavailable included, reads as "nothing found".
+const withAlgo25Entropy = <T>(
+    mnemonicIndices: Uint16Array,
+    derive: (entropy: Uint8Array) => T,
+): T => {
+    const entropy = indicesToAlgo25Seed(mnemonicIndices)
+    try {
+        return derive(entropy)
+    } finally {
+        zeroBytes(entropy)
+    }
+}
+
+const findQuantumAccountForMnemonic = async (
+    mnemonicIndices: Uint16Array,
+    scope: ChainScope,
+): Promise<Nullable<string>> => {
+    const network = algorandNetworkOf(scope)
+    try {
+        const algo25Address = withAlgo25Entropy(mnemonicIndices, entropy =>
+            ed25519Address(algo25PublicKeyFromSeed(entropy), scope),
+        )
+        if (await algorandAccountExists(algo25Address, network)) return null
+
+        const candidates = withAlgo25Entropy(mnemonicIndices, entropy =>
+            quantumAddressCandidates(entropy, algorandQuantumDerivation),
+        )
+        const existence = await Promise.all(
+            candidates.map(candidate =>
+                algorandAccountExists(candidate.address, network),
+            ),
+        )
+        return candidates.find((_, index) => existence[index])?.address ?? null
+    } catch {
+        return null
+    }
+}
+
 export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
     create: (keystore, { kind, id }, scope) =>
-        kind === AccountTypes.algo25
+        kind === AccountTypes.standalone
             ? createAlgo25(keystore, scope, id)
             : createQuantum(keystore, id),
     importMnemonic: (
@@ -259,7 +300,8 @@ export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
         scope,
         save,
     ) =>
-        kind === AccountTypes.algo25
+        kind === AccountTypes.standalone
             ? importAlgo25(keystore, mnemonicIndices, scope, save)
             : importQuantum(keystore, mnemonicIndices, isHeld, scope, save),
+    findQuantumAccountForMnemonic,
 }

@@ -14,8 +14,9 @@ import {
     createChainAdapterRegistry,
     scopeForLegacyNetwork,
     type ChainId,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { CardSiwaSignData } from './api/card-creation'
 import type { PendingWithdrawal } from './models'

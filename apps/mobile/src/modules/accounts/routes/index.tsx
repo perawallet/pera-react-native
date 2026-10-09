@@ -23,7 +23,7 @@ import {
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
 import { peraCardAccountScreens } from '@modules/card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 import { fullScreenLayout } from '@layouts/index'
 
 import type { AccountStackParamsList } from './types'
@@ -35,8 +35,8 @@ export const AccountStackNavigator = () => {
     // Same gate the root stack puts on the rest of the card surface, so the
     // remote kill-switch removes the dashboard route too, not just its entry
     // point in the account switcher.
-    const isPeraCardEnabled = useIsPeraCardEnabled()
-    const isCardEnabled = routeCapabilities.peraCard && isPeraCardEnabled
+    const isCardEnabled = useIsPeraCardEnabled()
+    const canManageAssets = useCapability({ anyChain: 'manageAssets' })
 
     return (
         <AccountStack.Navigator
@@ -68,11 +68,13 @@ export const AccountStackNavigator = () => {
                     title: '',
                 }}
             />
-            <AccountStack.Screen
-                name='RemoveAssets'
-                component={RemoveAssetsScreen}
-                options={{ title: 'remove_assets.title' }}
-            />
+            {canManageAssets && (
+                <AccountStack.Screen
+                    name='RemoveAssets'
+                    component={RemoveAssetsScreen}
+                    options={{ title: 'remove_assets.title' }}
+                />
+            )}
             {/* Deeplinking straight to a card screen must pass `initial: false`,
                 or this stack is seeded without AccountDetails to go back to. */}
             {isCardEnabled &&

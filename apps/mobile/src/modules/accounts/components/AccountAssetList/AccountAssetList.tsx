@@ -11,7 +11,6 @@
  */
 
 import { PWButton, PWText, PWView } from '@components/core'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback } from 'react'
 import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
@@ -29,6 +28,7 @@ import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -46,6 +46,7 @@ export const AccountAssetList = ({
     refreshControl,
 }: AccountAssetListProps) => {
     const styles = useStyles()
+    const isNativeAssetId = useIsNativeAssetId()
     const { t } = useLanguage()
 
     const {
@@ -53,6 +54,7 @@ export const AccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
+        canManageAssets,
         listRef,
         headerState,
         setSearchFilter,
@@ -67,7 +69,8 @@ export const AccountAssetList = ({
         ({ item }: { item: AccountHoldingsLiteRow }) => {
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
-                !isAlgoAssetId(item.assetId) &&
+                renderItemProps.canManageAssets &&
+                !isNativeAssetId(item.assetId) &&
                 item.amount.isZero()
 
             return (
@@ -80,7 +83,7 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [renderItemProps, convertFiat],
+        [isNativeAssetId, renderItemProps, convertFiat],
     )
 
     const listHeader = (
@@ -103,15 +106,17 @@ export const AccountAssetList = ({
                             </PWText>
                         </PWView>
                         <PWView style={styles.titleBarButtonContainer}>
-                            <PWButton
-                                testID='manage_assets_button'
-                                icon='sliders'
-                                variant='helper'
-                                paddingStyle='none'
-                                onPress={handleOpenManage}
-                                style={styles.manageButton}
-                            />
-                            {!isReadOnly && (
+                            {canManageAssets && (
+                                <PWButton
+                                    testID='manage_assets_button'
+                                    icon='sliders'
+                                    variant='helper'
+                                    paddingStyle='none'
+                                    onPress={handleOpenManage}
+                                    style={styles.manageButton}
+                                />
+                            )}
+                            {!isReadOnly && canManageAssets && (
                                 <PWButton
                                     testID='add_asset_button'
                                     icon='plus'

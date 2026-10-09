@@ -16,31 +16,64 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { useRemoteConfigOverrides } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { selectChainMode, useNetworkStore } from '../store/network-store'
+
+export type ChainCapabilityRequirement = {
+    chain?: { chainId: ChainId; capability: ChainCapability }
+    anyChain?: ChainCapability
+}
 
 /**
+ * Subscribes once and returns a checker, so a list of requirements (tabs) or
+ * one chosen at call time (deeplinks) needs no hook per requirement.
+ *
  * The one rendering rule for every capability gate: a false capability hides
  * the element that depends on it. Nothing is ever rendered disabled because
- * a capability is off, and neither hook here checks whether the capability's
+ * a capability is off, and no hook here checks whether the capability's
  * adapter is registered — that's a build-time concern the
  * capability-to-adapter parity test owns, not something the UI branches on.
+ *
+ * The checker holds when every present part holds; an empty requirement holds.
  */
+export const useChainCapabilityCheck = (): ((
+    requirement: ChainCapabilityRequirement,
+) => boolean) => {
+    // Feature Flags changes re-render through this subscription, and the
+    // capabilities() reads below pick up whatever remote config holds then too.
+    useRemoteConfigOverrides()
+    // A primitive, so a gate re-renders only when some chain's mode changes
+    // (mode, override or saved custom network), never on unrelated store writes.
+    useNetworkStore(state =>
+        getProvider()
+            .chains.list()
+            .map(({ id }) => `${id}:${selectChainMode(state, id)}`)
+            .join(),
+    )
+    return ({ chain, anyChain }) => {
+        const { chains } = getProvider()
+        return (
+            (chain === undefined ||
+                chains.capabilities(chain.chainId)[chain.capability]) &&
+            (anyChain === undefined ||
+                chains
+                    .list()
+                    .some(
+                        descriptor =>
+                            chains.capabilities(descriptor.id)[anyChain],
+                    ))
+        )
+    }
+}
+
+export const useChainCapabilityRequirement = (
+    requirement: ChainCapabilityRequirement,
+): boolean => useChainCapabilityCheck()(requirement)
+
 export const useChainCapability = (
     chainId: ChainId,
     capability: ChainCapability,
-): boolean => {
-    // The developer Feature Flags layer is the only one that changes without
-    // a remount; subscribing to it re-renders this hook so the capabilities()
-    // read below picks up whatever remote config holds at that moment too.
-    useRemoteConfigOverrides()
-    return getProvider().chains.capabilities(chainId)[capability]
-}
+): boolean => useChainCapabilityRequirement({ chain: { chainId, capability } })
 
 export const useAnyEnabledChainHasCapability = (
     capability: ChainCapability,
-): boolean => {
-    useRemoteConfigOverrides()
-    const { chains } = getProvider()
-    return chains
-        .list()
-        .some(descriptor => chains.capabilities(descriptor.id)[capability])
-}
+): boolean => useChainCapabilityRequirement({ anyChain: capability })

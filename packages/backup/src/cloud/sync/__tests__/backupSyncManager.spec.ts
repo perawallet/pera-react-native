@@ -116,8 +116,14 @@ vi.mock('../webSocketClient', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: {
-        getState: () => ({ deviceIDs: new Map([['mainnet', 'dev-id']]) }),
+        getState: () => ({
+            deviceIDs: new Map([['algorand/mainnet', 'dev-id']]),
+        }),
     },
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
 }))
 
 vi.mock('../../store', () => ({
@@ -151,7 +157,6 @@ vi.mock('../../store', () => ({
 // manager reaches their state only through the injected sources.
 vi.mock('@perawallet/wallet-core-accounts', () => ({}))
 vi.mock('@perawallet/wallet-core-contacts', () => ({}))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },

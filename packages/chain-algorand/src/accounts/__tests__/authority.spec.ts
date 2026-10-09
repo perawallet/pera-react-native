@@ -10,31 +10,45 @@
  limitations under the License
  */
 
-import { beforeAll, describe, expect, test } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import {
     accountsChainAdapters,
+    useAccountChainStateStore,
     canSignArbitraryData,
-    AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
 import { algorandAuthority } from '../authority'
+import { seedAuthority } from './seedAuthority'
+
+const mainnet = scopeForLegacyNetwork('mainnet')
+const testnet = scopeForLegacyNetwork('testnet')
 
 beforeAll(() => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
 })
 
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
+
 const asAccount = (partial: object) => partial as WalletAccount
 const noQuantum = { isQuantumTargetEnabled: false }
 
-const isEligibleRekeyTarget = (target: WalletAccount, source: object) =>
+const isEligibleRekeyTarget = (
+    target: WalletAccount,
+    source: object,
+    scope = mainnet,
+) =>
     algorandAuthority.isEligibleTarget(
         'standard',
         target,
         asAccount(source),
         [],
+        scope,
         noQuantum,
     )
 const isEligibleQuantumRekeyTarget = (
@@ -47,6 +61,7 @@ const isEligibleQuantumRekeyTarget = (
         target,
         asAccount(source),
         [],
+        mainnet,
         { isQuantumTargetEnabled },
     )
 const isEligibleLedgerRekeyTarget = (target: WalletAccount, source: object) =>
@@ -55,6 +70,7 @@ const isEligibleLedgerRekeyTarget = (target: WalletAccount, source: object) =>
         target,
         asAccount(source),
         [],
+        mainnet,
         noQuantum,
     )
 const isEligibleSharedRekeyTarget = (
@@ -67,16 +83,18 @@ const isEligibleSharedRekeyTarget = (
         target,
         asAccount(source),
         accounts,
+        mainnet,
         noQuantum,
     )
 const getAccountsRekeyedTo = algorandAuthority.accountsDelegatedTo
-const canSignProgram = algorandAuthority.canSignProgram
+const canSignProgram = (account: WalletAccount, scope = mainnet) =>
+    algorandAuthority.canSignProgram(account, scope)
 
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount
@@ -85,7 +103,11 @@ const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'h',
         address: overrides.address ?? 'H',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         keyPairId: 'kp-hd',
         hdWalletDetails: {
             account: 0,
@@ -100,7 +122,16 @@ const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'l',
         address: overrides.address ?? 'L',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'dev',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
         ...overrides,
     }) as WalletAccount
@@ -109,7 +140,7 @@ const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'w',
         address: overrides.address ?? 'W',
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
         ...overrides,
     }) as WalletAccount
 
@@ -117,7 +148,7 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'm',
         address: overrides.address ?? 'M',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         multisigDetails: {
             threshold: 2,
             addresses: ['P1', 'P2', 'P3'],
@@ -130,7 +161,7 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'f',
         address: overrides.address ?? 'F',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         keyPairId: 'kp-quantum',
         ...overrides,
     }) as WalletAccount
@@ -138,19 +169,28 @@ const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
 describe('algorandAuthority.isDelegated', () => {
     const baseAccount = {
         id: '1',
-        type: 'hdWallet',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
         address: 'ADDR1',
         keyPairId: 'pk1',
     } as any
 
-    test('isRekeyedAccount returns true if rekeyAddress is present', () => {
-        expect(algorandAuthority.isDelegated(baseAccount)).toBe(false)
-        expect(
-            algorandAuthority.isDelegated({
-                ...baseAccount,
-                rekeyAddress: 'ADDR2',
-            } as any),
-        ).toBe(true)
+    test('is true once the scope has an authority', () => {
+        expect(algorandAuthority.isDelegated(baseAccount, mainnet)).toBe(false)
+
+        seedAuthority('ADDR1', 'ADDR2')
+
+        expect(algorandAuthority.isDelegated(baseAccount, mainnet)).toBe(true)
+    })
+
+    test('answers per scope', () => {
+        seedAuthority('ADDR1', 'ADDR2', testnet)
+
+        expect(algorandAuthority.isDelegated(baseAccount, testnet)).toBe(true)
+        expect(algorandAuthority.isDelegated(baseAccount, mainnet)).toBe(false)
     })
 })
 
@@ -183,9 +223,9 @@ describe('algorandAuthority.canSignProgram', () => {
     // auth account could usefully sign it. Refused until the signer resolves
     // that; canSignArbitraryData ignores rekeys (no auth-addr off-chain).
     test('canSignProgram excludes rekeyed accounts, unlike canSignArbitraryData', () => {
-        const rekeyed = { ...localKey, rekeyAddress: 'AUTH' }
-        expect(canSignProgram(rekeyed)).toBe(false)
-        expect(canSignArbitraryData(rekeyed)).toBe(true)
+        seedAuthority('HD', 'AUTH')
+        expect(canSignProgram(localKey)).toBe(false)
+        expect(canSignArbitraryData(localKey)).toBe(true)
     })
 })
 
@@ -199,12 +239,18 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     })
 
     test("rejects target equal to source's current auth", () => {
+        seedAuthority('SRC', 'B')
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'B' }), {
-                address: 'SRC',
-                rekeyAddress: 'B',
-            }),
+            isEligibleRekeyTarget(algo25({ address: 'B' }), { address: 'SRC' }),
         ).toBe(false)
+    })
+
+    test("excludes the source's authority only on the scope it was given", () => {
+        seedAuthority('SRC', 'B', testnet)
+        const target = algo25({ address: 'B' })
+
+        expect(isEligibleRekeyTarget(target, src, testnet)).toBe(false)
+        expect(isEligibleRekeyTarget(target, src, mainnet)).toBe(true)
     })
 
     test('rejects multisig / hardware / watch targets', () => {
@@ -229,12 +275,8 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     })
 
     test('rejects target already rekeyed away', () => {
-        expect(
-            isEligibleRekeyTarget(
-                algo25({ address: 'A', rekeyAddress: 'B' }),
-                src,
-            ),
-        ).toBe(false)
+        seedAuthority('A', 'B')
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), src)).toBe(false)
     })
 
     test('accepts valid algo25 / hdWallet target', () => {
@@ -243,11 +285,9 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     })
 
     test('accepts a rekeyed source rekeying to a different fresh target', () => {
+        seedAuthority('SRC', 'B')
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), {
-                address: 'SRC',
-                rekeyAddress: 'B',
-            }),
+            isEligibleRekeyTarget(algo25({ address: 'A' }), { address: 'SRC' }),
         ).toBe(true)
     })
 })
@@ -290,10 +330,11 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
     })
 
     test("rejects target equal to source's current auth", () => {
+        seedAuthority('SRC', 'F')
         expect(
             isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F' }),
-                { address: 'SRC', rekeyAddress: 'F' },
+                { address: 'SRC' },
                 true,
             ),
         ).toBe(false)
@@ -307,20 +348,18 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
     })
 
     test('rejects a quantum target already rekeyed away', () => {
+        seedAuthority('F', 'X')
         expect(
-            isEligibleQuantumRekeyTarget(
-                quantum({ address: 'F', rekeyAddress: 'X' }),
-                src,
-                true,
-            ),
+            isEligibleQuantumRekeyTarget(quantum({ address: 'F' }), src, true),
         ).toBe(false)
     })
 
     test('accepts a rekeyed source rekeying to a different fresh quantum target', () => {
+        seedAuthority('SRC', 'B')
         expect(
             isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F' }),
-                { address: 'SRC', rekeyAddress: 'B' },
+                { address: 'SRC' },
                 true,
             ),
         ).toBe(true)
@@ -345,19 +384,17 @@ describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
                 address: 'L',
             }),
         ).toBe(false)
-        expect(
-            isEligibleLedgerRekeyTarget(
-                ledger({ address: 'L', rekeyAddress: 'X' }),
-                src,
-            ),
-        ).toBe(false)
+        seedAuthority('L', 'X')
+        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), src)).toBe(
+            false,
+        )
     })
 
     test("rejects target equal to source's current auth", () => {
+        seedAuthority('SRC', 'L')
         expect(
             isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
                 address: 'SRC',
-                rekeyAddress: 'L',
             }),
         ).toBe(false)
     })
@@ -434,19 +471,15 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(
-            isEligibleSharedRekeyTarget(
-                ms,
-                { address: 'SRC', rekeyAddress: 'M' },
-                all,
-            ),
-        ).toBe(false)
+        seedAuthority('SRC', 'M')
+        expect(isEligibleSharedRekeyTarget(ms, { address: 'SRC' }, all)).toBe(
+            false,
+        )
     })
 
     test('rejects multisig already rekeyed away', () => {
         const ms = multisig({
             address: 'M',
-            rekeyAddress: 'X',
             multisigDetails: {
                 threshold: 1,
                 addresses: ['P1'],
@@ -454,6 +487,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        seedAuthority('M', 'X')
         expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
     })
 })
@@ -461,7 +495,8 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
 describe('services/accounts/utils - getAccountsRekeyedTo', () => {
     test('returns the accounts whose active-network auth-addr is the address', () => {
         const target = quantum({ address: 'PQ' })
-        const rekeyed = algo25({ address: 'A', rekeyAddress: 'PQ' })
+        const rekeyed = algo25({ address: 'A' })
+        seedAuthority('A', 'PQ')
         const unrelated = algo25({ address: 'B' })
 
         expect(
@@ -470,25 +505,22 @@ describe('services/accounts/utils - getAccountsRekeyedTo', () => {
     })
 
     test('excludes the address itself', () => {
-        const selfRekeyed = algo25({ address: 'A', rekeyAddress: 'A' })
+        const selfRekeyed = algo25({ address: 'A' })
+        seedAuthority('A', 'A')
         expect(getAccountsRekeyedTo('A', [selfRekeyed])).toEqual([])
     })
 
     test('matches a rekey recorded on a non-active network', () => {
-        // The mirror follows the active network, so a mainnet rekey seen while
-        // browsing testnet lives only in the per-network map.
-        const rekeyed = algo25({
-            address: 'A',
-            rekeyAddressByNetwork: { mainnet: 'PQ' },
-        })
+        const rekeyed = algo25({ address: 'A' })
+        seedAuthority('A', 'PQ', mainnet)
+        seedAuthority('A', null, testnet)
         expect(getAccountsRekeyedTo('PQ', [rekeyed])).toEqual([rekeyed])
     })
 
     test('returns an empty list when nothing points at the address', () => {
-        expect(
-            getAccountsRekeyedTo('PQ', [
-                algo25({ address: 'A', rekeyAddress: 'OTHER' }),
-            ]),
-        ).toEqual([])
+        seedAuthority('A', 'OTHER')
+        expect(getAccountsRekeyedTo('PQ', [algo25({ address: 'A' })])).toEqual(
+            [],
+        )
     })
 })

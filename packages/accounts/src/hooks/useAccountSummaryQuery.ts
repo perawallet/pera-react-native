@@ -11,17 +11,20 @@
  */
 
 import { useMemo } from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    ALGO_ASSET_ID,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+import {
+    useAssetPricesQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
@@ -75,10 +78,11 @@ export const readAccountSummary = async (address: string, network: Network) => {
 export const useAccountSummaryQuery = (
     address?: string,
 ): UseAccountSummaryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getAccountSummaryQueryKey(address ?? '', network),
+        queryKey: getAccountSummaryQueryKey(address ?? '', scope),
         enabled: !!address,
         staleTime: Infinity,
         // SQLite is the source of truth; run the queryFn even while offline
@@ -89,13 +93,14 @@ export const useAccountSummaryQuery = (
         queryFn: () => readAccountSummary(address as string, network),
     })
 
-    const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])
+    const nativeAssetId = useNativeAsset().assetId
+    const { data: algoPrices } = useAssetPricesQuery([nativeAssetId])
 
     return useMemo(() => {
         const algoAmount = query.data?.algoAmount ?? new Decimal(0)
         const nonAlgoUsdValue = query.data?.nonAlgoUsdValue ?? new Decimal(0)
         const usdAlgoPrice =
-            algoPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+            algoPrices?.get(nativeAssetId)?.usdPrice ?? new Decimal(0)
 
         // ALGO contributes its raw amount to the ALGO-denominated total (1:1,
         // price-independent); non-ALGO holdings convert via the ALGO/USD rate.
@@ -128,5 +133,12 @@ export const useAccountSummaryQuery = (
             isError: query.isError,
             isPaused: query.isPaused,
         }
-    }, [query.data, query.isPending, query.isError, query.isPaused, algoPrices])
+    }, [
+        query.data,
+        query.isPending,
+        query.isError,
+        query.isPaused,
+        algoPrices,
+        nativeAssetId,
+    ])
 }

@@ -12,7 +12,7 @@
 
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { isMainnet } from '@perawallet/wallet-core-config'
 
 const TESTNET_PREFIX = 't_'

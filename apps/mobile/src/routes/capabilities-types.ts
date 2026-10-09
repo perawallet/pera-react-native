@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ModeRestrictions } from '@perawallet/wallet-core-chain-contract'
+
 /**
  * Gate UI on these flags, never on Platform.OS (pera/no-platform-os-web fails
  * `=== 'web'`). Native resolves capabilities.ts; web resolves capabilities.web.ts.
@@ -42,6 +44,12 @@ export type RouteCapabilities = {
      * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx
      * always uses tap-to-confirm and the setting would be a no-op. */
     confirmationModeSetting: boolean
+    /**
+     * The analytics consent prompt and Settings toggle. Off on web: the
+     * extension reports through its own analytics service, which does not read
+     * the stored consent yet, so asking there would record a choice it ignores.
+     */
+    analyticsConsent: boolean
     developerSettings: boolean
     /** Developer screen gallery. Off in production bundles, where Metro drops
      * its code entirely (see metro-build-gates.js), not just its entry points. */
@@ -67,3 +75,7 @@ export type RouteCapabilities = {
      * settings-menu entries; their routes stay for direct navigation. */
     connectionsSettings: boolean
 }
+
+export type RouteCapability = keyof RouteCapabilities
+
+export type RouteCapabilityRestrictions = ModeRestrictions<RouteCapability>

@@ -12,12 +12,11 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
-    useNetwork,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import type {
+    ChainScope,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { localKeySignerAdapterFor } from '../chain-adapter'
@@ -41,28 +40,27 @@ export type UseLocalKeyTransactionSignerResult = {
         txnGroup: PeraTransaction[],
         indexesToSign: number[],
         account: WalletAccount,
+        scope: ChainScope,
     ) => Promise<PeraSignedTransaction[]>
 }
 
 /**
  * React binding for the chain's local-key signer: supplies key
- * custody (`useKMS`) and the transaction encoder, and holds no signing logic
- * of its own. The batching, `sgnr` and `pqsig` rules live in the pure
+ * custody (`useKMS`) and holds no signing logic of its own. The batching, `sgnr` and `pqsig` rules live in the pure
  * pipeline function so they can be proven against a real node.
  */
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
-        const { encodeTransaction } = useTransactionEncoder()
-        const { network } = useNetwork()
 
         const signTransactions = useCallback(
             async (
                 txnGroup: PeraTransaction[],
                 indexesToSign: number[],
                 account: WalletAccount,
+                scope: ChainScope,
             ): Promise<PeraSignedTransaction[]> =>
-                localKeySignerAdapterFor(network).signTransactions(
+                localKeySignerAdapterFor(scope).signTransactions(
                     {
                         signPayloads: (keyPairId, payloads) =>
                             signTransactionsWithKey(
@@ -71,18 +69,12 @@ export const useLocalKeyTransactionSigner =
                                 payloads,
                             ),
                         getPQSigningInfo,
-                        encodeTransaction,
                     },
                     txnGroup,
                     indexesToSign,
                     account,
                 ),
-            [
-                signTransactionsWithKey,
-                getPQSigningInfo,
-                encodeTransaction,
-                network,
-            ],
+            [signTransactionsWithKey, getPQSigningInfo],
         )
 
         return {

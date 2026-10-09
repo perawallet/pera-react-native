@@ -54,7 +54,11 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
-    isMainnet: (network: string) => network === 'mainnet',
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedChainMode: () => 'live',
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 const { accountBalancesMock } = vi.hoisted(() => ({
@@ -66,16 +70,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: () => accountBalancesMock(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({ newGroup: () => ({}) }),
-    useNetwork: () => ({ network: 'mainnet' }),
-    displayUnitsToBaseUnits: () => ({ toFixed: () => '0' }),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useNativeAsset: () => NATIVE_ASSET,
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane.
     getKnownAssetId: (
@@ -91,13 +95,21 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: vi.fn() }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    generateOrderedUniqueId: () => 'id',
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        generateOrderedUniqueId: () => 'id',
+        logger: {
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('@hooks/useLanguage')
 
@@ -119,7 +131,7 @@ const mockAccount: WalletAccount = {
     id: 'bidali-webview-web-account',
     address: VALID_ADDRESS,
     name: 'Test',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     keyPairId: 'test-key-pair-id',
 }
 

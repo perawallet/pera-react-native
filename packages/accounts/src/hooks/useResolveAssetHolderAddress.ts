@@ -12,8 +12,8 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getAssetHolderAddresses } from '../db'
 import { useAllAccounts } from './useAllAccounts'
@@ -39,7 +39,7 @@ export type ResolveAssetHolderAddress = (
  * happened to be selected.
  */
 export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccountAddress } = useSelectedAccountAddress()
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
@@ -52,12 +52,8 @@ export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
     return useCallback(
         async (assetId: string) => {
             const holders = await queryClient.ensureQueryData({
-                queryKey: getAssetHoldersQueryKey(assetId, network),
-                queryFn: () =>
-                    getAssetHolderAddresses({
-                        assetId,
-                        scope: scopeForLegacyNetwork(network),
-                    }),
+                queryKey: getAssetHoldersQueryKey(assetId, scope),
+                queryFn: () => getAssetHolderAddresses({ assetId, scope }),
                 staleTime: ASSET_HOLDERS_STALE_TIME_MS,
             })
 
@@ -75,6 +71,6 @@ export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
             }
             return candidates[0] ?? null
         },
-        [queryClient, network, knownAddresses, selectedAccountAddress],
+        [queryClient, scope, knownAddresses, selectedAccountAddress],
     )
 }

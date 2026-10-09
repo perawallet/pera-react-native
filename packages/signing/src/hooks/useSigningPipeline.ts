@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     canSignWith,
     useAllAccounts,
@@ -26,6 +28,7 @@ import {
     classifyRequestStructure,
     createTransactionListItems,
     legacyPlannerAdapter,
+    reviewerChainAdapters,
 } from '../chain-adapter'
 import type {
     SigningConfiguration,
@@ -67,8 +70,9 @@ const computeDisplayData = (
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
     const source = txRequest.groupContext ?? txRequest.txs ?? []
+    const reviewer = reviewerChainAdapters.get(LEGACY_CHAIN_ID)
     const allTransactions = source
-        .map(tx => mapToDisplayableTransaction(tx))
+        .map(tx => reviewer.toDisplayableTransaction(tx))
         .filter((tx): tx is PeraDisplayableTransaction => !!tx)
 
     // Default to "every index is signable" when groupContext is absent

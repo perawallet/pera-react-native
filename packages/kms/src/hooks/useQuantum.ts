@@ -38,6 +38,8 @@ export type QuantumKeyResult = {
     /** Keystore id of the persisted quantum signing child — what
      * `account.keyPairId` should be set to. */
     signKeyId: string
+    /** The signing child's public key, which `address` commits to. */
+    publicKey: Uint8Array
 }
 
 export const useQuantum = () => {
@@ -151,6 +153,7 @@ export const useQuantum = () => {
                 },
                 address,
                 signKeyId,
+                publicKey,
             }
         } catch (e) {
             // delete the seed if it was created

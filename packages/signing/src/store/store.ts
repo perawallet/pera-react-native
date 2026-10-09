@@ -19,17 +19,14 @@ import {
     logger,
     generateOrderedUniqueId,
     registerStore,
+    stringifyTypedJson,
+    parseTypedJson,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-} from '@perawallet/wallet-core-blockchain'
 
-// Custom storage: round-trip safe serialization for bigint and Map
-// Uses algorandSafeQuerySerialize/Parse to handle PeraTransaction bigint fields
-// (fee, amount, assetId, etc.)
+// Custom storage: round-trip safe serialization for bigint and Map, which
+// PeraTransaction fields (fee, amount, assetId, etc.) rely on.
 
 type PartializedState = { pendingSignRequests: SignRequest[] }
 
@@ -38,7 +35,7 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
         const str = getProvider().keyValueStorage.getItem(name)
         if (!str) return null
         try {
-            return algorandSafeQueryParse(str as string)
+            return parseTypedJson(str as string)
         } catch (error) {
             logger.warn(
                 'Failed to parse persisted signing-store; dropping persisted state',
@@ -49,10 +46,7 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
         }
     },
     setItem: (name, value) => {
-        getProvider().keyValueStorage.setItem(
-            name,
-            algorandSafeQuerySerialize(value),
-        )
+        getProvider().keyValueStorage.setItem(name, stringifyTypedJson(value))
     },
     removeItem: name => {
         getProvider().keyValueStorage.removeItem(name)

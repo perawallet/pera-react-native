@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, act } from '@testing-library/react'
 import { createWrapper } from '@test-utils'
 import { PeraNetworkError, type Network } from '@perawallet/wallet-core-shared'
@@ -64,7 +65,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn().mockReturnValue({
         network: 'mainnet',
         setNetwork: vi.fn(),
@@ -128,7 +129,7 @@ const seedPushToken = async (token: string | null): Promise<void> => {
  * afterwards.
  */
 const importUseDevice = async () => {
-    const { useNetwork } = await import('@perawallet/wallet-core-blockchain')
+    const { useNetwork } = await import('@perawallet/wallet-core-chain-shared')
     vi.mocked(useNetwork).mockReturnValue({
         network: 'mainnet',
         setNetwork: vi.fn(),
@@ -328,7 +329,9 @@ describe('services/device/hooks', () => {
             'Device create response carried no id',
         )
         expect(
-            useDeviceStore.getState().deviceIDs.get('mainnet') ?? null,
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')) ?? null,
         ).toBeNull()
     })
 
@@ -361,7 +364,11 @@ describe('services/device/hooks', () => {
             network: 'mainnet',
             data: expect.not.objectContaining({ id: expect.anything() }),
         })
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe('FRESH')
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('FRESH')
     })
 
     // Carried onto the v3 flow: only the 404 recreate can replace
@@ -392,12 +399,16 @@ describe('services/device/hooks', () => {
             await result.current.registerDevice(accounts)
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'FRESH-1',
-        )
-        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
-            'recreated',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('FRESH-1')
+        expect(
+            useDeviceStore.getState().deviceIdOrigins[
+                scopeKeyForLegacyNetwork('mainnet')
+            ],
+        ).toBe('recreated')
         expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
             'migrated_device_id_replaced',
             { network: 'mainnet', reason: 'not_found' },
@@ -427,12 +438,16 @@ describe('services/device/hooks', () => {
             await result.current.registerDevice(accounts)
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'FRESH-3',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('FRESH-3')
         expect(mockLogEvent).not.toHaveBeenCalled()
         expect(
-            useDeviceStore.getState().deviceIdOrigins.mainnet,
+            useDeviceStore.getState().deviceIdOrigins[
+                scopeKeyForLegacyNetwork('mainnet')
+            ],
         ).toBeUndefined()
     })
 
@@ -456,12 +471,16 @@ describe('services/device/hooks', () => {
         })
 
         expect(outcome).toEqual({ createdNew: false })
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'MIGRATED-1',
-        )
-        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
-            'migrated',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('MIGRATED-1')
+        expect(
+            useDeviceStore.getState().deviceIdOrigins[
+                scopeKeyForLegacyNetwork('mainnet')
+            ],
+        ).toBe('migrated')
         expect(mockLogEvent).not.toHaveBeenCalled()
     })
 
@@ -491,12 +510,16 @@ describe('services/device/hooks', () => {
             await result.current.registerDevice(accounts)
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'MIGRATED-1',
-        )
-        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
-            'migrated',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('MIGRATED-1')
+        expect(
+            useDeviceStore.getState().deviceIdOrigins[
+                scopeKeyForLegacyNetwork('mainnet')
+            ],
+        ).toBe('migrated')
         expect(mockLogEvent).not.toHaveBeenCalled()
     })
 
@@ -617,7 +640,11 @@ describe('services/device/hooks', () => {
         )
         // The device healed: the id from the retry is persisted, so the next
         // registration takes the update path instead of creating again.
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe('FRESH')
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('FRESH')
     })
 
     test('surfaces a 422 without retrying and without re-creating', async () => {
@@ -690,7 +717,7 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
         const { useNetwork } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
 
         vi.mocked(useNetwork).mockReturnValue({
             network: 'mainnet',
@@ -751,7 +778,9 @@ describe('services/device/hooks', () => {
         })
         // ...and no id leaked into the other network's slot.
         expect(
-            useDeviceStore.getState().deviceIDs.get('testnet') ?? null,
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('testnet')) ?? null,
         ).toBeNull()
     })
 
@@ -845,9 +874,11 @@ describe('services/device/hooks', () => {
         })
         expect(firstOutcome).toEqual({ createdNew: true })
         expect(secondOutcome).toEqual({ createdNew: false })
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'SHARED-ID',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('SHARED-ID')
     })
 
     // The queue must span the *whole*
@@ -986,9 +1017,11 @@ describe('services/device/hooks', () => {
 
         expect(outcome).toEqual({ createdNew: true })
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'RECOVERED',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('RECOVERED')
     })
 
     test('concurrent id-less creates for different networks do not interfere with each other', async () => {
@@ -997,7 +1030,7 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
         const { useNetwork } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
 
         useDeviceStore.getState().resetState()
         vi.mocked(useNetwork).mockReturnValue({
@@ -1039,13 +1072,17 @@ describe('services/device/hooks', () => {
             await result.current.registerDevice(accounts)
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('testnet')).toBe(
-            'TESTNET-ID',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('testnet')),
+        ).toBe('TESTNET-ID')
         // Mainnet's create hasn't resolved yet — still pending, not
         // discarded.
         expect(
-            useDeviceStore.getState().deviceIDs.get('mainnet') ?? null,
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')) ?? null,
         ).toBeNull()
 
         // Once it resolves, mainnet's id is persisted too. A late write for
@@ -1057,9 +1094,11 @@ describe('services/device/hooks', () => {
             await mainnetAttempt
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'MAINNET-ID',
-        )
+        expect(
+            useDeviceStore
+                .getState()
+                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+        ).toBe('MAINNET-ID')
     })
 
     test('reads the device id from the store at call time, not a stale captured closure', async () => {

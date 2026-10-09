@@ -12,7 +12,6 @@
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
@@ -20,12 +19,16 @@ import {
     useAllAccounts,
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    useIsNativeAssetId,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -44,6 +47,7 @@ import { useToast } from '@hooks/useToast'
  */
 export const useSendDestinationRouter = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
+    const isNativeAssetId = useIsNativeAssetId()
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
         useAccountBalancesQuery(accounts)
@@ -72,6 +76,9 @@ export const useSendDestinationRouter = () => {
     } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
     const { network } = useNetwork()
+    const canUseAssetInbox = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'assetInbox' },
+    })
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -79,7 +86,7 @@ export const useSendDestinationRouter = () => {
     // Pera-backed networks. Block the route up front instead of landing the
     // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
-        if (getArc59Config(network) === null) {
+        if (!canUseAssetInbox || getArc59Config(network) === null) {
             showToast({
                 title: t('send_funds.destination.inbox_unavailable_title'),
                 body: t('send_funds.destination.inbox_unavailable_body'),
@@ -89,7 +96,7 @@ export const useSendDestinationRouter = () => {
         }
         setSendMode('sendArc59')
         navigation.navigate('ARC59SendSummary')
-    }, [network, showToast, t, setSendMode, navigation])
+    }, [canUseAssetInbox, network, showToast, t, setSendMode, navigation])
 
     useEffect(() => {
         if (!pendingExternalAddress || !selectedAsset) return
@@ -126,7 +133,7 @@ export const useSendDestinationRouter = () => {
             // ALGO sends always go through normal flow
             if (
                 !selectedAsset?.assetId ||
-                isAlgoAssetId(selectedAsset.assetId)
+                isNativeAssetId(selectedAsset.assetId)
             ) {
                 setSendMode('normal')
                 navigation.navigate('ConfirmTransaction')
@@ -166,6 +173,7 @@ export const useSendDestinationRouter = () => {
             setPendingExternalAddress(address)
         },
         [
+            isNativeAssetId,
             selectedAsset,
             accounts,
             accountBalances,
@@ -191,7 +199,7 @@ export const useSendDestinationRouter = () => {
     // the asset lookup nor balances, so it's ready as soon as it resolves.
     const isReady =
         !!selectedAsset &&
-        (isAlgoAssetId(selectedAsset.assetId) || !isBalancesPending)
+        (isNativeAssetId(selectedAsset.assetId) || !isBalancesPending)
 
     return {
         selectedAsset,

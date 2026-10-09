@@ -11,16 +11,20 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
+    authorityOf,
     hasSigningKeys,
-    isAlgo25Account,
+    isStandaloneAccount,
+    standaloneSecretOf,
     isHDWalletAccount,
     isMultisigAccount,
     isQuantumAccount,
     isRekeyedAccount,
     useAllAccounts,
+    useAuthorityOf,
     useCanSignWith,
     useFindAccountByAddress,
     useMultisigDetailsBackfill,
@@ -35,12 +39,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { useIsAccountBackedUp } from '@modules/cloud-backup'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { ExportShareAccountContent } from '@modules/multisig'
 import {
     SharedAccountDetailsContent,
@@ -84,7 +89,7 @@ type BackupChoice = 'delete' | 'keep'
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
-    isCloudBackupEnabled: boolean
+    isCloudBackupAvailable: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
     authAccount: WalletAccount | undefined
@@ -117,27 +122,38 @@ export const useAccountOptions = ({
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isBackedUp = useIsAccountBackedUp(account.address)
 
     useMultisigDetailsBackfill(account)
 
     const canSign = useCanSignWith(account)
+    const canRekey = useCapability(REKEY_REQUIREMENT)
+    const canUseMultisig = useCapability({
+        platform: 'sharedAccounts',
+        anyChain: 'multisig',
+    })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
+    const canBackUpMnemonic = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'mnemonicBackup' },
+    })
     const showPassphrase =
+        canBackUpMnemonic &&
         !isRekeyed &&
-        (isAlgo25Account(account) ||
+        ((isStandaloneAccount(account) &&
+            standaloneSecretOf(account) === 'mnemonic') ||
             isHDWalletAccount(account) ||
             isQuantumAccount(account))
-    const canUndoRekey = routeCapabilities.rekeyFlows && isRekeyed && canSign
+    const canUndoRekey = canRekey && isRekeyed && canSign
     const isHdWallet = isHDWalletAccount(account)
-    const isQuantum = isQuantumAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
         ? (account.multisigDetails?.addresses.length ?? 0)
         : 0
 
-    const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
+    const authority = useAuthorityOf(account, scope)
+    const authAccount = useFindAccountByAddress(authority ?? '')
 
     const handleCopyAddress = useCallback(() => {
         trackEvent(AccountOptionsEvent.CopyAddress)
@@ -326,7 +342,7 @@ export const useAccountOptions = ({
     const blockedByRekeyedDependents = useCallback((): boolean => {
         const rekeyedToThisAccount = accounts.filter(
             a =>
-                a.rekeyAddress === account.address &&
+                authorityOf(a, scope) === account.address &&
                 a.address !== account.address,
         )
         if (rekeyedToThisAccount.length === 0) return false
@@ -339,7 +355,7 @@ export const useAccountOptions = ({
             type: 'error',
         })
         return true
-    }, [accounts, account.address, showToast, t])
+    }, [accounts, scope, account.address, showToast, t])
 
     const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
@@ -390,14 +406,14 @@ export const useAccountOptions = ({
             onClose()
             return
         }
-        if (isCloudBackupEnabled && isBackedUp) {
+        if (isCloudBackupAvailable && isBackedUp) {
             setRemoveConfirmView('cloud-backup-delete')
             return
         }
         finishRemove()
     }, [
         blockedByRekeyedDependents,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         isBackedUp,
         onClose,
         finishRemove,
@@ -474,7 +490,7 @@ export const useAccountOptions = ({
     const options = useMemo(() => {
         const items: AccountOption[] = []
 
-        if (isSharedAccount) {
+        if (isSharedAccount && canUseMultisig) {
             items.push({
                 id: 'shared-account-detail',
                 icon: 'people',
@@ -507,9 +523,7 @@ export const useAccountOptions = ({
                 title: t(
                     isHdWallet
                         ? 'account_options.view_passphrase_hd'
-                        : isQuantum
-                          ? 'account_options.view_passphrase_quantum'
-                          : 'account_options.view_passphrase_algo25',
+                        : 'account_options.view_passphrase_algo25',
                 ),
                 onPress: handleViewPassphrase,
             })
@@ -519,8 +533,9 @@ export const useAccountOptions = ({
         // is a root stack that a platform may not register, and an
         // unregistered route makes the row a silent no-op rather than an error.
         // Rekeying also needs a signature from the source account, so only
-        // offer it when this wallet can actually sign.
-        if (routeCapabilities.rekeyFlows && canSign) {
+        // offer it when this wallet can actually sign. A shared account's only
+        // target is another shared account.
+        if (canRekey && canSign && (!isSharedAccount || canUseMultisig)) {
             items.push({
                 id: 'rekey-account',
                 icon: 'rekey',
@@ -529,7 +544,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isSharedAccount) {
+        if (isSharedAccount && canUseMultisig) {
             // Export stays available regardless of `canSign` — it only reads
             // metadata.
             items.push({
@@ -543,7 +558,7 @@ export const useAccountOptions = ({
         // Post-import rekey discovery: find accounts whose on-chain auth-addr
         // is this account's key. Signable types only — a watch account holds
         // no key another account could be rekeyed to sign with.
-        if (routeCapabilities.rekeyFlows && canSign) {
+        if (canRekey && canSign) {
             items.push({
                 id: 'scan-rekeyed',
                 icon: 'magnifying-glass',
@@ -584,6 +599,8 @@ export const useAccountOptions = ({
         participantCount,
         showPassphrase,
         canSign,
+        canRekey,
+        canUseMultisig,
         isSharedAccount,
         notificationsEnabled,
         isNotificationTogglePending,
@@ -591,7 +608,6 @@ export const useAccountOptions = ({
         handleShowAddress,
         handleViewPassphrase,
         isHdWallet,
-        isQuantum,
         handleRekeyAccount,
         handleScanRekeyed,
         handleExportShareAccount,
@@ -603,11 +619,11 @@ export const useAccountOptions = ({
 
     return {
         options,
-        isCloudBackupEnabled,
+        isCloudBackupAvailable,
         isRekeyed,
         canUndoRekey,
         authAccount: authAccount ?? undefined,
-        authAddress: account.rekeyAddress,
+        authAddress: authority ?? undefined,
         handleUndoRekey,
         removeConfirmView,
         handleConfirmBackupWarning,

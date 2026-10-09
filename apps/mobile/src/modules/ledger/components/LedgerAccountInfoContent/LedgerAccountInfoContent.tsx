@@ -11,10 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
-import { ActivityIndicator } from 'react-native'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
+import {
+    PWView,
+    PWText,
+    PWButton,
+    PWFlatList,
+    PWLoadingIndicator,
+} from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -89,7 +93,7 @@ export const LedgerAccountInfoContent = ({
                                     variant='bodyCompact'
                                 />
                                 <PreferredAmount
-                                    sourceAssetId={ALGO_ASSET_ID}
+                                    sourceAssetId={nativeAsset.assetId}
                                     sourceAmount={item.algoBalance}
                                     usdPrice={item.algoUsdPrice}
                                     density='compact'
@@ -130,7 +134,7 @@ export const LedgerAccountInfoContent = ({
                     )
                 }
 
-                case 'rekeyAddress': {
+                case 'authorityAccount': {
                     return (
                         <AccountDisplay
                             account={item.account}
@@ -158,7 +162,7 @@ export const LedgerAccountInfoContent = ({
                     style={styles.centerState}
                     testID='ledger_account_info_loading'
                 >
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                 </PWView>
             )}
 

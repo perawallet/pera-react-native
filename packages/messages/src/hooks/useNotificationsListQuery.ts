@@ -12,8 +12,14 @@
 
 import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
     fetchNotificationList,
@@ -76,13 +82,17 @@ export type UseNotificationsListQueryResult = {
 
 export const useNotificationsListQuery =
     (): UseNotificationsListQueryResult => {
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const network = legacyNetworkOf(scope)
         const deviceID = useDeviceID(network)
-        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isUnavailableOnNetwork = !useChainCapability(
+            scope.chainId,
+            'notifications',
+        )
         const isEnabled = !!deviceID?.length && !isUnavailableOnNetwork
 
         const query = useInfiniteQuery({
-            queryKey: getNotificationsListQueryKey(network, deviceID!),
+            queryKey: getNotificationsListQueryKey(scope, deviceID!),
             queryFn: ({ pageParam }) =>
                 fetchNotificationList(
                     network,
@@ -109,20 +119,21 @@ export const useNotificationsListQuery =
         const { isPaused, isError } = getQueryRenderState(query)
 
         // The observer's fetchNextPage()/refetch() ignore `enabled` and would
-        // still fire the doomed Pera request on a non-backed network. Both
-        // guards MUST be referentially stable: NotificationsScreen refetches on
+        // still fire the doomed Pera request on a non-backed network, or with
+        // no device id (`/v2/devices//notifications/`, a 404). Both guards
+        // MUST be referentially stable: NotificationsScreen refetches on
         // focus with `refetch` in its effect deps, so a per-render identity
         // re-runs the effect after every render the refetch itself causes — an
         // infinite request loop with the refresh spinner pinned.
         const fetchNextPage = useCallback(() => {
-            if (isUnavailableOnNetwork) return
+            if (!isEnabled) return
             void query.fetchNextPage()
-        }, [isUnavailableOnNetwork, query.fetchNextPage])
+        }, [isEnabled, query.fetchNextPage])
 
         const refetch = useCallback(() => {
-            if (isUnavailableOnNetwork) return
+            if (!isEnabled) return
             void query.refetch()
-        }, [isUnavailableOnNetwork, query.refetch])
+        }, [isEnabled, query.refetch])
 
         return {
             data: query.data ?? [],

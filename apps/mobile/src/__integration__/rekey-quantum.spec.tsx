@@ -46,7 +46,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -64,7 +63,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
@@ -83,8 +82,6 @@ import {
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    disableQuantumFlag,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
@@ -158,14 +155,14 @@ const seedRekeyInAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-in-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const quantumTarget: WalletAccount = {
         id: 'rekey-in-quantum-target',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-in-quantum-target-key',
         name: 'Quantum target',
@@ -182,7 +179,7 @@ const seedRekeyInAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { source, quantumTarget }
@@ -198,14 +195,14 @@ const seedRekeyOutAccounts = async (): Promise<{
 }> => {
     const quantumSource: WalletAccount = {
         id: 'rekey-out-quantum-source',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-out-quantum-source-key',
         name: 'Quantum source',
     }
     const target: WalletAccount = {
         id: 'rekey-out-target',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: HD_TEST_ADDRESS,
         keyPairId: 'rekey-out-target-key',
         name: 'Target',
@@ -222,7 +219,7 @@ const seedRekeyOutAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { quantumSource, target }
@@ -296,8 +293,7 @@ describe('rekey quantum account', () => {
         )
     })
 
-    it('Given the quantum flag is on, when the user opens the rekey options sheet and taps the quantum entry, then the rekey-to-quantum flow lists the quantum account as a target', async () => {
-        await enableQuantumFlag()
+    it('When the user opens the rekey options sheet and taps the quantum entry, then the rekey-to-quantum flow lists the quantum account as a target', async () => {
         const { source, quantumTarget } = await seedRekeyInAccounts()
 
         renderWithNavigation(
@@ -325,29 +321,7 @@ describe('rekey quantum account', () => {
         })
     })
 
-    it('Given the quantum flag is off, when the user opens the rekey options sheet, then only the Ledger and standard entries are offered', async () => {
-        await disableQuantumFlag()
-        const { source } = await seedRekeyInAccounts()
-
-        renderWithNavigation(
-            () => <AccountOptionsHost account={source} />,
-            'AccountOptionsHost',
-            { additionalScreens: QUANTUM_REKEY_SCREENS },
-        )
-
-        fireEvent.click(
-            await screen.findByTestId('account_option_rekey-account'),
-        )
-
-        await waitFor(() => {
-            expect(screen.getByTestId('rekey_option_ledger')).toBeTruthy()
-        })
-        expect(screen.getByTestId('rekey_option_standard')).toBeTruthy()
-        expect(screen.queryByTestId('rekey_option_quantum')).toBeNull()
-    })
-
-    it('Given the quantum flag is on, when the user opens rekey-to-standard select-target, then the quantum account is not listed (the dedicated flow owns quantum targets)', async () => {
-        await enableQuantumFlag()
+    it('When the user opens rekey-to-standard select-target, then the quantum account is not listed (the dedicated flow owns quantum targets)', async () => {
         const { source, quantumTarget } = await seedRekeyInAccounts()
 
         renderWithNavigation(
@@ -369,31 +343,7 @@ describe('rekey quantum account', () => {
         ).toBeNull()
     })
 
-    it('Given the quantum flag is off, when the user opens rekey-to-quantum select-target directly, then no targets are listed', async () => {
-        await disableQuantumFlag()
-        const { source, quantumTarget } = await seedRekeyInAccounts()
-
-        renderWithNavigation(
-            RekeyToQuantumSelectTargetScreen,
-            'RekeyToQuantumSelectTarget',
-            {
-                initialParams: { sourceAddress: source.address },
-                additionalScreens: QUANTUM_REKEY_SCREENS,
-            },
-        )
-
-        await waitFor(() => {
-            expect(
-                screen.getByTestId('rekey-to-quantum-select-target-screen'),
-            ).toBeTruthy()
-        })
-        expect(
-            screen.queryByTestId(`rekey-target-row-${quantumTarget.address}`),
-        ).toBeNull()
-    })
-
     it('Given a quantum source and a standard target, when the user confirms the rekey, then the quantum-downgrade warning sheet appears before any signing occurs', async () => {
-        await enableQuantumFlag()
         const { quantumSource, target } = await seedRekeyOutAccounts()
 
         // Registered before driving to confirm so we can assert the
@@ -444,7 +394,6 @@ describe('rekey quantum account', () => {
     })
 
     it('Given the downgrade is confirmed and algod rejects the submission, when the error toast surfaces, then the confirm CTA leaves its loading state so the user can retry', async () => {
-        await enableQuantumFlag()
         const { quantumSource, target } = await seedSignableRekeyOutAccounts()
 
         server.use(

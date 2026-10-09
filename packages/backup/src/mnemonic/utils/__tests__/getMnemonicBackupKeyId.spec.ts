@@ -11,16 +11,17 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { getMnemonicBackupKeyId } from '../getMnemonicBackupKeyId'
 
 describe('getMnemonicBackupKeyId', () => {
     test('returns keyPairId for HDWallet accounts (siblings share one backup state)', () => {
         const account: WalletAccount = {
-            type: AccountTypes.hdWallet,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             address: 'ADDR_HD',
             keyPairId: 'kp-1',
             hdWalletDetails: {
@@ -35,7 +36,7 @@ describe('getMnemonicBackupKeyId', () => {
 
     test('returns keyPairId for Algo25 accounts', () => {
         const account: WalletAccount = {
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_25',
             keyPairId: 'kp-2',
         }
@@ -45,7 +46,7 @@ describe('getMnemonicBackupKeyId', () => {
     test('returns keyPairId for Quantum accounts (25-word recovery phrase, algo25 wire format)', () => {
         const account: WalletAccount = {
             id: 'acc-quantum',
-            type: AccountTypes.quantum,
+            custody: { kind: 'local', seed: 'quantum' },
             address: 'ADDR_Q',
             keyPairId: 'kp-quantum',
         }
@@ -54,12 +55,21 @@ describe('getMnemonicBackupKeyId', () => {
 
     test('returns null for multisig, hardware, watch', () => {
         const multisig: WalletAccount = {
-            type: AccountTypes.multisig,
+            custody: { kind: 'multisig' },
             address: 'ADDR_MS',
             multisigDetails: { threshold: 2, addresses: [], version: 1 },
         }
         const hardware: WalletAccount = {
-            type: AccountTypes.hardware,
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd1',
+                    deviceName: 'Ledger',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             address: 'ADDR_HW',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -70,7 +80,7 @@ describe('getMnemonicBackupKeyId', () => {
             },
         }
         const watch: WalletAccount = {
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'ADDR_WATCH',
         }
         expect(getMnemonicBackupKeyId(multisig)).toBeNull()

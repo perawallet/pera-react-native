@@ -13,23 +13,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import {
+    accountType,
+    AccountTypes,
+    isHardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mocks = vi.hoisted(() => ({
     useLedgerAccountPreview: vi.fn(),
     t: vi.fn((k: string, _opts?: Record<string, unknown>) => k),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useLedgerAccountPreview: mocks.useLedgerAccountPreview,
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
 }))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: mocks.t }),
@@ -62,6 +63,7 @@ const asaAsset = {
 }
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
 })
 
@@ -126,7 +128,7 @@ describe('useLedgerAccountInfoContent', () => {
                 algoBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH' },
+                rekey: { kind: 'delegatedTo', authorityAddress: 'AUTH' },
             },
             isLoading: false,
             isError: false,
@@ -137,17 +139,17 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        expect(rekeyAddressItems).toHaveLength(1)
-        expect(rekeyAddressItems[0]).toMatchObject({
-            kind: 'rekeyAddress',
+        expect(authorityItems).toHaveLength(1)
+        expect(authorityItems[0]).toMatchObject({
+            kind: 'authorityAccount',
         })
-        if (rekeyAddressItems[0].kind === 'rekeyAddress') {
-            expect(rekeyAddressItems[0].account.address).toBe('AUTH')
+        if (authorityItems[0].kind === 'authorityAccount') {
+            expect(authorityItems[0].account.address).toBe('AUTH')
             // synth is hardware → base icon is the Ledger icon, no override.
-            expect(rekeyAddressItems[0].displayStateOverride).toBeUndefined()
+            expect(authorityItems[0].displayStateOverride).toBeUndefined()
         }
     })
 
@@ -169,15 +171,15 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        const rekeyAddresses = rekeyAddressItems.map(i =>
-            i.kind === 'rekeyAddress' ? i.account.address : '',
+        const authorityAddresses = authorityItems.map(i =>
+            i.kind === 'authorityAccount' ? i.account.address : '',
         )
-        expect(rekeyAddresses).toEqual(['R1', 'R2'])
-        rekeyAddressItems.forEach(i => {
-            if (i.kind === 'rekeyAddress') {
+        expect(authorityAddresses).toEqual(['R1', 'R2'])
+        authorityItems.forEach(i => {
+            if (i.kind === 'authorityAccount') {
                 expect(i.displayStateOverride).toBe('rekeyedSignable')
             }
         })
@@ -246,9 +248,9 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.hardware)
+            expect(accountType(acct.account)).toBe(AccountTypes.hardware)
             expect(acct.account.address).toBe('MYADDR')
-            if (acct.account.type === AccountTypes.hardware) {
+            if (isHardwareWalletAccount(acct.account)) {
                 expect(acct.account.hardwareDetails.accountIndex).toBe(2)
                 expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
             }
@@ -257,14 +259,14 @@ describe('useLedgerAccountInfoContent', () => {
         }
     })
 
-    it('builds a watch+rekeyAddress synth account on the account item when rekeyedTo', () => {
+    it('builds a watch synth account on the account item when rekeyedTo', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'WATCH_ADDR',
                 algoBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH_ADDR' },
+                rekey: { kind: 'delegatedTo', authorityAddress: 'AUTH_ADDR' },
             },
             isLoading: false,
             isError: false,
@@ -277,9 +279,8 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.watch)
+            expect(accountType(acct.account)).toBe(AccountTypes.watch)
             expect(acct.account.address).toBe('WATCH_ADDR')
-            expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
             expect(acct.displayStateOverride).toBe('rekeyedSignable')
         }
     })
@@ -408,7 +409,7 @@ describe('useLedgerAccountInfoContent', () => {
             'asset', // ALGO
             'asset', // USDC
             'sectionHeader', // can_sign_for
-            'rekeyAddress',
+            'authorityAccount',
         ])
 
         const headers = result.current.items

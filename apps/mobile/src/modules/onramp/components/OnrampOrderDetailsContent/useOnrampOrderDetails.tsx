@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useCancelRampOrderMutation,
     toOnrampUserMessage,

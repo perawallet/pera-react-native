@@ -13,9 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { deriveHdAccount } from '../chain-adapter'
-import { HdDerivationTypeUnsupportedError } from '../errors'
-import { DerivationTypes } from '../models'
-import { fakeAccountsChain, FAKE_CHAIN_ID } from './fakeAccountsChain'
+import { fakeAccountsChain } from './fakeAccountsChain'
 
 describe('deriveHdAccount', () => {
     it('derives through the registered key derivation with the shared KMS core', async () => {
@@ -31,35 +29,5 @@ describe('deriveHdAccount', () => {
             networkId: 'mainnet',
         })
         expect(derived.keyPairId).toBe('seed-1-acc2-idx5-dt9')
-    })
-
-    it('derives when the requested type is the chain’s own', async () => {
-        const { deriveAccount } = fakeAccountsChain().derivation
-
-        await deriveHdAccount('mainnet', 'seed-1', {
-            account: 0,
-            keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
-        })
-
-        expect(deriveAccount).toHaveBeenCalledTimes(1)
-    })
-
-    it('refuses another derivation type without deriving', async () => {
-        const { deriveAccount } = fakeAccountsChain().derivation
-
-        await expect(
-            deriveHdAccount('mainnet', 'seed-1', {
-                account: 0,
-                keyIndex: 0,
-                derivationType: DerivationTypes.Khovratovich,
-            }),
-        ).rejects.toEqual(
-            expect.objectContaining({
-                name: HdDerivationTypeUnsupportedError.name,
-                chainId: FAKE_CHAIN_ID,
-            }),
-        )
-        expect(deriveAccount).not.toHaveBeenCalled()
     })
 })

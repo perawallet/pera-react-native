@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -23,7 +23,6 @@ import {
     useRemovePasskeyMutation,
     type Passkey,
 } from '@perawallet/wallet-core-passkeys'
-import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
 import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { trackEvent, PasskeysEvent } from '@analytics'
@@ -39,7 +38,10 @@ export type SettingsPasskeysScreenState =
     | 'empty'
     | 'populated'
 
-export type PasskeysNotice = 'hd-wallet' | 'biometric' | null
+// No 'biometric' notice: native's warns about a missing screen lock, but the
+// extension's passkeys verify the user with the vault password, and a browser
+// can't see the computer's lock anyway.
+export type PasskeysNotice = 'hd-wallet' | null
 
 export type UseSettingsPasskeysScreenResult = {
     state: SettingsPasskeysScreenState
@@ -83,7 +85,6 @@ export type UseSettingsPasskeysScreenResult = {
 export const useSettingsPasskeysScreen =
     (): UseSettingsPasskeysScreenResult => {
         const list = usePasskeysQuery()
-        const biometric = useBiometricSecurityLevel()
         const hasHDWallet = useHasHDWallet()
         const { request } = useBottomSheet()
         const { removePasskey } = useRemovePasskeyMutation()
@@ -92,21 +93,6 @@ export const useSettingsPasskeysScreen =
         const scanner = useModalState()
         const resolveBackupChoice = useRemoveFromBackupChoice()
         const { getPreference, setPreference } = usePreferences()
-
-        // Native refreshes on an AppState 'active' transition; the browser's
-        // equivalent is the document becoming visible again. Without it, a
-        // user who enables a screen lock in another tab (or another window)
-        // keeps seeing the stale "biometric required" notice until they
-        // manually reload the popup.
-        const refreshBiometric = biometric.refresh
-        useEffect(() => {
-            const onVisible = (): void => {
-                if (document.visibilityState === 'visible') refreshBiometric()
-            }
-            document.addEventListener('visibilitychange', onVisible)
-            return () =>
-                document.removeEventListener('visibilitychange', onVisible)
-        }, [refreshBiometric])
 
         const isInterceptionEnabled =
             getPreference(UserPreferences.webauthnInterceptionEnabled) === true
@@ -163,28 +149,19 @@ export const useSettingsPasskeysScreen =
         )
 
         const state = resolveState(isInterceptionEnabled, list)
-        const lacksDeviceAuthentication =
-            !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
         const isManaging = state === 'empty' || state === 'populated'
 
-        const notice: PasskeysNotice = !isManaging
-            ? null
-            : !hasHDWallet
-              ? 'hd-wallet'
-              : lacksDeviceAuthentication
-                ? 'biometric'
-                : null
+        const notice: PasskeysNotice =
+            isManaging && !hasHDWallet ? 'hd-wallet' : null
 
         return {
             state,
             passkeys: list.passkeys,
             notice,
             canRemove,
-            canScan:
-                state !== 'loading' &&
-                state !== 'error' &&
-                hasHDWallet &&
-                !lacksDeviceAuthentication,
+            // A scanned FIDO QR is handed to the OS credential provider as a
+            // fido: link, which only the mobile apps have.
+            canScan: false,
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,

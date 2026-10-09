@@ -39,6 +39,18 @@ describe('config/main', () => {
             })
         })
 
+        test('reads ethereum and its capability list', () => {
+            expect(
+                getConfig({
+                    chainIds: 'algorand,ethereum',
+                    chainEthereumCapabilities: 'send, receive',
+                }).chains,
+            ).toEqual({
+                enabled: ['algorand', 'ethereum'],
+                capabilities: { ethereum: ['send', 'receive'] },
+            })
+        })
+
         test('rejects an unknown chain id', () => {
             expect(() => getConfig({ chainIds: 'algorand,dogecoin' })).toThrow()
         })
@@ -165,6 +177,63 @@ describe('config/main', () => {
         expect(overrideEnvironmentMap.cardAutoDrawTemplateHash).toBe(
             'CARD_AUTODRAW_TEMPLATE_HASH',
         )
+    })
+
+    describe('ethereum endpoints', () => {
+        test('defaults to no RPC URLs and no Pera services', () => {
+            const defaults = getConfig({})
+
+            expect(defaults.ethereumMainnetRpcUrl).toBe('')
+            expect(defaults.ethereumSepoliaRpcUrl).toBe('')
+            expect(defaults.ethereumMainnetPeraServices).toEqual([])
+            expect(defaults.ethereumSepoliaPeraServices).toEqual([])
+        })
+
+        test('reads an RPC URL', () => {
+            expect(
+                getConfig({
+                    ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+                }).ethereumSepoliaRpcUrl,
+            ).toBe('https://sepolia.rpc.example')
+        })
+
+        test('rejects an RPC value that is not a URL', () => {
+            expect(() =>
+                getConfig({ ethereumMainnetRpcUrl: 'not a url' }),
+            ).toThrow()
+        })
+
+        test('splits a flat Pera services list', () => {
+            expect(
+                getConfig({ ethereumMainnetPeraServices: 'prices, history' })
+                    .ethereumMainnetPeraServices,
+            ).toEqual(['prices', 'history'])
+        })
+
+        test('reads an empty Pera services list as no services', () => {
+            expect(
+                getConfig({ ethereumSepoliaPeraServices: '' })
+                    .ethereumSepoliaPeraServices,
+            ).toEqual([])
+        })
+
+        test.each(['accounts', 'pricez'])(
+            'rejects %s as an Ethereum Pera service',
+            service => {
+                expect(() =>
+                    getConfig({ ethereumMainnetPeraServices: service }),
+                ).toThrow()
+            },
+        )
+
+        test('maps each value onto its environment variable', () => {
+            expect(overrideEnvironmentMap).toMatchObject({
+                ethereumMainnetRpcUrl: 'ETHEREUM_MAINNET_RPC_URL',
+                ethereumSepoliaRpcUrl: 'ETHEREUM_SEPOLIA_RPC_URL',
+                ethereumMainnetPeraServices: 'ETHEREUM_MAINNET_PERA_SERVICES',
+                ethereumSepoliaPeraServices: 'ETHEREUM_SEPOLIA_PERA_SERVICES',
+            })
+        })
     })
 
     test('exposes bounded-timeout defaults in milliseconds', () => {

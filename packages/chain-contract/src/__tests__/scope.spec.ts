@@ -19,11 +19,14 @@ import {
     type ChainScope,
 } from '../models/identity'
 import {
-    legacyColumnValue,
-    networkColumnValue,
+    LEGACY_SCOPES,
+    legacyNetworkOf,
     parseScopeKey,
+    queryKeyReferencesScope,
+    rekeyLegacyNetworkRecord,
     scopeForLegacyNetwork,
     scopeFromNetworkColumn,
+    scopeKeyForLegacyNetwork,
     toScopeKey,
 } from '../scope'
 
@@ -113,47 +116,12 @@ describe('scopeForLegacyNetwork', () => {
     })
 })
 
-describe('legacyColumnValue', () => {
-    it.each(['mainnet', 'testnet', 'betanet', 'custom'] as const)(
-        'is the bare legacy value for %s',
-        network => {
-            const value = legacyColumnValue(scopeForLegacyNetwork(network))
-
-            expect(value).toBe(network)
-        },
-    )
-
-    it('is the bare network id for any other network of the legacy chain', () => {
-        const value = legacyColumnValue({
-            chainId: 'algorand',
-            networkId: 'custom-9f3a',
-        })
-
-        expect(value).toBe('custom-9f3a')
-    })
-
-    it('rejects a network id that is not valid', () => {
-        const scope: ChainScope = {
-            chainId: 'algorand',
-            networkId: 'Not Valid',
-        }
-
-        expect(() => legacyColumnValue(scope)).toThrow(InvalidScopeKeyError)
-    })
-
-    it('rejects a chain id this build does not know', () => {
-        expect(() => legacyColumnValue(UNKNOWN_CHAIN_SCOPE)).toThrow(
-            InvalidScopeKeyError,
-        )
-    })
-})
-
 describe('network column encoding', () => {
     it.each(LEGACY_NETWORKS)(
-        'stores the Algorand %s scope as the bare network',
+        'stores the Algorand %s scope as its scope key',
         network => {
-            expect(networkColumnValue(scopeForLegacyNetwork(network))).toBe(
-                network,
+            expect(toScopeKey(scopeForLegacyNetwork(network))).toBe(
+                `algorand/${network}`,
             )
         },
     )
@@ -181,8 +149,130 @@ describe('network column encoding', () => {
     })
 
     it('rejects a scope key for an unknown chain', () => {
-        expect(() => scopeFromNetworkColumn('ethereum/mainnet')).toThrow(
+        expect(() => scopeFromNetworkColumn('unknown/mainnet')).toThrow(
             InvalidScopeKeyError,
         )
+    })
+})
+
+describe('LEGACY_SCOPES', () => {
+    it('holds the Algorand scope of every legacy network', () => {
+        expect(LEGACY_SCOPES).toEqual(
+            LEGACY_NETWORKS.map(scopeForLegacyNetwork),
+        )
+    })
+})
+
+describe('queryKeyReferencesScope', () => {
+    const testnet = scopeForLegacyNetwork('testnet')
+
+    it('matches the scope in the scope field of an object element', () => {
+        const key = ['assets', { assetId: '1', scope: testnet }]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(true)
+    })
+
+    it('matches the scope as a bare element', () => {
+        const key = ['rekey-transaction-fee', { ...testnet }, 'ADDR']
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(true)
+    })
+
+    it('does not match a key for another scope', () => {
+        const mainnet = scopeForLegacyNetwork('mainnet')
+        const key = ['assets', { assetId: '1', scope: mainnet }, mainnet]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('does not match the same network id on another chain', () => {
+        const key = [
+            'assets',
+            { scope: { chainId: 'ethereum', networkId: 'testnet' } },
+        ]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('does not match a key shaped before scopes, with a bare network', () => {
+        const key = ['assets', { assetId: '1', network: 'testnet' }, 'testnet']
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('rejects a scope that is not valid', () => {
+        expect(() =>
+            queryKeyReferencesScope(['assets'], UNKNOWN_CHAIN_SCOPE),
+        ).toThrow(InvalidScopeKeyError)
+    })
+
+    it('does not match a key that carries no network', () => {
+        const key = ['assets', null, { assetId: '1' }]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+})
+
+describe('scopeKeyForLegacyNetwork', () => {
+    it.each(LEGACY_NETWORKS)('keys %s under the Algorand chain', network => {
+        expect(scopeKeyForLegacyNetwork(network)).toBe(`algorand/${network}`)
+    })
+})
+
+describe('legacyNetworkOf', () => {
+    it.each(LEGACY_NETWORKS)('round-trips the Algorand %s scope', network => {
+        expect(legacyNetworkOf(scopeForLegacyNetwork(network))).toBe(network)
+    })
+
+    it('rejects a network of the legacy chain that has no legacy value', () => {
+        expect(() =>
+            legacyNetworkOf({ chainId: 'algorand', networkId: 'custom-9f3a' }),
+        ).toThrow(InvalidScopeKeyError)
+    })
+
+    it('rejects another chain', () => {
+        expect(() => legacyNetworkOf(UNKNOWN_CHAIN_SCOPE)).toThrow(
+            InvalidScopeKeyError,
+        )
+    })
+
+    it('rejects a chain that has no legacy networks', () => {
+        expect(() =>
+            legacyNetworkOf({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toThrow(InvalidScopeKeyError)
+    })
+})
+
+describe('rekeyLegacyNetworkRecord', () => {
+    it('re-keys bare legacy networks to scope keys, values unchanged', () => {
+        const rekeyed = rekeyLegacyNetworkRecord({
+            mainnet: 'id-main',
+            testnet: null,
+        })
+
+        expect(rekeyed).toEqual({
+            'algorand/mainnet': 'id-main',
+            'algorand/testnet': null,
+        })
+    })
+
+    it('passes keys that already are scope keys through', () => {
+        const migrated = { 'algorand/testnet': 42 }
+
+        expect(rekeyLegacyNetworkRecord(migrated)).toEqual(migrated)
+    })
+
+    it('drops keys it cannot read instead of throwing', () => {
+        const rekeyed = rekeyLegacyNetworkRecord({
+            mainnet: 1,
+            devnet: 2,
+            'unknown/mainnet': 3,
+        })
+
+        expect(rekeyed).toEqual({ 'algorand/mainnet': 1 })
+    })
+
+    it('treats a missing record as empty', () => {
+        expect(rekeyLegacyNetworkRecord(undefined)).toEqual({})
     })
 })

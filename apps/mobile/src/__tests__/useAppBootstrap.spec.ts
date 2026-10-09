@@ -79,6 +79,8 @@ const mocks = vi.hoisted(() => {
             (_fn: (state: unknown) => void) => () => {},
         ),
         applyLaunchAccountPreference: vi.fn(),
+        hydrateAccountChainStates: vi.fn(),
+        backfillAccountRecords: vi.fn(),
     }
 })
 
@@ -107,9 +109,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     setOnConfirmedHandler: mocks.setOnConfirmedHandler,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    algorandSafeQuerySerialize: (value: unknown) => value,
-    algorandSafeQueryParse: (value: unknown) => value,
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     derivePQKeygenSeed: (entropy: Uint8Array) => entropy,
 }))
 
@@ -149,6 +149,8 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    backfillAccountRecords: () => mocks.backfillAccountRecords(),
+    hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
     useAccountsStore: {
         getState: () => ({
             applyLaunchAccountPreference: mocks.applyLaunchAccountPreference,
@@ -205,6 +207,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         info: vi.fn(),
     },
     updateBackendHeaders: vi.fn(),
+    stringifyTypedJson: (value: unknown) => value,
+    parseTypedJson: (value: unknown) => value,
 }))
 
 describe('useAppBootstrap', () => {
@@ -222,6 +226,7 @@ describe('useAppBootstrap', () => {
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
         mocks.configOverrides = {}
         mocks.settingsState.language = 'system'
@@ -252,6 +257,29 @@ describe('useAppBootstrap', () => {
         expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.backfillAccountRecords).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays unbootstrapped until the chain-state slice has hydrated', async () => {
+        let finishHydration: () => void = () => {}
+        mocks.hydrateAccountChainStates.mockReturnValue(
+            new Promise<void>(resolve => {
+                finishHydration = resolve
+            }),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(false)
+
+        await act(async () => {
+            finishHydration()
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(true)
     })
 
     // rAF does not fire while the app produces no frames, so a cold start that

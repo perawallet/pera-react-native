@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     createConnectorRegistry,
     createWalletConnectConnector,
@@ -33,6 +34,10 @@ import {
     WALLET_CONNECT_V1_KIND,
     type WalletConnectV1Handler,
 } from './connection'
+import {
+    createStorageAnsweredRequests,
+    type WalletConnectV1AnsweredRequests,
+} from './answeredRequests'
 import { createV1ProposalHandlers } from './proposals'
 import { createV1RequestHandlers } from './requests'
 import { createV1SessionRestorer } from './restore'
@@ -51,6 +56,8 @@ export type CreateWalletConnectV1HandlerOptions = {
     getNetwork: () => Network
     /** Defaults to the keystore; the extension's offscreen document has none. */
     sessionKeys?: WalletConnectV1SessionKeyStore
+    /** Defaults to the provider's key-value storage. */
+    answeredRequests?: WalletConnectV1AnsweredRequests
 }
 
 // v1 is one bridge WebSocket per session, so this handler owns N connectors rather than one relay.
@@ -59,6 +66,9 @@ export const createWalletConnectV1Handler = (
 ): WalletConnectV1Handler => {
     const { getNetwork } = options
     const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()
+    const answeredRequests =
+        options.answeredRequests ??
+        createStorageAnsweredRequests(() => getProvider().keyValueStorage)
 
     // Pending origins are keyed by clientId: on v1 the connector IS the pairing.
     const kit = createHandlerKit(WALLET_CONNECT_V1_KIND, {
@@ -77,9 +87,14 @@ export const createWalletConnectV1Handler = (
     const connectors = createConnectorRegistry({
         bindHandlers: connector => bindHandlers(connector),
     })
-    const delivery = createWalletConnectV1Delivery(connectors)
+    const delivery = createWalletConnectV1Delivery(connectors, answeredRequests)
 
-    const requests = createV1RequestHandlers({ kit, connectors, getNetwork })
+    const requests = createV1RequestHandlers({
+        kit,
+        connectors,
+        getNetwork,
+        answeredRequests,
+    })
     const proposals = createV1ProposalHandlers({
         kit,
         connectors,
@@ -91,14 +106,17 @@ export const createWalletConnectV1Handler = (
         kit,
         connectors,
         sessionKeys,
+        answeredRequests,
         handleSessionRequest: proposals.handleSessionRequest,
         handleSignTxn: requests.handleSignTxn,
         handleSignData: requests.handleSignData,
+        handleGetEmptySignatures: requests.handleGetEmptySignatures,
     })
     const { restore } = createV1SessionRestorer({
         kit,
         connectors,
         sessionKeys,
+        answeredRequests,
         bindHandlers,
     })
 

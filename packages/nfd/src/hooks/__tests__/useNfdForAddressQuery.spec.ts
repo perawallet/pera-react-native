@@ -16,13 +16,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 const mockEnqueue = vi.hoisted(() => vi.fn())
+const nameService = vi.hoisted(() => ({ isEnabled: true }))
 
 vi.mock('../../services/nfdBatchQueue', () => ({
     nfdBatchQueue: { enqueue: mockEnqueue },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: () => nameService.isEnabled,
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -42,6 +47,7 @@ describe('useNfdForAddressQuery', () => {
 
     beforeEach(() => {
         registerFakeNameServiceAdapter()
+        nameService.isEnabled = true
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -124,6 +130,14 @@ describe('useNfdForAddressQuery', () => {
         await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(2))
 
         resolveFirst({ name: 'alice.algo', image: '', source: 'nfd' })
+    })
+
+    it('does not query while the nameService capability is off', () => {
+        nameService.isEnabled = false
+
+        renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), { wrapper })
+
+        expect(mockEnqueue).not.toHaveBeenCalled()
     })
 
     it('does not query when enabled is false', () => {

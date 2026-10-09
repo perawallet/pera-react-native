@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
     const actual = await importOriginal()
@@ -25,32 +25,46 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
 })
 
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import type {
     MultisigSignRequest,
     SignerResponse,
 } from '@perawallet/wallet-core-multisig'
 import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
+
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildQuantumAccount = (address: string): WalletAccount => ({
     id: `quantum-${address}`,
-    type: AccountTypes.quantum,
+    custody: { kind: 'local', seed: 'quantum' },
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -154,7 +168,7 @@ describe('getLocalUnsignedSigners', () => {
         const a = buildAlgo25Account('A')
         const watch: WalletAccount = {
             id: 'watch-w',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'W',
         }
         const signRequest = buildSignRequest(['A', 'W'])
@@ -177,10 +191,10 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildAlgo25Account('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-local',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'PARTICIPANT',
-            rekeyAddress: 'AUTH',
         }
+        seedAuthority('PARTICIPANT', 'AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
         const result = getLocalUnsignedSigners(signRequest, [auth, rekeyed])
@@ -192,10 +206,10 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildHardwareAccount('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-hardware',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: 'PARTICIPANT',
-            rekeyAddress: 'AUTH',
         }
+        seedAuthority('PARTICIPANT', 'AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
         const result = getLocalUnsignedSigners(signRequest, [auth, rekeyed])
@@ -204,10 +218,8 @@ describe('getLocalUnsignedSigners', () => {
     })
 
     it('includes a local-key participant even when rekeyed to a hardware account', () => {
-        const participant: WalletAccount = {
-            ...buildAlgo25Account('PARTICIPANT'),
-            rekeyAddress: 'AUTH',
-        }
+        const participant = buildAlgo25Account('PARTICIPANT')
+        seedAuthority('PARTICIPANT', 'AUTH')
         const auth = buildHardwareAccount('AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
@@ -217,10 +229,8 @@ describe('getLocalUnsignedSigners', () => {
     })
 
     it('includes a local-key participant even when rekeyed to another local-key account', () => {
-        const participant: WalletAccount = {
-            ...buildAlgo25Account('PARTICIPANT'),
-            rekeyAddress: 'AUTH',
-        }
+        const participant = buildAlgo25Account('PARTICIPANT')
+        seedAuthority('PARTICIPANT', 'AUTH')
         const auth = buildAlgo25Account('AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 

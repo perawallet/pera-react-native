@@ -35,8 +35,8 @@ const ASSET: PeraAsset = {
 }
 
 // Every other spec writes and reads through the same encoder, so only a raw
-// read catches a writer that stops storing what existing installs hold.
-describe('assets repositories store the legacy network value', () => {
+// read catches a writer that stops storing what the backfill migration wrote.
+describe('assets repositories store the scope key', () => {
     let db: Database
     let teardown: () => void
 
@@ -58,14 +58,18 @@ describe('assets repositories store the legacy network value', () => {
         return rows.map(([network]) => network)
     }
 
-    it('writes the bare network to assets_node and assets_pera', async () => {
+    it('writes the scope key to assets_node and assets_pera', async () => {
         await upsertAssets({ db, items: [ASSET], scope: TESTNET_SCOPE })
 
-        expect(await storedNetworks('assets_node')).toEqual(['testnet'])
-        expect(await storedNetworks('assets_pera')).toEqual(['testnet'])
+        expect(await storedNetworks('assets_node')).toEqual([
+            'algorand/testnet',
+        ])
+        expect(await storedNetworks('assets_pera')).toEqual([
+            'algorand/testnet',
+        ])
     })
 
-    it('updates the existing legacy row instead of adding a second one', async () => {
+    it('updates the existing row instead of adding a second one', async () => {
         await upsertAssets({ db, items: [ASSET], scope: TESTNET_SCOPE })
 
         await updateAssetPeraMetadata({
@@ -75,10 +79,12 @@ describe('assets repositories store the legacy network value', () => {
             updates: { isFavorited: true },
         })
 
-        expect(await storedNetworks('assets_pera')).toEqual(['testnet'])
+        expect(await storedNetworks('assets_pera')).toEqual([
+            'algorand/testnet',
+        ])
     })
 
-    it('writes the bare network to asset_prices and asset_price_misses', async () => {
+    it('writes the scope key to asset_prices and asset_price_misses', async () => {
         await upsertAssetPrices({
             db,
             prices: [{ assetId: '100', usdPrice: new Decimal('1') }],
@@ -86,7 +92,11 @@ describe('assets repositories store the legacy network value', () => {
         })
         await recordPriceMisses({ db, assetIds: ['200'], scope: TESTNET_SCOPE })
 
-        expect(await storedNetworks('asset_prices')).toEqual(['testnet'])
-        expect(await storedNetworks('asset_price_misses')).toEqual(['testnet'])
+        expect(await storedNetworks('asset_prices')).toEqual([
+            'algorand/testnet',
+        ])
+        expect(await storedNetworks('asset_price_misses')).toEqual([
+            'algorand/testnet',
+        ])
     })
 })

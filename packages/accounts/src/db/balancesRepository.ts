@@ -13,8 +13,9 @@
 import { eq, and } from 'drizzle-orm'
 import type { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -28,7 +29,12 @@ export type AccountBalanceRow = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
+}
+
+/** `network` is the raw column; read it through `scopeFromNetworkColumn`. */
+export type StoredAccountBalanceRow = AccountBalanceRow & {
+    network: ChainScopeKey
 }
 
 type UpsertAccountBalanceParams = {
@@ -41,7 +47,7 @@ type UpsertAccountBalanceParams = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
 }
 
 export async function upsertAccountBalance({
@@ -54,9 +60,9 @@ export async function upsertAccountBalance({
     totalAppsOptedIn,
     minBalance,
     status,
-    authAddress,
+    authorityAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const now = Date.now()
 
     await db
@@ -70,7 +76,7 @@ export async function upsertAccountBalance({
             totalAppsOptedIn,
             minBalance,
             status,
-            authAddress,
+            authAddress: authorityAddress,
             updatedAt: now,
         })
         .onConflictDoUpdate({
@@ -85,7 +91,7 @@ export async function upsertAccountBalance({
                 totalAppsOptedIn,
                 minBalance,
                 status,
-                authAddress,
+                authAddress: authorityAddress,
                 updatedAt: now,
             },
         })
@@ -103,7 +109,7 @@ export async function getAccountBalance({
     accountAddress,
     scope,
 }: GetAccountBalanceParams): Promise<Optional<AccountBalanceRow>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,
@@ -113,7 +119,7 @@ export async function getAccountBalance({
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
             minBalance: AccountBalancesSchema.minBalance,
             status: AccountBalancesSchema.status,
-            authAddress: AccountBalancesSchema.authAddress,
+            authorityAddress: AccountBalancesSchema.authAddress,
         })
         .from(AccountBalancesSchema)
         .where(
@@ -125,6 +131,25 @@ export async function getAccountBalance({
         .all()
 
     return rows[0]
+}
+
+export async function getAllAccountBalances({
+    db = getDatabase(),
+}: { db?: Database } = {}): Promise<StoredAccountBalanceRow[]> {
+    return db
+        .select({
+            accountAddress: AccountBalancesSchema.accountAddress,
+            network: AccountBalancesSchema.network,
+            algoBalance: AccountBalancesSchema.algoBalance,
+            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
+            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
+            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            minBalance: AccountBalancesSchema.minBalance,
+            status: AccountBalancesSchema.status,
+            authorityAddress: AccountBalancesSchema.authAddress,
+        })
+        .from(AccountBalancesSchema)
+        .all()
 }
 
 type DeleteAccountBalanceParams = {

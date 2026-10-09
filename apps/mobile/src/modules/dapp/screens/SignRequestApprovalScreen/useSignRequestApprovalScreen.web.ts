@@ -11,9 +11,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
+    isSignRequestAwaitingPreflight,
     useSigningRequest,
     GenesisHashMismatchError,
     type SignRequest,
@@ -151,9 +152,14 @@ export const useSignRequestApprovalScreen =
                 : null
 
         // A foreign request at the head keeps this loading; closing the
-        // window then rejects the approval via handleWindowRemoved.
+        // window then rejects the approval via handleWindowRemoved. So does
+        // a WalletConnect request still in its chain check, which has no
+        // actor to render yet.
+        const isAwaitingPreflight =
+            !!ownRequest && isSignRequestAwaitingPreflight(ownRequest)
         return {
-            isLoading: isLoading || (!ownRequest && !error),
+            isLoading:
+                isLoading || (!ownRequest && !error) || isAwaitingPreflight,
             error,
             request: ownRequest,
             origin: approval?.origin ?? '',

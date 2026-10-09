@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -47,7 +46,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToSharedIntroScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedIntroScreen'
 import { RekeyToSharedSelectTargetScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedSelectTargetScreen'
@@ -77,14 +76,14 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-shared-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const target: WalletAccount = {
         id: 'rekey-shared-target',
-        type: AccountTypes.multisig,
+        custody: { kind: 'multisig' },
         address: MULTISIG_REKEY_INTEGRATION_ADDRESS,
         name: 'Shared target',
         multisigDetails: {
@@ -105,7 +104,7 @@ const seedRekeyAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { source, target }

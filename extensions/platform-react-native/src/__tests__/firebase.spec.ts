@@ -56,6 +56,9 @@ vi.mock('@react-native-firebase/remote-config', () => ({
 vi.mock('@react-native-firebase/analytics', () => ({
     getAnalytics: vi.fn(() => ({})),
     logEvent: vi.fn(),
+    setAnalyticsCollectionEnabled: vi.fn(() => Promise.resolve()),
+    setConsent: vi.fn(() => Promise.resolve()),
+    resetAnalyticsData: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@react-native-firebase/messaging', () => ({
@@ -97,6 +100,7 @@ import * as analytics from '@react-native-firebase/analytics'
 import * as messaging from '@react-native-firebase/messaging'
 import * as crashlytics from '@react-native-firebase/crashlytics'
 import notifee from '@notifee/react-native'
+import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
 
 const mockNotifee = notifee as any
 
@@ -106,6 +110,10 @@ describe('RNFirebaseService', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         service = new RNFirebaseService()
+    })
+
+    afterEach(() => {
+        remoteConfigDefaultsRegistry.reset()
     })
 
     describe('Remote Config', () => {
@@ -171,6 +179,19 @@ describe('RNFirebaseService', () => {
                 expect(mockSetDefaults).toHaveBeenCalledWith(
                     expect.objectContaining({
                         staking_projects_i18n: expect.any(String),
+                    }),
+                )
+            })
+
+            it('seeds defaults another package declared alongside the platform ones', async () => {
+                remoteConfigDefaultsRegistry.declare({ fixture_fee: 1000 })
+
+                await service.initializeRemoteConfig()
+
+                expect(mockSetDefaults).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        staking_projects_i18n: expect.any(String),
+                        fixture_fee: 1000,
                     }),
                 )
             })
@@ -315,7 +336,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('fee_min_txn_fee')
+                const result = service.getNumberValue('fixture_fee')
                 expect(result).toEqual(42)
             })
 
@@ -325,7 +346,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('fee_min_txn_fee', 100)
+                const result = service.getNumberValue('fixture_fee', 100)
                 expect(result).toEqual(42)
             })
 
@@ -333,7 +354,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('fee_min_txn_fee', 100)
+                const result = service.getNumberValue('fixture_fee', 100)
                 expect(result).toEqual(100)
             })
 
@@ -341,7 +362,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('fee_min_txn_fee')
+                const result = service.getNumberValue('fixture_fee')
                 expect(result).toEqual(0)
             })
         })
@@ -808,6 +829,7 @@ describe('RNFirebaseService', () => {
     describe('Analytics', () => {
         beforeEach(() => {
             service.initializeAnalytics()
+            service.setCollectionEnabled(true)
         })
 
         it('logEvent forwards payload to Firebase analytics', () => {
@@ -831,6 +853,71 @@ describe('RNFirebaseService', () => {
 
         it('initializeAnalytics is callable without throwing', () => {
             expect(() => service.initializeAnalytics()).not.toThrow()
+        })
+    })
+
+    describe('Analytics consent', () => {
+        it('starts with collection off and analytics storage denied', () => {
+            service.initializeAnalytics()
+
+            expect(
+                analytics.setAnalyticsCollectionEnabled,
+            ).toHaveBeenLastCalledWith(expect.anything(), false)
+            expect(analytics.setConsent).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.objectContaining({ analytics_storage: false }),
+            )
+        })
+
+        it('drops events until collection is enabled', () => {
+            service.initializeAnalytics()
+
+            service.logEvent('before')
+            service.setCollectionEnabled(true)
+            service.logEvent('after')
+
+            expect(analytics.logEvent).toHaveBeenCalledExactlyOnceWith(
+                expect.anything(),
+                'after',
+                undefined,
+            )
+        })
+
+        it('grants analytics storage but never the ad consent types', () => {
+            service.initializeAnalytics()
+
+            service.setCollectionEnabled(true)
+
+            expect(analytics.setConsent).toHaveBeenLastCalledWith(
+                expect.anything(),
+                {
+                    analytics_storage: true,
+                    ad_storage: false,
+                    ad_user_data: false,
+                    ad_personalization: false,
+                },
+            )
+        })
+
+        it('applies a choice made before analytics initializes', () => {
+            service.setCollectionEnabled(true)
+
+            service.initializeAnalytics()
+
+            expect(
+                analytics.setAnalyticsCollectionEnabled,
+            ).toHaveBeenLastCalledWith(expect.anything(), true)
+        })
+
+        it('clears stored analytics data only when consent is withdrawn', () => {
+            service.initializeAnalytics()
+
+            service.setCollectionEnabled(false)
+            expect(analytics.resetAnalyticsData).not.toHaveBeenCalled()
+
+            service.setCollectionEnabled(true)
+            service.setCollectionEnabled(false)
+            expect(analytics.resetAnalyticsData).toHaveBeenCalledOnce()
         })
     })
 

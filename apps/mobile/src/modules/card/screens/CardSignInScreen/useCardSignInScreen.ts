@@ -15,6 +15,7 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     getCardApiError,
+    isInvalidCredentialsError,
     isInvalidInputError,
     signInSchema,
     useCardLoginMutation,
@@ -258,9 +259,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     )
                     return
                 }
-                // A rejected credentials submission: 401/400/422 is a wrong
-                // email or password, shown inline on the password field.
-                if (apiError.status === 401 || isInvalidInputError(apiError)) {
+                // A rejected credentials submission is shown inline on the
+                // password field.
+                if (isInvalidCredentialsError(apiError)) {
                     setError('password', {
                         type: 'server',
                         message: t('peraCard.sign_in.invalid_credentials'),

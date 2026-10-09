@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
     memoryStore,
     runHandlerContractTests,
@@ -28,12 +28,19 @@ import {
     type InboundMessage,
     type RawInboundMessage,
 } from '@perawallet/wallet-core-connections'
+import { logger } from '@perawallet/wallet-core-shared'
+import {
+    createStorageAnsweredRequests,
+    type WalletConnectV1AnsweredRequests,
+} from '../answeredRequests'
 import { createWalletConnectV1Handler } from '../handler'
+import type { WalletConnectV1Handler } from '../connection'
 import type { WalletConnectV1SessionKeyStore } from '../secrets'
 import {
     createConnectorRegistry,
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
+import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -511,7 +518,12 @@ describe('walletconnect v1 handler behaviour', () => {
         ],
     })
 
-    const setup = async (seed: Connection[] = []) => {
+    const setup = async (
+        seed: Connection[] = [],
+        {
+            answeredRequests,
+        }: { answeredRequests?: WalletConnectV1AnsweredRequests } = {},
+    ) => {
         const store = memoryStore(seed)
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
         const onMessage = vi.fn<(message: RawInboundMessage) => void>()
@@ -529,6 +541,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
             sessionKeys,
+            answeredRequests,
         })
         await handler.initialize(context)
         return {
@@ -597,6 +610,7 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(connector.options.uri).toBe(V1_URI)
         expect(getConnector(connector.clientId) as unknown).toBe(connector)
         expect([...connector.listeners.keys()].sort()).toEqual([
+            'algo_getEmptySignatures',
             'algo_signData',
             'algo_signTxn',
             'disconnect',
@@ -1185,6 +1199,57 @@ describe('walletconnect v1 handler behaviour', () => {
         })
     })
 
+    it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
+        keys.set('c1', 'restored-key')
+        const adapter = dappRequestAdapterFor(testGetNetwork())
+        if (!adapter) throw new Error('no Algorand adapter registered')
+        const emptySignaturesFor = vi
+            .spyOn(adapter, 'emptySignaturesFor')
+            .mockReturnValue({ AAAA: 'gA==' })
+        onTestFinished(() => emptySignaturesFor.mockRestore())
+        const { onMessage, onError } = await setupRestored([SEEDED])
+        const connector = lastConnector()
+
+        connector.emit('algo_getEmptySignatures', null, {
+            id: 11,
+            params: [
+                {
+                    chainId:
+                        adapter.walletConnect.caip2ChainIdFor(testGetNetwork()),
+                },
+            ],
+        })
+        await flush()
+
+        expect(emptySignaturesFor).toHaveBeenCalledWith(['AAAA'])
+        expect(connector.approveRequest).toHaveBeenCalledWith({
+            id: 11,
+            result: { AAAA: 'gA==' },
+        })
+        expect(onMessage).not.toHaveBeenCalled()
+        expect(onError).not.toHaveBeenCalled()
+    })
+
+    it('refuses algo_getEmptySignatures, silently, for a session on another network', async () => {
+        keys.set('c1', 'restored-key')
+        const { onError } = await setupRestored([
+            { ...SEEDED, metadata: { ...SEEDED.metadata, chainId: 416_002 } },
+        ])
+        const connector = lastConnector()
+
+        connector.emit('algo_getEmptySignatures', null, {
+            id: 12,
+            params: [{}],
+        })
+        await flush()
+
+        expect(connector.approveRequest).not.toHaveBeenCalled()
+        expect(connector.rejectRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 12 }),
+        )
+        expect(onError).not.toHaveBeenCalled()
+    })
+
     it('swallows a background reject that cannot be delivered', async () => {
         const { handler } = await setup()
 
@@ -1654,5 +1719,288 @@ describe('walletconnect v1 handler behaviour', () => {
 
         expect(connection.origin).toEqual(origin)
         expect((await records())[0].origin).toEqual(origin)
+    })
+
+    // The bridge can hand a fresh subscription a request the wallet already
+    // answered; shown again, the user signs or dismisses into a dApp that has
+    // moved on.
+    describe('replayed call requests', () => {
+        // Pera Connect's id shape: `Date.now() * 1000` plus a random suffix.
+        const SENT_AT_MS = 1_728_000_000_000
+        const REQUEST_ID = SENT_AT_MS * 1000 + 123
+        const frame = { id: REQUEST_ID, params: [[{ txn: 'dHhu' }]] }
+
+        const memoryPersistence = () => {
+            const entries = new Map<string, string>()
+            return {
+                entries,
+                getItem: (key: string) => entries.get(key) ?? null,
+                setItem: (key: string, value: string) =>
+                    void entries.set(key, value),
+                removeItem: (key: string) => void entries.delete(key),
+            }
+        }
+
+        const freshLedger = () => {
+            const persistence = memoryPersistence()
+            return createStorageAnsweredRequests(() => persistence)
+        }
+
+        const restoredWith = async (
+            answeredRequests: WalletConnectV1AnsweredRequests,
+        ) => {
+            keys.set('c1', 'restored-key')
+            const harness = await setup([SEEDED], { answeredRequests })
+            await harness.handler.restore()
+            const connector = lastConnector()
+            connector.connected = true
+            return { ...harness, connector }
+        }
+
+        const respondTo = async (message: RawInboundMessage) => {
+            await asRequest(message).respond({
+                type: 'sign-transactions',
+                signed: ['c2ln'],
+            })
+        }
+
+        it('drops a redelivery of a request it already answered', async () => {
+            const { connector, onMessage } = await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await respondTo(onMessage.mock.calls[0][0])
+
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(1)
+            expect(connector.approveRequest).toHaveBeenCalledTimes(1)
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('drops the redelivery when it lands on a recreated socket', async () => {
+            const { handler, connector, onMessage } =
+                await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await respondTo(onMessage.mock.calls[0][0])
+
+            connector._transport.connected = false
+            handler.reconnect()
+            const fresh = lastConnector()
+            expect(fresh).not.toBe(connector)
+            fresh.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(1)
+        })
+
+        it('drops the redelivery after an app restart', async () => {
+            const persistence = memoryPersistence()
+            const before = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            before.connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await respondTo(before.onMessage.mock.calls[0][0])
+
+            const after = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            after.connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(after.onMessage).not.toHaveBeenCalled()
+            expect(after.connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('treats a request the user declined as answered', async () => {
+            const { connector, onMessage } = await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await asRequest(onMessage.mock.calls[0][0]).reject(
+                new Error('User rejected'),
+            )
+
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(1)
+            expect(connector.rejectRequest).toHaveBeenCalledTimes(1)
+        })
+
+        it('drops a duplicate of a request still waiting for the user, without reporting it', async () => {
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
+            const { connector, onMessage } = await restoredWith(freshLedger())
+
+            connector.emit('algo_signTxn', null, frame)
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(1)
+            expect(error).not.toHaveBeenCalled()
+            error.mockRestore()
+        })
+
+        it('shows a redelivery again when the decline never reached the dApp', async () => {
+            // The dApp is still waiting on that id, so the redelivery is its
+            // only way to get an answer.
+            const { connector, onMessage } = await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            connector._transport.connected = false
+            connector.peerId = ''
+            await expect(
+                asRequest(onMessage.mock.calls[0][0]).reject(
+                    new Error('User rejected'),
+                ),
+            ).rejects.toThrow()
+
+            connector._transport.connected = true
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(2)
+        })
+
+        it('delivers a reused id that carries no send time', async () => {
+            // A dApp counting ids from 1 reuses them across requests; only a
+            // send-time id is unique for the life of a session.
+            const reused = { id: 7, params: [[{ txn: 'dHhu' }]] }
+            const { connector, onMessage } = await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, reused)
+            await flush()
+            await respondTo(onMessage.mock.calls[0][0])
+
+            connector.emit('algo_signTxn', null, reused)
+            await flush()
+
+            expect(onMessage).toHaveBeenCalledTimes(2)
+        })
+
+        it.each([
+            [
+                'approval',
+                (handler: WalletConnectV1Handler) =>
+                    handler.deliverApprove('c1', REQUEST_ID, ['c2ln']),
+            ],
+            [
+                'rejection',
+                (handler: WalletConnectV1Handler) =>
+                    handler.deliverReject(
+                        'c1',
+                        REQUEST_ID,
+                        new Error('declined'),
+                    ),
+            ],
+        ])(
+            'records an answer delivered after an app kill (%s)',
+            async (_label, answer) => {
+                const { handler, connector, onMessage } =
+                    await restoredWith(freshLedger())
+
+                await answer(handler)
+                connector.emit('algo_signTxn', null, frame)
+                await flush()
+
+                expect(onMessage).not.toHaveBeenCalled()
+            },
+        )
+
+        it('forgets the answered ids of a malformed record it drops', async () => {
+            const persistence = memoryPersistence()
+            persistence.setItem('wc1-answered:c1', JSON.stringify(['1']))
+            const malformed = {
+                ...SEEDED,
+                metadata: { ...SEEDED.metadata, bridge: undefined },
+            } as unknown as Connection
+            const { handler } = await setup([malformed], {
+                answeredRequests: createStorageAnsweredRequests(
+                    () => persistence,
+                ),
+            })
+
+            await handler.restore()
+
+            expect(persistence.entries.size).toBe(0)
+        })
+
+        it('still delivers a request that was never answered before a restart', async () => {
+            // Recorded only once answered, so a request lost to an app kill
+            // mid-review comes back rather than being dropped as a repeat.
+            const persistence = memoryPersistence()
+            const before = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            before.connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            const after = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            after.connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(after.onMessage).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not record an answer that never reached the dApp', async () => {
+            const persistence = memoryPersistence()
+            const { connector, onMessage } = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            connector._transport.connected = false
+            connector.peerId = ''
+
+            await expect(
+                respondTo(onMessage.mock.calls[0][0]),
+            ).rejects.toThrow()
+
+            expect(persistence.entries.size).toBe(0)
+        })
+
+        it('forgets the answered ids when the session is disconnected', async () => {
+            const persistence = memoryPersistence()
+            const { handler, connector, onMessage } = await restoredWith(
+                createStorageAnsweredRequests(() => persistence),
+            )
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await respondTo(onMessage.mock.calls[0][0])
+            expect(persistence.entries.size).toBe(1)
+
+            await handler.disconnect('c1')
+
+            expect(persistence.entries.size).toBe(0)
+        })
+
+        it('reports a dropped replay with how old the request is', async () => {
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
+            const { connector, onMessage } = await restoredWith(freshLedger())
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+            await respondTo(onMessage.mock.calls[0][0])
+            const now = vi
+                .spyOn(Date, 'now')
+                .mockReturnValue(SENT_AT_MS + 90_000)
+
+            connector.emit('algo_signTxn', null, frame)
+            await flush()
+
+            expect(error).toHaveBeenCalledWith(
+                '[WC v1] dropped a replayed sign request',
+                expect.objectContaining({
+                    clientId: 'c1',
+                    requestId: REQUEST_ID,
+                    method: 'algo_signTxn',
+                    replayOf: 'answered',
+                    ageMs: 90_000,
+                }),
+            )
+            now.mockRestore()
+            error.mockRestore()
+        })
     })
 })

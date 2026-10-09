@@ -21,6 +21,7 @@
 
 import {
     afterAll,
+    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -28,7 +29,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { QueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import {
@@ -40,7 +47,8 @@ import {
 import {
     encodeTransaction,
     encodeSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -52,7 +60,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -82,7 +89,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -366,7 +373,7 @@ const buildMeldHistoryPage = (): RampHistoryPageApiResponse => ({
 const seedSelectedAccount = (): WalletAccount => {
     const account: WalletAccount = {
         id: 'buyer-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'buyer-key-1',
         name: 'Buyer',
@@ -390,7 +397,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     })
     const account: WalletAccount = {
         id: 'buyer-1',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Buyer',
@@ -547,6 +554,34 @@ describe('Flow: Onramp buy (native XO)', () => {
         useAppIntegrityStore.getState().resetState()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
+    })
+
+    describe('mode gate', () => {
+        afterEach(() => {
+            useNetworkStore.getState().setMode('live')
+        })
+
+        it('Given developer mode, when the wallet switches to live, then the placeholder gives way to the buy flow without a remount', async () => {
+            seedSelectedAccount()
+            markIntroSeen()
+            useNetworkStore.getState().setMode('developer')
+            server.use(
+                mockRampPairs({ response: [buildPair()] }),
+                mockRampRegion({ response: REGION_RESPONSE }),
+            )
+
+            renderWithNavigation(OnrampScreen, 'Fund')
+
+            expect(await screen.findByText('onramp.testnet.title')).toBeTruthy()
+            expect(screen.queryByTestId('onramp-screen')).toBeNull()
+
+            await act(async () => {
+                useNetworkStore.getState().setMode('live')
+            })
+
+            expect(await screen.findByTestId('onramp-screen')).toBeTruthy()
+            expect(screen.queryByText('onramp.testnet.title')).toBeNull()
+        })
     })
 
     it('Given an ALGO-destination XO pair, when the user enters an amount and taps Buy, then no opt-in occurs and the XO order-review sheet shows the pay-in address', async () => {

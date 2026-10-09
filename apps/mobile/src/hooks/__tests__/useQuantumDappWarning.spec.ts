@@ -19,19 +19,24 @@ import { QuantumDappWarningSheet } from '@components/QuantumDappWarningSheet'
 import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnabled'
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
-type TestAccount = { address: string; type: string; rekeyAddress?: string }
+type TestAccount = {
+    address: string
+    custody: { kind: string }
+    authority?: string
+}
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    isQuantumAccount: (account: { type: string }) => account.type === 'quantum',
+    isQuantumAccount: (account: { custody?: { seed?: string } }) =>
+        account.custody?.seed === 'quantum',
     getSignerFor: (address: string, accounts: TestAccount[]) => {
         const account = accounts.find(a => a.address === address)
         if (!account) return null
-        if (!account.rekeyAddress) return account
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!account.authority) return account
+        const auth = accounts.find(a => a.address === account.authority)
         // Mirrors resolveSignerForAccount: an unresolvable or watch-only auth
         // account yields no signer.
-        return auth && auth.type !== 'watch' ? auth : null
+        return auth && auth.custody.kind !== 'watch' ? auth : null
     },
 }))
 
@@ -64,12 +69,18 @@ describe('useQuantumDappWarning', () => {
         vi.clearAllMocks()
         ;(useIsQuantumDappWarningEnabled as Mock).mockReturnValue(true)
         ;(useAllAccounts as Mock).mockReturnValue([
-            { address: QUANTUM_ADDRESS, type: 'quantum' },
-            { address: STANDARD_ADDRESS, type: 'algo25' },
+            {
+                address: QUANTUM_ADDRESS,
+                custody: { kind: 'local', seed: 'quantum' },
+            },
+            {
+                address: STANDARD_ADDRESS,
+                custody: { kind: 'local', seed: null },
+            },
             {
                 address: REKEYED_TO_QUANTUM_ADDRESS,
-                type: 'algo25',
-                rekeyAddress: QUANTUM_ADDRESS,
+                custody: { kind: 'local', seed: null },
+                authority: QUANTUM_ADDRESS,
             },
         ])
         mockGetPreference.mockReturnValue(null)

@@ -13,9 +13,11 @@
 import { useCallback } from 'react'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
 export type UseNoFundsButtonPanelResult = {
+    canBuy: boolean
     handleBuyAlgo: () => void
     handleReceive: () => void
     handleMore: () => void
@@ -23,6 +25,7 @@ export type UseNoFundsButtonPanelResult = {
 
 export const useNoFundsButtonPanel = (): UseNoFundsButtonPanelResult => {
     const navigation = useAppNavigation()
+    const canBuy = useCapability({ anyChain: 'onramp' })
     const { openReceiveFunds, openAccountOptions } = useAccountOverviewModal()
 
     const handleBuyAlgo = useCallback(() => {
@@ -31,6 +34,7 @@ export const useNoFundsButtonPanel = (): UseNoFundsButtonPanelResult => {
     }, [navigation])
 
     return {
+        canBuy,
         handleBuyAlgo,
         handleReceive: openReceiveFunds,
         handleMore: openAccountOptions,

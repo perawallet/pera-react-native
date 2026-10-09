@@ -38,7 +38,6 @@ describe('ChainCapability', () => {
             | 'giftCards'
             | 'discover'
             | 'feeDelegation'
-            | 'arc0027'
             | 'liquidAuth'
             | 'notifications'
             | 'cloudBackup'
@@ -48,6 +47,13 @@ describe('ChainCapability', () => {
             | 'manageAssets'
             | 'privateKeys'
             | 'contractDecoding'
+            | 'priceHistory'
+            | 'balanceHistory'
+            | 'assetSearch'
+            | 'assetFavorites'
+            | 'priceAlerts'
+            | 'csvExport'
+            | 'peraWebImport'
         >()
     })
 })

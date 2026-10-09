@@ -74,6 +74,8 @@ const collectScreenChildren = (node: React.ReactNode): ScreenChild[] => {
         .map(child => child as unknown as ScreenChild)
 }
 
+const allowAll = () => true
+
 describe('renderImportFlowScreens', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -83,7 +85,7 @@ describe('renderImportFlowScreens', () => {
     it('registers every screen named in IMPORT_FLOW_SCREEN_NAMES exactly once', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
-        const tree = renderImportFlowScreens(Stack)
+        const tree = renderImportFlowScreens(Stack, allowAll)
         const names = collectScreenChildren(tree).map(child => child.props.name)
         const duplicates = names.filter(
             (name, index) => names.indexOf(name) !== index,
@@ -93,10 +95,52 @@ describe('renderImportFlowScreens', () => {
         expect([...names].sort()).toEqual([...IMPORT_FLOW_SCREEN_NAMES].sort())
     })
 
+    it('leaves out the Ledger entry screens while the ledger capability is off', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(
+                Stack,
+                ({ anyChain }) => anyChain !== 'ledger',
+            ),
+        ).map(child => child.props.name)
+
+        expect(names).not.toContain('LedgerPair')
+        expect(names).not.toContain('LedgerInstructions')
+        expect(names).toContain('ImportAccountOptions')
+    })
+
+    it('leaves out every ASB import screen while secure backup is off, keeping the cloud restore screens', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(
+                Stack,
+                ({ anyChain }) => anyChain !== 'secureBackup',
+            ),
+        ).map(child => child.props.name)
+
+        expect(names.filter(name => name.startsWith('AsbImport'))).toEqual([])
+        expect(names).toContain('ImportAccountOptions')
+        expect(names).toContain('CloudBackupRestoreScan')
+    })
+
+    it('leaves out the rekeyed-address import while rekey is off', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(Stack, ({ chain }) => !chain),
+        ).map(child => child.props.name)
+
+        expect(names).not.toContain('ImportRekeyedAddresses')
+    })
+
     it('every screen has either title="" or headerShown:false or a dynamic title', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
-        const screens = collectScreenChildren(renderImportFlowScreens(Stack))
+        const screens = collectScreenChildren(
+            renderImportFlowScreens(Stack, allowAll),
+        )
 
         for (const screen of screens) {
             const options = screen.props.options
@@ -127,7 +171,9 @@ describe('cloud-backup restore screens registered in the import flow', () => {
         'CloudBackupRestoreEncryptionKey',
     ] as const)('exits %s through the import flow exit', name => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
-        const screens = collectScreenChildren(renderImportFlowScreens(Stack))
+        const screens = collectScreenChildren(
+            renderImportFlowScreens(Stack, allowAll),
+        )
         const Registered = screens.find(screen => screen.props.name === name)
             ?.props.component
 

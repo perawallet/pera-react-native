@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
             "request_origin": "İstek {{origin}} adresinden geldi",
-            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
+            "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Adresi göster",
         "view_passphrase_hd": "Ana cüzdan kurtarma passphrase’ini görüntüle",
         "view_passphrase_algo25": "Kurtarma passphrase’ini görüntüle",
-        "view_passphrase_quantum": "Quantum hesabı kurtarma passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Şifreleme anahtarını yapıştır",
             "encryption_key_restore": "Yedeklemeyi geri yükle",
             "restoring": "Yedeklemen geri yükleniyor…",
+            "progress_unlocking": "Yedeklemenin kilidi açılıyor…",
+            "progress_downloading": "Yedeklemen indiriliyor…",
+            "progress_importing": "Hesaplar geri yükleniyor: {{done}} / {{total}}",
+            "progress_finishing": "Tamamlanıyor…",
+            "progress_hint": "Çok sayıda hesap içeren yedeklemelerde bu işlem bir dakikadan uzun sürebilir. İşlem bitene kadar Pera’yı açık tut.",
             "error_not_found": "Bu kimlik bilgileri için yedekleme bulunamadı.",
             "error_invalid_credentials": "Yedekleme ifadesi veya şifreleme anahtarı yanlış.",
             "error_unknown": "Bir şeyler ters gitti. Lütfen tekrar dene.",
@@ -874,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "Bu ağda kullanılamıyor",
-            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç."
+            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç.",
+            "generic_body": "Bu özellik şu anda kullanılamıyor."
         },
         "yes": "Evet",
         "no": "Hayır",
@@ -1048,6 +1054,37 @@
                 "body": "Ağ işlemi reddetti. Tekrar dene veya sorun devam ederse destek ekibiyle iletişime geç."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Akıllı sözleşme işlemi reddetti",
+                "body": "Akıllı sözleşme bu işlemi bir neden belirtmeden reddetti. Ayrıntıları kontrol et ve tekrar dene."
+            },
+            "reverted_with_reason": {
+                "title": "Akıllı sözleşme işlemi reddetti",
+                "body": "Sözleşmenin döndürdüğü yanıt: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Yetersiz gas",
+                "body": "Bu işlem, limitinin izin verdiğinden daha fazla gas gerektiriyor. Tekrar dene, sorun devam ederse destek ekibiyle iletişime geç."
+            },
+            "nonce_too_low": {
+                "title": "İşlem sırası bozuk",
+                "body": "Bu hesaptan başka bir işlem önce işlendi. Tekrar dene."
+            },
+            "replacement_underpriced": {
+                "title": "Ağ ücreti çok düşük",
+                "body": "Bu hesaptaki bekleyen bir işlem ancak daha yüksek bir ağ ücretiyle değiştirilebilir. Tamamlanmasını bekle veya daha yüksek bir ücretle tekrar dene."
+            },
+            "insufficient_funds": {
+                "title": "Yetersiz ETH",
+                "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli ETH yok. Daha fazla ETH ekle ve tekrar dene."
+            },
+            "rate_limited": {
+                "title": "Ağ yoğun",
+                "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
+            },
+            "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan."
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "İşlem durumu bilinmiyor",
@@ -1214,8 +1251,8 @@
             "funding_account": "Fonlama hesabı",
             "no_funding_account": "Bağlı hesap yok",
             "connect": "Bağla",
-            "change": "Değiştir",
-            "funding_type_label": "Fonlama türü",
+            "funding_type_enabled_auto": "Otomatik fonlama açık",
+            "funding_type_enabled_manual": "Manuel fonlama açık",
             "funding_type_sheet_title": "Fonlama türünü seç",
             "funding_type_sheet_description": "Kartının nasıl fonlanacağını seç.",
             "funding_type_apply": "Uygula",
@@ -2001,6 +2038,11 @@
                 "paste_passphrase": "Passphrase’in tamamını yapıştır",
                 "scan_qr": "QR kodu tara",
                 "learn_more": "Daha fazla bilgi"
+            },
+            "quantum_detected": {
+                "title": "Bu bir Quantum hesabının passphrase’i",
+                "body": "Bu kelimeler zaten var olan bir Quantum hesabına ait. Normal bir hesap olarak içe aktarırsan farklı, boş bir hesap eklenir.",
+                "import_button": "Quantum hesabı içe aktar"
             }
         },
         "searching_accounts": {
@@ -2542,9 +2584,9 @@
         "theme": "Tema",
         "language": "Dil",
         "developer_settings": "Geliştirici ayarları",
-        "node_settings": "Node ayarları",
+        "node_settings": "Geliştirici modu",
         "feature_flags": "Özellik bayrakları",
-        "developer_menu": "Geliştirici seçenekleri",
+        "debug_tools": "Hata ayıklama araçları",
         "manage_cache": "Önbelleği yönet",
         "app_integrity": "Uygulama bütünlüğü",
         "messages": "Mesajlar"
@@ -2649,7 +2691,7 @@
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
             "inbox_unavailable_title": "Varlık gelen kutusu kullanılamıyor",
-            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu bu ağda kullanılamıyor. Göndermek için MainNet veya TestNet'e geç.",
+            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu şu anda kullanılamıyor, bu yüzden gönderilemiyor.",
             "nfd_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
             "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
             "nfd_unavailable_title": "{{name}} doğrulanamadı",
@@ -2798,16 +2840,17 @@
             "body": "Deneyimin nasıldı, bize anlat."
         },
         "developer": {
-            "node_settings_title": "Node ayarları",
+            "node_settings_title": "Geliştirici modu",
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
-                "network_label": "{{chain}} {{network}}",
+                "developer_mode_title": "Geliştirici modu",
+                "developer_mode_body": "Pera'yı TestNet'e veya aşağıda seçtiğin ağa geçirir. MainNet'e dönmek için kapat.",
+                "default_network_label": "{{network}} (varsayılan)",
                 "custom_label": "Özel ağ",
-                "chain_networks_title": "Blok zinciri başına ağ",
                 "non_mainnet_warning_title": "MainNet dışında sınırlı destek",
                 "non_mainnet_warning_body": "Tam olarak desteklenen tek ağ MainNet’tir. Pera servislerine dayanan özellikler — varlık detayları, swap, satın alma, kart, staking ve gelen kutusu — TestNet’te sınırlıdır; BetaNet ve özel node’larda hiç kullanılamaz.",
-                "enable_mainnet": "MainNet’i etkinleştir",
-                "enable_testnet": "TestNet’i etkinleştir",
+                "enable_developer_mode": "Geliştirici modunu etkinleştir",
+                "disable_developer_mode": "Geliştirici modunu devre dışı bırak",
                 "custom_sheet_title": "Özel ağı yapılandır",
                 "algod_url_label": "Algod URL",
                 "indexer_url_label": "Indexer URL",
@@ -2855,8 +2898,8 @@
             "clear_one_time_flags": "Tek seferlik işaretleri temizle",
             "clear_one_time_flags_success_title": "Tek seferlik işaretler temizlendi",
             "clear_one_time_flags_success_body": "İlk açılış mesajları ve uyarılar yeniden gösterilecek.",
-            "taps_to_notify": "{{remaining}} dokunuş sonra geliştirici menüsü açılacak",
-            "developer_menu_enabled": "Geliştirici menüsü açıldı",
+            "taps_to_notify": "{{remaining}} dokunuş sonra hata ayıklama araçları açılacak",
+            "debug_tools_enabled": "Hata ayıklama araçları açıldı",
             "overridden": "Geçersiz kılındı",
             "enabled": "Açık",
             "disabled": "Kapalı"
@@ -3047,7 +3090,7 @@
             "siwa_not_before": "Geçerlilik başlangıcı",
             "siwa_resources": "Kaynaklar",
             "siwa_invalid": "Bu kimlik doğrulama isteği hatalı biçimlendirilmiş ve imzalanamaz.",
-            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Yalnızca güveniyorsan devam et.",
+            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Pera, hesabını korumak için bu isteği engelledi.",
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
@@ -4104,6 +4147,10 @@
             "confirm_button": "Cüzdanı sıfırla",
             "error": "Cüzdan sıfırlanamadı. Lütfen tekrar dene."
         },
+        "database_reset": {
+            "title": "Cüzdan verileri yenilendi",
+            "body": "Bu tarayıcıda kayıtlı bakiyeleri ve geçmişi yeniden oluşturduk. Birazdan yeniden yüklenecek. Hesapların etkilenmedi."
+        },
         "security": {
             "autolock_title": "Otomatik kilitleme süresi",
             "autolock_minutes": "{{minutes}} dakika",
@@ -4148,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Pera Wallet doğrulaması"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Pera’yı geliştirmemize yardım et",
+            "body": "Pera’nın anonim uygulama kullanım verilerini toplamasına izin ver. Bu, ürünü geliştirmemize yardımcı olur. Seçimini istediğin zaman Ayarlar’dan değiştirebilirsin.",
+            "allow": "İzin ver",
+            "decline": "İzin verme"
+        },
+        "settings_label": "Kullanım analizlerini paylaş"
     }
 }

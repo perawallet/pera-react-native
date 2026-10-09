@@ -24,7 +24,6 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
-    AccountTypes,
     insertAssetHolding,
     useAccountsStore,
     type WalletAccount,
@@ -51,7 +50,7 @@ const SHARED_QUERY = 'orbit'
 
 const SEARCH_ACCOUNT: WalletAccount = {
     id: 'search-account-1',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'search-account-key',
     name: `${SHARED_QUERY} account`,
@@ -120,7 +119,7 @@ describe('Flow: Global search', () => {
         // observable change in the selected address.
         const otherAccount: WalletAccount = {
             id: 'other-account-1',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: HD_TEST_ADDRESS,
             name: 'unrelated',
         }
@@ -172,7 +171,7 @@ describe('Flow: Global search', () => {
         // the tap has to move the selection there.
         const nftHolder: WalletAccount = {
             id: 'nft-holder-1',
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
             address: HD_TEST_ADDRESS,
             name: 'nft holder',
         }

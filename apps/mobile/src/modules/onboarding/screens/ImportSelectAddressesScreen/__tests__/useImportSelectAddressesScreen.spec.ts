@@ -13,9 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@test-utils/render'
 import {
-    AccountTypes,
     useAccountsStore,
-    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -132,7 +130,11 @@ const sampleDiscovered = [
     {
         id: '1',
         address: 'ADDR-A',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 1, keyIndex: 0 },
+        },
         keyPairId: 'w-1',
         hdWalletDetails: {
             account: 1,
@@ -144,7 +146,11 @@ const sampleDiscovered = [
     {
         id: '2',
         address: 'ADDR-B',
-        type: AccountTypes.hdWallet,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 2, keyIndex: 0 },
+        },
         keyPairId: 'w-1',
         hdWalletDetails: {
             account: 2,
@@ -305,7 +311,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         const concurrent = {
             id: 'c',
             address: 'CONCURRENT',
-            type: AccountTypes.algo25,
+            custody: { kind: 'local', seed: null },
             keyPairId: 'kp-c',
         } as WalletAccount
         // Lands after render (useAllAccounts snapshot) but before the
@@ -319,7 +325,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
-            withCustody(concurrent),
+            concurrent,
             sampleDiscovered[0],
         ])
     })

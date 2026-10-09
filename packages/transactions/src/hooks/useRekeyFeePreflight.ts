@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useAccountInformationQuery } from '@perawallet/wallet-core-accounts'
-import { algosToMicroAlgosBigInt } from '@perawallet/wallet-core-blockchain'
+import { algosToMicroAlgosBigInt } from '@perawallet/wallet-core-shared'
 
 import type { Decimal } from 'decimal.js'
 

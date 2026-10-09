@@ -75,7 +75,7 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 
-        // The twin's local stylesheet must stay limited to the requester row
+        // The twin's local stylesheet must stay limited to the requester rows
         // and the delivery-failure notice — the two things mobile has no
         // counterpart for. Anything else appearing here is a value copied out
         // of mobile's, which is how the two drift on spacing or colour.
@@ -84,10 +84,10 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         ].map(m => m[1])
         expect(localDeclared.sort()).toEqual([
             'deliveryError',
-            'requesterOrigin',
+            'mismatchWarning',
+            'mismatchWarningText',
             'verifiedBadge',
             'verifiedBadgeText',
-            'verifiedRow',
         ])
     })
 

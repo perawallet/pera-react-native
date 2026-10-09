@@ -16,8 +16,9 @@ import {
     type ChainCapabilities,
     type ChainCapability,
 } from '../../models/capabilities'
-import type { ChainId } from '../../models/identity'
+import type { ChainId, ChainMode } from '../../models/identity'
 import {
+    isRestrictedIn,
     resolveCapability,
     resolveCapabilityWithSource,
     type CapabilityLayers,
@@ -33,13 +34,17 @@ const allCapabilities = (value: boolean): ChainCapabilities =>
 
 const build = (swap: boolean): CapabilityLayers['build'] => ({
     algorand: { ...allCapabilities(false), swap },
+    ethereum: allCapabilities(false),
 })
 
 type Row = {
     name: string
     layers: CapabilityLayers
     capability: ChainCapability
-    expected: { value: boolean; source: 'build' | 'remote' | 'developer' }
+    expected: {
+        value: boolean
+        source: 'build' | 'remote' | 'chainMode' | 'developer'
+    }
 }
 
 // Mirrors readRemoteConfigWithOverrides: a typed override wins, then the
@@ -139,4 +144,135 @@ describe('resolveCapability', () => {
             )
         },
     )
+})
+
+describe('isRestrictedIn', () => {
+    const restrictions = { swap: ['developer', 'developer-override'] } as const
+
+    it.each([
+        ['developer', 'swap', true],
+        ['developer-override', 'swap', true],
+        ['live', 'swap', false],
+        ['developer', 'card', false],
+    ] as const)('%s for %s: %s', (mode, key, expected) => {
+        expect(isRestrictedIn(restrictions, key, mode)).toBe(expected)
+    })
+
+    it('is only restricted in the listed modes', () => {
+        expect(
+            isRestrictedIn(
+                { swap: ['developer-override'] },
+                'swap',
+                'developer',
+            ),
+        ).toBe(false)
+    })
+
+    it('is never restricted without a map', () => {
+        expect(isRestrictedIn(undefined, 'swap', 'developer')).toBe(false)
+    })
+})
+
+describe('mode restrictions', () => {
+    const MODES: ChainMode[] = ['live', 'developer', 'developer-override']
+    const layersFor = (
+        mode: ChainMode,
+        {
+            buildValue,
+            remote,
+            developer,
+            restricted,
+        }: {
+            buildValue: boolean
+            remote?: boolean
+            developer?: boolean
+            restricted: boolean
+        },
+    ): CapabilityLayers => ({
+        build: build(buildValue),
+        remote:
+            remote === undefined ? undefined : { algorand: { swap: remote } },
+        developer:
+            developer === undefined
+                ? undefined
+                : { algorand: { swap: developer } },
+        restrictions: restricted
+            ? { algorand: { swap: ['developer', 'developer-override'] } }
+            : undefined,
+        chainMode: { algorand: mode },
+    })
+
+    it.each(MODES.filter(mode => mode !== 'live'))(
+        'switches off a restricted capability in %s even when build and remote are true',
+        mode => {
+            expect(
+                resolveCapabilityWithSource(
+                    'algorand',
+                    'swap',
+                    layersFor(mode, {
+                        buildValue: true,
+                        remote: true,
+                        restricted: true,
+                    }),
+                ),
+            ).toEqual({ value: false, source: 'chainMode' })
+        },
+    )
+
+    it.each([true, false])(
+        'lets a Feature Flags value of %s win over the restriction',
+        developer => {
+            expect(
+                resolveCapabilityWithSource(
+                    'algorand',
+                    'swap',
+                    layersFor('developer', {
+                        buildValue: true,
+                        developer,
+                        restricted: true,
+                    }),
+                ),
+            ).toEqual({ value: developer, source: 'developer' })
+        },
+    )
+
+    it('leaves a restricted capability alone in live', () => {
+        expect(
+            resolveCapabilityWithSource(
+                'algorand',
+                'swap',
+                layersFor('live', {
+                    buildValue: false,
+                    remote: true,
+                    restricted: true,
+                }),
+            ),
+        ).toEqual({ value: true, source: 'remote' })
+    })
+
+    it.each(MODES)(
+        'resolves an unrestricted capability as before in %s',
+        mode => {
+            expect(
+                resolveCapabilityWithSource(
+                    'algorand',
+                    'swap',
+                    layersFor(mode, {
+                        buildValue: false,
+                        remote: true,
+                        restricted: false,
+                    }),
+                ),
+            ).toEqual({ value: true, source: 'remote' })
+        },
+    )
+
+    it('reads a chain with no mode as live', () => {
+        expect(
+            resolveCapabilityWithSource('algorand', 'swap', {
+                build: build(true),
+                restrictions: { algorand: { swap: ['developer'] } },
+            }),
+        ).toEqual({ value: true, source: 'build' })
+    })
 })

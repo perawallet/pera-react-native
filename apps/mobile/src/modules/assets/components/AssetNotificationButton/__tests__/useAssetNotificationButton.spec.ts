@@ -26,7 +26,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => mocks.deviceId,
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'betanet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({

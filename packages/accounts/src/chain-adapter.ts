@@ -20,8 +20,10 @@ import {
     type ChainId,
     type ChainScope,
     type DeriveOpts,
+    type AccountChainState,
+    type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+
 import {
     kmsCore,
     type QuantumChainDerivation,
@@ -29,15 +31,17 @@ import {
 } from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
-    HdDerivationTypeUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
+    AccountCustody,
     AccountTypes,
-    DerivationType,
+    ChainAccount,
+    HdIndex,
     HDWalletDetails,
+    MultiSigDetails,
     WalletAccount,
 } from './models'
 import type { SignerResolution } from './signer-resolution'
@@ -46,8 +50,8 @@ export type AuthorityTargetKind = 'standard' | 'quantum' | 'hardware' | 'shared'
 
 /** Moving an account's signing authority to another account. */
 export type AccountAuthorityOps = {
-    isDelegated(account: WalletAccount): boolean
-    /** Held accounts whose authority is `address`; never `address` itself. */
+    isDelegated(account: WalletAccount, scope: ChainScope): boolean
+    /** Held accounts whose authority is `address` on any of the chain's scopes; never `address` itself. */
     accountsDelegatedTo(
         address: string,
         accounts: WalletAccount[],
@@ -57,10 +61,11 @@ export type AccountAuthorityOps = {
         target: WalletAccount,
         source: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
         options: { isQuantumTargetEnabled: boolean },
     ): boolean
     /** Whether the account can produce a usable delegated program signature. */
-    canSignProgram(account: WalletAccount): boolean
+    canSignProgram(account: WalletAccount, scope: ChainScope): boolean
 }
 
 export type AccountHoldingSnapshot = {
@@ -74,6 +79,10 @@ export type AccountHoldingSnapshot = {
 export type AccountStateSnapshot = {
     /** Display units of the chain's native asset. */
     nativeBalance: Decimal
+    /** Base units of the chain's native asset. */
+    nativeBalanceBaseUnits: Decimal
+    /** Persisted to `account_chain_state`; amounts inside are in base units. */
+    chainState: AccountChainState
     /** Display units of the chain's native asset; zero on a chain with no reserve. */
     minBalance: Decimal
     // Algorand's resource counts and participation status. A chain without
@@ -83,7 +92,7 @@ export type AccountStateSnapshot = {
     totalAppsOptedIn?: number
     status?: string
     /** The account's signer when it isn't the account's own key. */
-    authAddress: Nullable<string>
+    authorityAddress: Nullable<string>
     /** Includes the native asset, so reads sort and page it like any holding. */
     holdings: AccountHoldingSnapshot[]
     /**
@@ -93,25 +102,50 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
+/** An `account_balances` row, or a legacy authority with no row. */
+export type ObservedChainState = Pick<
+    AccountStateSnapshot,
+    'authorityAddress'
+> &
+    Partial<
+        Pick<
+            AccountStateSnapshot,
+            | 'minBalance'
+            | 'status'
+            | 'totalAssetsOptedIn'
+            | 'totalCreatedAssets'
+            | 'totalAppsOptedIn'
+        >
+    >
+
+export type AccountChangeSignal = {
+    /** Whether any of the addresses changed after the cursor. */
+    changed: boolean
+    /** The chain position (block or round) to pass as the next cursor. */
+    cursor: number
+}
+
 export type AccountStateReadHint = {
     /** Resources the account held at its last sync; 0 when never synced. */
     priorResourceCount: number
 }
 
-export type GetPublicKey = (params: {
-    account: number
-    keyIndex: number
-    derivationType: DerivationType
-}) => Promise<Uint8Array>
+export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
 
 export type SingleKeyAccountKind =
-    | typeof AccountTypes.algo25
+    | typeof AccountTypes.standalone
     | typeof AccountTypes.quantum
 
 /** The `useKMS()` calls single-key creation and import make; the hooks pass their own. */
 export type AccountKeystore = Pick<
     ReturnType<typeof useKMS>,
     'getKey' | 'createAlgo25Key' | 'createQuantumKey' | 'removeKeyAndChildren'
+>
+
+/** The `useKMS()` call a private-key reveal makes; the hook passes its own. */
+export type PrivateKeyKeystore = Pick<
+    ReturnType<typeof useKMS>,
+    'exportSecp256k1Key'
 >
 
 export type MintedAccount = {
@@ -145,18 +179,40 @@ export type SingleKeyAccountOps = {
         scope: ChainScope,
         save: (minted: MintedAccount) => Promise<void>,
     ): Promise<WalletAccount | WalletAccount[]>
+    /**
+     * A quantum passphrase has as many words as a standard 25-word one, so a
+     * standard import can't tell them apart. Returns the on-chain quantum
+     * account these words also control when the standard address itself has no
+     * on-chain footprint, else null. A failed probe reads as null: this is advisory and
+     * must never block an import.
+     */
+    findQuantumAccountForMnemonic(
+        /** Wordlist indices; the caller zeroes them. */
+        mnemonicIndices: Uint16Array,
+        scope: ChainScope,
+    ): Promise<Nullable<string>>
 }
 
 /** The chain-specific half of account state, discovery, creation and rekey; registered by the chain package. */
 export interface AccountsChainAdapter {
     readonly chainId: ChainId
-    /** The derivation type new HD accounts on this chain are created with. */
-    readonly hdDerivationType: DerivationType
     fetchAccountState(
         address: string,
         scope: ChainScope,
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
+    /**
+     * The chain's `AccountChainState` for state read back from storage; a sync
+     * already carries it as `AccountStateSnapshot.chainState`. A field left out
+     * takes its `account_balances` column default. `minBalance` arrives in
+     * display units.
+     */
+    toChainState(observed: ObservedChainState): AccountChainState
+    /**
+     * The `address` an `AccountInformation` carries for `address`; throws when
+     * `address` isn't valid on this chain.
+     */
+    toAccountInformationAddress(address: string): AccountInformation['address']
     fetchAccountInformation(
         address: string,
         scope: ChainScope,
@@ -166,6 +222,16 @@ export interface AccountsChainAdapter {
         address: string,
         scope: ChainScope,
     ): Promise<Map<string, number>>
+    /**
+     * Whether a sync pass has anything to read. A null cursor has never
+     * synced, so it always reports a change. Absent on a chain whose change
+     * signal lives outside the adapter.
+     */
+    fetchChangeSignal?(
+        addresses: string[],
+        scope: ChainScope,
+        cursor: Nullable<number>,
+    ): Promise<AccountChangeSignal>
     /** Any on-chain footprint counts, not only a funded balance. */
     accountExists(address: string, scope: ChainScope): Promise<boolean>
     /**
@@ -183,22 +249,38 @@ export interface AccountsChainAdapter {
      * deriving. Stored accounts reference this id, so its format never changes,
      * and it must equal the `keyPairId` the chain's `KeyDerivation` returns.
      */
-    hdKeyPairId(
-        seedKeyId: string,
-        details: Pick<
-            HDWalletDetails,
-            'account' | 'keyIndex' | 'derivationType'
-        >,
-    ): string
+    hdKeyPairId(seedKeyId: string, index: HdIndex): string
     /** Throws `InvalidBip44PathError` when `hdPath` is malformed or names other coordinates. */
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
+    /**
+     * The legacy detail objects this chain's account records still carry for
+     * `custody`: HD and multisig only, empty otherwise. Throws `AccountError`
+     * when the custody needs data `entry` lacks.
+     */
+    legacyDetails(
+        custody: AccountCustody,
+        entry: ChainAccount,
+    ): {
+        hdWalletDetails?: HDWalletDetails
+        multisigDetails?: MultiSigDetails
+    }
     /** Absent on a chain with no post-quantum accounts. */
     readonly quantum?: QuantumChainDerivation
     /** Absent on a chain whose only software accounts are HD. */
     readonly singleKeyAccounts?: SingleKeyAccountOps
-    /** Accounts whose signer is `authAddress`. Absent on a chain without rekey. */
+    /**
+     * Reads a standalone account's private key back from the keystore. The
+     * caller zeroes the bytes. Absent on a chain whose standalone secret is a
+     * mnemonic, which the passphrase flow shows instead.
+     */
+    revealPrivateKey?(
+        keystore: PrivateKeyKeystore,
+        keyPairId: string,
+        domain: string,
+    ): Promise<Uint8Array>
+    /** Accounts whose signer is `authorityAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
-        authAddress: string,
+        authorityAddress: string,
         scope: ChainScope,
     ): Promise<string[]>
     /** Absent on a chain whose signing authority can't move to another account. */
@@ -207,6 +289,7 @@ export interface AccountsChainAdapter {
     resolveSigner(
         account: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
     ): SignerResolution
     /**
      * The account whose key authorises `account` (itself when nothing is
@@ -216,7 +299,13 @@ export interface AccountsChainAdapter {
     getAuthAccount(
         account: WalletAccount,
         accounts: WalletAccount[],
+        scope: ChainScope,
     ): WalletAccount | null
+    /**
+     * Fills in record data this chain needs that older records lack, or
+     * returns `account` itself. May read the keystore.
+     */
+    backfillRecord?(account: WalletAccount): WalletAccount
 }
 
 export const accountsChainAdapters =
@@ -234,36 +323,14 @@ export const ed25519DeriveOpts = (network: Network): DeriveOpts => ({
     networkId: scopeForLegacyNetwork(network).networkId,
 })
 
-export type HdAccountCoordinates = {
-    account: number
-    keyIndex: number
-    /** Defaults to the chain's `hdDerivationType`; a backup payload's is unvalidated, hence `number`. */
-    derivationType?: number
-}
-
-/**
- * Derives the HD child through the chain's registered `KeyDerivation`.
- * `KeyDerivation.deriveAccount` only derives the chain's own `hdDerivationType`, so
- * any other requested type throws {@link HdDerivationTypeUnsupportedError} rather
- * than yielding a key that doesn't match the type a record names.
- */
+/** Derives the HD child through the chain's registered `KeyDerivation`. */
 export const deriveHdAccount = async (
     network: Network,
     seedKeyId: string,
-    { account, keyIndex, derivationType }: HdAccountCoordinates,
-) => {
-    const adapter = accountsAdapterFor(network)
-    if (
-        derivationType !== undefined &&
-        derivationType !== adapter.hdDerivationType
-    ) {
-        throw new HdDerivationTypeUnsupportedError(
-            derivationType,
-            adapter.chainId,
-        )
-    }
-    return keyDerivations
-        .get(adapter.chainId)
+    { account, keyIndex }: HdIndex,
+) =>
+    keyDerivations
+        .get(accountsAdapterFor(network).chainId)
         .deriveAccount(
             kmsCore,
             seedKeyId,
@@ -271,7 +338,6 @@ export const deriveHdAccount = async (
             keyIndex,
             ed25519DeriveOpts(network),
         )
-}
 
 /** Throws {@link RekeyUnsupportedError} on a chain without rekey. */
 export const requireRekey = (
@@ -305,11 +371,11 @@ export const requireSingleKeyAccounts = (
 
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
 export const fetchRekeyedAddresses = async (
-    authAddress: string,
+    authorityAddress: string,
     network: Network,
 ): Promise<string[]> =>
     requireRekey(accountsAdapterFor(network))(
-        authAddress,
+        authorityAddress,
         scopeForLegacyNetwork(network),
     )
 

@@ -69,7 +69,7 @@ pnpm ios                               # or: pnpm android
 pnpm localnet:stop
 ```
 
-Point the app at it from Settings, Developer, Node Settings, Custom network. Selecting it opens a
+Point the app at it from Settings, Developer, Node Settings: turn on Developer mode, then pick Custom network under Algorand. Selecting it opens a
 sheet for the algod and indexer URLs, their optional tokens, and the genesis hash and ID; **Fetch
 from node** fills the genesis values in. **Save and switch** applies the config at runtime, with no
 rebuild, no env rewrite, and MainNet and TestNet untouched.
@@ -143,8 +143,9 @@ pera-react-native/
 ├── packages/                # Headless business logic (one per domain)
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
-│   ├── blockchain/          # Algorand-specific code (node/indexer)
 │   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
+│   ├── chain-algorand/      # Algorand chain: node/indexer access and per-package adapters
+│   ├── chain-ethereum/      # Ethereum chain: descriptor, module and its adapters (viem)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools

@@ -35,7 +35,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -47,7 +46,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToLedgerIntroScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerIntroScreen'
 import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSelectTargetScreen'
@@ -77,14 +76,23 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-ledger-source',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const target: WalletAccount = {
         id: 'rekey-ledger-target',
-        type: AccountTypes.hardware,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
         address: HD_TEST_ADDRESS,
         name: 'Ledger target',
         hardwareDetails: {
@@ -107,7 +115,7 @@ const seedRekeyAccounts = async (): Promise<{
         totalAppsOptedIn: 0,
         minBalance: new Decimal(100_000),
         status: 'Offline',
-        authAddress: null,
+        authorityAddress: null,
     })
 
     return { source, target }

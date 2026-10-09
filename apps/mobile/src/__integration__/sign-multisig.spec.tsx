@@ -45,11 +45,10 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import {
-    AccountTypes,
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 // The multisig account's address is the transaction sender; the seeded Algo25
@@ -58,7 +57,7 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
-    type: AccountTypes.multisig,
+    custody: { kind: 'multisig' },
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {

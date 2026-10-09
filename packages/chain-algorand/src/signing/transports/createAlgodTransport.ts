@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { logger, toError, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
-    NetworkChangedError,
     SubmissionError,
     TransportError,
     type DataTransport,
@@ -32,15 +32,13 @@ import {
  *
  * @param algokit - AlgorandClient instance for network access
  * @param encodeSignedTransactions - Function to encode signed transactions
- * @param capturedNetwork - The network that was active when the signing actor
- *   was created. Re-compared against the live network at submit time — if the
- *   user switched networks mid-flow the transaction is aborted rather than
- *   submitted to the wrong chain.
+ * @param capturedScope - Re-checked with `assertScopeUnchanged` before
+ *   submitting.
  */
 export const createAlgodTransport = (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
-    capturedNetwork: Network,
+    capturedScope: ChainScope,
 ): DataTransport => {
     return {
         send: async (
@@ -55,10 +53,7 @@ export const createAlgodTransport = (
                 )
             }
 
-            const liveNetwork = useNetworkStore.getState().network
-            if (liveNetwork !== capturedNetwork) {
-                throw new NetworkChangedError(capturedNetwork, liveNetwork)
-            }
+            assertScopeUnchanged(capturedScope)
 
             const { signed } = result.signedData
 

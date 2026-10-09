@@ -60,12 +60,12 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 | AlgoKit/blockchain → app   | `bigint`               | `Decimal`                 | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                                                       |
 | Chain contract → app       | `Decimal` (base units) | `Decimal` (display units) | `baseUnitsToDisplayUnits()` / `toDecimalUnits()` at the UI or persistence edge; chain-contract types never carry display units |
 | App → display              | `Decimal`              | formatted `string`        | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                                                      |
-| App → transaction building | `Decimal`              | `bigint`                  | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain`                                      |
+| App → transaction building | `Decimal`              | `bigint`                  | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-shared`                                          |
 | App → database             | `Decimal`              | `TEXT`                    | Automatic via `decimalColumn`, no manual conversion needed                                                                     |
 
 ### Conversion Utilities
 
-Canonical conversion helpers live in `@perawallet/wallet-core-blockchain` (`baseUnitsToDisplayUnits`, `displayUnitsToBaseUnits`, `toBigInt`, `microAlgosToAlgos`, `algosToMicroAlgosBigInt`), with asset-aware wrappers `toWholeUnits`/`toDecimalUnits` in `@perawallet/wallet-core-assets`.
+Canonical conversion helpers live in `@perawallet/wallet-core-shared` (`baseUnitsToDisplayUnits`, `displayUnitsToBaseUnits`, `toBigInt`, `microAlgosToAlgos`, `algosToMicroAlgosBigInt`), with asset-aware wrappers `toWholeUnits`/`toDecimalUnits` in `@perawallet/wallet-core-assets`.
 
 ### Rules
 

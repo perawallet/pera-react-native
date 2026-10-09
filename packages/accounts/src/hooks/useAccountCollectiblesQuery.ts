@@ -11,8 +11,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    queryKeyReferencesScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
@@ -61,10 +65,11 @@ export const useAccountCollectiblesQuery = (
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getAccountCollectiblesQueryKey(address ?? '', network, {
+        queryKey: getAccountCollectiblesQueryKey(address ?? '', scope, {
             sortMode,
             search,
             includeOptedInOnly,
@@ -80,10 +85,10 @@ export const useAccountCollectiblesQuery = (
         // rather than someone else's.
         placeholderData: (previousRows, previousQuery) => {
             const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string; network?: string }
+                | { address?: string }
                 | undefined
             return previousParams?.address === address &&
-                previousParams?.network === network
+                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
                 ? previousRows
                 : undefined
         },
@@ -97,7 +102,7 @@ export const useAccountCollectiblesQuery = (
             await ensureAccountFetched(address as string, network)
             return getAccountCollectiblesLite({
                 accountAddress: address as string,
-                scope: scopeForLegacyNetwork(network),
+                scope,
                 sortMode,
                 search,
                 includeOptedInOnly,

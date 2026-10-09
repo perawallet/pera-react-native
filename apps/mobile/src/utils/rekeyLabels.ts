@@ -13,11 +13,11 @@
 import {
     AccountTypes,
     type AccountType,
-    type RekeyTransition,
+    type DelegateTransition,
 } from '@perawallet/wallet-core-accounts'
 
 const SIGNER_KEY: Record<AccountType, string> = {
-    [AccountTypes.algo25]: 'account_info.rekey_signer_standard',
+    [AccountTypes.standalone]: 'account_info.rekey_signer_standard',
     [AccountTypes.hdWallet]: 'account_info.rekey_signer_standard',
     [AccountTypes.hardware]: 'account_info.rekey_signer_ledger',
     [AccountTypes.multisig]: 'account_info.rekey_signer_shared',
@@ -34,7 +34,7 @@ export type RekeyLabelI18n = {
     descriptionKey: string
 }
 
-const descriptionKeyFor = (transition: RekeyTransition): string => {
+const descriptionKeyFor = (transition: DelegateTransition): string => {
     const { from, to } = transition
     if (to === AccountTypes.multisig) {
         return 'account_type_info.rekeyed_shared_description'
@@ -52,7 +52,7 @@ const descriptionKeyFor = (transition: RekeyTransition): string => {
 }
 
 export const getRekeyLabelI18n = (
-    transition: RekeyTransition,
+    transition: DelegateTransition,
 ): RekeyLabelI18n => ({
     labelKey: 'account_info.type_rekeyed_signer',
     signerKey: SIGNER_KEY[transition.to],

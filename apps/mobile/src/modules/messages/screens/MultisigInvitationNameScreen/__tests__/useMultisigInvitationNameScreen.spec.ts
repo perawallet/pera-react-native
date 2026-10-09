@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useMultisigInvitationNameScreen } from '../useMultisigInvitationNameScreen'
 import type { MultisigInvitationParam } from '../../../routes/types'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
@@ -79,15 +80,21 @@ vi.mock('@modules/onboarding/hooks', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
     const actual = await vi.importActual<object>(
@@ -96,6 +103,7 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
     return {
         ...actual,
         multisigAdapterFor: () => ({
+            chainId: 'algorand',
             deriveAddress: ({
                 version,
                 threshold,
@@ -114,7 +122,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockUseDeviceID(),
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -155,6 +163,7 @@ vi.mock('react-i18next', async () => {
 
 describe('useMultisigInvitationNameScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-id')
@@ -186,7 +195,7 @@ describe('useMultisigInvitationNameScreen', () => {
             {
                 address: 'M1',
                 name: 'Coffee fund',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['A', 'B'],
@@ -208,7 +217,7 @@ describe('useMultisigInvitationNameScreen', () => {
             {
                 address: 'M1',
                 name: 'Shared Account #1',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['A', 'B'],
@@ -218,7 +227,7 @@ describe('useMultisigInvitationNameScreen', () => {
             {
                 address: 'M2',
                 name: 'shared account #2',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['C', 'D'],
@@ -235,7 +244,11 @@ describe('useMultisigInvitationNameScreen', () => {
 
     it('fires isNameTaken when user types a colliding name (case-insensitive, trimmed)', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'My Wallet' } as WalletAccount,
+            {
+                address: 'A',
+                name: 'My Wallet',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
@@ -254,7 +267,7 @@ describe('useMultisigInvitationNameScreen', () => {
             {
                 address: invitation.address,
                 name: 'Shared Account #1',
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 multisigDetails: {
                     threshold: invitation.threshold,
                     addresses: invitation.participantAddresses,
@@ -282,7 +295,13 @@ describe('useMultisigInvitationNameScreen', () => {
     })
 
     it('handleFinish follows happy path: DELETE, setAccounts, select new account, play confetti, success toast, popToTop', async () => {
-        const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
+        const existing = [
+            {
+                address: 'X',
+                name: 'Other',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
+        ]
         mockUseAllAccounts.mockReturnValue(existing)
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
@@ -297,13 +316,26 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([
             ...existing,
             expect.objectContaining({
-                type: 'multisig',
+                custody: { kind: 'multisig' },
                 address: 'MSIG_ADDR',
                 name: 'Shared Account #1',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
                     version: 1,
+                },
+                chains: {
+                    algorand: {
+                        address: 'MSIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
             }),
         ])
@@ -342,7 +374,11 @@ describe('useMultisigInvitationNameScreen', () => {
 
     it('handleFinish bails with error toast when account with same address already exists', async () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'MSIG_ADDR', name: 'Other' } as WalletAccount,
+            {
+                address: 'MSIG_ADDR',
+                name: 'Other',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())

@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio.",
             "request_origin": "La solicitud proviene de {{origin}}",
-            "requester_verified_label": "Pestaña verificada",
+            "requester_verified_label": "Pestaña verificada: {{origin}}",
+            "requester_mismatch": "Esta solicitud vino de {{origin}}, no de {{claimed}}.",
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Ver dirección",
         "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
         "view_passphrase_algo25": "Ver la passphrase de recuperación",
-        "view_passphrase_quantum": "Ver la passphrase de recuperación de la cuenta Quantum",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
         "rekey_account": "Hacer rekey de la cuenta",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Pega tu clave de cifrado",
             "encryption_key_restore": "Restaurar copia de seguridad",
             "restoring": "Restaurando tu copia de seguridad…",
+            "progress_unlocking": "Desbloqueando tu copia de seguridad…",
+            "progress_downloading": "Descargando tu copia de seguridad…",
+            "progress_importing": "Restaurando cuentas: {{done}} de {{total}}",
+            "progress_finishing": "Finalizando…",
+            "progress_hint": "Puede tardar más de un minuto si tu copia de seguridad tiene muchas cuentas. No cierres Pera hasta que termine.",
             "error_not_found": "No se encontró ninguna copia de seguridad para estas credenciales.",
             "error_invalid_credentials": "La frase de copia de seguridad o la clave de cifrado son incorrectas.",
             "error_unknown": "Algo ha ido mal. Vuelve a intentarlo.",
@@ -874,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "No disponible en esta red",
-            "body": "Esto necesita Pera services, que no están disponibles en BetaNet ni en nodos personalizados. Cambia a MainNet o TestNet."
+            "body": "Esto necesita Pera services, que no están disponibles en BetaNet ni en nodos personalizados. Cambia a MainNet o TestNet.",
+            "generic_body": "Esta función no está disponible en este momento."
         },
         "yes": "Sí",
         "no": "No",
@@ -1048,6 +1054,37 @@
                 "body": "La red rechazó la transacción. Inténtalo de nuevo o ponte en contacto con soporte si el problema continúa."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "El smart contract rechazó la transacción",
+                "body": "El smart contract rechazó esta transacción sin indicar el motivo. Revisa los detalles y vuelve a intentarlo."
+            },
+            "reverted_with_reason": {
+                "title": "El smart contract rechazó la transacción",
+                "body": "El contrato devolvió: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Gas insuficiente",
+                "body": "Esta transacción necesita más gas del que permite su límite. Inténtalo de nuevo y contacta con soporte si el problema persiste."
+            },
+            "nonce_too_low": {
+                "title": "Transacción fuera de orden",
+                "body": "Otra transacción de esta cuenta se procesó antes. Inténtalo de nuevo."
+            },
+            "replacement_underpriced": {
+                "title": "Comisión de red demasiado baja",
+                "body": "Una transacción pendiente de esta cuenta solo puede reemplazarse con una comisión de red más alta. Espera a que se complete o vuelve a intentarlo con una comisión más alta."
+            },
+            "insufficient_funds": {
+                "title": "ETH insuficiente",
+                "body": "Esta cuenta no tiene suficiente ETH para cubrir el importe y la comisión de red. Añade más ETH y vuelve a intentarlo."
+            },
+            "rate_limited": {
+                "title": "Red saturada",
+                "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
+            },
+            "invalid_private_key": "Introduce una clave privada válida: 64 caracteres hexadecimales, con o sin 0x."
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Estado de la transacción desconocido",
@@ -1214,8 +1251,8 @@
             "funding_account": "Cuenta de financiación",
             "no_funding_account": "Ninguna cuenta conectada",
             "connect": "Conectar",
-            "change": "Cambiar",
-            "funding_type_label": "Tipo de financiación",
+            "funding_type_enabled_auto": "Financiación automática activada",
+            "funding_type_enabled_manual": "Financiación manual activada",
             "funding_type_sheet_title": "Selecciona el tipo de financiación",
             "funding_type_sheet_description": "Elige cómo se financia tu tarjeta.",
             "funding_type_apply": "Aplicar",
@@ -2001,6 +2038,11 @@
                 "paste_passphrase": "Pegar la passphrase completa",
                 "scan_qr": "Escanear código QR",
                 "learn_more": "Más información"
+            },
+            "quantum_detected": {
+                "title": "Esta es la passphrase de una cuenta Quantum",
+                "body": "Estas palabras pertenecen a una cuenta Quantum que ya existe. Si las importas como una cuenta normal, se añadirá otra cuenta vacía.",
+                "import_button": "Importar cuenta Quantum"
             }
         },
         "searching_accounts": {
@@ -2542,9 +2584,9 @@
         "theme": "Tema",
         "language": "Idioma",
         "developer_settings": "Ajustes de desarrollador",
-        "node_settings": "Ajustes del nodo",
+        "node_settings": "Modo desarrollador",
         "feature_flags": "Feature flags",
-        "developer_menu": "Opciones de desarrollador",
+        "debug_tools": "Herramientas de depuración",
         "manage_cache": "Gestionar caché",
         "app_integrity": "Integridad de la app",
         "messages": "Mensajes"
@@ -2649,7 +2691,7 @@
             "error_title": "Algo salió mal",
             "error_body": "Se ha producido un error inesperado. Vuelve a intentarlo.",
             "inbox_unavailable_title": "Bandeja de activos no disponible",
-            "inbox_unavailable_body": "El receptor no ha añadido este activo y la bandeja de activos no está disponible en esta red. Cambia a MainNet o TestNet para enviarlo.",
+            "inbox_unavailable_body": "El receptor no ha añadido este activo y la bandeja de activos no está disponible en este momento, así que no se puede enviar.",
             "nfd_mismatch_title": "El nombre no coincide en la cadena",
             "nfd_mismatch_body": "El contrato NFD de {{name}} no incluye esta dirección. Pega la dirección directamente si confías en ella.",
             "nfd_unavailable_title": "No se pudo verificar {{name}}",
@@ -2798,16 +2840,17 @@
             "body": "¿Cómo ha sido tu experiencia?"
         },
         "developer": {
-            "node_settings_title": "Ajustes del nodo",
+            "node_settings_title": "Modo desarrollador",
             "dispenser_title": "Dispensador de Algorand",
             "node_settings": {
-                "network_label": "{{chain}} {{network}}",
+                "developer_mode_title": "Modo desarrollador",
+                "developer_mode_body": "Cambia Pera a TestNet o a la red que elijas abajo. Desactívalo para volver a MainNet.",
+                "default_network_label": "{{network}} (predeterminada)",
                 "custom_label": "Red personalizada",
-                "chain_networks_title": "Red por blockchain",
                 "non_mainnet_warning_title": "Soporte limitado fuera de MainNet",
                 "non_mainnet_warning_body": "MainNet es la única red totalmente compatible. Las funciones que dependen de los servicios de Pera —detalles de activos, swap, compra, tarjeta, staking y bandeja de entrada— están limitadas en TestNet y no están disponibles en BetaNet ni en nodos personalizados.",
-                "enable_mainnet": "Activar MainNet",
-                "enable_testnet": "Activar TestNet",
+                "enable_developer_mode": "Activar modo desarrollador",
+                "disable_developer_mode": "Desactivar modo desarrollador",
                 "custom_sheet_title": "Configurar red personalizada",
                 "algod_url_label": "URL de Algod",
                 "indexer_url_label": "URL del Indexer",
@@ -2855,8 +2898,8 @@
             "clear_one_time_flags": "Borrar marcas de una sola vez",
             "clear_one_time_flags_success_title": "Marcas de una sola vez borradas",
             "clear_one_time_flags_success_body": "Los avisos y descargos de responsabilidad de primera ejecución volverán a mostrarse.",
-            "taps_to_notify": "El menú de desarrollador se activará en {{remaining}} toques",
-            "developer_menu_enabled": "Menú de desarrollador activado",
+            "taps_to_notify": "Las herramientas de depuración se activarán en {{remaining}} toques",
+            "debug_tools_enabled": "Herramientas de depuración activadas",
             "overridden": "Anulado",
             "enabled": "Activado",
             "disabled": "Desactivado"
@@ -3047,7 +3090,7 @@
             "siwa_not_before": "No válida antes de",
             "siwa_resources": "Recursos",
             "siwa_invalid": "Esta solicitud de autenticación tiene un formato incorrecto y no se puede firmar.",
-            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Continúa solo si confías en él.",
+            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Pera bloqueó esta solicitud para proteger tu cuenta.",
             "show_details": "Ver detalles",
             "details_title": "Detalles de la solicitud de autenticación",
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."
@@ -4104,6 +4147,10 @@
             "confirm_button": "Restablecer wallet",
             "error": "No se pudo restablecer la wallet. Inténtalo de nuevo."
         },
+        "database_reset": {
+            "title": "Datos de la wallet actualizados",
+            "body": "Reconstruimos los saldos y el historial guardados en este navegador. Se volverán a cargar en un momento. Tus cuentas no se ven afectadas."
+        },
         "security": {
             "autolock_title": "Bloqueo automático tras",
             "autolock_minutes": "{{minutes}} minutos",
@@ -4148,5 +4195,14 @@
     },
     "integrityCheck": {
         "frame_title": "Verificación de Pera Wallet"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Ayuda a mejorar Pera",
+            "body": "Permite que Pera recopile datos anónimos de uso de la app. Nos ayuda a mejorar el producto. Puedes cambiar tu elección en Ajustes cuando quieras.",
+            "allow": "Permitir",
+            "decline": "No permitir"
+        },
+        "settings_label": "Compartir analíticas de uso"
     }
 }

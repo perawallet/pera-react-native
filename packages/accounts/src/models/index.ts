@@ -10,17 +10,20 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletAccount,
     AccountSortMode,
     HardwareWalletDetails,
     LaunchAccountMode,
 } from './accounts'
+import type { HdIndex } from './credentials'
 import type {
     BaseStoreState,
     Network,
     Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
 export * from './accounts'
 export * from './credentials'
@@ -28,23 +31,71 @@ export * from './balances'
 export * from './ledger-account-preview'
 export * from './ledger-selectable-account'
 
+/** Authority address by scope key, then the account's address on that scope. */
+export type RecordedAuthorities = Partial<
+    Record<ChainScopeKey, Record<string, string>>
+>
+
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
     selectedAccountAddress: Nullable<string>
     sortMode: AccountSortMode
     manualAccountOrder: string[]
-    /**
-     * The network the `rekeyAddress` mirrors currently reflect. Session-only;
-     * null until the first `applyNetworkRekeyState` call, during which rekey
-     * writes treat their own network as the active one.
-     */
-    activeRekeyNetwork: Nullable<Network>
     /** Which account a cold start selects. See `applyLaunchAccountPreference`. */
     launchAccountMode: LaunchAccountMode
     /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
     launchAccountAddress: Nullable<string>
+    /**
+     * Authorities observed outside a sync: a pre-upgrade payload's record
+     * fields, discovery, a Ledger read. The chain-state slice is memory-only, so
+     * this is their durable copy until a sync writes the scope's row.
+     */
+    authorities: RecordedAuthorities
+    /**
+     * Authorities from a payload that predates the per-network map, whose scope
+     * is the selected Algorand scope. Hydration resolves them into `authorities`.
+     */
+    unscopedAuthorities: Record<string, string>
+    /** Records authorities, replacing any held for the same scope and address. */
+    recordAuthorities: (incoming: RecordedAuthorities) => void
+    /** Replaces both authority maps; hydration's reconciliation. */
+    settleAuthorities: (authorities: RecordedAuthorities) => void
+    /** Drops every authority held for `address`, on any scope. */
+    forgetAuthorities: (address: string) => void
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
+    /**
+     * Appends one account, throwing `DuplicateAccountError` naming the
+     * existing account when its address is already taken. Unlike
+     * `setAccounts`, which resolves duplicates silently.
+     */
+    addAccount: (account: WalletAccount) => void
+    /**
+     * Imports `privateKey` through the chain's KMS derivation and adds it as a
+     * standalone account on `chainId`. Throws `RawKeyImportUnsupportedError`
+     * before the KMS is reached when the chain imports no raw keys, and
+     * `DuplicateAccountError` naming the holder when the address is already
+     * held, in which case a key no account references is removed again.
+     * `privateKey` is zeroed before this settles, on success and on every throw.
+     */
+    importAccountFromPrivateKey: (
+        chainId: ChainId,
+        privateKey: Uint8Array,
+        name?: string,
+    ) => Promise<WalletAccount>
+    /**
+     * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
+     * (the seed's KMS id, as `seedOf` returns), or creates an account there.
+     * Throws `WalletCannotDeriveError` when the wallet can't mint on the chain,
+     * and `DuplicateAccountError` naming the holder when the address or the
+     * chain entry is already held. `name` applies only to a new account.
+     */
+    addChainAccount: (
+        walletId: string,
+        chainId: ChainId,
+        index: HdIndex,
+        name?: string,
+    ) => Promise<WalletAccount>
     setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**
@@ -63,27 +114,8 @@ export type AccountsState = BaseStoreState & {
      */
     applyLaunchAccountPreference: () => void
     setManualAccountOrder: (order: string[]) => void
-    /**
-     * Record the auth-addr observed for `address` on `network`, and update
-     * the active-network `rekeyAddress` mirror when `network` is the active
-     * one. Rekeys are per-network on-chain, so an inactive-network sync must
-     * never overwrite the mirror.
-     */
-    updateAccountRekeyAddress: (
-        address: string,
-        rekeyAddress: string | null,
-        network: Network,
-    ) => void
-    /**
-     * Re-derive every account's `rekeyAddress` mirror from its per-network
-     * state for `network`. Called on network switch so badges and
-     * signability are correct immediately, without a sync round-trip.
-     * Accounts persisted before per-network state existed keep their mirror
-     * until a sync tick writes the map.
-     */
-    applyNetworkRekeyState: (network: Network) => void
-    /** Append watch-only accounts whose rekeyAddress points at `sourceAddress`
-     * (scanned on `network`), skipping addresses that are already present in
+    /** Append watch-only accounts and record `sourceAddress` as each one's
+     * authority on `network`, skipping addresses that are already present in
      * the store. Returns the number of accounts actually appended. Validation
      * (Algorand-address shape) is the caller's responsibility. */
     addRekeyedWatchAccounts: (
@@ -93,7 +125,7 @@ export type AccountsState = BaseStoreState & {
     ) => number
     /**
      * Replace the watch account at `address` with a hardware account bound to
-     * `hardwareDetails`, preserving its id, name and rekey state. Returns
+     * `hardwareDetails`, preserving its id and name. Returns
      * whether an upgrade happened; refuses (false) when the address is
      * missing or not a watch account. Callers own the user confirmation.
      */

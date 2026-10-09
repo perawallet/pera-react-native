@@ -14,13 +14,14 @@ import { useCallback, useMemo, useState } from 'react'
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
-    useAllAccounts,
-    useAccountValueTotalsQuery,
-    useSortedAccounts,
+    accountType,
     type AccountType,
+    useAccountValueTotalsQuery,
+    useAllAccounts,
+    useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useNfdSearchQuery,
     type NfdSearchResult,
@@ -121,7 +122,8 @@ export const useAddressSearchView = ({
                 : accounts.filter(
                       a =>
                           a.address !== excludeAddress &&
-                          (!excludeTypes || !excludeTypes.includes(a.type)) &&
+                          (!excludeTypes ||
+                              !excludeTypes.includes(accountType(a))) &&
                           (!value?.length ||
                               a.address
                                   .toLowerCase()

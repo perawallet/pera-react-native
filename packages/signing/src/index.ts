@@ -37,9 +37,12 @@ export {
     type CreateMultisigStrategyOptions,
     type DappResolveContext,
     type DappResolveResult,
+    type ChainFeeConfig,
     type DappSignRequest,
     type DraftProposeContext,
     type EnqueueDappRequestDeps,
+    type FetchSuggestedMinFee,
+    type FetchSuggestedMinFeeOptions,
     type GetDeviceIdFn,
     type GetMsigMetadataFn,
     type GroupFeeReview,
@@ -55,6 +58,7 @@ export {
     type LocalKeySigningDeps,
     type LocalKeyStrategyOptions,
     type LocalSigningFunction,
+    type MinFeeForSenderResult,
     type MsigMetadata,
     type MultisigHandoffCompletionDeps,
     type MultisigSignerInput,
@@ -65,6 +69,7 @@ export {
     type ResolveMinFeeForSenderParams,
     type ResolverMessages,
     type TerminalHandoffOutcome,
+    type UseSuggestedMinFeeQueryResult,
 } from './chain-adapter'
 
 export {
@@ -107,6 +112,11 @@ export { useHandoffResolver } from './hooks/useHandoffResolver'
 export { useImpactTransactions } from './hooks/useImpactTransactions'
 export { useLastSigningEvent } from './hooks/useLastSigningEvent'
 export { useLocalKeyTransactionSigner } from './hooks/useLocalKeyTransactionSigner'
+export {
+    useFeeConfig,
+    useFetchSuggestedMinFee,
+    useSuggestedMinFeeQuery,
+} from './hooks/chainFees'
 export { useMinFeeForSender } from './hooks/useMinFeeForSender'
 export { useMinimumFeeCalculator } from './hooks/useMinimumFeeCalculator'
 export {
@@ -120,7 +130,10 @@ export {
 } from './hooks/useSignAndSubmitGroup'
 // The pure applier, not the hook: the app layer owns the AppState
 // subscription and feeds it in, keeping this package free of react-native.
-export { applyAppStateToHardwareSessions } from './hooks/useSigningActorLifecycle'
+export {
+    applyAppStateToHardwareSessions,
+    isSignRequestAwaitingPreflight,
+} from './hooks/useSigningActorLifecycle'
 export { useSigningEvent } from './hooks/useSigningEvent'
 export { useSigningPipeline } from './hooks/useSigningPipeline'
 export { useSigningRequest } from './hooks/useSigningRequest'
@@ -155,9 +168,13 @@ export {
     type DelegatedUnsignableReason,
     type RequestStructure,
     type ReviewerChainAdapter,
+    type ReviewPolicy,
     type SingleTransactionItem,
+    type TransactionDecoder,
     type TransactionListItem,
+    type WarningDetector,
 } from './chain-adapter'
+export { composeAnalysis, reviewGroup } from './pipeline/composeAnalysis'
 
 export {
     isExternalCallbackSource,
@@ -170,7 +187,7 @@ export {
     type AuthDataPayload,
     type AuthDataSignableData,
     type AuthData,
-    type DataAnalyzer,
+    type DecodedGroup,
     type RejectReason,
     type DataTransport,
     type SigningResult,
@@ -189,8 +206,8 @@ export {
     FeeAdjustmentDeliveryError,
     GenesisHashMismatchError,
     InvalidSignableDataError,
-    NetworkChangedError,
     NoLocalParticipantsError,
+    ReviewRequiredError,
     SigningError,
     SourceError,
     SubmissionError,
@@ -205,6 +222,11 @@ export { createSigningStrategySelector } from './pipeline/signing/getSigningStra
 export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
+export {
+    resolveSignerCredential,
+    type SignerCredential,
+    type SignerCustody,
+} from './machine/utils/resolveSignerCredential'
 export { signGroupsBySignerAccount } from './machine/actors/signers/signGroupsBySignerAccount'
 export type {
     AnalyzedSignableGroup,
@@ -226,6 +248,7 @@ export {
     type DerivedSubmissionAttempt,
     type OnConfirmedHandler,
     type ReconcileSummary,
+    type StaleGroupReason,
     type SubmissionSettledHandler,
     type SubmitAndAutoRefreshOptions,
 } from './broadcaster'

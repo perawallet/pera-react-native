@@ -35,6 +35,13 @@ export const PassphraseGrid = ({ wordIndices, style }: PassphraseGridProps) => {
                 <PWView
                     key={`${position}-${wordIndex}`}
                     style={styles.wordCell}
+                    // On the CELL, not on the word's PWText. PWView uses
+                    // getContainerTestProps (testID only), so the word stays
+                    // readable as a child node. PWText uses getTestProps, which
+                    // sets accessibilityLabel and would overwrite the word on
+                    // Android content-desc / iOS label -- hiding the very value
+                    // an automated check has to read back.
+                    testID={`passphrase_word_${position + 1}`}
                 >
                     <PWText style={styles.wordIndex}>
                         {String(position + 1)}

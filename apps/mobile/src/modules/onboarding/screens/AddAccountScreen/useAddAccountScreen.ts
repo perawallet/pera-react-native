@@ -14,8 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -43,7 +42,7 @@ export const useAddAccountScreen = () => {
     const isMounted = useIsMounted()
     const {
         buildHdWalletAccount,
-        buildAlgo25WalletAccount,
+        buildStandaloneAccount,
         buildQuantumWalletAccount,
     } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
@@ -59,7 +58,15 @@ export const useAddAccountScreen = () => {
     const { isAuthenticated } = useCardSession()
     const hasCardSession = isDebug || isStaging ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
-    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+    const canUseMultisig = useCapability({
+        platform: 'sharedAccounts',
+        anyChain: 'multisig',
+    })
+    const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
+    const isQuantumAccountsEnabled = useCapability({
+        platform: 'quantum',
+        anyChain: 'quantumAccounts',
+    })
 
     const {
         isOpen: isCreatingAccount,
@@ -183,8 +190,8 @@ export const useAddAccountScreen = () => {
     }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() => buildAlgo25WalletAccount({}))
-    }, [buildAlgo25WalletAccount, runCreateAccount])
+        runCreateAccount(() => buildStandaloneAccount({}))
+    }, [buildStandaloneAccount, runCreateAccount])
 
     const handleCreateQuantum = useCallback(() => {
         trackEvent(OnboardingEvent.CreateAccountQuantum)
@@ -248,7 +255,7 @@ export const useAddAccountScreen = () => {
                         onPress: handleLearnMoreQuantum,
                     },
                 },
-                routeCapabilities.sharedAccounts && {
+                canUseMultisig && {
                     testID: 'add_account_create_multisig_button',
                     titleKey:
                         'onboarding.add_account.create_multisig_option_title',
@@ -282,6 +289,7 @@ export const useAddAccountScreen = () => {
             handleAddAccount,
             handleCreateUniversalWallet,
             isQuantumAccountsEnabled,
+            canUseMultisig,
             handleCreateQuantum,
             handleLearnMoreQuantum,
             isCreatingAccount,
@@ -296,7 +304,7 @@ export const useAddAccountScreen = () => {
     const otherOptions: AccountOption[] = useMemo(
         () =>
             [
-                {
+                canAddWatchAccount && {
                     testID: 'add_account_watch_button',
                     titleKey:
                         'onboarding.add_account.watch_address_option_title',
@@ -328,6 +336,7 @@ export const useAddAccountScreen = () => {
             ].filter(Boolean) as AccountOption[],
         [
             hasHDWallet,
+            canAddWatchAccount,
             handleWatchAddress,
             handleCreateUniversalWallet,
             handleCreateAlgo25,

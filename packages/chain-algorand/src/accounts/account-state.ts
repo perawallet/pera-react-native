@@ -17,16 +17,15 @@ import type {
     AccountStateReadHint,
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
+import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandClient } from '../blockchain'
 import {
-    getAlgorandClient,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET_ID,
     type Network,
     type Nullable,
     type Optional,
+    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '../descriptor'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
 
 // algod rejects a full account read with HTTP 400 once total resources exceed
@@ -136,20 +135,49 @@ export async function fetchAlgorandAccountState(
     // synthetic-row union in the hot path. Its metadata is seeded at startup and
     // its price syncs under id '0', so the join resolves it like any asset.
     holdings.unshift({
-        assetId: ALGO_ASSET_ID,
+        assetId: algorandDescriptor.nativeAsset.ref.assetId,
         amount: new Decimal(info.amount.toString()),
         isFrozen: false,
     })
 
+    const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0
+    const totalCreatedAssets = info.totalCreatedAssets ?? 0
+    const totalAppsOptedIn = info.totalAppsOptedIn ?? 0
+    const authorityAddress = info.authAddr?.toString() ?? null
+
     return {
         nativeBalance: microAlgosToAlgos(info.amount),
+        nativeBalanceBaseUnits: new Decimal(info.amount.toString()),
         minBalance: microAlgosToAlgos(info.minBalance),
-        totalAssetsOptedIn: info.totalAssetsOptedIn ?? 0,
-        totalCreatedAssets: info.totalCreatedAssets ?? 0,
-        totalAppsOptedIn: info.totalAppsOptedIn ?? 0,
+        totalAssetsOptedIn,
+        totalCreatedAssets,
+        totalAppsOptedIn,
         status: info.status ?? 'Offline',
-        authAddress: info.authAddr?.toString() ?? null,
+        authorityAddress,
+        chainState: {
+            family: 'algorand',
+            ...(authorityAddress === null
+                ? {}
+                : { authAddress: authorityAddress }),
+            minBalance: new Decimal(info.minBalance.toString()),
+            status: toParticipationStatus(info.status),
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn,
+        },
         holdings,
         observedRound,
     }
 }
+
+type ParticipationStatus = Extract<
+    AccountChainState,
+    { family: 'algorand' }
+>['status']
+
+// algod types status as a bare string; anything unrecognised reads as Offline,
+// the same default the balance row uses.
+const toParticipationStatus = (
+    status: Optional<string>,
+): ParticipationStatus =>
+    status === 'Online' || status === 'NotParticipating' ? status : 'Offline'

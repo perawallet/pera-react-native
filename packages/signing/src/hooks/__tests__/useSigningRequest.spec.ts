@@ -80,28 +80,22 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useAllAccounts: vi.fn(() => [
-            { address: 'ADDR1', type: 'algo25' },
-            { address: 'ADDR2', type: 'algo25' },
+            { address: 'ADDR1', custody: { kind: 'local', seed: null } },
+            { address: 'ADDR2', custody: { kind: 'local', seed: null } },
         ]),
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...original,
-        useTransactionEncoder: vi.fn(() => ({
-            encodeSignedTransactions: vi.fn(),
-        })),
-        useAlgorandClient: vi.fn(() => ({
-            client: { algod: { sendRawTransaction: vi.fn() } },
-        })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    getSelectedScope: vi.fn((chainId: string) => ({
+        chainId,
+        networkId: 'testnet',
+    })),
+}))
 
 vi.mock('../../machine/createSigningMachine')
 

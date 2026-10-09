@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
 const account = {
     address: 'ADDR',
     keyPairId: 'key-1',
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 const authData: AuthData = {
@@ -103,7 +103,7 @@ describe('useAuthDataSigner', () => {
         mockAccounts = [account]
         const { result, rerender } = renderHook(() => useAuthDataSigner())
 
-        const revoked = { ...account, rekeyAddress: undefined }
+        const revoked = { ...account, name: 'Renamed' }
         mockAccounts = [revoked]
         rerender()
         await result.current.signAuthData(account, authData, metadata)

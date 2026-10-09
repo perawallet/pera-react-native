@@ -40,8 +40,14 @@ import {
     refreshAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,
+    upsertAccountChainState,
+    getAccountChainStateRow,
     getHeldAssetIdsByAccount,
 } from '../../db'
+import {
+    getAccountChainState,
+    useAccountChainStateStore,
+} from '../../store/accountChainState'
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
@@ -70,7 +76,7 @@ const balanceArgs = (
     totalAppsOptedIn: 0,
     minBalance: new Decimal('0.1'),
     status: 'Offline',
-    authAddress: null,
+    authorityAddress: null,
 })
 
 describe('cleanupRemovedAccountData', () => {
@@ -87,6 +93,28 @@ describe('cleanupRemovedAccountData', () => {
     afterEach(() => {
         teardown()
         resetAccountCleanupRegistry()
+        useAccountChainStateStore.getState().resetState()
+    })
+
+    it('drops the removed account from every chain-state scope and keeps others', async () => {
+        const state = {
+            family: 'algorand' as const,
+            minBalance: new Decimal(0),
+            status: 'Offline' as const,
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+        }
+        const slice = useAccountChainStateStore.getState()
+        slice.setAccountChainState(MAINNET_SCOPE, 'ADDR1', state)
+        slice.setAccountChainState(TESTNET_SCOPE, 'ADDR1', state)
+        slice.setAccountChainState(MAINNET_SCOPE, 'ADDR2', state)
+
+        await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
+
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toBeUndefined()
+        expect(getAccountChainState(TESTNET_SCOPE, 'ADDR1')).toBeUndefined()
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR2')).toBeDefined()
     })
 
     it('runs registered account cleanup handlers with the db and address', async () => {
@@ -116,8 +144,8 @@ describe('cleanupRemovedAccountData', () => {
             .insert(AccountAssetHoldingsSchema)
             .values({
                 accountAddress: 'ADDR1',
-                assetId: new Decimal('200'),
-                network: 'devnet' as ChainScopeKey,
+                assetId: '200',
+                network: 'unknown/devnet' as ChainScopeKey,
                 updatedAt: Date.now(),
             })
             .run()
@@ -127,11 +155,13 @@ describe('cleanupRemovedAccountData', () => {
             accountAddress: 'ADDR1',
         })
 
-        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
+        expect(result.prunedAssetIdsByNetwork).toEqual({
+            'algorand/mainnet': ['100'],
+        })
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
-    it('removes the account holdings and balance row', async () => {
+    it('removes the account holdings, balance and chain-state rows', async () => {
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
@@ -139,6 +169,13 @@ describe('cleanupRemovedAccountData', () => {
             scope: MAINNET_SCOPE,
         })
         await upsertAccountBalance(balanceArgs(db, 'ADDR1', MAINNET_SCOPE))
+        await upsertAccountChainState({
+            db,
+            accountAddress: 'ADDR1',
+            scope: MAINNET_SCOPE,
+            nativeBalance: new Decimal(1_000_000),
+            chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
+        })
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
 
@@ -147,6 +184,13 @@ describe('cleanupRemovedAccountData', () => {
         ).toEqual([])
         expect(
             await getAccountBalance({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            }),
+        ).toBeUndefined()
+        expect(
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
@@ -191,7 +235,9 @@ describe('cleanupRemovedAccountData', () => {
                 scope: MAINNET_SCOPE,
             }),
         ).toHaveLength(0)
-        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
+        expect(result.prunedAssetIdsByNetwork).toEqual({
+            'algorand/mainnet': ['100'],
+        })
     })
 
     it('keeps assets another account still holds or is opted into', async () => {
@@ -280,7 +326,10 @@ describe('cleanupRemovedAccountData', () => {
                 scope: TESTNET_SCOPE,
             }),
         ).toHaveLength(0)
-        expect(result.networksAffected.sort()).toEqual(['mainnet', 'testnet'])
+        expect(result.networksAffected.sort()).toEqual([
+            'algorand/mainnet',
+            'algorand/testnet',
+        ])
     })
 
     it('keeps the seeded native row when the last account holding it goes', async () => {

@@ -58,7 +58,11 @@ import {
     algorandAddressCodec,
     algorandKeyDerivation,
 } from './accounts'
-import { startNetworkRekeySync } from './accounts/network-rekey-sync'
+
+// These registrations must not depend on which barrel loads first.
+import './blockchain/store/store'
+import './blockchain/store/custom-network'
+import './blockchain/utils/algorandClient'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
@@ -84,5 +88,4 @@ export const registerChain = (): void => {
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)
     messageSignerChainAdapters.register(algorandMessageSignerAdapter)
-    startNetworkRekeySync()
 }

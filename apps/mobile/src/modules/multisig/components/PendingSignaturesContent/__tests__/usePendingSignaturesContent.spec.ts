@@ -12,10 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     type MultisigSignRequest,
     type SignRequestStatus,
@@ -43,13 +40,19 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    useTransactionEncoder: () => ({ decodeTransaction: vi.fn(() => ({})) }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    useTransactionEncoder: () => ({ decodeTransaction: vi.fn(() => ({})) }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -68,7 +71,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -181,7 +184,7 @@ const mockQueryReturn = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: `kp-${address}`,
 })
@@ -1165,7 +1168,16 @@ describe('usePendingSignaturesContent', () => {
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

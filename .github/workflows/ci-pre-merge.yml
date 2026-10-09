@@ -22,11 +22,13 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
 
+      # No `cache: pnpm`: setup-node keys the store on the exact lockfile with no
+      # fallback, so it can only hit when node_modules below does too, and it
+      # was a second 1 GB copy per PR in a repo cache that is already full.
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: ".tool-versions"
-          cache: "pnpm"
 
       # Fail fast if pnpm-lock.yaml drifted from package.json. Without this
       # step, a stale lockfile can silently install wrong versions on dev
@@ -39,10 +41,28 @@ jobs:
             exit 1
           fi
 
+      # ci-cache-warm.yml saves this on main for every lockfile, and a PR reads
+      # main's caches, so a PR that leaves the lockfile alone neither installs
+      # nor saves its own copy. Per-PR copies of this cache are what evicted
+      # every other cache within the hour.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+            conformance/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Cache node_modules
+        if: steps.node-modules.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -68,13 +88,11 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
 
-      # No `cache: pnpm` on any job below `setup`. setup-node's post-step saves
-      # the pnpm store, and a job that never runs `pnpm install` never creates
-      # it — saving a path that doesn't exist fails the job with "Path
-      # Validation Error", *after* the real work has already passed. This job
-      # never installs; the others restore node_modules from the cache `setup`
-      # saved and so skip the install. Only `setup` installs unconditionally,
-      # so only `setup` may cache the store.
+      # No `cache: pnpm` on any job (see Setup). Here it would also break the
+      # job: setup-node's post-step saves the pnpm store, and a job that never
+      # runs `pnpm install` never creates it — saving a path that doesn't
+      # exist fails the job with "Path Validation Error", *after* the real
+      # work has already passed.
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -306,28 +324,27 @@ jobs:
       fail-fast: false
       matrix:
         # The suite is CPU-bound on a 4-core runner, so the win comes from more
-        # runners rather than more threads per runner. Grouped by measured cost
-        # (locally, cache forced, CI thread caps) so no one shard sets the floor:
-        #   background 67s | rest 57s | mobile-unit 44s | heavy 33s | mobile-int 27s | lanekeep 4s
-        # `core-background` runs alone because it alone is ~26% of package test
-        # time, and it does NOT get faster with more threads (67s at 2, 74s at
-        # 4) — its suite doesn't parallelize, so it only needs its own runner.
-        # Together these cover every test task exactly once: 1 + 3 + 51 package
-        # tasks, mobile's two vitest projects (4094 + 351), and the lanekeep
-        # fixture suite — the full run.
+        # runners rather than more threads per runner. Packages are grouped by
+        # each package's vitest Duration in a CI log so no one shard sets the
+        # floor; regroup from a fresh log when one shard starts trailing.
+        # `packages-rest` is defined by exclusion so a new package lands there
+        # with no workflow change, which means every package named in `heavy`
+        # or `mid` must also be excluded from `rest`. Mobile's cost is per-file
+        # jsdom setup rather than test bodies, so it splits by file via vitest's
+        # --shard. Together these cover every test task exactly once.
         shard:
-          - name: packages-background
-            command: pnpm exec turbo run test --filter=@perawallet/wallet-core-background
-            vitestThreads: 2
-            turboConcurrency: 1
           - name: packages-rest
             command: >-
               pnpm exec turbo run test --filter='!mobile'
-              --filter='!@perawallet/wallet-core-background'
               --filter='!@perawallet/wallet-core-signing'
               --filter='!@perawallet/wallet-core-card'
               --filter='!@perawallet/wallet-core-accounts'
-            vitestThreads: 2
+              --filter='!@perawallet/wallet-core-backup'
+              --filter='!@perawallet/wallet-core-chain-algorand'
+              --filter='!@perawallet/wallet-core-swaps'
+              --filter='!@perawallet/wallet-core-assets'
+              --filter='!@perawallet/wallet-core-transactions'
+            vitestWorkers: 2
             turboConcurrency: 4
           - name: packages-heavy
             command: >-
@@ -335,19 +352,41 @@ jobs:
               --filter=@perawallet/wallet-core-signing
               --filter=@perawallet/wallet-core-card
               --filter=@perawallet/wallet-core-accounts
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 3
-          - name: mobile-unit
-            command: pnpm --filter mobile test:unit
-            vitestThreads: 4
+          - name: packages-mid
+            command: >-
+              pnpm exec turbo run test
+              --filter=@perawallet/wallet-core-backup
+              --filter=@perawallet/wallet-core-chain-algorand
+              --filter=@perawallet/wallet-core-swaps
+              --filter=@perawallet/wallet-core-assets
+              --filter=@perawallet/wallet-core-transactions
+            vitestWorkers: 2
+            turboConcurrency: 3
+          - name: mobile-unit-1
+            command: pnpm --filter mobile test:unit --shard=1/3
+            vitestWorkers: 4
             turboConcurrency: 1
-          - name: mobile-integration
-            command: pnpm --filter mobile test:integration
-            vitestThreads: 4
+          - name: mobile-unit-2
+            command: pnpm --filter mobile test:unit --shard=2/3
+            vitestWorkers: 4
+            turboConcurrency: 1
+          - name: mobile-unit-3
+            command: pnpm --filter mobile test:unit --shard=3/3
+            vitestWorkers: 4
+            turboConcurrency: 1
+          - name: mobile-integration-1
+            command: pnpm --filter mobile test:integration --shard=1/2
+            vitestWorkers: 4
+            turboConcurrency: 1
+          - name: mobile-integration-2
+            command: pnpm --filter mobile test:integration --shard=2/2
+            vitestWorkers: 4
             turboConcurrency: 1
           - name: lanekeep
             command: pnpm run test:lanekeep
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 1
     steps:
       - name: Checkout
@@ -396,13 +435,13 @@ jobs:
       - name: Test
         env:
           # GitHub-hosted ubuntu-24.04 runners have 4 cores, so each shard
-          # budgets threads against that. The `packages` shard fans out through
+          # budgets workers against that. The `packages` shard fans out through
           # turbo — without caps each of its ~30 sibling vitest processes would
-          # grab cpu_count threads and over-subscribe wildly. 2 threads × 4
-          # turbo tasks = 8 active threads, which fits 4 cores with headroom.
+          # start cpu_count - 1 workers and over-subscribe wildly. 2 workers × 4
+          # turbo tasks = 8 active workers, which fits 4 cores with headroom.
           # The mobile shards run a single vitest process, so that process
           # gets the whole runner.
-          VITEST_MAX_THREADS: ${{ matrix.shard.vitestThreads }}
+          VITEST_MAX_WORKERS: ${{ matrix.shard.vitestWorkers }}
           TURBO_CONCURRENCY: ${{ matrix.shard.turboConcurrency }}
         # Coverage is deliberately absent: nothing consumed the report on the PR
         # path (no thresholds, no upload), so instrumenting the whole monorepo
@@ -430,12 +469,19 @@ jobs:
           echo "All test shards passed"
 
   extension-e2e:
-    name: Extension bundle & e2e
+    name: Extension bundle & e2e (${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
     needs: setup
     permissions:
       contents: read
       pull-requests: read
+    # Each shard bundles for itself: a separate bundle job would add a job hop
+    # and an artifact round trip that cost about what the bundle does. Shards
+    # are split by measured spec cost in apps/browser/playwright.config.ts.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -511,9 +557,44 @@ jobs:
         if: steps.changes.outputs.affected == 'true'
         run: test -d node_modules || pnpm install --frozen-lockfile
 
+      # Only fonts on this image today, but apt's mirror is the slowest and most
+      # variable thing in the job, so it runs behind the bundle instead of
+      # after it. `Install Playwright Chromium` waits for it.
+      - name: Start Playwright system dependencies
+        if: steps.changes.outputs.affected == 'true'
+        # Every descriptor redirected: the runner waits for a step's output pipe
+        # to close, so a background job still holding it would block the step.
+        run: |
+          (
+            pnpm --filter browser exec playwright install-deps chromium
+            echo $? > "$RUNNER_TEMP/playwright-deps.exit"
+          ) < /dev/null > "$RUNNER_TEMP/playwright-deps.log" 2>&1 &
+
+      # Metro's transform cache is keyed by file content, so any older cache is
+      # safe and most of it still hits. ci-cache-warm.yml saves one from main
+      # nightly, which is what a PR's first run restores.
+      - name: Restore Metro cache
+        if: steps.changes.outputs.affected == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/metro-cache
+          key: metro-web-${{ runner.os }}-${{ github.sha }}
+          restore-keys: metro-web-${{ runner.os }}-
+
       - name: Bundle extension
         if: steps.changes.outputs.affected == 'true'
+        env:
+          # Expo keeps Metro's cache under os.tmpdir().
+          TMPDIR: ${{ runner.temp }}
         run: pnpm --filter browser bundle
+
+      # Every shard builds the same bundle, so one saves it.
+      - name: Save Metro cache
+        if: steps.changes.outputs.affected == 'true' && matrix.shard == 1
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/metro-cache
+          key: metro-web-${{ runner.os }}-${{ github.sha }}
 
       # The browser registers no v2 handler; WalletKit must never enter its
       # bundle. Checked here rather than tools/qa/check-prod-bundle.sh because
@@ -541,17 +622,28 @@ jobs:
 
       - name: Install Playwright Chromium
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter browser exec playwright install --with-deps chromium
+        run: |
+          set -euo pipefail
+          while [ ! -f "$RUNNER_TEMP/playwright-deps.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/playwright-deps.log"
+          exit_code=$(cat "$RUNNER_TEMP/playwright-deps.exit")
+          if [ "$exit_code" -ne 0 ]; then
+            echo "::error::playwright install-deps exited $exit_code"
+            exit "$exit_code"
+          fi
+          pnpm --filter browser exec playwright install chromium
 
       - name: Run extension e2e
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter browser test:e2e
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/4
+        run: pnpm --filter browser test:e2e --reporter=list
 
       - name: Upload fidelity screenshots
         if: always() && steps.changes.outputs.affected == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: extension-fidelity-screenshots
+          name: extension-fidelity-screenshots-${{ matrix.shard }}
           path: apps/browser/screenshots/
           retention-days: 14
 
@@ -559,7 +651,7 @@ jobs:
         if: failure() && steps.changes.outputs.affected == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: extension-e2e-traces
+          name: extension-e2e-traces-${{ matrix.shard }}
           path: apps/browser/test-results/
           retention-days: 7
 

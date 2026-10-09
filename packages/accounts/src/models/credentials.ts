@@ -10,55 +10,64 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainAccountNative,
+    ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
-import type { HardwareWalletDetails, HDWalletDetails } from './accounts'
+import type { HardwareWalletDetails } from './accounts'
 
-export type HdPath = HDWalletDetails
+/** Pera's position in the seed, the same on every chain; each chain's path template places it. */
+export type HdIndex = { account: number; keyIndex: number }
+
+/** The stored secret is the private key itself; nothing derives it. */
+export type StandaloneCustody = { kind: 'local'; seed: null }
 
 // No signature scheme here: it depends on the chain and the seed, and is
 // resolved at runtime (`credentialScheme`), so it needs no data migration.
-export type LocalProvenance =
+export type LocalCustody =
+    | StandaloneCustody
     | {
           kind: 'local'
-          seed: typeof SeedScheme.Algo25 | typeof SeedScheme.Quantum
+          seed: typeof SeedScheme.Quantum
       }
     | {
           kind: 'local'
           seed: typeof SeedScheme.Bip39
-          hd: HdPath
+          hd: HdIndex
       }
 
 export type HardwareRef = Omit<HardwareWalletDetails, 'accountIndex'>
 
-export type HardwareProvenance = {
+export type HardwareCustody = {
     kind: 'hardware'
     device: HardwareRef
     accountIndex: HardwareWalletDetails['accountIndex']
 }
 
-export type MultisigProvenance = {
+export type MultisigCustody = {
     kind: 'multisig'
-    threshold: number
-    members: string[]
-    /** Algorand multisig version byte. */
-    version: number
 }
 
-export type WatchProvenance = {
+export type WatchCustody = {
     kind: 'watch'
 }
 
-/** How an account is held. Cross-chain: the per-chain key lives in `credentials`. */
-export type AccountProvenance =
-    | LocalProvenance
-    | HardwareProvenance
-    | MultisigProvenance
-    | WatchProvenance
+/** How an account is held; the same on every chain. */
+export type AccountCustody =
+    | LocalCustody
+    | HardwareCustody
+    | MultisigCustody
+    | WatchCustody
 
-/** The KMS key that signs for an account on one chain. */
-export type ChainCredential = {
-    keyPairId: string
+export type ChainAccount = {
+    /** The account's primary address on this chain. */
+    address: string
+    /** The KMS key that signs on this chain; absent when no local key does. */
+    keyPairId?: string
+    /** Data only this chain reads. */
+    native?: ChainAccountNative
 }
 
-export type AccountCredentials = Partial<Record<ChainId, ChainCredential>>
+/** An entry means the account exists on that chain. */
+export type AccountChains = Partial<Record<ChainId, ChainAccount>>

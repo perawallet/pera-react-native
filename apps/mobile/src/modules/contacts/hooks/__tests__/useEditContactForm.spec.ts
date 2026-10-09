@@ -18,6 +18,8 @@ import {
     DuplicateAddressError,
 } from '@perawallet/wallet-core-contacts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useEditContactForm } from '../useEditContactForm'
 
 const editContactMock = vi.fn()
@@ -130,6 +132,7 @@ vi.mock('../useContactForm', () => ({
 describe('useEditContactForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         editContactMock.mockReset()
         formState.isValid = false
         // Defaults = in-app path: a contact selected in the app, no route
@@ -371,6 +374,14 @@ describe('useEditContactForm', () => {
             const { result: off } = renderHook(() => useEditContactForm())
 
             expect(off.current.needsBackupChoice).toBe(false)
+        })
+
+        it('asks for no choice when cloud backup is off on every chain', () => {
+            setCapabilityOverrides({ cloudBackup: false })
+
+            const { result } = renderHook(() => useEditContactForm())
+
+            expect(result.current.needsBackupChoice).toBe(false)
         })
 
         it('deletes the cloud copy when the user chooses Delete', async () => {

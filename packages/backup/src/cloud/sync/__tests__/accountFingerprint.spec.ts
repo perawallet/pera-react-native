@@ -15,7 +15,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { accountFingerprint } from '../accountFingerprint'
 
 const account = (over: Partial<WalletAccount>): WalletAccount =>
-    ({ address: 'A', type: 'watch', ...over }) as WalletAccount
+    ({ address: 'A', custody: { kind: 'watch' }, ...over }) as WalletAccount
 
 describe('accountFingerprint', () => {
     it('changes when an account is added', () => {
@@ -46,7 +46,7 @@ describe('accountFingerprint', () => {
     })
 
     it('ignores fields the backup address payload does not carry', () => {
-        expect(accountFingerprint([account({ rekeyAddress: 'AUTH' })])).toBe(
+        expect(accountFingerprint([account({ keyPairId: 'kp' })])).toBe(
             accountFingerprint([account({})]),
         )
     })

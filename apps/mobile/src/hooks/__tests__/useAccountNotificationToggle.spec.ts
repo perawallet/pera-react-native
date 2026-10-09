@@ -86,7 +86,7 @@ import {
     clearAccountNotificationToggleGuardForTests,
 } from '../useAccountNotificationToggle'
 
-type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'type'> &
+type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'custody'> &
     Partial<WalletAccount>
 
 const seedAccounts = (accounts: SeedAccount[]): void => {
@@ -109,7 +109,12 @@ describe('useAccountNotificationToggle', () => {
 
     it('applies the optimistic write and re-registers the device on success', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR1', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR1',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
 
         const { result } = renderHook(() => useAccountNotificationToggle())
@@ -450,8 +455,18 @@ describe('useAccountNotificationToggle', () => {
     // with every account's flag inline, not just the one that changed.
     it('re-registers the device with the toggled flag applied', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
-            { id: '2', address: 'ADDR_B', type: 'quantum', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
+            {
+                id: '2',
+                address: 'ADDR_B',
+                custody: { kind: 'local', seed: 'quantum' },
+                keyPairId: 'kp',
+            },
         ])
 
         const { result } = renderHook(() => useAccountNotificationToggle())
@@ -476,7 +491,12 @@ describe('useAccountNotificationToggle', () => {
 
     it('rolls the local preference back and shows an error when re-registration fails', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
         mocks.registerDevice.mockRejectedValueOnce(new Error('boom'))
 
@@ -501,7 +521,12 @@ describe('useAccountNotificationToggle', () => {
     // pre-muted account so the filter has something to actually remove.
     it('removes the address from the disabled set when re-enabling a muted account', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
         mocks.disabledAccounts = ['ADDR_A']
 
@@ -530,8 +555,18 @@ describe('useAccountNotificationToggle', () => {
     // "muted", receives pushes anyway, and the divergence survives a restart.
     it('preserves already-muted accounts when muting another one', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
-            { id: '2', address: 'ADDR_B', type: 'algo25', keyPairId: 'kp2' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
+            {
+                id: '2',
+                address: 'ADDR_B',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp2',
+            },
         ])
         mocks.disabledAccounts = ['ADDR_B']
 

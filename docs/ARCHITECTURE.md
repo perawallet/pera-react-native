@@ -165,19 +165,40 @@ gesture) goes in a small `.web.ts` twin of a constant or function instead of a f
 Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
 differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).
 
+A feature that only works in some wallet modes (a chain's backend serves its mainnet and default
+test network only, say) declares the developer modes it is off in, in a chain module's
+`capabilityRestrictions` or in `routeCapabilityRestrictions`, rather than comparing a network. The
+restriction can only switch a capability off, and Feature Flags still overrides it. The UI gates through
+`useCapability` or `<CapabilityGuard>`, which follow the mode and per-chain network override live.
+
+An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
+the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and
+the chain capability. A flag hook ANDs its capability in so callers check one hook, but a capability
+is never folded into a remote flag read or the reverse. A false capability removes the element from the
+tree; nothing renders disabled because a capability is off.
+
+`useCapabilityCheck` evaluates a list, or a requirement chosen at call time, from one subscription:
+tab descriptors carry `requires`, and `DEEPLINK_CAPABILITY_REQUIREMENTS` classifies every deeplink
+type. Routes, tabs and menu rows use `anyChain`; an element acting on an account uses the `chain:`
+form. Signing never depends on a capability remote config can switch off: `rekey` gates the ways into
+rekeying and rekey discovery, not `getSignerFor`, so an account that is already rekeyed keeps signing.
+The same holds for anything that outlives its capability: WalletConnect sessions, registered pushes and
+passkeys keep running, so their settings screens stay reachable and only the way to start a new one hides.
+
 ### Keeping code out of a build
 
 A capability hides a feature but still ships its code. Code that must not be in a bundle at all is
 dropped by Metro instead: `apps/mobile/metro.config.js` resolves the feature's entry modules to
-sibling `.stub.ts` files, so nothing behind them enters the graph. Two features use this. The locale
+sibling `.stub.ts` files, so nothing behind them enters the graph. Three features use this. The locale
 tour exists only when `NODE_ENV` is `development`. The developer screen gallery (settings, developer
 menu) is left out of production builds and kept in development and staging; the decision reads the
 `appEnvironment` baked into `packages/config/src/generated-env.ts` (or `APP_ENV`), not `NODE_ENV`,
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
 `modules/settings/routes/developer-gallery.ts`, which the oxlint rule
-`pera/dev-gallery-entry-points` enforces. Metro logs both decisions at startup
-(`[metro] developer gallery: included|stubbed`).
+`pera/dev-gallery-entry-points` enforces. The Ethereum chain module ships only when the baked `CHAINS`
+lists `ethereum`, and the extension build fails if viem reaches a bundle anyway. Metro logs each
+decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
 
@@ -197,15 +218,25 @@ no fallback and should surface as unavailable.
 ## Account types share one signing path
 
 Algo25, HD-wallet and quantum (Falcon-1024) accounts all route through
-`useLocalKeyTransactionSigner` and `createLocalKeyStrategy`. `determineSignerType` has no
-`'quantum'` case: a quantum account classifies as `'localKey'` like the others, because it satisfies
-`hasSigningKeys`. The only quantum-specific step is that the signer asks
+`useLocalKeyTransactionSigner` and `createLocalKeyStrategy`. `resolveSignerCredential` returns a custody and a
+scheme: the custody picks the signing actor, so a quantum account resolves to `local` custody like
+the others, and only its scheme (`falcon-1024`, from `credentialScheme`) differs. The signer is
+picked by the request's scope and reads the scheme off the key itself: it asks
 `useKMS().getPQSigningInfo(keyPairId)` once per call and, when that returns non-null, signs
 `pqSigningDigest(txn)` and assembles via `assemblePQSignedTransaction`.
 
 Worth knowing because the absence is invisible: if you go looking for a quantum branch in signing,
 routing or submission, there isn't one, and adding one is a regression. The Falcon libraries are
 confined to `packages/kms/src/crypto/pq` and a test fails CI if they appear anywhere else.
+
+## Each chain reviews its own requests
+
+The signing machine reviews every group with the reviewer registered for the request's chain: its
+decoder explains the group, its warning detector reads what was decoded, and `reviewGroup` derives
+the risk level the same way on every chain. A chain with no reviewer refuses the request, so nothing
+signs unreviewed. A request the app built itself has no review screen, so the chain's
+`policy.autoApproveLocal` decides it, and one the policy turns down fails with `ReviewRequiredError`
+rather than waiting for a screen that never opens.
 
 ## State management
 
@@ -221,15 +252,15 @@ when the app reinitializes (see `BaseStoreState`).
 
 ## Key packages
 
-| Package      | Purpose                            |
-| ------------ | ---------------------------------- |
-| `accounts`   | Wallet account management          |
-| `assets`     | Asset information and pricing      |
-| `blockchain` | Algorand node/indexer access       |
-| `signing`    | Transaction signing and submission |
-| `database`   | Local persistence                  |
-| `settings`   | User preferences                   |
-| `shared`     | Common utilities and models        |
+| Package          | Purpose                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `accounts`       | Wallet account management                                    |
+| `assets`         | Asset information and pricing                                |
+| `chain-algorand` | Algorand chain: node/indexer access and per-package adapters |
+| `signing`        | Transaction signing and submission                           |
+| `database`       | Local persistence                                            |
+| `settings`       | User preferences                                             |
+| `shared`         | Common utilities and models                                  |
 
 Platform service abstractions live in `extensions/*`, not in a package.
 

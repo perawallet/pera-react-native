@@ -41,7 +41,8 @@ import { useMenuScreen } from './useMenuScreen'
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { isScannerVisible, openScanner, closeScanner } = useMenuScreen()
+    const { canStake, isScannerVisible, openScanner, closeScanner } =
+        useMenuScreen()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
@@ -157,7 +158,7 @@ export const MenuScreen = () => {
             </PWView>
 
             <PWView style={styles.menuContainer}>
-                {routeCapabilities.staking && (
+                {canStake && (
                     <PanelButton
                         title={t('menu.staking')}
                         titleWeight='h3'

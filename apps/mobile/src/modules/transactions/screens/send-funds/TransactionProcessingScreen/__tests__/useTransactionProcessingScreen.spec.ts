@@ -13,7 +13,10 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
     UserRejectedSigningError,
@@ -21,6 +24,7 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import {
+    useAccountChainStateStore,
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -95,6 +99,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useSelectedAccount: vi.fn(() => ({
             address: 'test-address',
             name: 'Test',
+            custody: { kind: 'local', seed: null },
         })),
         useAllAccounts: vi.fn(() => []),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
@@ -133,7 +138,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
-        logger: { error: vi.fn() },
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
     }
 })
 
@@ -170,6 +180,7 @@ const publishProposed = (
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
         sendFundsState.amount = undefined
@@ -309,12 +320,21 @@ describe('useTransactionProcessingScreen', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
             address: 'SRC',
-            type: 'watch',
-            rekeyAddress: 'LEDGER_AUTH',
+            custody: { kind: 'watch' },
         }
+        seedAuthority('SRC', 'LEDGER_AUTH')
         const ledgerAuth = {
             address: 'LEDGER_AUTH',
-            type: 'hardware',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
             hardwareDetails: {
                 manufacturer: 'ledger',
                 deviceId: 'dev-1',
@@ -336,7 +356,7 @@ describe('useTransactionProcessingScreen', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
             address: 'SRC',
-            type: 'algo25',
+            custody: { kind: 'local', seed: null },
             keyPairId: 'kp',
         }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)

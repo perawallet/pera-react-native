@@ -17,8 +17,20 @@ export {
     deleteDatabase,
     clearDatabase,
     type Database,
+    type InitializeDatabaseOptions,
 } from './database'
-export { runMigrations, type MigrationConfig } from './migrator'
+export {
+    runMigrations,
+    type MigrationConfig,
+    type MigrationRecovery,
+    type RunMigrationsOptions,
+} from './migrator'
 export { migrations } from './migrations'
-export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
+export {
+    decimalColumn,
+    decimalJsonColumn,
+    decimalSum,
+    decimalMax,
+    decimalMin,
+} from './columns'
 export { DB_WRITE_CHUNK_SIZE, forEachWriteChunk } from './chunkedWrite'

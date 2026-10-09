@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import { describe, expect, it, test, vi } from 'vitest'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 import {
     Arc60BadJsonError,
     Arc60DomainMismatchError,
@@ -138,9 +142,11 @@ const NO_ACCOUNTS: WalletAccount[] = []
 const rekeyedData = encodeToBase64(
     utf8(buildSiwa({ account_address: 'REKEYED_ADDR' })),
 )
-const REKEYED_ACCOUNTS = [
-    { address: 'REKEYED_ADDR', rekeyAddress: SIGNER },
-] as WalletAccount[]
+const REKEYED_ACCOUNTS = [{ address: 'REKEYED_ADDR' }] as WalletAccount[]
+
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+})
 
 const makeAuthData = (domain: string): Uint8Array => {
     const hash = sha256(utf8(domain))
@@ -209,6 +215,7 @@ describe('validateArc60AuthRequest', () => {
     })
 
     test('does not throw when the SIWA signer is a rekeyed auth-addr for account_address', () => {
+        seedAuthority('REKEYED_ADDR', SIGNER)
         const { decodedData } = validateArc60AuthRequest(
             {
                 data: rekeyedData,
@@ -225,9 +232,8 @@ describe('validateArc60AuthRequest', () => {
     test('throws Arc60InvalidSignerError when account_address is the signer but that account is rekeyed', () => {
         // SIWA proves control of account_address, and on chain that control
         // moved to the auth address; the old key must not keep authenticating.
-        const rekeyedSelf = [
-            { address: SIGNER, rekeyAddress: 'AUTH_ADDR' },
-        ] as unknown as WalletAccount[]
+        seedAuthority(SIGNER, 'AUTH_ADDR')
+        const rekeyedSelf = [{ address: SIGNER }] as WalletAccount[]
         expect(() =>
             validateArc60AuthRequest(
                 {

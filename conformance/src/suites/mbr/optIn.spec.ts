@@ -15,7 +15,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,
-} from '@perawallet/wallet-core-blockchain/constants'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 
 import {
     createAlgo25Account,
@@ -47,8 +47,8 @@ const minBalanceOf = async (address: string): Promise<bigint> =>
  * the app falls back to whenever remote config is unavailable.
  *
  * Ceiling: this verifies the CONSTANTS against chain truth, not the app's
- * MBR arithmetic that consumes them (`useTransactionSendFlow.ts:148`'s
- * `mbrAfterOptIn = currentMbr + assetMbr`, `useEnsureDestinationOptIn.ts:104`'s
+ * MBR arithmetic that consumes them (`useTransactionSendFlow.ts`'s
+ * `mbrAfterOptIn = currentMbr + assetOptInMinBalance`, `useEnsureDestinationOptIn.ts:104`'s
  * balance-needed calculation) — those are React hooks, unreachable headlessly,
  * so a bug in how they COMBINE `assetMbr`/`baseAccountMbr` with a live
  * balance would not be caught here.

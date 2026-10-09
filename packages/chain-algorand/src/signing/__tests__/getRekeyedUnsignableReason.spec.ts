@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getRekeyedUnsignableReason } from '../getRekeyedUnsignableReason'
 
@@ -29,29 +30,33 @@ const accounts = [
     {
         id: 'ok',
         address: OK_SENDER,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-ok',
     },
     {
         id: 'ext',
         address: REKEYED_EXTERNAL,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-ext',
-        rekeyAddress: EXTERNAL_AUTH,
     },
     {
         id: 'rw',
         address: REKEYED_TO_WATCH,
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-rw',
-        rekeyAddress: WATCH_AUTH,
     },
     {
         id: 'watch-auth',
         address: WATCH_AUTH,
-        type: AccountTypes.watch,
+        custody: { kind: 'watch' },
     },
 ] as unknown as WalletAccount[]
+
+beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
+    seedAuthority(REKEYED_EXTERNAL, EXTERNAL_AUTH)
+    seedAuthority(REKEYED_TO_WATCH, WATCH_AUTH)
+})
 
 const txRequest = (senders: string[], overrides: object = {}): SignRequest =>
     ({

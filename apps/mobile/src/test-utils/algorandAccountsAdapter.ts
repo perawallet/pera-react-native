@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    accountsChainAdapters,
+    useAccountChainStateStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
 
 // Unit specs skip the app bootstrap, so signer resolution over real accounts
@@ -19,3 +27,21 @@ export const registerAlgorandAccountsAdapter = (): void => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
 }
+
+/**
+ * Records `authorityAddress` as `address`'s authority on `scope` (default: the
+ * selected network, which is what the readers ask) the way the syncer does;
+ * `null` is an observed "signs for itself".
+ */
+export const seedAuthority = (
+    address: string,
+    authorityAddress: string | null,
+    scope: ChainScope = getSelectedScope(LEGACY_CHAIN_ID),
+): void =>
+    useAccountChainStateStore
+        .getState()
+        .setAccountChainState(
+            scope,
+            address,
+            algorandAccountsAdapter.toChainState({ authorityAddress }),
+        )

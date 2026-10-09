@@ -13,7 +13,7 @@
 import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -57,7 +57,7 @@ export async function refreshAccountHoldings({
     holdings,
     scope,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const now = Date.now()
 
     const existingRows = await db
@@ -77,7 +77,7 @@ export async function refreshAccountHoldings({
 
     const existing = new Map(
         existingRows.map(r => [
-            r.assetId.toString(),
+            r.assetId,
             { amount: r.amount, isFrozen: r.isFrozen },
         ]),
     )
@@ -99,8 +99,7 @@ export async function refreshAccountHoldings({
     if (changed.length === 0 && removed.length === 0) return false
 
     if (removed.length > 0) {
-        const removedDecimals = removed.map(id => new Decimal(id))
-        await forEachWriteChunk(removedDecimals, async chunk => {
+        await forEachWriteChunk(removed, async chunk => {
             await db
                 .delete(AccountAssetHoldingsSchema)
                 .where(
@@ -120,7 +119,7 @@ export async function refreshAccountHoldings({
     if (changed.length > 0) {
         const rows = changed.map(h => ({
             accountAddress,
-            assetId: new Decimal(h.assetId),
+            assetId: h.assetId,
             network,
             amount: h.amount,
             isFrozen: h.isFrozen ?? false,
@@ -166,12 +165,12 @@ export async function insertAssetHolding({
     amount,
     isFrozen,
 }: InsertAssetHoldingParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     await db
         .insert(AccountAssetHoldingsSchema)
         .values({
             accountAddress,
-            assetId: new Decimal(assetId),
+            assetId,
             network,
             amount: new Decimal(amount ?? '0'),
             isFrozen: isFrozen ?? false,
@@ -203,11 +202,11 @@ export async function addToAssetHolding({
     scope,
     amount,
 }: AddToAssetHoldingParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const conditions = and(
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
         eq(AccountAssetHoldingsSchema.network, network),
-        eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+        eq(AccountAssetHoldingsSchema.assetId, assetId),
     )
 
     const existing = await db
@@ -261,7 +260,7 @@ export async function getAccountHoldings({
     hideOptedInNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideOptedInNfts === true ||
@@ -292,7 +291,7 @@ export async function getAccountHoldings({
             .all()
 
         return rows.map(r => ({
-            assetId: r.assetId.toString(),
+            assetId: r.assetId,
             amount: r.amount,
             isFrozen: r.isFrozen,
         }))
@@ -353,7 +352,7 @@ export async function getAccountHoldings({
         .all()
 
     return rows.map(r => ({
-        assetId: r.assetId.toString(),
+        assetId: r.assetId,
         amount: r.amount,
         isFrozen: r.isFrozen,
     }))
@@ -381,7 +380,7 @@ export async function isAssetFrozen({
     assetId,
     scope,
 }: IsAssetFrozenParams): Promise<boolean> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({ isFrozen: AccountAssetHoldingsSchema.isFrozen })
         .from(AccountAssetHoldingsSchema)
@@ -389,7 +388,7 @@ export async function isAssetFrozen({
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 eq(AccountAssetHoldingsSchema.network, network),
-                eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+                eq(AccountAssetHoldingsSchema.assetId, assetId),
             ),
         )
         .all()
@@ -410,10 +409,8 @@ export async function deleteAssetHoldings({
     assetIds,
     scope,
 }: DeleteAssetHoldingsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
-
-    const assetIdDecimals = assetIds.map(id => new Decimal(id))
 
     await db
         .delete(AccountAssetHoldingsSchema)
@@ -421,7 +418,7 @@ export async function deleteAssetHoldings({
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 eq(AccountAssetHoldingsSchema.network, network),
-                inArray(AccountAssetHoldingsSchema.assetId, assetIdDecimals),
+                inArray(AccountAssetHoldingsSchema.assetId, assetIds),
             ),
         )
         .run()
@@ -436,7 +433,7 @@ export async function getAllHeldAssetIdsForNetwork({
     db = getDatabase(),
     scope,
 }: GetAllHeldAssetIdsForNetworkParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .selectDistinct({
             assetId: AccountAssetHoldingsSchema.assetId,
@@ -449,7 +446,7 @@ export async function getAllHeldAssetIdsForNetwork({
         .orderBy(AccountAssetHoldingsSchema.assetId)
         .all()
 
-    return rows.map(r => r.assetId.toString())
+    return rows.map(r => r.assetId)
 }
 
 type GetAssetHolderAddressesParams = {
@@ -468,7 +465,7 @@ export async function getAssetHolderAddresses({
     assetId,
     scope,
 }: GetAssetHolderAddressesParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountAssetHoldingsSchema.accountAddress,
@@ -477,7 +474,7 @@ export async function getAssetHolderAddresses({
         .from(AccountAssetHoldingsSchema)
         .where(
             and(
-                eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+                eq(AccountAssetHoldingsSchema.assetId, assetId),
                 eq(AccountAssetHoldingsSchema.network, network),
             ),
         )
@@ -522,7 +519,7 @@ export async function getHeldAssetIdsByAccount({
         .all()
 
     return rows.map(r => ({
-        assetId: r.assetId.toString(),
+        assetId: r.assetId,
         network: r.network,
     }))
 }

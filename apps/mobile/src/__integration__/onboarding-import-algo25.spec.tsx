@@ -27,9 +27,10 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import {
     AccountTypes,
     useAccountsStore,
+    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -38,6 +39,7 @@ import {
     INVALID_ALGO25_MNEMONIC_WORDS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -152,7 +154,11 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         // SearchAccounts even runs. SearchAccounts then checks for rekeyed
         // accounts and, finding none, routes to NameAccount for the user to
         // confirm/customize the name before finishing.
-        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        // Before importing, an empty algo25 address triggers the quantum
+        // passphrase probe, which runs real Falcon keygen.
+        await waitFor(() => screen.getByTestId('name_account_finish_button'), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
         fireEvent.click(screen.getByTestId('name_account_finish_button'))
 
         await waitFor(
@@ -164,7 +170,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accountType(accounts[0])).toBe(AccountTypes.standalone)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
         expect(useAccountsStore.getState().selectedAccountAddress).toBe(
             ALGO25_TEST_ADDRESS,
@@ -245,12 +251,12 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         )
 
         // The algo25 import already persisted the master before rekey
-        // discovery ran (createAlgo25WalletAccount writes to the store
+        // discovery ran (createStandaloneAccount writes to the store
         // synchronously); confirm it survived.
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accountType(accounts[0])).toBe(AccountTypes.standalone)
     })
 
     it('Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored', async () => {
@@ -261,7 +267,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-algo25-1',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },

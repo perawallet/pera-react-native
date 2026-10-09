@@ -76,17 +76,19 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    // The connections package composes its request schema from the real
-    // ARC-0001 schema at load, so the stand-in must carry it.
-    ...(await vi.importActual<
-        typeof import('../../../../../../../../packages/blockchain/src/arc0001/schema')
-    >('../../../../../../../../packages/blockchain/src/arc0001/schema')),
-    // The card error toast classifies chain failures through the real parser
-    // before falling back to Baanx's message.
-    ...(await vi.importActual<
-        typeof import('../../../../../../../../packages/blockchain/src/errors')
-    >('../../../../../../../../packages/blockchain/src/errors')),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -16,7 +16,6 @@ import { PassphraseGrid } from '@components/PassphraseGrid'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
-import { PinEditView } from '@modules/security'
 import { useBackupReminderMnemonicScreen } from './useBackupReminderMnemonicScreen'
 import { useStyles } from './styles'
 
@@ -25,29 +24,13 @@ const SCREEN_CAPTURE_TAG = 'backup-mnemonic'
 export const BackupReminderMnemonicScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        wordIndices,
-        isLoading,
-        error,
-        isPinVisible,
-        isPinGateResolved,
-        handlePinVerified,
-        onContinue,
-    } = useBackupReminderMnemonicScreen()
+    const { wordIndices, isLoading, error, isPinGateResolved, onContinue } =
+        useBackupReminderMnemonicScreen()
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
 
     if (!isPinGateResolved) {
-        return (
-            <PWView style={styles.root}>
-                {isPinVisible && (
-                    <PinEditView
-                        mode='verify'
-                        onSuccess={handlePinVerified}
-                    />
-                )}
-            </PWView>
-        )
+        return <PWView style={styles.root} />
     }
 
     if (isLoading) {
@@ -76,6 +59,7 @@ export const BackupReminderMnemonicScreen = () => {
 
     return (
         <PWScreen
+            testID='backup_mnemonic_screen'
             footer={
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}

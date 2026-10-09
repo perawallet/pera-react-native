@@ -28,7 +28,7 @@ import {
     useAccountValueTotalsQuery,
     AccountTypes,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -36,11 +36,17 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountType: ({ custody }: { custody: { kind: string; seed?: string } }) =>
+        custody.kind !== 'local'
+            ? custody.kind
+            : custody.seed === 'bip39'
+              ? 'hdWallet'
+              : custody.seed,
     useAllAccounts: vi.fn(),
     useSortedAccounts: vi.fn(),
     useAccountValueTotalsQuery: vi.fn(),
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -49,7 +55,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
 }))
 
@@ -220,12 +226,12 @@ describe('useAddressSearchView', () => {
             {
                 address: 'STD_ADDR',
                 name: 'Standard',
-                type: AccountTypes.algo25,
+                custody: { kind: 'local', seed: null },
             },
             {
                 address: 'QUANTUM_ADDR',
                 name: 'Quantum',
-                type: AccountTypes.quantum,
+                custody: { kind: 'local', seed: 'quantum' },
             },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
@@ -369,7 +375,11 @@ describe('useAddressSearchView', () => {
 
     it('returns the matched wallet account when typed address is in user wallet', () => {
         const accounts = [
-            { address: 'OWN_ADDRESS', name: 'My Account', type: 'algo25' },
+            {
+                address: 'OWN_ADDRESS',
+                name: 'My Account',
+                custody: { kind: 'local', seed: null },
+            },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,

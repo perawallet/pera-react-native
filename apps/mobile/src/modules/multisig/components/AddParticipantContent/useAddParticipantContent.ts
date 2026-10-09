@@ -11,12 +11,16 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AccountTypes, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    isQuantumAccount,
+    isWatchAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import {
     AccountSigTypes,
     useAccountSigTypeQuery,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
     ParticipantIsQuantumError,
@@ -142,11 +146,11 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         (address: string, nfdName?: string) => {
             const localAccount = accounts.find(a => a.address === address)
             if (localAccount) {
-                if (localAccount.type === AccountTypes.watch) {
+                if (isWatchAccount(localAccount)) {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (localAccount.type === AccountTypes.quantum) {
+                if (isQuantumAccount(localAccount)) {
                     showValidationError(new ParticipantIsQuantumError())
                     return
                 }

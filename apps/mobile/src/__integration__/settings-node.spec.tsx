@@ -29,14 +29,13 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     insertAssetHolding,
     upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
@@ -47,7 +46,7 @@ const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
-    type: AccountTypes.algo25,
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'multi-network-key',
     name: 'Multi-network Account',
@@ -128,7 +127,7 @@ describe('Flow: Settings → Network selection', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
         await upsertAccountBalance({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
@@ -139,7 +138,7 @@ describe('Flow: Settings → Network selection', () => {
             totalAppsOptedIn: 0,
             minBalance: new Decimal(100_000),
             status: 'Offline',
-            authAddress: null,
+            authorityAddress: null,
         })
 
         // ALGO is a regular holding row now; the balance hook reads it from

@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    rawTransactionsMatch,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { rawTransactionsMatch } from '../../blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 export type VerifyReturnedTransactionsParams = {

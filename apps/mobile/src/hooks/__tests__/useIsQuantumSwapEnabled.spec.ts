@@ -14,24 +14,22 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { config } from '@perawallet/wallet-core-config'
+import { useCapability } from '@hooks/useCapability'
 import { useIsQuantumSwapEnabled } from '../useIsQuantumSwapEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfig: vi.fn(),
-    RemoteConfigKeys: { enable_quantum_swap: 'enable_quantum_swap' },
+}))
+
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    AlgorandRemoteConfigKeys: { enable_quantum_swap: 'enable_quantum_swap' },
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { appEnvironment: 'production' },
 }))
 
-const { mockRouteCapabilities } = vi.hoisted(() => ({
-    mockRouteCapabilities: { quantum: true },
-}))
-
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockRouteCapabilities,
-}))
+vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
 describe('useIsQuantumSwapEnabled', () => {
     const mockGetBooleanValue = vi.fn()
@@ -39,7 +37,7 @@ describe('useIsQuantumSwapEnabled', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         config.appEnvironment = 'production'
-        mockRouteCapabilities.quantum = true
+        vi.mocked(useCapability).mockReturnValue(true)
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
@@ -89,9 +87,25 @@ describe('useIsQuantumSwapEnabled', () => {
         expect(result.current).toBe(false)
     })
 
-    it('stays disabled when routeCapabilities.quantum is off, even if the remote flag is on', () => {
-        mockGetBooleanValue.mockReturnValue(true)
-        mockRouteCapabilities.quantum = false
+    it.each([
+        ['quantumAccounts', 'quantumAccounts'],
+        ['swap', 'swap'],
+    ] as const)(
+        'stays disabled when the %s capability is off, even if the remote flag is on',
+        (_, capability) => {
+            mockGetBooleanValue.mockReturnValue(true)
+            vi.mocked(useCapability).mockImplementation(
+                requirement => requirement.anyChain !== capability,
+            )
+
+            const { result } = renderHook(() => useIsQuantumSwapEnabled())
+
+            expect(result.current).toBe(false)
+        },
+    )
+
+    it('stays disabled when the remote flag is off, even if both capabilities are on', () => {
+        mockGetBooleanValue.mockReturnValue(false)
 
         const { result } = renderHook(() => useIsQuantumSwapEnabled())
 

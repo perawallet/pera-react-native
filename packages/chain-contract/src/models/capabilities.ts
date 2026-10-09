@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { DeveloperChainMode } from './identity'
+
 // A runtime list, not just a union, so the descriptor contract can check a
 // module's defaults declare every key.
 export const CHAIN_CAPABILITIES = [
@@ -35,7 +37,6 @@ export const CHAIN_CAPABILITIES = [
     'giftCards',
     'discover',
     'feeDelegation',
-    'arc0027',
     'liquidAuth',
     'notifications',
     'cloudBackup',
@@ -49,6 +50,15 @@ export const CHAIN_CAPABILITIES = [
     'privateKeys',
     // Decoding dApp contract calls with bundled ABIs and warning on approvals.
     'contractDecoding',
+    // Pera-backed slices of broader features whose base data comes from the node.
+    'priceHistory',
+    'balanceHistory',
+    'assetSearch',
+    'assetFavorites',
+    'priceAlerts',
+    'csvExport',
+    // Fetching a Pera Web backup needs the Pera backend.
+    'peraWebImport',
 ] as const
 
 /**
@@ -60,11 +70,19 @@ export const CHAIN_CAPABILITIES = [
  *
  * Values are layered, each overriding the one before: the chain module's
  * `capabilityDefaults`, the composition root's bootstrap overrides, remote
- * config, then the developer Feature Flags screen (see `resolveCapability`).
+ * config, the chain mode layer (which can only switch a capability off), then
+ * the developer Feature Flags screen (see `resolveCapability`).
  */
 export type ChainCapability = (typeof CHAIN_CAPABILITIES)[number]
 
 export type ChainCapabilities = Readonly<Record<ChainCapability, boolean>>
 
 /** `build` covers both a module's defaults and bootstrap overrides. */
-export type CapabilitySource = 'build' | 'remote' | 'developer'
+export type CapabilitySource = 'build' | 'remote' | 'chainMode' | 'developer'
+
+/** The developer modes each key is switched off in; an absent key is never restricted. */
+export type ModeRestrictions<K extends string> = Readonly<
+    Partial<Record<K, readonly DeveloperChainMode[]>>
+>
+
+export type ChainCapabilityRestrictions = ModeRestrictions<ChainCapability>

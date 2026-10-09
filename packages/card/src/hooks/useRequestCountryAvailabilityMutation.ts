@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { requestCountryAvailability } from '../api/waitlist'
 import { toCardMutationResult, type CardMutationResult } from './types'
 

@@ -14,15 +14,19 @@ import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AccountTypes,
-    type AccountProvenance,
+    type AccountCustody,
     type AccountType,
-    type LocalProvenance,
+    type LocalCustody,
     type HardwareWalletAccount,
     type HDWalletAccount,
-    type Algo25Account,
+    type StandaloneAccount,
     type QuantumAccount,
     type MultiSigAccount,
     type WatchAccount,
@@ -61,15 +65,16 @@ export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
 }
 
 const LOCAL_ACCOUNT_TYPES = {
-    algo25: AccountTypes.algo25,
     quantum: AccountTypes.quantum,
     bip39: AccountTypes.hdWallet,
-} as const satisfies Record<LocalProvenance['seed'], AccountType>
+} as const satisfies Record<NonNullable<LocalCustody['seed']>, AccountType>
 
-const accountTypeOf = (provenance: AccountProvenance): AccountType => {
-    switch (provenance.kind) {
+const accountTypeOf = (custody: AccountCustody): AccountType => {
+    switch (custody.kind) {
         case 'local': {
-            return LOCAL_ACCOUNT_TYPES[provenance.seed]
+            return custody.seed === null
+                ? AccountTypes.standalone
+                : LOCAL_ACCOUNT_TYPES[custody.seed]
         }
         case 'hardware': {
             return AccountTypes.hardware
@@ -83,65 +88,64 @@ const accountTypeOf = (provenance: AccountProvenance): AccountType => {
     }
 }
 
-/**
- * Rekey state is ignored: a watch account with an auth address stays `watch`.
- * A record the backfill left without a provenance keeps its stored `type`.
- */
+/** Rekey state is ignored: a watch account with an auth address stays `watch`. */
 export const accountType = (account: WalletAccount): AccountType =>
-    account.provenance ? accountTypeOf(account.provenance) : account.type
+    accountTypeOf(account.custody)
 
 export const isHDWalletAccount = (
     account: WalletAccount,
 ): account is HDWalletAccount => {
-    return account.type === AccountTypes.hdWallet
+    return accountType(account) === AccountTypes.hdWallet
 }
 
 export const isHardwareWalletAccount = (
     account: WalletAccount,
 ): account is HardwareWalletAccount => {
-    return account.type === AccountTypes.hardware
+    return accountType(account) === AccountTypes.hardware
 }
 
 export const isLedgerAccount = (
     account: WalletAccount,
 ): account is HardwareWalletAccount => {
     return (
-        account.type === AccountTypes.hardware &&
+        isHardwareWalletAccount(account) &&
         account.hardwareDetails?.manufacturer === 'ledger'
     )
 }
 
-/** False on a chain whose signing authority can't be delegated. */
+/** Answers on the chain's selected network. False on a chain whose signing authority can't be delegated. */
 export const isRekeyedAccount = (
     account: Nullable<WalletAccount>,
     chainId: ChainId,
 ): boolean =>
     !!account &&
-    (accountsChainAdapters.get(chainId).authority?.isDelegated(account) ??
+    (accountsChainAdapters
+        .get(chainId)
+        .authority?.isDelegated(account, getSelectedScope(chainId)) ??
         false)
 
-export const isAlgo25Account = (
+export const isStandaloneAccount = (
     account: WalletAccount,
-): account is Algo25Account => {
-    return account.type === AccountTypes.algo25
+): account is StandaloneAccount => {
+    return accountType(account) === AccountTypes.standalone
 }
 
 export const isQuantumAccount = (
     account: WalletAccount,
 ): account is QuantumAccount => {
-    return account.type === AccountTypes.quantum
+    return accountType(account) === AccountTypes.quantum
 }
 
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
-    return account.type === AccountTypes.watch
+    return accountType(account) === AccountTypes.watch
 }
 
 export const isMultisigAccount = (
     account: WalletAccount,
 ): account is MultiSigAccount => {
-    return account.type === AccountTypes.multisig
+    return accountType(account) === AccountTypes.multisig
 }
 
 export const hasSigningKeys = (account: WalletAccount): boolean => {
@@ -195,13 +199,14 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
 export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignDirectly(account)
 
-/** False on a chain that can't sign programs. */
+/** Answers on the chain's selected network. False on a chain that can't sign programs. */
 export const canSignProgram = (
     account: WalletAccount,
     chainId: ChainId,
 ): boolean =>
-    accountsChainAdapters.get(chainId).authority?.canSignProgram(account) ??
-    false
+    accountsChainAdapters
+        .get(chainId)
+        .authority?.canSignProgram(account, getSelectedScope(chainId)) ?? false
 
 /** An on-chain address, an internal account id, or both. */
 export type AccountKey = {
@@ -226,8 +231,8 @@ export type MnemonicAccountTypeResult =
     | { success: false; wordCount: number }
 
 /**
- * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to algo25
- * (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
+ * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to
+ * standalone (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
  * goes through auto-detection, only its dedicated entrypoint.
  */
 export const resolveImportAccountType = (
@@ -243,3 +248,14 @@ export const resolveImportAccountType = (
 
     return { success: false, wordCount }
 }
+
+// A chain whose codec isn't registered (a build-gated chain) falls back to
+// string equality rather than throwing on every account write.
+export const isSameAddress = (
+    chainId: ChainId,
+    a: string,
+    b: string,
+): boolean =>
+    addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).areEqual(a, b)
+        : a === b

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { toError, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
+import { toError } from '@perawallet/wallet-core-shared'
 import {
-    NetworkChangedError,
     TransportError,
     type AddSignaturesFn,
     type DataTransport,
@@ -27,14 +27,12 @@ import {
  * This is used when co-signing a transaction that was proposed by another participant.
  *
  * @param addSignatures - Function to call the backend API
- * @param capturedNetwork - Network active when the signing actor was created.
- *   Live network is re-checked before submission — if the user switched
- *   networks mid-flow we abort so cosign signatures aren't routed to the
- *   wrong backend (which would silently 404).
+ * @param capturedScope - Re-checked with `assertScopeUnchanged` before
+ *   submitting: the wrong network's backend would silently 404 the cosign.
  */
 export const createMultisigCosignTransport = (
     addSignatures: AddSignaturesFn,
-    capturedNetwork: Network,
+    capturedScope: ChainScope,
 ): DataTransport => {
     return {
         send: async (
@@ -48,10 +46,7 @@ export const createMultisigCosignTransport = (
                 )
             }
 
-            const liveNetwork = useNetworkStore.getState().network
-            if (liveNetwork !== capturedNetwork) {
-                throw new NetworkChangedError(capturedNetwork, liveNetwork)
-            }
+            assertScopeUnchanged(capturedScope)
 
             try {
                 const response = await addSignatures({
@@ -69,7 +64,6 @@ export const createMultisigCosignTransport = (
                     status: response.status,
                 }
             } catch (error) {
-                if (error instanceof NetworkChangedError) throw error
                 const err = toError(error)
                 throw new TransportError(err.message, err)
             }

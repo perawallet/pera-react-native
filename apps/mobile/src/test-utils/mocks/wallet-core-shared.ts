@@ -51,11 +51,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('@packages/shared/src/errors/expected')
 
     // Real money math, not a stub: unit-conversion.ts imports only constants
-    // and decimal-config. Blockchain re-exports these from shared, so a spec
-    // that spreads the actual blockchain module resolves them through here.
+    // and decimal-config.
     const unitConversion = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    // json.ts imports only base64-js and decimal.js, and signing's real store
+    // persists through these tags.
+    const { stringifyTypedJson, parseTypedJson } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/json')
+    >('@packages/shared/src/utils/json')
+    const { percentChange } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/percent-change')
+    >('@packages/shared/src/utils/percent-change')
 
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
@@ -194,6 +201,28 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         }
     }
 
+    // Mirrors packages/shared/src/errors/blockchain.ts. The real AlgodError
+    // extends it, so app specs that load AlgodError need it on this mock.
+    class BlockchainError extends AppError {
+        constructor(
+            message: string,
+            originalError?: Error,
+            metadata: Partial<AppErrorMetadata> = {},
+        ) {
+            super(
+                message,
+                {
+                    severity: 'high',
+                    category: 'blockchain',
+                    retryable: false,
+                    messageKey: 'errors.blockchain.generic',
+                    ...metadata,
+                },
+                originalError,
+            )
+        }
+    }
+
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
@@ -283,15 +312,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 
     return {
-        ALGO_ASSET_ID: '0',
         ALGO_ASSET_NAME: 'ALGO',
         ALGO_DECIMALS: 6,
         ...unitConversion,
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
+        percentChange,
+        stringifyTypedJson,
+        parseTypedJson,
         isAlgoAssetName: (value: string) => value === 'ALGO',
-        displayCurrencyToAssetId: (code: string) =>
-            code === 'ALGO' ? '0' : null,
         logger: {
             debug: vi.fn(),
             info: vi.fn(),
@@ -478,6 +505,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
         },
         AppError,
+        BlockchainError,
         PeraNetworkError,
         isPeraNetworkError,
         PeraServiceUnavailableError,

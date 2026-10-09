@@ -50,14 +50,14 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         constructor(
             readonly txIds: string[],
             readonly classification: string,
-            readonly algodError: unknown,
+            readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
         }
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => {
     class MockAlgodError extends Error {
         constructor(
             public readonly code: string,
@@ -69,8 +69,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         }
     }
     return {
-        microAlgosToAlgos: (microAlgos: { div: (n: number) => unknown }) =>
-            microAlgos.div(1_000_000),
         AlgodError: MockAlgodError,
         toAlgodError: (err: unknown) =>
             new MockAlgodError(
@@ -493,7 +491,7 @@ describe('useSwapExecution', () => {
             error: new (SubmissionError as unknown as new (
                 txIds: string[],
                 classification: string,
-                algodError: unknown,
+                nodeError: unknown,
             ) => Error)(
                 ['TXID'],
                 'unknown-outcome',

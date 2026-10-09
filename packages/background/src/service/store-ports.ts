@@ -11,9 +11,14 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { usePollingStore } from '../polling'
+import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
+import { useSyncCursorStore } from '../polling'
 import type { SyncStorePorts } from '../models'
+
+const cursorFor = (network: Network) =>
+    useSyncCursorStore.getState().cursors[scopeKeyForLegacyNetwork(network)]
 
 export const createSyncStorePorts = (): SyncStorePorts => ({
     getAccountAddresses: () =>
@@ -22,8 +27,17 @@ export const createSyncStorePorts = (): SyncStorePorts => ({
     // The persisted map can be partial, and an absent key must read as
     // never-synced (null), not as undefined — which `!== null` would treat
     // as already synced and skip the force-sync.
-    getLastRefreshedRound: network =>
-        usePollingStore.getState().lastRefreshedRound[network] ?? null,
+    getLastRefreshedRound: network => cursorFor(network)?.refreshRound ?? null,
     setLastRefreshedRound: (network, round) =>
-        usePollingStore.getState().setLastRefreshedRound(network, round),
+        useSyncCursorStore.getState().setRefreshRound(network, round),
+    getLastSyncAt: (network, kind) => {
+        const cursor = cursorFor(network)
+        return (
+            (kind === 'assets'
+                ? cursor?.lastAssetSyncAt
+                : cursor?.lastPriceSyncAt) ?? null
+        )
+    },
+    setLastSyncAt: (network, kind, atMs) =>
+        useSyncCursorStore.getState().markSynced(network, kind, atMs),
 })

@@ -20,10 +20,12 @@ import {
     SigningError,
     SIGNING_ERROR_KEYS,
 } from '@perawallet/wallet-core-signing'
+import { accountType } from '@perawallet/wallet-core-accounts'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const mocks = vi.hoisted(() => ({
     hasSigningKeys: vi.fn(),
-    isAlgo25Account: vi.fn(),
+    isStandaloneAccount: vi.fn(),
     isHDWalletAccount: vi.fn(),
     isQuantumAccount: vi.fn(),
 }))
@@ -36,26 +38,35 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         hasSigningKeys: mocks.hasSigningKeys,
-        isAlgo25Account: mocks.isAlgo25Account,
+        isStandaloneAccount: mocks.isStandaloneAccount,
         isHDWalletAccount: mocks.isHDWalletAccount,
         isQuantumAccount: mocks.isQuantumAccount,
     }
 })
 
 const algo25Account = {
-    type: 'algo25',
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
 const quantumAccount = {
-    type: 'quantum',
+    custody: { kind: 'local', seed: 'quantum' },
     address: 'ADDR',
     keyPairId: 'key-q',
 } as unknown as WalletAccount
 
 const unsupportedAccount = {
-    type: 'hardware',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     address: 'ADDR',
 } as unknown as WalletAccount
 
@@ -130,24 +141,26 @@ describe('createLocalKeyStrategy', () => {
             .mockReset()
             .mockImplementation(
                 (account: WalletAccount) =>
-                    account.type === 'algo25' ||
-                    account.type === 'hd-wallet' ||
-                    account.type === 'quantum',
+                    accountType(account) === 'standalone' ||
+                    accountType(account) === 'hd-wallet' ||
+                    accountType(account) === 'quantum',
             )
-        mocks.isAlgo25Account
+        mocks.isStandaloneAccount
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'algo25',
+                (account: WalletAccount) =>
+                    accountType(account) === 'standalone',
             )
         mocks.isHDWalletAccount
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'hd-wallet',
+                (account: WalletAccount) =>
+                    accountType(account) === 'hd-wallet',
             )
         mocks.isQuantumAccount
             .mockReset()
             .mockImplementation(
-                (account: WalletAccount) => account.type === 'quantum',
+                (account: WalletAccount) => accountType(account) === 'quantum',
             )
         errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     })
@@ -161,6 +174,7 @@ describe('createLocalKeyStrategy', () => {
             signTransactions,
             signArbitraryData,
             signAuthData,
+            scope: ALGORAND_MAINNET,
         })
 
     describe('canSign', () => {
@@ -223,6 +237,7 @@ describe('createLocalKeyStrategy', () => {
                     ? group.data.indicesToSign
                     : undefined,
                 algo25Account,
+                ALGORAND_MAINNET,
             )
         })
 
@@ -245,6 +260,7 @@ describe('createLocalKeyStrategy', () => {
                     ? group.data.indicesToSign
                     : undefined,
                 quantumAccount,
+                ALGORAND_MAINNET,
             )
         })
 
@@ -396,11 +412,11 @@ describe('createLocalKeyStrategy', () => {
 
         test('throws CannotSignError for unsupported account type', async () => {
             const weirdAccount = {
-                type: 'weird-type',
+                custody: { kind: 'weird-kind' },
                 address: 'ADDR',
             } as unknown as WalletAccount
             mocks.hasSigningKeys.mockReturnValue(true)
-            mocks.isAlgo25Account.mockReturnValue(false)
+            mocks.isStandaloneAccount.mockReturnValue(false)
             mocks.isHDWalletAccount.mockReturnValue(false)
             mocks.isQuantumAccount.mockReturnValue(false)
 
@@ -412,7 +428,7 @@ describe('createLocalKeyStrategy', () => {
         describe('failure reporting', () => {
             beforeEach(() => {
                 mocks.hasSigningKeys.mockReturnValue(true)
-                mocks.isAlgo25Account.mockReturnValue(true)
+                mocks.isStandaloneAccount.mockReturnValue(true)
             })
 
             test('forwards a KMS cause key so the toast names the key fault', async () => {
@@ -472,7 +488,7 @@ describe('createLocalKeyStrategy', () => {
                     'Local-key signing failed',
                     {
                         error: cause,
-                        accountType: 'algo25',
+                        accountType: 'standalone',
                         dataType: 'transactions',
                     },
                 )

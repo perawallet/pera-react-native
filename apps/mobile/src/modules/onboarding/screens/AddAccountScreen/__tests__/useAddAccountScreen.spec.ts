@@ -13,8 +13,13 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    accountType,
+    type HDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -50,14 +55,14 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useCreateAccount: () => ({
             buildHdWalletAccount: mockBuildHdWalletAccount,
-            buildAlgo25WalletAccount: mockBuildAlgo25WalletAccount,
+            buildStandaloneAccount: mockBuildAlgo25WalletAccount,
             buildQuantumWalletAccount: mockBuildQuantumWalletAccount,
         }),
         useAllAccounts: () => mockUseAllAccounts(),
         useCreateNextHDAccount: () => ({
             buildNextHDAccount: mockBuildNextHDAccount,
             hasHDWallet: mockUseAllAccounts().some(
-                (a: WalletAccount) => a.type === 'hdWallet',
+                (a: WalletAccount) => accountType(a) === 'hdWallet',
             ),
         }),
         useHDWalletGroups: () => ({
@@ -153,10 +158,16 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
 }))
 
-const mockQuantumFlag = vi.hoisted(() => ({ enabled: true }))
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 vi.mock('@analytics', async () => ({
@@ -164,10 +175,10 @@ vi.mock('@analytics', async () => ({
     trackEvent: mockTrackEvent,
 }))
 
-const HD_ACCOUNT = {
+const HD_ACCOUNT: HDWalletAccount = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
-    type: 'hdWallet' as const,
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -183,7 +194,7 @@ describe('useAddAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })
         mockPeraCardFlag.enabled = true
-        mockQuantumFlag.enabled = true
+        setQuantumEnabled(true)
     })
 
     it('mainOptions excludes add account option when no HD wallet exists', () => {
@@ -480,7 +491,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -529,7 +544,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -557,7 +576,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'algo25-id',
             address: 'ALGO25_ADDRESS',
-            type: 'algo25' as const,
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
         mockBuildAlgo25WalletAccount.mockResolvedValue(newAccount)
@@ -609,8 +628,32 @@ describe('useAddAccountScreen', () => {
         ).toBeDefined()
     })
 
+    it('mainOptions excludes the multisig option when the multisig capability is off', () => {
+        capabilityState.turnOff('multisig')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.some(
+                o => o.testID === 'add_account_create_multisig_button',
+            ),
+        ).toBe(false)
+    })
+
+    it('otherOptions excludes the watch option when the watchAccounts capability is off', () => {
+        capabilityState.turnOff('watchAccounts')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.otherOptions.some(
+                o => o.testID === 'add_account_watch_button',
+            ),
+        ).toBe(false)
+    })
+
     it('mainOptions excludes quantum option when the flag is disabled', () => {
-        mockQuantumFlag.enabled = false
+        setQuantumEnabled(false)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -673,7 +716,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'quantum-id',
             address: 'QUANTUM_ADDRESS',
-            type: 'quantum' as const,
+            custody: { kind: 'local', seed: 'quantum' },
             canSign: true,
         }
         mockBuildQuantumWalletAccount.mockResolvedValue(newAccount)
@@ -800,7 +843,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)
@@ -960,7 +1007,11 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
-            type: 'hdWallet' as const,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)

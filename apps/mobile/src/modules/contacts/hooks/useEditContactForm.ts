@@ -31,7 +31,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
-import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useIsContactBackedUp } from '@modules/cloud-backup'
 import { trackEvent, ContactsEvent } from '@analytics'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
@@ -92,9 +92,9 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const targetAddress = targetContact?.addresses.algorand ?? ''
 
     const { showToast } = useToast()
-    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isBackedUp = useIsContactBackedUp(targetAddress)
-    const needsBackupChoice = isCloudBackupEnabled && isBackedUp
+    const needsBackupChoice = isCloudBackupAvailable && isBackedUp
 
     const save = useCallback(
         (data: ContactFormValues) => {

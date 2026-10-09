@@ -16,9 +16,9 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import {
     getCustomNetworkConfig,
     setCustomNetwork,
-    useNetworkStore,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
 
 const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
@@ -36,33 +36,30 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(() => ({})),
 }))
 
-// Real store + shouldClearCustomCache (imported by concrete module path, not
-// the package barrel, for the same reason the global vitest.setup.ts mock
-// does: the barrel re-exports utils/algorandClient, whose module-level
-// `useNetworkStore.subscribe(...)` side effect would otherwise run for
-// this suite and reach into other mocked modules). fetchGenesisFromNode and
-// clearCustomNetworkCache stay mocked — they hit the network and the
-// database/query-cache respectively.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const store = await vi.importActual<
-        typeof import('../../../../../../../../../packages/chain-shared/src/store/network-store')
-    >(
-        '../../../../../../../../../packages/chain-shared/src/store/network-store',
-    )
-    const { shouldClearCustomCache } = await vi.importActual<
-        typeof import('../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
-    >(
-        '../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache',
-    )
+// Real store and shouldClearCustomCache; clearCustomNetworkCache stays mocked
+// because it hits the database and query cache.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    clearCustomNetworkCache,
+}))
+
+// Real custom-network functions, imported by concrete module path: the barrel
+// re-exports utils/algorandClient, whose module-level
+// `useNetworkStore.subscribe(...)` side effect would otherwise run for this
+// suite and reach into other mocked modules. fetchGenesisFromNode stays mocked
+// because it hits the network.
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
+    const customNetwork = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
+    >('@packages/chain-algorand/src/blockchain/store/custom-network')
 
     return {
-        useNetworkStore: store.useNetworkStore,
-        getCustomNetworkConfig: store.getCustomNetworkConfig,
-        isCustomNetworkConfigured: store.isCustomNetworkConfigured,
-        setCustomNetwork: store.setCustomNetwork,
-        shouldClearCustomCache,
+        getCustomNetworkConfig: customNetwork.getCustomNetworkConfig,
+        isCustomNetworkConfigured: customNetwork.isCustomNetworkConfigured,
+        setCustomNetwork: customNetwork.setCustomNetwork,
         fetchGenesisFromNode,
-        clearCustomNetworkCache,
     }
 })
 

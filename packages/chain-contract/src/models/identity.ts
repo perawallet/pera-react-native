@@ -11,12 +11,12 @@
  */
 
 /** A chain package adds its own id here in the change that creates it. */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]
 
 /** Grown the same way as `ChainId`. */
-export type ChainFamily = 'algorand'
+export type ChainFamily = 'algorand' | 'evm'
 
 export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
@@ -31,21 +31,36 @@ export type NetworkId = string
 /** Persisted as a record id, so it is a storage format as well as a network id. */
 export const CUSTOM_NETWORK_ID: NetworkId = 'custom'
 
-/** The wallet-wide choice; each chain maps it onto one of its own networks. */
-export const GLOBAL_NETWORKS = [...NETWORK_TIERS, 'custom'] as const
+export const WALLET_MODES = ['live', 'developer'] as const
 
-export type GlobalNetwork = (typeof GLOBAL_NETWORKS)[number]
+/** Live puts every chain on its mainnet-tier default; developer on its testnet-tier default unless the chain has an override. */
+export type WalletMode = (typeof WALLET_MODES)[number]
+
+/**
+ * What a chain resolves to: `developer-override` is developer mode on any
+ * network but the chain's default test network.
+ */
+export type ChainMode = WalletMode | 'developer-override'
+
+/** The modes a capability can be switched off in; `live` can't be restricted. */
+export type DeveloperChainMode = Exclude<ChainMode, 'live'>
 
 /**
  * The network as its own chain identifies it. A chain package adds its own
  * member, discriminated by `kind`.
  */
-export type NativeNetworkRef = {
-    kind: 'algorand'
-    genesisId: string
-    /** Base64, as algod reports it. */
-    genesisHash: string
-}
+export type NativeNetworkRef =
+    | {
+          kind: 'algorand'
+          genesisId: string
+          /** Base64, as algod reports it. */
+          genesisHash: string
+      }
+    | {
+          kind: 'evm'
+          /** EIP-155 chain id. */
+          eip155ChainId: number
+      }
 
 export interface ChainNetwork {
     id: NetworkId
@@ -94,9 +109,9 @@ export const isChainId = (value: unknown): value is ChainId =>
 export const isNetworkId = (value: unknown): value is NetworkId =>
     typeof value === 'string' && NETWORK_ID_PATTERN.test(value)
 
-export const isGlobalNetwork = (value: unknown): value is GlobalNetwork =>
+export const isWalletMode = (value: unknown): value is WalletMode =>
     typeof value === 'string' &&
-    (GLOBAL_NETWORKS as readonly string[]).includes(value)
+    (WALLET_MODES as readonly string[]).includes(value)
 
 export const isLegacyNetwork = (value: unknown): value is LegacyNetwork =>
     typeof value === 'string' &&

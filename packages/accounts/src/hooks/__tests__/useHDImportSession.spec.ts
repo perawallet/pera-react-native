@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     prepareHDMasterKey: prepareMock,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
@@ -75,7 +75,6 @@ describe('useHDImportSession', () => {
             prep = await result.current.prepareImport({ mnemonic: 'm' })
         })
         expect(prep.walletKeyId).toBe('w-1')
-        expect(prep.derivationType).toBe(DerivationTypes.Peikert)
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',
         )
@@ -100,7 +99,11 @@ describe('useHDImportSession', () => {
             {
                 id: 'discovered-1',
                 address: 'ADDR-A',
-                type: 'hdWallet' as const,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 0 },
+                },
                 keyPairId: 'w-1',
                 hdWalletDetails: {
                     account: 1,
@@ -154,7 +157,11 @@ describe('useHDImportSession', () => {
                         {
                             id: 'discovered-1',
                             address: 'ADDR-A',
-                            type: 'hdWallet' as const,
+                            custody: {
+                                kind: 'local',
+                                seed: 'bip39',
+                                hd: { account: 1, keyIndex: 0 },
+                            },
                             keyPairId: 'w-1',
                             hdWalletDetails: {
                                 account: 1,

@@ -12,13 +12,19 @@
 
 import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    TransactionHistoryItem,
-    TransactionBalanceImpact,
-    TransactionAssetSummary,
-    TransactionSwapGroupDetail,
+import {
+    assetRefKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+    type TransactionHistoryStatus,
+    type TransactionBalanceImpact,
+    type TransactionAssetSummary,
+    type TransactionSwapGroupDetail,
 } from '../models/types'
-import { resolveAssetFacts } from '../utils/algoAssetFacts'
+import type { AssetFactsResolver } from '../history-adapter'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -44,6 +50,7 @@ function serializeBalanceImpacts(
  */
 function deserializeBalanceImpacts(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): TransactionBalanceImpact[] {
     if (!json) return []
     const parsed = JSON.parse(json) as Array<{
@@ -76,6 +83,7 @@ function deserializeBalanceImpacts(
  */
 function deserializeAsset(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): Nullable<TransactionAssetSummary> {
     if (!json) return null
     const parsed = JSON.parse(json) as TransactionAssetSummary
@@ -94,6 +102,7 @@ function deserializeAsset(
  */
 export function deserializeSwapGroupDetail(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): Nullable<TransactionSwapGroupDetail> {
     if (!json) return null
     const parsed = JSON.parse(json) as TransactionSwapGroupDetail
@@ -117,23 +126,86 @@ export function deserializeSwapGroupDetail(
     }
 }
 
-export function toDb(item: TransactionHistoryItem) {
+type StoredSwapGroupDetail = Omit<
+    TransactionSwapGroupDetail,
+    'amountIn' | 'amountOut'
+> & {
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    amountIn: string
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    amountOut: string
+}
+
+/**
+ * The `algorand` entry of a `transactions.chain_data` document. Absent values
+ * are `null` rather than omitted, so every row has the same keys.
+ */
+type StoredAlgorandChainData = {
+    confirmedRound: Nullable<number>
+    /** Unix seconds. */
+    roundTime: Nullable<number>
+    innerTransactionCount: Nullable<number>
+    /** Decimal string: a uint64 id never lives in a JS number. */
+    applicationId: Nullable<string>
+    closeTo: Nullable<string>
+    swapGroupDetail: Nullable<StoredSwapGroupDetail>
+    groupId: Nullable<string>
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    closeAmount: Nullable<string>
+}
+
+// Built from the converted columns, so the two shapes can't drift apart.
+function serializeAlgorandChainData(
+    columns: ReturnType<typeof toAlgorandColumns>,
+    swap: Nullable<TransactionSwapGroupDetail>,
+): string {
+    const algorand: StoredAlgorandChainData = {
+        confirmedRound: columns.confirmedRound,
+        roundTime: columns.roundTime,
+        innerTransactionCount: columns.innerTransactionCount,
+        applicationId: columns.applicationId?.toString() ?? null,
+        closeTo: columns.closeTo,
+        swapGroupDetail: swap
+            ? {
+                  ...swap,
+                  amountIn: swap.amountIn.toString(),
+                  amountOut: swap.amountOut.toString(),
+              }
+            : null,
+        groupId: columns.groupId,
+        closeAmount: columns.closeAmount?.toString() ?? null,
+    }
+    return JSON.stringify({ algorand })
+}
+
+function toAlgorandColumns(item: TransactionHistoryItem) {
     return {
-        id: item.id,
-        txType: item.txType,
-        sender: item.sender,
-        receiver: item.receiver,
-        confirmedRound: item.confirmedRound,
+        confirmedRound: item.confirmedRound ?? null,
         roundTime: item.roundTime,
-        fee: item.fee,
         groupId: item.groupId,
-        amount: item.amount,
         closeTo: item.closeTo,
         closeAmount: item.closeAmount,
         applicationId: item.applicationId
             ? new Decimal(item.applicationId)
             : null,
         innerTransactionCount: item.innerTransactionCount,
+    }
+}
+
+export function toDb(item: TransactionHistoryItem, scope: ChainScope) {
+    const algorandColumns = toAlgorandColumns(item)
+    return {
+        ...algorandColumns,
+        id: item.id,
+        txType: item.txType,
+        sender: item.sender,
+        receiver: item.receiver,
+        status: item.status ?? TransactionHistoryStatuses.CONFIRMED,
+        fee: item.fee,
+        amount: item.amount,
         assetSender: item.assetSender,
         assetJson: item.asset ? JSON.stringify(item.asset) : null,
         swapGroupDetailJson: item.swapGroupDetail
@@ -143,37 +215,53 @@ export function toDb(item: TransactionHistoryItem) {
             ? JSON.stringify(item.interpretedMeaning)
             : null,
         balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
+        chainData: serializeAlgorandChainData(
+            algorandColumns,
+            item.swapGroupDetail,
+        ),
+        assetRef: item.asset
+            ? assetRefKey({
+                  chainId: scope.chainId,
+                  assetId: item.asset.assetId,
+              })
+            : null,
     }
 }
 
-export function fromDb(row: {
-    id: string
-    txType: string
-    sender: string
-    assetSender: Nullable<string>
-    receiver: Nullable<string>
-    confirmedRound: number
-    roundTime: number
-    fee: Decimal
-    groupId: Nullable<string>
-    amount: Nullable<Decimal>
-    closeTo: Nullable<string>
-    closeAmount: Nullable<Decimal>
-    applicationId: Nullable<Decimal>
-    innerTransactionCount: Nullable<number>
-    assetJson: Nullable<string>
-    swapGroupDetailJson: Nullable<string>
-    interpretedMeaningJson: Nullable<string>
-    balanceImpactsJson: Nullable<string>
-}): TransactionHistoryItem {
+export function fromDb(
+    row: {
+        id: string
+        txType: string
+        sender: string
+        assetSender: Nullable<string>
+        receiver: Nullable<string>
+        confirmedRound: Nullable<number>
+        roundTime: Nullable<number>
+        status: TransactionHistoryStatus
+        fee: Decimal
+        groupId: Nullable<string>
+        amount: Nullable<Decimal>
+        closeTo: Nullable<string>
+        closeAmount: Nullable<Decimal>
+        applicationId: Nullable<Decimal>
+        innerTransactionCount: Nullable<number>
+        assetJson: Nullable<string>
+        swapGroupDetailJson: Nullable<string>
+        interpretedMeaningJson: Nullable<string>
+        balanceImpactsJson: Nullable<string>
+    },
+    resolveAssetFacts: AssetFactsResolver,
+): TransactionHistoryItem {
     return {
         id: row.id,
         txType: row.txType as TransactionHistoryItem['txType'],
         sender: row.sender,
         assetSender: row.assetSender,
         receiver: row.receiver,
-        confirmedRound: row.confirmedRound,
-        roundTime: row.roundTime,
+        confirmedRound: row.confirmedRound ?? undefined,
+        status: row.status,
+        // Only a chain that can't time a pending transaction leaves this NULL.
+        roundTime: row.roundTime ?? 0,
         fee: row.fee,
         groupId: row.groupId,
         amount: row.amount,
@@ -181,11 +269,17 @@ export function fromDb(row: {
         closeAmount: row.closeAmount,
         applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
-        asset: deserializeAsset(row.assetJson),
-        swapGroupDetail: deserializeSwapGroupDetail(row.swapGroupDetailJson),
+        asset: deserializeAsset(row.assetJson, resolveAssetFacts),
+        swapGroupDetail: deserializeSwapGroupDetail(
+            row.swapGroupDetailJson,
+            resolveAssetFacts,
+        ),
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)
             : null,
-        balanceImpacts: deserializeBalanceImpacts(row.balanceImpactsJson),
+        balanceImpacts: deserializeBalanceImpacts(
+            row.balanceImpactsJson,
+            resolveAssetFacts,
+        ),
     }
 }

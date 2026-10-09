@@ -13,18 +13,19 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    AccountTypes,
+    useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    encodeAlgorandAddress,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useQuantumFeeExplainer } from '../useQuantumFeeExplainer'
+import { capabilityState } from '@test-utils/capability-mock'
 
 // Rekey resolution is what these cases exercise, so opt out of the unit
 // setup's blanket accounts mock and run against the real store and the real
@@ -40,33 +41,35 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
 }))
 
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: vi.fn(),
-}))
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
 
 const QUANTUM_ADDRESS = 'QUANTUM_ADDR'
 const STANDARD_ADDRESS = 'STANDARD_ADDR'
 const FOREIGN_ADDRESS = 'FOREIGN_ADDR'
 
-const quantumAccount = (rekeyAddress?: string): WalletAccount =>
-    ({
+const quantumAccount = (authority?: string): WalletAccount => {
+    if (authority) seedAuthority(QUANTUM_ADDRESS, authority)
+    return {
         id: 'quantum-id',
-        type: AccountTypes.quantum,
+        custody: { kind: 'local', seed: 'quantum' },
         address: QUANTUM_ADDRESS,
         keyPairId: 'quantum-key',
         name: 'Quantum',
-        rekeyAddress,
-    }) as WalletAccount
+    } as WalletAccount
+}
 
-const standardAccount = (rekeyAddress?: string): WalletAccount =>
-    ({
+const standardAccount = (authority?: string): WalletAccount => {
+    if (authority) seedAuthority(STANDARD_ADDRESS, authority)
+    return {
         id: 'standard-id',
-        type: AccountTypes.algo25,
+        custody: { kind: 'local', seed: null },
         address: STANDARD_ADDRESS,
         keyPairId: 'standard-key',
         name: 'Standard',
-        rekeyAddress,
-    }) as WalletAccount
+    } as WalletAccount
+}
 
 const buildTransaction = (
     overrides: Partial<PeraDisplayableTransaction> = {},
@@ -80,7 +83,8 @@ describe('useQuantumFeeExplainer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandAccountsAdapter()
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
+        useAccountChainStateStore.getState().resetState()
+        capabilityState.reset()
         ;(useSigningPipeline as Mock).mockReturnValue({ resolved: null })
         useAccountsStore.getState().setAccounts([])
     })
@@ -200,14 +204,14 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('returns false when the feature flag is disabled', () => {
-        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+    it('still explains the premium an existing quantum account pays after quantumAccounts is switched off', () => {
+        capabilityState.turnOff('quantumAccounts')
         useAccountsStore.getState().setAccounts([quantumAccount()])
 
         const { result } = renderHook(() =>
             useQuantumFeeExplainer(buildTransaction()),
         )
 
-        expect(result.current.isQuantumFee).toBe(false)
+        expect(result.current.isQuantumFee).toBe(true)
     })
 })

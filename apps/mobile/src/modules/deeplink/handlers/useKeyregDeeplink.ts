@@ -14,9 +14,9 @@ import { useCallback } from 'react'
 import {
     getExpectedGenesisHash,
     isValidAlgorandAddress,
-    useNetwork,
     useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
@@ -104,7 +104,7 @@ const checkSigningEligibility = (
     if (resolution.kind === 'authMissing') {
         return {
             variant: 'keyreg-unknown-account',
-            reason: `Rekey target ${resolution.authAddress} is not in this wallet`,
+            reason: `Rekey target ${resolution.authorityAddress} is not in this wallet`,
         }
     }
     return {

@@ -33,7 +33,7 @@ vi.mock('../useDevice', () => ({
 
 // Faithful re-implementation of the real useOnNetworkSwitch (effect-timed,
 // fires once per real switch) driven by the same mocked useNetwork.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-shared', async () => {
     const { useEffect, useRef } = await import('react')
     return {
         useNetwork: () => mockUseNetwork(),

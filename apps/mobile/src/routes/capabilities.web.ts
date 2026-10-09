@@ -10,10 +10,17 @@
  limitations under the License
  */
 
-import type { RouteCapabilities } from './capabilities-types'
+import type {
+    RouteCapabilities,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 import { isDeveloperGalleryIncluded } from './developer-gallery'
 
-export type { RouteCapabilities } from './capabilities-types'
+export type {
+    RouteCapabilities,
+    RouteCapability,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
     // Off: Discover gates its UI tier on compareVersions(version, DISCOVER_V3[platform])
@@ -40,6 +47,7 @@ export const routeCapabilities: RouteCapabilities = {
     // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
+    analyticsConsent: false,
     developerSettings: true, // internal builds need network/debug toggles
     developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: true,
@@ -53,3 +61,5 @@ export const routeCapabilities: RouteCapabilities = {
     sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }
+
+export const routeCapabilityRestrictions: RouteCapabilityRestrictions = {}

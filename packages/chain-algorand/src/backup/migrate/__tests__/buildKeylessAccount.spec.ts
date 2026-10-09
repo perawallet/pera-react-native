@@ -11,13 +11,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
@@ -25,7 +26,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     },
 }))
 
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import {
+    isHardwareWalletAccount,
+    isMultisigAccount,
+    useAccountChainStateStore,
+} from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     multisigChainAdapters,
@@ -36,6 +41,7 @@ import {
     buildWatchAccount,
     buildLedgerAccount,
     buildMultiSigAccount,
+    recordLegacyAuthority,
 } from '../buildKeylessAccount'
 
 const buildLegacyAccount = (
@@ -61,6 +67,7 @@ const deriveAddress = vi.fn(
 )
 
 beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
     deriveAddress.mockClear()
     multisigChainAdapters.reset()
     multisigChainAdapters.register({
@@ -84,10 +91,9 @@ describe('buildWatchAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'My Watcher',
-            type: AccountTypes.watch,
             address: 'ADDR_WATCH',
-            provenance: { kind: 'watch' },
-            credentials: {},
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'ADDR_WATCH' } },
         })
     })
 
@@ -99,7 +105,7 @@ describe('buildWatchAccount', () => {
         expect(account.name).toBeUndefined()
     })
 
-    it('prefills rekeyAddress from legacy authAddress on watch accounts', () => {
+    it('carries no authority on the account itself', () => {
         const account = buildWatchAccount(
             buildLegacyAccount({
                 type: 'standard',
@@ -108,15 +114,8 @@ describe('buildWatchAccount', () => {
             }),
         )
 
-        expect(account.rekeyAddress).toBe('AUTHADDR')
-    })
-
-    it('leaves rekeyAddress unset when legacy authAddress is null', () => {
-        const account = buildWatchAccount(
-            buildLegacyAccount({ type: 'watch', authAddress: null }),
-        )
-
-        expect(account.rekeyAddress).toBeUndefined()
+        expect(account).not.toHaveProperty('rekeyAddress')
+        expect(account).not.toHaveProperty('rekeyAddressByNetwork')
     })
 })
 
@@ -146,7 +145,6 @@ describe('buildLedgerAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Ledger 1',
-            type: AccountTypes.hardware,
             address: 'ADDR_LEDGER',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -155,7 +153,7 @@ describe('buildLedgerAccount', () => {
                 deviceName: 'Ledger Nano X',
                 accountIndex: 3,
             },
-            provenance: {
+            custody: {
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',
@@ -165,7 +163,7 @@ describe('buildLedgerAccount', () => {
                 },
                 accountIndex: 3,
             },
-            credentials: {},
+            chains: { algorand: { address: 'ADDR_LEDGER' } },
         })
     })
 
@@ -181,7 +179,7 @@ describe('buildLedgerAccount', () => {
 
         const account = buildLedgerAccount(legacy)
 
-        if (account.type !== AccountTypes.hardware)
+        if (!isHardwareWalletAccount(account))
             throw new Error('expected hardware account')
         expect(account.hardwareDetails.deviceName).toBe('')
     })
@@ -241,20 +239,26 @@ describe('buildMultiSigAccount', () => {
         expect(account).toEqual({
             id: 'mock-time-uuid',
             name: 'Joint',
-            type: AccountTypes.multisig,
             address: 'ADDR_MSIG',
             multisigDetails: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
             },
-            provenance: {
-                kind: 'multisig',
-                threshold: 2,
-                members: ['P1', 'P2', 'P3'],
-                version: 1,
+            custody: { kind: 'multisig' },
+            chains: {
+                algorand: {
+                    address: 'ADDR_MSIG',
+                    native: {
+                        family: 'algorand',
+                        multisig: {
+                            version: 1,
+                            threshold: 2,
+                            addresses: ['P1', 'P2', 'P3'],
+                        },
+                    },
+                },
             },
-            credentials: {},
         })
         expect(deriveAddress).not.toHaveBeenCalled()
     })
@@ -270,7 +274,7 @@ describe('buildMultiSigAccount', () => {
 
         const account = buildMultiSigAccount(legacy)
 
-        if (account.type !== AccountTypes.multisig)
+        if (!isMultisigAccount(account))
             throw new Error('expected multisig account')
         expect(account.multisigDetails.threshold).toBe(2)
         expect(deriveAddress).toHaveBeenCalledWith({
@@ -298,6 +302,36 @@ describe('buildMultiSigAccount', () => {
 
         expect(() => buildMultiSigAccount(legacy)).toThrow(
             /Could not derive multisig threshold for ADDR_DOES_NOT_MATCH/,
+        )
+    })
+})
+
+describe('recordLegacyAuthority', () => {
+    const slice = () => useAccountChainStateStore.getState().states
+
+    it("writes the legacy auth address under the active network's scope", () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'AUTH' }))
+
+        expect(slice()['algorand/mainnet' as never]?.ADDR_LEGACY).toMatchObject(
+            {
+                family: 'algorand',
+                authAddress: 'AUTH',
+            },
+        )
+    })
+
+    it('writes nothing without an auth address', () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: null }))
+
+        expect(slice()).toEqual({})
+    })
+
+    it('does not overwrite an existing entry', () => {
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'FIRST' }))
+        recordLegacyAuthority(buildLegacyAccount({ authAddress: 'SECOND' }))
+
+        expect(slice()['algorand/mainnet' as never]?.ADDR_LEGACY).toMatchObject(
+            { authAddress: 'FIRST' },
         )
     })
 })
