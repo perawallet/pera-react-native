@@ -228,7 +228,7 @@ describe('useAccountIcon', () => {
         >('@perawallet/wallet-core-accounts')
         vi.mocked(useAuthorityOf).mockImplementation(actual.useAuthorityOf)
         const { result } = renderHook(() =>
-            useAccountIcon(account(AccountTypes.algo25)),
+            useAccountIcon(account(AccountTypes.standalone)),
         )
         expect(result.current?.name).toBe('accounts/glyph/algo25-account')
 

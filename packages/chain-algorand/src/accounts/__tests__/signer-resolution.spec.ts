@@ -68,7 +68,7 @@ const seedAuthorities = (accounts: WalletAccount[]): void => {
 const algo25 = (address: string, authority?: string): WalletAccount =>
     withAuthority(
         {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address,
             keyPairId: `kp-${address}`,
         } as WalletAccount,

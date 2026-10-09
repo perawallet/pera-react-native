@@ -66,7 +66,7 @@ const algo25 = (authorityAddress?: string): WalletAccount => {
     }
     return {
         address: algoAddress.toString(),
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp-algo25',
     } as WalletAccount
 }

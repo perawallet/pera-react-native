@@ -79,7 +79,7 @@ const [ED_A, ED_B, ED_C] = Array.from({ length: 3 }, () =>
 const algo25 = (address: string, authorityAddress?: string): WalletAccount => {
     if (authorityAddress) seedAuthority(address, authorityAddress)
     return {
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: `kp-${address}`,
     } as WalletAccount

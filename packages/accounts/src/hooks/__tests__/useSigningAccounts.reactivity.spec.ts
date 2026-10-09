@@ -31,7 +31,7 @@ const watch = {
 const signer = {
     id: 'S',
     address: 'S',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'k',
 } as WalletAccount
 

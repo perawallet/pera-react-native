@@ -155,7 +155,7 @@ describe('authorityOf', () => {
         const address = addressOn(account, mainnet) as string
         slice().setAccountChainState(mainnet, address, chainState('AUTH'))
 
-        expect(authorityOf(buildTestAccount('algo25'), mainnet)).toBeNull()
+        expect(authorityOf(buildTestAccount('standalone'), mainnet)).toBeNull()
         expect(
             authorityOf(account, { chainId: 'ethereum', networkId: 'mainnet' }),
         ).toBeNull()

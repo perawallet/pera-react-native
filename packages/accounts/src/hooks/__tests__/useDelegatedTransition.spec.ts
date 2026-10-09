@@ -74,7 +74,7 @@ describe('useDelegatedTransition', () => {
 
         act(() => seedAuthority('A', 'S'))
 
-        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
+        expect(result.current).toEqual({ from: 'watch', to: 'standalone' })
     })
 
     it("returns the from/to types from the chain's signer for a rekeyed account", () => {
