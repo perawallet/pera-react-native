@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useRescanRekeyedAccounts } from '../useRescanRekeyedAccounts'
+import { useRescanDelegatedAccounts } from '../useRescanDelegatedAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import { RekeyUnsupportedError } from '../../errors'
@@ -41,7 +41,7 @@ vi.mock('../useIsRekeyAvailable', () => ({
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
-describe('useRescanRekeyedAccounts — scan', () => {
+describe('useRescanDelegatedAccounts — scan', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         rekey.isAvailable = true
@@ -53,7 +53,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue(['IN_WALLET', 'NEW_ONE'])
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const scanResult = await result.current.scan('SOURCE')
 
@@ -71,7 +71,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
         rekey.isAvailable = false
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         expect(await result.current.scan('SOURCE')).toEqual({
@@ -90,7 +90,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
         registerFakeAccountsChain({ fetchRekeyedAddresses: undefined })
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         await expect(result.current.scan('SOURCE')).rejects.toBeInstanceOf(
@@ -102,7 +102,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const scanResult = await result.current.scan('SOURCE')
 
@@ -113,7 +113,7 @@ describe('useRescanRekeyedAccounts — scan', () => {
     })
 })
 
-describe('useRescanRekeyedAccounts — scanAll', () => {
+describe('useRescanDelegatedAccounts — scanAll', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useAccountsStore.getState().resetState()
@@ -127,7 +127,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         )
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
 
@@ -146,7 +146,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue(['NEW_SAME'])
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
 
@@ -163,7 +163,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         )
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const sweep = await result.current.scanAll([
             'SOURCE_BAD',
@@ -180,7 +180,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         await result.current.scanAll(['SOURCE', 'SOURCE'])
 
@@ -196,7 +196,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         })
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const sweep = await result.current.scanAll(['SOURCE'])
 
@@ -209,7 +209,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
         const progress: Array<[number, number]> = []
 
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         await result.current.scanAll(['SOURCE_A', 'SOURCE_B'], {
             onProgress: (scanned, total) => progress.push([scanned, total]),
@@ -222,7 +222,7 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
     })
 })
 
-describe('useRescanRekeyedAccounts — importFromSweep', () => {
+describe('useRescanDelegatedAccounts — importFromSweep', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useAccountsStore.getState().resetState()
@@ -231,7 +231,7 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
     it('groups candidates by their source key and persists each group', async () => {
         mocks.isValidAddress.mockReturnValue(true)
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         let count = -1
@@ -258,7 +258,7 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
     })
 })
 
-describe('useRescanRekeyedAccounts — importSelected', () => {
+describe('useRescanDelegatedAccounts — importSelected', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useAccountsStore.getState().resetState()
@@ -266,7 +266,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
 
     it('returns 0 without persisting when the selection is empty', async () => {
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         let count = -1
@@ -281,7 +281,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
     it('returns 0 when every selected address fails format validation', async () => {
         mocks.isValidAddress.mockReturnValue(false)
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         let count = -1
@@ -301,7 +301,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
             (addr: string) => addr !== 'INVALID',
         )
         const { result } = renderHook(() =>
-            useRescanRekeyedAccounts(MAINNET_SCOPE),
+            useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
         let count = -1

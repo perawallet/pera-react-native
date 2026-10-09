@@ -43,9 +43,9 @@ export class AccountError extends AppError {
 }
 
 /**
- * Account has no HD wallet details
+ * The wallet holds no HD seed under the id given.
  */
-export class NoHDWalletError extends AccountError {
+export class NoHdSeedError extends AccountError {
     constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
             messageKey: 'errors.account.no_hd_wallet',
@@ -191,6 +191,12 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
 export class HdAccountsUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('HD accounts', chainId)
+    }
+}
+
+export class MultisigUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Multisig accounts', chainId)
     }
 }
 

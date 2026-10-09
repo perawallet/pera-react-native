@@ -32,7 +32,7 @@ import type {
 } from '../models'
 import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
-import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
+import { useDelegatedAddressesQuery } from './useDelegatedAddressesQuery'
 
 export const useLedgerAccountPreview = (
     address: string,
@@ -40,7 +40,7 @@ export const useLedgerAccountPreview = (
 ): UseLedgerAccountPreviewResult => {
     const nativeAsset = useNativeAsset()
     const onChain = useOnChainAccountStateQuery(address, scope)
-    const rekeyed = useRekeyedAddressesQuery(address, scope)
+    const rekeyed = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
     const authorityAddress = onChain.data?.authorityAddress
 

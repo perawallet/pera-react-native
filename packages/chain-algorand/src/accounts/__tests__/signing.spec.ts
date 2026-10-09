@@ -14,7 +14,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
     canSignWith,
-    getRekeyAccount,
+    getDelegatedAccount,
     getSignerFor,
     isMultisigUnsignable,
     isRekeyedUnsignable,
@@ -72,34 +72,38 @@ const watch = (address: string, authority?: string) =>
         ? rekeyedTo(watchAccount(address), authority)
         : watchAccount(address)
 
-describe('getRekeyAccount', () => {
+describe('getDelegatedAccount', () => {
     it('returns null when the address is not in the wallet', () => {
         expect(
-            getRekeyAccount('Z', [algo25('A')], ALGORAND_CHAIN_ID),
+            getDelegatedAccount('Z', [algo25('A')], ALGORAND_CHAIN_ID),
         ).toBeNull()
     })
 
     it('returns null when the account has no rekey', () => {
         const a = algo25('A')
-        expect(getRekeyAccount('A', [a], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('A', [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('returns the auth account when the target is held', () => {
         const auth = algo25('AUTH')
         const a = rekeyedTo(algo25('A'), 'AUTH')
-        expect(getRekeyAccount('A', [a, auth], ALGORAND_CHAIN_ID)).toBe(auth)
+        expect(getDelegatedAccount('A', [a, auth], ALGORAND_CHAIN_ID)).toBe(
+            auth,
+        )
     })
 
     it('returns null when the auth target is unknown locally', () => {
         const a = rekeyedTo(algo25('A'), 'MISSING')
-        expect(getRekeyAccount('A', [a], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('A', [a], ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('reports the immediate auth — does not follow chains', () => {
         const mid = rekeyedTo(algo25('B'), 'C')
         const a = rekeyedTo(algo25('A'), 'B')
         const c = algo25('C')
-        expect(getRekeyAccount('A', [a, mid, c], ALGORAND_CHAIN_ID)).toBe(mid)
+        expect(getDelegatedAccount('A', [a, mid, c], ALGORAND_CHAIN_ID)).toBe(
+            mid,
+        )
     })
 })
 

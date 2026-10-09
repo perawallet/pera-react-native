@@ -139,7 +139,7 @@ export const useAccountBalancesQuery = (
     // re-walks every holding — allocating a Decimal per field, per asset, per
     // render. This primitive signature captures everything the body reads
     // (`dataUpdatedAt` moves whenever the data does), and Object.is stays true
-    // across renders when content matches. Same guard as `useLedgerRekeyedScan`.
+    // across renders when content matches. Same guard as `useLedgerDelegatedScan`.
     const resultsSig = results
         .map(
             (r, i) =>

@@ -15,7 +15,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
-import { NoHDWalletError } from '../errors'
+import { NoHdSeedError } from '../errors'
 import { buildAccount } from '../credentials'
 import {
     accountsChainAdapters,
@@ -58,7 +58,7 @@ export const useCreateAccount = (scope: ChainScope) => {
             account,
             keyIndex,
         })
-        if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
+        if (!derived.publicKey) throw new NoHdSeedError(seedKeyId)
 
         const { chainId } = scope
         return buildAccount({
@@ -97,7 +97,7 @@ export const useCreateAccount = (scope: ChainScope) => {
                 createdNewSeed = true
             }
 
-            if (!seedKeyId) throw new NoHDWalletError(rootWalletId)
+            if (!seedKeyId) throw new NoHdSeedError(rootWalletId)
 
             const newAccount = await buildHdWalletAccountForSeed({
                 seedKeyId,

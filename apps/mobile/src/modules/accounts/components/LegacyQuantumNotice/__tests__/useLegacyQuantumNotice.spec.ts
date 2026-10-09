@@ -22,7 +22,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
 }))
 
-const mockUseRekeyedAddressesQuery = vi.fn()
+const mockUseDelegatedAddressesQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useRekeyedAddressesQuery: () => mockUseRekeyedAddressesQuery(),
+        useDelegatedAddressesQuery: () => mockUseDelegatedAddressesQuery(),
     }
 })
 
@@ -66,8 +66,8 @@ const NO_LOOKUP_RESULT = {
 describe('useLegacyQuantumNotice', () => {
     beforeEach(() => {
         mockGetKey.mockReset()
-        mockUseRekeyedAddressesQuery.mockReset()
-        mockUseRekeyedAddressesQuery.mockReturnValue(NO_LOOKUP_RESULT)
+        mockUseDelegatedAddressesQuery.mockReset()
+        mockUseDelegatedAddressesQuery.mockReturnValue(NO_LOOKUP_RESULT)
     })
 
     test('shows the marker for a legacy account', () => {
@@ -104,7 +104,7 @@ describe('useLegacyQuantumNotice', () => {
 
     test('uses the dependent-aware copy when an account is rekeyed to this address', () => {
         mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
-        mockUseRekeyedAddressesQuery.mockReturnValue({
+        mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: ['SOME_DEPENDENT_ADDRESS'],
             isLoading: false,
             isError: false,
@@ -120,7 +120,7 @@ describe('useLegacyQuantumNotice', () => {
 
     test('falls back to the dependent-aware copy when the auth-addr lookup fails', () => {
         mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
-        mockUseRekeyedAddressesQuery.mockReturnValue({
+        mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: undefined,
             isLoading: false,
             isError: true,
@@ -136,7 +136,7 @@ describe('useLegacyQuantumNotice', () => {
 
     test('uses the dependent-aware copy while the lookup is still loading', () => {
         mockGetKey.mockReturnValue({ metadata: { pqDerivation: 'legacy' } })
-        mockUseRekeyedAddressesQuery.mockReturnValue({
+        mockUseDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: undefined,
             isLoading: true,
             isError: false,

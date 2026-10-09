@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    useRescanRekeyedAccounts,
+    useRescanDelegatedAccounts,
     useSigningAccounts,
     type RekeyedSweepCandidate,
     chainAccountOf,
@@ -58,7 +58,7 @@ export const useRescanRekeyedSelectScreen =
             >()
         const sourceAddress = route.params?.sourceAddress
 
-        const { scanAll, importFromSweep } = useRescanRekeyedAccounts(scope)
+        const { scanAll, importFromSweep } = useRescanDelegatedAccounts(scope)
         const signingAccounts = useSigningAccounts(scope.chainId)
         const { showError } = useErrorToast()
         const { showToast } = useToast()

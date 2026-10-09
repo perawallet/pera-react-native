@@ -96,7 +96,7 @@ export const getAccountOptInRoundsQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'opt-in-rounds', { address, scope }]
 
-export const getRekeyedAddressesQueryKey = (
+export const getDelegatedAddressesQueryKey = (
     address: string,
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'rekeyed-addresses', { address, scope }]

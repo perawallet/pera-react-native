@@ -14,7 +14,7 @@ import { beforeAll, beforeEach, describe, test, expect } from 'vitest'
 import {
     accountsChainAdapters,
     canSignWith,
-    getRekeyAccount,
+    getDelegatedAccount,
     getSignerFor,
     isAuthorityDowngrade,
     delegateTransitionFor,
@@ -194,27 +194,31 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
     })
 })
 
-describe('services/accounts/utils - getRekeyAccount', () => {
+describe('services/accounts/utils - getDelegatedAccount', () => {
     test('returns the auth account when rekeyed and target is in the wallet', () => {
         const auth = algo25({ address: 'AUTH' })
         const rekeyed = algo25({ address: 'A', authority: 'AUTH' })
-        expect(getRekeyAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
-            auth,
-        )
+        expect(
+            getDelegatedAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID),
+        ).toBe(auth)
     })
 
     test('returns null when the address is not rekeyed', () => {
         const account = algo25({ address: 'A' })
-        expect(getRekeyAccount('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(
+            getDelegatedAccount('A', [account], ALGORAND_CHAIN_ID),
+        ).toBeNull()
     })
 
     test('returns null when the rekey target is not in the wallet', () => {
         const rekeyed = watch({ address: 'A', authority: 'MISSING' })
-        expect(getRekeyAccount('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(
+            getDelegatedAccount('A', [rekeyed], ALGORAND_CHAIN_ID),
+        ).toBeNull()
     })
 
     test('returns null when the address is unknown', () => {
-        expect(getRekeyAccount('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
     })
 })
 

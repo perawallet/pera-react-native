@@ -14,8 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import { useRekeyedAddressesQuery } from '../useRekeyedAddressesQuery'
-import { getRekeyedAddressesQueryKey } from '../querykeys'
+import { useDelegatedAddressesQuery } from '../useDelegatedAddressesQuery'
+import { getDelegatedAddressesQueryKey } from '../querykeys'
 
 import {
     fakeAccountsChain,
@@ -40,13 +40,13 @@ const createWrapper = () => {
         )
 }
 
-describe('useRekeyedAddressesQuery', () => {
+describe('useDelegatedAddressesQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('builds the expected query key', () => {
-        expect(getRekeyedAddressesQueryKey('ADDR', MAINNET_SCOPE)).toEqual([
+        expect(getDelegatedAddressesQueryKey('ADDR', MAINNET_SCOPE)).toEqual([
             'accounts',
             'rekeyed-addresses',
             { address: 'ADDR', scope: MAINNET_SCOPE },
@@ -57,7 +57,7 @@ describe('useRekeyedAddressesQuery', () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue(['REKEYED1', 'REKEYED2'])
 
         const { result } = renderHook(
-            () => useRekeyedAddressesQuery('ADDR', MAINNET_SCOPE),
+            () => useDelegatedAddressesQuery('ADDR', MAINNET_SCOPE),
             {
                 wrapper: createWrapper(),
             },
@@ -78,7 +78,7 @@ describe('useRekeyedAddressesQuery', () => {
 
     it('is disabled when address is empty', () => {
         const { result } = renderHook(
-            () => useRekeyedAddressesQuery('', MAINNET_SCOPE),
+            () => useDelegatedAddressesQuery('', MAINNET_SCOPE),
             {
                 wrapper: createWrapper(),
             },

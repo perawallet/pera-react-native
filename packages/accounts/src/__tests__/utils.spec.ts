@@ -22,7 +22,7 @@ import {
     isHardwareWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
-    isRekeyedAccount,
+    isDelegatedAccount,
     isSameAddress,
     isWatchAccount,
 } from '../utils'
@@ -206,7 +206,9 @@ describe('services/accounts/utils - authority wrappers', () => {
         useNetworkStore.getState().setNetwork('mainnet')
         registerFakeAccountsChain({
             authority: {
-                targetKinds: ['fake-target-local'],
+                targetKinds: [
+                    { id: 'fake-target-local', category: 'standard' },
+                ],
                 isDelegated: vi.fn(() => true),
                 accountsDelegatedTo: vi.fn(() => []),
                 isEligibleTarget: vi.fn(() => false),
@@ -216,10 +218,10 @@ describe('services/accounts/utils - authority wrappers', () => {
         })
     })
 
-    test("isRekeyedAccount and canSignProgram defer to the chain's authority", () => {
+    test("isDelegatedAccount and canSignProgram defer to the chain's authority", () => {
         const { authority } = fakeAccountsChain().adapter
 
-        expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(true)
+        expect(isDelegatedAccount(account, FAKE_CHAIN_ID)).toBe(true)
         expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(true)
         expect(authority?.isDelegated).toHaveBeenCalledWith(
             account,
@@ -235,7 +237,7 @@ describe('services/accounts/utils - authority wrappers', () => {
         const { authority } = fakeAccountsChain().adapter
         useNetworkStore.getState().setNetwork('testnet')
 
-        isRekeyedAccount(account, FAKE_CHAIN_ID)
+        isDelegatedAccount(account, FAKE_CHAIN_ID)
         canSignProgram(account, FAKE_CHAIN_ID)
 
         expect(authority?.isDelegated).toHaveBeenCalledWith(
@@ -251,12 +253,12 @@ describe('services/accounts/utils - authority wrappers', () => {
     test('fail closed on a chain without an authority', () => {
         registerFakeAccountsChain({ authority: undefined })
 
-        expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(false)
+        expect(isDelegatedAccount(account, FAKE_CHAIN_ID)).toBe(false)
         expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(false)
     })
 
-    test('isRekeyedAccount is false for a missing account', () => {
-        expect(isRekeyedAccount(null, FAKE_CHAIN_ID)).toBe(false)
+    test('isDelegatedAccount is false for a missing account', () => {
+        expect(isDelegatedAccount(null, FAKE_CHAIN_ID)).toBe(false)
     })
 })
 

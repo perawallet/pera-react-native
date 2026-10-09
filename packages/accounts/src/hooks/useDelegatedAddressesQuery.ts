@@ -13,9 +13,9 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchRekeyedAddresses } from '../chain-adapter'
-import { getRekeyedAddressesQueryKey } from './querykeys'
+import { getDelegatedAddressesQueryKey } from './querykeys'
 
-type UseRekeyedAddressesQueryResult = {
+type UseDelegatedAddressesQueryResult = {
     /** Addresses rekeyed to `address`; `undefined` until the query resolves */
     rekeyedAddresses: string[] | undefined
     isLoading: boolean
@@ -23,12 +23,12 @@ type UseRekeyedAddressesQueryResult = {
     refetch: () => void
 }
 
-export const useRekeyedAddressesQuery = (
+export const useDelegatedAddressesQuery = (
     address: string,
     scope: ChainScope,
-): UseRekeyedAddressesQueryResult => {
+): UseDelegatedAddressesQueryResult => {
     const query = useQuery({
-        queryKey: getRekeyedAddressesQueryKey(address, scope),
+        queryKey: getDelegatedAddressesQueryKey(address, scope),
         queryFn: () => fetchRekeyedAddresses(address, scope),
         enabled: !!address,
         // 30s lets `prefetchLedgerAccountPreview`'s warm-up actually pay off

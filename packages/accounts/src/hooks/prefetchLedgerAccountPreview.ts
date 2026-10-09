@@ -15,7 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import {
     getOnChainAccountStateQueryKey,
-    getRekeyedAddressesQueryKey,
+    getDelegatedAddressesQueryKey,
 } from './querykeys'
 import { fetchOnChainAccountState } from './useOnChainAccountStateQuery'
 
@@ -37,7 +37,7 @@ export const prefetchLedgerAccountPreview = async (
             queryFn: () => fetchOnChainAccountState(address, scope),
         }),
         queryClient.prefetchQuery({
-            queryKey: getRekeyedAddressesQueryKey(address, scope),
+            queryKey: getDelegatedAddressesQueryKey(address, scope),
             queryFn: () => fetchRekeyedAddresses(address, scope),
         }),
     ])

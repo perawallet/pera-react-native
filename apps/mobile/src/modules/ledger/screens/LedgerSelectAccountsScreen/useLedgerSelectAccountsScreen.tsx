@@ -19,7 +19,7 @@ import {
     type LedgerSelectableAccount,
     prefetchLedgerAccountPreview,
     useAllAccounts,
-    useLedgerRekeyedScan,
+    useLedgerDelegatedScan,
 } from '@perawallet/wallet-core-accounts'
 import {
     type LedgerAccount,
@@ -129,7 +129,7 @@ export const useLedgerSelectAccountsScreen =
             prefetchedRef.current = new Set()
         }, [network])
 
-        const { rekeyed, isScanning } = useLedgerRekeyedScan(accounts, scope)
+        const { rekeyed, isScanning } = useLedgerDelegatedScan(accounts, scope)
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
             () => [

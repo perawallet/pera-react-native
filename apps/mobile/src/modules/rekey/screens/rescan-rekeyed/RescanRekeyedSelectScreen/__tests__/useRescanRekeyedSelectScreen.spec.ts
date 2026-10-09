@@ -29,7 +29,7 @@ const { mockScanAll, mockImportFromSweep, routeState, signingAccountsState } =
     }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useRescanRekeyedAccounts: () => ({
+    useRescanDelegatedAccounts: () => ({
         scanAll: mockScanAll,
         importFromSweep: mockImportFromSweep,
     }),

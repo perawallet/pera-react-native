@@ -74,7 +74,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             algoValue: new Decimal(100),
         },
     })),
-    isRekeyedAccount: vi.fn(() => false),
+    isDelegatedAccount: vi.fn(() => false),
     // Consumed by the shared useSendDestinationRouter that useInputScreen now
     // calls for the deeplink-prefill direct-navigation path.
     useAllAccounts: vi.fn(() => []),

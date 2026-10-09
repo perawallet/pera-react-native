@@ -86,7 +86,7 @@ export const isLedgerAccount = (
     account.custody.device.manufacturer === 'ledger'
 
 /** Answers on the chain's selected network. False on a chain whose signing authority can't be delegated. */
-export const isRekeyedAccount = (
+export const isDelegatedAccount = (
     account: Nullable<WalletAccount>,
     chainId: ChainId,
 ): boolean =>

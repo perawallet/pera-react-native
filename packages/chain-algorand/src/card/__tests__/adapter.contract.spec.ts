@@ -54,7 +54,7 @@ vi.mock('../../fee-delegation', () => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
-    isRekeyedAccount: (account: WalletAccount) =>
+    isDelegatedAccount: (account: WalletAccount) =>
         account.chains.algorand?.address === REKEYED_ADDRESS,
     canSignProgram: () => true,
 }))

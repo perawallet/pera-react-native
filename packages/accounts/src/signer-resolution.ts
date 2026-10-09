@@ -17,7 +17,7 @@ import type { MultiSigAccount, WalletAccount } from './models'
 import {
     findAccountByAddressOn,
     isMultisigAccount,
-    isRekeyedAccount,
+    isDelegatedAccount,
 } from './utils'
 import { DelegationTargetNotFoundError } from './errors'
 import { accountsChainAdapters } from './chain-adapter'
@@ -116,13 +116,13 @@ export const resolveAuthAccount = (
  * The auth account only when `address` is rekeyed; null when it is not, when
  * it isn't held, or when its rekey target isn't held.
  */
-export const getRekeyAccount = (
+export const getDelegatedAccount = (
     address: string,
     accounts: WalletAccount[],
     chainId: ChainId,
 ): WalletAccount | null => {
     const account = findAccountByAddressOn(accounts, chainId, address)
-    if (!account || !isRekeyedAccount(account, chainId)) return null
+    if (!account || !isDelegatedAccount(account, chainId)) return null
     return getAuthAccount(account, accounts, chainId)
 }
 
@@ -132,7 +132,7 @@ export const isRekeyedUnsignable = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): boolean =>
-    isRekeyedAccount(account, chainId) &&
+    isDelegatedAccount(account, chainId) &&
     !canSignWith(account, accounts, chainId)
 
 /** Display-state counterpart to `isRekeyedUnsignable`. */
@@ -156,7 +156,7 @@ export const delegateTransitionFor = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): DelegateTransition | null => {
-    if (!isRekeyedAccount(account, chainId)) return null
+    if (!isDelegatedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
     return r.kind === 'ok' ? { from: account, to: r.signer } : null
 }

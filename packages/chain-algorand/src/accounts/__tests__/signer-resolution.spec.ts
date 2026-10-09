@@ -19,7 +19,7 @@ import {
     isMultisigUnsignable,
     canSignWith,
     getAuthAccount,
-    getRekeyAccount,
+    getDelegatedAccount,
     getSignerFor,
     delegateTransitionFor,
     resolveAuthAccount,
@@ -378,7 +378,7 @@ type SignerCase = {
     signer: string | null
     /** Address at the auth-addr (self when not rekeyed), or null when unresolvable. */
     auth: string | null
-    /** `getRekeyAccount`: the auth only when rekeyed. */
+    /** `getDelegatedAccount`: the auth only when rekeyed. */
     rekeyAccount: string | null
     isRekeyedUnsignable: boolean
     isMultisigUnsignable: boolean
@@ -643,7 +643,7 @@ describe.each(signerCases)('signer resolution: $name', c => {
         ).toBe(c.auth)
         expect(
             addressOrNull(
-                getRekeyAccount(address, c.accounts, ALGORAND_CHAIN_ID),
+                getDelegatedAccount(address, c.accounts, ALGORAND_CHAIN_ID),
             ),
         ).toBe(c.rekeyAccount)
         if (c.auth === null) {
@@ -679,7 +679,7 @@ describe('signer resolution: account not in the store', () => {
             kind: 'accountNotFound',
         })
         expect(getSignerFor('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
-        expect(getRekeyAccount('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
+        expect(getDelegatedAccount('Z', accounts, ALGORAND_CHAIN_ID)).toBeNull()
     })
 
     it('account-in-hand forms resolve without the account being stored', () => {
@@ -708,9 +708,9 @@ describe('auth-account forms on a legacy multisig record without multisigDetails
         expect(
             resolveAuthAccount(account, [account, legacy], ALGORAND_CHAIN_ID),
         ).toBe(legacy)
-        expect(getRekeyAccount('A', [account, legacy], ALGORAND_CHAIN_ID)).toBe(
-            legacy,
-        )
+        expect(
+            getDelegatedAccount('A', [account, legacy], ALGORAND_CHAIN_ID),
+        ).toBe(legacy)
     })
 })
 

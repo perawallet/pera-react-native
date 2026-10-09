@@ -19,7 +19,7 @@ import type { WalletAccount } from '../models'
 /**
  * Locally held accounts that `address` is the auth-addr of. Store-only, so it
  * misses rekeys performed outside the wallet until a rescan imports them —
- * cheap enough to call from render paths, unlike `useRekeyedAddressesQuery`,
+ * cheap enough to call from render paths, unlike `useDelegatedAddressesQuery`,
  * which asks the indexer.
  */
 export const useAccountsDelegatedTo = (

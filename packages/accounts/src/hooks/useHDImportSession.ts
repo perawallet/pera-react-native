@@ -22,7 +22,7 @@ import { discoverAccounts } from '../account-discovery'
 import { accountsChainAdapters, deriveHdAccount } from '../chain-adapter'
 import type { LocalAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
-import { HDImportSessionNotFoundError, NoHDWalletError } from '../errors'
+import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
 import { hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
@@ -104,7 +104,7 @@ export const useHDImportSession = (
                     selectedAccounts.map(acc => {
                         const index = hdIndexOf(acc)
                         if (!index) {
-                            throw new NoHDWalletError(pending.walletKeyId)
+                            throw new NoHdSeedError(pending.walletKeyId)
                         }
                         return deriveHdAccount(
                             scope,

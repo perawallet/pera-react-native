@@ -53,7 +53,7 @@ const onChainState = (
 
 const mocks = vi.hoisted(() => ({
     useOnChainAccountStateQuery: vi.fn(),
-    useRekeyedAddressesQuery: vi.fn(),
+    useDelegatedAddressesQuery: vi.fn(),
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
     useCurrency: vi.fn(),
@@ -62,8 +62,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../useOnChainAccountStateQuery', () => ({
     useOnChainAccountStateQuery: mocks.useOnChainAccountStateQuery,
 }))
-vi.mock('../useRekeyedAddressesQuery', () => ({
-    useRekeyedAddressesQuery: mocks.useRekeyedAddressesQuery,
+vi.mock('../useDelegatedAddressesQuery', () => ({
+    useDelegatedAddressesQuery: mocks.useDelegatedAddressesQuery,
 }))
 vi.mock('@perawallet/wallet-core-assets', async () => {
     const actual = await vi.importActual<
@@ -96,7 +96,7 @@ beforeEach(() => {
         ]),
         isPending: false,
     })
-    mocks.useRekeyedAddressesQuery.mockReturnValue({
+    mocks.useDelegatedAddressesQuery.mockReturnValue({
         rekeyedAddresses: [],
         isLoading: false,
         isError: false,
@@ -275,7 +275,7 @@ describe('useLedgerAccountPreview', () => {
             isError: false,
             refetch: vi.fn(),
         })
-        mocks.useRekeyedAddressesQuery.mockReturnValue({
+        mocks.useDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: ['SOMEONE'],
             isLoading: false,
             isError: false,
@@ -314,7 +314,7 @@ describe('useLedgerAccountPreview', () => {
             isError: false,
             refetch: vi.fn(),
         })
-        mocks.useRekeyedAddressesQuery.mockReturnValue({
+        mocks.useDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: ['R1', 'R2'],
             isLoading: false,
             isError: false,
@@ -378,7 +378,7 @@ describe('useLedgerAccountPreview', () => {
             isError: false,
             refetch: vi.fn(),
         })
-        mocks.useRekeyedAddressesQuery.mockReturnValue({
+        mocks.useDelegatedAddressesQuery.mockReturnValue({
             rekeyedAddresses: undefined,
             isLoading: false,
             isError: true,

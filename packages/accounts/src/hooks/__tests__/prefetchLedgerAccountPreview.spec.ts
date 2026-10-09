@@ -15,7 +15,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { prefetchLedgerAccountPreview } from '../prefetchLedgerAccountPreview'
 import {
     getOnChainAccountStateQueryKey,
-    getRekeyedAddressesQueryKey,
+    getDelegatedAddressesQueryKey,
 } from '../querykeys'
 
 import {
@@ -53,7 +53,7 @@ describe('prefetchLedgerAccountPreview', () => {
         ).toBeDefined()
         expect(
             queryClient.getQueryData(
-                getRekeyedAddressesQueryKey('ADDR', MAINNET_SCOPE),
+                getDelegatedAddressesQueryKey('ADDR', MAINNET_SCOPE),
             ),
         ).toBeDefined()
         expect(mocks.fetchAccountState).toHaveBeenCalledWith(

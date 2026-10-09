@@ -13,7 +13,7 @@
 import { toAlgodError, waitForTransactionConfirmation } from '../blockchain'
 import {
     canSignProgram,
-    isRekeyedAccount,
+    isDelegatedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
@@ -75,7 +75,7 @@ export const algorandCardAdapter: CardChainAdapter = {
     // draw from it. Ledger signs the sign-in proof on-device but its firmware
     // never signs a program.
     fundingSourceEligibility: account => ({
-        canFund: !isRekeyedAccount(account, ALGORAND_CHAIN_ID),
+        canFund: !isDelegatedAccount(account, ALGORAND_CHAIN_ID),
         canProveOwnership: canSignArc60(account),
         canAutoDraw: canSignProgram(account, ALGORAND_CHAIN_ID),
     }),

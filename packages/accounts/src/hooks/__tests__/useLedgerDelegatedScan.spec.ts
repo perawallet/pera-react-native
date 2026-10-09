@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useLedgerRekeyedScan } from '../useLedgerRekeyedScan'
+import { useLedgerDelegatedScan } from '../useLedgerDelegatedScan'
 import { testAccount } from '../../__tests__/accountFactory'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -42,13 +42,13 @@ beforeEach(() => {
     mocks.useIsRekeyAvailable.mockReturnValue(true)
 })
 
-describe('useLedgerRekeyedScan', () => {
+describe('useLedgerDelegatedScan', () => {
     it('finds nothing, and is not scanning, while rekey is unavailable', () => {
         mocks.useIsRekeyAvailable.mockReturnValue(false)
         mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
         const { result } = renderHook(() =>
-            useLedgerRekeyedScan([derived('LEDGER0', 0)], SCOPE),
+            useLedgerDelegatedScan([derived('LEDGER0', 0)], SCOPE),
         )
 
         expect(result.current).toEqual({ rekeyed: [], isScanning: false })
@@ -63,7 +63,7 @@ describe('useLedgerRekeyedScan', () => {
             { data: ['REKEYED_A', 'REKEYED_B'], isPending: false },
         ])
 
-        const { result } = renderHook(() => useLedgerRekeyedScan([d0], SCOPE))
+        const { result } = renderHook(() => useLedgerDelegatedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(false)
         expect(result.current.rekeyed).toEqual([
@@ -82,7 +82,7 @@ describe('useLedgerRekeyedScan', () => {
         ])
 
         const { result } = renderHook(() =>
-            useLedgerRekeyedScan([d0, d1], SCOPE),
+            useLedgerDelegatedScan([d0, d1], SCOPE),
         )
 
         expect(result.current.rekeyed).toEqual([
@@ -95,7 +95,7 @@ describe('useLedgerRekeyedScan', () => {
         const d0 = derived('LEDGER0', 0)
         mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
-        const { result } = renderHook(() => useLedgerRekeyedScan([d0], SCOPE))
+        const { result } = renderHook(() => useLedgerDelegatedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(true)
         expect(result.current.rekeyed).toEqual([])
@@ -103,7 +103,7 @@ describe('useLedgerRekeyedScan', () => {
 
     it('returns empty and not scanning for no derived accounts', () => {
         mocks.useQueries.mockReturnValue([])
-        const { result } = renderHook(() => useLedgerRekeyedScan([], SCOPE))
+        const { result } = renderHook(() => useLedgerDelegatedScan([], SCOPE))
         expect(result.current).toEqual({ rekeyed: [], isScanning: false })
     })
 })

@@ -12,7 +12,7 @@
 
 import {
     addressOn,
-    useRekeyedAddressesQuery,
+    useDelegatedAddressesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -56,7 +56,7 @@ export const useLegacyQuantumNotice = (
         rekeyedAddresses,
         isLoading: isRekeyLookupLoading,
         isError: isRekeyLookupError,
-    } = useRekeyedAddressesQuery(
+    } = useDelegatedAddressesQuery(
         isLegacyQuantumAccount ? (addressOn(account, scope) ?? '') : '',
         scope,
     )

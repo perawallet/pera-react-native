@@ -21,7 +21,7 @@ import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
 import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 
-export type RekeyedScanResult = {
+export type DelegatedScanResult = {
     /** Accounts the indexer reports are rekeyed to `sourceAddress` AND are
      * already in the wallet (added previously). Surfaced for context only. */
     importedAddresses: string[]
@@ -50,9 +50,9 @@ export type ScanAllOptions = {
 /** Indexer calls in flight at once during a sweep. */
 const SWEEP_CONCURRENCY = 4
 
-export type UseRescanRekeyedAccountsResult = {
+export type UseRescanDelegatedAccountsResult = {
     /** Hits the indexer for every account whose auth-addr is `sourceAddress`. */
-    scan: (sourceAddress: string) => Promise<RekeyedScanResult>
+    scan: (sourceAddress: string) => Promise<DelegatedScanResult>
     /**
      * Sweeps every given wallet key with the same auth-addr query, with
      * bounded concurrency. One key's failure doesn't void the sweep —
@@ -77,16 +77,16 @@ export type UseRescanRekeyedAccountsResult = {
     importFromSweep: (candidates: RekeyedSweepCandidate[]) => Promise<number>
 }
 
-export const useRescanRekeyedAccounts = (
+export const useRescanDelegatedAccounts = (
     scope: ChainScope,
-): UseRescanRekeyedAccountsResult => {
+): UseRescanDelegatedAccountsResult => {
     const addRekeyedWatchAccounts = useAccountsStore(
         state => state.addRekeyedWatchAccounts,
     )
     const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
 
     const scan = useCallback(
-        async (sourceAddress: string): Promise<RekeyedScanResult> => {
+        async (sourceAddress: string): Promise<DelegatedScanResult> => {
             if (!isRekeyAvailable) {
                 return { importedAddresses: [], notImportedAddresses: [] }
             }

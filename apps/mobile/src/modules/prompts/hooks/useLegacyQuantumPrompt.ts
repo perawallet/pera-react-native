@@ -15,7 +15,7 @@ import { useQueries } from '@tanstack/react-query'
 import {
     fetchRekeyedAddresses,
     addressOn,
-    getRekeyedAddressesQueryKey,
+    getDelegatedAddressesQueryKey,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -51,12 +51,12 @@ export const useLegacyQuantumPrompt = (): UseLegacyQuantumPromptResult => {
         [accounts, getKey, scope],
     )
 
-    // Shares its query key with `useRekeyedAddressesQuery` (the per-account
+    // Shares its query key with `useDelegatedAddressesQuery` (the per-account
     // marker's own lookup), so a prior fetch for the same address is reused
     // instead of doubling the indexer round-trip.
     const lookups = useQueries({
         queries: legacyAddresses.map(address => ({
-            queryKey: getRekeyedAddressesQueryKey(address, scope),
+            queryKey: getDelegatedAddressesQueryKey(address, scope),
             queryFn: () => fetchRekeyedAddresses(address, scope),
             staleTime: 30_000,
         })),

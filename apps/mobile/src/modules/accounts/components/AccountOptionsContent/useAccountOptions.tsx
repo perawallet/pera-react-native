@@ -19,7 +19,7 @@ import {
     hasSigningKeys,
     hdIndexOf,
     isMultisigAccount,
-    isRekeyedAccount,
+    isDelegatedAccount,
     multisigParametersOf,
     useAllAccounts,
     useAuthorityOf,
@@ -135,7 +135,7 @@ export const useAccountOptions = ({
         platform: 'sharedAccounts',
         anyChain: 'multisig',
     })
-    const isRekeyed = isRekeyedAccount(account, scope.chainId)
+    const isRekeyed = isDelegatedAccount(account, scope.chainId)
     const canBackUpMnemonic = useCapability({
         chain: { chainId: scope.chainId, capability: 'mnemonicBackup' },
     })

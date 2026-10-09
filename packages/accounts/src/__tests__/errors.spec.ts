@@ -14,13 +14,13 @@ import { describe, test, expect } from 'vitest'
 import {
     AccountError,
     DuplicateAccountError,
-    NoHDWalletError,
+    NoHdSeedError,
     WalletCannotDeriveError,
 } from '../errors'
 
 describe('account error copy', () => {
-    test('NoHDWalletError declares its key and walletKeyId param', () => {
-        const error = new NoHDWalletError('ABC')
+    test('NoHdSeedError declares its key and walletKeyId param', () => {
+        const error = new NoHdSeedError('ABC')
 
         expect(error.metadata.messageKey).toBe('errors.account.no_hd_wallet')
         expect(error.metadata.params).toEqual({ walletKeyId: 'ABC' })

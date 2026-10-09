@@ -15,13 +15,13 @@ import { useQueries } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchRekeyedAddresses } from '../chain-adapter'
-import { getRekeyedAddressesQueryKey } from './querykeys'
+import { getDelegatedAddressesQueryKey } from './querykeys'
 import { useIsRekeyAvailable } from './useIsRekeyAvailable'
 import { useAllAccounts } from './useAllAccounts'
 import type { LedgerSelectableAccount } from '../models'
 import { chainAccountOf } from '../credentials'
 
-type UseLedgerRekeyedScanResult = {
+type UseLedgerDelegatedScanResult = {
     rekeyed: LedgerSelectableAccount[]
     isScanning: boolean
 }
@@ -36,16 +36,16 @@ type UseLedgerRekeyedScanResult = {
  * rescan flows invalidate the cache when fresher data is explicitly required.
  * Best-effort: a failed/empty scan yields no rows for that address.
  */
-export const useLedgerRekeyedScan = (
+export const useLedgerDelegatedScan = (
     derivedAccounts: HardwareWalletDerivedAccount[],
     scope: ChainScope,
-): UseLedgerRekeyedScanResult => {
+): UseLedgerDelegatedScanResult => {
     const allAccounts = useAllAccounts()
     const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
 
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
-            queryKey: getRekeyedAddressesQueryKey(acc.address, scope),
+            queryKey: getDelegatedAddressesQueryKey(acc.address, scope),
             queryFn: () => fetchRekeyedAddresses(acc.address, scope),
             staleTime: 30_000,
             enabled: isRekeyAvailable,

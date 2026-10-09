@@ -19,13 +19,13 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 const {
     getAlgorandClient,
     waitForTransactionConfirmation,
-    isRekeyedAccount,
+    isDelegatedAccount,
     canSignArc60,
     canSignProgram,
 } = vi.hoisted(() => ({
     getAlgorandClient: vi.fn(),
     waitForTransactionConfirmation: vi.fn(),
-    isRekeyedAccount: vi.fn(),
+    isDelegatedAccount: vi.fn(),
     canSignArc60: vi.fn(),
     canSignProgram: vi.fn(),
 }))
@@ -36,7 +36,7 @@ vi.mock('../../blockchain', async () => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
-    isRekeyedAccount,
+    isDelegatedAccount,
     canSignProgram,
 }))
 vi.mock('../../accounts/vocabulary', async () => ({
@@ -219,7 +219,7 @@ describe('algorandCardAdapter.fundingSourceEligibility', () => {
     } as unknown as WalletAccount
 
     it('refuses a rekeyed account as a funding source', () => {
-        isRekeyedAccount.mockReturnValue(true)
+        isDelegatedAccount.mockReturnValue(true)
         canSignArc60.mockReturnValue(true)
         canSignProgram.mockReturnValue(true)
 
@@ -228,11 +228,11 @@ describe('algorandCardAdapter.fundingSourceEligibility', () => {
             canProveOwnership: true,
             canAutoDraw: true,
         })
-        expect(isRekeyedAccount).toHaveBeenCalledWith(account, 'algorand')
+        expect(isDelegatedAccount).toHaveBeenCalledWith(account, 'algorand')
     })
 
     it('lets a Ledger prove ownership but not sign the auto-draw program', () => {
-        isRekeyedAccount.mockReturnValue(false)
+        isDelegatedAccount.mockReturnValue(false)
         canSignArc60.mockReturnValue(true)
         canSignProgram.mockReturnValue(false)
 

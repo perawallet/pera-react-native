@@ -27,7 +27,7 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsStoreMock },
-    isRekeyedAccount: (account?: { authority?: string } | null) =>
+    isDelegatedAccount: (account?: { authority?: string } | null) =>
         !!account?.authority,
     isWatchAccount: (account: { custody?: { kind?: string } }) =>
         account.custody?.kind === 'watch',

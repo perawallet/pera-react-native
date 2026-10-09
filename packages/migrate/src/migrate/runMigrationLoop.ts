@@ -11,7 +11,7 @@
  */
 
 import {
-    isRekeyedAccount,
+    isDelegatedAccount,
     isWatchAccount,
     useAccountsStore,
     type WalletAccount,
@@ -96,7 +96,7 @@ export const runMigrationLoop = async (
                 if (
                     existing !== undefined &&
                     isWatchAccount(existing) &&
-                    !isRekeyedAccount(existing, chainId) &&
+                    !isDelegatedAccount(existing, chainId) &&
                     account.authAddress !== null
                 ) {
                     adapter.recordLegacyAuthority(account)
@@ -118,7 +118,7 @@ export const runMigrationLoop = async (
             })
             if (
                 account.authAddress !== null &&
-                !isRekeyedAccount(created, chainId)
+                !isDelegatedAccount(created, chainId)
             ) {
                 // Key-bearing imports (incl. the watch-reconcile reimport
                 // above) don't record the legacy authAddress themselves. Do it

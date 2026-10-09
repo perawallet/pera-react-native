@@ -16,7 +16,7 @@ import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
     isAuthorityDowngrade,
-    isRekeyedAccount,
+    isDelegatedAccount,
     useAllAccounts,
     useAuthorityOf,
     useFindAccountByAddress,
@@ -103,6 +103,7 @@ export const useRekeyConfirmScreen = ({
     const { pushWebView } = useWebView()
     const { request: requestBottomSheet } = useBottomSheet()
     const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation({
+        scope,
         signingMetadata: {
             name: t('rekey.signing.source_name'),
             description: t('rekey.signing.source_description'),
@@ -111,12 +112,17 @@ export const useRekeyConfirmScreen = ({
     const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
         sourceAddress,
         targetAddress,
+        scope,
     )
     // The source pays the rekey fee — block before any sign request is
     // created (and before the Ledger device prompt for hardware auths).
-    const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
+    const { isUnderfunded } = useRekeyFeePreflight(
+        sourceAddress,
+        feeAlgos,
+        scope,
+    )
 
-    const hasPreviousRekey = isRekeyedAccount(source, scope.chainId)
+    const hasPreviousRekey = isDelegatedAccount(source, scope.chainId)
 
     // Synchronous in-flight guard: `isSubmitting` only propagates on the
     // next render, so a same-frame double tap would submit twice without it.

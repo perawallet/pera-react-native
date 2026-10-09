@@ -123,7 +123,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
               : custody.seed,
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
-    useLedgerRekeyedScan: mockRekeyedScan,
+    useLedgerDelegatedScan: mockRekeyedScan,
     AccountTypes: {
         standalone: 'standalone',
         hdWallet: 'hdWallet',
