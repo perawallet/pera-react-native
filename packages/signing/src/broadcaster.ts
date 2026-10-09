@@ -71,6 +71,28 @@ export type SubmitAndAutoRefreshOptions = {
 /** The chain-specific leg of submitting signed transactions; registered by the chain package. */
 export interface BroadcasterChainAdapter {
     chainId: ChainId
+    /**
+     * Sends one group's wire-encoded signed transactions to the scope's node,
+     * in order and unchanged. Resolves with the submitted ids once the node
+     * accepts them, including when it already holds them. Rejects with a
+     * `SubmissionError`: `rejected-by-node` when the node refused them, or
+     * `unknown-outcome` with the locally derived ids when no answer arrived,
+     * since the group may still land. Records nothing and waits for nothing.
+     */
+    submit(
+        scope: ChainScope,
+        signedTransactions: readonly Uint8Array[],
+    ): Promise<string[]>
+    /**
+     * Resolves once the chain confirms the submitted group, and at once for
+     * no ids. Rejects when the chain refuses it, hasn't confirmed it within
+     * the chain's own wait window, or can't be reached. Never settles a
+     * submission attempt; the reconciler and `submitAndAutoRefresh` own that.
+     */
+    waitForConfirmation(
+        scope: ChainScope,
+        txIds: readonly string[],
+    ): Promise<void>
     /** The transport re-checks `capturedScope` with `assertScopeUnchanged` at send time. */
     createSubmitTransport(capturedScope: ChainScope): DataTransport
     /** Resolves with the tx ids once the node accepts; confirmation is awaited in the background. */

@@ -55,6 +55,8 @@ export const fakeBroadcasterAdapter = (
     createSubmitTransport: vi.fn(() => ({
         send: async () => ({ type: 'submitted', txIds: [] }),
     })),
+    submit: vi.fn(async () => []),
+    waitForConfirmation: vi.fn(async () => undefined),
     submitAndAutoRefresh: vi.fn(async () => []),
     isRequestGroupAlreadySubmitted: vi.fn(async () => false),
     findStaleGroupReason: vi.fn(async () => null),
