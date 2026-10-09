@@ -13,12 +13,32 @@
 import type {
     ChainId,
     ChainScope,
+    SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../models'
 import { isSameAddress } from '../utils'
-import { addressOn, hasCustody, hdIndexOf, seedOf } from './accessors'
+import {
+    addressOn,
+    chainAccountOf,
+    hasCustody,
+    hdIndexOf,
+    seedOf,
+} from './accessors'
 import type { KeystoreSnapshot } from './credentialScheme'
+
+/**
+ * The first of the chain's signing schemes that a seed can mint through a
+ * derivation path, so `canDerive` and the derivation itself agree on it.
+ */
+export const seedMintableScheme = (
+    chainId: ChainId,
+): SigningScheme | undefined => {
+    const { chains } = getProvider()
+    if (!chains.has(chainId)) return undefined
+    const { schemes, derivationPaths } = chains.get(chainId).descriptor.signing
+    return schemes.find(scheme => derivationPaths[scheme])
+}
 
 /**
  * Whether the wallet `walletId` (a seed's KMS id, as `seedOf` returns) can mint
@@ -31,10 +51,7 @@ export const canDerive = (
     chainId: ChainId,
     keys?: KeystoreSnapshot,
 ): boolean => {
-    const { chains } = getProvider()
-    if (!chains.has(chainId)) return false
-    const { schemes, derivationPaths } = chains.get(chainId).descriptor.signing
-    if (!schemes.some(scheme => derivationPaths[scheme])) return false
+    if (seedMintableScheme(chainId) === undefined) return false
     return accounts.some(
         account =>
             hasCustody(account, 'local') &&
@@ -69,6 +86,36 @@ export const findPathHolder = (
             seedOf(account, keys) === walletId
         )
     })
+
+/**
+ * The lowest position of wallet `walletId` (by account, then keyIndex) with no
+ * entry on `chainId`, or `{ max account + 1, 0 }` once every position has one.
+ */
+export const nextChainPosition = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    chainId: ChainId,
+    keys?: KeystoreSnapshot,
+): HdIndex => {
+    const positions = accounts
+        .flatMap(account => {
+            const index = hdIndexOf(account)
+            return index && seedOf(account, keys) === walletId
+                ? [{ account, index }]
+                : []
+        })
+        .sort(
+            (a, b) =>
+                a.index.account - b.index.account ||
+                a.index.keyIndex - b.index.keyIndex,
+        )
+    const free = positions.find(
+        ({ account }) => !chainAccountOf(account, chainId),
+    )
+    if (free) return { ...free.index }
+    const last = positions.at(-1)
+    return { account: last ? last.index.account + 1 : 0, keyIndex: 0 }
+}
 
 /** The account holding `address` on `scope`, compared through the chain codec. */
 export const findAddressHolder = (

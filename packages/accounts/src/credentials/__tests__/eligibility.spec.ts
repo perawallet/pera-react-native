@@ -31,6 +31,8 @@ import {
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
+    nextChainPosition,
+    seedMintableScheme,
 } from '../eligibility'
 
 describe('wallet eligibility and holder lookups', () => {
@@ -148,6 +150,102 @@ describe('wallet eligibility and holder lookups', () => {
 
         test('is false for a seed with no account behind it', () => {
             expect(canDerive([algo25], 'hd-seed', ALGORAND, keys)).toBe(false)
+        })
+    })
+
+    describe('seedMintableScheme', () => {
+        test('is the first scheme with a derivation path', () => {
+            expect(seedMintableScheme(FIXTURE_CHAIN_ID)).toBe('ed25519')
+            expect(seedMintableScheme(ALGORAND)).toBe('ed25519')
+        })
+
+        test('is undefined for an unregistered chain', () => {
+            expect(seedMintableScheme('ethereum' as ChainId)).toBeUndefined()
+        })
+
+        test('is undefined for a chain with no derivation paths', () => {
+            getProvider().chains.reset()
+            register(FIXTURE_CHAIN_ID, { derivationPaths: {} })
+
+            expect(seedMintableScheme(FIXTURE_CHAIN_ID)).toBeUndefined()
+        })
+    })
+
+    describe('nextChainPosition', () => {
+        const at = (
+            account: number,
+            keyIndex: number,
+            withFixture: boolean,
+        ) => {
+            const base = buildTestAccount('hdWallet')
+            return {
+                ...base,
+                id: `${account}-${keyIndex}`,
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account, keyIndex },
+                },
+                chains: withFixture
+                    ? {
+                          ...base.chains,
+                          [FIXTURE_CHAIN_ID]: { address: fixtureAddress },
+                      }
+                    : base.chains,
+            } as WalletAccount
+        }
+
+        test('returns the lowest position without the chain', () => {
+            const wallet = [at(1, 0, false), at(0, 1, false), at(0, 0, true)]
+
+            expect(
+                nextChainPosition(wallet, 'hd-seed', FIXTURE_CHAIN_ID, keys),
+            ).toEqual({ account: 0, keyIndex: 1 })
+        })
+
+        test('moves to the next account once every position has the chain', () => {
+            const wallet = [at(1, 0, true), at(0, 0, true), at(0, 1, true)]
+
+            expect(
+                nextChainPosition(wallet, 'hd-seed', FIXTURE_CHAIN_ID, keys),
+            ).toEqual({ account: 2, keyIndex: 0 })
+        })
+
+        test('ignores positions held by another wallet', () => {
+            const other = {
+                ...at(0, 0, false),
+                chains: {
+                    [ALGORAND]: { address: 'X', keyPairId: 'other-key' },
+                },
+            } as WalletAccount
+            const otherKeys = [
+                ...keys,
+                {
+                    id: 'hd-seed-2',
+                    type: 'seed',
+                    metadata: { scheme: 'bip39' },
+                },
+                {
+                    id: 'other-key',
+                    type: 'ed25519',
+                    metadata: { parentKeyId: 'hd-seed-2' },
+                },
+            ] as unknown as Keys
+
+            expect(
+                nextChainPosition(
+                    [other, at(0, 0, true)],
+                    'hd-seed',
+                    FIXTURE_CHAIN_ID,
+                    otherKeys,
+                ),
+            ).toEqual({ account: 1, keyIndex: 0 })
+        })
+
+        test('starts at the origin when the wallet holds no position', () => {
+            expect(
+                nextChainPosition([], 'hd-seed', FIXTURE_CHAIN_ID, keys),
+            ).toEqual({ account: 0, keyIndex: 0 })
         })
     })
 

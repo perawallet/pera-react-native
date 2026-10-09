@@ -55,6 +55,24 @@ export class NoHDWalletError extends AccountError {
 }
 
 /**
+ * The wallet has no seed that can mint an account on the chain.
+ */
+export class WalletCannotDeriveError extends AccountError {
+    readonly walletId: string
+    readonly chainId: ChainId
+
+    constructor(walletId: string, chainId: ChainId) {
+        super(
+            `Wallet ${walletId} cannot derive an account on ${chainId}`,
+            undefined,
+            { params: { walletId, chainId } },
+        )
+        this.walletId = walletId
+        this.chainId = chainId
+    }
+}
+
+/**
  * Rekey target account not found in local accounts
  */
 export class DelegationTargetNotFoundError extends AccountError {

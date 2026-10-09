@@ -34,4 +34,6 @@ export {
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
+    nextChainPosition,
+    seedMintableScheme,
 } from './eligibility'
