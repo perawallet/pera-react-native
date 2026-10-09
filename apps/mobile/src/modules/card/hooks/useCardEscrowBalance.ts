@@ -12,12 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { getCardSettlementAssetId, useCardStore } from '@perawallet/wallet-core-card'
 import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
 const ZERO_BALANCE = new Decimal(0)
@@ -35,11 +34,11 @@ export type UseCardEscrowBalanceResult = {
  * route to custodial platforms only, so the chain is the sole source Pera has.
  */
 export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
-    const { network } = useNetwork()
+    const scope = useCardScope()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
+        () => getCardSettlementAssetId(scope),
+        [scope],
     )
 
     const { data: accountInformation, isPending } =

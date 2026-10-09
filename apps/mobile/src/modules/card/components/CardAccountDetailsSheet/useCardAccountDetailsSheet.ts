@@ -16,6 +16,7 @@ import {
     useRegistrationSettingsQuery,
 } from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 import { getCountryName } from '../../utils/getCountryName'
 
 /** KYC presentation tone — drives the status color in the sheet. */
@@ -58,11 +59,12 @@ const KYC_BY_STATE: Record<
 
 export const useCardAccountDetailsSheet =
     (): UseCardAccountDetailsSheetResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
-        const { data: user, isLoading } = useCardUserQuery()
+        const { data: user, isLoading } = useCardUserQuery(scope)
         // Cached, long-lived list — used only to resolve the country code to a
         // name; the sheet doesn't block on it (falls back to the code).
-        const { data: settings } = useRegistrationSettingsQuery()
+        const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const unavailable = t('peraCard.account_details.value_unavailable')
         const fullName =

@@ -21,6 +21,7 @@ import {
 import { ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
@@ -56,15 +57,16 @@ type UseCardWalletBalanceScreenResult = {
 
 export const useCardWalletBalanceScreen =
     (): UseCardWalletBalanceScreenResult => {
+        const scope = useCardScope()
         const navigation = useAppNavigation()
         const { params } =
             useRoute<RouteProp<PeraCardFlowParamList, 'CardWalletBalance'>>()
         const kind = params?.kind ?? CardWalletKind.Reward
         const { copy, hero } = CARD_WALLET_PRESENTATION[kind]
         const { wallet, isLoading, isError, refetch } =
-            useCardWalletBalanceQuery(kind)
+            useCardWalletBalanceQuery(scope, kind)
         const { entries, isFetchingNextPage, hasNextPage, fetchNextPage } =
-            useCardWalletHistoryQuery(kind, wallet?.id ?? null)
+            useCardWalletHistoryQuery(scope, kind, wallet?.id ?? null)
 
         const hasBalance = wallet?.balance.gt(0) ?? false
         const canWithdraw =

@@ -20,6 +20,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the verification email can be re-sent. */
@@ -46,10 +47,11 @@ export type UseCardOnboardingEmailVerifyScreenResult = {
 
 export const useCardOnboardingEmailVerifyScreen =
     (): UseCardOnboardingEmailVerifyScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const { errorToast } = useToast()
         const navigation = useAppNavigation()
-        const sendEmailVerification = useSendEmailVerificationMutation()
+        const sendEmailVerification = useSendEmailVerificationMutation(scope)
         const email = useCardStore(state => state.email)
         const setVerificationCode = useCardStore(
             state => state.setVerificationCode,

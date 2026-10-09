@@ -20,6 +20,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
+import { useCardScope } from '../../hooks/useCardScope'
 
 type UseReportTransactionsSheetResult = {
     transactions: CardTransaction[]
@@ -38,9 +39,10 @@ type UseReportTransactionsSheetResult = {
  */
 export const useReportTransactionsSheet =
     (): UseReportTransactionsSheetResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const { resolve, dismiss } = useBottomSheetResult<'reported'>()
-        const { transactions, isLoading } = useCardTransactionsQuery()
+        const { transactions, isLoading } = useCardTransactionsQuery(scope)
         const { sendEmail } = useSendEmail()
 
         const [selectedIds, setSelectedIds] = useState<Set<string>>(

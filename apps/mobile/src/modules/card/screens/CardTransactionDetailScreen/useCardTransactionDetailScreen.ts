@@ -20,6 +20,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardAccountStackParamList } from '../../routes/types'
 import { formatCardTransactionDateTime } from '../../utils/cardTransactions'
 
@@ -35,6 +36,7 @@ type UseCardTransactionDetailScreenResult = {
 
 export const useCardTransactionDetailScreen =
     (): UseCardTransactionDetailScreenResult => {
+        const scope = useCardScope()
         const route =
             useRoute<
                 RouteProp<
@@ -59,7 +61,7 @@ export const useCardTransactionDetailScreen =
             hasNextPage,
             fetchNextPage,
             refetch,
-        } = useCardTransactionsQuery(undefined, { refetchOnMount: false })
+        } = useCardTransactionsQuery(scope, undefined, { refetchOnMount: false })
 
         const transaction = useMemo(
             () => transactions.find(item => item.id === id),

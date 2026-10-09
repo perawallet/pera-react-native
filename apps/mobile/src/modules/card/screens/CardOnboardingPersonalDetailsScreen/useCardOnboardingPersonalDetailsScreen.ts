@@ -46,6 +46,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingPersonalDetailsScreenResult = {
     control: Control<PersonalDetailsFormValues>
@@ -81,6 +82,7 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
 
 export const useCardOnboardingPersonalDetailsScreen =
     (): UseCardOnboardingPersonalDetailsScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -104,18 +106,18 @@ export const useCardOnboardingPersonalDetailsScreen =
             () => createPersonalDetailsSchema({ isUsResident }),
             [isUsResident],
         )
-        const submitPersonalDetails = useSubmitPersonalDetailsMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
+        const submitPersonalDetails = useSubmitPersonalDetailsMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
         // On resume the onboarding record already holds the user's details, so
         // we prefill them and lock the fields the server has confirmed.
         const { data: onboardingDetails, isLoading: isRecordLoading } =
-            useOnboardingDetailsQuery({ onboardingId })
+            useOnboardingDetailsQuery(scope, { onboardingId })
 
         const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
         const isLastNameLocked = Boolean(onboardingDetails?.lastName)
         const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
 
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(scope, {
             onboardingId,
         })
 

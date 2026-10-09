@@ -20,10 +20,11 @@ import {
     CardEscrowNotConfiguredError,
     CardOwnershipProofRejectedError,
     CardSetupIncompleteError,
+    describeCardChainError,
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
-import { toAlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     isConnectivityError,
     isPeraNetworkError,
@@ -31,6 +32,7 @@ import {
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from './useCardScope'
 
 export type CardErrorToastKeys = {
     /** i18n key for the toast title. */
@@ -49,13 +51,6 @@ export type CardErrorToastKeys = {
 
 export type CardErrorCopy = { titleKey: string; bodyKey: string }
 
-// Both mean the same thing to the user: the account can't cover the fee and
-// keep its minimum balance.
-const INSUFFICIENT_ALGO_CODES: ReadonlySet<string> = new Set([
-    'below_min_balance',
-    'overspend',
-])
-
 // Direct Baanx/AB calls surface ky's TimeoutError; proxied ones arrive wrapped.
 const isTimeoutError = (error: unknown): boolean =>
     (isPeraNetworkError(error) && error.kind === 'timeout') ||
@@ -69,6 +64,7 @@ const isTimeoutError = (error: unknown): boolean =>
  */
 export const resolveCardErrorCopy = (
     error: unknown,
+    scope: ChainScope,
     apiError?: CardApiError,
 ): CardErrorCopy | null | undefined => {
     if (error instanceof UserRejectedSigningError) return null
@@ -131,10 +127,12 @@ export const resolveCardErrorCopy = (
         }
     }
     // Every card chain call is paid by the linked account, whose spendable
-    // ALGO is easily exhausted once it holds several assets. The node names
-    // that case precisely; anything else it says is a TEAL dump the caller's
-    // own copy covers better.
-    if (INSUFFICIENT_ALGO_CODES.has(toAlgodError(error).code)) {
+    // native balance is easily exhausted once it holds several assets. The
+    // chain names that case precisely; anything else it says is a raw dump
+    // the caller's own copy covers better.
+    if (
+        describeCardChainError(error, scope) === 'insufficient-native-balance'
+    ) {
         return {
             titleKey: 'peraCard.account.insufficient_algo_title',
             bodyKey: 'peraCard.account.insufficient_algo_body',
@@ -159,6 +157,7 @@ export const useCardErrorToast = ({
 ) => Promise<void>) => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const scope = useCardScope()
 
     return useCallback(
         async (error: unknown, resolvedApiError?: CardApiError) => {
@@ -170,7 +169,7 @@ export const useCardErrorToast = ({
                 return
             }
             const apiError = resolvedApiError ?? (await getCardApiError(error))
-            const copy = resolveCardErrorCopy(error, apiError)
+            const copy = resolveCardErrorCopy(error, scope, apiError)
             if (copy === null) return
             if (copy) {
                 errorToast(t(copy.titleKey), t(copy.bodyKey))
@@ -182,6 +181,6 @@ export const useCardErrorToast = ({
             }
             errorToast(t(titleKey), apiError.message ?? t(bodyKey))
         },
-        [errorToast, t, titleKey, bodyKey, shouldUseBackendMessage],
+        [errorToast, t, scope, titleKey, bodyKey, shouldUseBackendMessage],
     )
 }

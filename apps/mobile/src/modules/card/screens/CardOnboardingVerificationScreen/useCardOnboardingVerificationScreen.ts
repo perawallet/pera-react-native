@@ -29,6 +29,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { isForegroundTransition } from '@utils/app-state'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */
@@ -41,6 +42,7 @@ export type UseCardOnboardingVerificationScreenResult = {
 
 export const useCardOnboardingVerificationScreen =
     (): UseCardOnboardingVerificationScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -56,7 +58,7 @@ export const useCardOnboardingVerificationScreen =
         // AppState listener below already refetches on refocus-from-Veriff.
         const isFocused = useIsFocused()
 
-        const startVerification = useStartVerificationMutation()
+        const startVerification = useStartVerificationMutation(scope)
 
         const {
             verificationState,
@@ -64,7 +66,7 @@ export const useCardOnboardingVerificationScreen =
             hasPollTimedOut,
             restartPolling,
             refetch,
-        } = useOnboardingKycPoll({ enabled: hasStarted && isFocused })
+        } = useOnboardingKycPoll(scope, { enabled: hasStarted && isFocused })
 
         const handleVerify = useCallback(() => {
             trackEvent(CardEvent.CreateSubmitDocs)

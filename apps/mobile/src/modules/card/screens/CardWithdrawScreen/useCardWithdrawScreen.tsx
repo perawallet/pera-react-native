@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CardWithdrawConfirmationSheet } from '../../components/CardWithdrawConfirmationSheet'
 import { useCardEscrowBalance, useCardOwnerAccount } from '../../hooks'
 import type { PeraCardFlowParamList } from '../../routes/types'
@@ -41,6 +42,7 @@ type UseCardWithdrawScreenResult = {
 }
 
 export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
+    const scope = useCardScope()
     const navigation =
         useNavigation<
             NativeStackNavigationProp<PeraCardFlowParamList, 'CardWithdraw'>
@@ -49,7 +51,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
 
     const destinationAccount = useCardOwnerAccount()
     const { balance: cardBalance } = useCardEscrowBalance()
-    const { pending } = useCardPendingWithdrawalQuery()
+    const { pending } = useCardPendingWithdrawalQuery(scope)
 
     const {
         amount: value,
