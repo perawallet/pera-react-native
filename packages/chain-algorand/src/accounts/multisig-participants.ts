@@ -38,25 +38,33 @@ export const acceptsAlgorandParticipantScheme = (
 ): boolean => scheme === 'ed25519'
 
 /**
- * Multisig signing is propose-based, so one local signable participant is
- * enough. Slots bind to the participant's own pubkey, so rekey indirection is
- * not followed. Quantum participants never count: see
+ * The held account at `address` when it can contribute its own subsignature.
+ * Slots bind to the participant's own pubkey, so rekey indirection is not
+ * followed, and a quantum key never counts: see
  * {@link acceptsAlgorandParticipantScheme}.
  */
+export const signableParticipantAt = (
+    address: string,
+    accounts: readonly WalletAccount[],
+): WalletAccount | undefined => {
+    const participant = accounts.find(
+        account => algorandAddressOf(account) === address,
+    )
+    return participant &&
+        !isQuantumAccount(participant) &&
+        canSignDirectly(participant)
+        ? participant
+        : undefined
+}
+
+/** Multisig signing is propose-based, so one local signable participant is enough. */
 export const canSignViaParticipants = (
     participantAddresses: readonly string[],
     accounts: readonly WalletAccount[],
 ): boolean =>
-    participantAddresses.some(address => {
-        const participant = accounts.find(
-            account => algorandAddressOf(account) === address,
-        )
-        return (
-            !!participant &&
-            !isQuantumAccount(participant) &&
-            canSignDirectly(participant)
-        )
-    })
+    participantAddresses.some(
+        address => signableParticipantAt(address, accounts) !== undefined,
+    )
 
 /** Whether a held account can propose for the multisig; false while its parameters are unknown. */
 export const hasLocalCoSigner = (
