@@ -22,6 +22,8 @@ import {
     type UseImportAccountOptionsScreenResult,
 } from '../useImportAccountOptionsScreen'
 import { capabilityState } from '@test-utils/capability-mock'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { OnboardingEvent, trackEvent } from '@analytics'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -37,6 +39,11 @@ const { mockCapabilities, mockRouteParams, mockHandoff } = vi.hoisted(() => ({
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<object>()),
     useRoute: () => ({ params: mockRouteParams.current }),
+}))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@hooks/useTabHandoff', () => ({
@@ -169,6 +176,7 @@ const pressCloudBackupOption = async (result: {
 describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         mockRouteParams.current = undefined
         mockHandoff.shouldHandOff = false
         mockCapabilities.ledgerUsb = false
@@ -260,6 +268,29 @@ describe('useImportAccountOptionsScreen', () => {
             accountType: null,
         })
     })
+
+    it.each([
+        ['bip39', OnboardingEvent.RecoverOneKey],
+        [null, OnboardingEvent.RecoverAlgo25],
+    ] as const)(
+        "tracks the picked kind's recover event (%s)",
+        async (seed, event) => {
+            mockRequestBottomSheet.mockResolvedValueOnce(seed)
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await act(async () => {
+                await result.current.options
+                    .find(
+                        o =>
+                            o.testID ===
+                            'import_account_options_recover_wallet_button',
+                    )!
+                    .onPress()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(event)
+        },
+    )
 
     it('stays put when the import options sheet is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)

@@ -19,6 +19,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -181,6 +182,7 @@ const HD_ACCOUNT: LocalAccount = {
 
 describe('useAddAccountScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })

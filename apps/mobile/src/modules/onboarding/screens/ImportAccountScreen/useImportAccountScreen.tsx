@@ -24,11 +24,13 @@ import {
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
@@ -74,10 +76,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { request: requestBottomSheet } = useBottomSheet()
     const { readText } = useClipboard()
 
-    const mnemonicLength =
-        localKeyKindOf(scope.chainId, accountType)?.mnemonicWordCounts[0] ?? 0
+    const importKind = localKeyKindOf(scope.chainId, accountType)
+    const mnemonicLength = importKind?.mnemonicWordCounts[0] ?? 0
 
-    const isQuantum = accountType === SeedScheme.Quantum
+    const isQuantum =
+        importKind !== undefined &&
+        isPostQuantumScheme(importKind.signingScheme)
     const titleKey = isQuantum
         ? 'onboarding.import_account.quantum_title'
         : 'onboarding.import_account.title'

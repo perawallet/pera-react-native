@@ -87,6 +87,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     consumePendingImportMnemonic: vi.fn(),
     localKeyKindOf: vi.fn((_chainId: string, seed: string) => ({
         seed,
+        signingScheme: seed === 'quantum' ? 'falcon-1024' : 'ed25519',
         mnemonicWordCounts: [seed === 'bip39' ? 24 : 25],
     })),
 }))

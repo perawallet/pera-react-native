@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    postQuantumKeyKindOf,
     useCreateAccount,
     useCreateNextHDAccount,
     useHdSeedGroups,
@@ -28,7 +29,6 @@ import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
-import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
@@ -194,16 +194,20 @@ export const useAddAccountScreen = () => {
         runCreateAccount(() => buildSingleKeyAccount({ seed: null }))
     }, [buildSingleKeyAccount, runCreateAccount])
 
+    const postQuantumKind = postQuantumKeyKindOf(scope.chainId)
+
     const handleCreateQuantum = useCallback(() => {
+        if (!postQuantumKind) return
+        const { seed } = postQuantumKind
         trackEvent(OnboardingEvent.CreateAccountQuantum)
         // Quantum keygen is heavier than Ed25519, so surface a Quantum-specific
         // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
         // build in memory, then NameAccount persists after the user names it.
         runCreateAccount(
-            () => buildSingleKeyAccount({ seed: SeedScheme.Quantum }),
+            () => buildSingleKeyAccount({ seed }),
             'onboarding.add_account.quantum_creating_title',
         )
-    }, [buildSingleKeyAccount, runCreateAccount])
+    }, [buildSingleKeyAccount, postQuantumKind, runCreateAccount])
 
     const handleLearnMoreQuantum = useCallback(
         () =>
@@ -236,26 +240,27 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
                 },
-                isQuantumEnabled && {
-                    testID: 'add_account_create_quantum_button',
-                    titleKey:
-                        'onboarding.add_account.quantum_account_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.quantum_account_option_description',
-                    leftIcon: 'quantum' as IconName,
-                    onPress: handleCreateQuantum,
-                    isDisabled: isCreatingAccount,
-                    badge: {
-                        labelKey:
-                            'onboarding.add_account.quantum_account_option_badge',
-                        variant: 'new',
+                isQuantumEnabled &&
+                    postQuantumKind && {
+                        testID: 'add_account_create_quantum_button',
+                        titleKey:
+                            'onboarding.add_account.quantum_account_option_title',
+                        descriptionKey:
+                            'onboarding.add_account.quantum_account_option_description',
+                        leftIcon: 'quantum' as IconName,
+                        onPress: handleCreateQuantum,
+                        isDisabled: isCreatingAccount,
+                        badge: {
+                            labelKey:
+                                'onboarding.add_account.quantum_account_option_badge',
+                            variant: 'new',
+                        },
+                        learnMore: {
+                            labelKey:
+                                'onboarding.add_account.quantum_account_option_learn_more',
+                            onPress: handleLearnMoreQuantum,
+                        },
                     },
-                    learnMore: {
-                        labelKey:
-                            'onboarding.add_account.quantum_account_option_learn_more',
-                        onPress: handleLearnMoreQuantum,
-                    },
-                },
                 canUseMultisig && {
                     testID: 'add_account_create_multisig_button',
                     titleKey:
@@ -290,6 +295,7 @@ export const useAddAccountScreen = () => {
             handleAddAccount,
             handleCreateUniversalWallet,
             isQuantumEnabled,
+            postQuantumKind,
             canUseMultisig,
             handleCreateQuantum,
             handleLearnMoreQuantum,
