@@ -44,7 +44,8 @@ esac
 # to vX.Y.(Z+1). Until that stable tag exists, stay on the package.json version —
 # so the first prerelease is v7.0.0-alpha.1, not v7.0.1-alpha.1. alpha and rc
 # share this base, so an rc is always a candidate for the same version the
-# nightlies are building toward.
+# nightlies are building toward. A prerelease tag already cut on a higher base
+# wins over both (see below), which is how a minor or major jump is made.
 #
 # Anchored on the NEWEST shipped stable, not on whether package.json's own
 # version happens to be tagged. package.json is not bumped as part of releasing,
@@ -64,6 +65,19 @@ if [ -n "$NEWEST_STABLE" ] &&
   IFS='.' read -r _maj _min _pat <<<"${NEWEST_STABLE#v}"
   BASE="${_maj}.${_min}.$((_pat + 1))"
   echo "Newest shipped stable is ${NEWEST_STABLE} — prereleases target v${BASE}."
+fi
+
+# A prerelease tag on a HIGHER base is a deliberate jump (a hand-cut v7.2.0-rc.1
+# moving the line to a new minor or major), so alpha and rc follow it rather than
+# keep cutting below it. Only exact-shape alpha/rc tags count, and a stable tag
+# never reaches this far: the newest stable already set the floor above.
+HIGHEST_PRERELEASE=$(git tag --list 'v*-alpha.*' 'v*-rc.*' |
+  grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|rc)\.[0-9]+$' |
+  sed -E 's/^v([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/' | sort -V | tail -n 1 || true)
+if [ -n "$HIGHEST_PRERELEASE" ] &&
+  [ "$(printf '%s\n%s\n' "$BASE" "$HIGHEST_PRERELEASE" | sort -V | tail -n 1)" != "$BASE" ]; then
+  echo "Prereleases already exist for v${HIGHEST_PRERELEASE} — following it instead of v${BASE}."
+  BASE="$HIGHEST_PRERELEASE"
 fi
 
 # --- Change gate: any new commits since the last tag of this channel? ---
