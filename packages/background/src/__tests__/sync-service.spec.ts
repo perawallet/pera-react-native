@@ -230,8 +230,12 @@ describe('SyncService', () => {
         })
     })
 
-    afterEach(() => {
+    afterEach(async () => {
         service.stop()
+        // stop() leaves an in-flight tick running. Drained under fake timers,
+        // its continuation can't outlive the test and call the shared mocks
+        // inside a later one.
+        await vi.runAllTimersAsync()
         vi.useRealTimers()
     })
 
