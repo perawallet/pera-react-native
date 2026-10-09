@@ -81,4 +81,6 @@ export interface ChainDescriptor {
     protocol: ChainProtocolFacts
     explorer: ExplorerUrlBuilders
     finality: ChainFinality
+    /** Schemes, without the `:`, that the chain's payment and deep links use. */
+    uriSchemes: readonly string[]
 }

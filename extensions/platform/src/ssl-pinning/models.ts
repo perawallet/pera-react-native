@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import { readAlgorandFeeConfig, type AlgorandFeeConfig } from '../remote-config'
-
-/** Runtime source of truth for minimum-fee and MBR values, in µAlgo (base units). */
-export const useMinimumFeeConfig = (): AlgorandFeeConfig =>
-    readAlgorandFeeConfig(useRemoteConfig())
+export interface PinnedHostGroup {
+    /**
+     * Remote-config boolean key. The group is pinned only once a fetched value
+     * is `true`, so each group keeps its own kill switch.
+     */
+    flag: string
+    /** Base URLs whose hostnames are pinned. */
+    urls: readonly string[]
+    /** Registrable domains a host must sit under to be pinned. */
+    domains: readonly string[]
+}

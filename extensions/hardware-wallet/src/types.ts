@@ -47,7 +47,7 @@ export type HardwareWalletAppVersion = {
 
 /**
  * Kept manufacturer- and standard-agnostic so this package doesn't depend on
- * the signing package's ARC-60 types.
+ * the signing package's message types.
  */
 export type HardwareWalletArbitrarySignRequest = {
     /** Authoritative for the key — the transport derives the device's derivation path from it. */
@@ -61,7 +61,7 @@ export type HardwareWalletArbitrarySignRequest = {
     /** First 32 bytes = sha256(domain). */
     authenticatorData: Uint8Array
     requestId?: string
-    /** ARC-60 scope (1 = AUTH). */
+    /** App-defined scope from the chain's message signer. */
     scope: number
     /** Payload encoding; which values are accepted is up to the device app. */
     encoding: string
@@ -107,14 +107,17 @@ export type HardwareWalletTransport = {
     ) => Promise<Uint8Array>
 
     /**
-     * ARC-60 AUTH scope. Blocks on physical confirmation; the device computes
-     * the signing payload itself from the request fields.
+     * Blocks on physical confirmation; the device computes the signing
+     * payload itself from the request fields.
      */
     signData: (
         request: HardwareWalletArbitrarySignRequest,
     ) => Promise<Uint8Array>
 
     getAppVersion: () => Promise<HardwareWalletAppVersion>
+
+    /** Rejects with the app's outdated error when the installed app can't run `signData`. */
+    assertCanSignData: () => Promise<void>
 
     /**
      * Fires when the link drops from the device's side. A pending APDU promise

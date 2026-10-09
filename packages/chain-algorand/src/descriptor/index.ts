@@ -114,6 +114,7 @@ export const algorandDescriptor: ChainDescriptor = {
         assetUrl: explorerLink('asset'),
     },
     finality: { kind: 'instant' },
+    uriSchemes: ['algorand'],
 }
 
 // Indexer, AlgoKit and Pera API ids arrive as strings, numbers or bigints; a

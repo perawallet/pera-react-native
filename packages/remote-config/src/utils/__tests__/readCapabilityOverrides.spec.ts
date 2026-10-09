@@ -13,21 +13,15 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     CHAIN_CAPABILITIES,
-    CHAIN_IDS,
     createChainRegistry,
     type ChainCapabilities,
     type ChainDescriptor,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    RemoteConfigDefaults,
-    RemoteConfigKeys,
-} from '@perawallet/wallet-extension-platform'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRemoteConfigStore } from '../../store'
 import { areConfigOverridesIgnored } from '../areConfigOverridesIgnored'
 import {
-    chainOverridesKey,
     parseChainOverrides,
     readCapabilityOverrides,
 } from '../readCapabilityOverrides'
@@ -164,14 +158,6 @@ describe('readCapabilityOverrides', () => {
         expect(readCapabilityOverrides().chainEnabled).toEqual({
             algorand: false,
         })
-    })
-
-    test('has a seeded remote key for every chain', () => {
-        for (const chainId of CHAIN_IDS) {
-            const key = chainOverridesKey(chainId)
-            expect(RemoteConfigKeys).toHaveProperty(key, key)
-            expect(RemoteConfigDefaults).toHaveProperty(key, '')
-        }
     })
 
     describe('through the chain registry', () => {

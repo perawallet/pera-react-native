@@ -13,3 +13,4 @@
 // Stamped on the iframe URL by bidali-url.web.ts (apps/mobile), which keeps
 // its own copy since the two sides live in different apps.
 export const BIDALI_BALANCES_PARAM = 'peraBidaliBalances'
+export const BIDALI_CURRENCIES_PARAM = 'peraBidaliCurrencies'

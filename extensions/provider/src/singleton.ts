@@ -175,9 +175,9 @@ export const reconcileKeystore = async (): Promise<KeystoreReconcileResult> => {
 }
 
 /**
- * `deriveKeygenSeed` is injected rather than imported: `@perawallet/wallet-core-chain-algorand`
- * (home of the real `derivePQKeygenSeed`) depends on this package, so an
- * import here would close a build-order cycle. Same reasoning as the marker
+ * `deriveKeygenSeed` is injected rather than imported: the chain package that
+ * owns the real seed derivation depends on this package, so an import here
+ * would close a build-order cycle. Same reasoning as the marker
  * constants in `./keystore/pqDerivation`.
  */
 export type QuantumMaterialRepairDependencies = {

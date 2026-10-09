@@ -36,7 +36,7 @@ export type LedgerDevice = HardwareWalletDevice & {
 }
 
 /**
- * An Algorand account derived from a Ledger device.
+ * An account derived from a Ledger device.
  * Alias for the generic hardware wallet derived account.
  */
 export type LedgerAccount = HardwareWalletDerivedAccount

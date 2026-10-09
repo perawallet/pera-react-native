@@ -69,6 +69,27 @@ export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
     kms: ChainKeyStore
 }
 
+export type ChainRemoteConfigValue = string | boolean | number
+
+/** Remote-config keys a chain reads, with their bundled defaults. */
+export type ChainRemoteConfigDefaults = Readonly<
+    Record<string, ChainRemoteConfigValue>
+>
+
+/**
+ * Node hosts a chain wants SSL-pinned, under its own remote-config kill switch.
+ * Every group shares one pin set (the CA roots behind Cloudflare), so a host
+ * served through another CA fails once its flag is on.
+ */
+export interface ChainPinnedHosts {
+    /** Remote-config boolean key; pinning applies only once a fetched value is `true`. */
+    flag: string
+    /** Base URLs whose hostnames are pinned. */
+    urls: readonly string[]
+    /** Registrable domains a host must sit under to be pinned. */
+    domains: readonly string[]
+}
+
 export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
@@ -78,4 +99,8 @@ export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
     register(ctx: ChainContext<E>): void
     /** Every i18n key the chain's adapters emit as data, which the literal-`t()` lint can't see. */
     i18nKeys(): readonly string[]
+    /** Key names are the wire contract with remote config, so they never change. */
+    remoteConfigDefaults?: ChainRemoteConfigDefaults
+    /** Called once at registration. */
+    pinnedHosts?: () => ChainPinnedHosts
 }

@@ -25,6 +25,7 @@ import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import {
+    BIDALI_PAYMENT_CURRENCIES,
     useBidaliTransport,
     computeBidaliBalances,
 } from '../../hooks/useBidaliTransport'
@@ -81,6 +82,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
             baseUrl: networkConfig.bidaliBaseUrl,
             apiKey: networkConfig.bidaliApiKey,
             balances: frozenBalances,
+            paymentCurrencies: BIDALI_PAYMENT_CURRENCIES,
         })
     }, [network, frozenBalances])
 

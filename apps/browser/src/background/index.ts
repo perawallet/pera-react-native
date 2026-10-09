@@ -21,6 +21,7 @@ import {
     CONNECTIONS_CONTROL_SCOPE,
     PasskeyRouter,
 } from '@perawallet/wallet-core-browser-runtime'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { config } from '@perawallet/wallet-core-config'
 import { installConnectModalPairRoute } from './connect-modal-pair'
 import {
@@ -53,7 +54,8 @@ startStorageProxyHost()
 
 // Also top-level: constructing the messaging instance registers the SDK's `push`
 // listener, so an async init would let a worker woken by a push miss that push.
-installPushHandlers()
+// Chains aren't registered in this realm, so the descriptor is read directly.
+installPushHandlers({ uriSchemes: algorandDescriptor.uriSchemes })
 
 // Same top-level discipline: a worker woken by INTEGRITY_RENEW_ALARM must
 // already have its listener attached, and the token provider must be live

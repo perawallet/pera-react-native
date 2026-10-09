@@ -18,7 +18,10 @@ import {
 import type { ChainDescriptor, ExplorerUrlBuilders } from '../models/descriptor'
 import { CUSTOM_NETWORK_ID, NETWORK_TIERS } from '../models/identity'
 
-type Rule = 'tiers' | 'caip2' | 'explorer' | 'capabilities'
+type Rule = 'tiers' | 'caip2' | 'explorer' | 'capabilities' | 'uriSchemes'
+
+// RFC 3986 scheme syntax, with no trailing `:`.
+const URI_SCHEME = /^[a-z][a-z0-9+.-]*$/
 
 type Violation = { rule: Rule; message: string }
 
@@ -89,6 +92,21 @@ const collectViolations = (
         }
     }
 
+    if (descriptor.uriSchemes.length === 0) {
+        violations.push({
+            rule: 'uriSchemes',
+            message: 'uriSchemes is empty',
+        })
+    }
+    for (const scheme of descriptor.uriSchemes) {
+        if (!URI_SCHEME.test(scheme)) {
+            violations.push({
+                rule: 'uriSchemes',
+                message: `uri scheme "${scheme}" is not a bare lower-case scheme`,
+            })
+        }
+    }
+
     for (const capability of CHAIN_CAPABILITIES) {
         if (typeof capabilityDefaults[capability] !== 'boolean') {
             violations.push({
@@ -138,6 +156,12 @@ export const descriptorContractTests = (
         it('builds explorer URLs for every non-custom network', () => {
             expect(
                 messagesFor(descriptor, capabilityDefaults, 'explorer'),
+            ).toEqual([])
+        })
+
+        it('declares bare URI schemes', () => {
+            expect(
+                messagesFor(descriptor, capabilityDefaults, 'uriSchemes'),
             ).toEqual([])
         })
 

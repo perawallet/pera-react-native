@@ -11,10 +11,8 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import {
-    RemoteConfigKeys,
-    useRemoteConfig,
-} from '@perawallet/wallet-core-remote-config'
+import { AlgorandRemoteConfigKeys } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useCapability } from '@hooks/useCapability'
 
 /**
@@ -36,7 +34,7 @@ export const useIsQuantumSwapEnabled = (): boolean => {
         isQuantumAvailable &&
         isSwapAvailable &&
         remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_quantum_swap,
+            AlgorandRemoteConfigKeys.enable_quantum_swap,
             fallback,
         )
     )

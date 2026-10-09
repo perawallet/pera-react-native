@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
     ErrorCategory,
     isExpectedError,
     type AppError,
 } from '@perawallet/wallet-core-shared'
 import {
+    classifyLedgerAppError,
     classifyLedgerError,
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
@@ -53,17 +54,17 @@ const createErrorWithStatus = (statusCode: number): Error => {
 }
 
 describe('classifyLedgerError', () => {
-    it('classifies 0x6986 as LedgerUserRejectedError', () => {
-        const result = classifyLedgerError(createErrorWithStatus(0x6986))
+    it('classifies 0x6985 as LedgerUserRejectedError', () => {
+        const result = classifyLedgerError(createErrorWithStatus(0x6985))
         expect(result).toBeInstanceOf(LedgerUserRejectedError)
         // The swap flow's user-rejection classification matches by name to
         // avoid a value import — the name must survive minification.
         expect(result.name).toBe('LedgerUserRejectedError')
     })
 
-    it('classifies 0x6985 (legacy) as LedgerUserRejectedError', () => {
-        const result = classifyLedgerError(createErrorWithStatus(0x6985))
-        expect(result).toBeInstanceOf(LedgerUserRejectedError)
+    it("leaves an app's own non-standard reject code to its driver", () => {
+        const result = classifyLedgerError(createErrorWithStatus(0x6986))
+        expect(result).toBeInstanceOf(LedgerConnectionError)
     })
 
     it('classifies 0x5515 as LedgerDeviceLockedError', () => {
@@ -131,8 +132,8 @@ describe('classifyLedgerError', () => {
 })
 
 describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
-    it('classifies returnCode 0x6986 as LedgerUserRejectedError', () => {
-        expect(classifyLedgerError({ returnCode: 0x6986 })).toBeInstanceOf(
+    it('classifies returnCode 0x6985 as LedgerUserRejectedError', () => {
+        expect(classifyLedgerError({ returnCode: 0x6985 })).toBeInstanceOf(
             LedgerUserRejectedError,
         )
     })
@@ -145,8 +146,67 @@ describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
 
     it('prefers statusCode when both are present', () => {
         expect(
-            classifyLedgerError({ statusCode: 0x6986, returnCode: 0x9000 }),
+            classifyLedgerError({ statusCode: 0x6985, returnCode: 0x9000 }),
         ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+})
+
+describe('classifyLedgerAppError', () => {
+    const app = { appName: 'Fixture', userRejectedStatusCodes: [0x6999] }
+
+    it("classifies the app's own reject code as LedgerUserRejectedError", () => {
+        expect(
+            classifyLedgerAppError(createErrorWithStatus(0x6999), app),
+        ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+
+    it('still classifies the standard reject code as LedgerUserRejectedError', () => {
+        expect(
+            classifyLedgerAppError({ returnCode: 0x6985 }, app),
+        ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+
+    it('names the app that is not open', () => {
+        const original = createErrorWithStatus(0x6e00)
+
+        const result = classifyLedgerAppError(original, app)
+
+        expect(result).toBeInstanceOf(LedgerAppNotOpenError)
+        expect(result.message).toBe(
+            'Fixture app is not open on the Ledger device',
+        )
+        expect(result.originalError).toBe(original)
+    })
+
+    it('names the app that is outdated', () => {
+        const result = classifyLedgerAppError({ returnCode: 0x6d00 }, app)
+
+        expect(result).toBeInstanceOf(LedgerAppOutdatedError)
+        expect(result.message).toBe(
+            'The Ledger Fixture app must be updated to sign this request',
+        )
+    })
+
+    it('passes an already-classified error through', () => {
+        const classified = new LedgerDeviceLockedError()
+
+        expect(classifyLedgerAppError(classified, app)).toBe(classified)
+    })
+
+    it('hands everything else to the fallback classifier', () => {
+        const fallback = vi.fn(() => new LedgerDeviceLockedError())
+        const error = createErrorWithStatus(0x1234)
+
+        const result = classifyLedgerAppError(error, app, fallback)
+
+        expect(fallback).toHaveBeenCalledWith(error)
+        expect(result).toBeInstanceOf(LedgerDeviceLockedError)
+    })
+
+    it("does not treat another app's reject code as a rejection", () => {
+        expect(
+            classifyLedgerAppError(createErrorWithStatus(0x6986), app),
+        ).toBeInstanceOf(LedgerConnectionError)
     })
 })
 
@@ -198,7 +258,7 @@ describe('classifyLedgerError with @ledgerhq/errors typed errors', () => {
     })
 
     it('classifies 0x6d00 (INS_NOT_SUPPORTED) as LedgerAppOutdatedError', () => {
-        // The installed Algorand app predates the instruction we sent — the
+        // The installed app predates the instruction we sent — the
         // only version signal the device volunteers.
         expect(
             classifyLedgerError(createErrorWithStatus(0x6d00)),

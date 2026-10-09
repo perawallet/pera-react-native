@@ -554,12 +554,6 @@ describe('RNLedgerService', () => {
             expect(classified).toBeInstanceOf(LedgerUserRejectedError)
         })
 
-        test('classifies 0x6986 as LedgerUserRejectedError', () => {
-            const error = { statusCode: 0x6986 }
-            const classified = classifyLedgerError(error)
-            expect(classified).toBeInstanceOf(LedgerUserRejectedError)
-        })
-
         test('classifies 0x6e00 as LedgerAppNotOpenError', () => {
             const error = { statusCode: 0x6e00 }
             const classified = classifyLedgerError(error)
