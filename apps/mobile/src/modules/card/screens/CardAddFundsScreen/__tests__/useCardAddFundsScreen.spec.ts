@@ -39,6 +39,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: mockNetwork }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -130,11 +134,16 @@ vi.mock('react-i18next', async () => {
 })
 
 import { useCardAddFundsScreen } from '../useCardAddFundsScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const type = (
     result: { current: ReturnType<typeof useCardAddFundsScreen> },
     keys: string[],
 ) => keys.forEach(key => act(() => result.current.handleKey(key)))
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardAddFundsScreen', () => {
     beforeEach(() => {

@@ -13,7 +13,7 @@
 import { z } from 'zod'
 
 // GET /v1/delegation/token — single-use pair, ~10 minute validity. The nonce
-// must be embedded in the signed SIWA payload the post-approval call carries.
+// must be embedded in the signed sign-in payload the post-approval call carries.
 export const delegationTokenResponseSchema = z.object({
     token: z.string(),
     nonce: z.string(),

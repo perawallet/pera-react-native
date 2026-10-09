@@ -81,6 +81,11 @@ vi.mock('react-i18next', async () => {
 })
 
 import { useReportLostStolenSheet } from '../useReportLostStolenSheet'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useReportLostStolenSheet', () => {
     beforeEach(() => {

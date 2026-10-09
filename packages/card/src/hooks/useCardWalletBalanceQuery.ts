@@ -13,10 +13,9 @@
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchWalletBalance } from '../api/wallet-balance'
@@ -35,9 +34,9 @@ export type UseCardWalletBalanceQueryResult = {
 
 /** Withdrawal freshness comes from invalidation in `useWithdrawWalletBalanceMutation`. */
 export const useCardWalletBalanceQuery = (
+    scope: ChainScope,
     kind: CardWalletKind,
 ): UseCardWalletBalanceQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 

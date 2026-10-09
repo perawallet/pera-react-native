@@ -16,7 +16,7 @@ import {
     isLedgerAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { describeError, logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -29,6 +29,7 @@ import {
     useAutoDrawSwitch,
     useCardErrorToast,
 } from '../../hooks'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseSelectFundingTypeSheetResult = {
     selectedType: FundingType
@@ -56,7 +57,8 @@ export const useSelectFundingTypeSheet =
         const { successToast } = useToast()
         const { resolve, dismiss } = useBottomSheetResult<'applied'>()
         const showError = useCardErrorToast()
-        const { network } = useNetwork()
+        const scope = useCardScope()
+        const network = legacyNetworkOf(scope)
 
         const storedType = useCardStore(state => state.selectedFundingType)
         const connectedAddress = useCardStore(

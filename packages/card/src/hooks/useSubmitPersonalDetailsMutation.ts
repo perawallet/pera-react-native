@@ -12,10 +12,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { submitPersonalDetails } from '../api/onboarding'
 import {
     getCardApiError,
@@ -30,45 +29,43 @@ import { toCardMutationResult, type CardMutationResult } from './types'
 export type UseSubmitPersonalDetailsMutationResult =
     CardMutationResult<PersonalDetailsInput>
 
-export const useSubmitPersonalDetailsMutation =
-    (): UseSubmitPersonalDetailsMutationResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const network = legacyNetworkOf(scope)
-        const queryClient = useQueryClient()
+export const useSubmitPersonalDetailsMutation = (
+    scope: ChainScope,
+): UseSubmitPersonalDetailsMutationResult => {
+    const network = legacyNetworkOf(scope)
+    const queryClient = useQueryClient()
 
-        const mutation = useMutation<void, Error, PersonalDetailsInput>({
-            mutationFn: async details => {
-                try {
-                    await submitPersonalDetails({ details, network })
-                } catch (error) {
-                    // Typed so the screen can show the "finish verifying"
-                    // state instead of Baanx's raw refusal string.
-                    if (isNotVerifiedError(await getCardApiError(error))) {
-                        throw new OnboardingNotVerifiedError()
-                    }
-                    throw error
+    const mutation = useMutation<void, Error, PersonalDetailsInput>({
+        mutationFn: async details => {
+            try {
+                await submitPersonalDetails({ details, network })
+            } catch (error) {
+                // Typed so the screen can show the "finish verifying"
+                // state instead of Baanx's raw refusal string.
+                if (isNotVerifiedError(await getCardApiError(error))) {
+                    throw new OnboardingNotVerifiedError()
                 }
-            },
-            // Personal details saved: advance to the address step.
-            onSuccess: () => {
-                useCardStore
-                    .getState()
-                    .setOnboardingStep(OnboardingStep.Address)
-            },
-            onError: (error, variables) => {
-                // The refusal proves our cached KYC state is optimistic, so
-                // refetch the record the screen gates on.
-                if (error instanceof OnboardingNotVerifiedError) {
-                    void queryClient.invalidateQueries({
-                        queryKey: cardQueryKeys.onboardingDetails(
-                            scope,
-                            variables.onboardingId,
-                        ),
-                    })
-                }
-            },
-            throwOnError: false,
-        })
+                throw error
+            }
+        },
+        // Personal details saved: advance to the address step.
+        onSuccess: () => {
+            useCardStore.getState().setOnboardingStep(OnboardingStep.Address)
+        },
+        onError: (error, variables) => {
+            // The refusal proves our cached KYC state is optimistic, so
+            // refetch the record the screen gates on.
+            if (error instanceof OnboardingNotVerifiedError) {
+                void queryClient.invalidateQueries({
+                    queryKey: cardQueryKeys.onboardingDetails(
+                        scope,
+                        variables.onboardingId,
+                    ),
+                })
+            }
+        },
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

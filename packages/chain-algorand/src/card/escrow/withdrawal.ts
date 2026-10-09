@@ -16,8 +16,8 @@ import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { CardEscrowWithdrawals } from '@perawallet/wallet-core-card'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { PendingWithdrawal } from '@perawallet/wallet-core-card'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from '../client'
 import { isAlgodNotFoundError } from './algod'
 import { resolveEscrowChainConfig } from './lsig'
@@ -51,6 +51,31 @@ const buildWithdrawalBoxName = (ownerAddress: string): Uint8Array => {
     return name
 }
 
+export type AlgorandEscrowWithdrawalParams = {
+    network: Network
+    sender: string
+    cardAddress: string
+    /** Base units of the card's settlement asset. */
+    amount: bigint
+}
+
+export interface AlgorandEscrowWithdrawals {
+    buildRequest(
+        params: AlgorandEscrowWithdrawalParams,
+    ): Promise<PeraTransaction[]>
+    buildWithdraw(
+        params: AlgorandEscrowWithdrawalParams,
+    ): Promise<PeraTransaction[]>
+    buildCancel(
+        params: Omit<AlgorandEscrowWithdrawalParams, 'amount'>,
+    ): Promise<PeraTransaction[]>
+    getPending(
+        network: Network,
+        ownerAddress: string,
+    ): Promise<Nullable<PendingWithdrawal>>
+    getWaitTimeSeconds(network: Network): Promise<Nullable<number>>
+}
+
 const getAppClient = (network: Network, sender?: string) => {
     const { mainAppId } = resolveEscrowChainConfig(network)
     return cardAlgorandClient(network).client.getAppClientById({
@@ -78,7 +103,7 @@ const buildCall = async (
     return populated.buildGroup().map(({ txn }) => txn)
 }
 
-export const algorandEscrowWithdrawals: CardEscrowWithdrawals = {
+export const algorandEscrowWithdrawals: AlgorandEscrowWithdrawals = {
     buildRequest: ({ network, sender, cardAddress, amount }) => {
         const { assetId } = resolveEscrowChainConfig(network)
         return buildCall(network, sender, {

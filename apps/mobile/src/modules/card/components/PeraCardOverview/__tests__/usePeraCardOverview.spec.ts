@@ -77,7 +77,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
         }),
-        useCardWalletBalanceQuery: (kind: 'reward' | 'credit') => {
+        useCardWalletBalanceQuery: (
+            _scope: unknown,
+            kind: 'reward' | 'credit',
+        ) => {
             const balance =
                 kind === 'reward'
                     ? mockState.rewardBalance
@@ -163,6 +166,7 @@ vi.mock('react-i18next', async () => {
 })
 
 import { usePeraCardOverview } from '../usePeraCardOverview'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const tx = (id: string, dateTime: string): CardTransaction =>
     ({ id, dateTime }) as unknown as CardTransaction
@@ -223,6 +227,10 @@ const setLinkedAlgo = (balance: Nullable<string>) => {
     linkedHoldings.algo = balance
     applyLinkedHoldings()
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('usePeraCardOverview', () => {
     beforeEach(() => {

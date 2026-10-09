@@ -66,13 +66,11 @@ vi.mock('@perawallet/wallet-core-config', async () => {
     >('@perawallet/wallet-core-config')
     return {
         ...actual,
-        getNetworkConfig: (
-            network: Parameters<typeof actual.getNetworkConfig>[0],
-        ) => ({
-            ...actual.getNetworkConfig(network),
-            cardW3CardAppId: '111',
-            cardKillswitchAppId: '222',
-        }),
+        config: {
+            ...actual.config,
+            mainnetCardW3CardAppId: '111',
+            mainnetCardKillswitchAppId: '222',
+        },
     }
 })
 

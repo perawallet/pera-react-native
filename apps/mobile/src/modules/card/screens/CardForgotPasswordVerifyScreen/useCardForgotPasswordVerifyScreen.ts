@@ -23,6 +23,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import type { PeraCardStackParamList } from '../../routes/types'
 
@@ -51,6 +52,7 @@ export type UseCardForgotPasswordVerifyScreenResult = {
 
 export const useCardForgotPasswordVerifyScreen =
     (): UseCardForgotPasswordVerifyScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const route =
@@ -58,8 +60,8 @@ export const useCardForgotPasswordVerifyScreen =
                 RouteProp<PeraCardStackParamList, 'CardForgotPasswordVerify'>
             >()
         const { email } = route.params
-        const requestReset = useRequestPasswordResetMutation()
-        const verifyReset = useVerifyPasswordResetMutation()
+        const requestReset = useRequestPasswordResetMutation(scope)
+        const verifyReset = useVerifyPasswordResetMutation(scope)
         const showError = useCardErrorToast({
             titleKey: 'peraCard.forgot_password.error_title',
             bodyKey: 'peraCard.forgot_password.error_body',

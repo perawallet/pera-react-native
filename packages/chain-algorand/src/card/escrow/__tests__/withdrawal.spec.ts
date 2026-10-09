@@ -25,13 +25,10 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
     // Identity passthrough: the "populated" ATC is the one build() returned.
     populateAppCallResources: vi.fn(async (atc: unknown) => atc),
 }))
-const { getNetworkConfig } = vi.hoisted(() => ({ getNetworkConfig: vi.fn() }))
-// resolveEscrowChainConfig reads the network config; everything else still
-// wants the real `config` object.
-vi.mock('@perawallet/wallet-core-config', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-config')),
-    getNetworkConfig,
+const { algorandCardConfig } = vi.hoisted(() => ({
+    algorandCardConfig: vi.fn(),
 }))
+vi.mock('../../config', () => ({ algorandCardConfig }))
 
 import { algorandEscrowWithdrawals as withdrawals } from '../withdrawal'
 
@@ -49,10 +46,10 @@ let getApplicationBoxByName: Mock
 
 beforeEach(() => {
     vi.clearAllMocks()
-    getNetworkConfig.mockReturnValue({
-        cardW3CardAppId: '769896880',
-        cardKillswitchAppId: '769896907',
-        cardUsdcAssetId: '10458941',
+    algorandCardConfig.mockReturnValue({
+        mainAppId: '769896880',
+        killswitchAppId: '769896907',
+        usdcAssetId: '10458941',
     })
     paramsCall = vi.fn(async ({ method }: { method: string }) => ({ method }))
     addAppCallMethodCall = vi.fn()

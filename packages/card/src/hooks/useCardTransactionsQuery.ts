@@ -13,10 +13,9 @@
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { fetchCardTransactions } from '../api/transactions'
 import type { CardTransactionFilters } from '../models'
 import { cardQueryKeys } from './querykeys'
@@ -35,10 +34,10 @@ type CardTransactionsQueryOptions = {
  * result (`hasNextPage`, `fetchNextPage`, `isLoading`, …).
  */
 export const useCardTransactionsQuery = (
+    scope: ChainScope,
     filters?: CardTransactionFilters,
     options?: CardTransactionsQueryOptions,
 ) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
 
     const { data, ...rest } = useInfiniteQuery({

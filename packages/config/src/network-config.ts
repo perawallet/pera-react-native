@@ -54,19 +54,6 @@ export type PeraServices = {
     baanxBaseUrl: string
     baanxClientKey: string
     baanxTenantId: string
-    cardW3CardAppId: string
-    cardKillswitchAppId: string
-    /**
-     * Lowercase hex SHA-256 of the compiled AutoDraw program, pinned per
-     * network. Lives beside the app IDs because it is derived from them — the
-     * compile is deterministic over (template, app IDs, genesis hash), so
-     * rotating either app ID invalidates this pin and both must move together.
-     * Build-time only, never remote config: a remotely-settable expected value
-     * would let whoever controls it approve any program the wallet is asked to
-     * sign.
-     */
-    cardAutoDrawProgramHash: string
-    cardUsdcAssetId: string
 }
 
 export type NetworkConfig = AlgorandChainConfig &
@@ -214,10 +201,6 @@ const EMPTY_PERA_SERVICES = {
     baanxBaseUrl: '',
     baanxClientKey: '',
     baanxTenantId: '',
-    cardW3CardAppId: '',
-    cardKillswitchAppId: '',
-    cardAutoDrawProgramHash: '',
-    cardUsdcAssetId: '',
 } satisfies PeraServices
 
 /**
@@ -233,10 +216,6 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.mainnetBaanxBaseUrl,
         baanxClientKey: config.mainnetBaanxClientKey,
         baanxTenantId: config.mainnetBaanxTenantId,
-        cardW3CardAppId: config.mainnetCardW3CardAppId,
-        cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-        cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-        cardUsdcAssetId: config.mainnetCardUsdcAssetId,
     },
     [Networks.testnet]: {
         backendUrl: config.testnetBackendUrl,
@@ -245,10 +224,6 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.testnetBaanxBaseUrl,
         baanxClientKey: config.testnetBaanxClientKey,
         baanxTenantId: config.testnetBaanxTenantId,
-        cardW3CardAppId: config.testnetCardW3CardAppId,
-        cardKillswitchAppId: config.testnetCardKillswitchAppId,
-        cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-        cardUsdcAssetId: config.testnetCardUsdcAssetId,
     },
     // No Pera deployment. Empty, never borrowed: the query client refuses a
     // Pera request for a scope whose backendUrl is empty.

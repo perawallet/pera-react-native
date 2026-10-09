@@ -15,11 +15,6 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchOnboardingDetails } = vi.hoisted(() => ({
     fetchOnboardingDetails: vi.fn(),
 }))
@@ -31,6 +26,8 @@ vi.mock('../../api/onboarding', async () => ({
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useOnboardingKycGate } from '../useOnboardingKycGate'
 import { cardQueryKeys } from '../querykeys'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -46,9 +43,12 @@ const record = (verificationState: string) => ({
 })
 
 const renderGate = () =>
-    renderHook(() => useOnboardingKycGate({ onboardingId: ONBOARDING_ID }), {
-        wrapper,
-    })
+    renderHook(
+        () => useOnboardingKycGate(SCOPE, { onboardingId: ONBOARDING_ID }),
+        {
+            wrapper,
+        },
+    )
 
 // `isKycRequired` is false both before the first fetch and for an accepted
 // record, so waiting on it does not prove the record landed — a refusal issued
@@ -58,10 +58,7 @@ const waitForFetchedRecord = () =>
     waitFor(() =>
         expect(
             queryClient.getQueryData(
-                cardQueryKeys.onboardingDetails(
-                    scopeForLegacyNetwork('testnet'),
-                    ONBOARDING_ID,
-                ),
+                cardQueryKeys.onboardingDetails(SCOPE, ONBOARDING_ID),
             ),
         ).toBeDefined(),
     )
@@ -72,7 +69,6 @@ describe('useOnboardingKycGate', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
     })
 
     it.each([

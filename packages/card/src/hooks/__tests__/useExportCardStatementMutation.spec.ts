@@ -15,18 +15,16 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { exportCardStatement } = vi.hoisted(() => ({
     exportCardStatement: vi.fn(),
 }))
 vi.mock('../../api/transactions', () => ({ exportCardStatement }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useExportCardStatementMutation } from '../useExportCardStatementMutation'
 import { StatementFormat } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useExportCardStatementMutation', () => {
     let queryClient: QueryClient
@@ -39,7 +37,6 @@ describe('useExportCardStatementMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -56,9 +53,12 @@ describe('useExportCardStatementMutation', () => {
         }
         exportCardStatement.mockResolvedValue(statement)
 
-        const { result } = renderHook(() => useExportCardStatementMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useExportCardStatementMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
         result.current.mutate({
             format: StatementFormat.Csv,
             filters: { dateFrom: '2026-01-01' },

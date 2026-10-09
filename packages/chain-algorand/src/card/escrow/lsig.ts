@@ -15,7 +15,6 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     AutoDrawProgramUnverifiedError,
     CardEscrowNotConfiguredError,
-    type EscrowChainConfig,
 } from '@perawallet/wallet-core-card'
 import {
     bytesToHex,
@@ -23,6 +22,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { getAlgorandClient } from '../../blockchain'
+import { algorandCardConfig } from '../config'
 import {
     AUTODRAW_TEAL_TEMPLATE,
     TMPL_GENESIS_HASH,
@@ -30,6 +30,15 @@ import {
     TMPL_MAIN_APP,
 } from './autodraw-teal'
 import { verifyAutoDrawTealTemplate } from './verify-teal'
+
+/** The on-chain ids the escrow card flows need, as decimal strings. */
+export type AlgorandEscrowConfig = {
+    /** Settlement asset id (USDC). */
+    assetId: string
+    killswitchAppId: string
+    /** W3Card (main) application id. */
+    mainAppId: string
+}
 
 /**
  * Resolves the on-chain ids the AutoDraw template needs. A missing id fails
@@ -40,22 +49,18 @@ import { verifyAutoDrawTealTemplate } from './verify-teal'
  */
 export const resolveEscrowChainConfig = (
     network: Network,
-): EscrowChainConfig => {
-    const { cardW3CardAppId, cardKillswitchAppId, cardUsdcAssetId } =
-        getNetworkConfig(network)
+): AlgorandEscrowConfig => {
+    const { mainAppId, killswitchAppId, usdcAssetId } =
+        algorandCardConfig(network)
 
-    if (!cardW3CardAppId || !cardKillswitchAppId || !cardUsdcAssetId) {
+    if (!mainAppId || !killswitchAppId || !usdcAssetId) {
         throw new CardEscrowNotConfiguredError()
     }
 
-    return {
-        assetId: cardUsdcAssetId,
-        killswitchAppId: cardKillswitchAppId,
-        mainAppId: cardW3CardAppId,
-    }
+    return { assetId: usdcAssetId, killswitchAppId, mainAppId }
 }
 
-export type RenderAutoDrawTealArgs = EscrowChainConfig & {
+export type RenderAutoDrawTealArgs = AlgorandEscrowConfig & {
     /** Base64 network genesis hash. */
     genesisHashBase64: string
 }
@@ -64,7 +69,7 @@ export type RenderAutoDrawTealArgs = EscrowChainConfig & {
  * Substitutes the three `TMPL_` placeholders in the AutoDraw template. The
  * genesis hash becomes a `0x`-prefixed hex byte literal (TEAL bytecblock form),
  * matching AB's demo substitution. `assetId` is accepted (via
- * {@link EscrowChainConfig}) but not used here — the LSig no longer pins a
+ * {@link AlgorandEscrowConfig}) but not used here — the LSig no longer pins a
  * single asset at compile time; asset gating happens entirely through the
  * Killswitch's per-(account, asset) authorization instead. Callers still need
  * it to build the Killswitch `enable`/`kill` app calls.
@@ -86,10 +91,9 @@ export const renderAutoDrawTeal = ({
 /**
  * Fails closed unless the SHA-256 of the compiled program matches the pin for
  * the network. Runs in EVERY environment — staging/testnet builds sign real user
- * keys too, so there is no production-only escape hatch. The pin lives in the
- * network config beside the app IDs it is derived from
- * (`cardAutoDrawProgramHash`); an unpinned network has an empty value and so
- * always rejects.
+ * keys too, so there is no production-only escape hatch. The pin lives in
+ * {@link algorandCardConfig} beside the app IDs it is derived from; an unpinned
+ * network has an empty value and so always rejects.
  *
  * A digest rather than the program bytes: it verifies just as strictly, is 64
  * chars instead of kilobytes, and avoids shipping a second copy of an artifact
@@ -101,7 +105,7 @@ export const verifyAutoDrawProgram = (
     network: Network,
     expected?: string,
 ): void => {
-    const pinned = expected ?? getNetworkConfig(network).cardAutoDrawProgramHash
+    const pinned = expected ?? algorandCardConfig(network).autoDrawProgramHash
 
     // Hex is case-insensitive; normalize so a pin pasted in upper case still
     // verifies instead of silently disabling AutoDraw.

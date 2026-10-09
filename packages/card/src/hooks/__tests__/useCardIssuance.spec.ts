@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchCardStatus, orderCard } = vi.hoisted(() => ({
     fetchCardStatus: vi.fn(),
     orderCard: vi.fn(),
@@ -40,6 +35,8 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardIssuance, CardIssuanceState } from '../useCardIssuance'
 import { CardStatus, CardType, VerificationState } from '../../models'
 import type { Card } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 const ACTIVE_CARD: Card = {
     id: 'card-1',
@@ -71,7 +68,6 @@ describe('useCardIssuance', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -91,7 +87,7 @@ describe('useCardIssuance', () => {
             isOrdered = true
         })
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(CardIssuanceState.Ready),
@@ -110,7 +106,10 @@ describe('useCardIssuance', () => {
         })
 
         const { result } = renderHook(
-            () => ({ first: useCardIssuance(), second: useCardIssuance() }),
+            () => ({
+                first: useCardIssuance(SCOPE),
+                second: useCardIssuance(SCOPE),
+            }),
             { wrapper },
         )
 
@@ -125,7 +124,7 @@ describe('useCardIssuance', () => {
         fetchCardStatus.mockResolvedValue(null)
         fetchUser.mockResolvedValue(user(VerificationState.Pending))
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(
@@ -139,7 +138,7 @@ describe('useCardIssuance', () => {
         fetchCardStatus.mockResolvedValue(null)
         fetchUser.mockResolvedValue(user(VerificationState.Rejected))
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(
@@ -157,7 +156,7 @@ describe('useCardIssuance', () => {
             baanxError(403, { message: 'Account has not been verified' }),
         )
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(
@@ -187,7 +186,7 @@ describe('useCardIssuance', () => {
             isOrdered = true
         })
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(CardIssuanceState.OrderFailed),
@@ -204,7 +203,7 @@ describe('useCardIssuance', () => {
     it('an existing card is READY and the dashboard never fetches the user', async () => {
         fetchCardStatus.mockResolvedValue(ACTIVE_CARD)
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(CardIssuanceState.Ready),
@@ -219,7 +218,7 @@ describe('useCardIssuance', () => {
             status: CardStatus.Pending,
         })
 
-        const { result } = renderHook(() => useCardIssuance(), { wrapper })
+        const { result } = renderHook(() => useCardIssuance(SCOPE), { wrapper })
 
         await waitFor(() =>
             expect(result.current.state).toBe(CardIssuanceState.Issuing),

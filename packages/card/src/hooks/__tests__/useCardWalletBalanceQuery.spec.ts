@@ -16,11 +16,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchWalletBalance } = vi.hoisted(() => ({
     fetchWalletBalance: vi.fn(),
 }))
@@ -34,6 +29,8 @@ vi.mock('../useCardSession', () => ({
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardWalletBalanceQuery } from '../useCardWalletBalanceQuery'
 import { CardWalletKind } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const wallet = (id: string, balance: string) => ({
     id,
@@ -50,7 +47,6 @@ describe('useCardWalletBalanceQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         mockSession.isAuthenticated = true
     })
 
@@ -67,7 +63,7 @@ describe('useCardWalletBalanceQuery', () => {
             fetchWalletBalance.mockResolvedValue(wallet('w_1', '12.34'))
 
             const { result } = renderHook(
-                () => useCardWalletBalanceQuery(kind),
+                () => useCardWalletBalanceQuery(SCOPE, kind),
                 { wrapper },
             )
 
@@ -88,8 +84,8 @@ describe('useCardWalletBalanceQuery', () => {
 
         const { result } = renderHook(
             () => ({
-                reward: useCardWalletBalanceQuery(CardWalletKind.Reward),
-                credit: useCardWalletBalanceQuery(CardWalletKind.Credit),
+                reward: useCardWalletBalanceQuery(SCOPE, CardWalletKind.Reward),
+                credit: useCardWalletBalanceQuery(SCOPE, CardWalletKind.Credit),
             }),
             { wrapper },
         )
@@ -106,9 +102,12 @@ describe('useCardWalletBalanceQuery', () => {
     it('stays idle without a Baanx session', () => {
         mockSession.isAuthenticated = false
 
-        renderHook(() => useCardWalletBalanceQuery(CardWalletKind.Reward), {
-            wrapper,
-        })
+        renderHook(
+            () => useCardWalletBalanceQuery(SCOPE, CardWalletKind.Reward),
+            {
+                wrapper,
+            },
+        )
 
         expect(fetchWalletBalance).not.toHaveBeenCalled()
     })

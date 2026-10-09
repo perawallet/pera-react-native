@@ -50,13 +50,14 @@ export * from './useCardWalletBalanceQuery'
 export * from './useWithdrawWalletBalanceMutation'
 export * from './useCardWalletHistoryQuery'
 
-// Funding delegation (auto-funding LSig lifecycle)
+// Funding delegation (auto-funding lifecycle)
 export * from './useCardExternalWalletsQuery'
 export * from './useSignCardOwnershipMutation'
 export * from './useCreateAndApproveCardMutation'
 export * from './useFundingAddressLinkMutation'
 export * from './useRestoreEscrowCardMutation'
-export * from './useKillswitchAutoDraw'
+export * from './useCardAutoDraw'
+export * from './cardChain'
 export * from './useEscrowWithdrawal'
 export * from './useCardPendingWithdrawalQuery'
 

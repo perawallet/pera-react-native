@@ -15,17 +15,15 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { sendLoginOtpRequest } = vi.hoisted(() => ({
     sendLoginOtpRequest: vi.fn(),
 }))
 vi.mock('../../api/auth', () => ({ sendLoginOtpRequest }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSendLoginOtpMutation } from '../useSendLoginOtpMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useSendLoginOtpMutation', () => {
     let queryClient: QueryClient
@@ -38,7 +36,6 @@ describe('useSendLoginOtpMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -51,7 +48,7 @@ describe('useSendLoginOtpMutation', () => {
     it('requests the login OTP for the user on the active network', async () => {
         sendLoginOtpRequest.mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useSendLoginOtpMutation(), {
+        const { result } = renderHook(() => useSendLoginOtpMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({ userId: 'user-1' })
@@ -65,7 +62,7 @@ describe('useSendLoginOtpMutation', () => {
     it('surfaces a send failure as a mutation error', async () => {
         sendLoginOtpRequest.mockRejectedValue(new Error('boom'))
 
-        const { result } = renderHook(() => useSendLoginOtpMutation(), {
+        const { result } = renderHook(() => useSendLoginOtpMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({ userId: 'user-1' })

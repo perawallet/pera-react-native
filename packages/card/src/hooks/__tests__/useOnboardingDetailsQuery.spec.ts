@@ -15,11 +15,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchOnboardingDetails } = vi.hoisted(() => ({
     fetchOnboardingDetails: vi.fn(),
 }))
@@ -29,6 +24,8 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useOnboardingDetailsQuery } from '../useOnboardingDetailsQuery'
 import { VerificationState } from '../../models'
 
+const SCOPE = scopeForLegacyNetwork('mainnet')
+
 describe('useOnboardingDetailsQuery', () => {
     let queryClient: QueryClient
 
@@ -37,7 +34,6 @@ describe('useOnboardingDetailsQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -53,7 +49,7 @@ describe('useOnboardingDetailsQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useOnboardingDetailsQuery({ onboardingId: 'ob_1' }),
+            () => useOnboardingDetailsQuery(SCOPE, { onboardingId: 'ob_1' }),
             { wrapper },
         )
 
@@ -72,7 +68,7 @@ describe('useOnboardingDetailsQuery', () => {
 
     it('stays idle while the onboarding id is null', async () => {
         const { result } = renderHook(
-            () => useOnboardingDetailsQuery({ onboardingId: null }),
+            () => useOnboardingDetailsQuery(SCOPE, { onboardingId: null }),
             { wrapper },
         )
 
@@ -89,7 +85,7 @@ describe('useOnboardingDetailsQuery', () => {
 
         const { result } = renderHook(
             () =>
-                useOnboardingDetailsQuery({
+                useOnboardingDetailsQuery(SCOPE, {
                     onboardingId: 'ob_1',
                     refetchInterval,
                 }),
@@ -103,7 +99,7 @@ describe('useOnboardingDetailsQuery', () => {
     it('does not fetch when disabled', async () => {
         const { result } = renderHook(
             () =>
-                useOnboardingDetailsQuery({
+                useOnboardingDetailsQuery(SCOPE, {
                     onboardingId: 'ob_1',
                     enabled: false,
                 }),

@@ -20,17 +20,15 @@ import {
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const { fetchCardDetailsToken } = vi.hoisted(() => ({
     fetchCardDetailsToken: vi.fn(),
 }))
 vi.mock('../../api/card-sensitive', () => ({ fetchCardDetailsToken }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardDetailsMutation } from '../useCardDetailsMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('useCardDetailsMutation', () => {
     let queryClient: QueryClient
@@ -43,7 +41,6 @@ describe('useCardDetailsMutation', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
     afterEach(() => {
@@ -63,7 +60,7 @@ describe('useCardDetailsMutation', () => {
             imageUrl: 'https://host/details-image?token=tok-1',
         })
 
-        const { result } = renderHook(() => useCardDetailsMutation(), {
+        const { result } = renderHook(() => useCardDetailsMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({})
@@ -88,7 +85,7 @@ describe('useCardDetailsMutation', () => {
             panBackgroundColor: '#FFE858',
         }
 
-        const { result } = renderHook(() => useCardDetailsMutation(), {
+        const { result } = renderHook(() => useCardDetailsMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({ customCss })
@@ -114,7 +111,7 @@ describe('useCardDetailsMutation', () => {
             new Error('Network request failed'),
         )
 
-        const { result } = renderHook(() => useCardDetailsMutation(), {
+        const { result } = renderHook(() => useCardDetailsMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate({})

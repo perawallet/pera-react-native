@@ -15,11 +15,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchDelegationToken,
     fetchExternalWallets,
+    postCardDelegation,
     postDelegationApproval,
-    postDelegatorLsig,
 } from '../endpoints'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
 
@@ -99,8 +100,7 @@ describe('fetchExternalWallets', () => {
 describe('postDelegationApproval', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const { network, ...approval } = {
-        network: 'testnet' as const,
+    const approval = {
         address: 'FUNDINGADDR',
         currency: 'usdc',
         txId: 'TX123',
@@ -108,7 +108,7 @@ describe('postDelegationApproval', () => {
         signature: 'c2ln',
         token: 'ABC_tok',
     }
-    const params = { network, ...approval }
+    const params = { scope: scopeForLegacyNetwork('testnet'), ...approval }
 
     it("POSTs the chain adapter's route and body on the direct route with the user Bearer", async () => {
         const adapter = registerFakeCardAdapter({
@@ -124,7 +124,7 @@ describe('postDelegationApproval', () => {
         expect(adapter.delegationApprovalRequest).toHaveBeenCalledWith(approval)
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                network,
+                network: 'testnet',
                 method: 'POST',
                 path: '/v1/delegation/chain/post-approval',
                 authenticated: true,
@@ -170,39 +170,23 @@ describe('postDelegationApproval', () => {
     })
 })
 
-describe('postDelegatorLsig', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        registerFakeCardAdapter()
-    })
+describe('postCardDelegation', () => {
+    beforeEach(() => vi.clearAllMocks())
 
-    const lsigParams = {
-        network: 'testnet' as const,
-        currency: 'usdc',
-        delegatorAddress: 'FUNDING_ADDR',
-        lsigBytes: 'bHNpZw==',
-        cardAddress: 'ESCROW_CARD',
+    const scope = scopeForLegacyNetwork('testnet')
+    const delegation = {
+        path: '/v1/delegation/chain/delegator-lsig',
+        data: { body: 'chain' },
     }
 
-    it("POSTs the chain adapter's delegator route and body with the user Bearer", async () => {
-        const adapter = registerFakeCardAdapter({
-            delegatorProgramRequest: vi.fn(() => ({
-                path: '/v1/delegation/chain/delegator-lsig',
-                data: { body: 'chain' },
-            })),
-        })
+    it('POSTs the route and body with the user Bearer', async () => {
         request.mockResolvedValue({ data: { success: true }, status: 201 })
 
-        await postDelegatorLsig(lsigParams)
+        await postCardDelegation(delegation, scope)
 
-        expect(adapter.delegatorProgramRequest).toHaveBeenCalledWith({
-            currency: 'usdc',
-            delegatorAddress: 'FUNDING_ADDR',
-            lsigBytes: 'bHNpZw==',
-            cardAddress: 'ESCROW_CARD',
-        })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
+                network: 'testnet',
                 method: 'POST',
                 path: '/v1/delegation/chain/delegator-lsig',
                 authenticated: true,
@@ -212,10 +196,10 @@ describe('postDelegatorLsig', () => {
         expect(request.mock.calls[0][0]).not.toHaveProperty('route')
     })
 
-    it('rejects an LSig registration Baanx did not accept', async () => {
+    it('rejects a delegation Baanx did not accept', async () => {
         request.mockResolvedValue({ data: { success: false }, status: 200 })
 
-        await expect(postDelegatorLsig(lsigParams)).rejects.toThrow(
+        await expect(postCardDelegation(delegation, scope)).rejects.toThrow(
             'Card delegation was rejected',
         )
     })
@@ -226,7 +210,9 @@ describe('postDelegatorLsig', () => {
         // that already succeeded.
         for (const data of ['Created', undefined, null, 42]) {
             request.mockResolvedValue({ data, status: 201 })
-            await expect(postDelegatorLsig(lsigParams)).resolves.toBeUndefined()
+            await expect(
+                postCardDelegation(delegation, scope),
+            ).resolves.toBeUndefined()
         }
     })
 })

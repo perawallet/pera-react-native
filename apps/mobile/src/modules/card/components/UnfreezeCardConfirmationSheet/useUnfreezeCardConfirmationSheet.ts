@@ -11,6 +11,7 @@
  */
 
 import { useUnfreezeCardMutation } from '@perawallet/wallet-core-card'
+import { useCardScope } from '../../hooks/useCardScope'
 import { useCardConfirmMutation } from '../../hooks'
 
 type UseUnfreezeCardConfirmationSheetResult = {
@@ -28,7 +29,8 @@ type UseUnfreezeCardConfirmationSheetResult = {
  */
 export const useUnfreezeCardConfirmationSheet =
     (): UseUnfreezeCardConfirmationSheetResult => {
-        const unfreeze = useUnfreezeCardMutation()
+        const scope = useCardScope()
+        const unfreeze = useUnfreezeCardMutation(scope)
 
         const { isPending, onConfirm, onClose } =
             useCardConfirmMutation<'confirm'>({

@@ -117,6 +117,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingEmailScreen } from '../useCardOnboardingEmailScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const france: SupportedCountry = {
     id: 'FR',
@@ -144,6 +145,10 @@ const selectCountry = async (
     })
     await waitFor(() => expect(result.current.selectedCountry).toEqual(country))
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingEmailScreen', () => {
     beforeEach(() => {

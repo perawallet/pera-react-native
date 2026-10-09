@@ -30,15 +30,18 @@ import {
 // still succeeding server-side.
 const CARD_CREATE_TIMEOUT_MS = 60_000
 
-/** ARC-60 `StdSigData`, base64-encoded for the wire. */
-export type CardSiwaSignData = {
+/**
+ * The chain-native sign-in payload, base64-encoded for the wire. Only the
+ * backend and the chain's card adapter read its fields.
+ */
+export type CardSignInData = {
     data: string
     authenticatorData: string
 }
 
 export type CreateCardParams = {
     network: Network
-    /** Funding-source address proving ownership via the ARC-60 signature. */
+    /** Funding-source address proving ownership via the sign-in signature. */
     address: string
     /**
      * Baanx user id from `GET /v1/user` — the same id Baanx sends as `user_id`
@@ -48,9 +51,8 @@ export type CreateCardParams = {
     baanxUserId: string
     /** Settlement currency, e.g. "usdc". */
     currency: string
-    /** ARC-60 SIWA sign data (base64 canonical payload + domain hash). */
-    signData: CardSiwaSignData
-    /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
+    signData: CardSignInData
+    /** Base64 signature over the sign-in payload. */
     signature: string
     signal?: AbortSignal
 }
@@ -62,7 +64,7 @@ export type CreateCardResult = {
 
 /**
  * Triggers on-chain Pera Card creation via the Pera backend: verifies the
- * ARC-60 ownership proof, links the funding address to the Baanx user,
+ * sign-in ownership proof, links the funding address to the Baanx user,
  * submits the `cardCreate` app call, and returns the resulting card address
  * and transaction id.
  *

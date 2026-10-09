@@ -44,6 +44,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 /** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
 const US_ISO = 'US'
@@ -92,6 +93,7 @@ export type UseCardOnboardingAddressScreenResult = {
 
 export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
+        const scope = useCardScope()
         const { t, currentLanguage } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast, infoToast } = useToast()
@@ -112,9 +114,12 @@ export const useCardOnboardingAddressScreen =
         const onboardingId = useCardStore(state => state.onboardingId)
         // Baanx refuses this step on an unverified record just like the
         // personal-details step, so it shares the same gate.
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
-            onboardingId,
-        })
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
+            scope,
+            {
+                onboardingId,
+            },
+        )
 
         const handleVerifyIdentity = useCallback(() => {
             navigation.navigate('CardOnboardingVerification')
@@ -137,10 +142,10 @@ export const useCardOnboardingAddressScreen =
                 useCardStore.getState()
             return marketing === null || sms === null
         })
-        const submitAddress = useSubmitAddressMutation()
-        const submitConsent = useSubmitConsentMutation()
-        const linkConsent = useLinkConsentMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
+        const submitAddress = useSubmitAddressMutation(scope)
+        const submitConsent = useSubmitConsentMutation(scope)
+        const linkConsent = useLinkConsentMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const [selectedCountry, setSelectedCountry] =
             useState<Optional<SupportedCountry>>(undefined)

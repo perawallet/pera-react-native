@@ -25,6 +25,7 @@ import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from '../../hooks/useCardScope'
 import { WalletWithdrawConfirmationSheet } from '../../components/WalletWithdrawConfirmationSheet'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import {
@@ -46,6 +47,7 @@ type UseCardWalletBalanceWithdrawScreenResult = {
 
 export const useCardWalletBalanceWithdrawScreen =
     (): UseCardWalletBalanceWithdrawScreenResult => {
+        const scope = useCardScope()
         const navigation = useNavigation()
         const { params } =
             useRoute<
@@ -57,7 +59,7 @@ export const useCardWalletBalanceWithdrawScreen =
         const { t } = useLanguage()
         const { successToast } = useToast()
 
-        const { wallet } = useCardWalletBalanceQuery(kind)
+        const { wallet } = useCardWalletBalanceQuery(scope, kind)
         const balance = wallet?.balance ?? ZERO_DECIMAL
 
         // The request carries the amount at display precision, so the pad

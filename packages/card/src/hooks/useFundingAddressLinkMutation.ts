@@ -12,7 +12,10 @@
 
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     CardUserUnavailableError,
     fetchFundingAddressLink,
@@ -40,32 +43,33 @@ export type UseFundingAddressLinkMutationResult = {
  * whichever account the user just tapped, and the answer is not worth caching
  * past that decision.
  */
-export const useFundingAddressLinkMutation =
-    (): UseFundingAddressLinkMutationResult => {
-        const { network } = useNetwork()
+export const useFundingAddressLinkMutation = (
+    scope: ChainScope,
+): UseFundingAddressLinkMutationResult => {
+    const network = legacyNetworkOf(scope)
 
-        const mutation = useMutation<FundingAddressLink, Error, string>({
-            mutationFn: async address => {
-                const user = await fetchUser({ network })
-                if (!user) {
-                    throw new CardUserUnavailableError()
-                }
-                return fetchFundingAddressLink({
-                    network,
-                    address,
-                    baanxUserId: user.id,
-                })
-            },
-            // Handled by the caller as an inconclusive preflight, so it must
-            // not reach the root error boundary.
-            throwOnError: false,
-        })
+    const mutation = useMutation<FundingAddressLink, Error, string>({
+        mutationFn: async address => {
+            const user = await fetchUser({ network })
+            if (!user) {
+                throw new CardUserUnavailableError()
+            }
+            return fetchFundingAddressLink({
+                network,
+                address,
+                baanxUserId: user.id,
+            })
+        },
+        // Handled by the caller as an inconclusive preflight, so it must
+        // not reach the root error boundary.
+        throwOnError: false,
+    })
 
-        const { mutateAsync } = mutation
-        const checkFundingAddress = useCallback(
-            (address: string) => mutateAsync(address),
-            [mutateAsync],
-        )
+    const { mutateAsync } = mutation
+    const checkFundingAddress = useCallback(
+        (address: string) => mutateAsync(address),
+        [mutateAsync],
+    )
 
-        return { checkFundingAddress, isPending: mutation.isPending }
-    }
+    return { checkFundingAddress, isPending: mutation.isPending }
+}

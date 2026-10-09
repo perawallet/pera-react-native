@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    getCardSettlementAssetId,
     useCardPendingWithdrawalQuery,
     useCardStore,
     useEscrowWithdrawal,
@@ -23,9 +24,7 @@ import {
     getOnChainAccountInformationQueryKey,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import {
     assertOnline,
@@ -35,6 +34,7 @@ import {
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
+import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 import { CardEscrowUnavailableError } from './useCardManualDeposit'
 import { useCardOwnerAccount } from './useCardOwnerAccount'
@@ -85,24 +85,22 @@ export type UseCardWithdrawResult = {
  * has no part in it, and there is one pending request per card at a time.
  */
 export const useCardWithdraw = (): UseCardWithdrawResult => {
-    const { network } = useNetwork()
+    const scope = useCardScope()
     const queryClient = useQueryClient()
-    const { mutateAsync: submit } = useSubmitAndConfirmMutation()
+    const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
     const { assignFeeToGroup } = useMinimumFeeCalculator()
-    const { buildRequest, buildWithdraw, buildCancel } = useEscrowWithdrawal()
+    const { buildRequest, buildWithdraw, buildCancel } =
+        useEscrowWithdrawal(scope)
     const {
         pending,
         waitTimeSeconds,
         isLoading: isPendingLoading,
         invalidate: invalidatePending,
-    } = useCardPendingWithdrawalQuery()
+    } = useCardPendingWithdrawalQuery(scope)
     const owner = useCardOwnerAccount()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
-    const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
-        [network],
-    )
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
     const decimals =
         (usdcAssetId === null
@@ -205,7 +203,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
                 queryClient.invalidateQueries({
                     queryKey: getOnChainAccountInformationQueryKey(
                         card.escrowCardAddress,
-                        scopeForLegacyNetwork(network),
+                        scope,
                     ),
                 }),
             ])
@@ -225,7 +223,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         submit,
         invalidatePending,
         queryClient,
-        network,
+        scope,
     ])
 
     const cancel = useCallback<UseCardWithdrawResult['cancel']>(async () => {

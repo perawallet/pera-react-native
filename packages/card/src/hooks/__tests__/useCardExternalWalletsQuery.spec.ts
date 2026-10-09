@@ -16,11 +16,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const { fetchExternalWallets } = vi.hoisted(() => ({
     fetchExternalWallets: vi.fn(),
 }))
@@ -34,6 +29,8 @@ vi.mock('../useCardSession', () => ({
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardExternalWalletsQuery } from '../useCardExternalWalletsQuery'
 import type { CardExternalWallet } from '../../models'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const wallet = (
     overrides: Partial<CardExternalWallet>,
@@ -54,7 +51,6 @@ describe('useCardExternalWalletsQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         mockSession.isAuthenticated = true
     })
 
@@ -72,7 +68,7 @@ describe('useCardExternalWalletsQuery', () => {
         ])
 
         const { result } = renderHook(
-            () => useCardExternalWalletsQuery({ address: 'ALGO_ADDR' }),
+            () => useCardExternalWalletsQuery(SCOPE, { address: 'ALGO_ADDR' }),
             { wrapper },
         )
 
@@ -87,7 +83,7 @@ describe('useCardExternalWalletsQuery', () => {
         ])
 
         const { result } = renderHook(
-            () => useCardExternalWalletsQuery({ address: 'ALGO_ADDR' }),
+            () => useCardExternalWalletsQuery(SCOPE, { address: 'ALGO_ADDR' }),
             { wrapper },
         )
 
@@ -100,7 +96,7 @@ describe('useCardExternalWalletsQuery', () => {
         fetchExternalWallets.mockResolvedValue([wallet({})])
 
         const { result } = renderHook(
-            () => useCardExternalWalletsQuery({ address: null }),
+            () => useCardExternalWalletsQuery(SCOPE, { address: null }),
             { wrapper },
         )
 
@@ -114,7 +110,7 @@ describe('useCardExternalWalletsQuery', () => {
         fetchExternalWallets.mockResolvedValue([wallet({})])
 
         renderHook(
-            () => useCardExternalWalletsQuery({ address: 'ALGO_ADDR' }),
+            () => useCardExternalWalletsQuery(SCOPE, { address: 'ALGO_ADDR' }),
             { wrapper },
         )
 
@@ -129,7 +125,7 @@ describe('useCardExternalWalletsQuery', () => {
 
         renderHook(
             () =>
-                useCardExternalWalletsQuery({
+                useCardExternalWalletsQuery(SCOPE, {
                     address: 'ALGO_ADDR',
                     enabled: false,
                 }),

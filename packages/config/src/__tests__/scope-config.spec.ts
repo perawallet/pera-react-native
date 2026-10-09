@@ -58,10 +58,6 @@ const NO_PERA_SERVICES = {
     baanxBaseUrl: '',
     baanxClientKey: '',
     baanxTenantId: '',
-    cardW3CardAppId: '',
-    cardKillswitchAppId: '',
-    cardAutoDrawProgramHash: '',
-    cardUsdcAssetId: '',
 }
 
 const cleanups: Array<() => void> = []
@@ -235,10 +231,6 @@ describe('getPeraServicesConfig', () => {
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
             baanxTenantId: config.mainnetBaanxTenantId,
-            cardW3CardAppId: config.mainnetCardW3CardAppId,
-            cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.mainnetCardUsdcAssetId,
         })
     })
 
@@ -252,10 +244,6 @@ describe('getPeraServicesConfig', () => {
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
             baanxTenantId: config.testnetBaanxTenantId,
-            cardW3CardAppId: config.testnetCardW3CardAppId,
-            cardKillswitchAppId: config.testnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
     })
 

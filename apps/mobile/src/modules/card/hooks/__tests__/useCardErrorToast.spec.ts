@@ -27,11 +27,12 @@ import {
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
-// The suite-wide stub short-circuits toAlgodError to `unknown_node_error`;
-// this file asserts on the real parser's codes.
+// The suite-wide stub short-circuits the node-error parser the card adapter
+// reads to `unknown_node_error`; this file asserts on the real parser's codes.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () =>
     vi.importActual<
         typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
@@ -48,6 +49,13 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 import { resolveCardErrorCopy, useCardErrorToast } from '../useCardErrorToast'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardErrorToast', () => {
     beforeEach(() => {
@@ -263,7 +271,7 @@ describe('resolveCardErrorCopy', () => {
             'peraCard.account.auto_funding_unavailable',
         ],
     ])('maps %s to its own copy', (error, prefix) => {
-        expect(resolveCardErrorCopy(error)).toEqual({
+        expect(resolveCardErrorCopy(error, SCOPE)).toEqual({
             titleKey: `${prefix}_title`,
             bodyKey: `${prefix}_body`,
         })
@@ -271,7 +279,7 @@ describe('resolveCardErrorCopy', () => {
 
     it('maps the escrow ownership mismatch code to the unavailable copy', () => {
         expect(
-            resolveCardErrorCopy(new Error('HTTP 400'), {
+            resolveCardErrorCopy(new Error('HTTP 400'), SCOPE, {
                 status: 400,
                 code: 'CARD_OWNERSHIP_MISMATCH',
             }),
@@ -291,7 +299,7 @@ describe('resolveCardErrorCopy', () => {
             'TransactionPool.Remember: transaction ABC: overspend (account 5EZXTMDYUXJTPFUL5HMNCVXOYKV33N2MPECM3DFRAPYIMN2IERNH4TVJYA, data {AccountBaseData:{MicroAlgos:{Raw:199000}}}, tried to spend {201000})',
         ],
     ])('names a fee shortfall instead of asking for a retry', message => {
-        expect(resolveCardErrorCopy(new Error(message))).toEqual({
+        expect(resolveCardErrorCopy(new Error(message), SCOPE)).toEqual({
             titleKey: 'peraCard.account.insufficient_algo_title',
             bodyKey: 'peraCard.account.insufficient_algo_body',
         })
@@ -305,14 +313,15 @@ describe('resolveCardErrorCopy', () => {
                 new Error(
                     'logic eval error: assert failed pc=1849. Details: app=769896880',
                 ),
+                SCOPE,
             ),
         ).toBeUndefined()
     })
 
     it('returns undefined for errors it cannot name', () => {
-        expect(resolveCardErrorCopy(new Error('boom'))).toBeUndefined()
+        expect(resolveCardErrorCopy(new Error('boom'), SCOPE)).toBeUndefined()
         expect(
-            resolveCardErrorCopy(new Error('boom'), { status: 500 }),
+            resolveCardErrorCopy(new Error('boom'), SCOPE, { status: 500 }),
         ).toBeUndefined()
     })
 })

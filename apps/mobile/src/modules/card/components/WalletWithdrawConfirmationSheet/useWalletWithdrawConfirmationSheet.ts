@@ -18,6 +18,7 @@ import {
     useWithdrawWalletBalanceMutation,
 } from '@perawallet/wallet-core-card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 import { useCardErrorToast } from '../../hooks'
 import {
     CARD_WALLET_PRESENTATION,
@@ -50,9 +51,10 @@ export const useWalletWithdrawConfirmationSheet = ({
     kind,
     amount,
 }: UseWalletWithdrawConfirmationSheetParams): UseWalletWithdrawConfirmationSheetResult => {
+    const scope = useCardScope()
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
-    const withdraw = useWithdrawWalletBalanceMutation(kind)
-    const { wallet } = useCardWalletBalanceQuery(kind)
+    const withdraw = useWithdrawWalletBalanceMutation(scope, kind)
+    const { wallet } = useCardWalletBalanceQuery(scope, kind)
     const showError = useCardErrorToast()
 
     const amountDisplay = useMemo(

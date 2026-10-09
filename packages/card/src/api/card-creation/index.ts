@@ -15,7 +15,7 @@ export {
     fetchFundingAddressLink,
     type CreateCardParams,
     type CreateCardResult,
-    type CardSiwaSignData,
+    type CardSignInData,
     type FetchFundingAddressLinkParams,
     type FundingAddressLink,
     type FundingAddressLinkState,

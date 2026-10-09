@@ -12,15 +12,13 @@
 
 import { useCallback } from 'react'
 import {
+    getCardFundingSourceEligibility,
     useCreateAndApproveCardMutation,
     useSignCardOwnershipMutation,
     type CardOwnershipProof,
     type CreateAndApproveCardResult,
 } from '@perawallet/wallet-core-card'
-import {
-    canSignArc60,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     ProgramSigningUnsupportedError,
     UserRejectedSigningError,
@@ -30,6 +28,7 @@ import {
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useCardScope } from './useCardScope'
 
 export type UseEscrowCardCreationResult = {
     /** Step 1: signs the ARC-60 SIWA ownership proof. No network call. */
@@ -56,14 +55,17 @@ export type UseEscrowCardCreationResult = {
  * funding-type switch.
  */
 export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
+    const scope = useCardScope()
     const { addSignRequest } = useSigningRequest()
-    const { mutateAsync: signOwnershipAsync } = useSignCardOwnershipMutation()
+    const { mutateAsync: signOwnershipAsync } =
+        useSignCardOwnershipMutation(scope)
     const { mutateAsync: createAndApproveAsync } =
-        useCreateAndApproveCardMutation()
+        useCreateAndApproveCardMutation(scope)
 
     const canCreateCard = useCallback(
-        (account: WalletAccount) => canSignArc60(account),
-        [],
+        (account: WalletAccount) =>
+            getCardFundingSourceEligibility(account, scope).canProveOwnership,
+        [scope],
     )
 
     // Enqueues a first-party ARC-60 request with `sourceType: 'card'` (one

@@ -15,14 +15,6 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: mockUseNetwork,
-}))
-
 const { createCard, postDelegationApproval, fetchUser } = vi.hoisted(() => ({
     createCard: vi.fn(),
     postDelegationApproval: vi.fn(),
@@ -57,6 +49,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCreateAndApproveCardMutation } from '../useCreateAndApproveCardMutation'
 import { useCardStore } from '../../store'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
@@ -70,6 +63,7 @@ let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
+const SCOPE = scopeForLegacyNetwork('testnet')
 const ADDRESS = 'FUNDINGADDR'
 const BAANX_USER_ID = 'baanx-user-1'
 const PROOF = {
@@ -92,7 +86,6 @@ describe('useCreateAndApproveCardMutation', () => {
             defaultOptions: { mutations: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
         useCardStore.getState().resetState()
         useAppIntegrityStore.getState().resetState()
         setValidIntegrityToken()
@@ -106,9 +99,12 @@ describe('useCreateAndApproveCardMutation', () => {
     })
 
     it('creates then approves using the same proof, and persists the store', async () => {
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const outcome = await result.current.mutateAsync({
             address: ADDRESS,
@@ -127,7 +123,7 @@ describe('useCreateAndApproveCardMutation', () => {
         )
         expect(postDelegationApproval).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: SCOPE,
                 address: ADDRESS,
                 currency: 'usdc',
                 txId: 'TX1',
@@ -144,9 +140,12 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('linked-elsewhere failure from create: rejects without persisting or approving', async () => {
         createCard.mockRejectedValue(new CardAccountLinkedElsewhereError())
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
@@ -157,9 +156,12 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('no Baanx user resolvable: rejects before creating', async () => {
         fetchUser.mockResolvedValue(null)
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
@@ -169,9 +171,12 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('no valid integrity token: rejects before creating anything', async () => {
         useAppIntegrityStore.getState().resetState()
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
@@ -182,9 +187,12 @@ describe('useCreateAndApproveCardMutation', () => {
     it('no valid integrity token on a development build: proceeds without one', async () => {
         useAppIntegrityStore.getState().resetState()
         buildEnv.appEnvironment = 'development'
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const outcome = await result.current.mutateAsync({
             address: ADDRESS,
@@ -198,9 +206,12 @@ describe('useCreateAndApproveCardMutation', () => {
     it('no valid integrity token on a staging build: proceeds without one', async () => {
         useAppIntegrityStore.getState().resetState()
         buildEnv.appEnvironment = 'staging'
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const outcome = await result.current.mutateAsync({
             address: ADDRESS,
@@ -213,9 +224,12 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('create failure: rejects and leaves the store untouched', async () => {
         createCard.mockRejectedValue(new Error('create boom'))
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
@@ -226,9 +240,12 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('approval failure after creation: card persists unapproved; a retry with a fresh proof re-approves only', async () => {
         postDelegationApproval.mockRejectedValueOnce(new Error('approval boom'))
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
@@ -267,9 +284,12 @@ describe('useCreateAndApproveCardMutation', () => {
             txId: 'EXISTING_TX',
         })
         useCardStore.getState().markEscrowCardApproved()
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const outcome = await result.current.mutateAsync({
             address: ADDRESS,
@@ -293,9 +313,12 @@ describe('useCreateAndApproveCardMutation', () => {
             cardAddress: 'CARD_FOR_B',
             txId: 'TX_B',
         })
-        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
 
         const outcome = await result.current.mutateAsync({
             address: ADDRESS,

@@ -22,6 +22,7 @@ import {
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
 
 export type UseCardForgotPasswordScreenResult = {
@@ -33,10 +34,11 @@ export type UseCardForgotPasswordScreenResult = {
 
 export const useCardForgotPasswordScreen =
     (): UseCardForgotPasswordScreenResult => {
+        const scope = useCardScope()
         const navigation = useAppNavigation()
         const route =
             useRoute<RouteProp<PeraCardStackParamList, 'CardForgotPassword'>>()
-        const requestReset = useRequestPasswordResetMutation()
+        const requestReset = useRequestPasswordResetMutation(scope)
         const showError = useCardErrorToast({
             titleKey: 'peraCard.forgot_password.error_title',
             bodyKey: 'peraCard.forgot_password.error_body',

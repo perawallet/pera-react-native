@@ -12,10 +12,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitMailingAddress,
@@ -36,45 +35,45 @@ export type UseSubmitMailingAddressMutationResult = CardMutationResult<
     SubmitAddressResult
 >
 
-export const useSubmitMailingAddressMutation =
-    (): UseSubmitMailingAddressMutationResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const network = legacyNetworkOf(scope)
-        const queryClient = useQueryClient()
+export const useSubmitMailingAddressMutation = (
+    scope: ChainScope,
+): UseSubmitMailingAddressMutationResult => {
+    const network = legacyNetworkOf(scope)
+    const queryClient = useQueryClient()
 
-        const mutation = useMutation<
-            SubmitAddressResult,
-            Error,
-            MailingAddressInput
-        >({
-            mutationFn: async address => {
-                try {
-                    return await submitMailingAddress({ address, network })
-                } catch (error) {
-                    if (isNotVerifiedError(await getCardApiError(error))) {
-                        throw new OnboardingNotVerifiedError()
-                    }
-                    throw error
+    const mutation = useMutation<
+        SubmitAddressResult,
+        Error,
+        MailingAddressInput
+    >({
+        mutationFn: async address => {
+            try {
+                return await submitMailingAddress({ address, network })
+            } catch (error) {
+                if (isNotVerifiedError(await getCardApiError(error))) {
+                    throw new OnboardingNotVerifiedError()
                 }
-            },
-            onSuccess: result => completeCardRegistration({ result, network }),
-            onError: async (error, variables) => {
-                if (error instanceof OnboardingNotVerifiedError) {
-                    void queryClient.invalidateQueries({
-                        queryKey: cardQueryKeys.onboardingDetails(
-                            scope,
-                            variables.onboardingId,
-                        ),
-                    })
-                    return
-                }
-                const apiError = await getCardApiError(error)
-                logger.warn('Card mailing address submission failed', {
-                    error: apiError,
+                throw error
+            }
+        },
+        onSuccess: result => completeCardRegistration({ result, network }),
+        onError: async (error, variables) => {
+            if (error instanceof OnboardingNotVerifiedError) {
+                void queryClient.invalidateQueries({
+                    queryKey: cardQueryKeys.onboardingDetails(
+                        scope,
+                        variables.onboardingId,
+                    ),
                 })
-            },
-            throwOnError: false,
-        })
+                return
+            }
+            const apiError = await getCardApiError(error)
+            logger.warn('Card mailing address submission failed', {
+                error: apiError,
+            })
+        },
+        throwOnError: false,
+    })
 
-        return toCardMutationResult(mutation)
-    }
+    return toCardMutationResult(mutation)
+}

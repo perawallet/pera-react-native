@@ -20,11 +20,6 @@ import {
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
-}))
-
 const api = vi.hoisted(() => ({
     freezeCard: vi.fn(),
     unfreezeCard: vi.fn(),
@@ -36,6 +31,8 @@ import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardStatus, type Card } from '../../models/card'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -50,7 +47,6 @@ describe('card lifecycle mutation hooks', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         api.freezeCard.mockResolvedValue(undefined)
         api.unfreezeCard.mockResolvedValue(undefined)
     })
@@ -61,7 +57,7 @@ describe('card lifecycle mutation hooks', () => {
 
     it('useFreezeCardMutation freezes and invalidates card status', async () => {
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useFreezeCardMutation(), {
+        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -78,7 +74,7 @@ describe('card lifecycle mutation hooks', () => {
 
     it('useUnfreezeCardMutation unfreezes and invalidates card status', async () => {
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+        const { result } = renderHook(() => useUnfreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -94,11 +90,11 @@ describe('card lifecycle mutation hooks', () => {
     })
 
     it('useFreezeCardMutation marks the cached card frozen on success', async () => {
-        const key = cardQueryKeys.status(scopeForLegacyNetwork('mainnet'))
+        const key = cardQueryKeys.status(SCOPE)
         queryClient.setQueryData<Card>(key, {
             status: CardStatus.Active,
         } as Card)
-        const { result } = renderHook(() => useFreezeCardMutation(), {
+        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -111,11 +107,11 @@ describe('card lifecycle mutation hooks', () => {
     })
 
     it('useUnfreezeCardMutation clears the frozen state on success', async () => {
-        const key = cardQueryKeys.status(scopeForLegacyNetwork('mainnet'))
+        const key = cardQueryKeys.status(SCOPE)
         queryClient.setQueryData<Card>(key, {
             status: CardStatus.Frozen,
         } as Card)
-        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+        const { result } = renderHook(() => useUnfreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -130,7 +126,7 @@ describe('card lifecycle mutation hooks', () => {
     it('useFreezeCardMutation surfaces the error and skips status invalidation on failure', async () => {
         api.freezeCard.mockRejectedValue(new Error('freeze failed'))
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useFreezeCardMutation(), {
+        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -144,7 +140,7 @@ describe('card lifecycle mutation hooks', () => {
     it('useUnfreezeCardMutation surfaces the error and skips status invalidation on failure', async () => {
         api.unfreezeCard.mockRejectedValue(new Error('unfreeze failed'))
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+        const { result } = renderHook(() => useUnfreezeCardMutation(SCOPE), {
             wrapper,
         })
 
@@ -167,7 +163,7 @@ describe('card lifecycle mutation hooks', () => {
         onlineManager.setOnline(false)
         api.freezeCard.mockRejectedValue(new Error('Network request failed'))
 
-        const { result } = renderHook(() => useFreezeCardMutation(), {
+        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
             wrapper,
         })
         result.current.mutate()

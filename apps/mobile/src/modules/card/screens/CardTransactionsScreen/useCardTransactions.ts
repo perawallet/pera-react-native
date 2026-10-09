@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
+import { useCardScope } from '../../hooks/useCardScope'
 import { useCardErrorToast } from '../../hooks'
 import type { PeraCardAccountStackParamList } from '../../routes/types'
 import {
@@ -47,6 +48,7 @@ type UseCardTransactionsResult = {
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
+    const scope = useCardScope()
     const navigation =
         useNavigation<
             NativeStackNavigationProp<PeraCardAccountStackParamList>
@@ -59,9 +61,9 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         hasNextPage,
         fetchNextPage,
         refetch,
-    } = useCardTransactionsQuery()
+    } = useCardTransactionsQuery(scope)
     const { mutateAsync: exportStatement, isPending: isExporting } =
-        useExportCardStatementMutation()
+        useExportCardStatementMutation(scope)
     const showExportError = useCardErrorToast({
         titleKey: 'peraCard.transactions.export_error_title',
         bodyKey: 'peraCard.transactions.export_error_body',

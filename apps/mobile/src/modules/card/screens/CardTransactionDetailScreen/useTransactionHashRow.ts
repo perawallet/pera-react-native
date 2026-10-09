@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { getCardTransactionUrl } from '@perawallet/wallet-core-card'
 import {
     generateUniqueId,
     truncateAlgorandAddress,
@@ -21,6 +21,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useClipboard } from '@hooks/useClipboard'
+import { useCardScope } from '../../hooks/useCardScope'
 
 // "ABCDEF...UVWXYZ" — enough of each end to eyeball-match in the explorer.
 const HASH_DISPLAY_LENGTH = 12
@@ -29,14 +30,9 @@ type UseTransactionHashRowResult = {
     truncatedHash: string
     onCopy: () => void
     /**
-     * Undefined for non-Algorand funding legs (Baanx also settles from EVM
-     * networks, e.g. "linea" with 0x hashes) — the Pera explorer can only
-     * resolve Algorand transactions, so the action is hidden instead of
-     * opening a guaranteed not-found page. Also undefined on a network with no
-     * explorer at all (`custom`'s `explorerUrl` is `''` by design), where the
-     * interpolation would yield the schemeless relative path `/tx/…` — the
-     * `!routeCapabilities.inAppWebView` branch below hands that to
-     * `Linking.openURL`, which rejects rather than no-opping.
+     * Undefined when the explorer can't resolve the leg — Baanx also settles
+     * from other chains — or the network has no explorer, so the action is
+     * hidden instead of opening a guaranteed not-found page.
      */
     onOpenExplorer: (() => void) | undefined
 }
@@ -45,11 +41,14 @@ export const useTransactionHashRow = (
     txHash: string,
     network: string,
 ): UseTransactionHashRowResult => {
-    const { networkConfig } = useNetwork()
+    const scope = useCardScope()
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()
 
-    const isAlgorand = network.trim().toLowerCase() === 'algorand'
+    const explorerUrl = useMemo(
+        () => getCardTransactionUrl(txHash, network, scope),
+        [txHash, network, scope],
+    )
 
     const onCopy = useCallback(() => {
         trackEvent(CardEvent.TransactionsCopyTx)
@@ -57,21 +56,19 @@ export const useTransactionHashRow = (
     }, [copyToClipboard, txHash])
 
     const openExplorer = useCallback(() => {
-        if (!networkConfig.explorerUrl) return
+        if (explorerUrl === null) return
         trackEvent(CardEvent.TransactionsViewExplorer)
-        const url = `${networkConfig.explorerUrl}/tx/${txHash}`
         if (!routeCapabilities.inAppWebView) {
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- rooted at config.explorerUrl
-            void Linking.openURL(url)
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- built by the card adapter from the network's explorer config
+            void Linking.openURL(explorerUrl)
             return
         }
-        pushWebView({ url, id: generateUniqueId() })
-    }, [networkConfig.explorerUrl, pushWebView, txHash])
+        pushWebView({ url: explorerUrl, id: generateUniqueId() })
+    }, [explorerUrl, pushWebView])
 
     return {
         truncatedHash: truncateAlgorandAddress(txHash, HASH_DISPLAY_LENGTH),
         onCopy,
-        onOpenExplorer:
-            isAlgorand && networkConfig.explorerUrl ? openExplorer : undefined,
+        onOpenExplorer: explorerUrl === null ? undefined : openExplorer,
     }
 }

@@ -12,8 +12,7 @@
 
 import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { CardEscrowNotConfiguredError } from '../api/escrow'
@@ -41,48 +40,48 @@ const EMPTY_STATE: PendingWithdrawalState = {
     waitTimeSeconds: null,
 }
 
-export const useCardPendingWithdrawalQuery =
-    (): UseCardPendingWithdrawalQueryResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const queryClient = useQueryClient()
-        const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
-        const { getPendingWithdrawal, getWaitTimeSeconds } =
-            useEscrowWithdrawal()
+export const useCardPendingWithdrawalQuery = (
+    scope: ChainScope,
+): UseCardPendingWithdrawalQueryResult => {
+    const queryClient = useQueryClient()
+    const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
+    const { getPendingWithdrawal, getWaitTimeSeconds } =
+        useEscrowWithdrawal(scope)
 
-        const queryKey = cardQueryKeys.pendingWithdrawal(scope, escrowCardOwner)
+    const queryKey = cardQueryKeys.pendingWithdrawal(scope, escrowCardOwner)
 
-        const query = useQuery({
-            queryKey,
-            queryFn: async (): Promise<PendingWithdrawalState> => {
-                if (escrowCardOwner === null) return EMPTY_STATE
-                try {
-                    const [pending, waitTimeSeconds] = await Promise.all([
-                        getPendingWithdrawal(escrowCardOwner),
-                        getWaitTimeSeconds(),
-                    ])
-                    return { pending, waitTimeSeconds }
-                } catch (error) {
-                    // A build without the chain ids has no contract to ask,
-                    // which is the same as nothing pending.
-                    if (error instanceof CardEscrowNotConfiguredError) {
-                        return EMPTY_STATE
-                    }
-                    throw error
+    const query = useQuery({
+        queryKey,
+        queryFn: async (): Promise<PendingWithdrawalState> => {
+            if (escrowCardOwner === null) return EMPTY_STATE
+            try {
+                const [pending, waitTimeSeconds] = await Promise.all([
+                    getPendingWithdrawal(escrowCardOwner),
+                    getWaitTimeSeconds(),
+                ])
+                return { pending, waitTimeSeconds }
+            } catch (error) {
+                // A build without the chain ids has no contract to ask,
+                // which is the same as nothing pending.
+                if (error instanceof CardEscrowNotConfiguredError) {
+                    return EMPTY_STATE
                 }
-            },
-            staleTime: config.reactQueryShortLivedStaleTime,
-            enabled: escrowCardOwner !== null,
-        })
+                throw error
+            }
+        },
+        staleTime: config.reactQueryShortLivedStaleTime,
+        enabled: escrowCardOwner !== null,
+    })
 
-        const invalidate = useCallback(
-            () => queryClient.invalidateQueries({ queryKey }),
-            [queryClient, queryKey],
-        )
+    const invalidate = useCallback(
+        () => queryClient.invalidateQueries({ queryKey }),
+        [queryClient, queryKey],
+    )
 
-        return {
-            pending: query.data?.pending ?? null,
-            waitTimeSeconds: query.data?.waitTimeSeconds ?? null,
-            isLoading: query.isLoading,
-            invalidate,
-        }
+    return {
+        pending: query.data?.pending ?? null,
+        waitTimeSeconds: query.data?.waitTimeSeconds ?? null,
+        isLoading: query.isLoading,
+        invalidate,
     }
+}
