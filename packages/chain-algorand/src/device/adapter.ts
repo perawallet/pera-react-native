@@ -11,7 +11,10 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { accountType, type AccountType } from './vocabulary'
+import type { DeviceChainAdapter } from '@perawallet/wallet-core-device'
+import { accountType, type AccountType } from '../accounts/vocabulary'
+import { algorandDuplicateRank } from '../accounts/local-key-kinds'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
  * Account types as the v3 devices API spells them on the wire. A separate
@@ -21,7 +24,7 @@ import { accountType, type AccountType } from './vocabulary'
  * recognise — which, for a quantum account, means the backend prices its swap
  * quotes at the Ed25519 minimum fee and the swap fails on chain.
  */
-const DEVICE_ACCOUNT_TYPES = {
+export const ALGORAND_DEVICE_ACCOUNT_TYPES = {
     standalone: 'algo25',
     hdWallet: 'hdWallet',
     hardware: 'hardware',
@@ -30,5 +33,19 @@ const DEVICE_ACCOUNT_TYPES = {
     quantum: 'quantum',
 } as const satisfies Record<AccountType, string>
 
-export const algorandDeviceAccountType = (account: WalletAccount): string =>
-    DEVICE_ACCOUNT_TYPES[accountType(account)]
+export type AlgorandDeviceAccountType =
+    (typeof ALGORAND_DEVICE_ACCOUNT_TYPES)[AccountType]
+
+export const algorandDeviceAccountType = (
+    account: WalletAccount,
+): AlgorandDeviceAccountType =>
+    ALGORAND_DEVICE_ACCOUNT_TYPES[accountType(account)]
+
+// The rank the accounts store dedupes by, so registration can never report
+// the kind of the duplicate the store dropped.
+export const algorandDeviceAdapter: DeviceChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    accountTypeOf: (account: WalletAccount) =>
+        algorandDeviceAccountType(account),
+    rankOf: (account: WalletAccount) => algorandDuplicateRank(account),
+}
