@@ -43,16 +43,7 @@ vi.mock('../../store', () => ({
 
 // Mock platform integration
 const mockNetwork = { network: 'mainnet' }
-const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
-const mockRegisterDeviceMutation = vi.fn().mockResolvedValue({})
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn(() => mockDeviceID),
-    useRegisterDeviceMutation: () => ({
-        mutateAsync: mockRegisterDeviceMutation,
-    }),
-}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -110,14 +101,6 @@ describe('useUpdateAccount', () => {
 
         const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
         expect(written[2]).toEqual({ ...hardware, name: 'Renamed' })
-    })
-
-    it('does not touch the device API — registration is the single writer', () => {
-        const { result } = renderHook(() => useUpdateAccount())
-
-        result.current({ ...account1(), name: 'Updated' })
-
-        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     it('leaves the list unchanged for an unknown id', () => {

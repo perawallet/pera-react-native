@@ -76,15 +76,6 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-const mockRegisterDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useRegisterDeviceMutation: vi.fn(() => ({
-        mutateAsync: mockRegisterDeviceMutation,
-    })),
-    useDeviceID: vi.fn(() => 'device-id'),
-}))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         deviceInfo: {
@@ -120,18 +111,6 @@ describe('useCreateAccount', () => {
             },
         })
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
-    })
-
-    test('does not touch the device API — registration is the single writer', async () => {
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
-
-        await act(async () => {
-            await result.current.saveAccount(testAccount('local', 'ADDR1'))
-        })
-
-        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     test('creates new HD wallet account when no existing key', async () => {

@@ -87,4 +87,21 @@ describe('accounts package dependencies', () => {
         expect(files.length).toBeGreaterThan(50)
         expect(offending).toEqual([])
     })
+
+    // Device registration is the one writer of the device's accounts, so a
+    // create or update here must never reach the devices API.
+    it('neither declares nor imports the device package', () => {
+        const DEVICE = '@perawallet/wallet-core-device'
+        const declared = (
+            ['dependencies', 'devDependencies', 'peerDependencies'] as const
+        ).flatMap(field => Object.keys(manifest?.[field] ?? {}))
+        const importers = Object.entries(sources).filter(([, source]) =>
+            [...source.matchAll(SPECIFIER)].some(
+                match => packageOf(match[1] ?? match[2] ?? match[3]) === DEVICE,
+            ),
+        )
+
+        expect(declared).not.toContain(DEVICE)
+        expect(importers.map(([file]) => file)).toEqual([])
+    })
 })
