@@ -32,6 +32,11 @@ import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
 import { useCardScope } from './useCardScope'
 
+const isFundingSourceKind = (account: WalletAccount): boolean =>
+    isAlgo25Account(account) ||
+    isHDWalletAccount(account) ||
+    isHardwareWalletAccount(account)
+
 /**
  * Accounts eligible as the card's funding source: standard, HD, and Ledger
  * accounts the card contract can draw from — watch-only and multisig (by
@@ -41,9 +46,7 @@ export const isEligibleFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
 ): boolean =>
-    (isAlgo25Account(account) ||
-        isHDWalletAccount(account) ||
-        isHardwareWalletAccount(account)) &&
+    isFundingSourceKind(account) &&
     getCardFundingSourceEligibility(account, scope).canFund
 
 /**
@@ -54,9 +57,14 @@ export const isEligibleFundingSource = (
 export const isSigningCapableFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
-): boolean =>
-    isEligibleFundingSource(account, scope) &&
-    getCardFundingSourceEligibility(account, scope).canProveOwnership
+): boolean => {
+    if (!isFundingSourceKind(account)) return false
+    const { canFund, canProveOwnership } = getCardFundingSourceEligibility(
+        account,
+        scope,
+    )
+    return canFund && canProveOwnership
+}
 
 /**
  * Whether `account` can turn ON auto funding, i.e. sign the auto-draw

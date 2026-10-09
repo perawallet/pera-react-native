@@ -16,6 +16,5 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
-// The card is issued on Algorand only, so its flows run on Algorand's selected
-// network until the card can be scoped to another chain.
+// The card is Algorand-only until the card can be scoped to another chain.
 export const useCardScope = (): ChainScope => useSelectedScope(LEGACY_CHAIN_ID)

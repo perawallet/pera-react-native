@@ -11,5 +11,3 @@
  */
 
 export { algorandCardAdapter } from './adapter'
-// Lets a test pin the bundled template instead of stubbing the compile.
-export { computeAutoDrawTemplateHash } from './escrow/verify-teal'

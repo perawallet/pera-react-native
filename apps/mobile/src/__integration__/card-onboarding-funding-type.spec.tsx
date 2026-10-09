@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -32,28 +24,28 @@ import { http, HttpResponse } from 'msw'
 // artifacts are committed, so the compile fails closed for every network.
 // Pinning the bundled template and the MSW compile result (`BoEB`, `int 1`)
 // stands in for a pinned build; the guard itself is unit-tested in
-// packages/chain-algorand/src/card/escrow/__tests__/lsig.spec.ts. The template
-// digest is set in beforeAll: computing it inside this factory would load the
-// chain package while the config module is still being mocked.
-const pins = vi.hoisted(() => ({
-    template: '',
-    // sha256 of the MSW compile result.
-    program: '08b37ef1ea5c33d6370364744b2ca8c109da5a1a77aec0ee779b5a2a6b78a240',
-}))
+// packages/chain-algorand/src/card/escrow/__tests__/lsig.spec.ts.
 vi.mock('@perawallet/wallet-core-config', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-config')
     >('@perawallet/wallet-core-config')
+    const { AUTODRAW_TEAL_TEMPLATE } = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/card/escrow/autodraw-teal')
+    >('@packages/chain-algorand/src/card/escrow/autodraw-teal')
+    const { sha256 } = await import('@noble/hashes/sha2.js')
+    const { bytesToHex } = await import('@noble/hashes/utils.js')
     return {
         ...actual,
         config: {
             ...actual.config,
             mainnetCardW3CardAppId: '111',
             mainnetCardKillswitchAppId: '0',
-            mainnetCardAutoDrawProgramHash: pins.program,
-            get cardAutoDrawTemplateHash() {
-                return pins.template
-            },
+            cardAutoDrawTemplateHash: bytesToHex(
+                sha256(new TextEncoder().encode(AUTODRAW_TEAL_TEMPLATE)),
+            ),
+            // sha256 of the MSW compile result.
+            mainnetCardAutoDrawProgramHash:
+                '08b37ef1ea5c33d6370364744b2ca8c109da5a1a77aec0ee779b5a2a6b78a240',
         },
     }
 })
@@ -118,13 +110,12 @@ import {
     mockCreateCard,
     mockGetUser,
     mockGetDelegationToken,
-    mockPostAlgorandDelegationApproval,
 } from '@perawallet/wallet-core-card/test-handlers'
 import {
     mockAlgodTealCompile,
+    mockPostAlgorandDelegationApproval,
     mockPostAutoDrawDelegation,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { computeAutoDrawTemplateHash } from '@perawallet/wallet-core-chain-algorand/card'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 
@@ -248,10 +239,6 @@ const mockOnboardingDetails = (verificationState: string) =>
     )
 
 describe('Flow: Card onboarding — select funding type', () => {
-    beforeAll(() => {
-        pins.template = computeAutoDrawTemplateHash()
-    })
-
     beforeEach(async () => {
         await seedFundingSigner()
         const store = useCardStore.getState()

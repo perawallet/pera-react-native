@@ -25,6 +25,7 @@ export type UseCardAutoDrawResult = {
 }
 
 export const useCardAutoDraw = (scope: ChainScope): UseCardAutoDrawResult => {
+    // The chain picks the hook, so a scope must not change chain while mounted.
     const useAutoDraw = cardAdapterFor(scope).useAutoDraw
     const operations = useAutoDraw()
 

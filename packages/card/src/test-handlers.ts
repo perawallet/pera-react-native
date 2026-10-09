@@ -85,12 +85,10 @@ export type {
 
 export {
     mockGetDelegationToken,
-    mockPostAlgorandDelegationApproval,
     mockGetExternalWallets,
 } from './api/delegation/msw-handlers'
 export type {
     MockGetDelegationTokenParams,
-    MockPostAlgorandDelegationApprovalParams,
     MockGetExternalWalletsParams,
 } from './api/delegation/msw-handlers'
 

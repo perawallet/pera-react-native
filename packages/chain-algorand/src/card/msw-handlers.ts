@@ -12,6 +12,21 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 
+export type MockPostAlgorandDelegationApprovalParams = {
+    status?: number
+    /** Captures each request body for assertions. */
+    onRequest?: (body: Record<string, unknown>) => void
+}
+
+export const mockPostAlgorandDelegationApproval = ({
+    status = 201,
+    onRequest,
+}: MockPostAlgorandDelegationApprovalParams = {}): HttpHandler =>
+    http.post('*/v1/delegation/algorand/post-approval', async ({ request }) => {
+        onRequest?.((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json({ success: status < 400 }, { status })
+    })
+
 export type MockPostAutoDrawDelegationParams = {
     status?: number
     /** Captures each request body for assertions. */
