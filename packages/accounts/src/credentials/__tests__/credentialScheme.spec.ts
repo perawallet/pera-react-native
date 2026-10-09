@@ -202,6 +202,12 @@ describe('usesNonPrimaryScheme', () => {
         ).toBe(false)
     })
 
+    test("prices a quantum custody's key by its seed while the keystore is not loaded", () => {
+        expect(usesNonPrimaryScheme(quantum('missing'), 'algorand', [])).toBe(
+            true,
+        )
+    })
+
     test('is false for an account that cannot sign on the chain', () => {
         expect(
             usesNonPrimaryScheme(account({ kind: 'watch' }), 'algorand', []),

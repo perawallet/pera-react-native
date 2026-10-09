@@ -16,9 +16,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
+    usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isQuantumAccount } from '../accounts/vocabulary'
 import {
     calculateMinTxnFee,
     calculatePQFeeSurcharge,
@@ -87,7 +87,7 @@ export const groupHasQuantumSigner = ({
             subsetIndex,
         )
         const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
-        return signer !== null && isQuantumAccount(signer)
+        return signer !== null && usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
     })
 
 /**
@@ -180,7 +180,8 @@ export const assignMinimumFeesToGroup = ({
             i,
         )
         const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
-        if (signer === null || !isQuantumAccount(signer)) continue
+        if (signer === null || !usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID))
+            continue
         if (tx.group && coSignedGroupKeys.has(bytesToHex(tx.group))) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum
         // for a fee that wouldn't even cover a plain transaction. The floor

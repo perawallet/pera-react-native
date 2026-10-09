@@ -206,6 +206,25 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
+    // It still resolves as a signer: its key on another chain counts.
+    it('returns false for quantum custody with no key on Algorand', () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                ...quantumAccount(),
+                chains: {
+                    algorand: { address: QUANTUM_ADDRESS },
+                    other: { address: 'OTHER', keyPairId: 'other-key' },
+                },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
     it('still explains the premium an existing quantum account pays after quantumAccounts is switched off', () => {
         capabilityState.turnOff('quantumAccounts')
         useAccountsStore.getState().setAccounts([quantumAccount()])

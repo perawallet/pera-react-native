@@ -33,6 +33,7 @@ import { validateTransactionGroupIntegrity } from '../validateTransactionGroupIn
 import {
     assignFeeToGroup,
     assignMinimumFeesToGroup,
+    groupHasQuantumSigner,
 } from '../assignMinimumFeesToGroup'
 
 const quantumAddress = makeTestAddress(1)
@@ -266,6 +267,34 @@ describe('assignMinimumFeesToGroup', () => {
         expect(
             rawTransactionsMatch(before, result.transactions.map(encode)),
         ).toBe(true)
+    })
+
+    test('leaves quantum custody with no key on Algorand untouched', () => {
+        const transactions = [makePayment(quantumAddress, 1000n)]
+        // It still resolves as a signer: its key on another chain counts.
+        const keyless = quantum({
+            chains: {
+                [ALGORAND_CHAIN_ID]: { address: quantumAddress.toString() },
+                other: { address: 'OTHER', keyPairId: 'kp-other' },
+            },
+        })
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions,
+            signableIndices: [0],
+            accounts: [keyless],
+        })
+
+        expect(result.transactions).toBe(transactions)
+        expect(result.adjustments).toEqual([])
+        expect(
+            groupHasQuantumSigner({
+                transactions,
+                signableIndices: [0],
+                accounts: [keyless],
+            }),
+        ).toBe(false)
     })
 
     test('leaves a co-signed partition untouched even when a quantum fee is below the PQ minimum', () => {

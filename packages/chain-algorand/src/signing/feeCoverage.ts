@@ -17,9 +17,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
+    usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { algorandAddressOf, isQuantumAccount } from '../accounts/vocabulary'
+import { algorandAddressOf } from '../accounts/vocabulary'
 import {
     bytesToHex,
     logger,
@@ -150,7 +151,10 @@ export const findFundedIndices = async ({
             partition.every(index => subsetIndexOf.has(index)) &&
             partition.some(index => {
                 const signer = signerAt(index)
-                return signer !== null && isQuantumAccount(signer)
+                return (
+                    signer !== null &&
+                    usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
+                )
             }),
     )
 

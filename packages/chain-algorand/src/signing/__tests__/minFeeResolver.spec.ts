@@ -107,6 +107,23 @@ describe('resolveMinFeeForSender', () => {
         expect(fee).toBe(1000n)
     })
 
+    // It still resolves as a signer: its key on another chain counts.
+    it('charges the base fee for quantum custody with no key on Algorand', () => {
+        const fee = resolveMinFeeForSender({
+            ...baseParams,
+            senderAddress: 'QADDR',
+            accounts: [
+                quantum({
+                    chains: {
+                        [ALGORAND_CHAIN_ID]: { address: 'QADDR' },
+                        other: { address: 'OTHER', keyPairId: 'kp-other' },
+                    },
+                }),
+            ],
+        })
+        expect(fee).toBe(1000n)
+    })
+
     it('falls back to base fee for a sender not in the wallet', () => {
         const fee = resolveMinFeeForSender({
             ...baseParams,
