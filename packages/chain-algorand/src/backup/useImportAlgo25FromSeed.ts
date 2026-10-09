@@ -90,7 +90,7 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
                     mnemonicIndices,
-                    type: 'algo25',
+                    type: 'standalone',
                 })
 
                 // Algo25 imports always return a WalletAccount; the HD

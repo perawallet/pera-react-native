@@ -44,7 +44,7 @@ type UseAccountTypeInfoResult = {
 }
 
 const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
-    [AccountTypes.algo25]: {
+    [AccountTypes.standalone]: {
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },
@@ -71,7 +71,7 @@ const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
 }
 
 const SUPPORT_URL: Record<AccountType, string> = {
-    [AccountTypes.algo25]: config.accountTypeSupportUrl,
+    [AccountTypes.standalone]: config.accountTypeSupportUrl,
     [AccountTypes.hdWallet]: config.accountTypeSupportUrl,
     [AccountTypes.watch]: config.accountTypeSupportUrl,
     [AccountTypes.hardware]: config.ledgerAccountSupportUrl,

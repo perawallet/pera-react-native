@@ -645,7 +645,7 @@ describe('submitAndAutoRefresh (public)', () => {
         ({
             id: address,
             address,
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             keyPairId: 'kp',
         }) as WalletAccount
 

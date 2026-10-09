@@ -118,7 +118,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useLedgerAccountPreview: vi.fn(),
     useLedgerRekeyedScan: mockRekeyedScan,
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',

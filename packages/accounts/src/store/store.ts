@@ -31,18 +31,30 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     CHAIN_IDS,
+    keyDerivations,
     scopeForLegacyNetwork,
     toScopeKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { kmsCore, zeroBytes } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
-import { buildAccount, chainAccountOf } from '../credentials'
+import {
+    buildAccount,
+    canImportRawKey,
+    chainAccountOf,
+    findAddressHolder,
+    isKeyReferenced,
+} from '../credentials'
 import {
     toCurrentAccount,
     type PersistedAccountRecord,
 } from '../credentials/backfill'
-import { DuplicateAccountError } from '../errors'
+import { DuplicateAccountError, RawKeyImportUnsupportedError } from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
 import { liftLegacyAuthority } from './legacyAuthority'
 import {
@@ -53,7 +65,7 @@ import {
 } from '../utils'
 
 const STORE_NAME = 'accounts-store'
-const STORE_VERSION = 3
+const STORE_VERSION = 4
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -85,23 +97,39 @@ const stripPreV2Custody = (
     return rest as PersistedAccountRecord
 }
 
+// v4 replaced the Algorand-named seed scheme with a seedless custody.
+const withStandaloneCustody = (account: WalletAccount): WalletAccount => {
+    const { custody } = account as { custody: { kind: string; seed?: string } }
+    return custody.kind === 'local' && custody.seed === 'algo25'
+        ? ({
+              ...account,
+              custody: { kind: 'local', seed: null },
+          } as WalletAccount)
+        : account
+}
+
 /**
  * Before v2 the legacy `type` and details were authoritative, so those
  * versions derive custody from them again. v3 stops persisting `type`, which
- * re-running this over migrated state leaves alone.
+ * re-running this over migrated state leaves alone. v4 rewrites the stored
+ * Algorand-named seed scheme to a seedless standalone custody.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
     version: number,
 ): PersistedAccountsState => {
-    if (version >= 3) return persistedState as PersistedAccountsState
+    if (version >= 4) return persistedState as PersistedAccountsState
     const state = persistedState as PersistedAccountsRecordState
     const lifted = liftLegacyAuthority(state.accounts ?? [])
     return {
         ...state,
         accounts: lifted.records.map(account =>
-            toCurrentAccount(
-                version < 2 ? stripPreV2Custody(account) : account,
+            withStandaloneCustody(
+                version < 3
+                    ? toCurrentAccount(
+                          version < 2 ? stripPreV2Custody(account) : account,
+                      )
+                    : (account as unknown as WalletAccount),
             ),
         ),
         authorities: mergeAuthorities(lifted.authorities, state.authorities),
@@ -209,6 +237,21 @@ const resolveDuplicateAccounts = (
     }
 
     return resolved
+}
+
+/** Removes a KMS entry no account references; a failure is logged so the caller's own error is the one thrown. */
+const removeUnreferencedKey = async (
+    accounts: readonly WalletAccount[],
+    keyPairId: string,
+): Promise<void> => {
+    if (isKeyReferenced(accounts, keyPairId)) return
+    try {
+        await getProvider().key.store.remove(keyPairId)
+    } catch (error) {
+        logger.warn(
+            `Could not remove an unreferenced imported key: ${error instanceof Error ? error.message : 'unknown error'}`,
+        )
+    }
 }
 
 /** The account held by the hardware wallet, on the chain whose entry holds `address`; `undefined` when none does. */
@@ -321,6 +364,51 @@ export const useAccountsStore: UseBoundStore<
                     }
                 }
                 get().setAccounts([...accounts, account])
+            },
+            importAccountFromPrivateKey: async (
+                chainId: ChainId,
+                privateKey: Uint8Array,
+                name?: string,
+            ) => {
+                try {
+                    const scheme = canImportRawKey(chainId)
+                        ? getProvider().chains.get(chainId).descriptor.signing
+                              .rawKeySchemes[0]
+                        : undefined
+                    if (!scheme) throw new RawKeyImportUnsupportedError(chainId)
+                    const networkId = selectChainNetworkId(
+                        useNetworkStore.getState(),
+                        chainId,
+                    )
+                    const { keyPairId, address } = await keyDerivations
+                        .get(chainId)
+                        .importRawKey(kmsCore, privateKey, {
+                            scheme,
+                            networkId,
+                        })
+                    try {
+                        const holder = findAddressHolder(
+                            get().accounts,
+                            { chainId, networkId },
+                            address,
+                        )
+                        if (holder)
+                            throw new DuplicateAccountError(address, holder)
+                        const account = buildAccount({
+                            name,
+                            custody: { kind: 'local', seed: null },
+                            chainId,
+                            chains: { [chainId]: { address, keyPairId } },
+                        })
+                        get().addAccount(account)
+                        return account
+                    } catch (error) {
+                        await removeUnreferencedKey(get().accounts, keyPairId)
+                        throw error
+                    }
+                } finally {
+                    zeroBytes(privateKey)
+                }
             },
             setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts

@@ -59,7 +59,7 @@ const makeAccount = (address: string): WalletAccount =>
         address,
         name: address,
         id: address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         canSign: true,
     }) as WalletAccount
 

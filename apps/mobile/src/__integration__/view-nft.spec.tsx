@@ -76,7 +76,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 // the transfer; the view-only test uses a placeholder `keyPairId`.
 const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     id: 'holder-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'holder-key',
     name: 'NFT Holder',
@@ -96,7 +96,7 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
     })
     const holder: WalletAccount = {
         id: 'holder-1',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'NFT Holder',

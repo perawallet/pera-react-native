@@ -72,7 +72,7 @@ const USDC_ASSET = {
 
 const ACCOUNT_A: WalletAccount = {
     id: 'portfolio-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'portfolio-a-key',
     name: 'Trading',
@@ -80,7 +80,7 @@ const ACCOUNT_A: WalletAccount = {
 
 const ACCOUNT_B: WalletAccount = {
     id: 'portfolio-b',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: HD_TEST_ADDRESS,
     keyPairId: 'portfolio-b-key',
     name: 'Long-term',

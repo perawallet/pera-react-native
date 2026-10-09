@@ -67,7 +67,7 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => mockUseDeviceID(),
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',
@@ -143,7 +143,7 @@ describe('useImportSharedAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 address: 'P2',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             } as WalletAccount,
         ])
 
@@ -156,7 +156,7 @@ describe('useImportSharedAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 address: 'P2',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'kp',
             } as WalletAccount,
         ])

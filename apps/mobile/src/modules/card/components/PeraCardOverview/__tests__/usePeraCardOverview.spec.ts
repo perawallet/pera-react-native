@@ -171,7 +171,7 @@ const tx = (id: string, dateTime: string): CardTransaction =>
 // the stored type alone is not enough — the account has to be resolvable.
 const LOCAL_ACCOUNT = {
     address: 'LINKED_ADDR',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'key-1',
 } as WalletAccount
 

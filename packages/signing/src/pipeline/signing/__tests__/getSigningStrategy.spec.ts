@@ -38,7 +38,7 @@ import { registerFakeLocalKeySignerAdapter } from '../../../__tests__/fakeLocalK
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
 const algo25Account = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'A',
     keyPairId: 'key-a',
 } as unknown as WalletAccount
@@ -207,7 +207,7 @@ describe('createSigningStrategySelector', () => {
                     }
                     if (account.custody.kind === 'hardware') {
                         return {
-                            custody: { kind: 'local', seed: 'algo25' },
+                            custody: { kind: 'local', seed: null },
                             address: `${account.address}_AUTH`,
                         } as unknown as WalletAccount
                     }

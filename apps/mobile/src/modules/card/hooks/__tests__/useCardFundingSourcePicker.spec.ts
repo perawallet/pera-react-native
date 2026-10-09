@@ -93,13 +93,13 @@ beforeEach(() => {
 
 describe('isEligibleFundingSource', () => {
     it('accepts standard / HD / Ledger and rejects watch, multisig, rekeyed', () => {
-        expect(isEligibleFundingSource(account('A', 'algo25'))).toBe(true)
+        expect(isEligibleFundingSource(account('A', 'standalone'))).toBe(true)
         expect(isEligibleFundingSource(account('B', 'hdWallet'))).toBe(true)
         expect(isEligibleFundingSource(account('C', 'hardware'))).toBe(true)
         expect(isEligibleFundingSource(account('D', 'watch'))).toBe(false)
         expect(isEligibleFundingSource(account('E', 'multisig'))).toBe(false)
         seedAuthority('F', 'X')
-        expect(isEligibleFundingSource(account('F', 'algo25'))).toBe(false)
+        expect(isEligibleFundingSource(account('F', 'standalone'))).toBe(false)
     })
 })
 
@@ -107,7 +107,7 @@ describe('isSigningCapableFundingSource', () => {
     it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
-                account('A', 'algo25', { keyPairId: 'k1' }),
+                account('A', 'standalone', { keyPairId: 'k1' }),
             ),
         ).toBe(true)
         expect(
@@ -120,7 +120,7 @@ describe('isSigningCapableFundingSource', () => {
             true,
         )
         // A local-key type with no keyPairId can't sign at all.
-        expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
+        expect(isSigningCapableFundingSource(account('D', 'standalone'))).toBe(
             false,
         )
         expect(isSigningCapableFundingSource(account('E', 'watch'))).toBe(false)
@@ -129,15 +129,15 @@ describe('isSigningCapableFundingSource', () => {
 
 describe('canAutoFund', () => {
     it('allows local-key accounts and rejects Ledger (cannot sign the LSig)', () => {
-        expect(canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }))).toBe(
-            true,
-        )
+        expect(
+            canAutoFund(account('A', 'standalone', { keyPairId: 'k1' })),
+        ).toBe(true)
         expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }))).toBe(
             true,
         )
         // Ledger creates cards but can never sign an LSig.
         expect(canAutoFund(account('C', 'hardware'))).toBe(false)
-        expect(canAutoFund(account('D', 'algo25'))).toBe(false)
+        expect(canAutoFund(account('D', 'standalone'))).toBe(false)
     })
 })
 

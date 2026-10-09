@@ -153,7 +153,7 @@ const watchAccount: WalletAccount = {
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
     address: 'ALGO25_ADDRESS',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'algo25-key-1',
 }
 

@@ -54,7 +54,7 @@ import {
 
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'rescan-source-key',
     name: 'Source',

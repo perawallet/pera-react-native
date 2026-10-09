@@ -182,7 +182,7 @@ describe('createHardwareStrategy', () => {
                 chainId: 'algorand',
             })
             const algo25Account = {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: SIGNER_ADDRESS,
                 keyPairId: 'key-1',
             } as unknown as WalletAccount
@@ -465,7 +465,7 @@ describe('createHardwareStrategy', () => {
                 chainId: 'algorand',
             })
             const algo25Account = {
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: SIGNER_ADDRESS,
                 keyPairId: 'key-1',
             } as unknown as WalletAccount

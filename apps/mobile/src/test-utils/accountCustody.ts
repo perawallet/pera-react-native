@@ -16,7 +16,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 
 const CUSTODY_BY_TYPE: Record<AccountType, AccountCustody> = {
-    algo25: { kind: 'local', seed: 'algo25' },
+    standalone: { kind: 'local', seed: null },
     quantum: { kind: 'local', seed: 'quantum' },
     hdWallet: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     hardware: {

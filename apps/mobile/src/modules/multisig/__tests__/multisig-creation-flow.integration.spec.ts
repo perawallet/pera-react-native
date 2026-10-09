@@ -139,7 +139,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
     DeviceAccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hdWallet: 'hdWallet',
         hardware: 'hardware',
         multisig: 'multisig',

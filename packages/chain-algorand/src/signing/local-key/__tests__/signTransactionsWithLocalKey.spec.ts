@@ -32,7 +32,7 @@ const txn = (id: number): PeraTransaction =>
 
 const algo25Account = (address = SENDER): WalletAccount => ({
     id: 'acct',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: 'key-1',
 })

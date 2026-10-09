@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 const SIGNER_KEY: Record<AccountType, string> = {
-    [AccountTypes.algo25]: 'account_info.rekey_signer_standard',
+    [AccountTypes.standalone]: 'account_info.rekey_signer_standard',
     [AccountTypes.hdWallet]: 'account_info.rekey_signer_standard',
     [AccountTypes.hardware]: 'account_info.rekey_signer_ledger',
     [AccountTypes.multisig]: 'account_info.rekey_signer_shared',

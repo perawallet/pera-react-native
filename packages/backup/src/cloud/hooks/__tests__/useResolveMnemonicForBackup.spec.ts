@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { Algo25Account } from '@perawallet/wallet-core-accounts'
+import type { StandaloneAccount } from '@perawallet/wallet-core-accounts'
 
 const { executeWithMnemonicMock, loggerWarnMock } = vi.hoisted(() => ({
     executeWithMnemonicMock: vi.fn(),
@@ -33,11 +33,11 @@ import { useResolveMnemonicForBackup } from '../useResolveMnemonicForBackup'
 
 const ACCOUNT = {
     id: 'a-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'ADDR',
     keyPairId: 'key-1',
     name: 'Algo25',
-} as unknown as Algo25Account
+} as unknown as StandaloneAccount
 
 describe('useResolveMnemonicForBackup', () => {
     beforeEach(() => {

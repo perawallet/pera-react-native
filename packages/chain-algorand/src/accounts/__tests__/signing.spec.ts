@@ -22,7 +22,7 @@ import {
     resolveSignerFor,
     useAccountChainStateStore,
     AccountTypes,
-    type Algo25Account,
+    type StandaloneAccount,
     type HDWalletAccount,
     type HardwareWalletAccount,
     type MultiSigAccount,
@@ -52,9 +52,9 @@ const rekeyedTo = <T extends WalletAccount>(
 
 const algo25 = (
     address: string,
-    extra: Partial<Algo25Account> = {},
-): Algo25Account => ({
-    custody: { kind: 'local', seed: 'algo25' },
+    extra: Partial<StandaloneAccount> = {},
+): StandaloneAccount => ({
+    custody: { kind: 'local', seed: null },
     address,
     keyPairId: 'kp',
     ...extra,
@@ -334,7 +334,7 @@ describe('delegateTransitionFor', () => {
         const auth = hardware('S')
         const a: WalletAccount = rekeyedTo(algo25('A'), 'S')
         expect(delegateTransitionFor(a, [a, auth], ALGORAND_CHAIN_ID)).toEqual({
-            from: AccountTypes.algo25,
+            from: AccountTypes.standalone,
             to: AccountTypes.hardware,
         })
     })
@@ -361,8 +361,8 @@ describe('delegateTransitionFor', () => {
         const c = algo25('C')
         const b: WalletAccount = rekeyedTo(algo25('B'), 'C')
         expect(delegateTransitionFor(b, [b, c], ALGORAND_CHAIN_ID)).toEqual({
-            from: AccountTypes.algo25,
-            to: AccountTypes.algo25,
+            from: AccountTypes.standalone,
+            to: AccountTypes.standalone,
         })
     })
 })

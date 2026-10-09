@@ -78,7 +78,7 @@ const createASAInboxItem = (address: string): InboxItem => ({
 const createMockAccounts = (addresses: string[]): WalletAccount[] =>
     addresses.map(address => ({
         address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
     })) as WalletAccount[]
 
 describe('utils', () => {

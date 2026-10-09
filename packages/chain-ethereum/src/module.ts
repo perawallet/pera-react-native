@@ -29,5 +29,5 @@ export const ethereumModule: ChainModule = {
         addressCodecs.register(ethereumAddressCodec)
         keyDerivations.register(ethereumKeyDerivation)
     },
-    i18nKeys: () => EVM_ERROR_I18N_KEYS,
+    i18nKeys: () => [...EVM_ERROR_I18N_KEYS, 'errors.evm.invalid_private_key'],
 }

@@ -805,7 +805,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('does not flag a quantum fee for a standard signer', () => {
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'STANDARD_ADDRESS',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
             })
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: 1000n,

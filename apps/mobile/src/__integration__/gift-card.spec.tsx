@@ -41,7 +41,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const ACCOUNT_A: WalletAccount = {
     id: 'gift-card-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'gift-card-a-key',
     name: 'Spending',

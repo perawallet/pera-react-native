@@ -134,14 +134,14 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'conn-a-key',
     name: 'Trading',
 }
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'conn-b',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: HD_TEST_ADDRESS,
     keyPairId: 'conn-b-key',
     name: 'DeFi',

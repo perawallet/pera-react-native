@@ -29,7 +29,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const PRIMARY_ACCOUNT: WalletAccount = {
     id: 'primary-1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'primary-keypair',
     name: 'Primary',

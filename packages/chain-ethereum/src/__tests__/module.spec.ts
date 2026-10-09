@@ -86,5 +86,8 @@ describe('ethereumModule', () => {
         expect(ethereumModule.i18nKeys()).toContain(
             'errors.evm.insufficient_funds.body',
         )
+        expect(ethereumModule.i18nKeys()).toContain(
+            'errors.evm.invalid_private_key',
+        )
     })
 })

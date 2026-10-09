@@ -188,7 +188,7 @@ describe('Flow: Opt into an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',
@@ -384,7 +384,7 @@ describe('Flow: Opt out of an asset', () => {
         })
         sender = {
             id: 'sender-1',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',

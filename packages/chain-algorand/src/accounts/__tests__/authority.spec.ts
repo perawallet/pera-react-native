@@ -94,7 +94,7 @@ const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: overrides.id ?? 'a',
         address: overrides.address ?? 'A',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'kp',
         ...overrides,
     }) as WalletAccount

@@ -55,7 +55,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useCreateAccount: () => ({
             buildHdWalletAccount: mockBuildHdWalletAccount,
-            buildAlgo25WalletAccount: mockBuildAlgo25WalletAccount,
+            buildStandaloneAccount: mockBuildAlgo25WalletAccount,
             buildQuantumWalletAccount: mockBuildQuantumWalletAccount,
         }),
         useAllAccounts: () => mockUseAllAccounts(),
@@ -576,7 +576,7 @@ describe('useAddAccountScreen', () => {
         const newAccount = {
             id: 'algo25-id',
             address: 'ALGO25_ADDRESS',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             canSign: true,
         }
         mockBuildAlgo25WalletAccount.mockResolvedValue(newAccount)

@@ -27,7 +27,7 @@ const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAlgo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
@@ -141,7 +141,7 @@ describe('signLocalKeyGroups', () => {
             'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
         const participantAccount: WalletAccount = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: PARTICIPANT,
             keyPairId: 'key-participant',
         } as unknown as WalletAccount
@@ -152,7 +152,7 @@ describe('signLocalKeyGroups', () => {
         })
 
         const authAccount: WalletAccount = {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: AUTH,
             keyPairId: 'key-auth',
         } as unknown as WalletAccount

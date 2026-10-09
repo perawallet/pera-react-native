@@ -73,10 +73,9 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
     algo25: buildAccount({
         id: 'algo25',
         name: 'Main',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         chainId: 'algorand',
         chains: {
-            ...fixtureChain('ALGO25ADDR', 'algo25-key'),
             algorand: { address: 'ALGO25ADDR', keyPairId: 'algo25-key' },
         },
     }),
@@ -145,7 +144,7 @@ const legacyShaped: Record<AccountKind, WalletAccount> = {
     algo25: {
         id: 'algo25',
         name: 'Main',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: 'ALGO25ADDR',
         keyPairId: 'algo25-key',
     },

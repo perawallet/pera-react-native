@@ -47,7 +47,7 @@ const makePayment = (sender: Address, amount: bigint): Transaction =>
     makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
 const userAccount = {
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: userAddr.toString(),
     keyPairId: 'key-1',
 } as unknown as WalletAccount

@@ -25,7 +25,7 @@ import {
 const held = (address: string, extra: Partial<WalletAccount> = {}) =>
     ({
         id: address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: 'k',
         ...extra,
@@ -74,7 +74,7 @@ describe('useDelegatedTransition', () => {
 
         act(() => seedAuthority('A', 'S'))
 
-        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
+        expect(result.current).toEqual({ from: 'watch', to: 'standalone' })
     })
 
     it("returns the from/to types from the chain's signer for a rekeyed account", () => {
@@ -94,6 +94,6 @@ describe('useDelegatedTransition', () => {
 
         const { result } = renderHook(() => useDelegatedTransition('A'))
 
-        expect(result.current).toEqual({ from: 'watch', to: 'algo25' })
+        expect(result.current).toEqual({ from: 'watch', to: 'standalone' })
     })
 })

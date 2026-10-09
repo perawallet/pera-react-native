@@ -98,7 +98,7 @@ const algo25Account = (
     address: string,
 ): { address: string; custody: { kind: string } } => ({
     address,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 })
 
 const buildDeps = (): MigrationDeps => ({

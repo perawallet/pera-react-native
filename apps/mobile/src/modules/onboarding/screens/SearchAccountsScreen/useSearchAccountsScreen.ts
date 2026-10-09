@@ -17,7 +17,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
     useAccountDiscovery,
@@ -212,7 +212,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         accounts: discoveredAccounts,
                     })
                 }
-            } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
+            } else if (
+                isStandaloneAccount(account) ||
+                isQuantumAccount(account)
+            ) {
                 // Quantum accounts are flat single-key accounts like algo25:
                 // discovery is an address-only rekey scan (no derivation), and
                 // an empty result must still move the flow on to NameAccount —

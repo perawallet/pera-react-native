@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletAccount,
     AccountSortMode,
@@ -68,6 +69,19 @@ export type AccountsState = BaseStoreState & {
      * `setAccounts`, which resolves duplicates silently.
      */
     addAccount: (account: WalletAccount) => void
+    /**
+     * Imports `privateKey` through the chain's KMS derivation and adds it as a
+     * standalone account on `chainId`. Throws `RawKeyImportUnsupportedError`
+     * before the KMS is reached when the chain imports no raw keys, and
+     * `DuplicateAccountError` naming the holder when the address is already
+     * held, in which case a key no account references is removed again.
+     * `privateKey` is zeroed before this settles, on success and on every throw.
+     */
+    importAccountFromPrivateKey: (
+        chainId: ChainId,
+        privateKey: Uint8Array,
+        name?: string,
+    ) => Promise<WalletAccount>
     setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**

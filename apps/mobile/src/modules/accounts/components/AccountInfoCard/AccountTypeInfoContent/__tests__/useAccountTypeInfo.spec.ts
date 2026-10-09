@@ -96,7 +96,7 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves algo25 account type', () => {
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25') }),
+            useAccountTypeInfo({ account: accountOfType('standalone') }),
         )
 
         expect(result.current.title).toBe('account_type_info.standard_title')
@@ -154,7 +154,9 @@ describe('useAccountTypeInfo', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         expect(result.current.title).toBe(
@@ -218,7 +220,9 @@ describe('useAccountTypeInfo', () => {
         mockUseCanSignWith.mockReturnValue(false)
         mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         expect(result.current.title).toBe('account_type_info.no_auth_title')
@@ -248,7 +252,7 @@ describe('useAccountTypeInfo', () => {
 
     it('opens webview with support URL when learn more is pressed', () => {
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25') }),
+            useAccountTypeInfo({ account: accountOfType('standalone') }),
         )
 
         act(() => {
@@ -290,11 +294,13 @@ describe('useAccountTypeInfo', () => {
 
     it('opens webview with the quantum article when learn more is pressed for an account rekeyed to quantum', () => {
         mockUseDelegatedTransition.mockReturnValue({
-            from: 'algo25',
+            from: 'standalone',
             to: 'quantum',
         })
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         act(() => {

@@ -181,7 +181,7 @@ describe('useAccountOptions', () => {
     const algo25Account: WalletAccount = {
         id: 'acc-1',
         address: 'ALGO25ADDRESS',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'key-1',
         name: 'My Account',
     }
@@ -203,7 +203,7 @@ describe('useAccountOptions', () => {
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: 'key-3',
     }
 
@@ -1296,7 +1296,7 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'key-rekeyed',
             }
             seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')
@@ -1325,7 +1325,7 @@ describe('useAccountOptions', () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'key-rekeyed',
             }
             seedAuthority(rekeyedToAlgo25.address, 'ALGO25ADDRESS')

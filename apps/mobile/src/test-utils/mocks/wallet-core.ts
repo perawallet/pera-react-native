@@ -317,6 +317,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         const custody = account?.custody
         if (!custody) return undefined
         if (custody.kind !== 'local') return custody.kind
+        if (custody.seed === null) return 'standalone'
         return custody.seed === 'bip39' ? 'hdWallet' : custody.seed
     }
     // The one source every rekey answer below derives from; a spec seeds a
@@ -371,7 +372,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         isHDWalletAccount: vi.fn(
             (account: any) => kindOf(account) === 'hdWallet',
         ),
-        isAlgo25Account: vi.fn((account: any) => kindOf(account) === 'algo25'),
+        isStandaloneAccount: vi.fn(
+            (account: any) => kindOf(account) === 'standalone',
+        ),
+        standaloneSecretOf: vi.fn((account: any) =>
+            kindOf(account) === 'standalone' ? 'mnemonic' : undefined,
+        ),
         isQuantumAccount: vi.fn(
             (account: any) => kindOf(account) === 'quantum',
         ),
@@ -442,7 +448,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
         AccountTypes: {
-            algo25: 'algo25',
+            standalone: 'standalone',
             hdWallet: 'hdWallet',
             hardware: 'hardware',
             multisig: 'multisig',

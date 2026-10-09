@@ -40,7 +40,7 @@ const watch = (address: string): AsbBackupAccount => ({
 const algo25 = (address: string): WalletAccount => ({
     id: address,
     address,
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     keyPairId: 'k',
 })
 

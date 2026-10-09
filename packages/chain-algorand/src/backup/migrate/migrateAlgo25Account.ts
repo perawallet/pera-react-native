@@ -27,7 +27,7 @@ export const migrateAlgo25Account = async ({
         mnemonicIndices = algo25SecretKeyToIndices(account.secretKey)
         const created = await importAccount({
             mnemonicIndices,
-            type: 'algo25',
+            type: 'standalone',
         })
 
         if (!('address' in created)) {

@@ -14,9 +14,13 @@ import {
     LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
+    type StandaloneSecret,
 } from '@perawallet/wallet-core-chain-contract'
 import { resolveSeedKeyFrom } from '@perawallet/wallet-core-kms'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import type {
     AccountCustody,
     ChainAccount,
@@ -40,13 +44,14 @@ export const hasCustody = <K extends AccountCustody['kind']>(
     custody: Extract<AccountCustody, { kind: K }>
 } => account.custody.kind === kind
 
-// `chains` is optional, so the top-level address and key answer for the legacy chain.
+// The top-level address and key answer for the legacy chain only on a record
+// that predates `chains`; once `chains` exists it is authoritative, so an
+// account on another chain never reads as held on the legacy one.
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
 ): ChainAccount | undefined => {
-    const entry = account.chains?.[chainId]
-    if (entry) return entry
+    if (account.chains) return account.chains[chainId]
     if (chainId !== LEGACY_CHAIN_ID || account.address === undefined) {
         return undefined
     }
@@ -69,10 +74,41 @@ export const signingKeyOn = (
     chainId: ChainId,
 ): string | undefined => chainAccountOf(account, chainId)?.keyPairId
 
+/** Whether any account in `accounts` signs with the KMS key `keyPairId`. */
+export const isKeyReferenced = (
+    accounts: readonly WalletAccount[],
+    keyPairId: string,
+): boolean =>
+    accounts.some(
+        account =>
+            account.keyPairId === keyPairId ||
+            Object.values(account.chains ?? {}).some(
+                entry => entry?.keyPairId === keyPairId,
+            ),
+    )
+
 export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
     const { custody } = account
     return custody.kind === 'local' && custody.seed === 'bip39'
         ? custody.hd
+        : undefined
+}
+
+/**
+ * How a standalone account's secret is shown and backed up, read from the
+ * chain it lives on. Undefined for any other account, or an unregistered chain.
+ */
+export const standaloneSecretOf = (
+    account: WalletAccount,
+): StandaloneSecret | undefined => {
+    const { custody } = account
+    if (custody.kind !== 'local' || custody.seed !== null) return undefined
+    const chainId =
+        (Object.keys(account.chains ?? {})[0] as ChainId | undefined) ??
+        LEGACY_CHAIN_ID
+    const { chains } = getProvider()
+    return chains.has(chainId)
+        ? chains.get(chainId).descriptor.signing.standaloneSecret
         : undefined
 }
 

@@ -14,7 +14,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     accountType,
     hasSigningKeys,
-    isAlgo25Account,
+    isStandaloneAccount,
     isHDWalletAccount,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -71,7 +71,7 @@ export const createLocalKeyStrategy = (
             }
 
             if (
-                !isAlgo25Account(account) &&
+                !isStandaloneAccount(account) &&
                 !isHDWalletAccount(account) &&
                 !isQuantumAccount(account)
             ) {

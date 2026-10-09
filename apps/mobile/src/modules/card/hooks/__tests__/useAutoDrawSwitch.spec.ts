@@ -77,7 +77,7 @@ import { useAutoDrawSwitch } from '../useAutoDrawSwitch'
 
 const localAccount: WalletAccount = {
     id: 'a1',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
     address: 'FUNDINGADDR',
     keyPairId: 'kp1',
 } as WalletAccount

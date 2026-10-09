@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
-            }
+            },
+            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x."
         },
         "submission": {
             "unknown_outcome": {

@@ -181,7 +181,7 @@ const hasQuantumAuthority = (
  * Compares *effective* authority (one rekey hop), not raw account type,
  * because that is where the protection lives:
  * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
- *   back to Ed25519, even though its own `type` is still `algo25`.
+ *   back to Ed25519, even though it is still a standalone account.
  * - A quantum-typed account already rekeyed away to Ed25519 has no protection
  *   left, so rekeying it further is NOT a downgrade.
  */

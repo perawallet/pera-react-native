@@ -71,7 +71,7 @@ const createAlgo25 = async (
     try {
         return {
             account: buildAccount({
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 chainId: ALGORAND_CHAIN_ID,
                 chains: {
                     [ALGORAND_CHAIN_ID]: {
@@ -232,7 +232,7 @@ const importAlgo25 = async (
     })
     const minted: MintedAccount = {
         account: buildAccount({
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chainId: ALGORAND_CHAIN_ID,
             chains: {
                 [ALGORAND_CHAIN_ID]: {
@@ -264,7 +264,7 @@ const withAlgo25Entropy = <T>(
     }
 }
 
-const findQuantumAccountForAlgo25Mnemonic = async (
+const findQuantumAccountForMnemonic = async (
     mnemonicIndices: Uint16Array,
     scope: ChainScope,
 ): Promise<Nullable<string>> => {
@@ -291,7 +291,7 @@ const findQuantumAccountForAlgo25Mnemonic = async (
 
 export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
     create: (keystore, { kind, id }, scope) =>
-        kind === AccountTypes.algo25
+        kind === AccountTypes.standalone
             ? createAlgo25(keystore, scope, id)
             : createQuantum(keystore, id),
     importMnemonic: (
@@ -300,8 +300,8 @@ export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
         scope,
         save,
     ) =>
-        kind === AccountTypes.algo25
+        kind === AccountTypes.standalone
             ? importAlgo25(keystore, mnemonicIndices, scope, save)
             : importQuantum(keystore, mnemonicIndices, isHeld, scope, save),
-    findQuantumAccountForAlgo25Mnemonic,
+    findQuantumAccountForMnemonic,
 }

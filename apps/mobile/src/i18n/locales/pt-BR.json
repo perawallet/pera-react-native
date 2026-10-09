@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
-            }
+            },
+            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x."
         },
         "submission": {
             "unknown_outcome": {

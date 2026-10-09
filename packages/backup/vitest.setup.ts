@@ -11,11 +11,30 @@
  */
 
 import { webcrypto } from 'node:crypto'
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+import {
+    createChainRegistry,
+    type ChainDescriptor,
+} from '@perawallet/wallet-core-chain-contract'
 
 // In-memory keyValueStorage so importing @perawallet/wallet-core-accounts does
 // not transitively pull in react-native-mmkv (not available under jsdom).
 const kvStore = new Map<string, string>()
+
+// A standalone account's secret format is read from its chain's descriptor.
+const chains = createChainRegistry()
+beforeEach(() => {
+    chains.reset()
+    chains.register({
+        id: 'algorand',
+        signing: {
+            schemes: ['ed25519'],
+            derivationPaths: {},
+            rawKeySchemes: [],
+            standaloneSecret: 'mnemonic',
+        },
+    } as unknown as ChainDescriptor)
+})
 
 // The native writer in `@perawallet/wallet-core-passkeys` imports this module,
 // which has no loadable build outside a device runtime. A per-file `vi.mock`
@@ -36,6 +55,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
         deviceInfo: { getDevicePlatform: () => 'ios' },
+        chains,
     }),
     // Node's real WebCrypto, not a stub: `derivePasskeyMainKey` falls back to
     // it when no `subtle` is passed and needs a working PBKDF2.

@@ -245,7 +245,7 @@ describe('useImportAccountOptionsScreen', () => {
     })
 
     it('navigates to ImportInfo when the import options sheet resolves with a result', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('algo25')
+        mockRequestBottomSheet.mockResolvedValueOnce('standalone')
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const recoverOption = result.current.options.find(
@@ -257,7 +257,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'algo25',
+            accountType: 'standalone',
         })
     })
 
@@ -475,7 +475,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
         vi.mocked(resolveImportAccountType).mockReturnValue({
             success: true,
-            accountType: 'algo25',
+            accountType: 'standalone',
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -486,7 +486,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'algo25',
+            accountType: 'standalone',
         })
     })
 

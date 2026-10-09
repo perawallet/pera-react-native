@@ -16,7 +16,8 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import {
     canSignArc60,
     canSignProgram,
-    isAlgo25Account,
+    chainAccountOf,
+    isStandaloneAccount,
     isHardwareWalletAccount,
     isHDWalletAccount,
     isRekeyedAccount,
@@ -37,7 +38,9 @@ import { useCardAddAccount } from './useCardAddAccount'
  * account are excluded, since they can't act as a funding source.
  */
 export const isEligibleFundingSource = (account: WalletAccount): boolean =>
-    (isAlgo25Account(account) ||
+    // The card is an Algorand feature, so a standalone key on another chain can't fund it.
+    ((isStandaloneAccount(account) &&
+        chainAccountOf(account, LEGACY_CHAIN_ID) !== undefined) ||
         isHDWalletAccount(account) ||
         isHardwareWalletAccount(account)) &&
     !isRekeyedAccount(account, LEGACY_CHAIN_ID)

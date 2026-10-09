@@ -31,7 +31,7 @@ describe('useSigningAccounts', () => {
         const mockAccounts = [
             {
                 address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
             { address: 'addr2', custody: { kind: 'watch' } },
@@ -55,7 +55,7 @@ describe('useSigningAccounts', () => {
         expect(result.current).toEqual([
             {
                 address: 'addr1',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 keyPairId: 'pk1',
             },
             {

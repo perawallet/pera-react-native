@@ -34,7 +34,7 @@ import { useCardFundingAccount } from '../useCardFundingAccount'
 
 const localAccount = {
     address: 'LOCAL',
-    custody: { kind: 'local', seed: 'algo25' },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 
 describe('useCardFundingAccount', () => {

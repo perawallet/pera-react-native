@@ -1082,7 +1082,8 @@
             "rate_limited": {
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
-            }
+            },
+            "invalid_private_key": "Saisissez une clé privée valide : 64 caractères hexadécimaux, avec ou sans 0x."
         },
         "submission": {
             "unknown_outcome": {

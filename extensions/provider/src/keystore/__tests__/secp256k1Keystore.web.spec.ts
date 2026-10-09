@@ -182,7 +182,7 @@ describe('secp256k1 through the patched engine and the provider shim', () => {
         ).rejects.toBeInstanceOf(InvalidKeyDataError)
     })
 
-    it('seals an imported raw key as non-extractable and signs with it', async () => {
+    it('seals an imported raw key and signs with it, releasing it through export only when imported extractable', async () => {
         const { keystore, store } = await freshKeystore()
         const digest = new Uint8Array(32).fill(0x42)
 
@@ -199,11 +199,32 @@ describe('secp256k1 through the patched engine and the provider shim', () => {
         )
 
         const entry = store.state.keys.find(k => k.id === id)!
-        expect(entry.extractable).toBe(false)
+        expect(entry.extractable).toBe(true)
         expect(addressOf(entry.publicKey!)).toBe(FIRST_ADDRESS)
         expect(
             verifies(await keystore.sign(id, digest), digest, entry.publicKey!),
         ).toBe(true)
+        expect(new Uint8Array((await keystore.export(id)).privateKey!)).toEqual(
+            FIRST_PRIVATE_KEY,
+        )
+    })
+
+    it('exports nothing for a key imported non-extractable', async () => {
+        const { keystore, store } = await freshKeystore()
+
+        const id = await keystore.import(
+            {
+                id: 'imported-1',
+                type: 'secp256k1',
+                algorithm: SECP256K1_ALGORITHM,
+                extractable: false,
+                keyUsages: ['sign', 'verify'],
+                privateKey: Uint8Array.from(FIRST_PRIVATE_KEY),
+            },
+            'raw',
+        )
+
+        expect(store.state.keys.find(k => k.id === id)!.extractable).toBe(false)
         expect(await keystore.export(id)).not.toHaveProperty('privateKey')
     })
 

@@ -54,7 +54,7 @@ const seedWithChild = (
     ] as unknown as Keys
 
 const algo25 = (keyPairId?: string) =>
-    account({ kind: 'local', seed: 'algo25' }, keyPairId)
+    account({ kind: 'local', seed: null }, keyPairId)
 const quantum = (keyPairId?: string) =>
     account({ kind: 'local', seed: 'quantum' }, keyPairId)
 
@@ -120,7 +120,7 @@ describe('credentialScheme', () => {
             id: 'a',
             address: 'ADDR',
             keyPairId: 'missing',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
         } as WalletAccount
 
         expect(credentialScheme(legacy, algorand, [])).toBe('ed25519')
@@ -170,5 +170,31 @@ describe('credentialScheme', () => {
                 [],
             ),
         ).toBeNull()
+    })
+
+    describe('a standalone key on another chain', () => {
+        const ethereum: SchemeChain = {
+            id: 'ethereum',
+            signing: {
+                schemes: ['secp256k1'],
+                derivationPaths: {},
+                rawKeySchemes: ['secp256k1'],
+            },
+            protocol: { supportsNativeMultisig: false },
+        }
+        const imported = {
+            id: 'e',
+            address: '0xabc',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc', keyPairId: 'raw-key' } },
+        } as WalletAccount
+
+        test("signs with the chain's primary scheme on its own chain", () => {
+            expect(credentialScheme(imported, ethereum, [])).toBe('secp256k1')
+        })
+
+        test('has no scheme on Algorand, where it holds no key', () => {
+            expect(credentialScheme(imported, algorand, [])).toBeNull()
+        })
     })
 })

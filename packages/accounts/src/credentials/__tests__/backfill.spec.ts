@@ -56,7 +56,7 @@ const legacyFixtures: Array<[string, PersistedAccountRecord, CustodyFields]> = [
             keyPairId: 'seed-ed25519',
         },
         {
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             chains: {
                 algorand: { address: 'ALGO25-ADDR', keyPairId: 'seed-ed25519' },
             },
@@ -176,7 +176,10 @@ describe('custodyFromLegacy', () => {
             expect(
                 custodyFromLegacy({ id: 'k', type, address: 'ADDR' }),
             ).toEqual({
-                custody: { kind: 'local', seed: type },
+                custody: {
+                    kind: 'local',
+                    seed: type === 'algo25' ? null : type,
+                },
                 chains: { algorand: { address: 'ADDR' } },
             })
         },

@@ -34,7 +34,7 @@ export type AccountDisplayState =
 export type AccountGlyph = { name: IconName; variant: PWRoundIconVariant }
 
 const BASE_GLYPH: Record<AccountType, AccountGlyph> = {
-    [AccountTypes.algo25]: {
+    [AccountTypes.standalone]: {
         name: 'accounts/glyph/algo25-account',
         variant: 'accountTurquoise',
     },

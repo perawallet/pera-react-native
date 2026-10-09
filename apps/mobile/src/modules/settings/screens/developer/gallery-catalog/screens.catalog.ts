@@ -294,7 +294,7 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'AddAccount',
                         params: {
                             screen: 'ImportInfo',
-                            params: { accountType: 'algo25' },
+                            params: { accountType: 'standalone' },
                         },
                     },
                 },
@@ -308,7 +308,7 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'AddAccount',
                         params: {
                             screen: 'ImportAccount',
-                            params: { accountType: 'algo25' },
+                            params: { accountType: 'standalone' },
                         },
                     },
                 },

@@ -206,7 +206,7 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 const walletAccount = (address: string): WalletAccount =>
     ({
         address,
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         keyPairId: `key-${address}`,
     }) as WalletAccount
 

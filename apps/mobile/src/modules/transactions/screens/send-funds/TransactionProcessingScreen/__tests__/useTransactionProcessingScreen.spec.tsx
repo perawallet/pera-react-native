@@ -52,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // existing tests focus on send-pipeline routing and don't care about
     // the copy branch, so a minimal stub keeps them green.
     AccountTypes: {
-        algo25: 'algo25',
+        standalone: 'standalone',
         hardware: 'hardware',
         watch: 'watch',
         multisig: 'multisig',

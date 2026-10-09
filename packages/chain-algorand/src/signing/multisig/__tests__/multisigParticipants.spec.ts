@@ -50,7 +50,7 @@ const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
 
 const makeAccount = (address: string): WalletAccount =>
     ({
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address,
         keyPairId: `key-${address}`,
     }) as unknown as WalletAccount

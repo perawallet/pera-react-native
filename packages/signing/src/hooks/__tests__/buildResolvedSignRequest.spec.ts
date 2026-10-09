@@ -16,7 +16,7 @@ import type { SigningMachineContext } from '../../machine/context'
 import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
 
 const CUSTODY = {
-    algo25: { kind: 'local', seed: 'algo25' },
+    algo25: { kind: 'local', seed: null },
     hardware: { kind: 'hardware' },
     multisig: { kind: 'multisig' },
 }

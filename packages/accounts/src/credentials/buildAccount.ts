@@ -18,11 +18,11 @@ import { AccountError } from '../errors'
 import {
     type AccountChains,
     type AccountCustody,
-    type Algo25Account,
     type HardwareWalletAccount,
     type HDWalletAccount,
     type MultiSigAccount,
     type QuantumAccount,
+    type StandaloneAccount,
     type WalletAccount,
     type WatchAccount,
 } from '../models'
@@ -50,8 +50,8 @@ export type AccountForCustody<C extends AccountCustody> = C extends {
           ? HDWalletAccount
           : C extends { seed: typeof SeedScheme.Quantum }
             ? QuantumAccount
-            : C extends { seed: typeof SeedScheme.Algo25 }
-              ? Algo25Account
+            : C extends { seed: null }
+              ? StandaloneAccount
               : WalletAccount
 
 /**

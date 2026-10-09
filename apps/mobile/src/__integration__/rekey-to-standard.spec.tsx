@@ -89,14 +89,14 @@ const seedRekeyAccounts = async (): Promise<{
     })
     const source: WalletAccount = {
         id: 'rekey-source',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const target: WalletAccount = {
         id: 'rekey-target',
-        custody: { kind: 'local', seed: 'algo25' },
+        custody: { kind: 'local', seed: null },
         address: HD_TEST_ADDRESS,
         keyPairId: 'rekey-target-key',
         name: 'Target',

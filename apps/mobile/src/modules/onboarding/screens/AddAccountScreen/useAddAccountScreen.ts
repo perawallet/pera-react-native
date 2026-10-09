@@ -42,7 +42,7 @@ export const useAddAccountScreen = () => {
     const isMounted = useIsMounted()
     const {
         buildHdWalletAccount,
-        buildAlgo25WalletAccount,
+        buildStandaloneAccount,
         buildQuantumWalletAccount,
     } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
@@ -190,8 +190,8 @@ export const useAddAccountScreen = () => {
     }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() => buildAlgo25WalletAccount({}))
-    }, [buildAlgo25WalletAccount, runCreateAccount])
+        runCreateAccount(() => buildStandaloneAccount({}))
+    }, [buildStandaloneAccount, runCreateAccount])
 
     const handleCreateQuantum = useCallback(() => {
         trackEvent(OnboardingEvent.CreateAccountQuantum)

@@ -78,7 +78,7 @@ export const useAccountTypeLabel = (
             case AccountTypes.hdWallet: {
                 return plain(t('account_info.type_universal_wallet'))
             }
-            case AccountTypes.algo25: {
+            case AccountTypes.standalone: {
                 return plain(t('account_info.type_algo25'))
             }
             case AccountTypes.quantum: {

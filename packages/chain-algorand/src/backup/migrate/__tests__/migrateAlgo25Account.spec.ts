@@ -47,7 +47,7 @@ const buildArgs = (
         importedHdRoots: new Map(),
         importAccount: vi.fn().mockResolvedValue({
             id: 'imported-id',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         }),
@@ -81,7 +81,7 @@ describe('migrateAlgo25Account', () => {
     it('imports with the derived indices and algo25 type', async () => {
         const importAccount = vi.fn().mockResolvedValue({
             id: 'i',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         })
@@ -94,14 +94,14 @@ describe('migrateAlgo25Account', () => {
         )
         expect(importAccount).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'algo25',
+            type: 'standalone',
         })
     })
 
     it('returns the created account when the imported address matches', async () => {
         const created = {
             id: 'created',
-            custody: { kind: 'local', seed: 'algo25' },
+            custody: { kind: 'local', seed: null },
             address: 'ADDR_LEGACY',
             keyPairId: 'kp',
         }
@@ -119,7 +119,7 @@ describe('migrateAlgo25Account', () => {
             account: buildLegacyAccount({ address: 'ADDR_LEGACY' }),
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'ADDR_DIFFERENT',
                 keyPairId: 'kp',
             }),
@@ -147,7 +147,7 @@ describe('migrateAlgo25Account', () => {
             account: buildLegacyAccount({ secretKey }),
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
-                custody: { kind: 'local', seed: 'algo25' },
+                custody: { kind: 'local', seed: null },
                 address: 'ADDR_DIFFERENT',
                 keyPairId: 'kp',
             }),
