@@ -14,6 +14,9 @@ export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',
+    'chain-shared',
+    'config',
+    'shared',
     'accounts',
     'assets',
     'transactions',
@@ -99,11 +102,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
-        file: 'packages/accounts/src/credentials/backfill.ts',
-        text: "'algorand'",
-        reason: "Writes Algorand's native member from the legacy multisig details; both go together.",
-    },
-    {
         file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
         text: "'algorand'",
         reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
@@ -114,14 +112,29 @@ const ALLOWED: readonly Allowed[] = [
         reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
     },
     {
-        file: 'packages/signing/src/hooks/useMinFeeForSender.ts',
+        file: 'packages/signing/src/hooks/usePlannerHook.ts',
         text: 'planner.chainId === chainId',
         reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
     },
     {
-        file: 'packages/signing/src/hooks/useMinimumFeeCalculator.ts',
-        text: 'planner.chainId === chainId',
-        reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
+        file: 'packages/config/src/network-config.ts',
+        text: 'row.scope.chainId === scope.chainId',
+        reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",
+    },
+    {
+        file: 'packages/config/src/network-config.ts',
+        text: "'algorand'",
+        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
+    },
+    {
+        file: 'packages/config/src/network-config.ts',
+        text: "'ethereum'",
+        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
+    },
+    {
+        file: 'packages/config/src/main.ts',
+        text: "'algorand'",
+        reason: 'The chains a build enables when its environment names none.',
     },
     {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',

@@ -53,6 +53,21 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         ).toEqual(['chain-identity.product.ts:8'])
     })
 
+    it('scans the foundation packages every feature builds on', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v =>
+                    v.file.endsWith('chain-identity.foundation.ts'),
+                ),
+            ),
+        ).toEqual([
+            'chain-identity.foundation.ts:7',
+            'chain-identity.foundation.ts:7',
+        ])
+    })
+
     it('leaves packages outside the shared list alone', async () => {
         const found = await runRule(RULE, FIXTURES)
 
