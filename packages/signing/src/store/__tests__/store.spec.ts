@@ -146,7 +146,8 @@ describe('SigningStore', () => {
         expect(removed).toBe(false)
     })
 
-    test('should filter out callback requests from persistence', () => {
+    test('should filter out callback requests from persistence', async () => {
+        await rehydrateSigningStore({ unstampedRequestChainId: 'algorand' })
         const { result } = renderHook(() => useSigningStore())
 
         act(() => {
@@ -259,6 +260,64 @@ describe('SigningStore', () => {
         )
         await useSigningStore.persist.rehydrate()
         expect(useSigningStore.getState().pendingSignRequests).toEqual([])
+    })
+})
+
+describe('SigningStore writes before hydration', () => {
+    const request = (id: string): SignRequest => ({
+        id,
+        chainId: 'algorand',
+        txs: [],
+        type: 'transactions',
+        transport: 'algod',
+        sourceType: 'multisig-cosign',
+    })
+    const persisted = JSON.stringify({
+        state: { pendingSignRequests: [request('persisted')] },
+        version: 1,
+    })
+
+    const loadStore = async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        return import('../store')
+    }
+
+    test('drops a write made before hydration, and persists the ones after it', async () => {
+        const store = await loadStore()
+
+        store.useSigningStore.getState().addSignRequest(request('early'))
+
+        expect(mockStorage.setItem).not.toHaveBeenCalled()
+
+        mockStorage.getItem.mockReturnValueOnce(persisted)
+        await store.rehydrateSigningStore({
+            unstampedRequestChainId: 'algorand',
+        })
+        mockStorage.setItem.mockClear()
+        store.useSigningStore.getState().addSignRequest(request('late'))
+
+        expect(mockStorage.setItem).toHaveBeenCalledWith(
+            'signing-store',
+            expect.stringContaining('late'),
+        )
+    })
+
+    test('leaves storage untouched, and keeps dropping writes, when the migration throws', async () => {
+        const store = await loadStore()
+        mockStorage.getItem.mockReturnValueOnce(persisted)
+        store.useSigningStore.persist.setOptions({
+            migrate: () => {
+                throw new Error('migration broke')
+            },
+        })
+
+        await store.useSigningStore.persist.rehydrate()
+        store.useSigningStore.getState().addSignRequest(request('after'))
+
+        expect(store.useSigningStore.persist.hasHydrated()).toBe(false)
+        expect(mockStorage.setItem).not.toHaveBeenCalled()
+        expect(mockStorage.removeItem).not.toHaveBeenCalled()
     })
 })
 

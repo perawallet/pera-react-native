@@ -26,6 +26,7 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { gateWritesOnHydration } from './hydrationGate'
 
 // Custom storage: round-trip safe serialization for bigint and Map, which
 // PeraTransaction fields (fee, amount, assetId, etc.) rely on.
@@ -178,7 +179,9 @@ export const useSigningStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: signingStoreStorage(),
+            ...gateWritesOnHydration<SigningStore, PartializedState>(
+                signingStoreStorage(),
+            ),
             version: STORE_VERSION,
             // Hydrated by rehydrateSigningStore, which supplies the chain of
             // requests persisted before they were stamped.
