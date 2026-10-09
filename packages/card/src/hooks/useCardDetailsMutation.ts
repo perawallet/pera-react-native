@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { fetchCardDetailsToken } from '../api/card-sensitive'
 import type { CardImageCustomCss, CardSecureView } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -31,8 +31,8 @@ export type UseCardDetailsMutationResult = CardMutationResult<
  * image URL to render). A mutation, not a query — the result is never written
  * to the query cache and must be discarded by the caller after render.
  */
-export const useCardDetailsMutation = (): UseCardDetailsMutationResult => {
-    const { network } = useNetwork()
+export const useCardDetailsMutation = (scope: ChainScope): UseCardDetailsMutationResult => {
+    const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<
         CardSecureView,

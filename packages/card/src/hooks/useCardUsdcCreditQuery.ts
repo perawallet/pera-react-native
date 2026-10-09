@@ -12,19 +12,14 @@
 
 import { useCallback } from 'react'
 import { QueryObserver, useQueryClient } from '@tanstack/react-query'
-import { getKnownAssetId } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
+import { getCardSettlementAssetId } from './cardChain'
 import { cardQueryKeys } from './querykeys'
 
 export const USDC_CREDIT_POLL_INTERVAL_MS = 1500
-/** Generous: a swap lands within a round or two, but algod can lag behind the submit. */
+/** Generous: a swap lands within a round or two, but the node can lag behind the submit. */
 export const USDC_CREDIT_TIMEOUT_MS = 45_000
 
 export class UsdcCreditTimeoutError extends Error {
@@ -35,16 +30,12 @@ export class UsdcCreditTimeoutError extends Error {
 }
 
 const fetchUsdcBalance = async (
-    network: Network,
+    scope: ChainScope,
     address: string,
 ): Promise<bigint> => {
-    const usdcAssetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
+    const usdcAssetId = getCardSettlementAssetId(scope)
     if (usdcAssetId === null) return 0n
-    return cardAdapterFor(network).getAssetBalance(
-        network,
-        address,
-        usdcAssetId,
-    )
+    return cardAdapterFor(scope).getAssetBalance(scope, address, usdcAssetId)
 }
 
 type WaitForUsdcCreditParams = {
@@ -71,22 +62,20 @@ export type UseCardUsdcCreditQueryResult = {
  * The watch is a query observer rather than `useQuery` so it outlives the
  * screen that started it, like the deposit awaiting it.
  */
-export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
+export const useCardUsdcCreditQuery = (scope: ChainScope): UseCardUsdcCreditQueryResult => {
     const queryClient = useQueryClient()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
 
     const readUsdcBalance = useCallback(
         (address: string): Promise<bigint> =>
             queryClient.fetchQuery({
                 queryKey: cardQueryKeys.usdcBalance(scope, address),
-                queryFn: () => fetchUsdcBalance(network, address),
+                queryFn: () => fetchUsdcBalance(scope, address),
                 // A baseline for the next credit: never a cached figure.
                 staleTime: 0,
                 gcTime: 0,
                 retry: false,
             }),
-        [queryClient, scope, network],
+        [queryClient, scope],
     )
 
     const waitForUsdcCredit = useCallback(
@@ -105,7 +94,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
                 }),
                 queryFn: async () => {
                     const delta =
-                        (await fetchUsdcBalance(network, address)) - before
+                        (await fetchUsdcBalance(scope, address)) - before
                     if (delta > 0n && delta >= minimum) return delta
                     if (Date.now() >= deadline) {
                         throw new UsdcCreditTimeoutError()
@@ -139,7 +128,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
                 })
             })
         },
-        [queryClient, scope, network],
+        [queryClient, scope],
     )
 
     return { readUsdcBalance, waitForUsdcCredit }

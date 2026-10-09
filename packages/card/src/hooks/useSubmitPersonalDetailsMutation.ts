@@ -11,11 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { submitPersonalDetails } from '../api/onboarding'
 import {
     getCardApiError,
@@ -31,8 +27,7 @@ export type UseSubmitPersonalDetailsMutationResult =
     CardMutationResult<PersonalDetailsInput>
 
 export const useSubmitPersonalDetailsMutation =
-    (): UseSubmitPersonalDetailsMutationResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    (scope: ChainScope): UseSubmitPersonalDetailsMutationResult => {
         const network = legacyNetworkOf(scope)
         const queryClient = useQueryClient()
 

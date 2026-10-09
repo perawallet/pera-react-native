@@ -11,11 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     fetchOnboardingDetails,
@@ -42,12 +38,12 @@ export type UseOnboardingDetailsQueryOptions = {
 }
 
 /** Pre-auth onboarding status (GET /v1/auth/register) — polls the KYC state. */
-export const useOnboardingDetailsQuery = ({
+export const useOnboardingDetailsQuery = (
+    scope: ChainScope,{
     onboardingId,
     enabled,
     refetchInterval,
 }: UseOnboardingDetailsQueryOptions) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
 
     return useQuery({

@@ -11,8 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     buildSiwxAuthData,
     type AuthDataMetadata,
@@ -66,8 +65,8 @@ export type UseSignCardOwnershipMutationResult = CardMutationResult<
  * valid ~10 minutes, so a retry must re-sign rather than reuse.
  */
 export const useSignCardOwnershipMutation =
-    (): UseSignCardOwnershipMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseSignCardOwnershipMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             CardOwnershipProof,
@@ -79,7 +78,7 @@ export const useSignCardOwnershipMutation =
                 // inside the payload the user signs, so it is fetched first.
                 const { token, nonce } = await fetchDelegationToken({ network })
                 const { authData, metadata } = buildSiwxAuthData(
-                    scopeForLegacyNetwork(network).chainId,
+                    scope.chainId,
                     {
                         domain: CARD_SIGN_IN_DOMAIN,
                         address,

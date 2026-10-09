@@ -40,7 +40,7 @@ const initialState = {
     allowSms: null,
     connectedFundingSourceAddress: null,
     // A single global preference, while the on-chain AutoDraw enable it
-    // mirrors is per account + network (one Killswitch box per enabler).
+    // mirrors is per account + network (one on-chain switch per enabler).
     // Holds only because the funding account/type flows keep them in
     // lockstep (change-funding is blocked while Auto is on); scope this per
     // account+network if that constraint is ever lifted.

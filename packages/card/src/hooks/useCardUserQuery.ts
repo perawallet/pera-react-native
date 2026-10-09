@@ -11,11 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchUser } from '../api/user'
 import type { CardUser } from '../models'
@@ -38,8 +34,8 @@ export type UseCardUserQueryOptions = {
 }
 
 /** `data` is the `CardUser` (or `null`); read `data?.verificationState` to gate KYC. */
-export const useCardUserQuery = (options?: UseCardUserQueryOptions) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useCardUserQuery = (
+    scope: ChainScope,options?: UseCardUserQueryOptions) => {
     const network = legacyNetworkOf(scope)
 
     return useQuery({

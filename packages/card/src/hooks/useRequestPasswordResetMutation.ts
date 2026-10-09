@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     requestPasswordReset,
     type RequestPasswordResetParams,
@@ -32,8 +32,8 @@ export type UseRequestPasswordResetMutationResult =
  * exist), so callers can always advance to the code screen.
  */
 export const useRequestPasswordResetMutation =
-    (): UseRequestPasswordResetMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseRequestPasswordResetMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             void,

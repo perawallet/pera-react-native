@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     sendEmailVerification,
     type SendEmailVerificationResult,
@@ -28,8 +28,8 @@ export type UseSendEmailVerificationMutationResult = CardMutationResult<
 >
 
 export const useSendEmailVerificationMutation =
-    (): UseSendEmailVerificationMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseSendEmailVerificationMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             SendEmailVerificationResult,

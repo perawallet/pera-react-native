@@ -64,32 +64,6 @@ export const mockPostAlgorandDelegationApproval = ({
         return HttpResponse.json(response, { status })
     })
 
-export type MockPostDelegatorLsigParams = {
-    status?: number
-    /** Captures each request body for assertions. */
-    onRequest?: (body: Record<string, unknown>) => void
-}
-
-export const mockPostDelegatorLsig = ({
-    status = 201,
-    onRequest,
-}: MockPostDelegatorLsigParams = {}): HttpHandler =>
-    http.post(
-        '*/v1/delegation/algorand/delegator-lsig',
-        async ({ request }) => {
-            onRequest?.((await request.json()) as Record<string, unknown>)
-            const response = { success: status < 400 }
-            if (status < 400) {
-                validateMockResponse(
-                    delegationAcceptedResponseSchema,
-                    response,
-                    'mockPostDelegatorLsig',
-                )
-            }
-            return HttpResponse.json(response, { status })
-        },
-    )
-
 export type MockGetExternalWalletsParams = {
     response: ExternalWalletApiResponse[]
     status?: number

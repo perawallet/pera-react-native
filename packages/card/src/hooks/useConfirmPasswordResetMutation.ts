@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     confirmPasswordReset,
     type ConfirmPasswordResetParams,
@@ -28,8 +28,8 @@ export type UseConfirmPasswordResetMutationResult =
 
 /** Step 3 of the forgot-password flow: sets the new password. */
 export const useConfirmPasswordResetMutation =
-    (): UseConfirmPasswordResetMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseConfirmPasswordResetMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             void,

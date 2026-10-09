@@ -81,7 +81,7 @@ export class CardSetupIncompleteError extends AppError {
 }
 
 /**
- * Backend 401: the ARC-60 ownership proof was rejected. The common cause is a
+ * Backend 401: the sign-in ownership proof was rejected. The common cause is a
  * funding account rekeyed on-chain that signed with its own, no longer
  * authorised key. Terminal for this account.
  */

@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     verifyPasswordReset,
     type VerifyPasswordResetParams,
@@ -35,8 +35,8 @@ export type UseVerifyPasswordResetMutationResult = CardMutationResult<
  * written to the persisted card store.
  */
 export const useVerifyPasswordResetMutation =
-    (): UseVerifyPasswordResetMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseVerifyPasswordResetMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             string,

@@ -58,10 +58,6 @@ describe('network-config', () => {
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
             baanxTenantId: config.mainnetBaanxTenantId,
-            cardW3CardAppId: config.mainnetCardW3CardAppId,
-            cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.mainnetCardUsdcAssetId,
         })
     })
 
@@ -86,10 +82,6 @@ describe('network-config', () => {
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
             baanxTenantId: config.testnetBaanxTenantId,
-            cardW3CardAppId: config.testnetCardW3CardAppId,
-            cardKillswitchAppId: config.testnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
     })
 
@@ -134,7 +126,6 @@ describe('network-config', () => {
             expect(networkConfig.backendUrl).not.toBe(testnetBackend)
             expect(networkConfig.bidaliBaseUrl).toBe('')
             expect(networkConfig.baanxBaseUrl).toBe('')
-            expect(networkConfig.cardUsdcAssetId).toBe('')
         }
     })
 
@@ -263,10 +254,6 @@ describe('getNetworkConfig keeps its values and key order for every network', ()
         baanxBaseUrl: '',
         baanxClientKey: '',
         baanxTenantId: '',
-        cardW3CardAppId: '',
-        cardKillswitchAppId: '',
-        cardAutoDrawProgramHash: '',
-        cardUsdcAssetId: '',
     }
 
     // Written in the key order getNetworkConfig has always produced; the
@@ -290,10 +277,6 @@ describe('getNetworkConfig keeps its values and key order for every network', ()
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
             baanxTenantId: config.testnetBaanxTenantId,
-            cardW3CardAppId: config.testnetCardW3CardAppId,
-            cardKillswitchAppId: config.testnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.testnetCardUsdcAssetId,
         },
         mainnet: {
             network: Networks.mainnet,
@@ -313,10 +296,6 @@ describe('getNetworkConfig keeps its values and key order for every network', ()
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
             baanxTenantId: config.mainnetBaanxTenantId,
-            cardW3CardAppId: config.mainnetCardW3CardAppId,
-            cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-            cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-            cardUsdcAssetId: config.mainnetCardUsdcAssetId,
         },
         betanet: {
             network: Networks.betanet,

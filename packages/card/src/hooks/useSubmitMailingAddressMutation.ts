@@ -11,11 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { legacyNetworkOf, type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitMailingAddress,
@@ -37,8 +33,7 @@ export type UseSubmitMailingAddressMutationResult = CardMutationResult<
 >
 
 export const useSubmitMailingAddressMutation =
-    (): UseSubmitMailingAddressMutationResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    (scope: ChainScope): UseSubmitMailingAddressMutationResult => {
         const network = legacyNetworkOf(scope)
         const queryClient = useQueryClient()
 

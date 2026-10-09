@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
     CardIntegrityAttestationRequiredError,
@@ -55,8 +55,8 @@ export type UseCreateAndApproveCardMutationResult = CardMutationResult<
  * is never persisted.
  */
 export const useCreateAndApproveCardMutation =
-    (): UseCreateAndApproveCardMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseCreateAndApproveCardMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             CreateAndApproveCardResult,
@@ -120,7 +120,7 @@ export const useCreateAndApproveCardMutation =
 
                 if (!approved) {
                     await postDelegationApproval({
-                        network,
+                        scope,
                         address,
                         currency,
                         txId,

@@ -10,13 +10,17 @@
  limitations under the License
  */
 
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
 import {
     cardAdapterFor,
+    type CardDelegationRequest,
     type DelegationApprovalParams,
-    type DelegatorProgramParams,
 } from '../../chain-adapter'
 import type { CardDelegationToken, CardExternalWallet } from '../../models'
 import {
@@ -79,8 +83,28 @@ const assertAccepted = (data: unknown): void => {
     }
 }
 
+/**
+ * Sends a chain adapter's delegation request to Baanx. Only an explicit
+ * `success: false` reads as a rejection; see `assertAccepted`.
+ */
+export const postCardDelegation = async (
+    request: CardDelegationRequest,
+    scope: ChainScope,
+    signal?: AbortSignal,
+): Promise<void> => {
+    const response = await getCardTransport().request({
+        network: legacyNetworkOf(scope),
+        method: 'POST',
+        path: request.path,
+        authenticated: true,
+        data: request.data,
+        signal,
+    })
+    assertAccepted(response.data)
+}
+
 export type PostDelegationApprovalParams = DelegationApprovalParams & {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -90,57 +114,17 @@ export type PostDelegationApprovalParams = DelegationApprovalParams & {
  * registered either way.
  */
 export const postDelegationApproval = async ({
-    network,
+    scope,
     signal,
     ...params
 }: PostDelegationApprovalParams): Promise<void> => {
-    const { path, data } =
-        cardAdapterFor(network).delegationApprovalRequest(params)
+    const request = cardAdapterFor(scope).delegationApprovalRequest(params)
 
     try {
-        const response = await getCardTransport().request({
-            network,
-            method: 'POST',
-            path,
-            authenticated: true,
-            data,
-            signal,
-        })
-        assertAccepted(response.data)
+        await postCardDelegation(request, scope, signal)
     } catch (error) {
         const apiError = await getCardApiError(error)
         if (isAlreadyCreatedError(apiError)) return
         throw error
     }
-}
-
-export type PostDelegatorLsigParams = DelegatorProgramParams & {
-    network: Network
-    signal?: AbortSignal
-}
-
-/**
- * Persists the signed AutoDraw delegation with Baanx, keyed by the delegator
- * that signed it. The delegation signature is itself the ownership proof, so
- * no separate SIWA signature accompanies it. Registered once per wallet and
- * currency.
- */
-export const postDelegatorLsig = async ({
-    network,
-    signal,
-    ...params
-}: PostDelegatorLsigParams): Promise<void> => {
-    const { path, data } =
-        cardAdapterFor(network).delegatorProgramRequest(params)
-
-    const response = await getCardTransport().request({
-        network,
-        method: 'POST',
-        path,
-        authenticated: true,
-        data,
-        signal,
-    })
-
-    assertAccepted(response.data)
 }

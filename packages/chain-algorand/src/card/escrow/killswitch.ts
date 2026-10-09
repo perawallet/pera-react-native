@@ -15,10 +15,10 @@ import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
-import type { CardAutoDraw } from '@perawallet/wallet-core-card'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from '../client'
+import { algorandCardConfig } from '../config'
 import { isAlgodNotFoundError } from './algod'
 import killswitchArc56 from './killswitch-arc56.json'
 
@@ -44,20 +44,47 @@ const buildAccountAssetBoxName = (
     return key
 }
 
+export type AlgorandAutoDrawToggleParams = {
+    network: Network
+    sender: string
+    /** Settlement asset id as a decimal string. */
+    asset: string
+}
+
+/** The on-chain switch that lets the card draw from the funding account. */
+export interface AlgorandAutoDraw {
+    /** False until a real switch contract is configured for the network. */
+    isConfigured(network: Network): boolean
+    /**
+     * Built for fee delegation: the sponsor pays, so the returned group
+     * carries no fee or group id of its own.
+     */
+    buildEnable(
+        params: AlgorandAutoDrawToggleParams & { cardAddress: string },
+    ): Promise<PeraTransaction[]>
+    buildKill(params: AlgorandAutoDrawToggleParams): Promise<PeraTransaction[]>
+    /**
+     * Callers MUST check this before enable/kill rather than parse reverts,
+     * which surface as opaque simulate failures. An unknown state rethrows
+     * instead of reading as disabled.
+     */
+    isEnabled(params: AlgorandAutoDrawToggleParams): Promise<boolean>
+}
+
 const getAppClient = (network: Network, sender: string) => {
-    const { cardKillswitchAppId } = getNetworkConfig(network)
+    const { killswitchAppId } = algorandCardConfig(network)
     return cardAlgorandClient(network).client.getAppClientById({
-        appId: BigInt(cardKillswitchAppId),
+        appId: BigInt(killswitchAppId),
         appSpec: KILLSWITCH_SPEC,
         defaultSender: sender,
     })
 }
 
-export const algorandAutoDraw: CardAutoDraw = {
+export const algorandAutoDraw: AlgorandAutoDraw = {
     // '0' is the dev placeholder, not a real app.
     isConfigured: network => {
-        const { cardKillswitchAppId } = getNetworkConfig(network)
-        return cardKillswitchAppId !== '' && cardKillswitchAppId !== '0'
+        const { killswitchAppId } = algorandCardConfig(network)
+        return killswitchAppId !== '' && killswitchAppId !== '0'
     },
 
     // The sponsor covers the group fee (the backend simulates, so the inner
@@ -130,11 +157,11 @@ export const algorandAutoDraw: CardAutoDraw = {
     // those surface from the simulate as opaque "assert failed pc=NNN" errors,
     // since the ARC-56 mapping never runs.
     isEnabled: async ({ network, sender, asset }) => {
-        const { cardKillswitchAppId } = getNetworkConfig(network)
+        const { killswitchAppId } = algorandCardConfig(network)
         try {
             await cardAlgorandClient(network)
                 .client.algod.getApplicationBoxByName(
-                    BigInt(cardKillswitchAppId),
+                    BigInt(killswitchAppId),
                     buildAccountAssetBoxName(sender, BigInt(asset)),
                 )
                 .do()

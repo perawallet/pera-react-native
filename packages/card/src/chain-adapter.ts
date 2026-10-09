@@ -12,23 +12,14 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import type { CardSiwaSignData } from './api/card-creation'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { CardSignInData } from './api/card-creation'
 import type { PendingWithdrawal } from './models'
-
-/** The on-chain ids the escrow card flows need, as decimal strings. */
-export type EscrowChainConfig = {
-    /** Settlement asset id (USDC). */
-    assetId: string
-    killswitchAppId: string
-    /** W3Card (main) application id. */
-    mainAppId: string
-}
 
 /** A Baanx delegation route and body; the card transport sends it. */
 export type CardDelegationRequest = {
@@ -43,38 +34,54 @@ export type DelegationApprovalParams = {
     currency: string
     /** Transaction id of the on-chain card creation, from the backend create-card response. */
     txId: string
-    /** ARC-60 SIWA sign data whose payload carries the delegation token's nonce. */
-    signData: CardSiwaSignData
-    /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
+    /** Sign-in payload whose message carries the delegation token's nonce. */
+    signData: CardSignInData
+    /** Base64 signature over the sign-in payload. */
     signature: string
     /** Single-use token from GET /v1/delegation/token. */
     token: string
 }
 
-export type DelegatorProgramParams = {
-    /** Currency code the delegated program covers, as Baanx expects it, e.g. "usdc". */
-    currency: string
-    /** Delegator (funding-source) address that signed the program. */
-    delegatorAddress: string
-    /** Base64 encoding of the signed delegation, in the chain's own format. */
-    lsigBytes: string
-    /** Escrow card address returned by the backend create-card call. */
-    cardAddress: string
-}
-
 export type EscrowWithdrawalParams = {
-    network: Network
+    scope: ChainScope
     sender: string
     cardAddress: string
     /** Base units of the card's settlement asset. */
     amount: bigint
 }
 
-export type AutoDrawToggleParams = {
-    network: Network
+export type CardManualDepositBuildParams = {
     sender: string
-    /** Settlement asset id as a decimal string. */
-    asset: string
+    cardAddress: string
+    /** Base units of the settlement asset. */
+    amount: bigint
+}
+
+export type CardFundingSourceEligibility = {
+    /** The chain's card contract can draw from the account. */
+    canFund: boolean
+    /** The account can sign the sign-in proof card creation needs. */
+    canProveOwnership: boolean
+    /** The account can sign the delegation auto-draw needs. */
+    canAutoDraw: boolean
+}
+
+/** The account can't cover the fee and keep its minimum balance. */
+export type CardChainErrorReason = 'insufficient-native-balance'
+
+export type CardAutoDrawOperations = {
+    /**
+     * Registers the signed delegation with Baanx, then switches auto-draw on
+     * chain. The on-chain leg is fee-sponsored, so the funding account needs
+     * none of the native asset. Resolves without submitting when already on.
+     */
+    enableAutoDraw(
+        account: WalletAccount,
+        cardAddress: string,
+        scope: ChainScope,
+    ): Promise<void>
+    /** Resolves without submitting when already off. */
+    disableAutoDraw(account: WalletAccount, scope: ChainScope): Promise<void>
 }
 
 /** Withdrawal from the escrow card: timelocked, request then release. */
@@ -90,64 +97,58 @@ export interface CardEscrowWithdrawals {
     ): Promise<PeraTransaction[]>
     /** The owner's open request, or null when there is none. */
     getPending(
-        network: Network,
+        scope: ChainScope,
         ownerAddress: string,
     ): Promise<Nullable<PendingWithdrawal>>
     /** Seconds a request must age before release; null until the contract owner sets it. */
-    getWaitTimeSeconds(network: Network): Promise<Nullable<number>>
-}
-
-/** The on-chain switch that lets the card draw from the funding account. */
-export interface CardAutoDraw {
-    /** False until a real switch contract is configured for the network. */
-    isConfigured(network: Network): boolean
-    /**
-     * Built for fee delegation: the sponsor pays, so the returned group
-     * carries no fee or group id of its own.
-     */
-    buildEnable(
-        params: AutoDrawToggleParams & { cardAddress: string },
-    ): Promise<PeraTransaction[]>
-    buildKill(params: AutoDrawToggleParams): Promise<PeraTransaction[]>
-    /**
-     * Callers MUST check this before enable/kill rather than parse reverts,
-     * which surface as opaque simulate failures. An unknown state rethrows
-     * instead of reading as disabled.
-     */
-    isEnabled(params: AutoDrawToggleParams): Promise<boolean>
+    getWaitTimeSeconds(scope: ChainScope): Promise<Nullable<number>>
 }
 
 /** The chain-specific legs of the card flows; registered by the chain package. */
 export interface CardChainAdapter {
     chainId: ChainId
-    /** @throws CardEscrowNotConfiguredError when the build lacks an id. */
-    resolveEscrowChainConfig(network: Network): EscrowChainConfig
-    /**
-     * The pinned AutoDraw program the funding account signs, verified before
-     * it is returned.
-     * @throws AutoDrawTealUnverifiedError, AutoDrawProgramUnverifiedError
-     */
-    compileAutoDrawProgram(network: Network): Promise<Uint8Array>
+    /** Settlement asset (USDC) id, or null when the scope has none. */
+    settlementAsset(scope: ChainScope): Nullable<string>
     delegationApprovalRequest(
         params: DelegationApprovalParams,
     ): CardDelegationRequest
-    delegatorProgramRequest(
-        params: DelegatorProgramParams,
-    ): CardDelegationRequest
     /** Base units held; 0 when the account cannot hold the asset yet. */
     getAssetBalance(
-        network: Network,
+        scope: ChainScope,
         address: string,
         assetId: string,
     ): Promise<bigint>
     /** Resolves once the transaction is in a block. */
-    awaitConfirmation(network: Network, txId: string): Promise<void>
+    awaitConfirmation(scope: ChainScope, txId: string): Promise<void>
+    /**
+     * A transfer of the settlement asset to the card's own account.
+     * @throws CardEscrowNotConfiguredError when the scope has no settlement asset.
+     */
+    buildManualDeposit(
+        params: CardManualDepositBuildParams,
+        scope: ChainScope,
+    ): Promise<PeraTransaction[]>
+    fundingSourceEligibility(
+        account: WalletAccount,
+        scope: ChainScope,
+    ): CardFundingSourceEligibility
+    /** Null for anything the chain can't name more precisely than the caller's copy. */
+    describeError(error: unknown): Nullable<CardChainErrorReason>
+    /**
+     * Explorer link for a card transaction leg. Null when Baanx's `legNetwork`
+     * isn't this chain or the scope has no explorer.
+     */
+    transactionUrl(
+        hash: string,
+        legNetwork: string,
+        scope: ChainScope,
+    ): Nullable<string>
+    useAutoDraw(): CardAutoDrawOperations
     withdrawal: CardEscrowWithdrawals
-    autoDraw: CardAutoDraw
 }
 
 export const cardChainAdapters =
     createChainAdapterRegistry<CardChainAdapter>('card')
 
-export const cardAdapterFor = (network: Network): CardChainAdapter =>
-    cardChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+export const cardAdapterFor = (scope: ChainScope): CardChainAdapter =>
+    cardChainAdapters.get(scope.chainId)

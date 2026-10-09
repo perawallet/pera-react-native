@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CardUserUnavailableError,
@@ -36,8 +36,8 @@ export type UseRestoreEscrowCardMutationResult = CardMutationResult<
  * every candidate address is asked.
  */
 export const useRestoreEscrowCardMutation =
-    (): UseRestoreEscrowCardMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseRestoreEscrowCardMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<Nullable<string>, Error, string[]>({
             mutationFn: async addresses => {

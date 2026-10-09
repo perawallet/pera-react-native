@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { requestCountryAvailability } from '../api/waitlist'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -29,8 +29,8 @@ export type UseRequestCountryAvailabilityMutationResult =
  * package); the network is resolved here.
  */
 export const useRequestCountryAvailabilityMutation =
-    (): UseRequestCountryAvailabilityMutationResult => {
-        const { network } = useNetwork()
+    (scope: ChainScope): UseRequestCountryAvailabilityMutationResult => {
+        const network = legacyNetworkOf(scope)
 
         const mutation = useMutation<
             void,

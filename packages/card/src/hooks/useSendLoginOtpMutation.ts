@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope, legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import { sendLoginOtpRequest } from '../api/auth'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -28,8 +28,8 @@ export type UseSendLoginOtpMutationResult =
  * call this when login returns `isOtpRequired` (and again on "resend"), then
  * retry the login with the user-entered `otpCode`.
  */
-export const useSendLoginOtpMutation = (): UseSendLoginOtpMutationResult => {
-    const { network } = useNetwork()
+export const useSendLoginOtpMutation = (scope: ChainScope): UseSendLoginOtpMutationResult => {
+    const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<void, Error, SendLoginOtpParams>({
         mutationFn: ({ userId }) => sendLoginOtpRequest({ userId, network }),

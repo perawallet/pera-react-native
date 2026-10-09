@@ -86,15 +86,16 @@ export type {
 export {
     mockGetDelegationToken,
     mockPostAlgorandDelegationApproval,
-    mockPostDelegatorLsig,
     mockGetExternalWallets,
 } from './api/delegation/msw-handlers'
 export type {
     MockGetDelegationTokenParams,
     MockPostAlgorandDelegationApprovalParams,
-    MockPostDelegatorLsigParams,
     MockGetExternalWalletsParams,
 } from './api/delegation/msw-handlers'
+
+// For chain packages' handlers of their own delegation routes.
+export { delegationAcceptedResponseSchema } from './api/delegation/schema'
 
 export { mockCreateCard } from './api/card-creation/msw-handlers'
 export type { MockCreateCardParams } from './api/card-creation/msw-handlers'
