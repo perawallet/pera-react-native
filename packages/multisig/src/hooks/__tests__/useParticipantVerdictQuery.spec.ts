@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { multisigChainAdapters } from '../../chain-adapter'
+import { multisigChainAdapters, ParticipantVerdicts } from '../../chain-adapter'
 import { fakeMultisigAdapter } from '../../__tests__/fakeMultisigAdapter'
 import { useParticipantVerdictQuery } from '../useParticipantVerdictQuery'
 
@@ -59,6 +59,24 @@ describe('useParticipantVerdictQuery', () => {
             expect(result.current.verdict).toBe('incompatible-scheme'),
         )
         expect(classifyParticipant).toHaveBeenCalledWith('ADDR', SCOPE)
+    })
+
+    test('treats every address as unclassified on a chain that classifies none', async () => {
+        multisigChainAdapters.reset()
+        multisigChainAdapters.register(
+            fakeMultisigAdapter({ classifyParticipant: undefined }),
+        )
+
+        const { result } = renderHook(
+            () => useParticipantVerdictQuery({ address: 'ADDR', scope: SCOPE }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.verdict).toBe(
+                ParticipantVerdicts.unclassified,
+            ),
+        )
     })
 
     test('reports no verdict when the chain fails to classify', async () => {

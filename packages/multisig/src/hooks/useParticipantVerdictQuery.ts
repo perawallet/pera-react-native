@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     multisigChainAdapters,
+    ParticipantVerdicts,
     type ParticipantVerdict,
 } from '../chain-adapter'
 import { getParticipantVerdictQueryKey } from './querykeys'
@@ -38,10 +39,12 @@ export const useParticipantVerdictQuery = ({
 }: UseParticipantVerdictQueryParams): UseParticipantVerdictQueryResult => {
     const query = useQuery({
         queryKey: getParticipantVerdictQueryKey(scope, address),
-        queryFn: () =>
-            multisigChainAdapters
-                .get(scope.chainId)
-                .classifyParticipant(address, scope),
+        queryFn: (): Promise<ParticipantVerdict> => {
+            const adapter = multisigChainAdapters.get(scope.chainId)
+            return adapter.classifyParticipant
+                ? adapter.classifyParticipant(address, scope)
+                : Promise.resolve(ParticipantVerdicts.unclassified)
+        },
         enabled: enabled && !!address,
         retry: false,
     })

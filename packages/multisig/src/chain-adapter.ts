@@ -109,9 +109,10 @@ export interface MultisigChainAdapter {
     acceptsParticipantScheme(scheme: SigningScheme): boolean
     /**
      * Classifies an external address (a contact, a scan, a typed address) the
-     * wallet holds no key for, so its scheme can't be read locally.
+     * wallet holds no key for, so its scheme can't be read locally. Absent on
+     * a chain with one participant scheme: every address is `unclassified`.
      */
-    classifyParticipant(
+    classifyParticipant?(
         address: string,
         scope: ChainScope,
     ): Promise<ParticipantVerdict>
