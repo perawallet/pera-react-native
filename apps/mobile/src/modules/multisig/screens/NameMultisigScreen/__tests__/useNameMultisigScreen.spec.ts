@@ -84,7 +84,6 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
             threshold: number
             addresses: string[]
         }) => mockDeriveMultisigAddress(version, threshold, addresses),
-        toNative: (multisig: unknown) => ({ family: 'algorand', multisig }),
     }),
 }))
 

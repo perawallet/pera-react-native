@@ -18,6 +18,7 @@ import {
     useAccountsStore,
     useAllAccounts,
     useSelectedAccountId,
+    withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -153,21 +154,16 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 device_id: deviceId,
             })
 
-            const newAccount = buildAccount({
-                name: accountName,
-                custody: { kind: 'multisig' },
-                chainId: adapter.chainId,
-                chains: {
-                    [adapter.chainId]: {
-                        address: multisigAddress,
-                        native: adapter.toNative({
-                            version,
-                            threshold,
-                            addresses,
-                        }),
-                    },
-                },
-            })
+            const newAccount = withMultisigParameters(
+                buildAccount({
+                    name: accountName,
+                    custody: { kind: 'multisig' },
+                    chainId: adapter.chainId,
+                    chains: { [adapter.chainId]: { address: multisigAddress } },
+                }),
+                adapter.chainId,
+                { version, threshold, addresses },
+            )
 
             setAccounts([...accounts, newAccount])
             setSelectedAccountId(newAccount.id)

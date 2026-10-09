@@ -14,7 +14,7 @@ import algosdk from 'algosdk'
 import nacl from 'tweetnacl'
 import { describe, expect, it } from 'vitest'
 
-import { algorandMultisigAdapter } from '@perawallet/wallet-core-chain-algorand/multisig/adapter'
+import { algorandMultisigNative } from '@perawallet/wallet-core-chain-algorand/accounts/multisig-native'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -136,7 +136,7 @@ describe('conformance keystore harness', () => {
 
         expect(reversed.address).not.toBe(multisig.address)
         expect(
-            algorandMultisigAdapter.parametersOf(
+            algorandMultisigNative.parametersOf(
                 multisig.walletAccount.chains[LEGACY_CHAIN_ID]?.native,
             )?.addresses,
         ).toEqual(members.map(member => member.address))

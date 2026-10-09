@@ -11,11 +11,13 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type {
-    AccountCustody,
-    ChainAccount,
-    HardwareRef,
-    WalletAccount,
+import {
+    accountsChainAdapters,
+    type AccountCustody,
+    type AccountsChainAdapter,
+    type ChainAccount,
+    type HardwareRef,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
@@ -135,22 +137,33 @@ const notStubbed = (member: string) => () => {
     throw new Error(`test multisig adapter: ${member} is not stubbed`)
 }
 
-/** Registers a multisig adapter that reads and writes parameters the way {@link multisigAccount} stores them. */
+/**
+ * Registers a multisig adapter, and, when no accounts adapter is registered,
+ * one that reads parameters the way {@link multisigAccount} stores them.
+ */
 export const registerTestMultisigAdapter = (): void => {
+    if (!accountsChainAdapters.has(TEST_CHAIN_ID)) {
+        accountsChainAdapters.register({
+            chainId: TEST_CHAIN_ID,
+            multisigNative: {
+                parametersOf: native =>
+                    native?.multisig
+                        ? {
+                              ...native.multisig,
+                              addresses: [...native.multisig.addresses],
+                          }
+                        : undefined,
+                withParameters: (native, parameters) => ({
+                    ...native,
+                    family: 'algorand',
+                    multisig: parameters,
+                }),
+            },
+        } as Partial<AccountsChainAdapter> as AccountsChainAdapter)
+    }
     const adapter: MultisigChainAdapter = {
         chainId: TEST_CHAIN_ID,
         deriveAddress: notStubbed('deriveAddress'),
-        parametersOf: native =>
-            native?.multisig
-                ? {
-                      ...native.multisig,
-                      addresses: [...native.multisig.addresses],
-                  }
-                : undefined,
-        toNative: ({ version, threshold, addresses }) => ({
-            family: 'algorand',
-            multisig: { version, threshold, addresses: [...addresses] },
-        }),
         assembleSignedTransactions: notStubbed('assembleSignedTransactions'),
         validateSignRequest: notStubbed('validateSignRequest'),
     }

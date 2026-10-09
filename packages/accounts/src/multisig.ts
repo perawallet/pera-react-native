@@ -11,10 +11,8 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    multisigChainAdapters,
-    type MultisigParameters,
-} from '@perawallet/wallet-core-multisig'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import { accountsChainAdapters, requireMultisigNative } from './chain-adapter'
 import { chainAccountOf } from './credentials/accessors'
 import type { WalletAccount } from './models'
 
@@ -24,28 +22,29 @@ export const multisigParametersOf = (
     chainId: ChainId,
 ): MultisigParameters | undefined => {
     if (account.custody.kind !== 'multisig') return undefined
-    if (!multisigChainAdapters.has(chainId)) return undefined
-    return multisigChainAdapters
+    if (!accountsChainAdapters.has(chainId)) return undefined
+    return accountsChainAdapters
         .get(chainId)
-        .parametersOf(chainAccountOf(account, chainId)?.native)
+        .multisigNative?.parametersOf(chainAccountOf(account, chainId)?.native)
 }
 
-/** The account with `parameters` stored on its `chainId` entry; unchanged when it has no entry there. */
-export const withMultisigParameters = (
-    account: WalletAccount,
+/**
+ * The account with `parameters` stored on its `chainId` entry, beside
+ * whatever else the entry's native data holds; unchanged when it has no entry
+ * there. Throws `MultisigUnsupportedError` on a chain without multisig.
+ */
+export const withMultisigParameters = <A extends WalletAccount>(
+    account: A,
     chainId: ChainId,
     parameters: MultisigParameters,
-): WalletAccount => {
+): A => {
     const entry = chainAccountOf(account, chainId)
     if (!entry) return account
+    const native = requireMultisigNative(
+        accountsChainAdapters.get(chainId),
+    ).withParameters(entry.native, parameters)
     return {
         ...account,
-        chains: {
-            ...account.chains,
-            [chainId]: {
-                ...entry,
-                native: multisigChainAdapters.get(chainId).toNative(parameters),
-            },
-        },
+        chains: { ...account.chains, [chainId]: { ...entry, native } },
     }
 }

@@ -31,14 +31,6 @@ export const fakeMultisigAdapter = (
 ): MultisigChainAdapter => ({
     chainId: 'algorand',
     deriveAddress,
-    parametersOf: native =>
-        native?.multisig
-            ? { ...native.multisig, addresses: [...native.multisig.addresses] }
-            : undefined,
-    toNative: ({ version, threshold, addresses }) => ({
-        family: 'algorand',
-        multisig: { version, threshold, addresses: [...addresses] },
-    }),
     assembleSignedTransactions: async ({ rawTransactionsBase64, threshold }) =>
         rawTransactionsBase64.length === 0
             ? { kind: 'success', signedTransactionsBytes: [] }

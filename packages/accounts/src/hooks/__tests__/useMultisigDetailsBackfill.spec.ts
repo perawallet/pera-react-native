@@ -19,7 +19,11 @@ import {
 import { useMultisigDetailsBackfill } from '../useMultisigDetailsBackfill'
 import { withMultisigParameters } from '../../multisig'
 import { testAccount } from '../../__tests__/accountFactory'
-import { FAKE_CHAIN_ID, MAINNET_SCOPE } from '../../__tests__/fakeAccountsChain'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    fakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 
 const mocks = vi.hoisted(() => ({
     updateAccount: vi.fn(),
@@ -43,17 +47,10 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
     useMultisigAccountDetailQuery: mocks.useMultisigAccountDetailQuery,
 }))
 
+// Only address derivation is under test here; the accounts fake stores the parameters.
 const fakeMultisigAdapter = {
     chainId: FAKE_CHAIN_ID,
     deriveAddress: mocks.deriveAddress,
-    parametersOf: native =>
-        native?.multisig
-            ? { ...native.multisig, addresses: [...native.multisig.addresses] }
-            : undefined,
-    toNative: ({ version, threshold, addresses }) => ({
-        family: 'algorand',
-        multisig: { version, threshold, addresses: [...addresses] },
-    }),
 } as Partial<MultisigChainAdapter> as MultisigChainAdapter
 
 const PARAMETERS = {
@@ -169,7 +166,10 @@ describe('useMultisigDetailsBackfill', () => {
             chains: {
                 [FAKE_CHAIN_ID]: {
                     address: 'MSIG_ADDR',
-                    native: fakeMultisigAdapter.toNative(PARAMETERS),
+                    native: fakeAccountsChain().adapter.multisigNative!.withParameters(
+                        undefined,
+                        PARAMETERS,
+                    ),
                 },
             },
         })

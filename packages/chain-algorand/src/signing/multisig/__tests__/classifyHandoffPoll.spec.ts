@@ -54,8 +54,6 @@ beforeEach(() => {
     multisigChainAdapters.register({
         chainId: 'algorand',
         deriveAddress: vi.fn(),
-        parametersOf: vi.fn(),
-        toNative: vi.fn(),
         assembleSignedTransactions: assembleMock,
         validateSignRequest: vi.fn(),
     })

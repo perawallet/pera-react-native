@@ -38,7 +38,6 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { algorandMultisigOf } from '../../../accounts/multisig-participants'
-import { algorandMultisigAdapter } from '../../../multisig/adapter'
 import {
     buildWatchAccount,
     buildLedgerAccount,
@@ -77,8 +76,6 @@ beforeEach(() => {
         deriveAddress,
         assembleSignedTransactions: vi.fn(),
         validateSignRequest: vi.fn(),
-        parametersOf: algorandMultisigAdapter.parametersOf,
-        toNative: algorandMultisigAdapter.toNative,
     })
 })
 

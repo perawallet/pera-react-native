@@ -24,6 +24,7 @@ import {
     type MultiSigAccount,
     type WalletAccount,
     type WatchAccount,
+    withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
@@ -147,17 +148,16 @@ const buildMultisigAccount = (
             `Multisig address mismatch: derived ${derived} != backup ${payload.address}`,
         )
     }
-    return buildAccount({
-        custody: { kind: 'multisig' },
-        chainId: adapter.chainId,
-        chains: {
-            [adapter.chainId]: {
-                address: payload.address,
-                native: multisig.toNative(parameters),
-            },
-        },
-        ...nameField(payload.customName),
-    })
+    return withMultisigParameters(
+        buildAccount({
+            custody: { kind: 'multisig' },
+            chainId: adapter.chainId,
+            chains: { [adapter.chainId]: { address: payload.address } },
+            ...nameField(payload.customName),
+        }),
+        adapter.chainId,
+        parameters,
+    )
 }
 
 // Only a bip39 seed derives HD children.

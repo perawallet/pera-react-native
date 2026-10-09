@@ -85,6 +85,21 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         buildAccount,
         DuplicateAccountError,
+        // Stands in for the chain's record encoding of the parameters.
+        withMultisigParameters: (
+            account: WalletAccount,
+            chainId: 'algorand',
+            parameters: unknown,
+        ) => ({
+            ...account,
+            chains: {
+                ...account.chains,
+                [chainId]: {
+                    ...account.chains[chainId],
+                    native: { family: 'algorand', multisig: parameters },
+                },
+            },
+        }),
         findAddressHolder: (
             accounts: WalletAccount[],
             scope: { chainId: string },
@@ -106,13 +121,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     multisigChainAdapters: {
-        get: () => ({
-            deriveAddress: deriveMultisigAddressMock,
-            toNative: (parameters: unknown) => ({
-                family: 'algorand',
-                multisig: parameters,
-            }),
-        }),
+        get: () => ({ deriveAddress: deriveMultisigAddressMock }),
     },
 }))
 

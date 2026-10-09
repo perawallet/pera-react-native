@@ -10,36 +10,25 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import {
-    multisigChainAdapters,
-    type MultisigChainAdapter,
-} from '@perawallet/wallet-core-multisig'
+import { describe, expect, it } from 'vitest'
+import { MultisigUnsupportedError } from '../errors'
 import { multisigParametersOf, withMultisigParameters } from '../multisig'
 import { buildTestAccount, TEST_CUSTODY, testAccount } from './accountFactory'
-import { FAKE_CHAIN_ID } from './fakeAccountsChain'
+import {
+    FAKE_CHAIN_ID,
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from './fakeAccountsChain'
 
 const PARAMETERS = { version: 1, threshold: 2, addresses: ['P1', 'P2', 'P3'] }
 
-// Only the storage half of the adapter is under test here.
-const fakeMultisigAdapter = {
-    chainId: FAKE_CHAIN_ID,
-    parametersOf: native =>
-        native?.multisig
-            ? { ...native.multisig, addresses: [...native.multisig.addresses] }
-            : undefined,
-    toNative: ({ version, threshold, addresses }) => ({
-        family: 'algorand',
-        multisig: { version, threshold, addresses: [...addresses] },
-    }),
-} as Partial<MultisigChainAdapter> as MultisigChainAdapter
+const storedNative = () =>
+    fakeAccountsChain().adapter.multisigNative!.withParameters(
+        undefined,
+        PARAMETERS,
+    )
 
 describe('multisig parameters on the account', () => {
-    beforeEach(() => {
-        multisigChainAdapters.reset()
-        multisigChainAdapters.register(fakeMultisigAdapter)
-    })
-
     it('stores parameters on the chain entry and reads them back', () => {
         const account = testAccount('multisig', 'MSIG')
 
@@ -51,10 +40,29 @@ describe('multisig parameters on the account', () => {
 
         expect(stored.chains[FAKE_CHAIN_ID]).toEqual({
             address: 'MSIG',
-            native: fakeMultisigAdapter.toNative(PARAMETERS),
+            native: storedNative(),
         })
         expect(multisigParametersOf(stored, FAKE_CHAIN_ID)).toEqual(PARAMETERS)
         expect(account.chains[FAKE_CHAIN_ID]?.native).toBeUndefined()
+    })
+
+    it("keeps the rest of the entry's native data", () => {
+        const pq = { scheme: 'falcon-1024' as const, publicKey: 'cGs=' }
+        const account = buildTestAccount(TEST_CUSTODY.multisig, {
+            [FAKE_CHAIN_ID]: {
+                address: 'MSIG',
+                native: { family: 'algorand', pq },
+            },
+        })
+
+        const stored = withMultisigParameters(
+            account,
+            FAKE_CHAIN_ID,
+            PARAMETERS,
+        )
+
+        expect(stored.chains[FAKE_CHAIN_ID]?.native?.pq).toEqual(pq)
+        expect(multisigParametersOf(stored, FAKE_CHAIN_ID)).toEqual(PARAMETERS)
     })
 
     it('reads none from a multisig record that lacks them', () => {
@@ -71,7 +79,7 @@ describe('multisig parameters on the account', () => {
             [FAKE_CHAIN_ID]: {
                 address: 'A',
                 keyPairId: 'k',
-                native: fakeMultisigAdapter.toNative(PARAMETERS),
+                native: storedNative(),
             },
         })
 
@@ -84,9 +92,21 @@ describe('multisig parameters on the account', () => {
             FAKE_CHAIN_ID,
             PARAMETERS,
         )
-        multisigChainAdapters.reset()
+        registerFakeAccountsChain({ multisigNative: undefined })
 
         expect(multisigParametersOf(stored, FAKE_CHAIN_ID)).toBeUndefined()
+    })
+
+    it('refuses to store parameters on a chain without multisig', () => {
+        registerFakeAccountsChain({ multisigNative: undefined })
+
+        expect(() =>
+            withMultisigParameters(
+                testAccount('multisig', 'MSIG'),
+                FAKE_CHAIN_ID,
+                PARAMETERS,
+            ),
+        ).toThrow(MultisigUnsupportedError)
     })
 
     it('leaves an account with no entry on the chain unchanged', () => {

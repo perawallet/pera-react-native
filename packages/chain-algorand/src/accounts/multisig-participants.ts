@@ -17,14 +17,14 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandMultisigAdapter } from '../multisig/adapter'
+import { algorandMultisigNative } from './multisig-native'
 import { algorandAddressOf, isQuantumAccount } from './vocabulary'
 
 /** The multisig parameters an account carries on Algorand; `undefined` when a legacy record lacks them. */
 export const algorandMultisigOf = (
     account: WalletAccount,
 ): MultisigParameters | undefined =>
-    algorandMultisigAdapter.parametersOf(
+    algorandMultisigNative.parametersOf(
         chainAccountOf(account, ALGORAND_CHAIN_ID)?.native,
     )
 
