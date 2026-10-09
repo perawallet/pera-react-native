@@ -22,6 +22,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
 
 import { handleBackgroundMessage, handleNotificationClick } from '../push'
 
+const options = { uriSchemes: ['algorand'] }
 const showNotification = vi.fn(async () => {})
 const create = vi.fn(async () => ({ id: 1 }))
 
@@ -39,13 +40,16 @@ beforeEach(() => {
 
 describe('handleBackgroundMessage', () => {
     it('renders the payload title, body and deeplink', async () => {
-        await handleBackgroundMessage({
-            data: {
-                title: 'Payment received',
-                body: '5 ALGO',
-                url: 'perawallet://asset/0',
-            },
-        } as never)
+        await handleBackgroundMessage(
+            {
+                data: {
+                    title: 'Payment received',
+                    body: '5 ALGO',
+                    url: 'perawallet://asset/0',
+                },
+            } as never,
+            options,
+        )
 
         expect(showNotification).toHaveBeenCalledWith(
             'Payment received',
@@ -59,7 +63,7 @@ describe('handleBackgroundMessage', () => {
     // userVisibleOnly is hardcoded true in the SDK: skipping the notification
     // for a malformed payload makes Chrome show its own generic toast instead.
     it('still shows a notification when the payload carries no data', async () => {
-        await handleBackgroundMessage({} as never)
+        await handleBackgroundMessage({} as never, options)
 
         expect(showNotification).toHaveBeenCalledWith(
             'Pera Wallet',
@@ -72,7 +76,7 @@ describe('handleBackgroundMessage', () => {
         'chrome-extension://abc/expanded.html?deeplink=x',
         'https://perawallet.app/other',
     ])('drops a non-Pera deeplink: %s', async url => {
-        await handleBackgroundMessage({ data: { url } } as never)
+        await handleBackgroundMessage({ data: { url } } as never, options)
 
         expect(showNotification).toHaveBeenCalledWith(
             'Pera Wallet',
@@ -84,11 +88,39 @@ describe('handleBackgroundMessage', () => {
         'algorand://ADDR?amount=1',
         'https://perawallet.app/qr/perawallet/home',
     ])('keeps an allowed deeplink: %s', async url => {
-        await handleBackgroundMessage({ data: { url } } as never)
+        await handleBackgroundMessage({ data: { url } } as never, options)
 
         expect(showNotification).toHaveBeenCalledWith(
             'Pera Wallet',
             expect.objectContaining({ data: { peraUrl: url } }),
+        )
+    })
+})
+
+describe('chain URI schemes', () => {
+    it('refuses a chain deeplink when no chain declares its scheme', async () => {
+        await handleBackgroundMessage(
+            { data: { url: 'algorand://ADDR?amount=1' } } as never,
+            { uriSchemes: [] },
+        )
+
+        expect(showNotification).toHaveBeenCalledWith(
+            'Pera Wallet',
+            expect.objectContaining({ data: { peraUrl: undefined } }),
+        )
+    })
+
+    it('keeps Pera deeplinks with no chain schemes at all', async () => {
+        await handleBackgroundMessage(
+            { data: { url: 'perawallet://asset/0' } } as never,
+            { uriSchemes: [] },
+        )
+
+        expect(showNotification).toHaveBeenCalledWith(
+            'Pera Wallet',
+            expect.objectContaining({
+                data: { peraUrl: 'perawallet://asset/0' },
+            }),
         )
     })
 })
@@ -98,13 +130,16 @@ describe('handleNotificationClick', () => {
         const close = vi.fn()
         const waitUntil = vi.fn()
 
-        handleNotificationClick({
-            notification: {
-                data: { peraUrl: 'perawallet://asset/0' },
-                close,
-            },
-            waitUntil,
-        } as never)
+        handleNotificationClick(
+            {
+                notification: {
+                    data: { peraUrl: 'perawallet://asset/0' },
+                    close,
+                },
+                waitUntil,
+            } as never,
+            options,
+        )
 
         expect(close).toHaveBeenCalled()
         expect(create).toHaveBeenCalledWith({
@@ -116,13 +151,16 @@ describe('handleNotificationClick', () => {
     it('refuses a stored non-Pera deeplink', () => {
         const close = vi.fn()
 
-        handleNotificationClick({
-            notification: {
-                data: { peraUrl: 'https://evil.example/phish' },
-                close,
-            },
-            waitUntil: vi.fn(),
-        } as never)
+        handleNotificationClick(
+            {
+                notification: {
+                    data: { peraUrl: 'https://evil.example/phish' },
+                    close,
+                },
+                waitUntil: vi.fn(),
+            } as never,
+            options,
+        )
 
         expect(create).not.toHaveBeenCalled()
     })
@@ -130,10 +168,13 @@ describe('handleNotificationClick', () => {
     it('ignores notifications it did not create', () => {
         const close = vi.fn()
 
-        handleNotificationClick({
-            notification: { data: {}, close },
-            waitUntil: vi.fn(),
-        } as never)
+        handleNotificationClick(
+            {
+                notification: { data: {}, close },
+                waitUntil: vi.fn(),
+            } as never,
+            options,
+        )
 
         expect(create).not.toHaveBeenCalled()
         expect(close).not.toHaveBeenCalled()

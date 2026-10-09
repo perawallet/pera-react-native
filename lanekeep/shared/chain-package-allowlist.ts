@@ -28,11 +28,11 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
     },
     {
         glob: '**/apps/browser/src/offscreen/runOffscreenApp.ts',
-        reason: 'extension offscreen composition root: passes the Algorand chain id to the dApp handler',
+        reason: "extension offscreen composition root: passes the Algorand chain id and the custom node's genesis hash to the dApp handler",
     },
     {
         glob: '**/apps/browser/src/background/index.ts',
-        reason: 'extension service-worker composition root: registers each chain for the background context',
+        reason: "extension service-worker composition root: registers each chain for the background context and hands the Algorand descriptor's URI schemes to the push handlers",
     },
 ]
 
