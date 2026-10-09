@@ -97,4 +97,5 @@ export const ethereumDescriptor: ChainDescriptor = {
                 : tokenLink(networkId, assetId),
     },
     finality: { kind: 'confirmations', recommended: 12 },
+    uriSchemes: ['ethereum'],
 }
