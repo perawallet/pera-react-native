@@ -38,7 +38,7 @@ const CONTRACT_SUITES = {
     '@perawallet/wallet-core-swaps/testing':
         '../swaps/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-transactions/testing':
-        '../transactions/src/__tests__/adapter-contract.ts',
+        '../transactions/src/__tests__/testing.ts',
     '@perawallet/wallet-extension-hardware-wallet/testing':
         '../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts',
 }
