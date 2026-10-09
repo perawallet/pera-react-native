@@ -14,12 +14,22 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    accountKindIdOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { AnalyticsMetadataKey, TransactionsEvent } from '@analytics'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 
 const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
@@ -46,7 +56,7 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    useAccountPresentation: vi.fn(() => ({ analyticsKind: 'standalone' })),
+    accountKindIdOf: vi.fn(() => 'standalone'),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -247,6 +257,28 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
             transactionId: 'TX_ID_123',
         })
+    })
+
+    it("reports the sender's account kind id with the completed send", async () => {
+        ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+        ;(useSendFunds as Mock).mockReturnValue({
+            ...mockSendFundsState,
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+            destination: 'DEST_ADDRESS',
+        })
+
+        await act(async () => {
+            renderHook(() => useTransactionProcessingScreen())
+        })
+
+        expect(accountKindIdOf).toHaveBeenCalledWith(mockAccount, 'algorand')
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            TransactionsEvent.Complete,
+            expect.objectContaining({
+                [AnalyticsMetadataKey.AccountType]: 'standalone',
+            }),
+        )
     })
 
     it('should include arc59Summary when sendMode is sendArc59', async () => {

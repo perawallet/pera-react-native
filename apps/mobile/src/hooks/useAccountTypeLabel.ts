@@ -71,13 +71,13 @@ export const useAccountTypeLabel = (
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }
-            if (!delegateTransition) {
+            const transitionLabel = delegateTransition
+                ? authorityTransitionLabel(delegateTransition, scope.chainId)
+                : null
+            if (!transitionLabel) {
                 return plain(t('account_info.type_rekeyed'))
             }
-            const { labelKey, signerKey } = authorityTransitionLabel(
-                delegateTransition,
-                scope.chainId,
-            )
+            const { labelKey, signerKey } = transitionLabel
             const label = t(labelKey, { to: t(signerKey) })
             return { label, ...splitAccountTypeLabel(label) }
         }

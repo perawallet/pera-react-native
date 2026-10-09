@@ -128,9 +128,11 @@ describe('algorandBackupAdapter.kindIdOf', () => {
     ] as const)('decodes a %s item to the kind showing %s', (type, glyph) => {
         const kindId = algorandBackupAdapter.kindIdOf(type as BackupItemKind)
 
-        expect(kindId && algorandAccountPresentation.kindGlyph(kindId)).toBe(
-            glyph,
-        )
+        expect(
+            kindId &&
+                algorandAccountPresentation.describe(kindId, { canSign: true })
+                    ?.glyph,
+        ).toBe(glyph)
     })
 
     it('has no kind for a bare seed item', () => {

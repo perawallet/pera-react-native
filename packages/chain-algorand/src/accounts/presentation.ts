@@ -11,19 +11,16 @@
  */
 
 import type {
+    AccountKindContext,
     AccountKindPresentation,
-    AccountPresentationOps,
+    AccountPresentationChainAdapter,
     AuthorityTransitionLabel,
-    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { resolveAlgorandSigner } from './signer-resolution'
-import { accountType, AccountTypes, type AccountType } from './vocabulary'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { AccountTypes, type AccountType } from './vocabulary'
 
-type KindCopy = Omit<AccountKindPresentation, 'kindId' | 'analyticsKind'>
-
-const KIND_COPY: Record<AccountType, KindCopy> = {
+const KIND_COPY: Record<AccountType, AccountKindPresentation> = {
     [AccountTypes.standalone]: {
         labelKey: 'account_info.type_algo25',
         infoTitleKey: 'account_type_info.standard_title',
@@ -73,7 +70,7 @@ const KIND_COPY: Record<AccountType, KindCopy> = {
 // A multisig with no participant held locally can't sign, so it reads as a
 // no-auth account rather than as a shared one.
 const UNSIGNABLE_MULTISIG_COPY: Pick<
-    KindCopy,
+    AccountKindPresentation,
     'labelKey' | 'infoTitleKey' | 'infoBodyKey'
 > = {
     labelKey: 'account_info.type_no_auth',
@@ -106,55 +103,38 @@ const transitionDescriptionKey = (from: AccountType, to: AccountType) => {
     return 'account_type_info.rekeyed_standard_description'
 }
 
+// A kind id is the accounts adapter's `kindIdOf`, which is the account type.
+const isAccountType = (kindId: string): kindId is AccountType =>
+    Object.hasOwn(KIND_COPY, kindId)
+
 const describe = (
-    account: WalletAccount,
-    accounts: readonly WalletAccount[],
-    scope: ChainScope,
-): AccountKindPresentation => {
-    const type = accountType(account)
-    const copy = KIND_COPY[type]
-    const isUnsignableMultisig =
-        type === AccountTypes.multisig &&
-        resolveAlgorandSigner(account, [...accounts], scope).kind !== 'ok'
+    kindId: string,
+    { canSign }: AccountKindContext,
+): AccountKindPresentation | undefined => {
+    if (!isAccountType(kindId)) return undefined
+    const isUnsignableMultisig = kindId === AccountTypes.multisig && !canSign
     return {
-        kindId: type,
-        analyticsKind: type,
-        ...copy,
+        ...KIND_COPY[kindId],
         ...(isUnsignableMultisig ? UNSIGNABLE_MULTISIG_COPY : {}),
     }
 }
 
-// The backup wire format still spells the standalone kind `algo25`.
-const WIRE_KIND_IDS: Readonly<Record<string, AccountType>> = {
-    algo25: AccountTypes.standalone,
-}
-
-const kindGlyph = (kindId: string): string | undefined => {
-    if (Object.hasOwn(KIND_COPY, kindId)) {
-        return KIND_COPY[kindId as AccountType].glyph
-    }
-    return Object.hasOwn(WIRE_KIND_IDS, kindId)
-        ? KIND_COPY[WIRE_KIND_IDS[kindId]].glyph
-        : undefined
-}
-
 const transitionLabel = (
-    from: WalletAccount,
-    to: WalletAccount,
-): AuthorityTransitionLabel => {
-    const fromType = accountType(from)
-    const toType = accountType(to)
+    from: string,
+    to: string,
+): AuthorityTransitionLabel | undefined => {
+    if (!isAccountType(from) || !isAccountType(to)) return undefined
     return {
         labelKey: 'account_info.type_rekeyed_signer',
-        signerKey: SIGNER_KEY[toType],
-        descriptionKey: transitionDescriptionKey(fromType, toType),
-        supportUrl: KIND_COPY[toType].supportUrl,
+        signerKey: SIGNER_KEY[to],
+        descriptionKey: transitionDescriptionKey(from, to),
+        supportUrl: KIND_COPY[to].supportUrl,
     }
 }
 
-export const algorandAccountPresentation: AccountPresentationOps = {
+export const algorandAccountPresentation: AccountPresentationChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
     describe,
-    kindGlyph,
     transitionLabel,
 }
 

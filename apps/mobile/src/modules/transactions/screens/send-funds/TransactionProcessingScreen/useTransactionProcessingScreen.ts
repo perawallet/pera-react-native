@@ -18,7 +18,7 @@ import {
     chainAccountOf,
     hardwareDetailsOf,
     isHardwareWalletAccount,
-    useAccountPresentation,
+    accountKindIdOf,
     resolveAuthAccount,
     useAccountBalancesInvalidator,
     useAllAccounts,
@@ -81,10 +81,13 @@ export const useTransactionProcessingScreen =
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()
-        const analyticsKind = useAccountPresentation(
-            selectedAccount,
-            scope,
-        )?.analyticsKind
+        const accountKindId = useMemo(
+            () =>
+                selectedAccount
+                    ? accountKindIdOf(selectedAccount, scope.chainId)
+                    : undefined,
+            [selectedAccount, scope.chainId],
+        )
         const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
@@ -172,7 +175,7 @@ export const useTransactionProcessingScreen =
                         [AnalyticsMetadataKey.AssetId]: selectedAssetId ?? '',
                         [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
                         [AnalyticsMetadataKey.TransactionId]: txId,
-                        [AnalyticsMetadataKey.AccountType]: analyticsKind,
+                        [AnalyticsMetadataKey.AccountType]: accountKindId,
                     })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {

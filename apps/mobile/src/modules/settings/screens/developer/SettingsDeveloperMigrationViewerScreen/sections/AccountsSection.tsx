@@ -12,12 +12,8 @@
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
-import {
-    accountsChainAdapters,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { accountKindIdOf } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     MigrationDataSection,
@@ -29,13 +25,6 @@ import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { useStyles } from '../styles'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
-
-const kindOf = (account: WalletAccount): string => {
-    const scope = getSelectedScope(LEGACY_CHAIN_ID)
-    return accountsChainAdapters
-        .get(scope.chainId)
-        .presentation.describe(account, [], scope).kindId
-}
 
 const getDisplayType = (account: LegacyAccount): string => {
     if (account.type === 'watch') return 'watch'
@@ -164,7 +153,10 @@ const AccountCard = ({
                                     legacyValue={account.type}
                                     rnValue={
                                         rnAccount
-                                            ? kindOf(rnAccount)
+                                            ? accountKindIdOf(
+                                                  rnAccount,
+                                                  LEGACY_CHAIN_ID,
+                                              )
                                             : '(missing)'
                                     }
                                 />

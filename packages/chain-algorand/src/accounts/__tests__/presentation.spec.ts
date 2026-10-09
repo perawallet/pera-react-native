@@ -16,7 +16,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { BackupAccountType } from '@perawallet/wallet-core-backup'
-import { AlgorandBackupKinds } from '../../backup/serialize-account'
+import {
+    AlgorandBackupKinds,
+    algorandBackupKindIdOf,
+} from '../../backup/serialize-account'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -40,11 +43,32 @@ beforeAll(() => {
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
-const { transitionLabel } = algorandAccountPresentation
+const { kindIdOf } = algorandAccountsAdapter
+
+// As `useAccountPresentation` asks: by the account's kind id and whether a
+// held account signs for it.
 const describeAccount = (
     account: WalletAccount,
     accounts: readonly WalletAccount[],
-) => algorandAccountPresentation.describe(account, accounts, SCOPE)
+) => {
+    const canSign =
+        algorandAccountsAdapter.resolveSigner(account, [...accounts], SCOPE)
+            .kind === 'ok'
+    const described = algorandAccountPresentation.describe(kindIdOf(account), {
+        canSign,
+    })
+    if (!described) throw new Error('undescribed kind')
+    return described
+}
+
+const transitionLabel = (from: WalletAccount, to: WalletAccount) => {
+    const label = algorandAccountPresentation.transitionLabel!(
+        kindIdOf(from),
+        kindIdOf(to),
+    )
+    if (!label) throw new Error('unlabelled transition')
+    return label
+}
 
 const participant = standaloneAccount('P1')
 const signableMultisig = multisigAccount('MS', {
@@ -123,11 +147,8 @@ describe('algorandAccountPresentation.describe', () => {
             },
         ],
     ] as const)('describes a %s account', (kind, account, copy) => {
-        expect(describeAccount(account, [account, participant])).toEqual({
-            kindId: kind,
-            analyticsKind: kind,
-            ...copy,
-        })
+        expect(kindIdOf(account)).toBe(kind)
+        expect(describeAccount(account, [account, participant])).toEqual(copy)
     })
 
     it('describes a multisig with no held participant as a no-auth account', () => {
@@ -136,7 +157,6 @@ describe('algorandAccountPresentation.describe', () => {
         ])
 
         expect(presentation).toMatchObject({
-            kindId: 'multisig',
             labelKey: 'account_info.type_no_auth',
             infoTitleKey: 'account_type_info.no_auth_title',
             infoBodyKey: 'account_type_info.multisig_no_auth_description',
@@ -153,12 +173,18 @@ describe('algorandAccountPresentation.describe', () => {
         )
     })
 
-    it('describes the account by its own kind, ignoring rekey', () => {
+    it('names the account by its own kind, ignoring rekey', () => {
         const rekeyed = standaloneAccount('A', { authorityAddress: 'L' })
 
-        expect(
-            describeAccount(rekeyed, [rekeyed, hardwareAccount('L')]).kindId,
-        ).toBe('standalone')
+        expect(kindIdOf(rekeyed)).toBe('standalone')
+    })
+
+    it('describes no kind id it does not name', () => {
+        for (const kindId of ['algo25', 'hdSeed', 'toString']) {
+            expect(
+                algorandAccountPresentation.describe(kindId, { canSign: true }),
+            ).toBeUndefined()
+        }
     })
 })
 
@@ -275,7 +301,7 @@ describe('accountPresentationI18nKeys', () => {
     })
 })
 
-describe('kindGlyph', () => {
+describe('glyphs', () => {
     it.each([
         standaloneAccount('A'),
         hdAccount('A'),
@@ -283,28 +309,31 @@ describe('kindGlyph', () => {
         multisigAccount('A', null),
         watchAccount('A'),
         quantumAccount('A'),
-    ])('matches the glyph describe gives the same kind', account => {
-        const described = describeAccount(account, [account])
+    ])('are the same whether or not the account can sign', account => {
+        const kindId = kindIdOf(account)
 
-        expect(algorandAccountPresentation.kindGlyph(described.kindId)).toBe(
-            described.glyph,
+        expect(
+            algorandAccountPresentation.describe(kindId, { canSign: false })
+                ?.glyph,
+        ).toBe(
+            algorandAccountPresentation.describe(kindId, { canSign: true })
+                ?.glyph,
         )
     })
 
-    // A backup-only row passes the item's wire kind as the kind id.
+    // A backup-only row shows the kind the backup adapter reads off the item.
     it.each([
         ...Object.values(AlgorandBackupKinds),
         ...Object.values(BackupAccountType).filter(
             type => type !== BackupAccountType.hdSeed,
         ),
-    ])('names a glyph for the %s backup item kind', type => {
-        expect(algorandAccountPresentation.kindGlyph(type)).toBeDefined()
-    })
+    ])('include one for the %s backup item kind', type => {
+        const kindId = algorandBackupKindIdOf(type)
 
-    it('names none for an id it does not describe', () => {
-        expect(algorandAccountPresentation.kindGlyph('hdSeed')).toBeUndefined()
+        expect(kindId).toBeDefined()
         expect(
-            algorandAccountPresentation.kindGlyph('toString'),
-        ).toBeUndefined()
+            algorandAccountPresentation.describe(kindId!, { canSign: true })
+                ?.glyph,
+        ).toBeDefined()
     })
 })

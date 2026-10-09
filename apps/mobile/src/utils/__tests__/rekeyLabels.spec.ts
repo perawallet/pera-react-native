@@ -39,10 +39,12 @@ const transitionLabel = ({
     from: AlgorandAccountKind
     to: AlgorandAccountKind
 }): Omit<AuthorityTransitionLabel, 'supportUrl'> => {
-    const { labelKey, signerKey, descriptionKey } = authorityTransitionLabel(
+    const label = authorityTransitionLabel(
         { from: accountForType(from), to: accountForType(to) },
         LEGACY_CHAIN_ID,
     )
+    if (!label) throw new Error('Algorand words every transition')
+    const { labelKey, signerKey, descriptionKey } = label
     return { labelKey, signerKey, descriptionKey }
 }
 

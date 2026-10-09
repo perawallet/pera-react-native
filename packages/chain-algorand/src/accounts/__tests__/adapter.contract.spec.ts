@@ -20,7 +20,10 @@ import {
     mockIndexerSearchForAccounts,
 } from '../../test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
-import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
+import {
+    accountPresentationContractTests,
+    accountsContractTests,
+} from '@perawallet/wallet-core-accounts/testing'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import {
@@ -29,6 +32,7 @@ import {
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
+import { algorandAccountPresentation } from '../presentation'
 import { seedAuthority } from './seedAuthority'
 import { algorandAddressCodec } from '../address-codec'
 
@@ -45,12 +49,8 @@ const QUANTUM_CANONICAL =
 const QUANTUM_LEGACY =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
 
-const keyed = (id: string, address: string, rekeyAddress?: string) =>
-    standaloneAccount(address, {
-        id,
-        keyPairId: `${id}-key`,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    })
+const keyed = (id: string, address: string) =>
+    standaloneAccount(address, { id, keyPairId: `${id}-key` })
 
 accountsContractTests(() => algorandAccountsAdapter, {
     scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
@@ -119,11 +119,8 @@ accountsContractTests(() => algorandAccountsAdapter, {
     },
     rekeyed: {
         accounts: {
-            account: watchAccount(REKEYED, {
-                id: 'rekeyed',
-                rekeyAddress: FUNDED,
-            }),
-            auth: keyed('auth', FUNDED, EMPTY),
+            account: watchAccount(REKEYED, { id: 'rekeyed' }),
+            auth: keyed('auth', FUNDED),
             next: keyed('next', EMPTY),
         },
         seedAuthority: (address, authAddress) =>
@@ -137,3 +134,14 @@ accountsContractTests(() => algorandAccountsAdapter, {
         ],
     },
 })
+
+accountPresentationContractTests(
+    () => algorandAccountPresentation,
+    () => algorandAccountsAdapter,
+    {
+        signers: {
+            signing: keyed('signing', SIGNER),
+            watch: watchAccount(EMPTY, { id: 'watch' }),
+        },
+    },
+)

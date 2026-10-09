@@ -11,6 +11,7 @@
  */
 
 import type {
+    AccountKindId,
     HdIndex,
     LocalKeySeed,
     WalletAccount,
@@ -94,10 +95,11 @@ export interface BackupChainAdapter {
     localKindOf(type: BackupItemKind): BackupLocalKind | undefined
     /**
      * Decodes an address item's wire `type` into the kind id the chain's
-     * account presentation describes; `undefined` for an item that isn't an
-     * account (a bare seed).
+     * accounts adapter gives the account it restores (`kindIdOf`), which its
+     * presentation describes; `undefined` for an item that isn't an account
+     * (a bare seed).
      */
-    kindIdOf(type: BackupItemKind): string | undefined
+    kindIdOf(type: BackupItemKind): AccountKindId | undefined
     /** The secrets item a single-key local account's recovery phrase is stored as; `null` for any other account. */
     serializeMnemonicSecret(
         account: WalletAccount,
@@ -140,8 +142,8 @@ export const backupSeedReference = (
 ): Promise<string> =>
     backupAdapterFor(chainId).seedReference(kmsCore, seedKeyId)
 
-/** The presentation kind id for a backup item shown without a local account. */
+/** The account kind id for a backup item shown without a local account. */
 export const backupItemKindId = (
     type: BackupItemKind,
     chainId: ChainId,
-): string | undefined => backupAdapterFor(chainId).kindIdOf(type)
+): AccountKindId | undefined => backupAdapterFor(chainId).kindIdOf(type)
