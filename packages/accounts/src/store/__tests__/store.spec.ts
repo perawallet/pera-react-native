@@ -349,11 +349,11 @@ describe('services/accounts/store', () => {
         })
     })
 
-    describe('addRekeyedWatchAccounts', () => {
+    describe('addDelegatedWatchAccounts', () => {
         test('appends watch accounts holding just the address, and records the source as their authority on the scanned network', async () => {
             const added = useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], TESTNET_SCOPE)
+                .addDelegatedWatchAccounts('SRC', ['R1'], TESTNET_SCOPE)
 
             expect(added).toBe(1)
             const [r1] = useAccountsStore.getState().accounts
@@ -374,7 +374,7 @@ describe('services/accounts/store', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .addRekeyedWatchAccounts(
+                    .addDelegatedWatchAccounts(
                         'SRC',
                         ['R1', 'R2'],
                         TESTNET_SCOPE,
@@ -604,14 +604,14 @@ describe('services/accounts/store', () => {
 
     describe('v5 migration', () => {
         // Records in the fake chain's legacy shape: a top-level address, a
-        // `keyPairId` marking a local key.
+        // `keyPairId` marking a local key, authority beside them.
         const legacyRecords = () => [
             { id: 'a', name: 'Alpha', address: 'A-ADDR', keyPairId: 'k-a' },
             {
                 id: 'h',
                 address: 'H-ADDR',
-                rekeyAddress: 'AUTH',
-                rekeyAddressByNetwork: { mainnet: 'AUTH' },
+                authority: 'AUTH',
+                authorityByScope: { [toScopeKey(MAINNET_SCOPE)]: 'AUTH' },
                 custody: TEST_CUSTODY.hardware,
             },
             { id: 'w', address: 'W-ADDR' },
@@ -669,20 +669,18 @@ describe('services/accounts/store', () => {
                 )
 
                 expect(migrated).toStrictEqual(migratedState)
-                for (const record of records.filter(r => 'id' in r)) {
-                    const {
-                        rekeyAddress: _scalar,
-                        rekeyAddressByNetwork: _map,
-                        ...decoded
-                    } = record as Record<string, unknown>
+                for (const record of records) {
                     expect(
                         fake.adapter.decodeLegacyRecord,
-                    ).toHaveBeenCalledWith(decoded)
+                    ).toHaveBeenCalledWith(record)
                 }
+                expect(fake.adapter.decodeLegacyAuthority).toHaveBeenCalledWith(
+                    records[1],
+                )
             },
         )
 
-        test('moves the record authority fields into the authority maps', async () => {
+        test("files the authority the chain decodes from each record under the record's address", async () => {
             const { migrateAccountsState } = await import('../store')
 
             const migrated = migrateAccountsState(
@@ -692,19 +690,21 @@ describe('services/accounts/store', () => {
                         {
                             id: 'm',
                             address: 'M-ADDR',
-                            rekeyAddressByNetwork: { testnet: 'T' },
+                            authorityByScope: {
+                                [toScopeKey(TESTNET_SCOPE)]: 'T',
+                            },
                         },
-                        { id: 's', address: 'S-ADDR', rekeyAddress: 'S' },
+                        { id: 's', address: 'S-ADDR', authority: 'S' },
+                        // Dropped with its record: no chain entry to file it under.
+                        { id: 'x', authority: 'X' },
                     ],
                 },
                 3,
             )
 
             for (const migratedAccount of migrated.accounts) {
-                expect(migratedAccount).not.toHaveProperty('rekeyAddress')
-                expect(migratedAccount).not.toHaveProperty(
-                    'rekeyAddressByNetwork',
-                )
+                expect(migratedAccount).not.toHaveProperty('authority')
+                expect(migratedAccount).not.toHaveProperty('authorityByScope')
             }
             expect(migrated.authorities).toEqual({
                 [toScopeKey(TESTNET_SCOPE)]: { 'M-ADDR': 'T' },

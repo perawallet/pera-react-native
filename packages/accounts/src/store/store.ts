@@ -35,6 +35,7 @@ import {
     toScopeKey,
     type ChainId,
     type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
@@ -63,7 +64,6 @@ import {
 } from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
 import { gateWritesOnHydration } from './hydrationGate'
-import { liftLegacyAuthority } from './legacyAuthority'
 import {
     isHardwareWalletAccount,
     isSameAddress,
@@ -146,9 +146,52 @@ type MigratedRecord = {
     account: WalletAccount
 }
 
+type LiftedAuthorities = Pick<
+    PersistedAccountsState,
+    'authorities' | 'unscopedAuthorities'
+>
+
+/**
+ * Files the authority each chain decodes from `raw` under the address the
+ * record holds on that chain. Records persisted before v4 carried authority
+ * beside their account fields.
+ */
+const liftLegacyAuthority = (
+    raw: PersistedRecord,
+    { chains }: DecodedAccountRecord,
+    into: LiftedAuthorities,
+): void => {
+    for (const chainId of CHAIN_IDS) {
+        const address = chains[chainId]?.address
+        if (address === undefined || !accountsChainAdapters.has(chainId)) {
+            continue
+        }
+        const decoded = accountsChainAdapters
+            .get(chainId)
+            .decodeLegacyAuthority?.(raw)
+        if (!decoded) continue
+        for (const [key, authority] of Object.entries(decoded.byScope) as [
+            ChainScopeKey,
+            string | undefined,
+        ][]) {
+            if (authority === undefined) continue
+            into.authorities[key] = {
+                ...into.authorities[key],
+                [address]: authority,
+            }
+        }
+        if (decoded.unscoped !== undefined) {
+            into.unscopedAuthorities[address] = decoded.unscoped
+        }
+    }
+}
+
 // No migration ever wrote ids, so a record persisted without one gets a
 // derived id rather than losing the account.
-const migrateRecords = (raws: readonly PersistedRecord[]): MigratedRecord[] => {
+const migrateRecords = (
+    raws: readonly PersistedRecord[],
+    lifted: LiftedAuthorities,
+): MigratedRecord[] => {
     const usedIds = new Set(raws.flatMap(raw => persistedIdOf(raw) ?? []))
     const uniqueId = (base: string): string => {
         let id = base
@@ -161,6 +204,7 @@ const migrateRecords = (raws: readonly PersistedRecord[]): MigratedRecord[] => {
     return raws.flatMap(raw => {
         const decoded = decodeRecord(raw)
         if (!decoded) return []
+        liftLegacyAuthority(raw, decoded, lifted)
         return [
             {
                 legacyAddress:
@@ -226,10 +270,10 @@ const withoutAddress = <V>(
 
 /**
  * Every record decodes through the registered chain adapters, so this runs
- * only after they register (`rehydrateAccountsStore`). The authority fields
- * records carried before v4 move into the authority maps first; then each
- * record keeps only its custody and chain entries, and a record no chain
- * decodes is dropped. Selection moves from addresses to account ids.
+ * only after they register (`rehydrateAccountsStore`). Each record keeps only
+ * its custody and chain entries, the authority it carried before v4 moving
+ * into the authority maps, and a record no chain decodes is dropped.
+ * Selection moves from addresses to account ids.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
@@ -239,12 +283,16 @@ export const migrateAccountsState = (
         return persistedState as PersistedAccountsState
     }
     const state = (persistedState ?? {}) as LegacyPersistedState
-    const lifted = liftLegacyAuthority(
+    const lifted: LiftedAuthorities = {
+        authorities: {},
+        unscopedAuthorities: {},
+    }
+    const records = migrateRecords(
         (state.accounts ?? []).map(raw =>
             version < 2 ? stripPreV2Custody(raw) : raw,
         ),
+        lifted,
     )
-    const records = migrateRecords(lifted.records)
     const accounts = records.map(record => record.account)
     const idOf = (address: Nullable<string> | undefined) =>
         idForLegacyAddress(address, records)
@@ -640,7 +688,7 @@ export const useAccountsStore: UseBoundStore<
             setManualAccountOrder: (order: string[]) => {
                 set({ manualAccountOrder: order })
             },
-            addRekeyedWatchAccounts: (
+            addDelegatedWatchAccounts: (
                 sourceAddress: string,
                 addresses: string[],
                 scope: ChainScope,

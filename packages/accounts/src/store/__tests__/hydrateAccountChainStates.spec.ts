@@ -78,12 +78,12 @@ describe('hydrateAccountChainStates', () => {
         ).state
 
     // The first launch after the upgrade: the persisted record still carries
-    // the authority fields this store no longer has.
+    // authority in the fake chain's legacy fields.
     const launchWithLegacyPayload = async (
         account: WalletAccount,
         fields: {
-            rekeyAddress?: string
-            rekeyAddressByNetwork?: Record<string, string>
+            authority?: string
+            authorityByScope?: Record<string, string>
         },
     ): Promise<void> => {
         getProvider().keyValueStorage.setItem(
@@ -144,7 +144,7 @@ describe('hydrateAccountChainStates', () => {
     it('seeds a scope with no row from the per-network authority', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, {
-            rekeyAddressByNetwork: { testnet: 'T' },
+            authorityByScope: { [toScopeKey(TESTNET)]: 'T' },
         })
 
         await hydrateAccountChainStates({ db })
@@ -154,7 +154,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('seeds a lone scalar under the selected scope', async () => {
         const account = holdAccount()
-        await launchWithLegacyPayload(account, { rekeyAddress: 'S' })
+        await launchWithLegacyPayload(account, { authority: 'S' })
         useNetworkStore.getState().setNetwork('testnet')
 
         await hydrateAccountChainStates({ db })
@@ -166,8 +166,8 @@ describe('hydrateAccountChainStates', () => {
     it('ignores the scalar once a per-network map exists', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, {
-            rekeyAddress: 'SCALAR',
-            rekeyAddressByNetwork: { testnet: 'T' },
+            authority: 'SCALAR',
+            authorityByScope: { [toScopeKey(TESTNET)]: 'T' },
         })
         useNetworkStore.getState().setNetwork('mainnet')
 
@@ -180,8 +180,8 @@ describe('hydrateAccountChainStates', () => {
     it('keeps a migrated authority across two launches without a sync', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, {
-            rekeyAddress: 'S',
-            rekeyAddressByNetwork: { testnet: 'T' },
+            authority: 'S',
+            authorityByScope: { [toScopeKey(TESTNET)]: 'T' },
         })
         await hydrateAccountChainStates({ db })
 
@@ -193,7 +193,7 @@ describe('hydrateAccountChainStates', () => {
 
     it('keeps a lone scalar on the scope it resolved to, after the network changes', async () => {
         const account = holdAccount()
-        await launchWithLegacyPayload(account, { rekeyAddress: 'S' })
+        await launchWithLegacyPayload(account, { authority: 'S' })
         useNetworkStore.getState().setNetwork('testnet')
         await hydrateAccountChainStates({ db })
         useNetworkStore.getState().setNetwork('mainnet')
@@ -207,15 +207,13 @@ describe('hydrateAccountChainStates', () => {
     it('never persists the stripped record without its authority', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, {
-            rekeyAddressByNetwork: { testnet: 'T' },
+            authorityByScope: { [toScopeKey(TESTNET)]: 'T' },
         })
 
         await hydrateAccountChainStates({ db })
 
         const persisted = readPersisted()
-        expect(persisted.accounts[0]).not.toHaveProperty(
-            'rekeyAddressByNetwork',
-        )
+        expect(persisted.accounts[0]).not.toHaveProperty('authorityByScope')
         expect(persisted.authorities).toEqual({
             [toScopeKey(TESTNET)]: { [addressOf(account)]: 'T' },
         })
@@ -234,7 +232,7 @@ describe('hydrateAccountChainStates', () => {
     it('lets the row beat the record, and drops the record it supersedes', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, {
-            rekeyAddressByNetwork: { mainnet: 'M' },
+            authorityByScope: { [toScopeKey(MAINNET)]: 'M' },
         })
         await seedRow(addressOf(account), MAINNET, null)
 
