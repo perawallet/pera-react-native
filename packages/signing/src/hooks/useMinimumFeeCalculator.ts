@@ -12,7 +12,8 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import { registeredPlanners, type AssignFeeToGroup } from '../chain-adapter'
+import type { AssignFeeToGroup } from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
 
 export type UseMinimumFeeCalculatorResult = {
     assignFeeToGroup: AssignFeeToGroup
@@ -35,12 +36,8 @@ const keepFees: AssignFeeToGroup = async ({ transactions }) => ({
  */
 export const useMinimumFeeCalculator = (
     chainId: ChainId,
-): UseMinimumFeeCalculatorResult => {
-    let assignFeeToGroup = keepFees
-    // Every planner's hook runs, so the hooks called never depend on `chainId`.
-    for (const planner of registeredPlanners()) {
-        const chainAssigner = planner.useAssignFeeToGroup()
-        if (planner.chainId === chainId) assignFeeToGroup = chainAssigner
-    }
-    return { assignFeeToGroup }
-}
+): UseMinimumFeeCalculatorResult => ({
+    assignFeeToGroup: usePlannerHook(chainId, keepFees, planner =>
+        planner.useAssignFeeToGroup(),
+    ),
+})

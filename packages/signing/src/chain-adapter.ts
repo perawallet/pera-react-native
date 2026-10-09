@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-import type { Network } from '@perawallet/wallet-core-config'
+import { isDebug, type Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
@@ -830,30 +830,38 @@ export interface PlannerChainAdapter {
 
 const plannerRegistry =
     createChainAdapterRegistry<PlannerChainAdapter>('planner')
-const plannersInRegistrationOrder: PlannerChainAdapter[] = []
+let plannersForHooks: readonly PlannerChainAdapter[] | undefined
 
 export const plannerChainAdapters: ChainAdapterRegistry<PlannerChainAdapter> = {
+    ...plannerRegistry,
     register: adapter => {
-        plannerRegistry.register(adapter)
-        if (!plannersInRegistrationOrder.includes(adapter)) {
-            plannersInRegistrationOrder.push(adapter)
+        if (
+            isDebug &&
+            plannersForHooks &&
+            !plannersForHooks.includes(adapter)
+        ) {
+            throw new Error(
+                `The ${adapter.chainId} planner registered after planner hooks first ran; chains must register before React mounts`,
+            )
         }
+        plannerRegistry.register(adapter)
     },
-    get: chainId => plannerRegistry.get(chainId),
-    has: chainId => plannerRegistry.has(chainId),
     reset: () => {
         plannerRegistry.reset()
-        plannersInRegistrationOrder.length = 0
+        plannersForHooks = undefined
     },
 }
 
 /**
- * Every registered planner, in registration order. A hook that runs each
- * planner's hook from this list calls the same hooks whatever chain it serves,
- * because chains register before the first render.
+ * Every registered planner, in registration order, fixed at first use. A hook
+ * that runs each planner's hook from this list calls the same hooks on every
+ * render whatever chain it serves. Bootstrap registers every chain before
+ * React mounts; a debug build throws if a planner registers later.
  */
-export const registeredPlanners = (): readonly PlannerChainAdapter[] =>
-    plannersInRegistrationOrder
+export const registeredPlanners = (): readonly PlannerChainAdapter[] => {
+    plannersForHooks ??= plannerRegistry.list()
+    return plannersForHooks
+}
 
 export const plannerAdapterForScope = (
     scope: ChainScope,

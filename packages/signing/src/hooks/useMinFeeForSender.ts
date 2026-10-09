@@ -11,10 +11,8 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    registeredPlanners,
-    type MinFeeForSenderResult,
-} from '../chain-adapter'
+import type { MinFeeForSenderResult } from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
 
 const NO_MIN_FEE: MinFeeForSenderResult = {
     minFee: undefined,
@@ -30,16 +28,8 @@ const NO_MIN_FEE: MinFeeForSenderResult = {
 export const useMinFeeForSender = (
     senderAddress: string | undefined,
     chainId: ChainId,
-): MinFeeForSenderResult => {
-    let result = NO_MIN_FEE
-    // Every planner's hook runs, so the hooks called never depend on `chainId`;
-    // only the chain's own planner sees the sender.
-    for (const planner of registeredPlanners()) {
-        const isChain = planner.chainId === chainId
-        const chainResult = planner.useMinFeeForSender(
-            isChain ? senderAddress : undefined,
-        )
-        if (isChain) result = chainResult
-    }
-    return result
-}
+): MinFeeForSenderResult =>
+    // Only the chain's own planner sees the sender.
+    usePlannerHook(chainId, NO_MIN_FEE, (planner, isChain) =>
+        planner.useMinFeeForSender(isChain ? senderAddress : undefined),
+    )

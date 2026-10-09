@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { plannerChainAdapters } from '../../chain-adapter'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     useFeeConfig,
@@ -31,15 +31,23 @@ const suggestedMinFeeQuery = {
     isError: false,
 }
 const fetchSuggestedMinFee = async () => 5n
+const NO_PLANNER_CHAIN: ChainId = 'ethereum'
 
 describe('chainFees', () => {
-    it('returns the registered planner chain value for each hook', async () => {
-        registerFakePlannerAdapter({
-            useFeeConfig: vi.fn(() => feeConfig),
-            useSuggestedMinFeeQuery: vi.fn(() => suggestedMinFeeQuery),
-            useFetchSuggestedMinFee: vi.fn(() => fetchSuggestedMinFee),
-        })
+    const useChainFeeConfig = vi.fn(() => feeConfig)
+    const useChainSuggestedMinFeeQuery = vi.fn(() => suggestedMinFeeQuery)
+    const useChainFetchSuggestedMinFee = vi.fn(() => fetchSuggestedMinFee)
 
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerFakePlannerAdapter({
+            useFeeConfig: useChainFeeConfig,
+            useSuggestedMinFeeQuery: useChainSuggestedMinFeeQuery,
+            useFetchSuggestedMinFee: useChainFetchSuggestedMinFee,
+        })
+    })
+
+    it('returns the registered planner chain value for each hook', async () => {
         const config = renderHook(() => useFeeConfig(LEGACY_CHAIN_ID))
         const query = renderHook(() => useSuggestedMinFeeQuery(LEGACY_CHAIN_ID))
         const fetcher = renderHook(() =>
@@ -51,20 +59,44 @@ describe('chainFees', () => {
         expect(await fetcher.result.current()).toBe(5n)
     })
 
-    it('throws ChainAdapterNotRegisteredError when no planner is registered', () => {
-        plannerChainAdapters.reset()
-        const silence = vi.spyOn(console, 'error').mockImplementation(() => {})
+    it('gives neutral values on a chain with no planner, still running the registered hooks', async () => {
+        const config = renderHook(() => useFeeConfig(NO_PLANNER_CHAIN))
+        const query = renderHook(() =>
+            useSuggestedMinFeeQuery(NO_PLANNER_CHAIN),
+        )
+        const fetcher = renderHook(() =>
+            useFetchSuggestedMinFee(NO_PLANNER_CHAIN),
+        )
 
-        expect(() => renderHook(() => useFeeConfig(LEGACY_CHAIN_ID))).toThrow(
+        expect(config.result.current).toEqual({
+            minTxnFee: 0n,
+            pqMultiplier: 1n,
+            assetOptInMinBalance: 0n,
+        })
+        expect(query.result.current).toEqual({
+            suggestedMinFee: undefined,
+            isPending: false,
+            isError: false,
+        })
+        expect(await fetcher.result.current({ fallback: 9n })).toBe(9n)
+        await expect(fetcher.result.current()).rejects.toBeInstanceOf(
             ChainAdapterNotRegisteredError,
         )
-        expect(() =>
-            renderHook(() => useSuggestedMinFeeQuery(LEGACY_CHAIN_ID)),
-        ).toThrow(ChainAdapterNotRegisteredError)
-        expect(() =>
-            renderHook(() => useFetchSuggestedMinFee(LEGACY_CHAIN_ID)),
-        ).toThrow(ChainAdapterNotRegisteredError)
+        expect(useChainFeeConfig).toHaveBeenCalledTimes(1)
+        expect(useChainSuggestedMinFeeQuery).toHaveBeenCalledTimes(1)
+        expect(useChainFetchSuggestedMinFee).toHaveBeenCalledTimes(1)
+    })
 
-        silence.mockRestore()
+    it('calls the same hooks when the chain changes between renders', () => {
+        const { result, rerender } = renderHook(
+            ({ chainId }: { chainId: ChainId }) => useFeeConfig(chainId),
+            { initialProps: { chainId: LEGACY_CHAIN_ID as ChainId } },
+        )
+        expect(result.current).toEqual(feeConfig)
+
+        rerender({ chainId: NO_PLANNER_CHAIN })
+
+        expect(result.current.minTxnFee).toBe(0n)
+        expect(useChainFeeConfig).toHaveBeenCalledTimes(2)
     })
 })

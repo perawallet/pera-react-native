@@ -10,33 +10,58 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useCallback } from 'react'
 import {
-    plannerChainAdapters,
-    type ChainFeeConfig,
-    type FetchSuggestedMinFee,
-    type UseSuggestedMinFeeQueryResult,
-} from '../chain-adapter'
+    ChainAdapterNotRegisteredError,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 
-// The chain's hook runs as part of each of these, so `chainId` must not
-// change across renders.
-export const useFeeConfig = (chainId: ChainId): ChainFeeConfig => {
-    const useChainFeeConfig = plannerChainAdapters.get(chainId).useFeeConfig
-    return useChainFeeConfig()
+import type {
+    ChainFeeConfig,
+    FetchSuggestedMinFee,
+    UseSuggestedMinFeeQueryResult,
+} from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
+
+const NO_FEE_CONFIG: ChainFeeConfig = {
+    minTxnFee: 0n,
+    pqMultiplier: 1n,
+    assetOptInMinBalance: 0n,
 }
 
+const NO_SUGGESTED_MIN_FEE: UseSuggestedMinFeeQueryResult = {
+    suggestedMinFee: undefined,
+    isPending: false,
+    isError: false,
+}
+
+/** Zero fees on a chain with no planner. */
+export const useFeeConfig = (chainId: ChainId): ChainFeeConfig =>
+    usePlannerHook(chainId, NO_FEE_CONFIG, planner => planner.useFeeConfig())
+
+/** No suggested fee, and nothing pending, on a chain with no planner. */
 export const useSuggestedMinFeeQuery = (
     chainId: ChainId,
-): UseSuggestedMinFeeQueryResult => {
-    const useChainSuggestedMinFeeQuery =
-        plannerChainAdapters.get(chainId).useSuggestedMinFeeQuery
-    return useChainSuggestedMinFeeQuery()
-}
+): UseSuggestedMinFeeQueryResult =>
+    usePlannerHook(chainId, NO_SUGGESTED_MIN_FEE, planner =>
+        planner.useSuggestedMinFeeQuery(),
+    )
 
+/**
+ * On a chain with no planner the fetch fails as a failed network fetch does:
+ * it resolves the caller's `fallback`, else rejects.
+ */
 export const useFetchSuggestedMinFee = (
     chainId: ChainId,
 ): FetchSuggestedMinFee => {
-    const useChainFetchSuggestedMinFee =
-        plannerChainAdapters.get(chainId).useFetchSuggestedMinFee
-    return useChainFetchSuggestedMinFee()
+    const fetchWithoutPlanner = useCallback<FetchSuggestedMinFee>(
+        async options => {
+            if (options?.fallback !== undefined) return options.fallback
+            throw new ChainAdapterNotRegisteredError('planner', chainId)
+        },
+        [chainId],
+    )
+    return usePlannerHook(chainId, fetchWithoutPlanner, planner =>
+        planner.useFetchSuggestedMinFee(),
+    )
 }
