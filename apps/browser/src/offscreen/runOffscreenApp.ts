@@ -64,8 +64,9 @@ import { createWorkerExecutor } from './worker-executor'
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
 // Each store hydrates once (the accounts store when registerChainAdapters has
-// registered the chains, the others at import) and this context is long-lived,
-// so writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
+// registered the chains, writing nothing before then; the others at import)
+// and this context is long-lived, so writes from other contexts must be
+// re-read. Keys are `kv:` + STORE_NAME.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
