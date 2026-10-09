@@ -52,7 +52,7 @@ describe('ChromeRemoteConfigService', () => {
 
         expect(service.getNumberValue('fee_min_txn_fee')).toBe(1000)
         expect(service.getBooleanValue('enable_pera_card')).toBe(false)
-        expect(service.getStringValue('terms_version')).toBe('1')
+        expect(service.getStringValue('terms_version')).toBe('2')
         expect(mockFetchAndActivate).not.toHaveBeenCalled()
     })
 

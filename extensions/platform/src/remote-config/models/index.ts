@@ -124,7 +124,7 @@ export const RemoteConfigDefaults: Record<
     enable_gift_cards: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
-    terms_version: '1',
+    terms_version: '2',
     // Endpoint used to actively probe internet reachability. MUST return HTTP
     // 204 with an empty body (a captive portal answering 200 + HTML is thereby
     // detected as unreachable). Overridable via Remote Config without a
