@@ -77,6 +77,7 @@ const makeTransport = (
     signTransaction: vi.fn(),
     signData: vi.fn(),
     getAppVersion: vi.fn(),
+    assertCanSignData: vi.fn(),
     disconnect: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 })

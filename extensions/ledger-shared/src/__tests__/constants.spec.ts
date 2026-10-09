@@ -15,7 +15,6 @@ import { getBluetoothServiceUuids } from '@ledgerhq/devices'
 import {
     resolveDeviceModel,
     LEDGER_BLE_SERVICE_UUIDS,
-    MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
     resolveUsbDeviceModel,
 } from '../constants'
@@ -65,12 +64,8 @@ describe('resolveDeviceModel', () => {
 
 describe('isAppVersionAtLeast', () => {
     it('true when version equals the minimum', () => {
-        expect(
-            isAppVersionAtLeast(
-                MIN_ARBITRARY_SIGN_APP_VERSION,
-                MIN_ARBITRARY_SIGN_APP_VERSION,
-            ),
-        ).toBe(true)
+        const version = { major: 2, minor: 0, patch: 0 }
+        expect(isAppVersionAtLeast(version, version)).toBe(true)
     })
 
     it('false when major is lower', () => {

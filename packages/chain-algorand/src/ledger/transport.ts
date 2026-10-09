@@ -19,9 +19,16 @@ import type {
     LedgerAppTransport,
 } from '@perawallet/wallet-extension-hardware-wallet'
 import {
+    classifyLedgerAppError,
     classifyLedgerError,
+    isAppVersionAtLeast,
+    LedgerAppOutdatedError,
     LedgerSigningError,
 } from '@perawallet/wallet-extension-ledger-shared'
+import {
+    ALGORAND_LEDGER_APP,
+    ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+} from './app'
 import { buildLedgerAccountPath } from './path'
 
 /**
@@ -30,105 +37,132 @@ import { buildLedgerAccountPath } from './path'
  * transport-independent, so every transport package (native BLE/USB, web
  * BLE/USB) reaches this through the Algorand Ledger app driver.
  *
- * `classifyError` lets a transport map its own error shapes, which APDU
- * exchanges surface as well as `connect`.
+ * `classifyTransportError` lets a transport map its own error shapes, which
+ * APDU exchanges surface as well as `connect`; the Algorand app's own status
+ * words are classified first.
  */
 export const createAlgorandLedgerTransport = (
     transport: LedgerAppTransport,
     algorandApp: AlgorandApp,
-    classifyError: LedgerAppErrorClassifier = classifyLedgerError,
-): HardwareWalletTransport => ({
-    async getAddress(accountIndex, verify = false) {
-        try {
-            const result = await algorandApp.getAddressAndPubKey(
-                accountIndex,
-                verify,
-            )
-            return {
-                address: result.address.toString(),
-                publicKey: Uint8Array.from(result.publicKey),
-                accountIndex,
-            }
-        } catch (error) {
-            throw classifyError(error)
-        }
-    },
+    classifyTransportError: LedgerAppErrorClassifier = classifyLedgerError,
+): HardwareWalletTransport => {
+    const classifyError = (error: unknown) =>
+        classifyLedgerAppError(
+            error,
+            ALGORAND_LEDGER_APP,
+            classifyTransportError,
+        )
 
-    async signTransaction(accountIndex, txnBytes) {
-        try {
-            // Re-prime the device onto this account index before EVERY sign,
-            // never cached. The Algorand app only re-derives its signing path
-            // from an APDU carrying P1_FIRST_ACCOUNT_ID, which
-            // `AlgorandApp.sign` omits for account 0 — so without this the
-            // device keeps signing with whatever account a prior call (possibly
-            // another host's) left it on. `getAddressAndPubKey` always sends the
-            // prefix, so it reliably re-asserts.
-            //
-            // Not cached because a cache reflects only our own calls, not the
-            // device state, which can move outside our visibility.
-            await algorandApp.getAddressAndPubKey(accountIndex, false)
-
-            // AlgorandApp.sign decodes a string message as UTF-8, so the
-            // msgpack bytes MUST be passed as a Buffer. The library strips the
-            // trailing status word, so the returned signature is already clean.
-            const result = await algorandApp.sign(
-                accountIndex,
-                Buffer.from(txnBytes),
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return signature
-        } catch (error) {
-            throw classifyError(error)
-        }
-    },
-
-    async getAppVersion() {
+    const getAppVersion = async () => {
         try {
             const { major, minor, patch } = await algorandApp.getVersion()
             return { major, minor, patch }
         } catch (error) {
             throw classifyError(error)
         }
-    },
+    }
 
-    async signData(
-        request: HardwareWalletArbitrarySignRequest,
-    ): Promise<Uint8Array> {
-        try {
-            const result = await algorandApp.signData(
-                {
-                    data: request.data,
-                    signer: request.signerPublicKey,
-                    domain: request.domain,
-                    authenticationData: request.authenticatorData,
-                    requestId: request.requestId,
-                    hdPath: buildLedgerAccountPath(request.accountIndex),
-                },
-                { scope: request.scope, encoding: request.encoding },
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
+    return {
+        async getAddress(accountIndex, verify = false) {
+            try {
+                const result = await algorandApp.getAddressAndPubKey(
+                    accountIndex,
+                    verify,
+                )
+                return {
+                    address: result.address.toString(),
+                    publicKey: Uint8Array.from(result.publicKey),
+                    accountIndex,
+                }
+            } catch (error) {
+                throw classifyError(error)
             }
-            return signature
-        } catch (error) {
-            throw classifyError(error)
-        }
-    },
+        },
 
-    ...(transport.on
-        ? {
-              onDisconnect: (listener: () => void) => {
-                  transport.on?.('disconnect', listener)
-                  return () => transport.off?.('disconnect', listener)
-              },
-          }
-        : {}),
+        async signTransaction(accountIndex, txnBytes) {
+            try {
+                // Re-prime the device onto this account index before EVERY sign,
+                // never cached. The Algorand app only re-derives its signing path
+                // from an APDU carrying P1_FIRST_ACCOUNT_ID, which
+                // `AlgorandApp.sign` omits for account 0 — so without this the
+                // device keeps signing with whatever account a prior call (possibly
+                // another host's) left it on. `getAddressAndPubKey` always sends the
+                // prefix, so it reliably re-asserts.
+                //
+                // Not cached because a cache reflects only our own calls, not the
+                // device state, which can move outside our visibility.
+                await algorandApp.getAddressAndPubKey(accountIndex, false)
 
-    async disconnect() {
-        await transport.close()
-    },
-})
+                // AlgorandApp.sign decodes a string message as UTF-8, so the
+                // msgpack bytes MUST be passed as a Buffer. The library strips the
+                // trailing status word, so the returned signature is already clean.
+                const result = await algorandApp.sign(
+                    accountIndex,
+                    Buffer.from(txnBytes),
+                )
+                const signature = Uint8Array.from(result.signature)
+                if (signature.length === 0) {
+                    throw new LedgerSigningError('Empty signature returned')
+                }
+                return signature
+            } catch (error) {
+                throw classifyError(error)
+            }
+        },
+
+        getAppVersion,
+
+        async assertCanSignData() {
+            const version = await getAppVersion()
+            if (
+                !isAppVersionAtLeast(
+                    version,
+                    ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+                )
+            ) {
+                throw new LedgerAppOutdatedError({
+                    appName: ALGORAND_LEDGER_APP.appName,
+                    requiredVersion: ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+                })
+            }
+        },
+
+        async signData(
+            request: HardwareWalletArbitrarySignRequest,
+        ): Promise<Uint8Array> {
+            try {
+                const result = await algorandApp.signData(
+                    {
+                        data: request.data,
+                        signer: request.signerPublicKey,
+                        domain: request.domain,
+                        authenticationData: request.authenticatorData,
+                        requestId: request.requestId,
+                        hdPath: buildLedgerAccountPath(request.accountIndex),
+                    },
+                    { scope: request.scope, encoding: request.encoding },
+                )
+                const signature = Uint8Array.from(result.signature)
+                if (signature.length === 0) {
+                    throw new LedgerSigningError('Empty signature returned')
+                }
+                return signature
+            } catch (error) {
+                throw classifyError(error)
+            }
+        },
+
+        ...(transport.on
+            ? {
+                  onDisconnect: (listener: () => void) => {
+                      transport.on?.('disconnect', listener)
+                      return () => transport.off?.('disconnect', listener)
+                  },
+              }
+            : {}),
+
+        async disconnect() {
+            await transport.close()
+        },
+    }
+}
