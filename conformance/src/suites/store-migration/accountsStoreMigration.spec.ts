@@ -65,6 +65,7 @@ import {
     STORE_FIXTURES,
     type FixtureAccounts,
     type PersistedPayload,
+    type StoreFixture,
 } from './fixtures'
 
 const STORE_KEY = 'accounts-store'
@@ -266,7 +267,10 @@ describe('accounts-store migration conformance', () => {
         await submitAndConfirm(bytes)
     }
 
-    const expectAccountsBehave = async (phase: string): Promise<void> => {
+    const expectAccountsBehave = async (
+        phase: string,
+        fixture: StoreFixture,
+    ): Promise<void> => {
         const { accounts, selectedAccountId, manualAccountOrder } =
             useAccountsStore.getState()
         expect(accounts.map(addressOf)).toEqual([
@@ -281,6 +285,12 @@ describe('accounts-store migration conformance', () => {
         expect(manualAccountOrder).toEqual(accounts.map(account => account.id))
         expect(isWatchAccount(heldAccount(fixtureAccounts.watch.address))).toBe(
             true,
+        )
+        // Derived, not minted: every context that migrates the payload must
+        // agree on it, and a restart must not change it.
+        expect(heldAccount(fixtureAccounts.watch.address).id).toBe(
+            fixture.migratedWatchId?.(fixtureAccounts) ??
+                fixtureAccounts.watch.id,
         )
 
         for (const account of [algo25, hd, quantum]) {
@@ -330,7 +340,7 @@ describe('accounts-store migration conformance', () => {
         afterAll(() => teardown())
 
         it('keeps every account signing on the first launch', async () => {
-            await expectAccountsBehave(`${fixture.name} first launch`)
+            await expectAccountsBehave(`${fixture.name} first launch`, fixture)
         })
 
         // Nothing has synced, and the chain-state slice is memory-only: the
@@ -340,7 +350,10 @@ describe('accounts-store migration conformance', () => {
             async ordinal => {
                 useAccountChainStateStore.getState().resetState()
                 await launch(db)
-                await expectAccountsBehave(`${fixture.name} ${ordinal} restart`)
+                await expectAccountsBehave(
+                    `${fixture.name} ${ordinal} restart`,
+                    fixture,
+                )
             },
         )
     })

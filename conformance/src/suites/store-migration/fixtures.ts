@@ -40,6 +40,8 @@ export type PersistedPayload = {
 export type StoreFixture = {
     name: string
     payload: (accounts: FixtureAccounts) => PersistedPayload
+    /** The watch account's id after the migration; absent keeps the persisted one. */
+    migratedWatchId?: (accounts: FixtureAccounts) => string
 }
 
 // The network the app named LocalNet under: rekeys were recorded per legacy
@@ -429,9 +431,11 @@ export const STORE_FIXTURES: StoreFixture[] = [
         }),
     },
     {
-        // A record held without an id gets a fresh one, and the order entry
-        // that named it by address follows it.
+        // A record held without an id gets one derived from its address, the
+        // same in every context that migrates it, and the order entry that
+        // named it by address follows it.
         name: 'v4 with a record held without an id',
+        migratedWatchId: a => `legacy:algorand:${a.watch.address}`,
         payload: a => ({
             state: {
                 accounts: v4Records(a).map(record => {
