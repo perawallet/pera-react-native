@@ -10,28 +10,51 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
-// The card chain ids are empty in the test env, and AutoDraw now fails closed
-// without them — supply them so the LSig leg runs. `cardKillswitchAppId: '0'`
-// satisfies that check while `isKillswitchConfigured` treats it as NOT
-// configured, so `enableAutoDraw` only registers the LSig (the leg this test
-// covers) and skips the on-chain Killswitch enable, which has no MSW mocks here.
+// The card chain ids are empty in the test env, and AutoDraw fails closed
+// without them — supply them so the LSig leg runs. A Killswitch id of '0'
+// satisfies that check while the adapter treats the switch as NOT configured,
+// so enabling only registers the LSig (the leg this test covers) and skips the
+// on-chain Killswitch enable, which has no MSW mocks here.
+//
+// The AutoDraw pins are deliberately empty in source until the compiled
+// artifacts are committed, so the compile fails closed for every network.
+// Pinning the bundled template and the MSW compile result (`BoEB`, `int 1`)
+// stands in for a pinned build; the guard itself is unit-tested in
+// packages/chain-algorand/src/card/escrow/__tests__/lsig.spec.ts. The template
+// digest is set in beforeAll: computing it inside this factory would load the
+// chain package while the config module is still being mocked.
+const pins = vi.hoisted(() => ({
+    template: '',
+    // sha256 of the MSW compile result.
+    program: '08b37ef1ea5c33d6370364744b2ca8c109da5a1a77aec0ee779b5a2a6b78a240',
+}))
 vi.mock('@perawallet/wallet-core-config', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-config')
     >('@perawallet/wallet-core-config')
     return {
         ...actual,
-        getNetworkConfig: (
-            network: Parameters<typeof actual.getNetworkConfig>[0],
-        ) => ({
-            ...actual.getNetworkConfig(network),
-            cardW3CardAppId: '111',
-            cardKillswitchAppId: '0',
-        }),
+        config: {
+            ...actual.config,
+            mainnetCardW3CardAppId: '111',
+            mainnetCardKillswitchAppId: '0',
+            mainnetCardAutoDrawProgramHash: pins.program,
+            get cardAutoDrawTemplateHash() {
+                return pins.template
+            },
+        },
     }
 })
 
@@ -72,18 +95,6 @@ vi.mock('@modules/card/hooks', async () => {
     }
 })
 
-// The AutoDraw program pin is deliberately empty in source until the compiled
-// artifacts are committed, so `compileAutoDrawProgram` fails closed
-// for every network — correct in production, but it would stop this flow test at
-// the LSig step. The MSW compile handler also answers with `BoEB` (`int 1`),
-// which is exactly the substituted program the guard exists to reject. Stub the
-// compile step to stand in for a pinned build; the guard itself is unit-tested
-// in packages/chain-algorand/src/card/escrow/__tests__/lsig.spec.ts.
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
-    compileAutoDrawProgram: vi.fn(async () => new Uint8Array([6, 129, 1])),
-}))
-
 // Manual funding gates only on PIN; skip the PIN sheet here (unit-tested in
 // useRequirePinVerification.spec).
 vi.mock('@modules/security', async () => ({
@@ -108,9 +119,12 @@ import {
     mockGetUser,
     mockGetDelegationToken,
     mockPostAlgorandDelegationApproval,
-    mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
-import { mockAlgodTealCompile } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import {
+    mockAlgodTealCompile,
+    mockPostAutoDrawDelegation,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { computeAutoDrawTemplateHash } from '@perawallet/wallet-core-chain-algorand/card'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 
@@ -234,6 +248,10 @@ const mockOnboardingDetails = (verificationState: string) =>
     )
 
 describe('Flow: Card onboarding — select funding type', () => {
+    beforeAll(() => {
+        pins.template = computeAutoDrawTemplateHash()
+    })
+
     beforeEach(async () => {
         await seedFundingSigner()
         const store = useCardStore.getState()
@@ -364,7 +382,7 @@ describe('Flow: Card onboarding — select funding type', () => {
                     approvalBody = body
                 },
             }),
-            mockPostDelegatorLsig({
+            mockPostAutoDrawDelegation({
                 onRequest: body => {
                     lsigBody = body
                 },
@@ -478,7 +496,7 @@ describe('Flow: Card onboarding — select funding type', () => {
             mockAlgodTealCompile(),
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
             mockPostAlgorandDelegationApproval(),
-            mockPostDelegatorLsig({ status: 500 }),
+            mockPostAutoDrawDelegation({ status: 500 }),
         )
 
         renderStatus()
