@@ -10,14 +10,29 @@
  limitations under the License
  */
 
-import type { CardChainAdapter } from '@perawallet/wallet-core-card'
-
-type DelegationRequests = Pick<
+import type {
     CardChainAdapter,
-    'delegationApprovalRequest' | 'delegatorProgramRequest'
->
+    CardDelegationRequest,
+} from '@perawallet/wallet-core-card'
 
-export const algorandDelegationRequests: DelegationRequests = {
+// Baanx's name for this chain in its network/blockchain fields.
+export const BAANX_ALGORAND_NETWORK = 'algorand'
+
+export type AutoDrawDelegationParams = {
+    /** Currency code the delegated program covers, as Baanx expects it, e.g. "usdc". */
+    currency: string
+    /** Delegator (funding-source) address that signed the program. */
+    delegatorAddress: string
+    /** Base64 of the signed delegated LogicSig account. */
+    lsigBytes: string
+    /** Escrow card address returned by the backend create-card call. */
+    cardAddress: string
+}
+
+export const algorandDelegationRequests: Pick<
+    CardChainAdapter,
+    'delegationApprovalRequest'
+> = {
     // The amount is fixed at "0": Algorand spending is bounded by the signed
     // AutoDraw LogicSig and the Killswitch app, not by an allowance, and
     // Baanx's Algorand reference client sends "0" too.
@@ -32,7 +47,7 @@ export const algorandDelegationRequests: DelegationRequests = {
         path: '/v1/delegation/algorand/post-approval',
         data: {
             address,
-            network: 'algorand',
+            network: BAANX_ALGORAND_NETWORK,
             currency,
             amount: '0',
             txHash: txId,
@@ -44,20 +59,21 @@ export const algorandDelegationRequests: DelegationRequests = {
         },
     }),
 
-    // Baanx rejects unknown fields on this route with a 422.
-    delegatorProgramRequest: ({
+}
+
+// Baanx rejects unknown fields on this route with a 422.
+export const autoDrawDelegationRequest = ({
+    currency,
+    delegatorAddress,
+    lsigBytes,
+    cardAddress,
+}: AutoDrawDelegationParams): CardDelegationRequest => ({
+    path: '/v1/delegation/algorand/delegator-lsig',
+    data: {
         currency,
         delegatorAddress,
         lsigBytes,
         cardAddress,
-    }) => ({
-        path: '/v1/delegation/algorand/delegator-lsig',
-        data: {
-            currency,
-            delegatorAddress,
-            lsigBytes,
-            cardAddress,
-            blockchain: 'algorand',
-        },
-    }),
-}
+        blockchain: BAANX_ALGORAND_NETWORK,
+    },
+})
