@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
     buildAccount,
@@ -31,14 +31,21 @@ import { serializeAccountForBackup } from '../serializeAccountForBackup'
 import type { SerializedAccount, SerializedItem } from '../types'
 import {
     GOLDEN_ACCOUNT_ITEMS,
+    GOLDEN_CHAIN_ACCOUNT_ITEMS,
+    GOLDEN_CHAIN_PRIVATE_KEY_HEX,
     GOLDEN_HD,
     GOLDEN_MNEMONIC,
     GOLDEN_UPDATED_AT,
     type GoldenItem,
 } from './accountWireFormat.golden'
 import { stubAccountsAdapter } from '../../../__tests__/stubAccountsAdapter'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 accountsChainAdapters.register(stubAccountsAdapter)
+registerEthereumAccountsAdapter()
 
 type AccountKind = keyof typeof GOLDEN_ACCOUNT_ITEMS
 
@@ -239,6 +246,83 @@ describe('backup account wire format', () => {
     )
 
     it.each(GOLDEN_ITEMS)(
+        'parses every field of the golden $key payload back unchanged',
+        ({ key, payload }) => {
+            const parsed = isAccountItemKey(key)
+                ? parseAddressPayload(payload)
+                : parseSecretsPayload(payload)
+
+            expect(canonicalJson(parsed)).toBe(payload)
+        },
+    )
+})
+
+describe('backup chain-tagged account wire format', () => {
+    type ChainKind = keyof typeof GOLDEN_CHAIN_ACCOUNT_ITEMS
+
+    const accounts: Record<ChainKind, WalletAccount> = {
+        hdChain: buildAccount({
+            id: 'hdChain',
+            name: 'Eth child',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 1 },
+            },
+            chainId: 'ethereum',
+            chains: {
+                ethereum: { address: '0xHDCHAINADDR', keyPairId: 'eth-hd' },
+            },
+        }),
+        standaloneKey: buildAccount({
+            id: 'standaloneKey',
+            name: 'Imported',
+            custody: { kind: 'local', seed: null },
+            chainId: 'ethereum',
+            chains: {
+                ethereum: { address: '0xKEYADDR', keyPairId: 'eth-raw' },
+            },
+        }),
+        watchChain: buildAccount({
+            id: 'watchChain',
+            custody: { kind: 'watch' },
+            chainId: 'ethereum',
+            chains: { ethereum: { address: '0xWATCHADDR' } },
+        }),
+    }
+
+    const kinds = Object.keys(GOLDEN_CHAIN_ACCOUNT_ITEMS) as ChainKind[]
+    const goldenItems: GoldenItem[] = kinds.flatMap(kind => [
+        ...GOLDEN_CHAIN_ACCOUNT_ITEMS[kind],
+    ])
+
+    beforeEach(registerEthereumBackupChain)
+
+    it.each(kinds)(
+        'serializes a %s account to the golden items',
+        async kind => {
+            const serialized = wireItems(
+                await serializeAccountForBackup(accounts[kind], {
+                    updatedAt: GOLDEN_UPDATED_AT,
+                    hashAddress,
+                    // No legacy entry, so there is no hdWallet public key to derive.
+                    resolveHd: async () => ({
+                        ...GOLDEN_HD,
+                        publicKeyHex: null,
+                    }),
+                    resolvePrivateKey: async () =>
+                        Uint8Array.from(
+                            GOLDEN_CHAIN_PRIVATE_KEY_HEX.match(/../g)!,
+                            byte => Number.parseInt(byte, 16),
+                        ),
+                }),
+            )
+
+            expect(serialized).toEqual(GOLDEN_CHAIN_ACCOUNT_ITEMS[kind])
+        },
+    )
+
+    it.each(goldenItems)(
         'parses every field of the golden $key payload back unchanged',
         ({ key, payload }) => {
             const parsed = isAccountItemKey(key)

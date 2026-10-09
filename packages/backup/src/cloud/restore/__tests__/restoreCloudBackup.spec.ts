@@ -60,10 +60,6 @@ vi.mock('../../credentials/keyStorage', () => ({
 vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
 }))
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    deriveHdAccount: deriveHdAccountMock,
-}))
 // Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
 // acceptance test below exercises the actual seed-lookup logic; only the
 // secret read (`withSecret`, which needs a real keystore backend) is faked.
@@ -75,6 +71,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: { getItem: () => null },
         passkeyAutofill: { refreshCredentialIdentities: async () => {} },
+        chains: {
+            has: () => true,
+            list: () => [{ id: 'algorand' }],
+            capabilities: () => ({ cloudBackup: true }),
+        },
     }),
     getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
     // The import derives with `derivePasskeyMainKey`'s default `subtle`.
@@ -110,6 +111,10 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyImport'
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
+import {
+    accountsChainAdapters,
+    type AccountsChainAdapter,
+} from '@perawallet/wallet-core-accounts'
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
@@ -236,6 +241,19 @@ describe('restoreCloudBackup', () => {
             lastSyncResult: 'SUCCESS',
         })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('seeds the chains this build can read, so the first sync does not re-read what it skipped', async () => {
+        const result = await restoreCloudBackup(params())
+
+        expect(result.syncState.readableChains).toEqual([])
+
+        accountsChainAdapters.register({
+            chainId: 'algorand',
+        } as unknown as AccountsChainAdapter)
+        const withAdapter = await restoreCloudBackup(params())
+
+        expect(withAdapter.syncState.readableChains).toEqual(['algorand'])
     })
 
     test('reports each phase in order, with the account import counted', async () => {

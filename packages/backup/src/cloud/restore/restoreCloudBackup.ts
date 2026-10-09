@@ -40,6 +40,7 @@ import type {
     SettingsImportFn,
     SyncImportFn,
 } from '../sync/types'
+import { readableBackupChains } from '../sync/backupChains'
 import { mergeRemoteSettings } from '../sync/settingsDocument'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
@@ -276,6 +277,9 @@ const syncStateFromPull = (
     lastSyncedSeq: pull.lastSeq,
     lastSyncedAt: Date.now(),
     lastSyncResult: 'SUCCESS',
+    // What this restore could read, so the first sync doesn't re-read the
+    // items it just skipped as unreadable.
+    readableChains: readableBackupChains(),
     items: withPulledSettings(trackedItemsFromPull(pull), pull.settings),
 })
 

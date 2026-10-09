@@ -20,6 +20,83 @@ import {
     BackupPayloadParseError,
 } from '../payloadParsers'
 
+describe('chain-tagged payloads', () => {
+    const hdChain = {
+        type: 'hdChain',
+        chain: 'ethereum',
+        address: '0xabc',
+        seedFirstDerivedAddress: 'SEED',
+        account: 0,
+        keyIndex: 2,
+        customName: 'Eth 1',
+        updatedAt: 5,
+    }
+
+    test('parses an hdChain address payload', () => {
+        expect(parseAddressPayload(JSON.stringify(hdChain))).toEqual(hdChain)
+    })
+
+    test.each(['standaloneKey', 'watchChain'])(
+        'parses a %s address payload',
+        type => {
+            const payload = {
+                type,
+                chain: 'ethereum',
+                address: '0xabc',
+                customName: null,
+            }
+
+            expect(parseAddressPayload(JSON.stringify(payload))).toMatchObject(
+                payload,
+            )
+        },
+    )
+
+    test('parses a standaloneKey secrets payload', () => {
+        const payload = {
+            type: 'standaloneKey',
+            chain: 'ethereum',
+            address: '0xabc',
+            privateKey: 'ab01',
+        }
+
+        expect(parseSecretsPayload(JSON.stringify(payload))).toEqual(payload)
+    })
+
+    test.each([
+        ['an unknown chain', { ...hdChain, chain: 'unknown-chain' }],
+        ['a missing chain', { ...hdChain, chain: undefined }],
+    ])('rejects %s', (_label, payload) => {
+        expect(() => parseAddressPayload(JSON.stringify(payload))).toThrow(
+            BackupPayloadParseError,
+        )
+    })
+
+    test.each(['0xab', 'AB01', 'abc', ''])(
+        'rejects a non-hex or odd-length private key %j',
+        privateKey => {
+            expect(() =>
+                parseSecretsPayload(
+                    JSON.stringify({
+                        type: 'standaloneKey',
+                        chain: 'ethereum',
+                        address: '0xabc',
+                        privateKey,
+                    }),
+                ),
+            ).toThrow(BackupPayloadParseError)
+        },
+    )
+
+    test('leaves a legacy watch payload free of a chain', () => {
+        const parsed = parseAddressPayload(
+            JSON.stringify({ type: 'watch', address: 'W', customName: null }),
+        )
+
+        expect(Object.keys(parsed)).not.toContain('chain')
+    })
+})
+
 describe('parseAddressPayload', () => {
     it('parses an algo25 address payload', () => {
         const json = JSON.stringify({

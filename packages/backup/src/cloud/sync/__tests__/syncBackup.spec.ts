@@ -28,8 +28,10 @@ vi.mock('../../api', async importOriginal => ({
 }))
 
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError, UpsertResult } from '../../api'
+import { encryptItemPayload } from '../../crypto/itemPayload'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
@@ -50,6 +52,10 @@ import { syncBackup } from '../syncBackup'
 import { BackupSyncAbortedError } from '../types'
 import { canonicalJson, contentHash } from '../canonicalize'
 import { TEST_SETTINGS } from './testSettings'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
@@ -596,5 +602,113 @@ describe('syncBackup', () => {
             ]),
         )
         expect(privateKey.every(byte => byte === 0)).toBe(true)
+    })
+})
+
+describe('syncBackup after a chain becomes readable', () => {
+    const ETH_KEY = accountKey('0xabc')
+    const ethPayload = {
+        type: 'watchChain',
+        chain: 'ethereum',
+        address: '0xabc',
+        customName: 'Eth watch',
+        updatedAt: 1,
+    }
+
+    // An account item this device tracked but never read: its chain was not
+    // readable here when it arrived.
+    const stateWithUnreadItem = (readableChains?: ChainId[]): SyncState => {
+        const state = createEmptySyncState('b')
+        state.lastKnownBackupHash = 'g'
+        state.lastSyncedSeq = 4
+        if (readableChains) state.readableChains = readableChains
+        state.items[ETH_KEY] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r-eth',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+        return withSyncedSettings(state)
+    }
+
+    const syncDeps = () => ({ ...deps(), listAccounts: () => [] })
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerEthereumAccountsAdapter()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 4,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        readItems.mockResolvedValue([
+            {
+                key: ETH_KEY,
+                ver: 2,
+                hash: 'r-eth',
+                payload: encryptItemPayload(JSON.stringify(ethPayload), {
+                    encryptionKey,
+                    backupId: 'b',
+                    key: ETH_KEY,
+                }),
+            },
+        ])
+    })
+
+    it('re-reads the item it skipped and imports it, though the manifest is unchanged', async () => {
+        registerEthereumBackupChain()
+        const dependencies = syncDeps()
+
+        const next = await syncBackup(dependencies, stateWithUnreadItem())
+
+        expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [ETH_KEY])
+        expect(dependencies.importAccounts).toHaveBeenCalledWith([
+            expect.objectContaining({
+                address: '0xabc',
+                addressPayload: expect.objectContaining({
+                    type: 'watchChain',
+                }),
+            }),
+        ])
+        expect(next.readableChains).toEqual(['ethereum'])
+        expect(next.items[ETH_KEY]).toMatchObject({ address: '0xabc' })
+    })
+
+    it('short-circuits when the readable chains are unchanged', async () => {
+        registerEthereumBackupChain()
+
+        const next = await syncBackup(
+            syncDeps(),
+            stateWithUnreadItem(['ethereum']),
+        )
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
+    it('keeps the item unread while its chain is still unreadable', async () => {
+        const dependencies = syncDeps()
+
+        const next = await syncBackup(dependencies, stateWithUnreadItem([]))
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(next.readableChains).toEqual([])
+        expect(next.items[ETH_KEY]?.localContentHash).toBeNull()
+    })
+
+    it('leaves a held item for the user instead of re-reading it', async () => {
+        registerEthereumBackupChain()
+        const state = stateWithUnreadItem()
+        state.items[ETH_KEY] = { ...state.items[ETH_KEY]!, pendingImport: true }
+
+        await syncBackup(syncDeps(), state)
+
+        expect(readItems).not.toHaveBeenCalled()
     })
 })

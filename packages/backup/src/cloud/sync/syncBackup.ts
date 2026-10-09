@@ -20,7 +20,8 @@ import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
 import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
-import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { readableBackupChains } from './backupChains'
+import { fetchDeltaOrRebuild, unreadAccountDeltas } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
 import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
@@ -29,6 +30,13 @@ import type { LocalItem, LocalSnapshot, SyncEngineDeps } from './types'
 const abortIfStopped = (deps: SyncEngineDeps): void => {
     if (deps.isAborted()) throw new BackupSyncAbortedError()
 }
+
+const sameChains = (
+    stored: readonly string[] | undefined,
+    current: readonly string[],
+): boolean =>
+    (stored ?? []).length === current.length &&
+    current.every((chainId, index) => stored?.[index] === chainId)
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
@@ -121,16 +129,24 @@ export const syncBackup = async (
         return { ...state, lastSyncResult: 'FAILED' }
     }
 
+    // A chain this client could not read before is readable now: re-read what
+    // it skipped, which no delta will mention again.
+    const readableChains = readableBackupChains()
+    const hasNewChains = !sameChains(next.readableChains, readableChains)
+    const unread = hasNewChains ? unreadAccountDeltas(next) : []
+    if (hasNewChains) next = { ...next, readableChains }
+
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
-        !hasPendingWork(next)
+        !hasPendingWork(next) &&
+        unread.length === 0
     ) {
         return { ...next, lastSyncedAt: now, lastSyncResult: 'SUCCESS' }
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const { deltas } = await fetchDeltaOrRebuild(
+    const { deltas: fetchedDeltas } = await fetchDeltaOrRebuild(
         deps,
         next,
         async () => manifest,
@@ -138,7 +154,7 @@ export const syncBackup = async (
     abortIfStopped(deps)
     next = await applyDeltas({
         state: next,
-        deltas,
+        deltas: [...unread, ...fetchedDeltas],
         deps: {
             network: deps.network,
             backupId: deps.backupId,

@@ -14,6 +14,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import {
     isAccountItemKey,
+    payloadChain,
     type AddressBackupPayload,
     type BackupItemKey,
     type FetchedItem,
@@ -21,6 +22,7 @@ import {
     type SyncItemState,
 } from '../models'
 import { buildPulledAccounts, type PulledAccount } from '../restore'
+import { isBackupChain } from './backupChains'
 import {
     adoptRemote,
     decryptItem,
@@ -72,6 +74,17 @@ export const collectAccountPayloads = ({
             continue
         }
         const { address, type } = parsed.payload
+
+        // Left unread rather than adopted, so the first sync after this
+        // client can read the chain picks it up.
+        const chain = payloadChain(parsed.payload)
+        if (chain !== null && !isBackupChain(chain)) {
+            items[item.key] = {
+                ...(items[item.key] as SyncItemState),
+                localContentHash: null,
+            }
+            continue
+        }
 
         // Cached but not imported: the user deleted this account here on
         // purpose, and only the review row needs it back.

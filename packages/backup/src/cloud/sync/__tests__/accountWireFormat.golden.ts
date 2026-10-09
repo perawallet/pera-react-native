@@ -95,3 +95,47 @@ export const GOLDEN_ACCOUNT_ITEMS = {
         },
     ],
 } as const satisfies Record<string, readonly GoldenItem[]>
+
+// Chain-tagged kinds, additive to the Algorand wire format above. The private
+// key is bytes 0x01..0x20.
+export const GOLDEN_CHAIN_PRIVATE_KEY_HEX =
+    '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'
+
+export const GOLDEN_CHAIN_ACCOUNT_ITEMS = {
+    hdChain: [
+        {
+            key: 'accounts/8092ca3109726f4da81f4d28943deb82d873eb298151ae9940605101e97eb3c3',
+            type: 'ACCOUNT',
+            payload:
+                '{"account":0,"address":"0xHDCHAINADDR","chain":"ethereum","customName":"Eth child","keyIndex":1,"seedFirstDerivedAddress":"HDFIRSTADDR","type":"hdChain","updatedAt":1719300000000}',
+        },
+        {
+            key: 'secrets/005f4ba4d5215ccd4693df161b41c6ff2140a42b9c75666ec626872a62326db7',
+            type: 'ACCOUNT',
+            payload:
+                '{"address":"HDFIRSTADDR","entropy":"eeff","seed":"ccdd","type":"hdSeed"}',
+        },
+    ],
+    standaloneKey: [
+        {
+            key: 'accounts/73c5872147b33aab11cbe8dab74758c9cdc9afea9c8681d8bd524d97a3703dbd',
+            type: 'ACCOUNT',
+            payload:
+                '{"address":"0xKEYADDR","chain":"ethereum","customName":"Imported","type":"standaloneKey","updatedAt":1719300000000}',
+        },
+        {
+            key: 'secrets/73c5872147b33aab11cbe8dab74758c9cdc9afea9c8681d8bd524d97a3703dbd',
+            type: 'ACCOUNT',
+            payload:
+                '{"address":"0xKEYADDR","chain":"ethereum","privateKey":"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20","type":"standaloneKey"}',
+        },
+    ],
+    watchChain: [
+        {
+            key: 'accounts/9cae595ffff63e2583098265649b4c33cea243cdc4802cc2ee296967bac66c40',
+            type: 'ACCOUNT',
+            payload:
+                '{"address":"0xWATCHADDR","chain":"ethereum","customName":null,"type":"watchChain","updatedAt":1719300000000}',
+        },
+    ],
+} as const satisfies Record<string, readonly GoldenItem[]>

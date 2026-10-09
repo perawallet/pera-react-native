@@ -35,6 +35,10 @@ import {
     BackupAccountType,
 } from '../../models'
 import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
@@ -68,6 +72,48 @@ const pull = () =>
         deviceId: 'device-1',
         encryptionKey: encKey,
     })
+
+describe('pullBackupItems on a chain-tagged item', () => {
+    const watchChain = {
+        type: 'watchChain',
+        chain: 'ethereum',
+        address: '0xabc',
+        customName: 'Eth watch',
+    }
+
+    beforeEach(() => {
+        fetchManifest.mockReset()
+        readItems.mockReset()
+        registerEthereumAccountsAdapter()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 3,
+            items: { [accountKey('0xabc')]: active(1, 'h1', 3) },
+        })
+        readItems.mockResolvedValue([item(accountKey('0xabc'), watchChain)])
+    })
+
+    it('returns an item on a chain this client can back up', async () => {
+        registerEthereumBackupChain()
+
+        const result = await pull()
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.addressByKey[accountKey('0xabc')]).toBe('0xabc')
+        expect(result.skipped).toEqual([])
+    })
+
+    it('skips an item on an unregistered chain, keeping it out of the address map', async () => {
+        const result = await pull()
+
+        expect(result.accounts).toEqual([])
+        expect(result.skipped).toEqual([
+            { key: accountKey('0xabc'), reason: 'chain' },
+        ])
+        expect(result.addressByKey).toEqual({})
+        expect(result.manifestItems[accountKey('0xabc')]).toBeDefined()
+    })
+})
 
 describe('pullBackupItems', () => {
     beforeEach(() => {

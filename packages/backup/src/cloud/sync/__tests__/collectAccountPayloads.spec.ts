@@ -11,7 +11,7 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupAccountType,
@@ -24,6 +24,10 @@ import {
     type SyncItemState,
 } from '../../models'
 import { collectAccountPayloads } from '../collectAccountPayloads'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(3))
 const ADDRESS = 'ALICE_ADDRESS'
@@ -159,5 +163,57 @@ describe('collectAccountPayloads', () => {
 
         expect(accounts).toEqual([])
         expect(items[ADDRESS_KEY].address).toBeUndefined()
+    })
+})
+
+describe('collectAccountPayloads for a chain-tagged item', () => {
+    const ETH_ADDRESS = '0xabc'
+    const ETH_KEY = accountItemKey(hashAddress(ETH_ADDRESS))
+    const ethPlaintext = JSON.stringify({
+        type: BackupAccountType.watchChain,
+        chain: 'ethereum',
+        address: ETH_ADDRESS,
+        customName: 'Eth watch',
+        updatedAt: 10,
+    })
+
+    beforeEach(() => {
+        registerEthereumAccountsAdapter()
+    })
+
+    it('imports an item on a chain this client can back up', () => {
+        registerEthereumBackupChain()
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [ETH_KEY]: tracked(),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(ETH_KEY)],
+            items,
+            deps: deps({ [ETH_KEY]: ethPlaintext }),
+        })
+
+        expect(accounts).toHaveLength(1)
+        expect(items[ETH_KEY]).toMatchObject({
+            address: ETH_ADDRESS,
+            accountType: BackupAccountType.watchChain,
+        })
+    })
+
+    it('leaves an item on an unregistered chain unread: not returned, no cached address, hash reset', () => {
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [ETH_KEY]: tracked({ localContentHash: 'was-set' }),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(ETH_KEY)],
+            items,
+            deps: deps({ [ETH_KEY]: ethPlaintext }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[ETH_KEY]?.address).toBeUndefined()
+        expect(items[ETH_KEY]?.accountType).toBeUndefined()
+        expect(items[ETH_KEY]?.localContentHash).toBeNull()
     })
 })

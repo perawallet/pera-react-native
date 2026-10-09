@@ -178,6 +178,22 @@ describe('addChainAccount', () => {
         expect(Object.keys(result.chains ?? {})).toEqual([FIXTURE_CHAIN_ID])
     })
 
+    test('creates the first account of a held seed no account references', async () => {
+        state().setAccounts([])
+
+        const result = await add(ORIGIN, 'First')
+
+        expect(state().accounts).toEqual([result])
+        expect(result.custody).toEqual({
+            kind: 'local',
+            seed: 'bip39',
+            hd: ORIGIN,
+        })
+        expect(result.chains?.[FIXTURE_CHAIN_ID]?.keyPairId).toBe(
+            'hd-seed-fx-0-0',
+        )
+    })
+
     test('derives the same address after the account is removed and added again', async () => {
         const first = await add(FREE)
         state().setAccounts([holder])

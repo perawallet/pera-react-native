@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainDescriptor } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -22,8 +22,17 @@ import {
 } from '../../api/payloadParsers'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { accountItemKey, secretsItemKey } from '../../models'
-import { serializeAccountItems } from '../serializeAccountItems'
+import {
+    accountAddressesOf,
+    backupChainEntriesOf,
+    serializeAccountItems,
+    serializeChainEntryItem,
+} from '../serializeAccountItems'
 import { canonicalJson } from '../canonicalize'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
@@ -175,6 +184,183 @@ describe('serializeAccountItems', () => {
 
         expect(
             serializeAccountItems(imported, {
+                updatedAt: 1,
+                secrets: null,
+                hashAddress,
+            }),
+        ).toBeNull()
+    })
+})
+
+describe('chain entries', () => {
+    const ETH = (address: string) => ({ ethereum: { address } })
+
+    const withEntries = (
+        base: Partial<WalletAccount>,
+        chains: Record<string, { address: string; keyPairId?: string }>,
+    ): WalletAccount => ({ id: 'a', ...base, chains }) as WalletAccount
+
+    const hdAccount = withEntries(
+        {
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 2, keyIndex: 5 },
+            },
+            name: 'Child',
+            address: 'ALGO',
+        },
+        {
+            algorand: { address: 'ALGO', keyPairId: 'k1' },
+            ethereum: { address: '0xeth', keyPairId: 'k2' },
+        },
+    )
+
+    beforeEach(() => {
+        registerEthereumBackupChain()
+        registerEthereumAccountsAdapter()
+    })
+
+    describe('backupChainEntriesOf', () => {
+        it('drops the legacy entry and sorts by chain id', () => {
+            const account = withEntries(
+                {},
+                {
+                    ...ETH('0xeth'),
+                    algorand: { address: 'ALGO' },
+                },
+            )
+
+            expect(backupChainEntriesOf(account)).toEqual([
+                { chainId: 'ethereum', entry: { address: '0xeth' } },
+            ])
+        })
+
+        it('drops a chain this build cannot back up', () => {
+            const account = withEntries(
+                {},
+                {
+                    ...ETH('0xeth'),
+                    'fixture-chain': { address: 'fx' },
+                },
+            )
+
+            expect(
+                backupChainEntriesOf(account).map(({ chainId }) => chainId),
+            ).toEqual(['ethereum'])
+        })
+
+        it('drops a chain whose cloud backup capability is off', () => {
+            getProvider().chains.reset()
+            getProvider().chains.register(
+                {
+                    id: 'ethereum',
+                    signing: { schemes: [], derivationPaths: {} },
+                } as unknown as ChainDescriptor,
+                { cloudBackup: false } as never,
+            )
+
+            expect(backupChainEntriesOf(withEntries({}, ETH('0xeth')))).toEqual(
+                [],
+            )
+        })
+
+        it('is empty for a legacy record with no chains', () => {
+            expect(backupChainEntriesOf(algo25)).toEqual([])
+        })
+    })
+
+    describe('serializeChainEntryItem', () => {
+        const params = {
+            updatedAt: 9,
+            hashAddress,
+            seedFirstDerivedAddress: 'SEED',
+        }
+        const entry = {
+            chainId: 'ethereum',
+            entry: { address: '0xeth' },
+        } as const
+
+        it('files an hdChain item under the entry address with the seed position', () => {
+            const item = serializeChainEntryItem(hdAccount, entry, params)
+
+            expect(item?.key).toBe(accountItemKey(hashAddress('0xeth')))
+            expect(item?.payload).toEqual({
+                type: 'hdChain',
+                chain: 'ethereum',
+                address: '0xeth',
+                seedFirstDerivedAddress: 'SEED',
+                account: 2,
+                keyIndex: 5,
+                customName: 'Child',
+                updatedAt: 9,
+            })
+        })
+
+        it('has no hdChain item without a seed reference', () => {
+            expect(
+                serializeChainEntryItem(hdAccount, entry, {
+                    updatedAt: 9,
+                    hashAddress,
+                }),
+            ).toBeNull()
+        })
+
+        it('maps a private-key account to a standaloneKey item', () => {
+            const account = withEntries(
+                { custody: { kind: 'local', seed: null } },
+                ETH('0xeth'),
+            )
+
+            expect(
+                serializeChainEntryItem(account, entry, params)?.payload,
+            ).toMatchObject({ type: 'standaloneKey', chain: 'ethereum' })
+        })
+
+        it('maps a watch account to a watchChain item', () => {
+            const account = withEntries(
+                { custody: { kind: 'watch' }, name: 'Eye' },
+                ETH('0xeth'),
+            )
+
+            expect(
+                serializeChainEntryItem(account, entry, params)?.payload,
+            ).toMatchObject({
+                type: 'watchChain',
+                chain: 'ethereum',
+                customName: 'Eye',
+            })
+        })
+
+        it.each([
+            ['hardware', { kind: 'hardware' }],
+            ['multisig', { kind: 'multisig' }],
+            ['quantum', { kind: 'local', seed: 'quantum' }],
+        ])('has no item for a %s account', (_label, custody) => {
+            const account = withEntries({ custody } as never, ETH('0xeth'))
+
+            expect(serializeChainEntryItem(account, entry, params)).toBeNull()
+        })
+    })
+
+    describe('accountAddressesOf', () => {
+        it('lists every chain address once', () => {
+            expect(accountAddressesOf(hdAccount)).toEqual(['ALGO', '0xeth'])
+        })
+
+        it('answers with the address alone for a legacy record', () => {
+            expect(accountAddressesOf(algo25)).toEqual(['ADDR'])
+        })
+    })
+
+    it('has no legacy item for an account with no legacy-chain entry', () => {
+        const ethereumOnly = withEntries(
+            { custody: { kind: 'watch' }, address: '0xeth' },
+            ETH('0xeth'),
+        )
+
+        expect(
+            serializeAccountItems(ethereumOnly, {
                 updatedAt: 1,
                 secrets: null,
                 hashAddress,

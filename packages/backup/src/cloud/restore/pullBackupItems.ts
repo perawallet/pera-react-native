@@ -35,6 +35,7 @@ import {
     isPasskeyItemKey,
     isPasskeySecretsItemKey,
     isSettingsItemKey,
+    payloadChain,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -47,6 +48,7 @@ import {
     type SecretsBackupPayload,
     type SettingsBackupPayload,
 } from '../models'
+import { isBackupChain } from '../sync/backupChains'
 import type { PulledPasskey } from '../sync/types'
 
 const READ_BATCH_SIZE = 50
@@ -64,7 +66,7 @@ export type PulledSettings = {
 
 export type SkippedItem = {
     key: BackupItemKey
-    reason: 'decrypt' | 'parse'
+    reason: 'decrypt' | 'parse' | 'chain'
 }
 
 export type PullBackupItemsResult = {
@@ -245,6 +247,15 @@ const collectItemPayloads = (
         if (parsed.kind === 'passkeySecrets') {
             addressByKey[item.key] = parsed.payload.credentialId
             passkeySecrets.set(parsed.payload.credentialId, parsed.payload)
+            continue
+        }
+
+        const chain =
+            parsed.kind === 'address' || parsed.kind === 'secrets'
+                ? payloadChain(parsed.payload)
+                : null
+        if (chain !== null && !isBackupChain(chain)) {
+            skipped.push({ key: item.key, reason: 'chain' })
             continue
         }
 

@@ -11,6 +11,7 @@
  */
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     StandaloneAccount,
     HDWalletAccount,
@@ -138,10 +139,18 @@ export type SerializeMnemonicResolver = (
  *  (needs KMS), injected from the app layer; null when the seed is unavailable. */
 export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
     seedFirstDerivedAddress: string
-    publicKeyHex: string
+    /** Null when the account has no legacy-chain entry to derive it for. */
+    publicKeyHex: string | null
     seedHex: string
     entropyHex: string
 } | null>
+
+/** Reads a private-key account's raw key. The caller zeroes the bytes; null
+ *  means unavailable, which skips the account. */
+export type SerializePrivateKeyResolver = (
+    chainId: ChainId,
+    keyPairId: string,
+) => Promise<Uint8Array | null>
 
 /** A local item with its content hash (sha256 of canonical payload sans
  *  updatedAt). `address`/`accountType` are lifted out of the payload for the

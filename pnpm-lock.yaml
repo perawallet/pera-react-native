@@ -2118,6 +2118,12 @@ importers:
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.21
         version: 1.0.0-canary.21(patch_hash=62cfd017d54d6ea5ef016a0bf8b24306a4f7e2b480aa44033402a80db7ebc9aa)(fc1b2b6a9f9b175769f4b9979cd4d9b0)
+      '@noble/secp256k1':
+        specifier: 'catalog:'
+        version: 3.2.0
+      '@perawallet/wallet-core-chain-ethereum':
+        specifier: workspace:*
+        version: link:../chain-ethereum
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools

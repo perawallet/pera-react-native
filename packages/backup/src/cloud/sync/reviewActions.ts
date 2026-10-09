@@ -32,6 +32,7 @@ import {
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
+    hdPositionOf,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -211,6 +212,40 @@ const collect = (
     }
 }
 
+/** Held HD items at the same seed position as `payload`: the same account on
+ *  another chain, which Add brings back together. */
+const heldPositionSiblingKeys = async (
+    state: SyncState,
+    ownKey: BackupItemKey,
+    payload: AddressBackupPayload,
+    deps: ReviewActionDeps,
+): Promise<BackupItemKey[]> => {
+    const position = hdPositionOf(payload)
+    if (position === null) return []
+    const candidates = Object.entries(state.items)
+        .filter(
+            ([key, item]) =>
+                key !== ownKey &&
+                isAccountItemKey(key) &&
+                item.status === BackupItemStatus.ACTIVE &&
+                item.pendingImport === true &&
+                (item.accountType === BackupAccountType.hdWallet ||
+                    item.accountType === BackupAccountType.hdChain),
+        )
+        .map(([key]) => key)
+    const payloads = await readAddressPayloads(candidates, deps)
+    return candidates.filter(key => {
+        const other = payloads.get(key)
+        const otherPosition = other ? hdPositionOf(other) : null
+        return (
+            otherPosition !== null &&
+            otherPosition.seedReference === position.seedReference &&
+            otherPosition.account === position.account &&
+            otherPosition.keyIndex === position.keyIndex
+        )
+    })
+}
+
 /** An HD child needs a second read: its key material lives under the seed's
  *  first derived address, not its own, and without it the import has no parent
  *  to derive from. */
@@ -223,8 +258,8 @@ export const importFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: ImportSummary }> => {
-    const keys = liveKeysFor(state, address)
-    if (keys.length === 0) {
+    const ownKeys = liveKeysFor(state, address)
+    if (ownKeys.length === 0) {
         return {
             state,
             summary: {
@@ -235,25 +270,47 @@ export const importFromBackup = async ({
         }
     }
 
-    const fetched = await deps.readItems(
+    const ownFetched = await deps.readItems(
         deps.network,
         deps.backupId,
         deps.deviceId,
-        keys,
+        ownKeys,
     )
     const collected: CollectedPayloads = {
         addressPayloads: new Map(),
         secretsPayloads: new Map(),
     }
-    collect(fetched, deps, collected)
+    collect(ownFetched, deps, collected)
 
     const addressPayload = collected.addressPayloads.get(address)
-    if (addressPayload?.type === BackupAccountType.hdWallet) {
+    const addressKey = ownKeys.find(isAccountItemKey)
+    const siblingKeys =
+        addressPayload && addressKey
+            ? await heldPositionSiblingKeys(
+                  state,
+                  addressKey,
+                  addressPayload,
+                  deps,
+              )
+            : []
+    const siblingFetched =
+        siblingKeys.length > 0
+            ? await deps.readItems(
+                  deps.network,
+                  deps.backupId,
+                  deps.deviceId,
+                  siblingKeys,
+              )
+            : []
+    collect(siblingFetched, deps, collected)
+
+    const seedReference = addressPayload
+        ? hdPositionOf(addressPayload)?.seedReference
+        : undefined
+    if (seedReference) {
         // Hashed, not matched: the seed is filed under an account this device
         // may not hold, so nothing caches that address.
-        const seedKey = secretsItemKey(
-            deps.hashAddress(addressPayload.seedFirstDerivedAddress),
-        )
+        const seedKey = secretsItemKey(deps.hashAddress(seedReference))
         if (state.items[seedKey]?.status === BackupItemStatus.ACTIVE) {
             collect(
                 await deps.readItems(
@@ -275,9 +332,11 @@ export const importFromBackup = async ({
         ),
     )
 
-    const byKey = new Map(fetched.map(item => [item.key, item]))
+    const byKey = new Map(
+        [...ownFetched, ...siblingFetched].map(item => [item.key, item]),
+    )
     const items = { ...state.items }
-    for (const key of keys) {
+    for (const key of [...ownKeys, ...siblingKeys]) {
         const tracked = items[key]
         if (tracked) items[key] = clearReviewed(tracked, byKey.get(key))
     }
@@ -364,25 +423,21 @@ const secretKeyToDelete = async (
     const own = payloads.get(addressKey)
     if (!own) return null
 
-    if (own.type !== BackupAccountType.hdWallet) {
+    const ownSeed = hdPositionOf(own)?.seedReference
+    if (ownSeed === undefined) {
         return liveKeyUnder(state, address, BACKUP_SECRETS_KEY_PREFIX)
     }
 
     // Hashed, not matched: the seed is filed under an account this device may
     // not hold, so nothing caches that address.
-    const seedKey = secretsItemKey(
-        deps.hashAddress(own.seedFirstDerivedAddress),
-    )
+    const seedKey = secretsItemKey(deps.hashAddress(ownSeed))
     if (!isLive(seedKey)) return null
 
     const stillDerives = others.some(key => {
         const payload = payloads.get(key)
         // Unreadable sibling: assume it needs the seed.
         if (!payload) return true
-        return (
-            payload.type === BackupAccountType.hdWallet &&
-            payload.seedFirstDerivedAddress === own.seedFirstDerivedAddress
-        )
+        return hdPositionOf(payload)?.seedReference === ownSeed
     })
     return stillDerives ? null : seedKey
 }
