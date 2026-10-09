@@ -24,6 +24,7 @@ import {
 import { generateKey } from 'falcon-1024'
 import {
     accountsChainAdapters,
+    useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -31,6 +32,7 @@ import {
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
+import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { deriveQuantumAddress } from '../../blockchain/pq/quantumAdapter'
 import { algorandEmptySignaturesFor } from '../emptySignatures'
 
@@ -74,13 +76,14 @@ const [ED_A, ED_B, ED_C] = Array.from({ length: 3 }, () =>
     generateAccount().addr.toString(),
 )
 
-const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
+const algo25 = (address: string, authorityAddress?: string): WalletAccount => {
+    if (authorityAddress) seedAuthority(address, authorityAddress)
+    return {
         custody: { kind: 'local', seed: 'algo25' },
         address,
         keyPairId: `kp-${address}`,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
+    } as WalletAccount
+}
 
 const quantum = (address: string): WalletAccount =>
     ({
@@ -130,6 +133,7 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
+    useAccountChainStateStore.getState().resetState()
     state.accounts = []
     state.pqPublicKey = PQ_PUBLIC_KEY
     state.isKeystoreOpen = true
