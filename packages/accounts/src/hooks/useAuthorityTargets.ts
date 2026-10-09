@@ -57,3 +57,17 @@ export const useAuthorityTargets = (
         )
     }, [accounts, scope, chainStates, source, category])
 }
+
+/**
+ * The target categories the scope's chain lists a kind under, in the order
+ * it lists them; empty when the chain can't move authority. The app shows a
+ * category's flow only when it's here.
+ */
+export const useAuthorityTargetCategories = (
+    scope: ChainScope,
+): readonly AuthorityTargetCategory[] =>
+    useMemo(() => {
+        const authority = accountsChainAdapters.get(scope.chainId).authority
+        if (!authority) return []
+        return [...new Set(authority.targetKinds.map(kind => kind.category))]
+    }, [scope.chainId])

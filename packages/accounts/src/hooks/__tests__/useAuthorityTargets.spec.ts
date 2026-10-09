@@ -13,7 +13,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useAuthorityTargets } from '../useAuthorityTargets'
+import {
+    useAuthorityTargetCategories,
+    useAuthorityTargets,
+} from '../useAuthorityTargets'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -227,6 +230,35 @@ describe('useAuthorityTargets', () => {
                 AuthorityTargetCategories.standard,
                 MAINNET_SCOPE,
             ),
+        )
+
+        expect(result.current).toEqual([])
+    })
+})
+
+describe('useAuthorityTargetCategories', () => {
+    it('lists each category the chain files a kind under once, in its order', () => {
+        withTargetKinds([
+            { id: 'ledger', category: AuthorityTargetCategories.hardware },
+            { id: 'ed', category: AuthorityTargetCategories.standard },
+            { id: 'ledger-2', category: AuthorityTargetCategories.hardware },
+        ])
+
+        const { result } = renderHook(() =>
+            useAuthorityTargetCategories(MAINNET_SCOPE),
+        )
+
+        expect(result.current).toEqual([
+            AuthorityTargetCategories.hardware,
+            AuthorityTargetCategories.standard,
+        ])
+    })
+
+    it('lists nothing on a chain without an authority', () => {
+        registerFakeAccountsChain({ authority: undefined })
+
+        const { result } = renderHook(() =>
+            useAuthorityTargetCategories(MAINNET_SCOPE),
         )
 
         expect(result.current).toEqual([])
