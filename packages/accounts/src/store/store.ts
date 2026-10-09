@@ -24,7 +24,6 @@ import {
     type WalletAccount,
 } from '../models'
 import {
-    generateOrderedUniqueId,
     logger,
     registerStore,
     type WithPersist,
@@ -63,6 +62,7 @@ import {
     WalletCannotDeriveError,
 } from '../errors'
 import { useAccountChainStateStore } from './accountChainState'
+import { gateWritesOnHydration } from './hydrationGate'
 import { liftLegacyAuthority } from './legacyAuthority'
 import {
     isHardwareWalletAccount,
@@ -118,29 +118,61 @@ const currentShapeOf = (
           }
         : undefined
 
-type IdentifiedRecord = PersistedRecord & { id: string }
+const decodeRecord = (raw: PersistedRecord): DecodedAccountRecord | undefined =>
+    CHAIN_IDS.flatMap(chainId => {
+        if (!accountsChainAdapters.has(chainId)) return []
+        const adapter = accountsChainAdapters.get(chainId)
+        return adapter.decodeLegacyRecord?.(raw) ?? []
+    })[0] ?? currentShapeOf(raw)
 
-// No migration ever wrote ids, so a record persisted without one gets a fresh
-// id rather than losing the account.
-const withId = (raw: PersistedRecord): IdentifiedRecord =>
-    typeof raw.id === 'string' && raw.id !== ''
-        ? (raw as IdentifiedRecord)
-        : { ...raw, id: generateOrderedUniqueId() }
+const persistedIdOf = (raw: PersistedRecord): string | undefined =>
+    typeof raw.id === 'string' && raw.id !== '' ? raw.id : undefined
 
-const decodeRecord = (raw: IdentifiedRecord): WalletAccount | undefined => {
-    const decoded =
-        CHAIN_IDS.flatMap(chainId =>
-            accountsChainAdapters.has(chainId)
-                ? (accountsChainAdapters.get(chainId).decodeLegacyRecord(raw) ??
-                  [])
-                : [],
-        )[0] ?? currentShapeOf(raw)
-    if (!decoded) return undefined
-    return {
-        id: raw.id,
-        ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
-        ...decoded,
+/**
+ * The id for a record persisted without one, derived from its first chain
+ * address. It must be the same wherever the migration runs: the extension's
+ * popup and offscreen document each migrate the same payload, and a random id
+ * would differ between them. The `legacy:` prefix can't collide with the
+ * UUIDs `buildAccount` mints.
+ */
+const derivedIdOf = ({ chains }: DecodedAccountRecord): string => {
+    const chainId = CHAIN_IDS.find(id => chains[id])
+    return chainId ? `legacy:${chainId}:${chains[chainId]?.address}` : 'legacy'
+}
+
+type MigratedRecord = {
+    /** The address the record was persisted under before v5, which selection named. */
+    legacyAddress: string | undefined
+    account: WalletAccount
+}
+
+// No migration ever wrote ids, so a record persisted without one gets a
+// derived id rather than losing the account.
+const migrateRecords = (raws: readonly PersistedRecord[]): MigratedRecord[] => {
+    const usedIds = new Set(raws.flatMap(raw => persistedIdOf(raw) ?? []))
+    const uniqueId = (base: string): string => {
+        let id = base
+        for (let repeat = 2; usedIds.has(id); repeat++) {
+            id = `${base}:${repeat}`
+        }
+        usedIds.add(id)
+        return id
     }
+    return raws.flatMap(raw => {
+        const decoded = decodeRecord(raw)
+        if (!decoded) return []
+        return [
+            {
+                legacyAddress:
+                    typeof raw.address === 'string' ? raw.address : undefined,
+                account: {
+                    id: persistedIdOf(raw) ?? uniqueId(derivedIdOf(decoded)),
+                    ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
+                    ...decoded,
+                },
+            },
+        ]
+    })
 }
 
 // Before v2 the legacy `type` and details were authoritative, and v1's
@@ -158,12 +190,13 @@ const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
 /** The id of the account that held `address` before the migration; `null` when none did. */
 const idForLegacyAddress = (
     address: Nullable<string> | undefined,
-    raws: readonly IdentifiedRecord[],
-    accounts: readonly WalletAccount[],
+    records: readonly MigratedRecord[],
 ): Nullable<string> => {
     if (!address) return null
-    const id = raws.find(record => record.address === address)?.id
-    return id && accounts.some(account => account.id === id) ? id : null
+    return (
+        records.find(record => record.legacyAddress === address)?.account.id ??
+        null
+    )
 }
 
 // Entries in `held` win: they were persisted alongside the records the legacy
@@ -211,10 +244,10 @@ export const migrateAccountsState = (
             version < 2 ? stripPreV2Custody(raw) : raw,
         ),
     )
-    const raws = lifted.records.map(withId)
-    const accounts = raws.flatMap(raw => decodeRecord(raw) ?? [])
+    const records = migrateRecords(lifted.records)
+    const accounts = records.map(record => record.account)
     const idOf = (address: Nullable<string> | undefined) =>
-        idForLegacyAddress(address, raws, accounts)
+        idForLegacyAddress(address, records)
     const launchAccountId = idOf(state.launchAccountAddress)
     return {
         accounts,
@@ -722,13 +755,23 @@ export const useAccountsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            ...gateWritesOnHydration<AccountsState, unknown>(
+                createJSONStorage(() => getProvider().keyValueStorage),
+            ),
             version: STORE_VERSION,
             // `migrate` decodes records through the chain adapters, which
             // register after every module has evaluated: hydrating at import
             // would run it against an empty registry.
             skipHydration: true,
             migrate: migrateAccountsState,
+            onRehydrateStorage: () => (_state, error) => {
+                if (error) {
+                    logger.error(
+                        'Accounts store hydration failed; the persisted state is left untouched',
+                        { error },
+                    )
+                }
+            },
             partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
                 selectedAccountId: state.selectedAccountId,

@@ -804,7 +804,7 @@ describe('services/accounts/store', () => {
         })
 
         test.each([2, 3, 4])(
-            'gives a v%s record persisted without an id a fresh one, and keeps what pointed at its address',
+            'gives a v%s record persisted without an id one derived from its address, and keeps what pointed at it',
             async version => {
                 const { migrateAccountsState } = await import('../store')
 
@@ -833,8 +833,8 @@ describe('services/accounts/store', () => {
                     custody: { kind: 'local' },
                     chains: { algorand: { keyPairId: 'k-n' } },
                 })
-                expect(noId?.id).toEqual(expect.any(String))
-                expect(emptyId?.id).toEqual(expect.any(String))
+                expect(noId?.id).toBe('legacy:algorand:NO-ID')
+                expect(emptyId?.id).toBe('legacy:algorand:EMPTY-ID')
                 expect(new Set(migrated.accounts.map(a => a.id)).size).toBe(
                     migrated.accounts.length,
                 )
@@ -849,6 +849,54 @@ describe('services/accounts/store', () => {
                 expect(migrated.launchAccountMode).toBe('specific')
             },
         )
+
+        test('derives the same ids wherever it runs, and distinct ones for a repeated address', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const payload = () => ({
+                ...legacyState(),
+                accounts: [
+                    { address: 'TWICE', keyPairId: 'k-1' },
+                    { address: 'TWICE' },
+                    { id: 'legacy:algorand:TAKEN', address: 'OTHER' },
+                    { address: 'TAKEN' },
+                ],
+            })
+
+            const first = migrateAccountsState(payload(), 4)
+            const second = migrateAccountsState(payload(), 4)
+
+            expect(first.accounts.map(a => a.id)).toEqual([
+                'legacy:algorand:TWICE',
+                'legacy:algorand:TWICE:2',
+                'legacy:algorand:TAKEN',
+                'legacy:algorand:TAKEN:2',
+            ])
+            expect(second).toStrictEqual(first)
+        })
+
+        test('skips a chain adapter that decodes no legacy records', async () => {
+            const { accountsChainAdapters } =
+                await import('../../chain-adapter')
+            accountsChainAdapters.reset()
+            accountsChainAdapters.register({
+                ...fake.adapter,
+                decodeLegacyRecord: undefined,
+            })
+            const { migrateAccountsState } = await import('../store')
+            const current = on('watch', 'current', {
+                algorand: { address: 'CURRENT' },
+            })
+
+            const migrated = migrateAccountsState(
+                {
+                    ...legacyState(),
+                    accounts: [...legacyRecords(), current],
+                },
+                4,
+            )
+
+            expect(migrated.accounts).toEqual([current])
+        })
 
         test('falls back to lastUsed when the launch pin names no surviving account', async () => {
             const { migrateAccountsState } = await import('../store')
@@ -889,6 +937,64 @@ describe('services/accounts/store', () => {
             expect(module.useAccountsStore.persist.hasHydrated()).toBe(true)
             expect(module.useAccountsStore.getState()).toMatchObject(
                 migratedState,
+            )
+        })
+
+        test('drops a write made before hydration, then persists the migrated state', async () => {
+            const persisted = JSON.stringify({
+                state: legacyState(),
+                version: 3,
+            })
+            getProvider().keyValueStorage.setItem(STORE_KEY, persisted)
+            const module = await loadStore()
+
+            module.useAccountsStore.getState().settleAuthorities({}, {})
+            module.useAccountsStore.getState().setAccounts([])
+
+            expect(getProvider().keyValueStorage.getItem(STORE_KEY)).toBe(
+                persisted,
+            )
+
+            await module.rehydrateAccountsStore()
+
+            const written = JSON.parse(
+                getProvider().keyValueStorage.getItem(STORE_KEY) as string,
+            )
+            expect(written).toMatchObject({ version: 5, state: migratedState })
+
+            const added = account('watch', 'NEW-ADDR')
+            module.useAccountsStore
+                .getState()
+                .setAccounts([...migratedAccounts, added])
+
+            expect(
+                JSON.parse(
+                    getProvider().keyValueStorage.getItem(STORE_KEY) as string,
+                ).state.accounts,
+            ).toContainEqual(added)
+        })
+
+        test('leaves storage untouched, and keeps dropping writes, when the migration throws', async () => {
+            const persisted = JSON.stringify({
+                state: legacyState(),
+                version: 3,
+            })
+            getProvider().keyValueStorage.setItem(STORE_KEY, persisted)
+            const module = await loadStore()
+            vi.mocked(fake.adapter.decodeLegacyRecord!).mockImplementation(
+                () => {
+                    throw new Error('decoder broke')
+                },
+            )
+
+            await module.rehydrateAccountsStore()
+            module.useAccountsStore
+                .getState()
+                .setAccounts([account('watch', 'NEW-ADDR')])
+
+            expect(module.useAccountsStore.persist.hasHydrated()).toBe(false)
+            expect(getProvider().keyValueStorage.getItem(STORE_KEY)).toBe(
+                persisted,
             )
         })
 
