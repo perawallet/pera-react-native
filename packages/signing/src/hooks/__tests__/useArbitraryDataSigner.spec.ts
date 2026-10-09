@@ -89,4 +89,20 @@ describe('useArbitraryDataSigner', () => {
         ).rejects.toBeInstanceOf(CannotSignError)
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
+
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const signArbitraryData = vi.fn()
+        registerFakeMessageSignerAdapter({ signArbitraryData })
+        const { result } = renderHook(() => useArbitraryDataSigner())
+
+        await expect(
+            result.current.signArbitraryData(
+                'algorand',
+                { ...account, chains: {} },
+                'x',
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signArbitraryData).not.toHaveBeenCalled()
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
 })

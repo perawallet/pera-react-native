@@ -24,6 +24,7 @@ import type {
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
 import { plannerAdapterForScope } from '../../../chain-adapter'
+import { CannotSignError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -86,15 +87,18 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             scope.chainId,
         )
 
+        const authAddress = chainAccountOf(authAccount, scope.chainId)?.address
+        if (authAddress === undefined) {
+            throw new CannotSignError(
+                signerAddress,
+                `its signing account has no address on chain ${scope.chainId}`,
+            )
+        }
+
         const transport = createTransport(source, authAccount)
         const merged =
             plannerAdapterForScope(scope).mergeSigningResults(signingResults)
 
-        return transport.send(
-            merged,
-            source,
-            chainAccountOf(authAccount, scope.chainId)?.address ??
-                signerAddress,
-        )
+        return transport.send(merged, source, authAddress)
     },
 )

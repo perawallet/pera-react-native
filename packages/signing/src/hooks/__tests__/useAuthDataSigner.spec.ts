@@ -141,4 +141,21 @@ describe('useAuthDataSigner', () => {
         ).rejects.toBeInstanceOf(CannotSignError)
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
+
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const signAuthData = vi.fn()
+        registerFakeMessageSignerAdapter({ signAuthData })
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await expect(
+            result.current.signAuthData(
+                'algorand',
+                { ...account, chains: {} },
+                authData,
+                metadata,
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signAuthData).not.toHaveBeenCalled()
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
 })

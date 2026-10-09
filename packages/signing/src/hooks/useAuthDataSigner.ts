@@ -20,6 +20,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { messageSignerFor } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
 export type UseAuthDataSignerResult = {
     /**
@@ -40,11 +41,15 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const accounts = useAllAccounts()
 
     const signAuthData = useCallback<UseAuthDataSignerResult['signAuthData']>(
-        async (chainId, account, authData, metadata) =>
-            messageSignerFor(
-                chainId,
-                chainAccountOf(account, chainId)?.address ?? '',
-            ).signAuthData(
+        async (chainId, account, authData, metadata) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
+                )
+            }
+            return messageSignerFor(chainId, address).signAuthData(
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -57,7 +62,8 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
                 authData,
                 metadata,
                 accounts,
-            ),
+            )
+        },
         // `accounts` backs the signer's rekey cross-check; without it the
         // callback would validate against the account list as of first render
         // and fail open on a rekey revoked after mount.

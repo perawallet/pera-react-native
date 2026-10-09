@@ -17,6 +17,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { messageSignerFor } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
 export type UseArbitraryDataSignerResult = {
     signArbitraryData: (
@@ -32,11 +33,15 @@ export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const signArbitraryData = useCallback<
         UseArbitraryDataSignerResult['signArbitraryData']
     >(
-        async (chainId, account, data) =>
-            messageSignerFor(
-                chainId,
-                chainAccountOf(account, chainId)?.address ?? '',
-            ).signArbitraryData(
+        async (chainId, account, data) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
+                )
+            }
+            return messageSignerFor(chainId, address).signArbitraryData(
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -47,7 +52,8 @@ export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
                 },
                 account,
                 [data].flat(),
-            ),
+            )
+        },
         [signDataWithKey],
     )
 

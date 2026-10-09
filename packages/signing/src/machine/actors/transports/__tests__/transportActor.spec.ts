@@ -36,6 +36,19 @@ import {
     registerFakePlannerAdapter,
 } from '../../../../__tests__/fakePlannerAdapter'
 import { plannerChainAdapters } from '../../../../chain-adapter'
+import { CannotSignError } from '../../../../pipeline/errors'
+import { resolveSigningAccount } from '../../../utils/resolveSigningAccount'
+
+vi.mock('../../../utils/resolveSigningAccount', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../../utils/resolveSigningAccount')
+        >()
+    return {
+        ...actual,
+        resolveSigningAccount: vi.fn(actual.resolveSigningAccount),
+    }
+})
 
 const ALGORAND_TESTNET: ChainScope = {
     chainId: 'algorand',
@@ -388,5 +401,25 @@ describe('transportActor', () => {
             signRequestId: 'sign-req-2',
             signers: mockSigningResult.signers,
         })
+    })
+
+    it('refuses before any transport when the signing account has no address on the chain', async () => {
+        const authWithoutChainEntry: WalletAccount = {
+            id: 'auth-elsewhere',
+            custody: { kind: 'local', seed: null },
+            chains: {},
+        }
+        vi.mocked(resolveSigningAccount).mockReturnValueOnce(
+            authWithoutChainEntry,
+        )
+        const createTransport = vi.fn()
+
+        const actor = createActor(transportActor, {
+            input: makeInput({ type: 'local' }, { createTransport }),
+        })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toBeInstanceOf(CannotSignError)
+        expect(createTransport).not.toHaveBeenCalled()
     })
 })
