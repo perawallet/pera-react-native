@@ -138,14 +138,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
-    DeviceAccountTypes: {
-        standalone: 'standalone',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 vi.mock('@hooks/useToast', () => ({

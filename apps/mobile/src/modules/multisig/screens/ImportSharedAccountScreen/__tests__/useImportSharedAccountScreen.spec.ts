@@ -73,14 +73,6 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => mockUseDeviceID(),
-    DeviceAccountTypes: {
-        standalone: 'standalone',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({
