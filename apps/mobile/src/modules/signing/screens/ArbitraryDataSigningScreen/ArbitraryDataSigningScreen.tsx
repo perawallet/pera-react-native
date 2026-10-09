@@ -27,7 +27,7 @@ export const ArbitraryDataSigningScreen = () => {
         request,
         isSingleSignRequest,
         isPending,
-        isQuantumBlocked,
+        isSigningBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -35,7 +35,7 @@ export const ArbitraryDataSigningScreen = () => {
 
     if (!request) return null
 
-    if (isQuantumBlocked) {
+    if (isSigningBlocked) {
         return (
             <PWScreen
                 footer={

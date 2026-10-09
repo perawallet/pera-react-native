@@ -30,9 +30,9 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
+    canSignMessage,
     isAuthDataWirePayload,
     legacyArbitraryDataWireSchema,
-    messageSignerChainAdapters,
     parseAuthDataWireRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -124,9 +124,7 @@ export const useDataSigningHandler = (
                     )
                     if (
                         !account ||
-                        !messageSignerChainAdapters
-                            .get(LEGACY_CHAIN_ID)
-                            .canSign(account, 'authData')
+                        !canSignMessage(LEGACY_CHAIN_ID, account, 'authData')
                     ) {
                         sendInvalidSigner(message.id)
                         return

@@ -75,8 +75,8 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 }))
 
 const mockIsQuantumDataSigningBlocked = vi.fn()
-vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
-    useIsQuantumDataSigningBlocked: (request: unknown) =>
+vi.mock('@hooks/useIsDataSigningBlocked', () => ({
+    useIsDataSigningBlocked: (request: unknown) =>
         mockIsQuantumDataSigningBlocked(request),
 }))
 
@@ -208,7 +208,7 @@ describe('useArc60SigningScreen', () => {
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.isSigningBlocked).toBe(true)
         expect(result.current.canConfirm).toBe(false)
     })
 
@@ -219,7 +219,7 @@ describe('useArc60SigningScreen', () => {
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(false)
+        expect(result.current.isSigningBlocked).toBe(false)
         expect(result.current.canConfirm).toBe(true)
     })
 

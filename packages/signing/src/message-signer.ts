@@ -116,6 +116,24 @@ export interface MessageSignerChainAdapter {
 export const messageSignerChainAdapters =
     createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
 
+/** False on a chain with no message signer: it signs nothing. */
+export const canSignMessage = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).canSign(account, kind)
+
+/** False on a chain with no message signer, so a review blocks the request. */
+export const signsMessageVerifiably = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).signsVerifiably(account, kind)
+
 /** The refusal gate: with no signer registered, nothing is signed or passed through unsigned. */
 export const messageSignerFor = (
     chainId: ChainId,

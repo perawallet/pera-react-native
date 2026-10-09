@@ -25,13 +25,12 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
+    canSignMessage,
     isFeeAdjustmentDeliveryError,
-    messageSignerChainAdapters,
     useSigningRequest,
     type AuthDataSignRequest,
     type AuthDataSignableData,
     type ArbitraryDataSignRequest,
-    type MessageSignKind,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
@@ -251,15 +250,6 @@ const enqueueDataSignRequest = (
     addSignRequest(signRequest)
     trackRequest(deps, message, () => removeSignRequest(signRequest))
 }
-
-// A chain with no message signer registered signs nothing, so it fails closed.
-const canSignMessage = (
-    chainId: ChainId,
-    account: WalletAccount,
-    kind: MessageSignKind,
-): boolean =>
-    messageSignerChainAdapters.has(chainId) &&
-    messageSignerChainAdapters.get(chainId).canSign(account, kind)
 
 /**
  * use-wallet v5 dApps set the ARC-60 signer to the connected account's auth

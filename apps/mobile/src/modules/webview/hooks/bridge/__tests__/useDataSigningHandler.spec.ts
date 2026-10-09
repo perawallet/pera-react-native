@@ -93,12 +93,8 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
                 }
             },
         ),
-        messageSignerChainAdapters: {
-            get: () => ({
-                canSign: (account: unknown, kind: string) =>
-                    kind === 'authData' && mockCanSignAuthData(account),
-            }),
-        },
+        canSignMessage: (_chainId: string, account: unknown, kind: string) =>
+            kind === 'authData' && mockCanSignAuthData(account),
         useSigningRequest: () => ({
             addSignRequest: mockAddSignRequest,
         }),

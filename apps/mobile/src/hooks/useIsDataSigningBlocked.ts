@@ -17,8 +17,8 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     isAuthDataRequest,
-    messageSignerChainAdapters,
     resolveAllSignerAddresses,
+    signsMessageVerifiably,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -28,7 +28,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  * the signature (a key of a scheme the message format doesn't carry), instead
  * of letting the user sign into a guaranteed failure.
  */
-export const useIsQuantumDataSigningBlocked = (
+export const useIsDataSigningBlocked = (
     request: Nullable<SignRequest>,
 ): boolean => {
     const accounts = useAllAccounts()
@@ -40,7 +40,6 @@ export const useIsQuantumDataSigningBlocked = (
     // account rekeyed to an unverifiable auth can't sign in at all: naming
     // itself is refused by the chain's auth-data validation (control moved to
     // the auth), and naming the auth lands here.
-    const signer = messageSignerChainAdapters.get(LEGACY_CHAIN_ID)
     const kind = isAuthDataRequest(request) ? 'authData' : 'arbitraryData'
     return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
         const account = findAccountByAddressOn(
@@ -48,6 +47,8 @@ export const useIsQuantumDataSigningBlocked = (
             LEGACY_CHAIN_ID,
             address,
         )
-        return !!account && !signer.signsVerifiably(account, kind)
+        return (
+            !!account && !signsMessageVerifiably(LEGACY_CHAIN_ID, account, kind)
+        )
     })
 }

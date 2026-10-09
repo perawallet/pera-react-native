@@ -32,7 +32,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsQuantumDataSigningBlocked } from '@hooks/useIsQuantumDataSigningBlocked'
+import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
@@ -61,7 +61,7 @@ type UseArc60SigningScreenResult = {
      * ARC-60 protocol can't verify yet — the screen must show a terminal
      * notice instead of the confirm control.
      */
-    isQuantumBlocked: boolean
+    isSigningBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void
@@ -81,7 +81,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         request?.authData.signer ?? '',
         scope,
     )
-    const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
+    const isSigningBlocked = useIsDataSigningBlocked(request)
     const parsed =
         pipeline.resolved?.kind.type === 'auth-data'
             ? pipeline.resolved.kind.parsed
@@ -111,7 +111,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         // Backstop for the blocked terminal states: the confirm control is
         // hidden when quantum-blocked and disabled on an origin mismatch, so
         // this should be unreachable.
-        if (isQuantumBlocked || hasOriginMismatch) return
+        if (isSigningBlocked || hasOriginMismatch) return
 
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
 
@@ -135,7 +135,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         isCardRequest,
         request,
         confirmQuantumDappUsage,
-        isQuantumBlocked,
+        isSigningBlocked,
         hasOriginMismatch,
         scope.chainId,
     ])
@@ -154,7 +154,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         !isPending &&
         !!account &&
         parsed?.type === 'siwx' &&
-        !isQuantumBlocked &&
+        !isSigningBlocked &&
         !hasOriginMismatch
 
     const errorMessage = pipeline.error
@@ -169,7 +169,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
-        isQuantumBlocked,
+        isSigningBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,

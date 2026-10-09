@@ -66,20 +66,16 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // `validate.ts` imports this eagerly; only the sign-transactions path is
     // driven from this file, so it is unused.
     parseAuthDataWireRequest: vi.fn(),
-    // Mirrors the real predicate: the class name, or the marker the
-    // WalletConnect rewrap keeps in the message.
     // Mirrors a chain's `canSign`: a flag per message kind on the account
     // itself, no rekey hop. `mockHasMessageSigner` stands in for a chain with
     // no message signer registered.
-    messageSignerChainAdapters: {
-        has: () => mockHasMessageSigner,
-        get: () => ({
-            canSign: (account: MockAccount, kind: string) =>
-                kind === 'authData'
-                    ? account.canArc60 === true
-                    : account.canSignData === true,
-        }),
-    },
+    canSignMessage: (_chainId: string, account: MockAccount, kind: string) =>
+        mockHasMessageSigner &&
+        (kind === 'authData'
+            ? account.canArc60 === true
+            : account.canSignData === true),
+    // Mirrors the real predicate: the class name, or the marker the
+    // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
         error.name === 'FeeAdjustmentDeliveryError' ||
         error.message.includes('fee-adjusted'),

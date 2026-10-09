@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { algorandMessageSignerAdapter } from '@perawallet/wallet-core-chain-algorand/signing'
 import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
-import { useIsQuantumDataSigningBlocked } from '../useIsQuantumDataSigningBlocked'
+import { useIsDataSigningBlocked } from '../useIsDataSigningBlocked'
 
 type TestAccount = {
     custody: { kind: string }
@@ -55,7 +55,7 @@ const buildArbitraryDataRequest = (signers: string[]) =>
         data: signers.map(signer => ({ signer, data: 'ZGF0YQ==' })),
     }) as unknown as SignRequest
 
-describe('useIsQuantumDataSigningBlocked', () => {
+describe('useIsDataSigningBlocked', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandReviewerAdapter()
@@ -79,7 +79,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
 
     it('blocks an ARC-60 request whose named signer is a quantum account', () => {
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(buildArc60Request(QUANTUM_ADDRESS)),
+            useIsDataSigningBlocked(buildArc60Request(QUANTUM_ADDRESS)),
         )
 
         expect(result.current).toBe(true)
@@ -87,7 +87,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
 
     it('blocks an arbitrary-data request when any entry names a quantum signer', () => {
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(
+            useIsDataSigningBlocked(
                 buildArbitraryDataRequest([STANDARD_ADDRESS, QUANTUM_ADDRESS]),
             ),
         )
@@ -97,7 +97,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
 
     it('does not block a standard account', () => {
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(buildArc60Request(STANDARD_ADDRESS)),
+            useIsDataSigningBlocked(buildArc60Request(STANDARD_ADDRESS)),
         )
 
         expect(result.current).toBe(false)
@@ -107,7 +107,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
         // Data signatures are made and verified against the named account's
         // own key — rekey is irrelevant here, unlike transaction signing.
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(
+            useIsDataSigningBlocked(
                 buildArc60Request(REKEYED_TO_QUANTUM_ADDRESS),
             ),
         )
@@ -117,7 +117,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
 
     it('does not block a signer that matches no known account', () => {
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(buildArc60Request('UNKNOWN')),
+            useIsDataSigningBlocked(buildArc60Request('UNKNOWN')),
         )
 
         expect(result.current).toBe(false)
@@ -132,7 +132,7 @@ describe('useIsQuantumDataSigningBlocked', () => {
         })
 
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(
+            useIsDataSigningBlocked(
                 buildArbitraryDataRequest([STANDARD_ADDRESS]),
             ),
         )
@@ -146,10 +146,18 @@ describe('useIsQuantumDataSigningBlocked', () => {
         )
     })
 
-    it('does not block when there is no request', () => {
+    it('blocks a known signer on a chain with no message signer', () => {
+        messageSignerChainAdapters.reset()
+
         const { result } = renderHook(() =>
-            useIsQuantumDataSigningBlocked(null),
+            useIsDataSigningBlocked(buildArc60Request(STANDARD_ADDRESS)),
         )
+
+        expect(result.current).toBe(true)
+    })
+
+    it('does not block when there is no request', () => {
+        const { result } = renderHook(() => useIsDataSigningBlocked(null))
 
         expect(result.current).toBe(false)
     })
