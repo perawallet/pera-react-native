@@ -26,6 +26,7 @@ export * from './cleanup'
 export * from './import-session'
 
 export {
+    backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,
     hydrateAccountChainStates,
