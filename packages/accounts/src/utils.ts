@@ -28,10 +28,25 @@ import { chainAccountOf, hasCustody } from './credentials/accessors'
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own format — legacy apps auto-named accounts with a 6+6
 // truncation that migration carries over verbatim.
+const TRUNCATION_SEPARATORS = ['...', '…'] as const
+
+// Split on the first separator by index: a backtracking regex here runs in
+// polynomial time on long names.
+const splitTruncation = (name: string): [string, string] | undefined => {
+    const cuts = TRUNCATION_SEPARATORS.flatMap(separator => {
+        const at = name.indexOf(separator, 1)
+        return at === -1 ? [] : [{ at, separator }]
+    })
+    if (cuts.length === 0) return undefined
+    const { at, separator } = cuts.reduce((a, b) => (b.at < a.at ? b : a))
+    const suffix = name.slice(at + separator.length)
+    return suffix.length > 0 ? [name.slice(0, at), suffix] : undefined
+}
+
 const isTruncationOfAddress = (name: string, address: string) => {
-    const match = name.match(/^(.+?)(?:\.\.\.|…)(.+)$/)
-    if (!match) return false
-    const [, prefix, suffix] = match
+    const parts = splitTruncation(name)
+    if (!parts) return false
+    const [prefix, suffix] = parts
     return (
         prefix.length + suffix.length < address.length &&
         address.startsWith(prefix) &&
