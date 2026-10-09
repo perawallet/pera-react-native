@@ -12,9 +12,9 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { WalletAccount } from '../../models'
-import { useAccountsStore } from '../../store'
+import { useAccountsStore } from '../store'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
-import { backfillAccountRecords } from '../backfillRecords'
+import { backfillAccountRecords } from '../backfillAccountRecords'
 
 const held = (address: string): WalletAccount =>
     ({

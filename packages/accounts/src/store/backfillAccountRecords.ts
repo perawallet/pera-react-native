@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { accountsChainAdapters } from '../chain-adapter'
 import type { WalletAccount } from '../models'
-import { useAccountsStore } from '../store/store'
+import { useAccountsStore } from './store'
 
 // `chains` is optional; a record without it lives on the legacy chain alone.
 const chainIdsOf = (account: WalletAccount): ChainId[] =>
