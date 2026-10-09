@@ -13,7 +13,10 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import { useImportSharedAccountScreen } from '../useImportSharedAccountScreen'
 
 const SCANNED_ADDRESS = 'SHARED_ADDR'
@@ -60,7 +63,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-multisig')
+    >()),
     useMultisigAccountDetailQuery: () => mockUseMultisigAccountDetailQuery(),
     useDeleteImportInboxMutation: () => ({ mutate: mockDeleteImportInbox }),
 }))
@@ -93,6 +99,7 @@ const detail = {
 describe('useImportSharedAccountScreen', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-1')

@@ -25,4 +25,6 @@ multisigContractTests(() => adapter, {
         adapter.deriveAddress(parameters),
     ),
     malformedAddress: 'not-an-address',
+    participantScheme: 'ed25519',
+    nonParticipantScheme: 'falcon-1024',
 })

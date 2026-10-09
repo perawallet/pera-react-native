@@ -13,26 +13,24 @@
 import {
     canSignDirectly,
     hasCustody,
-    importFormatsFor,
+    localKeyKindOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    type ChainId,
-    type SigningScheme,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 
-// Multisig slots verify Ed25519 subsignatures only, and algosdk's PQ signer
-// rejects multisig signing outright.
-const MULTISIG_PARTICIPANT_SCHEME: SigningScheme = 'ed25519'
-
-/** False for a local key minted under any other scheme; hardware signs with the participant scheme. */
+/** False for a local key minted under a scheme the chain's participant slots can't verify. */
 export const signsWithParticipantScheme = (
     account: WalletAccount,
     chainId: ChainId,
-): boolean =>
-    !hasCustody(account, 'local') ||
-    importFormatsFor(chainId).find(kind => kind.seed === account.custody.seed)
-        ?.signingScheme === MULTISIG_PARTICIPANT_SCHEME
+): boolean => {
+    if (!hasCustody(account, 'local')) return true
+    const scheme = localKeyKindOf(chainId, account.custody.seed)?.signingScheme
+    return (
+        scheme !== undefined &&
+        multisigChainAdapters.get(chainId).acceptsParticipantScheme(scheme)
+    )
+}
 
 /** Whether a held account may be offered as a participant of a new multisig. */
 export const canBeMultisigParticipant = (

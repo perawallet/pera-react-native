@@ -11,6 +11,7 @@
  */
 
 import type { MultisigChainAdapter } from '@perawallet/wallet-core-multisig'
+import { acceptsAlgorandParticipantScheme } from '../accounts/multisig-participants'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { generateMultisigAddress } from './address'
 import { assembleSignedMultisigTransactions } from './assemble'
@@ -22,4 +23,5 @@ export const algorandMultisigAdapter: MultisigChainAdapter = {
         generateMultisigAddress(version, threshold, addresses),
     assembleSignedTransactions: assembleSignedMultisigTransactions,
     validateSignRequest: validateAlgorandSignRequest,
+    acceptsParticipantScheme: acceptsAlgorandParticipantScheme,
 }

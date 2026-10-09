@@ -23,6 +23,7 @@ import type {
 } from '@perawallet/wallet-core-multisig'
 import {
     registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
 
@@ -40,6 +41,7 @@ import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 
 beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
+    registerAlgorandMultisigAdapter()
 })
 
 const buildAlgo25Account = (address: string): WalletAccount => ({

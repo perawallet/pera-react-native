@@ -15,6 +15,7 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandMultisigNative } from './multisig-native'
@@ -29,9 +30,18 @@ export const algorandMultisigOf = (
     )
 
 /**
+ * Multisig slots verify Ed25519 subsignatures only, and algosdk's PQ signer
+ * rejects multisig signing outright.
+ */
+export const acceptsAlgorandParticipantScheme = (
+    scheme: SigningScheme,
+): boolean => scheme === 'ed25519'
+
+/**
  * Multisig signing is propose-based, so one local signable participant is
  * enough. Slots bind to the participant's own pubkey, so rekey indirection is
- * not followed. Quantum participants never count — slots verify Ed25519 only.
+ * not followed. Quantum participants never count: see
+ * {@link acceptsAlgorandParticipantScheme}.
  */
 export const canSignViaParticipants = (
     participantAddresses: readonly string[],

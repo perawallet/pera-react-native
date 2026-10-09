@@ -166,6 +166,7 @@ export const registerTestMultisigAdapter = (): void => {
         deriveAddress: notStubbed('deriveAddress'),
         assembleSignedTransactions: notStubbed('assembleSignedTransactions'),
         validateSignRequest: notStubbed('validateSignRequest'),
+        acceptsParticipantScheme: notStubbed('acceptsParticipantScheme'),
     }
     multisigChainAdapters.reset()
     multisigChainAdapters.register(adapter)

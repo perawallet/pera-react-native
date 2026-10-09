@@ -12,7 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import { useAddParticipantContent } from '../useAddParticipantContent'
 
 const LOCAL_ALGO_ADDR = 'A'.repeat(58)
@@ -103,6 +106,7 @@ describe('useAddParticipantContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandAccountsAdapter()
+        registerAlgorandMultisigAdapter()
         multisigCheckState.data = undefined
         multisigCheckState.isFetching = false
         sigTypeCheckState.sigType = null

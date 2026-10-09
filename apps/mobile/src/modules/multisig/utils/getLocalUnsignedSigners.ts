@@ -65,9 +65,7 @@ export const getLocalUnsignedSigners = (
             participantAddress,
         )
         // A key minted under another scheme holds its own keyPairId but can
-        // never contribute a usable subsignature. Mirrors
-        // packages/chain-algorand/src/signing/multisig/multisigParticipants.ts's
-        // getLocalParticipants; keep both in agreement.
+        // never contribute a usable subsignature.
         if (!account || !canSignAsParticipant(account, chainId)) continue
 
         result.push(account)

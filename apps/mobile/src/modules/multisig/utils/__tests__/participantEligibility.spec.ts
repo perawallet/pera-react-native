@@ -14,7 +14,11 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountForType } from '@test-utils/accountCustody'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import {
     canBeMultisigParticipant,
     canSignAsParticipant,
@@ -28,6 +32,7 @@ vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => ({
 describe('participantEligibility', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        registerAlgorandMultisigAdapter()
     })
 
     it.each([
@@ -58,6 +63,19 @@ describe('participantEligibility', () => {
         ).toBe(true)
         expect(
             signsWithParticipantScheme(accountForType('watch'), 'algorand'),
+        ).toBe(true)
+    })
+
+    it("follows the chain's multisig adapter on which schemes fill a slot", () => {
+        const adapter = multisigChainAdapters.get('algorand')
+        multisigChainAdapters.reset()
+        multisigChainAdapters.register({
+            ...adapter,
+            acceptsParticipantScheme: () => true,
+        })
+
+        expect(
+            canBeMultisigParticipant(accountForType('quantum'), 'algorand'),
         ).toBe(true)
     })
 
