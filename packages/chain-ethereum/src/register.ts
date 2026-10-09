@@ -21,6 +21,7 @@ import {
 import {
     addressCodecs,
     keyDerivations,
+    transactionPlanners,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -29,6 +30,7 @@ import {
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { ethereumPlannerAdapter } from './signing/adapter'
 
 // The registries ignore a repeat of the same instance but reject a new one, so
 // the context-bound adapters are built once; every context the app hands in
@@ -41,6 +43,7 @@ export const registerChain = (ctx: ChainContext): void => {
     assetsAdapter ??= createEthereumAssetsAdapter(ctx)
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
+    transactionPlanners.register(ethereumPlannerAdapter)
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
 }

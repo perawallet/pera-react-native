@@ -17,9 +17,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ScopeChangedError,
+    transactionPlanners,
     type ChainId,
     type ChainScope,
-    type SigningRequest,
+    type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
@@ -220,13 +221,7 @@ const buildUnsignedTransactionGroups = (
     scope: ChainScope,
     source: SourceMetadata,
 ): SignableGroup[] => {
-    const planner = plannerAdapterForScope(scope)
-    const plan = planner.plan?.bind(planner)
-    if (!plan) {
-        throw new InvalidSignableDataError(
-            `${scope.chainId} has no planner for chain-neutral transactions`,
-        )
-    }
+    const planner = transactionPlanners.get(scope.chainId)
 
     const bySigner = new Map<
         string,
@@ -237,7 +232,7 @@ const buildUnsignedTransactionGroups = (
             throw new InvalidSignableDataError(MIXED_SHAPES)
         }
         // Planned first: a planner refuses another chain's transaction.
-        const signers = new Set(planSigners(plan, tx))
+        const signers = new Set(planSigners(planner, tx))
         // Built for another network than the chain's selected one, by a dApp
         // or before the user switched.
         if (tx.scope.networkId !== scope.networkId) {
@@ -275,11 +270,11 @@ const buildUnsignedTransactionGroups = (
 
 // A payload the chain can't read is untrusted data, not an internal fault.
 const planSigners = (
-    plan: (transaction: UnsignedTransaction) => SigningRequest[],
+    planner: TransactionPlanner,
     transaction: UnsignedTransaction,
 ): string[] => {
     try {
-        return plan(transaction).map(entry => entry.signer)
+        return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
         throw new InvalidSignableDataError(
             error instanceof Error ? error.message : String(error),
@@ -428,6 +423,7 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     scope: input.scope,
     encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
+    keyStore: input.keyStore,
 })
 
 /**

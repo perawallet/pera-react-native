@@ -11,10 +11,12 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
-import type {
-    ChainScope,
-    SigningRequest,
-    UnsignedTransaction,
+import {
+    transactionPlanners,
+    type ChainScope,
+    type SigningRequest,
+    type TransactionPlanner,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
@@ -97,7 +99,10 @@ export const makeUnsignedTransaction = (
     chainData: { family: 'evm' },
 })
 
-/** Names the payload's `from` as the one signer, as a single-signature chain plans. */
+/**
+ * Names the payload's `from` as the one signer, as a single-signature chain
+ * plans, in the scheme of the Algorand rules the second chain runs on.
+ */
 export const planFromPayload = (
     transaction: UnsignedTransaction,
 ): SigningRequest[] => {
@@ -105,12 +110,35 @@ export const planFromPayload = (
     if (transaction.scope.chainId !== SECOND_CHAIN_SCOPE.chainId) {
         throw new Error(`Not a ${SECOND_CHAIN_SCOPE.chainId} transaction`)
     }
+    const { from } = transaction.payload as { from: string }
     return [
         {
             requestIndex: 0,
-            signer: (transaction.payload as { from: string }).from,
-            scheme: 'secp256k1',
-            payload: new Uint8Array(32),
+            signer: from,
+            scheme: 'ed25519',
+            // Copied into this realm: jsdom's TextEncoder returns a foreign Uint8Array.
+            payload: new Uint8Array(new TextEncoder().encode(from)),
         },
     ]
+}
+
+/** Plans with `plan` and assembles by concatenating the signatures. */
+export const fakeTransactionPlanner = (
+    plan: TransactionPlanner['plan'] = planFromPayload,
+): TransactionPlanner => ({
+    chainId: SECOND_CHAIN_SCOPE.chainId,
+    plan,
+    assemble: (transaction, signatures) => ({
+        scope: transaction.scope,
+        id: `signed-by-${signatures.map(s => s.signer).join(',')}`,
+        bytes: new Uint8Array(signatures.flatMap(s => [...s.bytes])),
+    }),
+})
+
+export const registerFakeTransactionPlanner = (
+    planner: TransactionPlanner = fakeTransactionPlanner(),
+): TransactionPlanner => {
+    transactionPlanners.reset()
+    transactionPlanners.register(planner)
+    return planner
 }

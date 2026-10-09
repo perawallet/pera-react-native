@@ -15,18 +15,20 @@ import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccount
 import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
     addressCodecs,
+    ChainAdapterNotRegisteredError,
     ScopeChangedError,
+    transactionPlanners,
     type AddressCodec,
 } from '@perawallet/wallet-core-chain-contract'
-import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     SECOND_CHAIN_SCOPE,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
+    fakeTransactionPlanner,
     planFromPayload,
+    registerFakeTransactionPlanner,
 } from '../../__tests__/transactions'
-import { plannerChainAdapters } from '../../chain-adapter'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -516,12 +518,7 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
     })
 
     beforeEach(() => {
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: planFromPayload,
-            }),
-        )
+        registerFakeTransactionPlanner()
     })
 
     it("groups each transaction under the signer its chain's planner names, keeping its position", () => {
@@ -591,27 +588,20 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
         ).toThrow(InvalidSignableDataError)
     })
 
-    it("refuses when the chain's planner can't plan chain-neutral transactions", () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({ chainId: SECOND_CHAIN_SCOPE.chainId }),
-        )
+    it('refuses a chain with no transaction planner', () => {
+        transactionPlanners.reset()
 
         expect(() =>
             resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
-        ).toThrow(InvalidSignableDataError)
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 
     it('refuses a transaction that needs more than one signer', () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: transaction => [
-                    ...planFromPayload(transaction),
-                    { ...planFromPayload(transaction)[0], signer: ALSO_OURS },
-                ],
-            }),
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(transaction => [
+                ...planFromPayload(transaction),
+                { ...planFromPayload(transaction)[0], signer: ALSO_OURS },
+            ]),
         )
 
         expect(() =>
@@ -642,13 +632,9 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
     })
 
     it("refuses a payload the chain's planner can't read, as untrusted data", () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: () => {
-                    throw new Error('The payload is malformed')
-                },
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(() => {
+                throw new Error('The payload is malformed')
             }),
         )
 

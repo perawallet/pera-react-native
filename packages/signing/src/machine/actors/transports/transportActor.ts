@@ -78,11 +78,11 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         // with "should have been authorized by <auth>"), and no hop for cosign
         // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
-        const dataType = signingResults[0]?.signedData.type ?? 'transactions'
+        const signedType = signingResults[0]?.signedData.type ?? 'transactions'
         const authAccount = resolveSigningAccount(
             signerAccount,
             source,
-            dataType,
+            signedType === 'signed-transactions' ? 'transactions' : signedType,
             allAccounts,
             scope.chainId,
         )

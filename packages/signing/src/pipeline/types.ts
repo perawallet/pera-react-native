@@ -17,6 +17,7 @@ import type {
     PeraTransaction,
     PeraSignedTransaction,
     PeraTransactionType,
+    SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -372,6 +373,12 @@ export interface SignedTransactionData {
     signed: PeraSignedTransaction[]
 }
 
+/** Chain-neutral transactions as their chain's planner assembled them. */
+export interface SignedChainTransactionsData {
+    type: 'signed-transactions'
+    signed: SignedTransaction[]
+}
+
 export interface SignedArbitraryData {
     type: 'arbitrary-data'
     signatures: Uint8Array[]
@@ -384,6 +391,7 @@ export interface SignedAuthData {
 
 export type SignedData =
     | SignedTransactionData
+    | SignedChainTransactionsData
     | SignedArbitraryData
     | SignedAuthData
 

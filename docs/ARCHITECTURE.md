@@ -262,6 +262,13 @@ its payload. One built for a network other than its chain's selected one fails w
 source can't set one the pipeline would ignore. Algorand's own signing paths sign only Algorand
 transactions.
 
+A chain-neutral transaction is signed through its chain's `TransactionPlanner`, registered in
+`transactionPlanners` in chain-contract so a chain package registers it without depending on
+packages/signing. `plan` names each signature and its exact bytes, the wallet signs only those, each
+with the key of the account the request names in the scheme it names, and `assemble` builds the
+signed transaction. No other path hands chain-neutral bytes to the key store, so a request can't
+have arbitrary bytes signed, which is what `eth_sign` would allow.
+
 ## State management
 
 Zustand holds client state (user settings, wallet accounts). TanStack Query holds server state

@@ -6,7 +6,8 @@
     // program excludes the specs that import it.
     "paths": {
       "@perawallet/wallet-core-chain-algorand/accounts": ["../chain-algorand/src/accounts/index.ts"],
-      "@perawallet/wallet-core-chain-algorand/descriptor": ["../chain-algorand/src/descriptor/index.ts"]
+      "@perawallet/wallet-core-chain-algorand/descriptor": ["../chain-algorand/src/descriptor/index.ts"],
+      "@perawallet/wallet-core-chain-ethereum/testing": ["../chain-ethereum/src/__tests__/testing.ts"]
     }
   },
   "include": [

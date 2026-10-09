@@ -26,12 +26,17 @@ import type {
 import type { SignerCustody } from './utils/resolveSignerCredential'
 import {
     isInteractiveSource,
+    isUnsignedTransactionsData,
     type AnalyzedSignableGroup,
     type SignableAnalysis,
     type SigningResult,
     type TransportResult,
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
+import {
+    signPlannedGroups,
+    type PlannedSignerInput,
+} from './actors/signers/signPlannedGroups'
 import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
@@ -45,6 +50,11 @@ import {
     type LocalKeySignerInput,
     type MultisigSignerInput,
 } from '../chain-adapter'
+
+type LocalSignerInput = LocalKeySignerInput & PlannedSignerInput
+
+const isPlannedGroup = (group: AnalyzedSignableGroup): boolean =>
+    group.data.type === 'transactions' && isUnsignedTransactionsData(group.data)
 
 /** The next custody with groups left to sign, or undefined once all are done. */
 const getNextPendingCustody = (
@@ -88,9 +98,11 @@ export const signingMachine = setup({
     // lifecycle, parent-forwarded events).
     actors: {
         analyzerActor,
-        localKeySignerActor: fromPromise<SigningResult[], LocalKeySignerInput>(
+        localKeySignerActor: fromPromise<SigningResult[], LocalSignerInput>(
             ({ input }) =>
-                localKeySignerAdapterFor(input.scope).signGroups(input),
+                input.groups.length > 0 && input.groups.every(isPlannedGroup)
+                    ? signPlannedGroups(input)
+                    : localKeySignerAdapterFor(input.scope).signGroups(input),
         ),
         hardwareSigningMachine,
         multisigSignerActor: fromPromise<SigningResult[], MultisigSignerInput>(
@@ -366,6 +378,7 @@ export const signingMachine = setup({
                             signArbitraryData: context.deps.signArbitraryData,
                             signAuthData: context.deps.signAuthData,
                             scope: context.deps.scope,
+                            keyStore: context.deps.keyStore,
                         }),
                         onDone: {
                             target: 'dispatching',

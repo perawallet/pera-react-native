@@ -22,7 +22,12 @@ export {
     FIXTURE_CHAIN_ID,
     fixtureCodec,
     fixtureDerivation,
+    fixturePlanner,
 } from './fixture-chain'
+export {
+    transactionPlannerContractTests,
+    type TransactionPlannerContractFixtures,
+} from './transaction-planner-contract'
 export {
     createFakeChainKeyStore,
     keyDerivationContractTests,
