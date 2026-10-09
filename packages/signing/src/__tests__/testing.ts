@@ -11,6 +11,10 @@
  */
 
 export {
+    broadcasterContractTests,
+    type BroadcasterContractFixtures,
+} from './broadcaster-contract'
+export {
     reviewerContractTests,
     type ReviewerContractFixtures,
 } from './reviewer-contract'
