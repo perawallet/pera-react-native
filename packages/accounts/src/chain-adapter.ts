@@ -123,7 +123,12 @@ export type ObservedChainState = Pick<
 export type AccountChangeSignal = {
     /** Whether any of the addresses changed after the cursor. */
     changed: boolean
-    /** The chain position (block or round) to pass as the next cursor. */
+    /**
+     * The chain position (block or round) to pass as the next cursor. After a
+     * change it is only a fallback: the caller checkpoints on the lowest
+     * `observedRound` its reads returned, since a change-signal source ahead
+     * of the node the reads came from would otherwise skip a change.
+     */
     cursor: number
 }
 

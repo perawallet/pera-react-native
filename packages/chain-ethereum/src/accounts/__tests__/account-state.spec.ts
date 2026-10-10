@@ -348,6 +348,37 @@ describe('createEthereumAccountStateOps', () => {
             )
         })
 
+        it.each([401, 403])(
+            'follows the RPC head for the rest of the session after a %i',
+            async status => {
+                let shouldRefreshRequests = 0
+                server.use(
+                    ...peraEvmHandlers({
+                        baseUrl: PERA_URL,
+                        blockFollowing: () => {
+                            shouldRefreshRequests += 1
+                            return status
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        rpcUrl: RPC_URL,
+                        responses: { eth_blockNumber: '0x30' },
+                    }),
+                )
+                const ops = createEthereumAccountStateOps(
+                    contextWith(['blockFollowing']),
+                )
+
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 40),
+                ).resolves.toEqual({ changed: true, cursor: 48 })
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 48),
+                ).resolves.toEqual({ changed: false, cursor: 48 })
+                expect(shouldRefreshRequests).toBe(1)
+            },
+        )
+
         it('rejects a response that does not match the schema', async () => {
             server.use(
                 ...peraEvmHandlers({

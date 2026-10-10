@@ -15,6 +15,7 @@ import {
     accountsChainAdapters,
     buildAccount,
 } from '@perawallet/wallet-core-accounts'
+import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
     keyDerivations,
@@ -22,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
+import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
 import { registerChain } from '../register'
 
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
@@ -32,14 +34,18 @@ describe('registerChain', () => {
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
+        assetsChainAdapters.reset()
     })
 
-    it('registers the address codec, key derivation and accounts adapter', () => {
+    it('registers the address codec, key derivation, and accounts and assets adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(assetsChainAdapters.get('ethereum').getNativeAsset()).toBe(
+            ETHEREUM_NATIVE_ASSET,
+        )
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

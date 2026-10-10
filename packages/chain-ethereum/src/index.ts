@@ -18,10 +18,9 @@ export {
     type EthereumAccountStateOps,
 } from './accounts'
 export {
-    createEthereumAssetOps,
+    createEthereumAssetsAdapter,
     ETHEREUM_NATIVE_ASSET,
-    type EthereumAssetOps,
-    type EthereumAssetPersistence,
+    NativePriceUnavailableError,
 } from './assets'
 export {
     createEvmClient,

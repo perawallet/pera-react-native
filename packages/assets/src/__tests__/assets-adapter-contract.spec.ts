@@ -17,7 +17,10 @@ import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '../models'
-import { assetMetadataContractTests } from './assets-metadata-contract'
+import {
+    assetMetadataContractTests,
+    assetPriceContractTests,
+} from './assets-adapter-contract'
 import { FAKE_NATIVE_ASSET, fakeAssetsAdapter } from './fakeAssetsChain'
 
 const persisted: string[] = []
@@ -56,6 +59,27 @@ assetMetadataContractTests(
         token: TOKEN,
         handlers: [],
         persistedIds: () => persisted,
+    },
+    'fake',
+)
+
+const PRICED = { assetId: '31566704', usdPrice: new Decimal('1.0001') }
+const UNPRICED_ID = '386192725'
+const ALGO_PRICE = new Decimal('0.25')
+
+assetPriceContractTests(
+    () =>
+        fakeAssetsAdapter({
+            fetchUsdPrices: async ids =>
+                ids.includes(PRICED.assetId) ? [PRICED] : [],
+            fetchNativeUsdPrice: async () => ALGO_PRICE,
+        }),
+    {
+        scope: scopeForLegacyNetwork('mainnet'),
+        priced: PRICED,
+        unpricedAssetId: UNPRICED_ID,
+        nativeUsdPrice: ALGO_PRICE,
+        handlers: [],
     },
     'fake',
 )

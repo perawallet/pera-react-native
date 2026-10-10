@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
+import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 // Type-only, so a chain package can run this suite without loading the database.
 import type { AssetsChainAdapter } from '../chain-adapter'
@@ -92,6 +93,70 @@ export const assetMetadataContractTests = (
             await expect(
                 makeOps().syncAssets([fixtures.nativeAssetId], scope),
             ).resolves.toBeUndefined()
+        })
+    })
+}
+
+export type AssetPriceOps = Pick<
+    AssetsChainAdapter,
+    | 'chainId'
+    | 'getNativeAsset'
+    | 'maxPriceIdsPerRequest'
+    | 'fetchUsdPrices'
+    | 'fetchNativeUsdPrice'
+>
+
+export interface AssetPriceContractFixtures {
+    scope: ChainScope
+    /** A token the price source under `handlers` prices. */
+    priced: { assetId: string; usdPrice: Decimal }
+    /** A token the price source knows but has no price for. */
+    unpricedAssetId: string
+    nativeUsdPrice: Decimal
+    /** Installed before every case. */
+    handlers: readonly RequestHandler[]
+}
+
+/** The price half of `AssetsChainAdapter`: a missing price is left out, never priced 0. */
+export const assetPriceContractTests = (
+    makeOps: () => AssetPriceOps,
+    fixtures: AssetPriceContractFixtures,
+    label?: string,
+): void => {
+    const server = setupServer()
+    const { scope, priced } = fixtures
+
+    describe(`AssetsChainAdapter price contract: ${makeOps().chainId}${label ? ` (${label})` : ''}`, () => {
+        beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+        beforeEach(() => server.use(...fixtures.handlers))
+        afterEach(() => server.resetHandlers())
+        afterAll(() => server.close())
+
+        it('takes at least one id per request', () => {
+            expect(makeOps().maxPriceIdsPerRequest).toBeGreaterThan(0)
+        })
+
+        it('prices a priced token in USD', async () => {
+            const rows = await makeOps().fetchUsdPrices([priced.assetId], scope)
+
+            expect(rows).toHaveLength(1)
+            expect(rows[0]!.assetId).toBe(priced.assetId)
+            expect(rows[0]!.usdPrice.equals(priced.usdPrice)).toBe(true)
+        })
+
+        it('leaves an unpriced token out rather than pricing it 0', async () => {
+            const rows = await makeOps().fetchUsdPrices(
+                [fixtures.unpricedAssetId, priced.assetId],
+                scope,
+            )
+
+            expect(rows.map(row => row.assetId)).toEqual([priced.assetId])
+        })
+
+        it('prices the native asset', async () => {
+            const price = await makeOps().fetchNativeUsdPrice(scope)
+
+            expect(price.equals(fixtures.nativeUsdPrice)).toBe(true)
         })
     })
 }

@@ -29,3 +29,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: { keys: [] } }),
     getProvider: () => ({ keyValueStorage, chains }),
 }))
+
+// Every Pera EVM route is integrity-guarded; the MSW handlers refuse a request
+// without a token, so specs see the header the app would send.
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    buildIntegrityHeaders: () => ({
+        'x-app-integrity-token': 'test-integrity-token',
+    }),
+}))

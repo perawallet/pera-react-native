@@ -11,8 +11,7 @@
  */
 
 export {
-    createEthereumAssetOps,
-    type EthereumAssetOps,
-    type EthereumAssetPersistence,
-} from './metadata'
+    createEthereumAssetsAdapter,
+    NativePriceUnavailableError,
+} from './adapter'
 export { ETHEREUM_NATIVE_ASSET } from './native-asset'

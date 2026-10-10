@@ -99,6 +99,23 @@ const whitelist = (...addresses: string[]) =>
     })
 
 const server = setupServer()
+
+type RpcCall = { method: string; params: unknown[] }
+
+// Answers nothing, so every request still reaches the RPC fixtures; install it
+// after them, since server.use puts the newest handler first.
+const recordRpcCalls = (): RpcCall[] => {
+    const calls: RpcCall[] = []
+    server.use(
+        http.post(TEST_RPC_URL, async ({ request }) => {
+            const body: unknown = await request.clone().json()
+            calls.push(...((Array.isArray(body) ? body : [body]) as RpcCall[]))
+            return undefined
+        }),
+    )
+    return calls
+}
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
@@ -211,25 +228,23 @@ describe('fetchAccountState token holdings', () => {
     })
 
     it('reads every balance in one call pinned to the read block', async () => {
-        const blocks: unknown[] = []
-        const responder = erc20CallResponder({
-            [USDC]: token(5n),
-            [DAI]: token(7n),
-        })
         server.use(
-            ...rpcAtBlock('0x64', params => {
-                blocks.push(params[1])
-                return responder(params)
-            }),
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({ [USDC]: token(5n), [DAI]: token(7n) }),
+            ),
             ...whitelist(USDC, DAI),
         )
+        const calls = recordRpcCalls()
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
         )
 
         await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
 
-        expect(blocks).toEqual(['0x64'])
+        const ethCalls = calls.filter(call => call.method === 'eth_call')
+        expect(ethCalls).toHaveLength(1)
+        expect(ethCalls[0]!.params[1]).toBe('0x64')
     })
 
     it('makes no balance call when the whitelist lists no tokens', async () => {

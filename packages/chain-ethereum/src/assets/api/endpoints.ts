@@ -10,79 +10,35 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import {
-    eip155ChainIdOf,
-    fromCaip19,
-    InvalidCaip19Error,
-    toCaip19,
-} from '../../blockchain/utils/caip19'
+import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import {
     assetsResponseSchema,
-    whitelistItemSchema,
     whitelistResponseSchema,
     type AssetItemSchemaOutput,
 } from './schema'
+import { toWhitelistRow, type WhitelistRow } from './transformers'
 
 export const ASSETS_SERVICE = 'assets'
+export const PRICES_SERVICE = 'prices'
 
 export const ASSETS_PATH = '/api/v4/assets/'
+// The backend rejects a request naming more ids than this (422).
+export const ASSETS_MAX_IDS = 500
+
 export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
 
 /**
- * `asset` is null when the backend has no metadata for the token: it does not
- * know it, or it quarantined it (`isQuarantined`).
+ * One item per id, in request order; at most `ASSETS_MAX_IDS` ids. Rejects
+ * with a `PeraNetworkError` on a failed request.
  */
-export type AssetItem = {
-    assetId: string
-    asset: PeraAsset | null
-    isQuarantined: boolean
-}
-
-export type WhitelistRow = {
-    /** App asset id: the native id or a checksummed contract address. */
-    assetId: string
-    type: 'native' | 'erc20'
-}
-
-// isFavorited and isPriceAlertEnabled stay unset: the persisted row keeps the
-// user's own flags only when the incoming ones are absent.
-const toPeraAsset = (
-    assetId: string,
-    item: AssetItemSchemaOutput,
-): PeraAsset | null =>
-    item.fraction_decimals === null
-        ? null
-        : {
-              assetId,
-              name: item.name ?? undefined,
-              unitName: item.unit_name ?? undefined,
-              decimals: item.fraction_decimals,
-              // The backend sends no supply: 0 unless the asset came from a
-              // chain read.
-              totalSupply: new Decimal(0),
-              creator: { address: '' },
-              peraMetadata: {
-                  isDeleted: false,
-                  verificationTier: item.verification_tier,
-                  logo: item.logo,
-                  type: 'standard_asset',
-              },
-          }
-
-// The backend withholds a quarantined token's metadata but keeps its tier.
-const isQuarantined = (item: AssetItemSchemaOutput): boolean =>
-    item.fraction_decimals === null && item.verification_tier === 'suspicious'
-
-/** At most 500 ids per call; answers in request order. Rejects with a `PeraNetworkError` on a failed request. */
 export const fetchAssetItems = async (
     scope: ChainScope,
     assetIds: string[],
-): Promise<AssetItem[]> => {
+): Promise<AssetItemSchemaOutput[]> => {
     if (assetIds.length === 0) return []
     const ids = assetIds.map(id => toCaip19(id, scope))
     const { data } = await queryClient<unknown>({
@@ -91,6 +47,7 @@ export const fetchAssetItems = async (
         scope,
         method: 'POST',
         url: ASSETS_PATH,
+        headers: buildIntegrityHeaders(),
         data: { ids },
     })
     const { results } = assetsResponseSchema.parse(data)
@@ -106,27 +63,7 @@ export const fetchAssetItems = async (
             `Pera assets for ${scope.chainId}/${scope.networkId} answered out of request order`,
         )
     }
-    return results.map((item, index) => ({
-        assetId: assetIds[index]!,
-        asset: toPeraAsset(assetIds[index]!, item),
-        isQuarantined: isQuarantined(item),
-    }))
-}
-
-const toWhitelistRow = (
-    row: unknown,
-    scope: ChainScope,
-): WhitelistRow | null => {
-    const parsed = whitelistItemSchema.safeParse(row)
-    if (!parsed.success) return null
-    const { type, asset_id } = parsed.data
-    if (type !== 'native' && type !== 'erc20') return null
-    try {
-        return { assetId: fromCaip19(asset_id, scope), type }
-    } catch (error) {
-        if (error instanceof InvalidCaip19Error) return null
-        throw error
-    }
+    return results
 }
 
 /**
@@ -143,6 +80,7 @@ export const fetchWhitelist = async (
         scope,
         method: 'GET',
         url: whitelistPath(eip155ChainIdOf(scope)),
+        headers: buildIntegrityHeaders(),
     })
     const { results } = whitelistResponseSchema.parse(data)
     return results.flatMap(row => toWhitelistRow(row, scope) ?? [])
