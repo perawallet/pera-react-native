@@ -18,13 +18,19 @@ import {
     getAddress,
     multicall3Abi,
     type Address,
+    type Hex,
     type PublicClient,
 } from 'viem'
 import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetType,
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import { partition } from '@perawallet/wallet-core-shared'
 import { createEvmClient } from './createEvmClient'
 
 /**
@@ -61,8 +67,8 @@ export const readErc20 = async (
         creator: { address: '' },
         peraMetadata: {
             isDeleted: false,
-            verificationTier: 'unverified',
-            type: 'standard_asset',
+            verificationTier: PeraAssetVerificationTier.unverified,
+            type: PeraAssetType.standard_asset,
         },
     }
 }
@@ -72,51 +78,114 @@ export const readErc20 = async (
 export const MULTICALL3_ADDRESS: Address =
     '0xcA11bde05977b3631167028862bE2a173976CA11'
 
-/**
- * `balanceOf(holder)` for every token in one `aggregate3` call at `blockNumber`,
- * in base units keyed by checksummed contract. A token whose call reverts is
- * left out; a failed call as a whole rejects.
- */
-export const readErc20Balances = async (
-    client: PublicClient,
-    holder: string,
-    tokenIds: string[],
-    blockNumber: bigint,
-): Promise<Map<string, bigint>> => {
-    if (tokenIds.length === 0) return new Map()
-    const owner = getAddress(holder)
-    const tokens = tokenIds.map(id => getAddress(id))
-    const callData = encodeFunctionData({
+export type HolderBalances = {
+    /** Base units. */
+    wei: bigint
+    /** Base units, keyed by checksummed contract; a token whose read failed is absent. */
+    tokens: Map<string, bigint>
+}
+
+// Bounds the gas one eth_call spends, well under the caps nodes put on it.
+const CALLS_PER_AGGREGATE = 300
+
+type BalanceCall = {
+    holder: Address
+    /** Null for the holder's ETH balance. */
+    token: Address | null
+    call: { target: Address; allowFailure: boolean; callData: Hex }
+}
+
+const balanceCalls = (holder: Address, tokens: Address[]): BalanceCall[] => {
+    const balanceOf = encodeFunctionData({
         abi: erc20Abi,
         functionName: 'balanceOf',
-        args: [owner],
+        args: [holder],
     })
-    // Not client.multicall: with allowFailure it turns a failed call as a
-    // whole into per-token failures, which would wipe every token holding.
-    const results = await client.readContract({
-        address: MULTICALL3_ADDRESS,
-        abi: multicall3Abi,
-        functionName: 'aggregate3',
-        args: [
-            tokens.map(target => ({ target, allowFailure: true, callData })),
-        ],
-        blockNumber,
-    })
-    const balances = new Map<string, bigint>()
-    results.forEach(({ success, returnData }, index) => {
-        if (!success) return
-        try {
-            balances.set(
-                tokens[index]!,
-                decodeFunctionResult({
-                    abi: erc20Abi,
-                    functionName: 'balanceOf',
-                    data: returnData,
+    return [
+        {
+            holder,
+            token: null,
+            // A failed ETH read fails the aggregate: a holder without it
+            // would read as empty.
+            call: {
+                target: MULTICALL3_ADDRESS,
+                allowFailure: false,
+                callData: encodeFunctionData({
+                    abi: multicall3Abi,
+                    functionName: 'getEthBalance',
+                    args: [holder],
                 }),
-            )
-        } catch {
-            // A target with no code "succeeds" with empty return data.
-        }
-    })
+            },
+        },
+        ...tokens.map(token => ({
+            holder,
+            token,
+            call: { target: token, allowFailure: true, callData: balanceOf },
+        })),
+    ]
+}
+
+/**
+ * Every holder's ETH balance and `balanceOf` for every token, through Multicall3
+ * `aggregate3` at `blockNumber`, keyed by checksummed holder. The aggregates go
+ * out together, so a batching transport sends them as one request. A token
+ * whose call reverts or answers with no or truncated data is left out; a
+ * failed aggregate rejects the whole read.
+ */
+export const readBalances = async (
+    client: PublicClient,
+    holders: string[],
+    tokenIds: string[],
+    blockNumber: bigint,
+): Promise<Map<string, HolderBalances>> => {
+    const tokens = tokenIds.map(id => getAddress(id))
+    const owners = [...new Set(holders.map(holder => getAddress(holder)))]
+    // Not client.multicall: with allowFailure it turns a failed call as a
+    // whole into per-call failures, which would wipe every holding.
+    const chunks = await Promise.all(
+        partition(
+            owners.flatMap(owner => balanceCalls(owner, tokens)),
+            CALLS_PER_AGGREGATE,
+        ).map(async calls => ({
+            calls,
+            results: await client.readContract({
+                address: MULTICALL3_ADDRESS,
+                abi: multicall3Abi,
+                functionName: 'aggregate3',
+                args: [calls.map(({ call }) => call)],
+                blockNumber,
+            }),
+        })),
+    )
+    const balances = new Map<string, HolderBalances>(
+        owners.map(owner => [owner, { wei: 0n, tokens: new Map() }]),
+    )
+    for (const { calls, results } of chunks) {
+        results.forEach(({ success, returnData }, index) => {
+            const { holder, token } = calls[index]!
+            const entry = balances.get(holder)!
+            if (token === null) {
+                entry.wei = decodeFunctionResult({
+                    abi: multicall3Abi,
+                    functionName: 'getEthBalance',
+                    data: returnData,
+                })
+                return
+            }
+            if (!success) return
+            try {
+                entry.tokens.set(
+                    token,
+                    decodeFunctionResult({
+                        abi: erc20Abi,
+                        functionName: 'balanceOf',
+                        data: returnData,
+                    }),
+                )
+            } catch {
+                // A target with no code "succeeds" with empty return data.
+            }
+        })
+    }
     return balances
 }

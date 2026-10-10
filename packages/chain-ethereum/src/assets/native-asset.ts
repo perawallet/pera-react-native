@@ -11,7 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    DEFAULT_ASSET_METADATA,
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { ethereumDescriptor } from '../descriptor'
 
 const { nativeAsset } = ethereumDescriptor
@@ -28,9 +32,7 @@ export const ETHEREUM_NATIVE_ASSET: PeraAsset = {
     totalSupply: new Decimal(0),
     creator: { address: '' },
     peraMetadata: {
-        isDeleted: false,
-        verificationTier: 'verified',
-        isFavorited: false,
-        isPriceAlertEnabled: false,
+        ...DEFAULT_ASSET_METADATA,
+        verificationTier: PeraAssetVerificationTier.verified,
     },
 }

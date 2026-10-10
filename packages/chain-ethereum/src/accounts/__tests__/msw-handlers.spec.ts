@@ -23,13 +23,29 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const post = async (path: string, body: unknown) => {
-    const response = await fetch(`${PERA_URL}${path}`, {
+const AUTHENTICATED = {
+    'x-api-key': 'key',
+    'x-app-integrity-token': 'token',
+}
+
+const send = (
+    path: string,
+    body: unknown,
+    headers: Record<string, string> = AUTHENTICATED,
+) =>
+    fetch(`${PERA_URL}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify(body),
     })
-    return response.json()
+
+const post = async (path: string, body: unknown) =>
+    (await send(path, body)).json()
+
+const SHOULD_REFRESH_BODY = {
+    chain: 'eip155:1',
+    account_addresses: ['0x00000000000000000000000000000000000000aa'],
+    last_refreshed_round: 40,
 }
 
 describe('unknownAssetItem', () => {
@@ -40,6 +56,64 @@ describe('unknownAssetItem', () => {
 })
 
 describe('peraEvmHandlers', () => {
+    it.each([
+        ['/api/v4/accounts/should-refresh/', SHOULD_REFRESH_BODY],
+        ['/api/v4/assets/', { ids: [USDC_CAIP19] }],
+    ])(
+        'refuses %s without an API key, as the backend does',
+        async (path, body) => {
+            server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
+
+            const response = await send(path, body, {
+                'x-app-integrity-token': 'token',
+            })
+
+            expect(response.status).toBe(401)
+        },
+    )
+
+    it.each([
+        ['/api/v4/accounts/should-refresh/', SHOULD_REFRESH_BODY],
+        ['/api/v4/assets/', { ids: [USDC_CAIP19] }],
+    ])(
+        'refuses %s without an integrity token, as the backend does',
+        async (path, body) => {
+            server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
+
+            const response = await send(path, body, { 'x-api-key': 'key' })
+
+            expect(response.status).toBe(403)
+            await expect(response.json()).resolves.toMatchObject({
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+            })
+        },
+    )
+
+    it('refuses the whitelist without an integrity token', async () => {
+        server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
+
+        const response = await fetch(`${PERA_URL}/api/v3/evm/1/tokens/`, {
+            headers: { 'x-api-key': 'key' },
+        })
+
+        expect(response.status).toBe(403)
+    })
+
+    it('accepts the staging bypass in place of a token', async () => {
+        server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
+
+        const response = await send(
+            '/api/v4/assets/',
+            { ids: [] },
+            {
+                'x-api-key': 'key',
+                'x-bypass-integrity': 'DEVELOPMENT_AND_STAGING_ONLY',
+            },
+        )
+
+        expect(response.status).toBe(200)
+    })
+
     it('answers an asset id lowercased', async () => {
         server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
 
@@ -65,11 +139,10 @@ describe('peraEvmHandlers', () => {
     it('reports no refresh past a cursor by default', async () => {
         server.use(...peraEvmHandlers({ baseUrl: PERA_URL }))
 
-        const answer = await post('/api/v4/accounts/should-refresh/', {
-            chain: 'eip155:1',
-            account_addresses: ['0x00000000000000000000000000000000000000aa'],
-            last_refreshed_round: 40,
-        })
+        const answer = await post(
+            '/api/v4/accounts/should-refresh/',
+            SHOULD_REFRESH_BODY,
+        )
 
         expect(answer).toEqual({ refresh: false })
     })

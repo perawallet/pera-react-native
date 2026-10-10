@@ -65,6 +65,34 @@ export const nativeWhitelistItem = (
 
 const failWith = (status: number) => HttpResponse.json({}, { status })
 
+const INTEGRITY_BYPASS_VALUE = 'DEVELOPMENT_AND_STAGING_ONLY'
+
+const hasIntegrityToken = (headers: Headers): boolean =>
+    Boolean(headers.get('x-app-integrity-token')) ||
+    /^Bearer\s+\S+$/i.test(headers.get('authorization') ?? '') ||
+    headers.get('x-bypass-integrity') === INTEGRITY_BYPASS_VALUE
+
+/**
+ * The backend's guard on every EVM route: 401 without an API key, 403 without
+ * an app-integrity token or the staging bypass. A request that skips
+ * queryClient or `buildIntegrityHeaders` fails here as it would there.
+ */
+export const rejectUnauthenticated = (request: Request) => {
+    if (!request.headers.get('x-api-key')) {
+        return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
+    if (!hasIntegrityToken(request.headers)) {
+        return HttpResponse.json(
+            {
+                error: 'App integrity token required',
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+            },
+            { status: 403 },
+        )
+    }
+    return undefined
+}
+
 /** The Pera backend's EVM whitelist and v4 asset metadata endpoints. */
 export const peraEvmAssetHandlers = ({
     baseUrl = '*',
@@ -73,14 +101,23 @@ export const peraEvmAssetHandlers = ({
 }: PeraEvmAssetFixtures = {}): RequestHandler[] => {
     const base = baseUrl.replace(/\/+$/, '')
     return [
-        http.get(`${base}${whitelistPath(':chainId')}`, ({ params }) => {
-            if (typeof whitelist === 'number') return failWith(whitelist)
-            const chainId = Number(params.chainId)
-            return HttpResponse.json({
-                results: whitelist[chainId] ?? [nativeWhitelistItem(chainId)],
-            })
-        }),
+        http.get(
+            `${base}${whitelistPath(':chainId')}`,
+            ({ request, params }) => {
+                const refused = rejectUnauthenticated(request)
+                if (refused) return refused
+                if (typeof whitelist === 'number') return failWith(whitelist)
+                const chainId = Number(params.chainId)
+                return HttpResponse.json({
+                    results: whitelist[chainId] ?? [
+                        nativeWhitelistItem(chainId),
+                    ],
+                })
+            },
+        ),
         http.post(`${base}${ASSETS_PATH}`, async ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
             if (typeof assets === 'number') return failWith(assets)
             const { ids } = (await request.json()) as { ids: string[] }
             // The backend answers every id lowercased.

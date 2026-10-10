@@ -26,7 +26,11 @@ import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { fetchAssetItems, fetchWhitelist } from '../endpoints'
 import { nativeWhitelistItem, unknownAssetItem } from '../msw-handlers'
 import type { AssetItemResponse, WhitelistItemResponse } from '../schema'
-import { PERA_URL } from '../../../__tests__/pera-backend'
+import {
+    PERA_URL,
+    TEST_API_KEY,
+    TEST_INTEGRITY_TOKEN,
+} from '../../../__tests__/pera-backend'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -59,89 +63,23 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('fetchAssetItems', () => {
-    it('posts CAIP-19 ids and maps each item to the requested app id', async () => {
+    it('posts CAIP-19 ids with the API key and integrity token, and returns the items', async () => {
         let body: unknown
+        let headers: Headers | undefined
         server.use(
             http.post(`${PERA_URL}/api/v4/assets/`, async ({ request }) => {
                 body = await request.json()
+                headers = request.headers
                 return HttpResponse.json({ results: [usdc] })
             }),
         )
 
-        const [item] = await fetchAssetItems(SCOPE, [USDC])
+        const items = await fetchAssetItems(SCOPE, [USDC])
 
         expect(body).toEqual({ ids: [USDC_CAIP19] })
-        expect(item!.assetId).toBe(USDC)
-        expect(item!.asset).toMatchObject({
-            assetId: USDC,
-            name: 'USD Coin',
-            unitName: 'USDC',
-            decimals: 6,
-            creator: { address: '' },
-            peraMetadata: {
-                verificationTier: 'verified',
-                logo: 'https://pera.test/usdc.png',
-                type: 'standard_asset',
-            },
-        })
-        expect(item!.asset!.totalSupply.toFixed()).toBe('0')
-        expect(item!.isQuarantined).toBe(false)
-    })
-
-    // upsertPeraAssets keeps the local favourite and price alert only when
-    // the incoming value is absent.
-    it('leaves the device-local flags unset', async () => {
-        server.use(
-            http.post(`${PERA_URL}/api/v4/assets/`, () =>
-                HttpResponse.json({ results: [usdc] }),
-            ),
-        )
-
-        const [item] = await fetchAssetItems(SCOPE, [USDC])
-
-        expect(item!.asset!.peraMetadata).not.toHaveProperty('isFavorited')
-        expect(item!.asset!.peraMetadata).not.toHaveProperty(
-            'isPriceAlertEnabled',
-        )
-    })
-
-    it('reports a suspicious item with no metadata as quarantined', async () => {
-        server.use(
-            http.post(`${PERA_URL}/api/v4/assets/`, () =>
-                HttpResponse.json({
-                    results: [
-                        {
-                            ...unknownAssetItem(USDC_CAIP19),
-                            verification_tier: 'suspicious',
-                        },
-                    ],
-                }),
-            ),
-        )
-
-        const [item] = await fetchAssetItems(SCOPE, [USDC])
-
-        expect(item).toEqual({
-            assetId: USDC,
-            asset: null,
-            isQuarantined: true,
-        })
-    })
-
-    it('zips the results with the request in order', async () => {
-        server.use(
-            http.post(`${PERA_URL}/api/v4/assets/`, () =>
-                HttpResponse.json({
-                    results: [unknownAssetItem(DAI_CAIP19), usdc],
-                }),
-            ),
-        )
-
-        const items = await fetchAssetItems(SCOPE, [DAI, USDC])
-
-        expect(items.map(i => i.assetId)).toEqual([DAI, USDC])
-        expect(items[0]!.asset).toBeNull()
-        expect(items[1]!.asset?.unitName).toBe('USDC')
+        expect(headers?.get('x-api-key')).toBe(TEST_API_KEY)
+        expect(headers?.get('x-app-integrity-token')).toBe(TEST_INTEGRITY_TOKEN)
+        expect(items).toEqual([usdc])
     })
 
     it('rejects a response that does not answer the request in order', async () => {
@@ -155,22 +93,21 @@ describe('fetchAssetItems', () => {
         await expect(fetchAssetItems(SCOPE, [USDC, DAI])).rejects.toThrow()
     })
 
-    it('reports an item with no decimals as unknown', async () => {
+    it('accepts the lowercase ids the backend answers with', async () => {
         server.use(
             http.post(`${PERA_URL}/api/v4/assets/`, () =>
                 HttpResponse.json({
-                    results: [{ ...usdc, fraction_decimals: null }],
+                    results: [unknownAssetItem(DAI_CAIP19), usdc],
                 }),
             ),
         )
 
-        const [item] = await fetchAssetItems(SCOPE, [USDC])
+        const items = await fetchAssetItems(SCOPE, [DAI, USDC])
 
-        expect(item).toEqual({
-            assetId: USDC,
-            asset: null,
-            isQuarantined: false,
-        })
+        expect(items.map(item => item.asset_id)).toEqual([
+            DAI_CAIP19,
+            USDC_CAIP19,
+        ])
     })
 
     it('makes no request for an empty list', async () => {

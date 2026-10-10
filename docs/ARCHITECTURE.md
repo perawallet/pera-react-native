@@ -219,8 +219,10 @@ no fallback and should surface as unavailable.
 
 Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client
 of its own: the Pera client in `packages/shared/src/api/query-client.ts` is the one place that adds
-the API key, the integrity token and the device headers. It is built for every configured scope, on
-every chain.
+the API key and the device headers. It is built for every configured scope, on every chain. It adds
+the integrity token only as the web build's Bearer, so a call to an integrity-guarded route (the
+card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
+`@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 
 A chain's ky-based node backends (`algod`, `indexer`) come from the `NodeBackendsAdapter` it
 registers (`packages/shared/src/api/node-backends.ts`): URL, token header and token. `queryClient`

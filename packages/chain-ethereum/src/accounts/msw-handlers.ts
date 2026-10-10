@@ -13,6 +13,7 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import {
     peraEvmAssetHandlers,
+    rejectUnauthenticated,
     type PeraEvmAssetFixtures,
 } from '../assets/api/msw-handlers'
 import { SHOULD_REFRESH_PATH, type ShouldRefreshResponse } from './endpoints'
@@ -52,6 +53,8 @@ export const peraEvmHandlers = ({
     http.post(
         `${(assetFixtures.baseUrl ?? '*').replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
         async ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
             const outcome =
                 typeof blockFollowing === 'function'
                     ? blockFollowing(
