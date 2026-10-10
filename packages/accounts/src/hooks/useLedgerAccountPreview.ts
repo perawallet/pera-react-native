@@ -27,7 +27,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
     LedgerAccountPreviewAsset,
-    LedgerAccountRekeyRelationship,
+    LedgerAccountDelegation,
     UseLedgerAccountPreviewResult,
 } from '../models'
 import { recordAuthority } from '../store/recordAuthority'
@@ -40,11 +40,11 @@ export const useLedgerAccountPreview = (
 ): UseLedgerAccountPreviewResult => {
     const nativeAsset = useNativeAsset()
     const onChain = useOnChainAccountStateQuery(address, scope)
-    const rekeyed = useDelegatedAddressesQuery(address, scope)
+    const delegated = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
     const authorityAddress = onChain.data?.authorityAddress
 
-    // The sheet's synthetic watch row reads its rekey state from the slice.
+    // The sheet's synthetic watch row reads its delegation state from the slice.
     useEffect(() => {
         if (authorityAddress && authorityAddress !== address) {
             recordAuthority(scope, address, authorityAddress)
@@ -126,15 +126,18 @@ export const useLedgerAccountPreview = (
             })
         }
 
-        let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
+        let delegation: LedgerAccountDelegation = { kind: 'none' }
         if (authorityAddress && authorityAddress !== address) {
-            rekey = { kind: 'delegatedTo', authorityAddress }
+            delegation = { kind: 'delegatedTo', authorityAddress }
         } else if (
-            !rekeyed.isError &&
-            rekeyed.rekeyedAddresses &&
-            rekeyed.rekeyedAddresses.length > 0
+            !delegated.isError &&
+            delegated.delegatedAddresses &&
+            delegated.delegatedAddresses.length > 0
         ) {
-            rekey = { kind: 'canSignFor', addresses: rekeyed.rekeyedAddresses }
+            delegation = {
+                kind: 'canSignFor',
+                addresses: delegated.delegatedAddresses,
+            }
         }
 
         return {
@@ -142,7 +145,7 @@ export const useLedgerAccountPreview = (
             algoBalance,
             totalFiatValue: usdToPreferred(totalUsd),
             assets: previewAssets,
-            rekey,
+            delegation,
         }
     }, [
         address,
@@ -151,8 +154,8 @@ export const useLedgerAccountPreview = (
         heldAssets,
         assets,
         prices,
-        rekeyed.rekeyedAddresses,
-        rekeyed.isError,
+        delegated.delegatedAddresses,
+        delegated.isError,
         usdToPreferred,
     ])
 

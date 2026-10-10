@@ -16,28 +16,28 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { fetchRekeyedAddresses } from '../chain-adapter'
+import { fetchDelegatedAddresses } from '../chain-adapter'
 import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
-import { useIsRekeyAvailable } from './useIsRekeyAvailable'
+import { useIsDelegationAvailable } from './useIsDelegationAvailable'
 
 export type DelegatedScanResult = {
-    /** Accounts the indexer reports are rekeyed to `sourceAddress` AND are
+    /** Accounts the indexer reports are delegated to `sourceAddress` AND are
      * already in the wallet (added previously). Surfaced for context only. */
     importedAddresses: string[]
-    /** Rekeyed accounts not yet in the wallet — candidates for import. */
+    /** Delegated accounts not yet in the wallet — candidates for import. */
     notImportedAddresses: string[]
 }
 
-export type RekeyedSweepCandidate = {
+export type DelegatedSweepCandidate = {
     address: string
-    /** The wallet key the candidate is rekeyed to (its on-chain auth-addr). */
+    /** The wallet key the candidate is delegated to (its on-chain authority). */
     sourceAddress: string
 }
 
-export type RekeyedSweepResult = {
+export type DelegatedSweepResult = {
     importedAddresses: string[]
-    candidates: RekeyedSweepCandidate[]
+    candidates: DelegatedSweepCandidate[]
     /** Keys whose indexer scan failed — a partial sweep, not a void one. */
     failedSources: string[]
 }
@@ -51,10 +51,10 @@ export type ScanAllOptions = {
 const SWEEP_CONCURRENCY = 4
 
 export type UseRescanDelegatedAccountsResult = {
-    /** Hits the indexer for every account whose auth-addr is `sourceAddress`. */
+    /** Looks up every account whose authority is `sourceAddress`. */
     scan: (sourceAddress: string) => Promise<DelegatedScanResult>
     /**
-     * Sweeps every given wallet key with the same auth-addr query, with
+     * Sweeps every given wallet key with the same authority lookup, with
      * bounded concurrency. One key's failure doesn't void the sweep —
      * failed keys are reported so the UI can surface a partial-failure
      * notice.
@@ -62,10 +62,9 @@ export type UseRescanDelegatedAccountsResult = {
     scanAll: (
         sourceAddresses: string[],
         options?: ScanAllOptions,
-    ) => Promise<RekeyedSweepResult>
+    ) => Promise<DelegatedSweepResult>
     /** Persists the chosen addresses as watch accounts whose authority
-     *  is `sourceAddress`. Mirrors Android's `addNewAccount` call
-     *  with `Type.NoAuth, creationType = REKEYED`. Resolves with the number
+     *  is `sourceAddress`. Resolves with the number
      *  of accounts actually persisted — 0 when every address was invalid or
      *  already in the wallet — so callers can react accordingly. */
     importSelected: (
@@ -74,7 +73,7 @@ export type UseRescanDelegatedAccountsResult = {
     ) => Promise<number>
     /** Sweep counterpart of `importSelected`: each candidate is persisted
      *  against its own source key. */
-    importFromSweep: (candidates: RekeyedSweepCandidate[]) => Promise<number>
+    importFromSweep: (candidates: DelegatedSweepCandidate[]) => Promise<number>
 }
 
 export const useRescanDelegatedAccounts = (
@@ -83,14 +82,17 @@ export const useRescanDelegatedAccounts = (
     const addDelegatedWatchAccounts = useAccountsStore(
         state => state.addDelegatedWatchAccounts,
     )
-    const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
+    const isDelegationAvailable = useIsDelegationAvailable(scope.chainId)
 
     const scan = useCallback(
         async (sourceAddress: string): Promise<DelegatedScanResult> => {
-            if (!isRekeyAvailable) {
+            if (!isDelegationAvailable) {
                 return { importedAddresses: [], notImportedAddresses: [] }
             }
-            const addresses = await fetchRekeyedAddresses(sourceAddress, scope)
+            const addresses = await fetchDelegatedAddresses(
+                sourceAddress,
+                scope,
+            )
             // Read the wallet's account set fresh, after the indexer call —
             // a scan can outlive an import/add that lands while the request
             // is in flight, so classification must reflect the latest store
@@ -116,15 +118,15 @@ export const useRescanDelegatedAccounts = (
                 notImportedAddresses: notImported,
             }
         },
-        [scope, isRekeyAvailable],
+        [scope, isDelegationAvailable],
     )
 
     const scanAll = useCallback(
         async (
             sourceAddresses: string[],
             options?: ScanAllOptions,
-        ): Promise<RekeyedSweepResult> => {
-            if (!isRekeyAvailable) {
+        ): Promise<DelegatedSweepResult> => {
+            if (!isDelegationAvailable) {
                 return {
                     importedAddresses: [],
                     candidates: [],
@@ -146,13 +148,13 @@ export const useRescanDelegatedAccounts = (
                         try {
                             foundBySource.set(
                                 source,
-                                await fetchRekeyedAddresses(source, scope),
+                                await fetchDelegatedAddresses(source, scope),
                             )
                         } catch (error) {
                             // One key's indexer failure must not void the
                             // sweep — record it and keep going.
                             logger.warn(
-                                'Rekeyed sweep: scan failed for a source key',
+                                'Delegated sweep: scan failed for a source key',
                                 { source, error },
                             )
                             failedSources.push(source)
@@ -183,7 +185,7 @@ export const useRescanDelegatedAccounts = (
                         imported.add(address)
                         continue
                     }
-                    // An account has one auth-addr, so a candidate should
+                    // An account has one authority, so a candidate should
                     // only ever surface under one key — first hit wins.
                     if (!candidateSource.has(address)) {
                         candidateSource.set(address, source)
@@ -200,21 +202,18 @@ export const useRescanDelegatedAccounts = (
                 failedSources,
             }
         },
-        [scope, isRekeyAvailable],
+        [scope, isDelegationAvailable],
     )
 
     const importSelected = useCallback(
         async (sourceAddress: string, addresses: string[]): Promise<number> => {
             if (addresses.length === 0) return 0
 
-            // Format-validate only — we trust the indexer's auth-addr filter
-            // (`fetchRekeyedAddresses` queries by `auth-addr: sourceAddress`)
-            // to bound which addresses come back. We do NOT re-derive the
-            // on-chain auth relationship before persisting: if the indexer
-            // is wrong about the auth-addr we'd import a watch-only entry
-            // that doesn't actually sign through `sourceAddress`. The next
-            // sync corrects classification, but the address stays imported.
-            // Acceptable trade-off for now; revisit if indexer trust changes.
+            // Format-validate only: `fetchDelegatedAddresses` bounds which
+            // addresses come back, and we do not re-derive the authority
+            // before persisting. A wrong lookup imports a watch-only entry
+            // that doesn't sign through `sourceAddress`; the next sync
+            // corrects classification but the address stays imported.
             const codec = addressCodecs.get(scope.chainId)
             const valid = addresses.filter(address => codec.isValid(address))
             if (valid.length === 0) return 0
@@ -225,7 +224,7 @@ export const useRescanDelegatedAccounts = (
     )
 
     const importFromSweep = useCallback(
-        async (candidates: RekeyedSweepCandidate[]): Promise<number> => {
+        async (candidates: DelegatedSweepCandidate[]): Promise<number> => {
             const bySource = new Map<string, string[]>()
             for (const candidate of candidates) {
                 const group = bySource.get(candidate.sourceAddress) ?? []

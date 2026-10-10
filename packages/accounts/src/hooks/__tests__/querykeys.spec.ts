@@ -55,7 +55,10 @@ describe('query keys', () => {
             getOnChainAccountStateQueryKey('ADDR1', MAINNET),
         ],
         ['opt-in-rounds', getAccountOptInRoundsQueryKey('ADDR1', MAINNET)],
-        ['rekeyed-addresses', getDelegatedAddressesQueryKey('ADDR1', MAINNET)],
+        [
+            'delegated-addresses',
+            getDelegatedAddressesQueryKey('ADDR1', MAINNET),
+        ],
         ['owned-asset-ids', getOwnedAssetIdsQueryKey(MAINNET)],
         ['asset-holders', getAssetHoldersQueryKey('123', MAINNET)],
         [

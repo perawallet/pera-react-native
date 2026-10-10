@@ -15,6 +15,7 @@
 import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
+import { describe, expect, it } from 'vitest'
 import {
     mockAlgodAccountInformation,
     mockIndexerSearchForAccounts,
@@ -31,6 +32,7 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandDescriptor } from '../../descriptor'
 import { algorandAccountsAdapter } from '../adapter'
 import { algorandAccountPresentation } from '../presentation'
 import { seedAuthority } from './seedAuthority'
@@ -117,16 +119,16 @@ accountsContractTests(() => algorandAccountsAdapter, {
         signing: keyed('signing', SIGNER),
         watch: watchAccount(EMPTY, { id: 'watch' }),
     },
-    rekeyed: {
+    delegated: {
         accounts: {
-            account: watchAccount(REKEYED, { id: 'rekeyed' }),
+            account: watchAccount(REKEYED, { id: 'delegated' }),
             auth: keyed('auth', FUNDED),
             next: keyed('next', EMPTY),
         },
         seedAuthority: (address, authAddress) =>
             seedAuthority(address, authAddress),
         authAddress: FUNDED,
-        rekeyedAddresses: [REKEYED],
+        delegatedAddresses: [REKEYED],
         handlers: [
             mockIndexerSearchForAccounts({
                 response: { accounts: [{ address: REKEYED }] },
@@ -145,3 +147,15 @@ accountPresentationContractTests(
         },
     },
 )
+
+describe('Algorand authority delegation', () => {
+    it('is declared exactly when the descriptor supports rekey', () => {
+        expect(!!algorandAccountsAdapter.authority).toBe(
+            algorandDescriptor.protocol.supportsRekey,
+        )
+    })
+
+    it('is switched by the rekey capability', () => {
+        expect(algorandAccountsAdapter.authority?.capability).toBe('rekey')
+    })
+})

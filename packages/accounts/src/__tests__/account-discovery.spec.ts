@@ -11,7 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
+import {
+    discoverAccounts,
+    discoverDelegatedAccounts,
+} from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
@@ -217,16 +220,16 @@ describe('discoverAccounts', () => {
     })
 })
 
-describe('discoverRekeyedAccounts', () => {
+describe('discoverDelegatedAccounts', () => {
     it('scans every provided address on the active network and labels results with it', async () => {
-        const fetchRekeyedAddresses = vi.mocked(
-            fakeAccountsChain().adapter.fetchRekeyedAddresses!,
+        const fetchDelegatedAddresses = vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
         )
-        fetchRekeyedAddresses.mockImplementation(async authAddress =>
+        fetchDelegatedAddresses.mockImplementation(async authAddress =>
             authAddress === 'EXPLICIT_ADDRESS' ? ['REKEYED_FROM_EXPLICIT'] : [],
         )
 
-        const accounts = await discoverRekeyedAccounts({
+        const accounts = await discoverDelegatedAccounts({
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
             scope: TESTNET_SCOPE,
         })
@@ -238,7 +241,7 @@ describe('discoverRekeyedAccounts', () => {
         expect(accounts[0].chains).toEqual({
             algorand: { address: 'REKEYED_FROM_EXPLICIT' },
         })
-        expect(fetchRekeyedAddresses.mock.calls).toEqual([
+        expect(fetchDelegatedAddresses.mock.calls).toEqual([
             ['EXPLICIT_ADDRESS', TESTNET_SCOPE],
             ['OTHER_ADDRESS', TESTNET_SCOPE],
         ])

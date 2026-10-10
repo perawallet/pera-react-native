@@ -23,7 +23,7 @@ export type AccountKindPresentation = {
     infoBodyKey: string
     glyph: string
     /** The glyph an account delegated to this kind shows; absent uses the generic one. */
-    rekeyedGlyph?: string
+    delegatedGlyph?: string
     supportUrl?: string
 }
 

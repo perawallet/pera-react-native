@@ -21,11 +21,12 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
+import { CHAIN_CAPABILITIES } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     accountKindId,
     accountsChainAdapters,
-    requireRekey,
+    fetchDelegatedAddresses,
     requireSingleKeyAccounts,
     type AccountsChainAdapter,
     type MintedAccount,
@@ -55,10 +56,10 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
     }
     /** Accounts on this chain: one that holds its own key, one that only watches. */
     signers: { signing: WalletAccount; watch: WalletAccount }
-    /** Required when the adapter implements rekey. */
-    rekeyed?: {
+    /** Required when the adapter declares `authority`. */
+    delegated?: {
         authAddress: string
-        rekeyedAddresses: readonly string[]
+        delegatedAddresses: readonly string[]
         handlers: readonly RequestHandler[]
         /**
          * Records `authAddress` as `address`'s authority on the fixtures'
@@ -66,7 +67,7 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
          * graph holds its own copy of the accounts store.
          */
         seedAuthority(address: string, authAddress: string): void
-        /** The contract seeds the relation: `account` is rekeyed to `auth`, which is itself rekeyed on to `next`. `auth` and `next` hold their keys. */
+        /** The contract seeds the relation: `account` is delegated to `auth`, which is itself delegated on to `next`. `auth` and `next` hold their keys. */
         accounts: {
             account: WalletAccount
             auth: WalletAccount
@@ -342,23 +343,28 @@ export const accountsContractTests = (
             }
         })
 
-        it('finds the accounts rekeyed to an address, or refuses on a chain without rekey', async () => {
+        it('finds the accounts delegated to an address, or finds none on a chain without delegation', async () => {
             const adapter = makeAdapter()
-            if (!adapter.fetchRekeyedAddresses) {
-                expect(() => requireRekey(adapter)).toThrow(
-                    expect.objectContaining({ chainId: adapter.chainId }),
-                )
+            const { authority } = adapter
+            if (!authority) {
+                await expect(
+                    fetchDelegatedAddresses('ANY', scope),
+                ).resolves.toEqual([])
                 return
             }
 
-            expect(fixtures.rekeyed).toBeDefined()
-            const { authAddress, rekeyedAddresses, handlers } =
-                fixtures.rekeyed!
+            expect(fixtures.delegated).toBeDefined()
+            const { authAddress, delegatedAddresses, handlers } =
+                fixtures.delegated!
             server.use(...handlers)
 
-            const found = await requireRekey(adapter)(authAddress, scope)
+            const found = await authority.fetchDelegatedAddresses(
+                authAddress,
+                scope,
+            )
 
-            expect([...found].sort()).toEqual([...rekeyedAddresses].sort())
+            expect([...found].sort()).toEqual([...delegatedAddresses].sort())
+            expect(CHAIN_CAPABILITIES).toContain(authority.capability)
         })
 
         it('resolves a key-holding account to itself and a watch account to no signer', () => {
@@ -381,11 +387,11 @@ export const accountsContractTests = (
 
         it('follows a delegation exactly one hop, or has none to follow', () => {
             const adapter = makeAdapter()
-            if (!adapter.fetchRekeyedAddresses) return
+            if (!adapter.authority) return
 
-            expect(fixtures.rekeyed).toBeDefined()
-            const { account, auth, next } = fixtures.rekeyed!.accounts
-            const { seedAuthority } = fixtures.rekeyed!
+            expect(fixtures.delegated).toBeDefined()
+            const { account, auth, next } = fixtures.delegated!.accounts
+            const { seedAuthority } = fixtures.delegated!
             seedAuthority(addressOn(account, scope)!, addressOn(auth, scope)!)
             seedAuthority(addressOn(auth, scope)!, addressOn(next, scope)!)
 
@@ -412,13 +418,13 @@ export const accountsContractTests = (
             const { authority } = adapter
             if (!authority) return
 
-            expect(fixtures.rekeyed).toBeDefined()
-            const { account, auth, next } = fixtures.rekeyed!.accounts
+            expect(fixtures.delegated).toBeDefined()
+            const { account, auth, next } = fixtures.delegated!.accounts
             const { signing } = fixtures.signers
             const held = [account, auth, next, signing]
             const kind =
-                fixtures.rekeyed!.targetKind ?? authority.targetKinds[0]?.id
-            const { seedAuthority } = fixtures.rekeyed!
+                fixtures.delegated!.targetKind ?? authority.targetKinds[0]?.id
+            const { seedAuthority } = fixtures.delegated!
             seedAuthority(addressOn(account, scope)!, addressOn(auth, scope)!)
             seedAuthority(addressOn(auth, scope)!, addressOn(next, scope)!)
 
@@ -437,7 +443,7 @@ export const accountsContractTests = (
             expect(
                 authority.isEligibleTarget(kind, signing, account, held, scope),
             ).toBe(true)
-            // Its current authority, and itself, are no-op rekeys.
+            // Its current authority, and itself, are no-op delegations.
             expect(
                 authority.isEligibleTarget(kind, auth, account, held, scope),
             ).toBe(false)

@@ -17,7 +17,6 @@ import {
     getDelegatedAccount,
     getSignerFor,
     isMultisigUnsignable,
-    isRekeyedUnsignable,
     delegateTransitionFor,
     resolveSignerFor,
     useAccountChainStateStore,
@@ -396,43 +395,6 @@ describe('resolveSignerFor', () => {
             kind: 'noLocalParticipant',
             account: ms,
         })
-    })
-})
-
-describe('isRekeyedUnsignable', () => {
-    it('returns false for non-rekeyed accounts', () => {
-        const a = algo25('A')
-        expect(isRekeyedUnsignable(a, [a], ALGORAND_CHAIN_ID)).toBe(false)
-    })
-
-    it('returns false for non-rekeyed watch accounts', () => {
-        // A pure watch is NOT rekeyed-unsignable. UI should use
-        // isWatchAccount for that case.
-        const a = watch('A')
-        expect(isRekeyedUnsignable(a, [a], ALGORAND_CHAIN_ID)).toBe(false)
-    })
-
-    it('returns true when rekeyed and auth is missing locally', () => {
-        const a = watch('A', 'MISSING')
-        expect(isRekeyedUnsignable(a, [a], ALGORAND_CHAIN_ID)).toBe(true)
-    })
-
-    it('returns true when rekeyed to a watch', () => {
-        const auth = watch('S')
-        const a = watch('A', 'S')
-        expect(isRekeyedUnsignable(a, [a, auth], ALGORAND_CHAIN_ID)).toBe(true)
-    })
-
-    it('returns true when rekeyed to an unsignable multisig', () => {
-        const ms = multisig('M', ['P1', 'P2'])
-        const a = watch('A', 'M')
-        expect(isRekeyedUnsignable(a, [a, ms], ALGORAND_CHAIN_ID)).toBe(true)
-    })
-
-    it('returns false when rekeyed to a signable account', () => {
-        const auth = algo25('S')
-        const a = watch('A', 'S')
-        expect(isRekeyedUnsignable(a, [a, auth], ALGORAND_CHAIN_ID)).toBe(false)
     })
 })
 
