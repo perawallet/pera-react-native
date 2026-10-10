@@ -17,9 +17,9 @@ import {
     REKEY_SCAN_UNAVAILABLE,
 } from '../useRekeyScanNotice'
 
-const { mockShowToast, mockDiscoverRekeyedAccounts } = vi.hoisted(() => ({
+const { mockShowToast, mockDiscoverDelegatedAccounts } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
-    mockDiscoverRekeyedAccounts: vi.fn(),
+    mockDiscoverDelegatedAccounts: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -35,13 +35,13 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAccountDiscovery: () => ({
-        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+        discoverDelegatedAccounts: mockDiscoverDelegatedAccounts,
     }),
 }))
 
 describe('useRekeyScanNotice', () => {
     it('returns the discovered accounts on success', async () => {
-        mockDiscoverRekeyedAccounts.mockResolvedValue([{ address: 'A' }])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([{ address: 'A' }])
         const { result } = renderHook(() => useRekeyScanNotice())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
@@ -51,7 +51,9 @@ describe('useRekeyScanNotice', () => {
     })
 
     it('resolves to the sentinel instead of throwing when the scan fails', async () => {
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
         const { result } = renderHook(() => useRekeyScanNotice())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
@@ -60,7 +62,9 @@ describe('useRekeyScanNotice', () => {
     })
 
     it('shows the non-fatal notice, not the import-failed error, when the scan fails', async () => {
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
         const { result } = renderHook(() => useRekeyScanNotice())
 
         await result.current.scanRekeyed(['SENDER'])

@@ -117,7 +117,7 @@ export const useAccountIcon = (
         switch (state) {
             case 'rekeyedSignable': {
                 return accountGlyphFor(
-                    authPresentation?.rekeyedGlyph ?? REKEYED_SIGNABLE_GLYPH,
+                    authPresentation?.delegatedGlyph ?? REKEYED_SIGNABLE_GLYPH,
                 )
             }
             case 'rekeyedUnsignable': {

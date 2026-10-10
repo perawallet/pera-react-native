@@ -40,14 +40,14 @@ export type UseRekeyScanNoticeResult = {
  */
 export const useRekeyScanNotice = (): UseRekeyScanNoticeResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { discoverRekeyedAccounts } = useAccountDiscovery(scope)
+    const { discoverDelegatedAccounts } = useAccountDiscovery(scope)
     const { showToast } = useToast()
     const { t } = useLanguage()
 
     const scanRekeyed = useCallback(
         async (accountAddresses: string[]) => {
             try {
-                return await discoverRekeyedAccounts({ accountAddresses })
+                return await discoverDelegatedAccounts({ accountAddresses })
             } catch (error) {
                 logger.error('Rekeyed-account scan failed after import', {
                     error,
@@ -64,7 +64,7 @@ export const useRekeyScanNotice = (): UseRekeyScanNoticeResult => {
                 return REKEY_SCAN_UNAVAILABLE
             }
         },
-        [discoverRekeyedAccounts, showToast, t],
+        [discoverDelegatedAccounts, showToast, t],
     )
 
     return { scanRekeyed }

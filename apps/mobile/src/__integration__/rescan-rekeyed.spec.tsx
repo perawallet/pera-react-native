@@ -16,7 +16,7 @@
 //               ─► candidate rows ─► import ─► persisted as watch accounts
 //
 // No signing pipeline is involved — this exercises the indexer discovery
-// (`fetchRekeyedAddresses`) and the store persistence
+// (`fetchDelegatedAddresses`) and the store persistence
 // (`addDelegatedWatchAccounts`).
 
 import { useEffect } from 'react'

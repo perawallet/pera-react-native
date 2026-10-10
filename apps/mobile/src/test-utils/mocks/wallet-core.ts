@@ -395,7 +395,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         useAllAccounts: vi.fn(() => []),
         useAccountDiscovery: vi.fn(() => ({
-            discoverRekeyedAccounts: vi.fn(),
+            discoverDelegatedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
         useAccountOptInRoundsQuery: vi.fn(() => ({
@@ -465,7 +465,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 !authorityOf(account) &&
                 hasSigningKeys(account),
         ),
-        isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),
         isAuthorityDowngrade: vi.fn(() => false),
         getDelegatedAccount: vi.fn(() => null),

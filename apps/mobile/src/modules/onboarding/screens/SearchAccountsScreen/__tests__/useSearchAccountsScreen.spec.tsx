@@ -20,7 +20,7 @@ const {
     mockGoBack,
     mockReplace,
     mockDiscoverAccounts,
-    mockDiscoverRekeyedAccounts,
+    mockDiscoverDelegatedAccounts,
     mockDiscoverImportAccounts,
     mockCancelImport,
     mockExitAccountFlow,
@@ -34,7 +34,7 @@ const {
     mockGoBack: vi.fn(),
     mockReplace: vi.fn(),
     mockDiscoverAccounts: vi.fn(),
-    mockDiscoverRekeyedAccounts: vi.fn(),
+    mockDiscoverDelegatedAccounts: vi.fn(),
     mockDiscoverImportAccounts: vi.fn(),
     mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
@@ -95,7 +95,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAccountDiscovery: () => ({
         discoverAccounts: mockDiscoverAccounts,
-        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+        discoverDelegatedAccounts: mockDiscoverDelegatedAccounts,
     }),
     useHDImportSession: () => ({
         prepareImport: vi.fn(),
@@ -119,12 +119,12 @@ vi.mock('../../../hooks', () => ({
     useShouldPlayConfetti: () => ({
         setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
-    // Mirrors the real useRekeyScanNotice: swallow discoverRekeyedAccounts
+    // Mirrors the real useRekeyScanNotice: swallow discoverDelegatedAccounts
     // failures into the sentinel instead of letting them throw.
     useRekeyScanNotice: () => ({
         scanRekeyed: async (accountAddresses: string[]) => {
             try {
-                return await mockDiscoverRekeyedAccounts({ accountAddresses })
+                return await mockDiscoverDelegatedAccounts({ accountAddresses })
             } catch {
                 mockShowToast({
                     type: 'info',
@@ -170,7 +170,7 @@ describe('useSearchAccountsScreen', () => {
         vi.clearAllMocks()
         // Default success mocks
         mockDiscoverAccounts.mockResolvedValue([])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
         mockAllAccounts.current = []
         mockRouteParams.current = {
             account: {
@@ -230,7 +230,7 @@ describe('useSearchAccountsScreen', () => {
             },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -258,7 +258,7 @@ describe('useSearchAccountsScreen', () => {
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -334,7 +334,7 @@ describe('useSearchAccountsScreen', () => {
                 account: 0,
                 keyIndex: 1,
             })
-            expect(mockDiscoverRekeyedAccounts).not.toHaveBeenCalled()
+            expect(mockDiscoverDelegatedAccounts).not.toHaveBeenCalled()
             expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
                 account: newAccount,
             })
@@ -360,7 +360,7 @@ describe('useSearchAccountsScreen', () => {
             },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -400,7 +400,7 @@ describe('useSearchAccountsScreen', () => {
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -554,7 +554,7 @@ describe('useSearchAccountsScreen', () => {
             account: algo25Account,
             createIfEmpty: undefined,
         } as SearchAccountsParams
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -587,7 +587,7 @@ describe('useSearchAccountsScreen', () => {
             account: algo25Account,
             createIfEmpty: undefined,
         } as SearchAccountsParams
-        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -612,7 +612,7 @@ describe('useSearchAccountsScreen', () => {
             account: quantumAccount,
             createIfEmpty: undefined,
         } as SearchAccountsParams
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -644,7 +644,7 @@ describe('useSearchAccountsScreen', () => {
             account: quantumAccount,
             createIfEmpty: undefined,
         } as SearchAccountsParams
-        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -669,7 +669,9 @@ describe('useSearchAccountsScreen', () => {
             account: algo25Account,
             createIfEmpty: undefined,
         } as SearchAccountsParams
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -715,7 +717,9 @@ describe('useSearchAccountsScreen', () => {
             },
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
 
         renderHook(() => useSearchAccountsScreen())
 

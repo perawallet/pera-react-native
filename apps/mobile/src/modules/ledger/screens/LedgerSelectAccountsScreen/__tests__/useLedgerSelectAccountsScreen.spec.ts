@@ -76,13 +76,13 @@ const {
     mockPrefetch,
     mockRequest,
     mockQueryClient,
-    mockRekeyedScan,
+    mockDelegatedScan,
     mockAllAccounts,
 } = vi.hoisted(() => {
     const mockPrefetch = vi.fn().mockResolvedValue(undefined)
     const mockRequest = vi.fn().mockResolvedValue(undefined)
     const mockQueryClient = {}
-    const mockRekeyedScan = vi.fn()
+    const mockDelegatedScan = vi.fn()
     const mockAllAccounts = vi.fn<
         () => {
             chains: { algorand: { address: string } }
@@ -93,7 +93,7 @@ const {
         mockPrefetch,
         mockRequest,
         mockQueryClient,
-        mockRekeyedScan,
+        mockDelegatedScan,
         mockAllAccounts,
     }
 })
@@ -123,7 +123,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
               : custody.seed,
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
-    useLedgerDelegatedScan: mockRekeyedScan,
+    useLedgerDelegatedScan: mockDelegatedScan,
     AccountTypes: {
         standalone: 'standalone',
         hdWallet: 'hdWallet',
@@ -200,7 +200,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockResolvedValue(transport)
         mockDisconnectTransport.mockResolvedValue(undefined)
         mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
-        mockRekeyedScan.mockReturnValue({ rekeyed: [], isScanning: false })
+        mockDelegatedScan.mockReturnValue({ delegated: [], isScanning: false })
     })
 
     it('reflects the route accounts as derived selectables on initial render', () => {
@@ -454,10 +454,10 @@ describe('useLedgerSelectAccountsScreen', () => {
     })
 
     it('prefetches discovered rekeyed addresses', async () => {
-        mockRekeyedScan.mockReturnValue({
-            rekeyed: [
+        mockDelegatedScan.mockReturnValue({
+            delegated: [
                 {
-                    kind: 'rekeyed',
+                    kind: 'delegated',
                     address: 'REKEYED_A',
                     authAccount: {
                         address: 'AAA111',
@@ -617,10 +617,10 @@ describe('useLedgerSelectAccountsScreen', () => {
     })
 
     it('exposes derived + scanned rekeyed as selectableAccounts', () => {
-        mockRekeyedScan.mockReturnValue({
-            rekeyed: [
+        mockDelegatedScan.mockReturnValue({
+            delegated: [
                 {
-                    kind: 'rekeyed',
+                    kind: 'delegated',
                     address: 'REKEYED_A',
                     authAccount: {
                         address: 'AAA111',
@@ -636,7 +636,7 @@ describe('useLedgerSelectAccountsScreen', () => {
 
         expect(result.current.isScanning).toBe(true)
         const kinds = result.current.selectableAccounts.map(s => s.kind)
-        expect(kinds).toEqual(['derived', 'derived', 'rekeyed'])
+        expect(kinds).toEqual(['derived', 'derived', 'delegated'])
     })
 
     it('navigates with the rekeyed selectable and auto-included auth account', () => {
@@ -645,9 +645,9 @@ describe('useLedgerSelectAccountsScreen', () => {
             publicKey: new Uint8Array([1]),
             accountIndex: 0,
         }
-        mockRekeyedScan.mockReturnValue({
-            rekeyed: [
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+        mockDelegatedScan.mockReturnValue({
+            delegated: [
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: auth },
             ],
             isScanning: false,
         })
@@ -671,7 +671,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         )?.[1] as { selectedAccounts: unknown[] }
         expect(arg.selectedAccounts).toEqual([
             {
-                kind: 'rekeyed',
+                kind: 'delegated',
                 address: 'REKEYED_A',
                 authAccount: serializedAuth,
             },
@@ -739,10 +739,10 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('keeps a rekeyed candidate disabled when its address already exists as a watch account', () => {
         // A rekeyed import IS a watch account — nothing to upgrade.
-        mockRekeyedScan.mockReturnValue({
-            rekeyed: [
+        mockDelegatedScan.mockReturnValue({
+            delegated: [
                 {
-                    kind: 'rekeyed',
+                    kind: 'delegated',
                     address: 'REKEYED_A',
                     authAccount: {
                         address: 'AAA111',
@@ -804,9 +804,9 @@ describe('useLedgerSelectAccountsScreen', () => {
             publicKey: new Uint8Array([1]),
             accountIndex: 0,
         }
-        mockRekeyedScan.mockReturnValue({
-            rekeyed: [
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+        mockDelegatedScan.mockReturnValue({
+            delegated: [
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: auth },
             ],
             isScanning: false,
         })
@@ -838,7 +838,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             arg.selectedAccounts.some(
                 (s: unknown) =>
                     (s as { kind: string; address?: string }).kind ===
-                        'rekeyed' &&
+                        'delegated' &&
                     (s as { address: string }).address === 'REKEYED_A',
             ),
         ).toBe(true)

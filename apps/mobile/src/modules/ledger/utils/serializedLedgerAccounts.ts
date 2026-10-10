@@ -30,7 +30,7 @@ export type SerializedLedgerAccount = {
 export type SerializedLedgerSelectableAccount =
     | { kind: 'derived'; account: SerializedLedgerAccount }
     | {
-          kind: 'rekeyed'
+          kind: 'delegated'
           address: string
           authAccount: SerializedLedgerAccount
       }
@@ -60,7 +60,7 @@ export const serializeSelectableAccount = (
               account: serializeLedgerAccount(selectable.account),
           }
         : {
-              kind: 'rekeyed',
+              kind: 'delegated',
               address: selectable.address,
               authAccount: serializeLedgerAccount(selectable.authAccount),
           }
@@ -74,7 +74,7 @@ export const deserializeSelectableAccount = (
               account: deserializeLedgerAccount(serialized.account),
           }
         : {
-              kind: 'rekeyed',
+              kind: 'delegated',
               address: serialized.address,
               authAccount: deserializeLedgerAccount(serialized.authAccount),
           }
