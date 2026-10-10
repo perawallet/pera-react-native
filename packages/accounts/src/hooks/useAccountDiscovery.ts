@@ -14,13 +14,13 @@ import { useCallback } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     discoverAccounts as baseDiscoverAccounts,
-    discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
+    discoverDelegatedAccounts as baseDiscoverDelegatedAccounts,
 } from '../account-discovery'
 import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
-import { useIsRekeyAvailable } from './useIsRekeyAvailable'
+import { useIsDelegationAvailable } from './useIsDelegationAvailable'
 
 export const useAccountDiscovery = (scope: ChainScope) => {
-    const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
+    const isDelegationAvailable = useIsDelegationAvailable(scope.chainId)
 
     const sessionGetPublicKey = useCallback(
         async (
@@ -50,18 +50,18 @@ export const useAccountDiscovery = (scope: ChainScope) => {
         [scope, sessionGetPublicKey],
     )
 
-    // Resolves empty rather than rejecting, so a caller's rekey step is skipped
+    // Resolves empty rather than rejecting, so a caller's delegation step is skipped
     // without a failure notice while the capability is off.
-    const discoverRekeyedAccounts = useCallback(
+    const discoverDelegatedAccounts = useCallback(
         async (params: { accountAddresses: string[] }) =>
-            isRekeyAvailable
-                ? baseDiscoverRekeyedAccounts({ ...params, scope })
+            isDelegationAvailable
+                ? baseDiscoverDelegatedAccounts({ ...params, scope })
                 : [],
-        [isRekeyAvailable, scope],
+        [isDelegationAvailable, scope],
     )
 
     return {
         discoverAccounts,
-        discoverRekeyedAccounts,
+        discoverDelegatedAccounts,
     }
 }

@@ -41,7 +41,7 @@ const KIND_COPY: Record<AccountType, AccountKindPresentation> = {
         infoTitleKey: 'account_type_info.ledger_title',
         infoBodyKey: 'account_type_info.ledger_description',
         glyph: 'accounts/glyph/ledger-account',
-        rekeyedGlyph: 'accounts/glyph/rekeyed-ledger',
+        delegatedGlyph: 'accounts/glyph/rekeyed-ledger',
         supportUrl: config.ledgerAccountSupportUrl,
     },
     [AccountTypes.multisig]: {
@@ -49,7 +49,7 @@ const KIND_COPY: Record<AccountType, AccountKindPresentation> = {
         infoTitleKey: 'account_type_info.multisig_title',
         infoBodyKey: 'account_type_info.multisig_description',
         glyph: 'accounts/glyph/multisig-account',
-        rekeyedGlyph: 'accounts/glyph/rekeyed-multisig',
+        delegatedGlyph: 'accounts/glyph/rekeyed-multisig',
         supportUrl: config.multisigSupportUrl,
     },
     [AccountTypes.watch]: {

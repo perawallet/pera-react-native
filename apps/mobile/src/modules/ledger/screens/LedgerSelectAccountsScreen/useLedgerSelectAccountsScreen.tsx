@@ -129,7 +129,10 @@ export const useLedgerSelectAccountsScreen =
             prefetchedRef.current = new Set()
         }, [network])
 
-        const { rekeyed, isScanning } = useLedgerDelegatedScan(accounts, scope)
+        const { delegated, isScanning } = useLedgerDelegatedScan(
+            accounts,
+            scope,
+        )
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
             () => [
@@ -137,9 +140,9 @@ export const useLedgerSelectAccountsScreen =
                     kind: 'derived',
                     account,
                 })),
-                ...rekeyed,
+                ...delegated,
             ],
-            [accounts, rekeyed],
+            [accounts, delegated],
         )
 
         useEffect(() => {
@@ -256,7 +259,7 @@ export const useLedgerSelectAccountsScreen =
             )
             for (const s of selected) {
                 if (
-                    s.kind === 'rekeyed' &&
+                    s.kind === 'delegated' &&
                     !present.has(s.authAccount.address)
                 ) {
                     present.add(s.authAccount.address)
@@ -357,7 +360,7 @@ export const useLedgerSelectAccountsScreen =
             (address: string, accountIndex: number) => {
                 const selectable = selectableByAddress.get(address)
                 const title =
-                    selectable?.kind === 'rekeyed'
+                    selectable?.kind === 'delegated'
                         ? t('ledger.select_accounts.rekeyed_account_title')
                         : undefined
                 void request({

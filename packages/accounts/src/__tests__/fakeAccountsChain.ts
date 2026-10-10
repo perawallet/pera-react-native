@@ -279,7 +279,6 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
         importMnemonic: vi.fn(),
         findAlternateImportKinds: vi.fn(async () => []),
     },
-    fetchRekeyedAddresses: vi.fn(async () => []),
     resolveSigner: vi.fn((account, _accounts, _scope) =>
         canSignDirectly(account)
             ? { kind: 'ok' as const, signer: account }
@@ -287,6 +286,8 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     ),
     getAuthAccount: vi.fn(account => account),
     authority: {
+        capability: 'rekey',
+        fetchDelegatedAddresses: vi.fn(async () => []),
         targetKinds: [
             { id: 'fake-target-local', category: 'standard' },
             { id: 'fake-target-hardware', category: 'hardware' },

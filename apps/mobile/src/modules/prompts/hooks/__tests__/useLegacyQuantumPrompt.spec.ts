@@ -27,7 +27,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        fetchRekeyedAddresses: (...args: unknown[]) =>
+        fetchDelegatedAddresses: (...args: unknown[]) =>
             mockFetchRekeyedAddresses(...args),
     }
 })

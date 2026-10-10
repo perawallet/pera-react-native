@@ -15,7 +15,6 @@ import {
     accountsChainAdapters,
     resolveSignerFor,
     resolveSignerForAccount,
-    isRekeyedUnsignable,
     isMultisigUnsignable,
     canSignWith,
     getAuthAccount,
@@ -301,46 +300,6 @@ describe('resolveSignerFor — by address', () => {
     })
 })
 
-describe('isRekeyedUnsignable', () => {
-    it('false for a non-rekeyed account', () => {
-        const account = algo25('A')
-        expect(isRekeyedUnsignable(account, [account], ALGORAND_CHAIN_ID)).toBe(
-            false,
-        )
-    })
-
-    it('false when rekeyed to a signable auth account', () => {
-        const auth = algo25('S')
-        const account = watch('A', 'S')
-        expect(
-            isRekeyedUnsignable(account, [account, auth], ALGORAND_CHAIN_ID),
-        ).toBe(false)
-    })
-
-    it('true when rekeyed to a watch auth account', () => {
-        const auth = watch('W')
-        const account = watch('A', 'W')
-        expect(
-            isRekeyedUnsignable(account, [account, auth], ALGORAND_CHAIN_ID),
-        ).toBe(true)
-    })
-
-    it('true when the rekey target is missing locally', () => {
-        const account = watch('A', 'GONE')
-        expect(isRekeyedUnsignable(account, [account], ALGORAND_CHAIN_ID)).toBe(
-            true,
-        )
-    })
-
-    it('true when rekeyed to a multisig with no local signable participant', () => {
-        const auth = multisig('MS', ['P1', 'P2'])
-        const account = watch('A', 'MS')
-        expect(
-            isRekeyedUnsignable(account, [account, auth], ALGORAND_CHAIN_ID),
-        ).toBe(true)
-    })
-})
-
 describe('isMultisigUnsignable', () => {
     it('false for a non-multisig account', () => {
         const account = algo25('A')
@@ -380,7 +339,6 @@ type SignerCase = {
     auth: string | null
     /** `getDelegatedAccount`: the auth only when rekeyed. */
     rekeyAccount: string | null
-    isRekeyedUnsignable: boolean
     isMultisigUnsignable: boolean
 }
 
@@ -392,7 +350,6 @@ const signerCases: SignerCase[] = [
         signer: 'A',
         auth: 'A',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -402,7 +359,6 @@ const signerCases: SignerCase[] = [
         signer: 'A',
         auth: 'A',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -412,7 +368,6 @@ const signerCases: SignerCase[] = [
         signer: 'A',
         auth: 'A',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -422,7 +377,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'A',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -432,7 +386,6 @@ const signerCases: SignerCase[] = [
         signer: 'MS',
         auth: 'MS',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -442,7 +395,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'MS',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: true,
     },
     {
@@ -452,7 +404,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'MS',
         rekeyAccount: null,
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: true,
     },
     {
@@ -462,7 +413,6 @@ const signerCases: SignerCase[] = [
         signer: 'S',
         auth: 'S',
         rekeyAccount: 'S',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -472,7 +422,6 @@ const signerCases: SignerCase[] = [
         signer: 'L',
         auth: 'L',
         rekeyAccount: 'L',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -482,7 +431,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'W',
         rekeyAccount: 'W',
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -496,7 +444,6 @@ const signerCases: SignerCase[] = [
         signer: 'MS',
         auth: 'MS',
         rekeyAccount: 'MS',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -506,7 +453,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'MS',
         rekeyAccount: 'MS',
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -516,7 +462,6 @@ const signerCases: SignerCase[] = [
         signer: 'F',
         auth: 'F',
         rekeyAccount: 'F',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -526,7 +471,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: null,
         rekeyAccount: null,
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -536,7 +480,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: null,
         rekeyAccount: null,
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -546,7 +489,6 @@ const signerCases: SignerCase[] = [
         signer: 'A',
         auth: 'A',
         rekeyAccount: 'A',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -556,7 +498,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'A',
         rekeyAccount: 'A',
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -566,7 +507,6 @@ const signerCases: SignerCase[] = [
         signer: 'B',
         auth: 'B',
         rekeyAccount: 'B',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -576,7 +516,6 @@ const signerCases: SignerCase[] = [
         signer: null,
         auth: 'B',
         rekeyAccount: 'B',
-        isRekeyedUnsignable: true,
         isMultisigUnsignable: false,
     },
     {
@@ -586,7 +525,6 @@ const signerCases: SignerCase[] = [
         signer: 'B',
         auth: 'B',
         rekeyAccount: 'B',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
     {
@@ -596,7 +534,6 @@ const signerCases: SignerCase[] = [
         signer: 'S',
         auth: 'S',
         rekeyAccount: 'S',
-        isRekeyedUnsignable: false,
         isMultisigUnsignable: false,
     },
 ]
@@ -627,9 +564,6 @@ describe.each(signerCases)('signer resolution: $name', c => {
         expect(canSignWith(account, c.accounts, ALGORAND_CHAIN_ID)).toBe(
             c.signer !== null,
         )
-        expect(
-            isRekeyedUnsignable(account, c.accounts, ALGORAND_CHAIN_ID),
-        ).toBe(c.isRekeyedUnsignable)
         expect(
             isMultisigUnsignable(account, c.accounts, ALGORAND_CHAIN_ID),
         ).toBe(c.isMultisigUnsignable)
@@ -719,6 +653,6 @@ describe('resolveAuthAccount error payload', () => {
         const account = watch('A', 'GONE')
         expect(() =>
             resolveAuthAccount(account, [account], ALGORAND_CHAIN_ID),
-        ).toThrow('Rekey target account GONE not found in local accounts')
+        ).toThrow('Delegation target account GONE not found in local accounts')
     })
 })

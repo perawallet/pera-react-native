@@ -73,12 +73,12 @@ export class WalletCannotDeriveError extends AccountError {
 }
 
 /**
- * Rekey target account not found in local accounts
+ * Delegation target account not found in local accounts
  */
 export class DelegationTargetNotFoundError extends AccountError {
     constructor(authorityAddress: string) {
         super(
-            `Rekey target account ${authorityAddress} not found in local accounts`,
+            `Delegation target account ${authorityAddress} not found in local accounts`,
             undefined,
             {
                 params: { authorityAddress },
@@ -167,12 +167,6 @@ class ChainFeatureUnsupportedError extends AccountError {
             params: { chainId },
         })
         this.chainId = chainId
-    }
-}
-
-export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Rekey', chainId)
     }
 }
 

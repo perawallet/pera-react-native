@@ -42,7 +42,7 @@ export type LedgerAccountPreviewAsset = {
     isFrozen: boolean
 }
 
-export type LedgerAccountRekeyRelationship =
+export type LedgerAccountDelegation =
     | { kind: 'delegatedTo'; authorityAddress: string }
     | { kind: 'canSignFor'; addresses: string[] }
     | { kind: 'none' }
@@ -58,7 +58,7 @@ export type LedgerAccountPreview = {
     totalFiatValue: Nullable<Decimal>
     /** ALGO first, then the account's on-chain holdings in algod order */
     assets: LedgerAccountPreviewAsset[]
-    rekey: LedgerAccountRekeyRelationship
+    delegation: LedgerAccountDelegation
 }
 
 export type UseLedgerAccountPreviewResult = {

@@ -548,7 +548,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                 response: { account_exists: false },
             }),
             // Every rekey lookup returns the same watch candidate. After
-            // commit, discoverRekeyedAccounts probes ALL discovered
+            // commit, discoverDelegatedAccounts probes ALL discovered
             // addresses (route param `accounts`, not just the selected
             // ones), so the rekey screen lists three entries — all the
             // same target.

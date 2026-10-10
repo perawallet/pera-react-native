@@ -21,13 +21,13 @@ const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const mocks = vi.hoisted(() => ({
     useQueries: vi.fn(),
     useAllAccounts: vi.fn(),
-    useIsRekeyAvailable: vi.fn(),
+    useIsDelegationAvailable: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
 vi.mock('../useAllAccounts', () => ({ useAllAccounts: mocks.useAllAccounts }))
-vi.mock('../useIsRekeyAvailable', () => ({
-    useIsRekeyAvailable: mocks.useIsRekeyAvailable,
+vi.mock('../useIsDelegationAvailable', () => ({
+    useIsDelegationAvailable: mocks.useIsDelegationAvailable,
 }))
 
 const derived = (address: string, accountIndex: number) => ({
@@ -39,25 +39,25 @@ const derived = (address: string, accountIndex: number) => ({
 beforeEach(() => {
     vi.clearAllMocks()
     mocks.useAllAccounts.mockReturnValue([])
-    mocks.useIsRekeyAvailable.mockReturnValue(true)
+    mocks.useIsDelegationAvailable.mockReturnValue(true)
 })
 
 describe('useLedgerDelegatedScan', () => {
-    it('finds nothing, and is not scanning, while rekey is unavailable', () => {
-        mocks.useIsRekeyAvailable.mockReturnValue(false)
+    it('finds nothing, and is not scanning, while delegation is unavailable', () => {
+        mocks.useIsDelegationAvailable.mockReturnValue(false)
         mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
         const { result } = renderHook(() =>
             useLedgerDelegatedScan([derived('LEDGER0', 0)], SCOPE),
         )
 
-        expect(result.current).toEqual({ rekeyed: [], isScanning: false })
+        expect(result.current).toEqual({ delegated: [], isScanning: false })
         expect(mocks.useQueries.mock.calls[0]![0].queries[0].enabled).toBe(
             false,
         )
     })
 
-    it('maps rekeyed addresses to entries attributed to the scanned derived account', () => {
+    it('maps delegated addresses to entries attributed to the scanned derived account', () => {
         const d0 = derived('LEDGER0', 0)
         mocks.useQueries.mockReturnValue([
             { data: ['REKEYED_A', 'REKEYED_B'], isPending: false },
@@ -66,9 +66,9 @@ describe('useLedgerDelegatedScan', () => {
         const { result } = renderHook(() => useLedgerDelegatedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(false)
-        expect(result.current.rekeyed).toEqual([
-            { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-            { kind: 'rekeyed', address: 'REKEYED_B', authAccount: d0 },
+        expect(result.current.delegated).toEqual([
+            { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+            { kind: 'delegated', address: 'REKEYED_B', authAccount: d0 },
         ])
     })
 
@@ -85,9 +85,9 @@ describe('useLedgerDelegatedScan', () => {
             useLedgerDelegatedScan([d0, d1], SCOPE),
         )
 
-        expect(result.current.rekeyed).toEqual([
-            { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-            { kind: 'rekeyed', address: 'REKEYED_C', authAccount: d1 },
+        expect(result.current.delegated).toEqual([
+            { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+            { kind: 'delegated', address: 'REKEYED_C', authAccount: d1 },
         ])
     })
 
@@ -98,12 +98,12 @@ describe('useLedgerDelegatedScan', () => {
         const { result } = renderHook(() => useLedgerDelegatedScan([d0], SCOPE))
 
         expect(result.current.isScanning).toBe(true)
-        expect(result.current.rekeyed).toEqual([])
+        expect(result.current.delegated).toEqual([])
     })
 
     it('returns empty and not scanning for no derived accounts', () => {
         mocks.useQueries.mockReturnValue([])
         const { result } = renderHook(() => useLedgerDelegatedScan([], SCOPE))
-        expect(result.current).toEqual({ rekeyed: [], isScanning: false })
+        expect(result.current).toEqual({ delegated: [], isScanning: false })
     })
 })

@@ -58,7 +58,7 @@ const CANONICAL_ACCOUNT: WalletAccount = {
 }
 
 const NO_LOOKUP_RESULT = {
-    rekeyedAddresses: [] as string[],
+    delegatedAddresses: [] as string[],
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
@@ -118,7 +118,7 @@ describe('useLegacyQuantumNotice', () => {
             metadata: { pqDerivation: 'legacy' },
         })
         mockUseDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: ['SOME_DEPENDENT_ADDRESS'],
+            delegatedAddresses: ['SOME_DEPENDENT_ADDRESS'],
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -137,7 +137,7 @@ describe('useLegacyQuantumNotice', () => {
             metadata: { pqDerivation: 'legacy' },
         })
         mockUseDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: undefined,
+            delegatedAddresses: undefined,
             isLoading: false,
             isError: true,
             refetch: vi.fn(),
@@ -156,7 +156,7 @@ describe('useLegacyQuantumNotice', () => {
             metadata: { pqDerivation: 'legacy' },
         })
         mockUseDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: undefined,
+            delegatedAddresses: undefined,
             isLoading: true,
             isError: false,
             refetch: vi.fn(),

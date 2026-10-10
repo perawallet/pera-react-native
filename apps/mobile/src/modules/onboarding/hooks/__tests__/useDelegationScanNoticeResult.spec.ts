@@ -13,13 +13,13 @@
 import { renderHook } from '@test-utils/render'
 import { vi } from 'vitest'
 import {
-    useRekeyScanNotice,
+    useDelegationScanNoticeResult,
     REKEY_SCAN_UNAVAILABLE,
-} from '../useRekeyScanNotice'
+} from '../useDelegationScanNoticeResult'
 
-const { mockShowToast, mockDiscoverRekeyedAccounts } = vi.hoisted(() => ({
+const { mockShowToast, mockDiscoverDelegatedAccounts } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
-    mockDiscoverRekeyedAccounts: vi.fn(),
+    mockDiscoverDelegatedAccounts: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -35,14 +35,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAccountDiscovery: () => ({
-        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+        discoverDelegatedAccounts: mockDiscoverDelegatedAccounts,
     }),
 }))
 
-describe('useRekeyScanNotice', () => {
+describe('useDelegationScanNoticeResult', () => {
     it('returns the discovered accounts on success', async () => {
-        mockDiscoverRekeyedAccounts.mockResolvedValue([{ address: 'A' }])
-        const { result } = renderHook(() => useRekeyScanNotice())
+        mockDiscoverDelegatedAccounts.mockResolvedValue([{ address: 'A' }])
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
 
@@ -51,8 +51,10 @@ describe('useRekeyScanNotice', () => {
     })
 
     it('resolves to the sentinel instead of throwing when the scan fails', async () => {
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
-        const { result } = renderHook(() => useRekeyScanNotice())
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
 
@@ -60,8 +62,10 @@ describe('useRekeyScanNotice', () => {
     })
 
     it('shows the non-fatal notice, not the import-failed error, when the scan fails', async () => {
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
-        const { result } = renderHook(() => useRekeyScanNotice())
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         await result.current.scanRekeyed(['SENDER'])
 

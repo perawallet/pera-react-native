@@ -23,8 +23,10 @@ import {
 } from '../../__tests__/fakeAccountsChain'
 
 const mocks = {
-    get fetchRekeyedAddresses() {
-        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    get fetchDelegatedAddresses() {
+        return vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
     },
 }
 
@@ -48,13 +50,16 @@ describe('useDelegatedAddressesQuery', () => {
     it('builds the expected query key', () => {
         expect(getDelegatedAddressesQueryKey('ADDR', MAINNET_SCOPE)).toEqual([
             'accounts',
-            'rekeyed-addresses',
+            'delegated-addresses',
             { address: 'ADDR', scope: MAINNET_SCOPE },
         ])
     })
 
     it('returns the addresses rekeyed to the given address', async () => {
-        mocks.fetchRekeyedAddresses.mockResolvedValue(['REKEYED1', 'REKEYED2'])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([
+            'REKEYED1',
+            'REKEYED2',
+        ])
 
         const { result } = renderHook(
             () => useDelegatedAddressesQuery('ADDR', MAINNET_SCOPE),
@@ -64,13 +69,13 @@ describe('useDelegatedAddressesQuery', () => {
         )
 
         await waitFor(() =>
-            expect(result.current.rekeyedAddresses).toEqual([
+            expect(result.current.delegatedAddresses).toEqual([
                 'REKEYED1',
                 'REKEYED2',
             ]),
         )
         expect(result.current.isError).toBe(false)
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledWith(
             'ADDR',
             MAINNET_SCOPE,
         )
@@ -84,8 +89,8 @@ describe('useDelegatedAddressesQuery', () => {
             },
         )
 
-        expect(result.current.rekeyedAddresses).toBeUndefined()
+        expect(result.current.delegatedAddresses).toBeUndefined()
         expect(result.current.isLoading).toBe(false)
-        expect(mocks.fetchRekeyedAddresses).not.toHaveBeenCalled()
+        expect(mocks.fetchDelegatedAddresses).not.toHaveBeenCalled()
     })
 })

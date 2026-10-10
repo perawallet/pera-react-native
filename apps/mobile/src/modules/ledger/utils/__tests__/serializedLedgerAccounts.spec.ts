@@ -40,7 +40,7 @@ describe('serialized ledger navigation params', () => {
     it('round-trips both selectable-account kinds', () => {
         const derived: LedgerSelectableAccount = { kind: 'derived', account }
         const rekeyed: LedgerSelectableAccount = {
-            kind: 'rekeyed',
+            kind: 'delegated',
             address: 'REKEYED222',
             authAccount: account,
         }

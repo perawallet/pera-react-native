@@ -83,9 +83,9 @@ export const canSignWith = (
 ): boolean => resolveSignerForAccount(account, accounts, chainId).kind === 'ok'
 
 /**
- * The auth-addr account (itself when not rekeyed) with no signability check —
- * callers classify it themselves (watch, multisig, hardware). Null only when
- * the rekey target isn't held locally.
+ * The authority account (itself when not delegated) with no signability
+ * check; callers classify it themselves (watch, multisig, hardware). Null only
+ * when the authority isn't held locally.
  */
 export const getAuthAccount = (
     account: WalletAccount,
@@ -113,8 +113,8 @@ export const resolveAuthAccount = (
 }
 
 /**
- * The auth account only when `address` is rekeyed; null when it is not, when
- * it isn't held, or when its rekey target isn't held.
+ * The authority account only when `address` is delegated; null when it is not,
+ * when it isn't held, or when its authority isn't held.
  */
 export const getDelegatedAccount = (
     address: string,
@@ -126,16 +126,7 @@ export const getDelegatedAccount = (
     return getAuthAccount(account, accounts, chainId)
 }
 
-/** The "rekeyed but stranded" display state, distinct from `isWatchAccount`. */
-export const isRekeyedUnsignable = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-    chainId: ChainId,
-): boolean =>
-    isDelegatedAccount(account, chainId) &&
-    !canSignWith(account, accounts, chainId)
-
-/** Display-state counterpart to `isRekeyedUnsignable`. */
+/** The "multisig with no local participant" display state. */
 export const isMultisigUnsignable = (
     account: WalletAccount,
     accounts: WalletAccount[],
@@ -144,13 +135,13 @@ export const isMultisigUnsignable = (
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
 export type DelegateTransition = {
-    /** The rekeyed account itself, not followed through the rekey. */
+    /** The delegated account itself, not followed to its authority. */
     from: WalletAccount
-    /** The account it is now rekeyed to. */
+    /** The account that now signs for it. */
     to: WalletAccount
 }
 
-/** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
+/** Backs the delegated account's signer label and info-sheet copy. */
 export const delegateTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],

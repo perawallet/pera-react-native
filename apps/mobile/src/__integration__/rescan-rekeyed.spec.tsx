@@ -16,7 +16,7 @@
 //               ─► candidate rows ─► import ─► persisted as watch accounts
 //
 // No signing pipeline is involved — this exercises the indexer discovery
-// (`fetchRekeyedAddresses`) and the store persistence
+// (`fetchDelegatedAddresses`) and the store persistence
 // (`addDelegatedWatchAccounts`).
 
 import { useEffect } from 'react'
@@ -39,7 +39,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
+import { DelegatedSweepSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/DelegatedSweepSelectScreen'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
@@ -68,7 +68,7 @@ const SOURCE: WalletAccount = {
 const TabBarStub = () => null
 
 const renderRescan = () =>
-    renderWithNavigation(RescanRekeyedSelectScreen, 'RescanRekeyedSelect', {
+    renderWithNavigation(DelegatedSweepSelectScreen, 'RescanRekeyedSelect', {
         initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
         additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
     })
@@ -109,7 +109,7 @@ const renderFromAccountOptions = () =>
             { name: 'RescanRekeyed', component: NestedNavigateRedirect },
             {
                 name: 'RescanRekeyedSelect',
-                component: RescanRekeyedSelectScreen,
+                component: DelegatedSweepSelectScreen,
             },
             { name: 'TabBar', component: TabBarStub },
         ],

@@ -112,29 +112,6 @@ const PRODUCT_NAMES: readonly ProductName[] = [
     },
 ]
 
-type AllowedNames = { file: string; names: readonly string[]; reason: string }
-
-// Matched by path fragment and the exact name.
-const ALLOWED: readonly AllowedNames[] = [
-    {
-        file: 'packages/accounts/src/',
-        names: [
-            'DiscoverRekeyedAccountsParams',
-            'RekeyedSweepCandidate',
-            'RekeyedSweepResult',
-            'baseDiscoverRekeyedAccounts',
-            'discoverRekeyedAccounts',
-            'fetchRekeyedAddresses',
-            'isRekeyedUnsignable',
-            'rekeyed',
-            'rekeyedAddress',
-            'rekeyedAddresses',
-            'rekeyedGlyph',
-        ],
-        reason: "the accounts discovery API and presentation field use Algorand's word for delegation; renaming them changes that package's public API",
-    },
-]
-
 const segmentsOf = (name: string): string[] =>
     name
         .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -154,11 +131,8 @@ const hasCompoundToken = (name: string): boolean => {
     )
 }
 
-const isAllowedCompound = (path: string, name: string): boolean =>
-    PRODUCT_NAMES.some(product => product.pattern.test(name)) ||
-    ALLOWED.some(
-        entry => path.includes(entry.file) && entry.names.includes(name),
-    )
+const isAllowedCompound = (name: string): boolean =>
+    PRODUCT_NAMES.some(product => product.pattern.test(name))
 
 // Bip39 is the root every chain derives from, so only the Algorand-only
 // schemes count.
@@ -230,7 +204,7 @@ export default defineRule({
             const name = ctx.text(m.compound) ?? ''
             if (VOCABULARY_NAMES.has(name)) return
             if (!SHARED_CODE.test(path)) return
-            if (!hasCompoundToken(name) || isAllowedCompound(path, name)) {
+            if (!hasCompoundToken(name) || isAllowedCompound(name)) {
                 return
             }
             if (isSeedSchemeMember(ctx, m.compound)) return

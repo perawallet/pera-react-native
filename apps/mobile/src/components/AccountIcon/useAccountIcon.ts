@@ -48,7 +48,7 @@ const GLYPH_TONE = {
 
 type KnownGlyph = keyof typeof GLYPH_TONE
 
-const REKEYED_SIGNABLE_GLYPH: KnownGlyph = 'accounts/glyph/rekeyed-standard'
+const DELEGATED_SIGNABLE_GLYPH: KnownGlyph = 'accounts/glyph/rekeyed-standard'
 const REKEYED_UNSIGNABLE_GLYPH: KnownGlyph = 'accounts/glyph/noauth-account'
 const FALLBACK_GLYPH: KnownGlyph = 'accounts/glyph/unknown-account'
 
@@ -117,7 +117,8 @@ export const useAccountIcon = (
         switch (state) {
             case 'rekeyedSignable': {
                 return accountGlyphFor(
-                    authPresentation?.rekeyedGlyph ?? REKEYED_SIGNABLE_GLYPH,
+                    authPresentation?.delegatedGlyph ??
+                        DELEGATED_SIGNABLE_GLYPH,
                 )
             }
             case 'rekeyedUnsignable': {
