@@ -10,17 +10,14 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
-import { signArbitraryData } from '../signArbitraryData'
-
-const signPayloads = vi.fn()
-const deps = { signPayloads }
+import { arbitraryDataPayloadFor } from '../arbitraryDataPayload'
 
 const hdAccount = {
     address: 'HD_ADDR',
@@ -42,68 +39,40 @@ const algo25Account = {
 
 const b64 = (text: string) => encodeToBase64(new TextEncoder().encode(text))
 
-describe('signArbitraryData', () => {
+describe('arbitraryDataPayloadFor', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         useAccountChainStateStore.getState().resetState()
-        signPayloads.mockResolvedValue([new Uint8Array([9, 8, 7])])
     })
 
-    test('signs an HD account with its child id and MX-prefixed bytes', async () => {
-        await signArbitraryData(deps, hdAccount, [b64('hello')])
+    test('prefixes the decoded bytes with MX for an HD account', () => {
+        const payload = arbitraryDataPayloadFor(hdAccount, b64('hello'))
 
-        expect(signPayloads).toHaveBeenCalledTimes(1)
-        const [keyPairId, items] = signPayloads.mock.calls[0]
-        expect(keyPairId).toBe('key-hd-child')
-        expect(items).toHaveLength(1)
-        expect(Array.from((items[0] as Uint8Array).slice(0, 2))).toEqual([
+        expect(Array.from(payload.slice(0, 2))).toEqual([
             'M'.charCodeAt(0),
             'X'.charCodeAt(0),
         ])
-        expect(
-            new TextDecoder().decode((items[0] as Uint8Array).slice(2)),
-        ).toBe('hello')
+        expect(new TextDecoder().decode(payload.slice(2))).toBe('hello')
     })
 
-    test('signs every item of a batch in one call', async () => {
-        await signArbitraryData(deps, hdAccount, [
-            b64('item1'),
-            b64('item2'),
-            b64('item3'),
-        ])
+    test('builds the same payload for an Algo25 account', () => {
+        const payload = arbitraryDataPayloadFor(algo25Account, b64('hello'))
 
-        const [, items] = signPayloads.mock.calls[0]
-        expect(items).toHaveLength(3)
+        expect(payload).toEqual(
+            arbitraryDataPayloadFor(hdAccount, b64('hello')),
+        )
     })
 
-    test('returns the signatures it was given', async () => {
-        const expectedSig = new Uint8Array([42, 43, 44])
-        signPayloads.mockResolvedValue([expectedSig])
-
-        await expect(
-            signArbitraryData(deps, hdAccount, [b64('hello')]),
-        ).resolves.toEqual([expectedSig])
-    })
-
-    test('signs an Algo25 account with its own child id', async () => {
-        await signArbitraryData(deps, algo25Account, [b64('hello')])
-
-        expect(signPayloads.mock.calls[0][0]).toBe('key-algo25-ed25519')
-    })
-
-    test("signs with the requested account's OWN key even when rekeyed", async () => {
-        // The dApp verifies the signature against the requested address's
-        // own pubkey, so the account's own keypair is used, never the auth
-        // chain.
+    test('does not follow a rekey: the requested account is still signable', () => {
+        // The dApp verifies against the requested address's own pubkey.
         const original = {
             ...algo25Account,
             address: 'ORIGINAL_ADDR',
         } as unknown as WalletAccount
         seedAuthority('ORIGINAL_ADDR', 'AUTH_ADDR')
 
-        await signArbitraryData(deps, original, [b64('hello')])
-
-        expect(signPayloads.mock.calls[0][0]).toBe('key-algo25-ed25519')
+        expect(() =>
+            arbitraryDataPayloadFor(original, b64('hello')),
+        ).not.toThrow()
     })
 
     test.each([
@@ -136,13 +105,14 @@ describe('signArbitraryData', () => {
                 },
             },
         ],
-    ])('rejects %s without signing', async (_name, account, authority) => {
+    ])('rejects %s', (_name, account, authority) => {
         if (authority) seedAuthority(account.address, authority)
-        await expect(
-            signArbitraryData(deps, account as unknown as WalletAccount, [
+
+        expect(() =>
+            arbitraryDataPayloadFor(
+                account as unknown as WalletAccount,
                 b64('hello'),
-            ]),
-        ).rejects.toThrow(/Cannot sign arbitrary data/)
-        expect(signPayloads).not.toHaveBeenCalled()
+            ),
+        ).toThrow(/Cannot sign arbitrary data/)
     })
 })

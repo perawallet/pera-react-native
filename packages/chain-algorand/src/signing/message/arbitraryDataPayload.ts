@@ -15,15 +15,13 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
-import type { MessageSigningDeps } from '@perawallet/wallet-core-signing'
 
 const MX_PREFIX = new TextEncoder().encode('MX')
 
-export const signArbitraryData = async (
-    deps: MessageSigningDeps,
+export const arbitraryDataPayloadFor = (
     account: WalletAccount,
-    data: string[],
-): Promise<Uint8Array[]> => {
+    data: string,
+): Uint8Array => {
     // Sign with the requested account's own key. Rekey is NOT
     // followed: the dApp verifies against this account's pubkey.
     if (!canSignArbitraryData(account) || !account.keyPairId) {
@@ -31,8 +29,5 @@ export const signArbitraryData = async (
     }
 
     // Legacy algo_signData: dApps verify against `MX || data`.
-    const toSign = data.map(item =>
-        concatBytes(MX_PREFIX, decodeFromBase64(item)),
-    )
-    return deps.signPayloads(account.keyPairId, toSign)
+    return concatBytes(MX_PREFIX, decodeFromBase64(data))
 }

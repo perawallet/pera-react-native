@@ -22,27 +22,26 @@ import {
 import type {
     AuthData,
     AuthDataMetadata,
-    MessageSigningDeps,
 } from '@perawallet/wallet-core-signing'
 import { assertAlgorandBip44PathMatches } from '../../accounts/bip44'
 import { buildArc60AuthSigningPayload, validateArc60AuthRequest } from './arc60'
 import { Arc60FailedHdPathError, Arc60InvalidSignerError } from './arc60-errors'
 
 /**
- * Produces a single ARC-60 AUTH-scope signature for the given signer account.
+ * Validates an ARC-60 AUTH-scope request for the given signer account and
+ * returns the bytes to sign.
  * Throws spec-aligned errors (`Arc60*Error`) for every rejection path so the
  * caller can surface a precise reason to the dApp.
  *
  * Local-key only (Algo25 / HDWallet / quantum). Ledger takes a separate route
  * through the hardware strategy.
  */
-export const signArc60AuthRequest = async (
-    deps: MessageSigningDeps,
+export const arc60AuthPayloadFor = (
     account: WalletAccount,
     authData: AuthData,
     metadata: AuthDataMetadata,
     accounts: WalletAccount[],
-): Promise<Uint8Array> => {
+): Uint8Array => {
     // `account` is the account the dApp named as `signer`. Data signing never
     // follows a rekey (see resolveSigningAccount), so a keyless rekeyed signer
     // is refused here, the spec's ERROR_INVALID_SIGNER, rather than signed for
@@ -105,6 +104,5 @@ export const signArc60AuthRequest = async (
     }
 
     // ARC-60 payload is signed as-is — no MX prefix.
-    const [signature] = await deps.signPayloads(account.keyPairId, [payload])
-    return signature
+    return payload
 }

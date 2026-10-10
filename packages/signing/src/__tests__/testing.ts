@@ -15,6 +15,10 @@ export {
     type BroadcasterContractFixtures,
 } from './broadcaster-contract'
 export {
+    messageSignerContractTests,
+    type MessageSignerContractFixtures,
+} from './message-signer-contract'
+export {
     reviewerContractTests,
     type ReviewerContractFixtures,
 } from './reviewer-contract'
