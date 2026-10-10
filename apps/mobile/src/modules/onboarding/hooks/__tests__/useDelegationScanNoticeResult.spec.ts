@@ -13,9 +13,9 @@
 import { renderHook } from '@test-utils/render'
 import { vi } from 'vitest'
 import {
-    useRekeyScanNotice,
+    useDelegationScanNoticeResult,
     REKEY_SCAN_UNAVAILABLE,
-} from '../useRekeyScanNotice'
+} from '../useDelegationScanNoticeResult'
 
 const { mockShowToast, mockDiscoverDelegatedAccounts } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
@@ -39,10 +39,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     }),
 }))
 
-describe('useRekeyScanNotice', () => {
+describe('useDelegationScanNoticeResult', () => {
     it('returns the discovered accounts on success', async () => {
         mockDiscoverDelegatedAccounts.mockResolvedValue([{ address: 'A' }])
-        const { result } = renderHook(() => useRekeyScanNotice())
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
 
@@ -54,7 +54,7 @@ describe('useRekeyScanNotice', () => {
         mockDiscoverDelegatedAccounts.mockRejectedValue(
             new Error('indexer 500'),
         )
-        const { result } = renderHook(() => useRekeyScanNotice())
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         const scanned = await result.current.scanRekeyed(['SENDER'])
 
@@ -65,7 +65,7 @@ describe('useRekeyScanNotice', () => {
         mockDiscoverDelegatedAccounts.mockRejectedValue(
             new Error('indexer 500'),
         )
-        const { result } = renderHook(() => useRekeyScanNotice())
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
 
         await result.current.scanRekeyed(['SENDER'])
 

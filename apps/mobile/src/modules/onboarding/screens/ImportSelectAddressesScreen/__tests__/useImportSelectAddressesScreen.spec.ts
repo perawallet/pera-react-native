@@ -71,9 +71,9 @@ vi.mock('../../../hooks', () => ({
         exitAccountFlow: mockExitAccountFlow,
         exitFailedAccountFlow: mockExitFailedAccountFlow,
     }),
-    // Mirrors the real useRekeyScanNotice: swallow discoverDelegatedAccounts
+    // Mirrors the real useDelegationScanNoticeResult: swallow discoverDelegatedAccounts
     // failures into the sentinel instead of letting them throw.
-    useRekeyScanNotice: () => ({
+    useDelegationScanNoticeResult: () => ({
         scanRekeyed: async (accountAddresses: string[]) => {
             try {
                 return await mockDiscoverDelegatedAccounts({ accountAddresses })

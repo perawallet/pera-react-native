@@ -27,7 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import type { RescanRekeyedStackParamList } from '../../../routes/rescan-rekeyed/types'
 
-export type UseRescanRekeyedSelectScreenResult = {
+export type UseDelegatedSweepSelectScreenResult = {
     /** True when scanning every signable key rather than a single one. */
     isSweep: boolean
     isLoading: boolean
@@ -48,8 +48,8 @@ export type UseRescanRekeyedSelectScreenResult = {
     handleRetry: () => void
 }
 
-export const useRescanRekeyedSelectScreen =
-    (): UseRescanRekeyedSelectScreenResult => {
+export const useDelegatedSweepSelectScreen =
+    (): UseDelegatedSweepSelectScreenResult => {
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation = useAppNavigation()
         const route =

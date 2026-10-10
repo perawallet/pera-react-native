@@ -119,9 +119,9 @@ vi.mock('../../../hooks', () => ({
     useShouldPlayConfetti: () => ({
         setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
-    // Mirrors the real useRekeyScanNotice: swallow discoverDelegatedAccounts
+    // Mirrors the real useDelegationScanNoticeResult: swallow discoverDelegatedAccounts
     // failures into the sentinel instead of letting them throw.
-    useRekeyScanNotice: () => ({
+    useDelegationScanNoticeResult: () => ({
         scanRekeyed: async (accountAddresses: string[]) => {
             try {
                 return await mockDiscoverDelegatedAccounts({ accountAddresses })

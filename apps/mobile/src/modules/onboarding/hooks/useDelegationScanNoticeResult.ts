@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export const REKEY_SCAN_UNAVAILABLE = 'rekey-scan-unavailable' as const
 
-export type UseRekeyScanNoticeResult = {
+export type UseDelegationScanNoticeResultResult = {
     scanRekeyed: (
         accountAddresses: string[],
     ) => Promise<WalletAccount[] | typeof REKEY_SCAN_UNAVAILABLE>
@@ -38,34 +38,35 @@ export type UseRekeyScanNoticeResult = {
  * import failed while holding the account, and their retry would then say
  * "already added".
  */
-export const useRekeyScanNotice = (): UseRekeyScanNoticeResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { discoverDelegatedAccounts } = useAccountDiscovery(scope)
-    const { showToast } = useToast()
-    const { t } = useLanguage()
+export const useDelegationScanNoticeResult =
+    (): UseDelegationScanNoticeResultResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const { discoverDelegatedAccounts } = useAccountDiscovery(scope)
+        const { showToast } = useToast()
+        const { t } = useLanguage()
 
-    const scanRekeyed = useCallback(
-        async (accountAddresses: string[]) => {
-            try {
-                return await discoverDelegatedAccounts({ accountAddresses })
-            } catch (error) {
-                logger.error('Rekeyed-account scan failed after import', {
-                    error,
-                })
-                showToast({
-                    type: 'info',
-                    title: t(
-                        'onboarding.searching_accounts.rekey_scan_failed_title',
-                    ),
-                    body: t(
-                        'onboarding.searching_accounts.rekey_scan_failed_body',
-                    ),
-                })
-                return REKEY_SCAN_UNAVAILABLE
-            }
-        },
-        [discoverDelegatedAccounts, showToast, t],
-    )
+        const scanRekeyed = useCallback(
+            async (accountAddresses: string[]) => {
+                try {
+                    return await discoverDelegatedAccounts({ accountAddresses })
+                } catch (error) {
+                    logger.error('Rekeyed-account scan failed after import', {
+                        error,
+                    })
+                    showToast({
+                        type: 'info',
+                        title: t(
+                            'onboarding.searching_accounts.rekey_scan_failed_title',
+                        ),
+                        body: t(
+                            'onboarding.searching_accounts.rekey_scan_failed_body',
+                        ),
+                    })
+                    return REKEY_SCAN_UNAVAILABLE
+                }
+            },
+            [discoverDelegatedAccounts, showToast, t],
+        )
 
-    return { scanRekeyed }
-}
+        return { scanRekeyed }
+    }

@@ -25,10 +25,10 @@ import { LoadingView } from '@components/LoadingView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { RescanCandidateRow } from '../../../components/rescan-rekeyed/RescanCandidateRow'
-import { useRescanRekeyedSelectScreen } from './useRescanRekeyedSelectScreen'
+import { useDelegatedSweepSelectScreen } from './useDelegatedSweepSelectScreen'
 import { useStyles } from './styles'
 
-export const RescanRekeyedSelectScreen = () => {
+export const DelegatedSweepSelectScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const importedRowStyle = useMemo(
@@ -51,7 +51,7 @@ export const RescanRekeyedSelectScreen = () => {
         handleAddSelected,
         handleSkip,
         handleRetry,
-    } = useRescanRekeyedSelectScreen()
+    } = useDelegatedSweepSelectScreen()
 
     if (isLoading) {
         const isSweepInProgress = (scanProgress?.total ?? 0) > 1
