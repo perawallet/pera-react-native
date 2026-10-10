@@ -251,9 +251,11 @@ export interface MessageSummary {
 
 export interface MessageRequest {
     scope: ChainScope
+    /** The kind of signature asked for; a chain's message signer lists the methods it signs. */
+    method: string
     signer: string
+    /** Chain-native; only the owning adapter reads it. */
     payload: unknown
-    summary: MessageSummary
 }
 
 export interface SignedMessage {

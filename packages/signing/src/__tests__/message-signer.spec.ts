@@ -10,15 +10,23 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    ChainAdapterNotRegisteredError,
+    type MessageRequest,
+    type SigningRequest,
+} from '@perawallet/wallet-core-chain-contract'
 import { CannotSignError } from '../pipeline/errors'
 import {
+    arbitraryDataMessageRequest,
+    authDataMessageRequest,
     buildSiwxAuthData,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     messageSignerFor,
     parseAuthDataWireRequest,
+    signMessages,
     type MessageSignerChainAdapter,
 } from '../message-signer'
 import { registerFakeMessageSignerAdapter } from './fakeMessageSignerAdapter'
@@ -90,5 +98,193 @@ describe('messageSignerFor', () => {
 
         expect(thrown).toBeInstanceOf(CannotSignError)
         expect((thrown as CannotSignError).metadata.retryable).toBe(false)
+    })
+})
+
+describe('message request builders', () => {
+    const scope = { chainId: CHAIN, networkId: 'mainnet' }
+
+    it('build an arbitrary-data request around one item', () => {
+        expect(arbitraryDataMessageRequest(scope, 'ADDR', 'aGk=')).toEqual({
+            scope,
+            method: 'arbitrary-data',
+            signer: 'ADDR',
+            payload: { data: 'aGk=' },
+        })
+    })
+
+    it('build an auth-data request that carries the payload as given', () => {
+        const payload = {
+            authData: {} as never,
+            metadata: { scope: 1, encoding: 'base64' },
+        }
+
+        expect(authDataMessageRequest(scope, 'ADDR', payload)).toEqual({
+            scope,
+            method: 'auth-data',
+            signer: 'ADDR',
+            payload,
+        })
+    })
+})
+
+describe('signMessages', () => {
+    const scope = { chainId: CHAIN, networkId: 'mainnet' }
+    const account = {
+        address: 'ADDR',
+        keyPairId: 'key-1',
+        custody: { kind: 'local', seed: null },
+    } as unknown as WalletAccount
+    const context = { account, accounts: [account] }
+
+    const request = (data: string): MessageRequest =>
+        arbitraryDataMessageRequest(scope, account.address, data)
+    const planOf = (
+        request: MessageRequest,
+        signer = account.address,
+    ): SigningRequest[] => [
+        {
+            requestIndex: 0,
+            signer,
+            scheme: 'ed25519',
+            payload: new TextEncoder().encode(
+                (request.payload as { data: string }).data,
+            ),
+        },
+    ]
+    const arrange = (overrides: Partial<MessageSignerChainAdapter> = {}) =>
+        registerFakeMessageSignerAdapter({
+            plan: vi.fn(message => planOf(message)),
+            assemble: vi.fn((message, signatures) => ({
+                scope: message.scope,
+                signature: signatures[0],
+            })),
+            ...overrides,
+        })
+    const signPayloads = vi.fn()
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        signPayloads.mockImplementation(async (_key, payloads: Uint8Array[]) =>
+            payloads.map(payload => payload.slice().reverse()),
+        )
+    })
+
+    it('signs every payload in one call under the account key, assembling per request', async () => {
+        const adapter = arrange()
+
+        const signed = await signMessages(
+            [request('a'), request('bc')],
+            context,
+            { signPayloads },
+        )
+
+        expect(signPayloads).toHaveBeenCalledTimes(1)
+        expect(signPayloads).toHaveBeenCalledWith('key-1', [
+            new TextEncoder().encode('a'),
+            new TextEncoder().encode('bc'),
+        ])
+        expect(adapter.assemble).toHaveBeenCalledTimes(2)
+        expect(signed.map(message => message.signature)).toEqual([
+            {
+                requestIndex: 0,
+                signer: 'ADDR',
+                scheme: 'ed25519',
+                bytes: new TextEncoder().encode('a'),
+            },
+            {
+                requestIndex: 0,
+                signer: 'ADDR',
+                scheme: 'ed25519',
+                bytes: new TextEncoder().encode('cb'),
+            },
+        ])
+    })
+
+    it('hands the planner the context it was given', async () => {
+        const adapter = arrange()
+
+        await signMessages([request('a')], context, { signPayloads })
+
+        expect(adapter.plan).toHaveBeenCalledWith(request('a'), context)
+    })
+
+    it('never touches the key store when a later plan throws, and propagates its error', async () => {
+        const failure = new Error('refused')
+        arrange({
+            plan: vi
+                .fn()
+                .mockImplementationOnce(message => planOf(message))
+                .mockImplementationOnce(() => {
+                    throw failure
+                }),
+        })
+
+        await expect(
+            signMessages([request('a'), request('b')], context, {
+                signPayloads,
+            }),
+        ).rejects.toBe(failure)
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('refuses a method the adapter does not support, without planning', async () => {
+        const adapter = arrange({ supports: vi.fn(() => false) })
+
+        await expect(
+            signMessages([request('a')], context, { signPayloads }),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(adapter.plan).not.toHaveBeenCalled()
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('refuses a plan that names a signer other than the account', async () => {
+        arrange({ plan: vi.fn(message => planOf(message, 'REKEY_TARGET')) })
+
+        await expect(
+            signMessages([request('a')], context, { signPayloads }),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('refuses an account with no key pair', async () => {
+        arrange()
+        const keyless = { ...account, keyPairId: undefined }
+
+        await expect(
+            signMessages(
+                [request('a')],
+                { account: keyless, accounts: [keyless] },
+                { signPayloads },
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('refuses with no signer registered for the chain', async () => {
+        messageSignerChainAdapters.reset()
+
+        await expect(
+            signMessages([request('a')], context, { signPayloads }),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('resolves an empty list without touching the key store', async () => {
+        arrange()
+
+        await expect(
+            signMessages([], context, { signPayloads }),
+        ).resolves.toEqual([])
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
+    it('rejects a key store that answers with the wrong number of signatures', async () => {
+        arrange()
+        signPayloads.mockResolvedValue([])
+
+        await expect(
+            signMessages([request('a')], context, { signPayloads }),
+        ).rejects.toThrow(/wrong number of signatures/)
     })
 })
