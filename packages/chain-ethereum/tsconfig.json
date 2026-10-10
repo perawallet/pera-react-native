@@ -6,6 +6,7 @@
     "paths": {
       "@perawallet/wallet-core-accounts/testing": ["../accounts/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-accounts/testing/account-state": ["../accounts/src/__tests__/account-state-contract.ts"],
+      "@perawallet/wallet-core-assets/testing/adapter-contract": ["../assets/src/__tests__/assets-adapter-contract.ts"],
       "@perawallet/wallet-core-chain-contract/testing": ["../chain-contract/src/__tests__/testing.ts"]
     }
   },

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
-export { InvalidCaip19Error, UnknownEvmNetworkError } from './caip19'
-export { createEvmClient, UnconfiguredEvmRpcError } from './createEvmClient'
-export { evmHttpTransport } from './evmHttpTransport'
+export {
+    createEthereumAssetsAdapter,
+    NativePriceUnavailableError,
+} from './adapter'
+export { ETHEREUM_NATIVE_ASSET } from './native-asset'

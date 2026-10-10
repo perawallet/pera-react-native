@@ -39,13 +39,22 @@ export class UnconfiguredEvmRpcError extends Error {
 
 const SUBMIT_METHODS: ReadonlySet<string> = new Set(['eth_sendRawTransaction'])
 
+// Providers cap the size of a JSON-RPC batch; a larger tick splits.
+const READ_BATCH_SIZE = 100
+
 // Mirrors the Algorand client: broadcasts get the submit ceiling, everything
 // else the read ceiling, and viem's own retries are off.
 const timeoutBoundedTransport = (
     url: string,
     { readMs, submitMs }: ChainContext['timeouts'],
 ): Transport => {
-    const read = evmHttpTransport(url, { timeout: readMs, retryCount: 0 })
+    // Reads issued in the same tick go out as one JSON-RPC batch, so a sync
+    // pass costs a few requests however many accounts it reads.
+    const read = evmHttpTransport(url, {
+        timeout: readMs,
+        retryCount: 0,
+        batch: { batchSize: READ_BATCH_SIZE },
+    })
     const submit = evmHttpTransport(url, { timeout: submitMs, retryCount: 0 })
     return params => {
         const readTransport = read(params)
