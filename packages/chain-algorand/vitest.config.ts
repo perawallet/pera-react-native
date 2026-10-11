@@ -19,6 +19,8 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const CONTRACT_SUITES = {
+    '@perawallet/wallet-core-assets/testing/adapter-contract':
+        '../assets/src/__tests__/assets-adapter-contract.ts',
     '@perawallet/wallet-core-accounts/testing':
         '../accounts/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-card/testing':

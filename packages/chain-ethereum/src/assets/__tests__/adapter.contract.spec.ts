@@ -127,8 +127,11 @@ assetPriceContractTests(
         ),
     {
         scope: SCOPE,
-        priced: { assetId: USDC, usdPrice: new Decimal('1.0001') },
-        unpricedAssetId: DAI,
+        priced: {
+            assetRef: { chainId: 'ethereum', assetId: USDC },
+            usdPrice: new Decimal('1.0001'),
+        },
+        unpriced: { chainId: 'ethereum', assetId: DAI },
         nativeUsdPrice: new Decimal('2500.12'),
         handlers,
     },

@@ -120,6 +120,9 @@ describe('registerChain', () => {
         expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandAssetsAdapter,
         )
+        expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID).priceProvider).toBe(
+            'pera',
+        )
     })
 
     it('registers the Algorand swap adapter', () => {

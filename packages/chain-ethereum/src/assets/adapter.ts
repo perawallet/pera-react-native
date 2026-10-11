@@ -11,9 +11,11 @@
  */
 
 import { getAddress, InvalidAddressError, isAddress, zeroAddress } from 'viem'
-import type {
-    ChainContext,
-    ChainScope,
+import {
+    assetRefKey,
+    type AssetRef,
+    type ChainContext,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getStaleOrMissingAssetIds,
@@ -23,12 +25,9 @@ import {
     type AssetsChainAdapter,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    AppError,
-    ErrorCategory,
-    partition,
-} from '@perawallet/wallet-core-shared'
+import { partition } from '@perawallet/wallet-core-shared'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { readErc20 } from '../blockchain/utils/erc20'
 import {
     ASSETS_MAX_IDS,
@@ -38,19 +37,6 @@ import {
 } from './api/endpoints'
 import { toAssetMetadata, toPriceRow } from './api/transformers'
 import { ETHEREUM_NATIVE_ASSET, NATIVE_ASSET_ID } from './native-asset'
-
-/** The scope has no price for the native asset; the price syncer records it as a miss rather than 0. */
-export class NativePriceUnavailableError extends AppError {
-    readonly scope: ChainScope
-
-    constructor(scope: ChainScope) {
-        super(`No ETH price for ${scope.chainId}/${scope.networkId}`, {
-            category: ErrorCategory.ASSETS,
-            expected: true,
-        })
-        this.scope = scope
-    }
-}
 
 // Token metadata rarely changes; the same window as Algorand's asset cache.
 const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -224,32 +210,50 @@ const fetchAsset =
     }
 
 // Prices ride on the v4 asset items, so they need the `assets` service as
-// well as `prices`; without both every id is a miss.
-const fetchUsdPrices =
-    (ctx: ChainContext): AssetsChainAdapter['fetchUsdPrices'] =>
-    async (assetIds, scope) => {
+// well as `prices`; without both every ref is a miss. A row is keyed back to
+// the ref it was asked for, whatever case its address came in.
+const getPrices =
+    (ctx: ChainContext): AssetsChainAdapter['getPrices'] =>
+    async (refs, scope) => {
+        eip155ChainIdOf(scope)
+        const foreign = refs.find(ref => ref.chainId !== ETHEREUM_CHAIN_ID)
+        if (foreign) {
+            throw new Error(`Not an Ethereum asset: ${assetRefKey(foreign)}`)
+        }
         if (!hasServices(ctx, scope, ASSETS_SERVICE, PRICES_SERVICE)) return []
-        const ids = [
-            ...(assetIds.includes(NATIVE_ASSET_ID) ? [NATIVE_ASSET_ID] : []),
-            ...toTokenIds(assetIds),
-        ]
-        const rows = await Promise.all(
-            partition(ids, ASSETS_MAX_IDS).map(async batch => {
+        const refById = new Map<string, AssetRef>()
+        for (const ref of refs) {
+            const id =
+                ref.assetId === NATIVE_ASSET_ID
+                    ? NATIVE_ASSET_ID
+                    : toTokenIds([ref.assetId])[0]
+            if (id) refById.set(id, ref)
+        }
+        const prices = await Promise.all(
+            partition([...refById.keys()], ASSETS_MAX_IDS).map(async batch => {
                 const items = await fetchAssetItems(scope, batch)
-                return items.flatMap(
-                    (item, index) => toPriceRow(batch[index]!, item) ?? [],
-                )
+                return items.flatMap((item, index) => {
+                    const row = toPriceRow(batch[index]!, item)
+                    return row
+                        ? [
+                              {
+                                  assetRef: refById.get(row.assetId)!,
+                                  usdPrice: row.usdPrice,
+                              },
+                          ]
+                        : []
+                })
             }),
         )
-        return rows.flat()
+        return prices.flat()
     }
 
 export const createEthereumAssetsAdapter = (
     ctx: ChainContext,
 ): AssetsChainAdapter => {
-    const usdPrices = fetchUsdPrices(ctx)
     return {
         chainId: ETHEREUM_CHAIN_ID,
+        priceProvider: 'pera',
         maxPriceIdsPerRequest: ASSETS_MAX_IDS,
         getNativeAsset: () => ETHEREUM_NATIVE_ASSET,
         syncAssets: syncAssets(ctx),
@@ -263,11 +267,6 @@ export const createEthereumAssetsAdapter = (
         // The backend has no EVM token search, and `assetSearch` is off for
         // Ethereum.
         searchAssets: async () => ({ results: [], nextCursor: undefined }),
-        fetchNativeUsdPrice: async scope => {
-            const [row] = await usdPrices([NATIVE_ASSET_ID], scope)
-            if (!row) throw new NativePriceUnavailableError(scope)
-            return row.usdPrice
-        },
-        fetchUsdPrices: usdPrices,
+        getPrices: getPrices(ctx),
     }
 }
