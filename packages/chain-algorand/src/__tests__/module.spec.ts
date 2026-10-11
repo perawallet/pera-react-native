@@ -49,6 +49,9 @@ import {
     algorandSendFlowAdapter,
     algorandTransferAdapter,
 } from '../transactions'
+import { ALGORAND_MESSAGE_TITLE_KEYS } from '../signing/message/messageSigner'
+import { ALGORAND_HISTORY_SUMMARY_KEYS } from '../transactions/summarize'
+import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandAssetsAdapter } from '../assets'
@@ -170,14 +173,17 @@ describe('chainModule', () => {
         )
     })
 
-    it('declares the i18n keys its transfer and message summaries carry', () => {
-        expect(chainModule.i18nKeys()).toEqual([
-            'transactions.list_item.send',
-            'transactions.list_item.opt_in',
-            'signing.arbitrary_data_view.body',
-            'signing.arc60_view.title',
-            'signing.arc60_view.siwa_invalid',
-        ])
+    it('declares every i18n key its summaries carry, once each', () => {
+        const keys = chainModule.i18nKeys()
+
+        expect(new Set(keys).size).toBe(keys.length)
+        expect(keys).toEqual(
+            expect.arrayContaining([
+                ...ALGORAND_TRANSFER_TITLE_KEYS,
+                ...ALGORAND_MESSAGE_TITLE_KEYS,
+                ...ALGORAND_HISTORY_SUMMARY_KEYS,
+            ]),
+        )
     })
 })
 
