@@ -11,13 +11,16 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type {
     CollectiblePreferencesState,
     CollectibleSortMode,
     GalleryLayout,
 } from '../models/collectible-preferences'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'collectible-preferences-store'
@@ -32,7 +35,7 @@ const initialState = {
 export const useCollectiblePreferencesStore: UseBoundStore<
     WithPersist<StoreApi<CollectiblePreferencesState>, unknown>
 > = create<CollectiblePreferencesState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setCollectibleSortMode: (mode: CollectibleSortMode) => {
@@ -51,7 +54,7 @@ export const useCollectiblePreferencesStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 collectibleSortMode: state.collectibleSortMode,

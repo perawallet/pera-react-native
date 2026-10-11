@@ -11,13 +11,13 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     rekeyLegacyNetworkRecord,
     scopeKeyForLegacyNetwork,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    guardedPersist,
     registerStore,
     type Network,
     type WithPersist,
@@ -103,7 +103,7 @@ const patchCursor = (
 export const useSyncCursorStore: UseBoundStore<
     WithPersist<StoreApi<SyncCursorStore>, unknown>
 > = create<SyncCursorStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setRefreshRound: (network: Network, round: Nullable<number>) => {
@@ -128,7 +128,7 @@ export const useSyncCursorStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 2,
             migrate: migrateSyncCursorState,
             partialize: state => ({

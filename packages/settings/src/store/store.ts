@@ -11,14 +11,17 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type {
     SettingsState,
     ThemeMode,
     LanguagePreference,
     ConfirmationMode,
 } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'settings-store'
@@ -69,7 +72,7 @@ export const migrateSettingsState = (
 export const useSettingsStore: UseBoundStore<
     WithPersist<StoreApi<SettingsState>, unknown>
 > = create<SettingsState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             setTheme: (theme: ThemeMode) => set({ theme }),
@@ -99,7 +102,7 @@ export const useSettingsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 3,
             migrate: migrateSettingsState,
             partialize: state => ({

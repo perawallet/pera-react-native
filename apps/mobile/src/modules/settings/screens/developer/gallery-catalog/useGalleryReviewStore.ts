@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { guardedPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 /** Dev-only review tracking for the component gallery. */
@@ -32,7 +32,7 @@ type GalleryReviewStore = GalleryReviewState & GalleryReviewActions
 const initialState: GalleryReviewState = { visited: {}, good: {} }
 
 export const useGalleryReviewStore = create<GalleryReviewStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             markVisited: id =>
@@ -47,7 +47,7 @@ export const useGalleryReviewStore = create<GalleryReviewStore>()(
         }),
         {
             name: 'gallery-review-store',
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             partialize: state => ({ visited: state.visited, good: state.good }),
         },
     ),

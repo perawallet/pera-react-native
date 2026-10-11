@@ -11,8 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { MnemonicBackupStore } from '../models'
 
@@ -23,7 +22,7 @@ const initialState = {
 }
 
 export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             markBackedUp: (keyId: string) => {
@@ -42,7 +41,7 @@ export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 backedUpKeyIds: state.backedUpKeyIds,

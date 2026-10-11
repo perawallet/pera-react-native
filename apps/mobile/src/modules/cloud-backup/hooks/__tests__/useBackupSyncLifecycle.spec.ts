@@ -107,9 +107,14 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
     logger: { error: vi.fn() },
     registerStore: vi.fn(),
+    guardedPersist: (
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/guarded-persist-core')
+        >('@packages/shared/src/utils/guarded-persist-core')
+    ).createGuardedPersist({ critical: vi.fn(), warn: vi.fn() }),
 }))
 
 vi.mock('@hooks/useLanguage')

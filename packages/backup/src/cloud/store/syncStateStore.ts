@@ -11,8 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { SyncState } from '../models'
@@ -32,7 +31,7 @@ type BackupSyncStateActions = {
 type BackupSyncStateStore = BackupSyncStateState & BackupSyncStateActions
 
 export const useBackupSyncStateStore = create<BackupSyncStateStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setSyncState: syncState => set({ syncState }),
@@ -40,7 +39,7 @@ export const useBackupSyncStateStore = create<BackupSyncStateStore>()(
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({ syncState: state.syncState }),
         },

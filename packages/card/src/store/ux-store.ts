@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { OnboardingStep, type CardUxState } from '../models'
 
@@ -60,7 +63,7 @@ const initialState = {
 export const useCardStore: UseBoundStore<
     WithPersist<StoreApi<CardUxState>, unknown>
 > = create<CardUxState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setOnboardingStep: step => set({ onboardingStep: step }),
@@ -148,7 +151,7 @@ export const useCardStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // `verificationCode` is intentionally omitted — a transient OTP
             // that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise

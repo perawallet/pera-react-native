@@ -57,6 +57,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     // The `@modules/network` barrel transitively pulls store modules that
     // self-register for reset-on-logout.
     registerStore: vi.fn(),
+    guardedPersist: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/shared/src/utils/guarded-persist-core')
+        >(
+            '../../../../../../../../packages/shared/src/utils/guarded-persist-core',
+        )
+    ).createGuardedPersist({ critical: vi.fn(), warn: vi.fn() }),
 }))
 
 // The real `useConnectionPairing` runs here — only the registry underneath it
