@@ -3137,7 +3137,10 @@
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
             "default": "Transaction",
-            "more_impacts": "Show {{count}} more"
+            "more_impacts": "Show {{count}} more",
+            "interpreted_title": "{{title}}",
+            "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
+            "inner_transaction_count": "{{innerCount}} inner txns"
         },
         "type": {
             "pay": "Payment Transaction",
