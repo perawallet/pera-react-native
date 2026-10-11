@@ -15,6 +15,10 @@ export {
     type SendFlowContractFixtures,
 } from './adapter-contract'
 export {
+    historyContractTests,
+    type HistoryContractFixtures,
+} from './history-contract'
+export {
     transferContractTests,
     type TransferContractFixtures,
 } from './transfer-contract'

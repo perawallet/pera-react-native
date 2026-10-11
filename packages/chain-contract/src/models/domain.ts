@@ -108,7 +108,18 @@ export type TransactionIconKind =
     | 'contract-call'
     | 'approval'
     | 'opt-in'
+    | 'opt-out'
+    | 'asset-config'
+    | 'asset-freeze'
+    /** Participation records. */
+    | 'consensus'
     | 'unknown'
+
+export interface BalanceChange {
+    assetRef: AssetRef
+    /** Signed base units: negative left the account, positive arrived. */
+    value: Decimal
+}
 
 export interface TransactionSummary {
     kind:
@@ -122,7 +133,12 @@ export interface TransactionSummary {
     title: LocalizedText
     direction: 'in' | 'out' | 'self' | 'none'
     counterparty?: string
+    /** Shown instead of the counterparty's name when set. */
+    subtitle?: LocalizedText
+    /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
     amount?: { assetRef: AssetRef; value: Decimal }
+    /** Shown instead of `amount` when set. */
+    balanceChanges?: BalanceChange[]
     icon: TransactionIconKind
 }
 

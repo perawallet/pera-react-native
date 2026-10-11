@@ -148,6 +148,8 @@ describe('backfillMissingCloseAmounts', () => {
             chainId: 'algorand',
             fetchHistory: vi.fn(),
             fetchMoreHistory: vi.fn(),
+            getTransactionHistory: vi.fn(),
+            summarize: vi.fn(),
             toDisplayable: vi.fn(),
         })
 
