@@ -36,6 +36,11 @@ export type AccountValueTotals = {
      * price has never synced, so the value is genuinely unknown — not 0.
      */
     usdValue: Nullable<Decimal>
+    /**
+     * Same contract as `AccountBalance.fiatValue`. Unlike `usdValue`, an
+     * unpriced native balance is `null` on every network.
+     */
+    fiatValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -112,9 +117,9 @@ export const useAccountValueTotalsQuery = (
     const results = useQueries({ queries })
     const nativeAssetId = useNativeAsset().assetId
     const { data: algoPrices } = useAssetPricesQuery([nativeAssetId])
-    const usdAlgoPrice =
-        algoPrices?.get(nativeAssetId)?.usdPrice ?? new Decimal(0)
-    const usdAlgoPriceKey = usdAlgoPrice.toString()
+    const nativeUsdPrice = algoPrices?.get(nativeAssetId)?.usdPrice
+    const usdAlgoPrice = nativeUsdPrice ?? new Decimal(0)
+    const usdAlgoPriceKey = nativeUsdPrice?.toString() ?? 'unpriced'
 
     // Stable stand-in for `results`, whose array identity churns per render.
     const resultsSig = results
@@ -163,6 +168,10 @@ export const useAccountValueTotalsQuery = (
                     isPricedNetwork
                         ? null
                         : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
+                const fiatValue =
+                    nativeUsdPrice === undefined && !algoAmount.isZero()
+                        ? null
+                        : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
                 const algoValue = usdAlgoPrice.isZero()
                     ? algoAmount
                     : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))
@@ -180,6 +189,7 @@ export const useAccountValueTotalsQuery = (
                     {
                         algoValue,
                         usdValue,
+                        fiatValue,
                         isPending: r?.isPending ?? false,
                         isFetched: r?.isFetched ?? false,
                         isRefetching: r?.isRefetching ?? false,
@@ -199,8 +209,9 @@ export const useAccountValueTotalsQuery = (
             isError: results.some(r => r.isError),
             isPaused: results.some(r => r.isPaused),
         }
-        // `results` / `usdAlgoPrice` are read inside but deliberately not
-        // deps — `resultsSig` / `usdAlgoPriceKey` are their stable stand-ins.
+        // `results` / `usdAlgoPrice` / `nativeUsdPrice` are read inside but
+        // deliberately not deps — `resultsSig` / `usdAlgoPriceKey` are their
+        // stable stand-ins.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resultsSig, addresses, hasAccounts, usdAlgoPriceKey])
 }

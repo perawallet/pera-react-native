@@ -177,9 +177,10 @@ export const useAccountBalancesQuery = (
             const holdings = r.data?.holdings ?? []
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
-            const usdAlgoPrice =
-                holdings.find(h => h.assetId === nativeAsset.assetId)
-                    ?.usdPrice ?? new Decimal(0)
+            const nativeHolding = holdings.find(
+                h => h.assetId === nativeAsset.assetId,
+            )
+            const usdAlgoPrice = nativeHolding?.usdPrice ?? new Decimal(0)
 
             let algoValue = new Decimal(0)
             // Accumulated in the same pass as `algoValue`: the portfolio
@@ -202,6 +203,7 @@ export const useAccountBalancesQuery = (
                             amount: new Decimal(0),
                             algoValue: new Decimal(0),
                             usdPrice: holding.usdPrice ?? undefined,
+                            fiatValue: null,
                             isFrozen: holding.isFrozen ?? false,
                         }
                     }
@@ -224,15 +226,25 @@ export const useAccountBalancesQuery = (
                         amount: assetAmount,
                         algoValue: algoAssetValue,
                         usdPrice: usdAssetPrice,
+                        fiatValue:
+                            holding.usdPrice === null
+                                ? null
+                                : assetAmount.times(holding.usdPrice),
                         isFrozen: holding.isFrozen ?? false,
                     }
                 },
             )
 
+            const isNativeUnpriced =
+                !!nativeHolding &&
+                nativeHolding.usdPrice === null &&
+                !nativeHolding.amount.isZero()
+
             return {
                 assetBalances,
                 algoValue,
                 usdValue,
+                fiatValue: isNativeUnpriced ? null : usdValue,
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,
