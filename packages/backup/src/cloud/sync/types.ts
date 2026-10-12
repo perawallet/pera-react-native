@@ -188,6 +188,9 @@ export type PasskeySkipReason =
     | 'seed-missing'
     | 'pubkey-mismatch'
     | 'already-present'
+    /** The extension's engine cannot hold a backed-up key, only re-derive
+     *  one, and this credential was backed up without its derivation inputs. */
+    | 'underivable'
 
 /** A credential's two backup items, joined. `secret` is `null` when the
  *  `passkey-secrets/` item is absent or unreadable. */

@@ -17,12 +17,15 @@ import {
     logger,
 } from '@perawallet/wallet-core-shared'
 import {
+    deriveEnginePasskeyEntry,
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    enginePasskeyEntryExists,
     isStoreDisabledError,
     nativePasskeyEntryExists,
     p256PrivateKeyToSpkiDer,
     passkeyMainKeyIdFromSeedKeyId,
+    storesPasskeysInEngine,
     usePasskeyAutofillService,
     writeNativePasskeyEntry,
 } from '@perawallet/wallet-core-passkeys'
@@ -54,6 +57,9 @@ export type UseCloudBackupPasskeyImportResult = {
 }
 
 type SeedCache = Map<string, { seedKeyId: string; mainKey: Uint8Array } | null>
+
+/** Seed address to the seed's local key id, or `null` when it is not here. */
+type SeedIdCache = Map<string, string | null>
 
 /** `privateKey` is owned by whoever receives this and must be zeroed. */
 type ResolvedKey =
@@ -115,6 +121,49 @@ export const useCloudBackupPasskeyImport = (
         [resolveSeedEntropy],
     )
 
+    /** `null` once written. The backed-up private key is no use here: the
+     *  engine only holds credentials it can re-derive from their seed. */
+    const importIntoEngine = useCallback(
+        async (
+            payload: PasskeyBackupPayload,
+            seedIds: SeedIdCache,
+        ): Promise<PasskeySkipReason | null> => {
+            const publicKeySpkiDer = decodeFromBase64(payload.publicKeySpkiDer)
+            if (
+                enginePasskeyEntryExists(payload.credentialId, publicKeySpkiDer)
+            ) {
+                return 'already-present'
+            }
+
+            const { seedAddress, identity } = payload
+            if (seedAddress == null || identity == null) return 'underivable'
+
+            if (!seedIds.has(seedAddress)) {
+                // Only the seed's id is wanted; the engine reads the entropy itself.
+                const resolved = await resolveSeedEntropy(seedAddress)
+                if (resolved !== null) zeroBytes(resolved.entropy)
+                seedIds.set(seedAddress, resolved?.seedKeyId ?? null)
+            }
+            const seedKeyId = seedIds.get(seedAddress) ?? null
+            if (seedKeyId === null) return 'seed-missing'
+
+            const result = await deriveEnginePasskeyEntry({
+                credentialId: payload.credentialId,
+                origin: payload.origin,
+                identity,
+                counter: payload.counter ?? 0,
+                seedKeyId,
+                publicKeySpkiDer,
+                userId: payload.userId,
+                userName: payload.userName,
+                displayName: payload.displayName,
+                createdAtMs: payload.createdAt,
+            })
+            return result === 'written' ? null : 'pubkey-mismatch'
+        },
+        [resolveSeedEntropy],
+    )
+
     const importPasskeys = useCallback<PasskeyImportFn>(
         async passkeys => {
             const summary: PasskeyImportSummary = {
@@ -125,12 +174,30 @@ export const useCloudBackupPasskeyImport = (
             // PBKDF2 at 210k iterations is the expensive part, and a user's
             // credentials cluster on one seed.
             const seeds: SeedCache = new Map()
+            const seedIds: SeedIdCache = new Map()
+            const inEngine = storesPasskeysInEngine()
 
             try {
                 for (const { payload, secret } of passkeys) {
                     const { credentialId } = payload
                     let privateKey: Uint8Array | null = null
                     try {
+                        if (inEngine) {
+                            const skip = await importIntoEngine(
+                                payload,
+                                seedIds,
+                            )
+                            if (skip === null) {
+                                summary.imported += 1
+                            } else {
+                                summary.skipped.push({
+                                    credentialId,
+                                    reason: skip,
+                                })
+                            }
+                            continue
+                        }
+
                         if (nativePasskeyEntryExists(credentialId)) {
                             summary.skipped.push({
                                 credentialId,
@@ -233,7 +300,7 @@ export const useCloudBackupPasskeyImport = (
 
             return summary
         },
-        [keyFromSeed, autofill],
+        [keyFromSeed, importIntoEngine, autofill],
     )
 
     return { importPasskeys }

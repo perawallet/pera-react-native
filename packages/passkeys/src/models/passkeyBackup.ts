@@ -20,6 +20,7 @@ import {
     logger,
 } from '@perawallet/wallet-core-shared'
 import { toDerivationUserHandle } from '../authenticator/authenticator'
+import { b64urlToBytes } from '../authenticator/wire'
 import { splitP256PublicKey } from '../authenticator/webauthn-structures'
 import {
     derivePasskeyCredential,
@@ -140,7 +141,9 @@ const SPKI_DER_LENGTH = 91
  * `derivePasskeyCredential` produces — before comparing. Throws on an input
  * that is neither shape; callers catch.
  */
-const toSpkiDer = (publicKey: Uint8Array): Uint8Array => {
+export const passkeyPublicKeyToSpkiDer = (
+    publicKey: Uint8Array,
+): Uint8Array => {
     if (publicKey.length === SPKI_DER_LENGTH) return publicKey
     const { x, y } = splitP256PublicKey(publicKey)
     return p256RawPublicKeyToSpkiDer(concatBytes(x, y))
@@ -157,6 +160,22 @@ const userNameOf = (metadata: Record<string, unknown>): string | undefined => {
     return userHandle && userHandle !== readString(metadata, 'userId')
         ? userHandle
         : undefined
+}
+
+/** The extension writes no `userId`, only `user.id` as base64url
+ *  `userHandleOriginal`. Restated in standard base64, the alphabet iOS writes
+ *  and Android's restore converts from, so every restore answers the relying
+ *  party with its own user id. */
+const userIdOf = (metadata: Record<string, unknown>): string | undefined => {
+    const userId = readString(metadata, 'userId')
+    if (userId) return userId
+    const original = readString(metadata, 'userHandleOriginal')
+    if (!original) return undefined
+    try {
+        return encodeToBase64(b64urlToBytes(original))
+    } catch {
+        return undefined
+    }
 }
 
 /** Unix ms, or 0 when the record never stored one. Not the clock: `createdAt`
@@ -190,7 +209,12 @@ export const storedPasskeyBackupInputs = (
     let publicKeySpkiDer: Uint8Array
     try {
         publicKeySpkiDer = p256PrivateKeyToSpkiDer(privateKey)
-        if (!bytesEqual(publicKeySpkiDer, toSpkiDer(key.publicKey))) {
+        if (
+            !bytesEqual(
+                publicKeySpkiDer,
+                passkeyPublicKeyToSpkiDer(key.publicKey),
+            )
+        ) {
             throw new Error('public key mismatch')
         }
     } catch {
@@ -211,7 +235,7 @@ export const storedPasskeyBackupInputs = (
                 ? (metadata.counter as number)
                 : undefined,
         publicKeySpkiDer: encodeToBase64(publicKeySpkiDer),
-        userId: readString(metadata, 'userId'),
+        userId: userIdOf(metadata),
         userName: userNameOf(metadata),
         displayName: readString(metadata, 'displayName'),
         createdAt: createdAtOf(metadata),
@@ -257,7 +281,7 @@ export const passkeyBackupInputs = async (
 
     let storedSpkiDer: Uint8Array
     try {
-        storedSpkiDer = toSpkiDer(storedPublicKey)
+        storedSpkiDer = passkeyPublicKeyToSpkiDer(storedPublicKey)
     } catch {
         // Neither 64/65 nor 91 bytes: a writer this module doesn't know
         // about. Unlike "no candidate matched", this path leaves no other
@@ -320,7 +344,7 @@ export const passkeyBackupInputs = async (
                     counter,
                     publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
                     seedKeyId,
-                    userId: readString(metadata, 'userId'),
+                    userId: userIdOf(metadata),
                     userName: userNameOf(metadata),
                     displayName: readString(metadata, 'displayName'),
                     createdAt: createdAtOf(metadata),
