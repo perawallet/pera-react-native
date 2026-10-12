@@ -24,7 +24,6 @@ import {
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
-    deleteAccountBalance,
     deleteAccountChainState,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
@@ -44,7 +43,7 @@ export type CleanupRemovedAccountDataResult = {
 }
 
 /**
- * Removes an account's holdings, balance and chain-state rows, prunes any assets and prices
+ * Removes an account's holdings and chain-state rows, prunes any assets and prices
  * no remaining account holds or is opted into, then runs any account-cleanup
  * handlers other packages registered (e.g. transaction-row pruning).
  * Idempotent — safe for an address with no data.
@@ -64,7 +63,6 @@ export async function cleanupRemovedAccountData({
     }
 
     await deleteAllAssetHoldingsForAccount({ db, accountAddress })
-    await deleteAccountBalance({ db, accountAddress })
     await deleteAccountChainState({ db, accountAddress })
     useAccountChainStateStore
         .getState()

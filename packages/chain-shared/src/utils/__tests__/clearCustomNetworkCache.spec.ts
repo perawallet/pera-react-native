@@ -97,7 +97,7 @@ describe('clearCustomNetworkCache', () => {
         )
     })
 
-    test('deletes custom-scope rows from all eleven network-partitioned tables, leaving other networks untouched', async () => {
+    test('deletes custom-scope rows from all ten network-partitioned tables, leaving other networks untouched', async () => {
         const custom = storedValue('custom')
         const testnet = storedValue('testnet')
         // `transactions` and `submission_attempts` key on `id` alone, so each
@@ -121,10 +121,6 @@ describe('clearCustomNetworkCache', () => {
         await db.run(sql`
             INSERT INTO account_asset_holdings (account_address, asset_id, network, updated_at)
             VALUES ('ADDR', '1', ${custom}, 1), ('ADDR', '1', ${testnet}, 1)
-        `)
-        await db.run(sql`
-            INSERT INTO account_balances (account_address, network, updated_at)
-            VALUES ('ADDR', ${custom}, 1), ('ADDR', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO account_chain_state (account_address, network, native_balance, chain_data, updated_at)
@@ -151,7 +147,7 @@ describe('clearCustomNetworkCache', () => {
 
         await clearCustomNetworkCache(queryClient, db)
 
-        expect(NETWORK_PARTITIONED_TABLES).toHaveLength(11)
+        expect(NETWORK_PARTITIONED_TABLES).toHaveLength(10)
         for (const table of NETWORK_PARTITIONED_TABLES) {
             const customRows = await db.values<[number]>(
                 sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${custom}`,

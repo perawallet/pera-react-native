@@ -20,7 +20,7 @@ export type UseRekeyFeePreflightResult = {
     /**
      * True when the source's spendable balance (balance − min-balance
      * reserve, in microalgos) cannot cover the rekey fee. Stays false while
-     * the fee or the balance row is still loading — missing data never
+     * the fee or the chain-state row is still loading — missing data never
      * blocks the flow; algod remains the final authority.
      */
     isUnderfunded: boolean
@@ -29,7 +29,7 @@ export type UseRekeyFeePreflightResult = {
 /**
  * Preflight for the rekey confirm screens: the source account pays the rekey
  * fee, and after paying it its balance must stay at or above the min-balance
- * reserve. Reads the per-network balance row account sync keeps fresh and
+ * reserve. Reads the per-network chain-state row account sync keeps fresh and
  * compares against the fee the screen already displays
  * (`useRekeyTransactionFeeQuery`'s ALGO `Decimal`), so the gate and the
  * displayed fee can never diverge.

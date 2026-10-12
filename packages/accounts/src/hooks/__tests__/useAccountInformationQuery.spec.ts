@@ -19,11 +19,11 @@ import React from 'react'
 import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import { useAccountInformationQuery } from '../useAccountInformationQuery'
 
-const mockGetAccountBalance = vi.hoisted(() => vi.fn())
+const mockGetAccountChainStateRow = vi.hoisted(() => vi.fn())
 const mockGetAccountHoldings = vi.hoisted(() => vi.fn())
 
 vi.mock('../../db', () => ({
-    getAccountBalance: mockGetAccountBalance,
+    getAccountChainStateRow: mockGetAccountChainStateRow,
     getAccountHoldings: mockGetAccountHoldings,
 }))
 
@@ -59,15 +59,17 @@ describe('useAccountInformationQuery', () => {
     })
 
     test('reads account information from database', async () => {
-        mockGetAccountBalance.mockResolvedValue({
+        mockGetAccountChainStateRow.mockResolvedValue({
             accountAddress: mockAddress,
-            algoBalance: new Decimal(1), // 1 ALGO (whole units)
-            minBalance: new Decimal(0.1), // 0.1 ALGO (whole units)
-            status: 'Online',
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authorityAddress: null,
+            nativeBalance: new Decimal(1_000_000),
+            chainData: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Online',
+                totalAssetsOptedIn: 1,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
         })
         mockGetAccountHoldings.mockResolvedValue([
             { assetId: '123', amount: new Decimal(500), isFrozen: true },
@@ -92,7 +94,7 @@ describe('useAccountInformationQuery', () => {
         expect(
             fakeAccountsChain().adapter.toAccountInformationAddress,
         ).toHaveBeenCalledWith(mockAddress)
-        expect(mockGetAccountBalance).toHaveBeenCalledWith({
+        expect(mockGetAccountChainStateRow).toHaveBeenCalledWith({
             accountAddress: mockAddress,
             scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
@@ -103,7 +105,7 @@ describe('useAccountInformationQuery', () => {
     })
 
     test('returns defaults when account not in database', async () => {
-        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
         mockGetAccountHoldings.mockResolvedValue([])
 
         const { result } = renderHook(
@@ -123,8 +125,32 @@ describe('useAccountInformationQuery', () => {
         })
     })
 
+    test('reads a chain with no reserve or participation status as zero and Offline', async () => {
+        mockGetAccountChainStateRow.mockResolvedValue({
+            accountAddress: mockAddress,
+            nativeBalance: new Decimal('2500000000000000000'),
+            chainData: { family: 'evm', nonce: { latest: 1, pending: 2 } },
+        })
+        mockGetAccountHoldings.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () => useAccountInformationQuery(mockAddress),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toMatchObject({
+            minBalance: 0n,
+            amount: 2_500_000_000_000_000_000n,
+            status: 'Offline',
+        })
+    })
+
     test('provides loading state initially', () => {
-        mockGetAccountBalance.mockImplementation(() => new Promise(() => {}))
+        mockGetAccountChainStateRow.mockImplementation(
+            () => new Promise(() => {}),
+        )
         mockGetAccountHoldings.mockImplementation(() => new Promise(() => {}))
 
         const { result } = renderHook(
@@ -139,15 +165,17 @@ describe('useAccountInformationQuery', () => {
         const address1 = 'ADDRESS1'
         const address2 = 'ADDRESS2'
 
-        mockGetAccountBalance.mockResolvedValue({
+        mockGetAccountChainStateRow.mockResolvedValue({
             accountAddress: address1,
-            algoBalance: new Decimal(1), // 1 ALGO (whole units)
-            minBalance: new Decimal(0.1), // 0.1 ALGO (whole units)
-            status: 'Online',
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authorityAddress: null,
+            nativeBalance: new Decimal(1_000_000),
+            chainData: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Online',
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
         })
         mockGetAccountHoldings.mockResolvedValue([])
 
@@ -167,6 +195,6 @@ describe('useAccountInformationQuery', () => {
         await waitFor(() => expect(result2.current.isSuccess).toBe(true))
         expect(result2.current.data?.address).toBe(address2)
 
-        expect(mockGetAccountBalance).toHaveBeenCalledTimes(2)
+        expect(mockGetAccountChainStateRow).toHaveBeenCalledTimes(2)
     })
 })

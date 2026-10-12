@@ -19,6 +19,8 @@
 //
 // or `withTestDatabase()` for all three at once.
 
+import { Decimal } from 'decimal.js'
+import { upsertAccountChainState } from '@perawallet/wallet-core-accounts'
 import {
     initializeDatabase,
     resetDatabase,
@@ -31,6 +33,7 @@ import {
 import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { testDatabaseService } from './sqlite-database'
@@ -93,4 +96,45 @@ export const seedAssets = async (
 ): Promise<void> => {
     if (assets.length === 0) return
     await upsertAssets({ items: assets, scope: scopeForLegacyNetwork(network) })
+}
+
+type SeedAlgorandAccountStateParams = {
+    accountAddress: string
+    scope: ChainScope
+    /** microAlgos. */
+    nativeBalance: Decimal
+    /** microAlgos. */
+    minBalance?: Decimal
+    totalAssetsOptedIn?: number
+    totalCreatedAssets?: number
+    authAddress?: string
+}
+
+/**
+ * Insert an account's chain-state row the way the syncer persists it, so
+ * balance and holdings reads have data without a network round-trip.
+ */
+export const seedAlgorandAccountState = async ({
+    accountAddress,
+    scope,
+    nativeBalance,
+    minBalance = new Decimal(100_000),
+    totalAssetsOptedIn = 0,
+    totalCreatedAssets = 0,
+    authAddress,
+}: SeedAlgorandAccountStateParams): Promise<void> => {
+    await upsertAccountChainState({
+        accountAddress,
+        scope,
+        nativeBalance,
+        chainData: {
+            family: 'algorand',
+            minBalance,
+            status: 'Offline',
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn: 0,
+            ...(authAddress ? { authAddress } : {}),
+        },
+    })
 }

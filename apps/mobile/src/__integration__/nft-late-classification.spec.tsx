@@ -40,10 +40,10 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountsStore,
     useEnsureAccountEnriched,
     type WalletAccount,
@@ -159,16 +159,13 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
     beforeEach(async () => {
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: account.address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(1_000_000),
+            nativeBalance: new Decimal(1_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 1,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
         await insertAssetHolding({
             accountAddress: account.address,

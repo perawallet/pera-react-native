@@ -78,7 +78,7 @@ describe('createEthereumAccountStateOps', () => {
 
             const state = await createEthereumAccountStateOps(
                 contextWith(),
-            ).fetchAccountState(ADDRESS, SCOPE, { priorResourceCount: 0 })
+            ).fetchAccountState(ADDRESS, SCOPE, { priorChainState: undefined })
 
             expect(balanceTags).toEqual(['0x10'])
             expect(nonceTags.sort()).toEqual(['0x10', 'pending'])
@@ -86,7 +86,6 @@ describe('createEthereumAccountStateOps', () => {
                 family: 'evm',
                 nonce: { latest: 7, pending: 9 },
             })
-            expect(state.nativeBalance.toString()).toBe('1')
             expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
                 '1000000000000000000',
             )
@@ -111,10 +110,10 @@ describe('createEthereumAccountStateOps', () => {
 
             const state = await createEthereumAccountStateOps(
                 contextWith(),
-            ).fetchAccountState(ADDRESS, SCOPE, { priorResourceCount: 0 })
+            ).fetchAccountState(ADDRESS, SCOPE, { priorChainState: undefined })
 
-            expect(state.nativeBalance.toFixed()).toBe(
-                '123456789.123456789123456789',
+            expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
+                '123456789123456789123456789',
             )
         })
     })

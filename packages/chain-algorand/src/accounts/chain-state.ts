@@ -10,21 +10,19 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import type { ObservedChainState } from '@perawallet/wallet-core-accounts'
 import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
-import { algosToMicroAlgos } from '@perawallet/wallet-core-shared'
-
-const STATUSES = ['Offline', 'Online', 'NotParticipating'] as const
 
 export const toAlgorandChainState = (
     observed: ObservedChainState,
 ): AccountChainState => ({
     family: 'algorand',
-    minBalance: algosToMicroAlgos(observed.minBalance ?? 0),
-    status: STATUSES.find(status => status === observed.status) ?? 'Offline',
-    totalAssetsOptedIn: observed.totalAssetsOptedIn ?? 0,
-    totalCreatedAssets: observed.totalCreatedAssets ?? 0,
-    totalAppsOptedIn: observed.totalAppsOptedIn ?? 0,
+    minBalance: new Decimal(0),
+    status: 'Offline',
+    totalAssetsOptedIn: 0,
+    totalCreatedAssets: 0,
+    totalAppsOptedIn: 0,
     ...(observed.authorityAddress
         ? { authAddress: observed.authorityAddress }
         : {}),

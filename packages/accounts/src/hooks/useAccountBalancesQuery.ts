@@ -34,7 +34,7 @@ import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
-    getAccountBalance,
+    getAccountChainStateRow,
     getAccountHoldingsPage,
     type AccountHoldingsFilters,
     type AccountHoldingsPageRow,
@@ -51,14 +51,14 @@ async function readAccountFromDb(
     scope: ChainScope,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    // If this account has no balance row yet the background sync either
+    // If this account has no chain-state row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
-    const balance = await getAccountBalance({
+    const row = await getAccountChainStateRow({
         accountAddress: address,
         scope,
     })
-    if (!balance) {
+    if (!row) {
         const network = legacyNetworkOf(scope)
         try {
             await fetchAndPersistAccount(address, network)

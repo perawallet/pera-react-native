@@ -23,10 +23,7 @@ import {
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     getAccountHoldings,
@@ -40,11 +37,6 @@ import {
     deleteAllAssetHoldingsForAccount,
 } from '../holdingsRepository'
 import { getAccountHoldingsPage } from '../holdingsQueries'
-import {
-    upsertAccountBalance,
-    getAccountBalance,
-    deleteAccountBalance,
-} from '../balancesRepository'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
@@ -858,19 +850,6 @@ describe('account holdings repository', () => {
     })
 
     describe('per-account cleanup helpers', () => {
-        const balanceArgs = (accountAddress: string, scope: ChainScope) => ({
-            db,
-            accountAddress,
-            scope,
-            algoBalance: new Decimal('1'),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            minBalance: new Decimal('0.1'),
-            status: 'Offline',
-            authorityAddress: null,
-        })
-
         it('getHeldAssetIdsByAccount returns the account holdings across networks', async () => {
             await refreshAccountHoldings({
                 db,
@@ -947,36 +926,6 @@ describe('account holdings repository', () => {
             expect(addr2).toEqual([
                 { assetId: '100', network: 'algorand/mainnet' },
             ])
-        })
-
-        it('deleteAccountBalance removes the account balance row(s)', async () => {
-            await upsertAccountBalance(balanceArgs('ADDR1', MAINNET_SCOPE))
-            await upsertAccountBalance(balanceArgs('ADDR1', TESTNET_SCOPE))
-            await upsertAccountBalance(balanceArgs('ADDR2', MAINNET_SCOPE))
-
-            await deleteAccountBalance({ db, accountAddress: 'ADDR1' })
-
-            expect(
-                await getAccountBalance({
-                    db,
-                    accountAddress: 'ADDR1',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).toBeUndefined()
-            expect(
-                await getAccountBalance({
-                    db,
-                    accountAddress: 'ADDR1',
-                    scope: TESTNET_SCOPE,
-                }),
-            ).toBeUndefined()
-            expect(
-                await getAccountBalance({
-                    db,
-                    accountAddress: 'ADDR2',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).toBeDefined()
         })
     })
 
