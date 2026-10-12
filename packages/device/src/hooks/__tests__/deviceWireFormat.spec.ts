@@ -11,11 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-    DeviceAccountTypes,
-    type DeviceAccountRegistration,
-    type DeviceAccountType,
-    type DeviceRegistration,
+import type {
+    DeviceAccountRegistration,
+    DeviceRegistration,
 } from '../../models'
 import { toDeviceRegistrationRequest } from '../serializers'
 import {
@@ -29,17 +27,22 @@ import {
 const onTheWire = (registration: DeviceRegistration): unknown =>
     JSON.parse(JSON.stringify(toDeviceRegistrationRequest(registration)))
 
+// The chain spells `accountType`; registration passes it through verbatim
+// and keeps `rank` off the wire.
 const account = (
     address: string,
-    accountType: DeviceAccountType,
+    accountType: string,
     receiveNotifications = true,
-): DeviceAccountRegistration => ({ address, accountType, receiveNotifications })
+): DeviceAccountRegistration => ({
+    address,
+    accountType,
+    rank: 1,
+    receiveNotifications,
+})
+
+const types = GOLDEN_DEVICE_ACCOUNT_TYPES
 
 describe('devices API wire format', () => {
-    it('spells every account type the way the backend expects', () => {
-        expect(DeviceAccountTypes).toStrictEqual(GOLDEN_DEVICE_ACCOUNT_TYPES)
-    })
-
     it('sends an update of a known device as the golden body', () => {
         const registration: DeviceRegistration = {
             id: '3502762836822418987',
@@ -49,12 +52,12 @@ describe('devices API wire format', () => {
             appVersion: '7.0.1',
             currency: 'USD',
             accounts: [
-                account('ALGO25ADDR', DeviceAccountTypes.algo25),
-                account('HDCHILDADDR', DeviceAccountTypes.hdWallet),
-                account('LEDGERADDR', DeviceAccountTypes.hardware),
-                account('MSIGADDR', DeviceAccountTypes.multisig),
-                account('WATCHADDR', DeviceAccountTypes.watch, false),
-                account('QUANTUMADDR', DeviceAccountTypes.quantum),
+                account('ALGO25ADDR', types.algo25),
+                account('HDCHILDADDR', types.hdWallet),
+                account('LEDGERADDR', types.hardware),
+                account('MSIGADDR', types.multisig),
+                account('WATCHADDR', types.watch, false),
+                account('QUANTUMADDR', types.quantum),
             ],
         }
 

@@ -74,7 +74,7 @@ describe('fetchTopPairs', () => {
             data: { results: [] },
         })
 
-        await fetchTopPairs('mainnet')
+        await fetchTopPairs({ chainId: 'algorand', networkId: 'mainnet' })
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
@@ -98,7 +98,10 @@ describe('fetchTopPairs', () => {
             },
         })
 
-        const result = await fetchTopPairs('mainnet', 10)
+        const result = await fetchTopPairs(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            10,
+        )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',

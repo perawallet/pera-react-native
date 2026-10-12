@@ -19,6 +19,7 @@ import {
     PeraWebImportErrorReason,
     usePeraWebAccountImport,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -47,7 +48,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
     const { t } = useLanguage()
     const { network } = useNetwork()
     const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
-    const { importAccount } = usePeraWebAccountImport()
+    const { importAccount } = usePeraWebAccountImport(LEGACY_CHAIN_ID)
     const setPayload = usePeraWebImportFlowStore(state => state.setPayload)
     const reset = usePeraWebImportFlowStore(state => state.reset)
 

@@ -16,14 +16,18 @@ import DraggableFlatList, {
     ScaleDecorator,
 } from 'react-native-draggable-flatlist'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
 
 type DraggableAccountListProps = {
     accounts: WalletAccount[]
-    onReorder: (orderedAddresses: string[]) => void
+    onReorder: (orderedIds: string[]) => void
 }
 
 export const DraggableAccountList = ({
@@ -38,7 +42,7 @@ export const DraggableAccountList = ({
             <ScaleDecorator activeScale={0.97}>
                 <PWView
                     style={styles.draggableRow}
-                    testID={`draggable_account_${item.address}`}
+                    testID={`draggable_account_${chainAccountOf(item, LEGACY_CHAIN_ID)?.address}`}
                 >
                     <PWView style={styles.accountDisplayContainer}>
                         <AccountDisplay
@@ -62,11 +66,11 @@ export const DraggableAccountList = ({
         [styles],
     )
 
-    const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
+    const keyExtractor = useCallback((item: WalletAccount) => item.id, [])
 
     const handleDragEnd = useCallback(
         ({ data }: { data: WalletAccount[] }) => {
-            onReorder(data.map(a => a.address))
+            onReorder(data.map(a => a.id))
         },
         [onReorder],
     )

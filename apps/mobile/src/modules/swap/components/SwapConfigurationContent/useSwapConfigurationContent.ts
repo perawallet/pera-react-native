@@ -15,6 +15,8 @@ import {
     useSwaps,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
@@ -61,7 +63,8 @@ const isSlippageInvalid = (text: string): boolean => {
 export const useSwapConfigurationContent = ({
     onApply,
 }: UseSwapConfigurationContentParams): UseSwapConfigurationContentResult => {
-    const { slippage, isLocalCurrencyInput } = useSwaps()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { slippage, isLocalCurrencyInput } = useSwaps(scope)
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')

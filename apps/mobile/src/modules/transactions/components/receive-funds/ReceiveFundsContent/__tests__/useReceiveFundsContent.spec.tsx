@@ -25,12 +25,12 @@ vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
 }))
 
-const mockAccount = {
+const mockAccount: WalletAccount = {
     id: 'watch-test-account',
-    address: 'test-address-123',
     name: 'Test Account',
     custody: { kind: 'watch' },
-} as WalletAccount
+    chains: { algorand: { address: 'test-address-123' } },
+}
 
 const mockSetSelectedAccount = vi.fn()
 const mockSetCanSelectAccount = vi.fn()
@@ -145,7 +145,7 @@ describe('useReceiveFundsContent', () => {
         expect(mockReset).not.toHaveBeenCalled()
     })
 
-    it('does not update selected account if address matches', () => {
+    it('does not update selected account if it is already selected', () => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             canSelectAccount: false,
             setSelectedAccount: mockSetSelectedAccount,

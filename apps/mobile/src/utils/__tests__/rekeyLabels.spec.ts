@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -20,32 +20,61 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
 }))
 
-import { getRekeyLabelI18n, splitAccountTypeLabel } from '@utils/rekeyLabels'
+import {
+    authorityTransitionLabel,
+    type AuthorityTransitionLabel,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    accountForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { splitAccountTypeLabel } from '@utils/rekeyLabels'
 
-describe('getRekeyLabelI18n', () => {
-    it('names the ledger signer for a rekey to a Ledger auth account', () => {
-        expect(
-            getRekeyLabelI18n({ from: 'standalone', to: 'hardware' }),
-        ).toEqual({
-            labelKey: 'account_info.type_rekeyed_signer',
-            signerKey: 'account_info.rekey_signer_ledger',
-            descriptionKey: 'account_type_info.rekeyed_ledger_description',
-        })
+const transitionLabel = ({
+    from,
+    to,
+}: {
+    from: AlgorandAccountKind
+    to: AlgorandAccountKind
+}): Omit<AuthorityTransitionLabel, 'supportUrl'> => {
+    const label = authorityTransitionLabel(
+        { from: accountForType(from), to: accountForType(to) },
+        LEGACY_CHAIN_ID,
+    )
+    if (!label) throw new Error('Algorand words every transition')
+    const { labelKey, signerKey, descriptionKey } = label
+    return { labelKey, signerKey, descriptionKey }
+}
+
+// The rekey copy the app renders, pinned per signer kind.
+describe('authorityTransitionLabel on Algorand', () => {
+    beforeEach(() => {
+        registerAlgorandAccountsAdapter()
     })
 
-    it('keeps the ledger signer but swaps the description for ledger-to-ledger', () => {
-        expect(getRekeyLabelI18n({ from: 'hardware', to: 'hardware' })).toEqual(
+    it('names the ledger signer for a rekey to a Ledger auth account', () => {
+        expect(transitionLabel({ from: 'standalone', to: 'hardware' })).toEqual(
             {
                 labelKey: 'account_info.type_rekeyed_signer',
                 signerKey: 'account_info.rekey_signer_ledger',
-                descriptionKey:
-                    'account_type_info.rekeyed_ledger_to_ledger_description',
+                descriptionKey: 'account_type_info.rekeyed_ledger_description',
             },
         )
     })
 
+    it('keeps the ledger signer but swaps the description for ledger-to-ledger', () => {
+        expect(transitionLabel({ from: 'hardware', to: 'hardware' })).toEqual({
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_ledger',
+            descriptionKey:
+                'account_type_info.rekeyed_ledger_to_ledger_description',
+        })
+    })
+
     it('names the standard signer for a rekey to an HD auth account', () => {
-        expect(getRekeyLabelI18n({ from: 'watch', to: 'hdWallet' })).toEqual({
+        expect(transitionLabel({ from: 'watch', to: 'hdWallet' })).toEqual({
             labelKey: 'account_info.type_rekeyed_signer',
             signerKey: 'account_info.rekey_signer_standard',
             descriptionKey: 'account_type_info.rekeyed_standard_description',
@@ -53,17 +82,15 @@ describe('getRekeyLabelI18n', () => {
     })
 
     it('names the shared signer for a rekey to a shared auth account', () => {
-        expect(getRekeyLabelI18n({ from: 'multisig', to: 'multisig' })).toEqual(
-            {
-                labelKey: 'account_info.type_rekeyed_signer',
-                signerKey: 'account_info.rekey_signer_shared',
-                descriptionKey: 'account_type_info.rekeyed_shared_description',
-            },
-        )
+        expect(transitionLabel({ from: 'multisig', to: 'multisig' })).toEqual({
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_shared',
+            descriptionKey: 'account_type_info.rekeyed_shared_description',
+        })
     })
 
     it('names the quantum signer for a rekey to a Quantum auth account', () => {
-        expect(getRekeyLabelI18n({ from: 'watch', to: 'quantum' })).toEqual({
+        expect(transitionLabel({ from: 'watch', to: 'quantum' })).toEqual({
             labelKey: 'account_info.type_rekeyed_signer',
             signerKey: 'account_info.rekey_signer_quantum',
             descriptionKey: 'account_type_info.rekeyed_quantum_description',
@@ -71,8 +98,8 @@ describe('getRekeyLabelI18n', () => {
     })
 
     it('ignores the rekeyed account own type — only the signer drives the label', () => {
-        expect(getRekeyLabelI18n({ from: 'watch', to: 'hardware' })).toEqual(
-            getRekeyLabelI18n({ from: 'quantum', to: 'hardware' }),
+        expect(transitionLabel({ from: 'watch', to: 'hardware' })).toEqual(
+            transitionLabel({ from: 'quantum', to: 'hardware' }),
         )
     })
 })

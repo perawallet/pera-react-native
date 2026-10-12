@@ -20,23 +20,36 @@ import {
     type AnalyzedSignableGroup,
 } from '@perawallet/wallet-core-signing'
 import { createMultisigStrategy } from '../createMultisigStrategy'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import { algorandAddressOf } from '../../../accounts/vocabulary'
 
 const makeMultisigAccount = (address: string): WalletAccount =>
     ({
         custody: { kind: 'multisig' },
-        address,
-        multisigDetails: {
-            version: 1,
-            threshold: 2,
-            addresses: ['PARTICIPANT_A', 'PARTICIPANT_B'],
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 2,
+                        addresses: ['PARTICIPANT_A', 'PARTICIPANT_B'],
+                    },
+                },
+            },
         },
     }) as any
 
 const makeAlgo25Account = (address: string): WalletAccount =>
     ({
         custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: 'key-1',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address,
+                keyPairId: 'key-1',
+            },
+        },
     }) as any
 
 const makeSigningResult = (address: string): SigningResult => ({
@@ -82,7 +95,7 @@ describe('createMultisigStrategy', () => {
         const mockParticipantStrategy: SigningStrategy = {
             canSign: () => true,
             sign: vi.fn((_group, account) =>
-                Promise.resolve(makeSigningResult(account.address)),
+                Promise.resolve(makeSigningResult(algorandAddressOf(account)!)),
             ),
         }
 
@@ -166,9 +179,14 @@ describe('createMultisigStrategy', () => {
                 canSign: () => true,
                 sign: vi.fn((_group, account) => {
                     const sigs =
-                        account.address === 'PARTICIPANT_A' ? sigsA : sigsB
+                        algorandAddressOf(account) === 'PARTICIPANT_A'
+                            ? sigsA
+                            : sigsB
                     return Promise.resolve(
-                        makeSigningResultWithSigs(account.address, sigs),
+                        makeSigningResultWithSigs(
+                            algorandAddressOf(account)!,
+                            sigs,
+                        ),
                     )
                 }),
             }

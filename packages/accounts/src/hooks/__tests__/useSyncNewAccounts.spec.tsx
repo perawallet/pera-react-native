@@ -14,26 +14,24 @@ import React from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSyncNewAccounts } from '../useSyncNewAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
 
-const mockSyncAndEnrichNewAccount = vi.fn(() => Promise.resolve())
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const mockSyncAndEnrichNewAccount = vi.fn((..._args: unknown[]) =>
+    Promise.resolve(),
+)
 
 vi.mock('../../sync/account-syncer', () => ({
     syncAndEnrichNewAccount: (...args: unknown[]) =>
         mockSyncAndEnrichNewAccount(...args),
 }))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 const makeAccount = (address: string): WalletAccount =>
-    ({
-        custody: { kind: 'watch' },
-        address,
-        name: address,
-    }) as unknown as WalletAccount
+    testAccount('watch', address, { id: address, name: address })
 
 const makeWrapper = () => {
     const client = new QueryClient({
@@ -52,7 +50,7 @@ describe('useSyncNewAccounts', () => {
     it('does not sync the accounts already present at mount', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
 
         expect(mockSyncAndEnrichNewAccount).not.toHaveBeenCalled()
     })
@@ -60,7 +58,7 @@ describe('useSyncNewAccounts', () => {
     it('syncs only the addresses added after mount', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
 
         act(() => {
             useAccountsStore
@@ -71,7 +69,7 @@ describe('useSyncNewAccounts', () => {
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledTimes(1)
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledWith(
             'ADDR2',
-            'mainnet',
+            SCOPE,
             expect.any(QueryClient),
         )
     })
@@ -79,7 +77,7 @@ describe('useSyncNewAccounts', () => {
     it('ignores store writes that do not change the address set', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
 
         act(() => {
             // Same membership, new array/object references (e.g. a rename or
@@ -95,7 +93,7 @@ describe('useSyncNewAccounts', () => {
             .getState()
             .setAccounts([makeAccount('ADDR1'), makeAccount('ADDR2')])
 
-        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
 
         act(() => {
             useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
@@ -109,7 +107,7 @@ describe('useSyncNewAccounts', () => {
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledTimes(1)
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledWith(
             'ADDR2',
-            'mainnet',
+            SCOPE,
             expect.any(QueryClient),
         )
     })
@@ -117,7 +115,7 @@ describe('useSyncNewAccounts', () => {
     it('does not sync while disabled', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts({ isEnabled: false }), {
+        renderHook(() => useSyncNewAccounts(SCOPE, { isEnabled: false }), {
             wrapper: makeWrapper(),
         })
 
@@ -134,7 +132,7 @@ describe('useSyncNewAccounts', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
         const { rerender } = renderHook(
-            ({ isEnabled }) => useSyncNewAccounts({ isEnabled }),
+            ({ isEnabled }) => useSyncNewAccounts(SCOPE, { isEnabled }),
             { wrapper: makeWrapper(), initialProps: { isEnabled: false } },
         )
 
@@ -168,7 +166,7 @@ describe('useSyncNewAccounts', () => {
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledTimes(1)
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledWith(
             'ADDR3',
-            'mainnet',
+            SCOPE,
             expect.any(QueryClient),
         )
     })

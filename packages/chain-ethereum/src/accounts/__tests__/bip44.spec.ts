@@ -11,18 +11,12 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
 import {
     assertEthereumBip44PathMatches,
     parseEthereumBip44Path,
 } from '../bip44'
 
-const DETAILS = {
-    account: 2,
-    change: 0,
-    keyIndex: 7,
-    derivationType: DerivationTypes.Peikert,
-}
+const DETAILS = { account: 2, keyIndex: 7 }
 
 describe('parseEthereumBip44Path', () => {
     it.each([["m/44'/60'/2'/0/7"], ["44'/60'/2'/0/7"], ['m/44h/60h/2h/0/7']])(

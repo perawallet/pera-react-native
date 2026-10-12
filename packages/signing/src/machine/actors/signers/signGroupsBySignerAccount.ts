@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '../../../pipeline/types'
 import { CannotSignError } from '../../../pipeline/errors'
-import { findSignerAccount } from '../../utils/findSignerAccount'
 
 /**
  * Shared scaffold for the per-signer actors (local-key, multisig):
@@ -37,10 +39,10 @@ export const signGroupsBySignerAccount = (
 ): Promise<SigningResult[]> =>
     Promise.all(
         groups.map(group => {
-            const signerAccount = findSignerAccount(
+            const signerAccount = findAccountByAddressOn(
                 allAccounts,
-                group.signerAddress,
                 chainId,
+                group.signerAddress,
             )
             if (!signerAccount) {
                 throw new CannotSignError(

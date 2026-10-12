@@ -15,15 +15,18 @@ import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
 import {
     useAccountChainStateStore,
+    useAccountsStore,
     type DelegateTransition,
     type WalletAccount,
-    type AccountType,
 } from '@perawallet/wallet-core-accounts'
 import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
-import { custodyForType } from '@test-utils/accountCustody'
+import {
+    accountForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -72,18 +75,41 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
+const PARTICIPANT = accountForType('standalone', 'PARTICIPANT_ADDR')
+
 const accountOfType = (
-    type: AccountType,
+    type: AlgorandAccountKind,
     authority?: string,
 ): WalletAccount => {
-    const address = `${type.toUpperCase()}_ADDR`
+    const account = accountForType(type)
+    const address = account.chains.algorand?.address ?? ''
     if (authority) seedAuthority(address, authority)
+    if (type !== 'multisig') return account
     return {
-        custody: custodyForType(type),
-        address,
-        keyPairId: 'key-1',
-    } as WalletAccount
+        ...account,
+        chains: {
+            algorand: {
+                address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 1,
+                        addresses: ['PARTICIPANT_ADDR', 'OTHER_ADDR'],
+                    },
+                },
+            },
+        },
+    }
 }
+
+const transition = (
+    from: AlgorandAccountKind,
+    to: AlgorandAccountKind,
+): DelegateTransition => ({
+    from: accountForType(from),
+    to: accountForType(to),
+})
 
 describe('useAccountTypeInfo', () => {
     beforeEach(() => {
@@ -92,6 +118,8 @@ describe('useAccountTypeInfo', () => {
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseDelegatedTransition.mockReturnValue(null)
+        // A held participant makes the multisig fixtures signable.
+        useAccountsStore.setState({ accounts: [PARTICIPANT] })
     })
 
     it('resolves algo25 account type', () => {
@@ -140,6 +168,7 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves an unsignable multisig account as No Auth', () => {
         mockUseCanSignWith.mockReturnValue(false)
+        useAccountsStore.setState({ accounts: [] })
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('multisig') }),
         )
@@ -169,10 +198,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a rekey to a Ledger auth account with the split signer title', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseDelegatedTransition.mockReturnValue({
-            from: 'watch',
-            to: 'hardware',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('watch', 'hardware'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('watch', 'AUTH') }),
         )
@@ -188,10 +216,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a shared-to-shared rekey with the shared description', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseDelegatedTransition.mockReturnValue({
-            from: 'multisig',
-            to: 'multisig',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('multisig', 'multisig'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('multisig', 'AUTH') }),
         )
@@ -203,10 +230,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a ledger-to-ledger rekey with the ledger-to-ledger description', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseDelegatedTransition.mockReturnValue({
-            from: 'hardware',
-            to: 'hardware',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('hardware', 'hardware'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('hardware', 'AUTH') }),
         )
@@ -293,10 +319,9 @@ describe('useAccountTypeInfo', () => {
     })
 
     it('opens webview with the quantum article when learn more is pressed for an account rekeyed to quantum', () => {
-        mockUseDelegatedTransition.mockReturnValue({
-            from: 'standalone',
-            to: 'quantum',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('standalone', 'quantum'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({
                 account: accountOfType('standalone', 'AUTH'),
@@ -313,10 +338,9 @@ describe('useAccountTypeInfo', () => {
     })
 
     it('opens webview with the quantum article when learn more is pressed for a Ledger account rekeyed to quantum', () => {
-        mockUseDelegatedTransition.mockReturnValue({
-            from: 'hardware',
-            to: 'quantum',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('hardware', 'quantum'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('hardware', 'AUTH') }),
         )

@@ -11,14 +11,13 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useQuery } from '@tanstack/react-query'
 import {
     useAssetsQuery,
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAllHeldAssetIdsForNetwork } from '../db'
 import { getOwnedAssetIdsQueryKey } from './querykeys'
 
@@ -38,10 +37,10 @@ export type UseOwnedAssetsResult = {
 }
 
 export const useOwnedAssets = (
+    scope: ChainScope,
     options?: UseOwnedAssetsOptions,
 ): UseOwnedAssetsResult => {
     const enabled = options?.enabled ?? true
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({

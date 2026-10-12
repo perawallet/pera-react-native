@@ -11,21 +11,18 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchTopPairs } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const useTopPairsQuery = (limit?: number, enabled: boolean = true) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
+export const useTopPairsQuery = (
+    scope: ChainScope,
+    limit?: number,
+    enabled: boolean = true,
+) => {
     return useQuery({
         queryKey: swapQueryKeys.topPairs(limit, scope),
-        queryFn: () => fetchTopPairs(network, limit),
+        queryFn: () => fetchTopPairs(scope, limit),
         enabled,
     })
 }

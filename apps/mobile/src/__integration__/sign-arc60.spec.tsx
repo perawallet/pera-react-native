@@ -54,6 +54,7 @@ import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
 
 // The test keystore's ed25519 `sign()` returns a fixed-length stub regardless
 // of key, so which key signed is only observable by spying on the keystore
@@ -140,7 +141,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
     it('blocks a quantum signer with a terminal notice instead of the confirm control', async () => {
         const quantum = await seedQuantumSigner()
         const { request, approve, reject } = buildArc60SignRequest({
-            signer: quantum.address,
+            signer: addressOf(quantum),
         })
 
         renderSignReview(request)
@@ -176,7 +177,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-arc60-signer',
             custody: { kind: 'watch' },
-            address: REKEYED_SIGNER_ADDRESS,
+            chains: { algorand: { address: REKEYED_SIGNER_ADDRESS } },
             name: 'Rekeyed SIWA signer',
         }
         seedAuthority(REKEYED_SIGNER_ADDRESS, AUTH_ADDRESS)
@@ -218,8 +219,12 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-with-own-key',
             custody: { kind: 'local', seed: null },
-            address: ownAddress,
-            keyPairId: ownKey.seedKey.id ?? '',
+            chains: {
+                algorand: {
+                    address: ownAddress,
+                    keyPairId: ownKey.seedKey.id ?? '',
+                },
+            },
             name: 'Rekeyed SIWA signer with key',
         }
         seedAuthority(ownAddress, AUTH_ADDRESS)
@@ -265,7 +270,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-arc60-account',
             custody: { kind: 'watch' },
-            address: REKEYED_SIGNER_ADDRESS,
+            chains: { algorand: { address: REKEYED_SIGNER_ADDRESS } },
             name: 'Rekeyed SIWA account',
         }
         seedAuthority(REKEYED_SIGNER_ADDRESS, AUTH_ADDRESS)
@@ -301,7 +306,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const delivered = approve.mock.calls[0][0]
         expect(delivered[0].signer).toBe(AUTH_ADDRESS)
         expect(signSpy).toHaveBeenCalledTimes(1)
-        expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
+        expect(signSpy.mock.calls[0][0]).toBe(keyPairIdOf(authSigner))
 
         signSpy.mockRestore()
     })

@@ -19,7 +19,10 @@ import {
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountAssetsQuery } from '../useAccountAssetsQuery'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockGetAccountHoldingsLite = vi.fn()
 vi.mock('../../db', () => ({
@@ -28,9 +31,6 @@ vi.mock('../../db', () => ({
 }))
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
-}))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
 
@@ -77,9 +77,12 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountAssetsQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -105,9 +108,12 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountAssetsQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -126,7 +132,7 @@ describe('useAccountAssetsQuery', () => {
 
         renderHook(
             () =>
-                useAccountAssetsQuery('ADDR1', {
+                useAccountAssetsQuery('ADDR1', SCOPE, {
                     sortMode: 'alphabeticalAsc',
                     search: 'algo',
                     filters: { hideZeroBalance: true },

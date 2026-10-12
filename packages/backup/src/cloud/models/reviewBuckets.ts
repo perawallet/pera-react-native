@@ -15,7 +15,7 @@ import {
     isContactItemKey,
     isPasskeyItemKey,
 } from './itemKeys'
-import type { BackupAccountType } from './payloads'
+import type { BackupItemKind } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
 
@@ -29,7 +29,7 @@ type ReviewBuckets<TAvailable> = {
 
 export type BackupAccountReview = ReviewBuckets<{
     address: string
-    type: BackupAccountType | null
+    type: BackupItemKind | null
 }>
 
 export type BackupContactReview = ReviewBuckets<{

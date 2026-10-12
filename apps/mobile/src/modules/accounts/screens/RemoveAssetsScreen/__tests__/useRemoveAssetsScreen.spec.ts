@@ -17,7 +17,12 @@ import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
-const mockAccount = { address: 'test-address', name: 'Test' }
+const mockAccount = {
+    id: 'test',
+    name: 'Test',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const mockAssetBalances = [
     {

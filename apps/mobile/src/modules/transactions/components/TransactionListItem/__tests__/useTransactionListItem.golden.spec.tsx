@@ -27,7 +27,10 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     baseUnitsToDisplayUnits,
     formatNumber,
@@ -42,6 +45,8 @@ import { useTransactionListItem } from '../useTransactionListItem'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
@@ -50,7 +55,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(),
-        useNativeAsset: () => ({ assetId: '0' }),
+        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     }
 })
 
@@ -190,8 +195,8 @@ describe('useTransactionListItem against the history summary goldens', () => {
         'renders $name as its summary',
         golden => {
             vi.mocked(useSelectedAccount).mockReturnValue({
-                address: golden.account,
-            } as ReturnType<typeof useSelectedAccount>)
+                chains: { algorand: { address: golden.account } },
+            } as unknown as ReturnType<typeof useSelectedAccount>)
             const { summary } = golden
 
             const { result } = renderHook(

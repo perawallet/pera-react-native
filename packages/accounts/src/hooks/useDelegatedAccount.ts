@@ -11,22 +11,21 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { getRekeyAccount } from '../signer-resolution'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getDelegatedAccount } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 import { useSelectedChainStates } from './useSelectedChainStates'
 
 export const useDelegatedAccount = (
     address: string | undefined | null,
+    chainId: ChainId,
 ): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
-    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
+    const chainStates = useSelectedChainStates(chainId)
     return useMemo(
         () =>
-            address
-                ? getRekeyAccount(address, accounts, LEGACY_CHAIN_ID)
-                : null,
-        [address, accounts, chainStates],
+            address ? getDelegatedAccount(address, accounts, chainId) : null,
+        [address, accounts, chainId, chainStates],
     )
 }

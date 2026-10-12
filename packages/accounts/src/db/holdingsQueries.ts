@@ -25,8 +25,8 @@ import {
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import {
-    LEGACY_CHAIN_ID,
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -290,10 +290,11 @@ export type AssetColumnsLite = Pick<
  */
 export const assetFromHoldingLiteRow = (
     row: AssetColumnsLite,
+    chainId: ChainId,
 ): Nullable<PeraAsset> => {
     if (row.decimals === null || row.totalSupply === null) {
-        return isNativeAssetId(LEGACY_CHAIN_ID, row.assetId)
-            ? nativeAssetFor(LEGACY_CHAIN_ID)
+        return isNativeAssetId(chainId, row.assetId)
+            ? nativeAssetFor(chainId)
             : null
     }
 

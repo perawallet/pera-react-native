@@ -17,12 +17,14 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '../blockchain'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO25_SEED_LENGTH,
     algo25SeedToIndices,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
  * Copy the first 32 bytes off `privateKey` so the caller's buffer is left
@@ -70,9 +72,10 @@ export type UseImportAlgo25FromSeedResult = {
  * separately from real failures.
  */
 export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
-    const importAlgo25 = useImportAccount()
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
+    const importAlgo25 = useImportAccount(scope)
     const updateAccount = useUpdateAccount()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete(ALGORAND_CHAIN_ID)
 
     const importFromSeed = useCallback(
         async (params: {
@@ -90,12 +93,12 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
                     mnemonicIndices,
-                    type: 'standalone',
+                    seed: null,
                 })
 
-                // Algo25 imports always return a WalletAccount; the HD
-                // branch only fires for `type: 'hdWallet'`.
-                if (!('address' in imported)) {
+                // Algo25 imports always return one WalletAccount; only a
+                // bip39 seed takes the HD branch.
+                if (Array.isArray(imported) || !('custody' in imported)) {
                     throw new Error(
                         'Unexpected non-account result for algo25 seed import',
                     )

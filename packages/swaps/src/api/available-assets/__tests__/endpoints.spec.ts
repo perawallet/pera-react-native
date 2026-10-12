@@ -41,7 +41,10 @@ describe('fetchAvailableAssets', () => {
     test('GETs /available-assets/ with asset_in_id', async () => {
         queryClientMock.mockResolvedValue({ data: { results: [validAsset] } })
 
-        await fetchAvailableAssets(0, 'mainnet')
+        await fetchAvailableAssets(0, {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -54,7 +57,11 @@ describe('fetchAvailableAssets', () => {
     test('forwards the q search param when provided', async () => {
         queryClientMock.mockResolvedValue({ data: { results: [] } })
 
-        await fetchAvailableAssets(0, 'mainnet', 'usdc')
+        await fetchAvailableAssets(
+            0,
+            { chainId: 'algorand', networkId: 'mainnet' },
+            'usdc',
+        )
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -11,6 +11,8 @@
  */
 
 import { useCallback } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
@@ -52,7 +54,8 @@ const SHEET_OPTIONS = {
  */
 export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
     const { requestByType } = useBottomSheetStore()
-    const { optIn } = useAssetOptInMutation()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { optIn } = useAssetOptInMutation(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const { t } = useLanguage()

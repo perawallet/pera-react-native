@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWFlatList, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
@@ -35,21 +39,16 @@ export type AccountMenuProps = {
     /** Fired when an activated Pera Card row is tapped (host closes the menu and opens the card). */
     onPeraCardOpen?: () => void
     /**
-     * Controlled highlight: when provided (even `null`), highlights this address
+     * Controlled highlight: when provided (even `null`), highlights this account
      * instead of the global selection, and tapping won't change the global account.
      */
-    selectedAddress?: Nullable<string>
+    selectedAccountId?: Nullable<string>
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
-    const {
-        listItems,
-        selectedAccountAddress,
-        sortMode,
-        flatListRef,
-        handleTap,
-    } = useAccountMenu(props)
+    const { listItems, selectedAccountId, sortMode, flatListRef, handleTap } =
+        useAccountMenu(props)
     const {
         onAddAccount,
         onOpenSort,
@@ -73,21 +72,22 @@ export const AccountMenu = (props: AccountMenuProps) => {
             }
 
             const acct = item.account
+            const address = chainAccountOf(acct, LEGACY_CHAIN_ID)?.address ?? ''
             return (
                 <CopyableText
-                    copyValue={acct.address}
+                    copyValue={address}
                     onPress={() => handleTap(acct)}
                     activeOpacity={0.8}
-                    testID={`account_switcher_row_${acct.address}`}
+                    testID={`account_switcher_row_${address}`}
                 >
                     <AccountWithBalance
                         account={acct}
-                        isHighlighted={acct.address === selectedAccountAddress}
+                        isHighlighted={acct.id === selectedAccountId}
                     />
                 </CopyableText>
             )
         },
-        [handleTap, selectedAccountAddress, onPeraCardActivate, onPeraCardOpen],
+        [handleTap, selectedAccountId, onPeraCardActivate, onPeraCardOpen],
     )
 
     return (
@@ -105,9 +105,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     data={listItems}
                     extraData={sortMode}
                     keyExtractor={item =>
-                        item.kind === 'account'
-                            ? item.account.address
-                            : 'pera-card'
+                        item.kind === 'account' ? item.account.id : 'pera-card'
                     }
                     renderItem={renderItem}
                     ListHeaderComponent={

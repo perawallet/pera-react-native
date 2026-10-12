@@ -11,6 +11,7 @@
  */
 
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
@@ -62,7 +63,7 @@ export const AddressListItem = ({
     })
 
     const primary = account
-        ? getAccountDisplayName(account)
+        ? getAccountDisplayName(account, LEGACY_CHAIN_ID)
         : (contact?.name ?? nfdName ?? truncatedAddress)
     // Show the address underneath only when the primary line is a distinct
     // label (name/NFD); otherwise the primary line already *is* the address.

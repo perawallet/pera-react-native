@@ -13,10 +13,7 @@
 import { describe, test, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { onlineManager, focusManager } from '@tanstack/react-query'
-import {
-    DeviceAccountTypes,
-    type DeviceAccountRegistration,
-} from '../../models'
+import type { DeviceAccountRegistration } from '../../models'
 
 const mockRegisterDevice = vi.fn()
 const mockClearDevicePushToken = vi.fn()
@@ -62,14 +59,15 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 // Builds a v3 registration entry. Defaults to the most common real-world
-// shape (algo25, notifications on) so each test only spells out the field
+// shape (a signing account, notifications on) so each test only spells out the field
 // it cares about.
 const registration = (
     address: string,
     overrides: Partial<DeviceAccountRegistration> = {},
 ): DeviceAccountRegistration => ({
     address,
-    accountType: DeviceAccountTypes.algo25,
+    accountType: 'signing-kind',
+    rank: 2,
     receiveNotifications: true,
     ...overrides,
 })
@@ -541,7 +539,8 @@ describe('useDeviceRegistration', () => {
         rerender({
             accounts: [
                 registration('ADDR_A', {
-                    accountType: DeviceAccountTypes.quantum,
+                    accountType: 'other-kind',
+                    rank: 3,
                 }),
             ],
         })
@@ -578,7 +577,7 @@ describe('useDeviceRegistration', () => {
             await import('../useDeviceRegistration')
 
         const accounts = [
-            registration('ADDR_A', { accountType: DeviceAccountTypes.quantum }),
+            registration('ADDR_A', { accountType: 'other-kind', rank: 3 }),
         ]
 
         renderHook(() => useDeviceRegistration(accounts))

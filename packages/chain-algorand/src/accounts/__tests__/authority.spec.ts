@@ -18,9 +18,24 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import {
+    standaloneAccount,
+    hardwareAccount,
+    hdAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+    type AlgorandAccountOptions,
+} from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../adapter'
-import { algorandAuthority } from '../authority'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '../../capability-defaults'
+import { algorandDescriptor } from '../../descriptor'
+import { algorandAuthority, AlgorandAuthorityTargetKinds } from '../authority'
 import { seedAuthority } from './seedAuthority'
 
 const mainnet = scopeForLegacyNetwork('mainnet')
@@ -33,150 +48,164 @@ beforeAll(() => {
 
 beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
+    registerAlgorandChain(true)
 })
 
-const asAccount = (partial: object) => partial as WalletAccount
-const noQuantum = { isQuantumTargetEnabled: false }
+type Options = AlgorandAccountOptions & { address?: string }
+
+// The chain reads its own `quantumAccounts` capability.
+const registerAlgorandChain = (quantumAccounts: boolean) => {
+    const { chains } = getProvider()
+    chains.reset()
+    chains.register(
+        algorandDescriptor,
+        { ...algorandCapabilityDefaults, quantumAccounts },
+        algorandCapabilityRestrictions,
+    )
+}
+
+const algo25 = ({ address = 'A', ...options }: Options = {}) =>
+    standaloneAccount(address, { id: 'a', keyPairId: 'kp', ...options })
+const hd = ({ address = 'H', ...options }: Options = {}) =>
+    hdAccount(address, { id: 'h', keyPairId: 'kp-hd', ...options })
+const ledger = ({ address = 'L', ...options }: Options = {}) =>
+    hardwareAccount(address, { id: 'l', ...options })
+const watch = ({ address = 'W', ...options }: Options = {}) =>
+    watchAccount(address, { id: 'w', ...options })
+const multisig = ({
+    address = 'M',
+    parameters = { threshold: 2, addresses: ['P1', 'P2', 'P3'], version: 1 },
+    ...options
+}: Options & { parameters?: MultisigParameters } = {}) =>
+    multisigAccount(address, parameters, { id: 'm', ...options })
+const quantum = ({ address = 'F', ...options }: Options = {}) =>
+    quantumAccount(address, { id: 'f', keyPairId: 'kp-quantum', ...options })
+
+const source = (address: string) => algo25({ id: `src-${address}`, address })
 
 const isEligibleRekeyTarget = (
     target: WalletAccount,
-    source: object,
+    from: WalletAccount,
     scope = mainnet,
 ) =>
     algorandAuthority.isEligibleTarget(
-        'standard',
+        AlgorandAuthorityTargetKinds.standard,
         target,
-        asAccount(source),
+        from,
         [],
         scope,
-        noQuantum,
     )
 const isEligibleQuantumRekeyTarget = (
     target: WalletAccount,
-    source: object,
+    from: WalletAccount,
     isQuantumTargetEnabled: boolean,
+) => {
+    registerAlgorandChain(isQuantumTargetEnabled)
+    return algorandAuthority.isEligibleTarget(
+        AlgorandAuthorityTargetKinds.quantum,
+        target,
+        from,
+        [],
+        mainnet,
+    )
+}
+const isEligibleLedgerRekeyTarget = (
+    target: WalletAccount,
+    from: WalletAccount,
 ) =>
     algorandAuthority.isEligibleTarget(
-        'quantum',
+        AlgorandAuthorityTargetKinds.hardware,
         target,
-        asAccount(source),
+        from,
         [],
         mainnet,
-        { isQuantumTargetEnabled },
-    )
-const isEligibleLedgerRekeyTarget = (target: WalletAccount, source: object) =>
-    algorandAuthority.isEligibleTarget(
-        'hardware',
-        target,
-        asAccount(source),
-        [],
-        mainnet,
-        noQuantum,
     )
 const isEligibleSharedRekeyTarget = (
     target: WalletAccount,
-    source: object,
+    from: WalletAccount,
     accounts: WalletAccount[],
 ) =>
     algorandAuthority.isEligibleTarget(
-        'shared',
+        AlgorandAuthorityTargetKinds.shared,
         target,
-        asAccount(source),
+        from,
         accounts,
         mainnet,
-        noQuantum,
     )
 const getAccountsRekeyedTo = algorandAuthority.accountsDelegatedTo
 const canSignProgram = (account: WalletAccount, scope = mainnet) =>
     algorandAuthority.canSignProgram(account, scope)
 
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'a',
-        address: overrides.address ?? 'A',
-        custody: { kind: 'local', seed: null },
-        keyPairId: 'kp',
-        ...overrides,
-    }) as WalletAccount
+describe('algorandAuthority.targetKinds', () => {
+    test('files each rekey target kind under the flow that offers it', () => {
+        expect(algorandAuthority.targetKinds).toEqual([
+            { id: 'standard', category: 'standard' },
+            { id: 'quantum', category: 'postQuantum' },
+            { id: 'hardware', category: 'hardware' },
+            { id: 'shared', category: 'shared' },
+        ])
+    })
 
-const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'h',
-        address: overrides.address ?? 'H',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        keyPairId: 'kp-hd',
-        hdWalletDetails: {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: 9,
-        },
-        ...overrides,
-    }) as WalletAccount
+    test('treats an unknown kind as ineligible', () => {
+        expect(
+            algorandAuthority.isEligibleTarget(
+                'unknown',
+                algo25(),
+                source('SRC'),
+                [],
+                mainnet,
+            ),
+        ).toBe(false)
+    })
 
-const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'l',
-        address: overrides.address ?? 'L',
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'dev',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 0,
-        },
-        hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
-        ...overrides,
-    }) as WalletAccount
+    test('treats quantum targets as disabled while the chain is not registered', () => {
+        getProvider().chains.reset()
 
-const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'w',
-        address: overrides.address ?? 'W',
-        custody: { kind: 'watch' },
-        ...overrides,
-    }) as WalletAccount
+        expect(
+            algorandAuthority.isEligibleTarget(
+                AlgorandAuthorityTargetKinds.quantum,
+                quantum(),
+                source('SRC'),
+                [],
+                mainnet,
+            ),
+        ).toBe(false)
+    })
+})
 
-const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'm',
-        address: overrides.address ?? 'M',
-        custody: { kind: 'multisig' },
-        multisigDetails: {
-            threshold: 2,
-            addresses: ['P1', 'P2', 'P3'],
-            version: 1,
-        },
-        ...overrides,
-    }) as WalletAccount
+describe('algorandAuthority.isAuthorityDowngrade', () => {
+    test('a quantum source to an Ed25519 target is a downgrade', () => {
+        const from = quantum()
+        const to = algo25()
 
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: overrides.id ?? 'f',
-        address: overrides.address ?? 'F',
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
+        expect(
+            algorandAuthority.isAuthorityDowngrade(
+                from,
+                to,
+                [from, to],
+                mainnet,
+            ),
+        ).toBe(true)
+    })
+
+    test('reads the effective authority one rekey hop away', () => {
+        const from = algo25()
+        const auth = quantum()
+        const to = hd()
+        seedAuthority('A', 'F')
+        const accounts = [from, auth, to]
+
+        expect(
+            algorandAuthority.isAuthorityDowngrade(from, to, accounts, mainnet),
+        ).toBe(true)
+        expect(
+            algorandAuthority.isAuthorityDowngrade(to, from, accounts, mainnet),
+        ).toBe(false)
+    })
+})
 
 describe('algorandAuthority.isDelegated', () => {
-    const baseAccount = {
-        id: '1',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        address: 'ADDR1',
-        keyPairId: 'pk1',
-    } as any
+    const baseAccount = hd({ address: 'ADDR1' })
 
     test('is true once the scope has an authority', () => {
         expect(algorandAuthority.isDelegated(baseAccount, mainnet)).toBe(false)
@@ -213,10 +242,12 @@ describe('algorandAuthority.canSignProgram', () => {
     // appearing. A delegated LSig carries a single sigkey, so multisig can
     // never be represented regardless of what keys it holds.
     test('canSignProgram stays false for hardware and multisig even with a keyPairId', () => {
-        expect(canSignProgram({ ...hardware, keyPairId: 'pk1' })).toBe(false)
-        expect(canSignProgram({ ...multisigAccount, keyPairId: 'pk1' })).toBe(
-            false,
-        )
+        expect(
+            canSignProgram(ledger({ address: 'HW', keyPairId: 'pk1' })),
+        ).toBe(false)
+        expect(
+            canSignProgram(multisig({ address: 'M', keyPairId: 'pk1' })),
+        ).toBe(false)
     })
 
     // A delegated LSig is checked against the sender's auth-addr, so only the
@@ -230,18 +261,18 @@ describe('algorandAuthority.canSignProgram', () => {
 })
 
 describe('services/accounts/utils - isEligibleRekeyTarget', () => {
-    const src = { address: 'SRC' }
+    const src = source('SRC')
 
     test('rejects target equal to source', () => {
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), { address: 'A' }),
+            isEligibleRekeyTarget(algo25({ address: 'A' }), source('A')),
         ).toBe(false)
     })
 
     test("rejects target equal to source's current auth", () => {
         seedAuthority('SRC', 'B')
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'B' }), { address: 'SRC' }),
+            isEligibleRekeyTarget(algo25({ address: 'B' }), source('SRC')),
         ).toBe(false)
     })
 
@@ -268,9 +299,7 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     })
 
     test('rejects target without signing keys', () => {
-        const noKey = algo25({ address: 'A' })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(noKey as any).keyPairId = undefined
+        const noKey = algo25({ address: 'A', keyPairId: null })
         expect(isEligibleRekeyTarget(noKey, src)).toBe(false)
     })
 
@@ -287,13 +316,13 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     test('accepts a rekeyed source rekeying to a different fresh target', () => {
         seedAuthority('SRC', 'B')
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), { address: 'SRC' }),
+            isEligibleRekeyTarget(algo25({ address: 'A' }), source('SRC')),
         ).toBe(true)
     })
 })
 
 describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
-    const src = { address: 'SRC' }
+    const src = source('SRC')
 
     test('accepts a quantum target when quantum targets are enabled (rekey-in migration path)', () => {
         expect(
@@ -323,7 +352,7 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
         expect(
             isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F' }),
-                { address: 'F' },
+                source('F'),
                 true,
             ),
         ).toBe(false)
@@ -334,16 +363,14 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
         expect(
             isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F' }),
-                { address: 'SRC' },
+                source('SRC'),
                 true,
             ),
         ).toBe(false)
     })
 
     test('rejects target without signing keys', () => {
-        const noKey = quantum({ address: 'F' })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(noKey as any).keyPairId = undefined
+        const noKey = quantum({ address: 'F', keyPairId: null })
         expect(isEligibleQuantumRekeyTarget(noKey, src, true)).toBe(false)
     })
 
@@ -359,7 +386,7 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
         expect(
             isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F' }),
-                { address: 'SRC' },
+                source('SRC'),
                 true,
             ),
         ).toBe(true)
@@ -367,7 +394,7 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
 })
 
 describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
-    const src = { address: 'SRC' }
+    const src = source('SRC')
 
     test('rejects non-hardware targets', () => {
         expect(isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), src)).toBe(
@@ -380,9 +407,7 @@ describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
 
     test('rejects target equal to source / already rekeyed', () => {
         expect(
-            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
-                address: 'L',
-            }),
+            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), source('L')),
         ).toBe(false)
         seedAuthority('L', 'X')
         expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), src)).toBe(
@@ -393,9 +418,10 @@ describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
     test("rejects target equal to source's current auth", () => {
         seedAuthority('SRC', 'L')
         expect(
-            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
-                address: 'SRC',
-            }),
+            isEligibleLedgerRekeyTarget(
+                ledger({ address: 'L' }),
+                source('SRC'),
+            ),
         ).toBe(false)
     })
 
@@ -407,7 +433,7 @@ describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
 })
 
 describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
-    const src = { address: 'SRC' }
+    const src = source('SRC')
 
     test('rejects non-multisig targets', () => {
         const all: WalletAccount[] = []
@@ -422,7 +448,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
     test('rejects multisig when the wallet holds none of its participants', () => {
         const ms = multisig({
             address: 'M',
-            multisigDetails: {
+            parameters: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
@@ -436,7 +462,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
         // A watch-only participant has no key of its own — it can't propose.
         const ms = multisig({
             address: 'M',
-            multisigDetails: {
+            parameters: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
@@ -451,7 +477,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
         // remaining signatures are collected from co-signers.
         const ms = multisig({
             address: 'M',
-            multisigDetails: {
+            parameters: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
@@ -464,7 +490,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
     test("rejects multisig equal to source's current auth", () => {
         const ms = multisig({
             address: 'M',
-            multisigDetails: {
+            parameters: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
@@ -472,15 +498,13 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
         })
         const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
         seedAuthority('SRC', 'M')
-        expect(isEligibleSharedRekeyTarget(ms, { address: 'SRC' }, all)).toBe(
-            false,
-        )
+        expect(isEligibleSharedRekeyTarget(ms, source('SRC'), all)).toBe(false)
     })
 
     test('rejects multisig already rekeyed away', () => {
         const ms = multisig({
             address: 'M',
-            multisigDetails: {
+            parameters: {
                 threshold: 1,
                 addresses: ['P1'],
                 version: 1,

@@ -40,12 +40,12 @@ const resolveEntropy = vi.fn(async (seedAddress: string) =>
         : null,
 )
 
-const resolveSeedKeyId = vi.fn(async (seedAddress: string) =>
+const resolveSeedKeyId = vi.fn(async (seedAddress: string, _chainId: string) =>
     seedAddress === 'SEEDADDRESS' ? 'local-seed-id' : null,
 )
 vi.mock('../useResolveSeedEntropyForBackup', () => ({
-    resolveBackupSeedKeyId: (seedAddress: string) =>
-        resolveSeedKeyId(seedAddress),
+    resolveBackupSeedKeyId: (seedAddress: string, chainId: string) =>
+        resolveSeedKeyId(seedAddress, chainId),
 }))
 
 vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => {
@@ -153,7 +153,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('writes the credential without its wallet being on this device', async () => {
             const pulled = await buildPulledWithSecret()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -175,7 +175,7 @@ describe('useCloudBackupPasskeyImport', () => {
                 secret: (await buildPulledWithSecret('alice')).secret,
             }
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -188,7 +188,7 @@ describe('useCloudBackupPasskeyImport', () => {
             const pulled = await buildPulledWithSecret()
             const other = await buildPulledWithSecret('mallory')
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -207,7 +207,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('skips a secret that is not a P-256 private key', async () => {
             const pulled = await buildPulledWithSecret()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -231,7 +231,7 @@ describe('useCloudBackupPasskeyImport', () => {
                 },
             )
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([pulled])
@@ -243,7 +243,7 @@ describe('useCloudBackupPasskeyImport', () => {
     describe('without a backed-up private key', () => {
         it('re-derives a credential whose public key matches', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -256,7 +256,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('records the local parent key id and the derivation counter', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([
@@ -274,7 +274,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('skips and never writes when the derived public key disagrees', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -288,7 +288,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('skips when the owning seed is not on this device', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -302,7 +302,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('skips when the record carries no derivation inputs either', async () => {
             const { payload } = await buildPulledWithSecret()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -324,7 +324,7 @@ describe('useCloudBackupPasskeyImport', () => {
             )
             vi.mocked(derivePasskeyCredential).mockClear()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([pulled])
@@ -338,7 +338,7 @@ describe('useCloudBackupPasskeyImport', () => {
             const pulled = await withoutSecret({ publicKeySpkiDer: 'd3Jvbmc=' })
             vi.mocked(derivePasskeyCredential).mockClear()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([pulled])
@@ -352,7 +352,7 @@ describe('useCloudBackupPasskeyImport', () => {
             writeEntry.mockRejectedValueOnce(new Error('keystore unavailable'))
             vi.mocked(derivePasskeyCredential).mockClear()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -368,7 +368,7 @@ describe('useCloudBackupPasskeyImport', () => {
                 new Error('kdf unavailable'),
             )
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -384,7 +384,7 @@ describe('useCloudBackupPasskeyImport', () => {
             const second = await withoutSecret({ identity: 'bob' })
             resolveEntropy.mockClear()
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([first, second])
@@ -396,7 +396,7 @@ describe('useCloudBackupPasskeyImport', () => {
     it('does not clobber a credential the device already holds', async () => {
         entryExists.mockReturnValue(true)
         const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
+            useCloudBackupPasskeyImport('algorand', resolveEntropy),
         )
 
         const summary = await result.current.importPasskeys([
@@ -415,7 +415,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('re-derives the credential under its restored seed in the engine', async () => {
             const pulled = await withoutSecret({ counter: 2 })
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -444,7 +444,7 @@ describe('useCloudBackupPasskeyImport', () => {
                 secret: (await buildPulledWithSecret('alice')).secret,
             }
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([pulled])
@@ -455,7 +455,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('skips a credential backed up without its derivation inputs', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -468,7 +468,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('skips when the owning seed is not on this device', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -482,7 +482,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('does not re-derive a credential the engine already holds', async () => {
             engineEntryExists.mockReturnValue(true)
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -497,7 +497,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('reports a mismatch when the seed does not reproduce the key', async () => {
             deriveEngineEntry.mockResolvedValue('pubkey-mismatch')
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -511,7 +511,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('records a failure and carries on when the engine throws', async () => {
             deriveEngineEntry.mockRejectedValueOnce(new Error('vault locked'))
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([
@@ -527,7 +527,7 @@ describe('useCloudBackupPasskeyImport', () => {
 
         it('finds each seed once and never reads its entropy', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([
@@ -536,6 +536,10 @@ describe('useCloudBackupPasskeyImport', () => {
             ])
 
             expect(resolveSeedKeyId).toHaveBeenCalledTimes(1)
+            expect(resolveSeedKeyId).toHaveBeenCalledWith(
+                'SEEDADDRESS',
+                'algorand',
+            )
             expect(resolveEntropy).not.toHaveBeenCalled()
         })
     })
@@ -543,7 +547,7 @@ describe('useCloudBackupPasskeyImport', () => {
     describe('publishing to the iOS identity store', () => {
         it('refreshes the identities once a credential is written', async () => {
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([
@@ -557,7 +561,7 @@ describe('useCloudBackupPasskeyImport', () => {
         it('does not refresh when nothing was written', async () => {
             entryExists.mockReturnValue(true)
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             await result.current.importPasskeys([await buildPulledWithSecret()])
@@ -570,7 +574,7 @@ describe('useCloudBackupPasskeyImport', () => {
                 new Error('ASCredentialIdentityStoreErrorDomain error 1'),
             )
             const { result } = renderHook(() =>
-                useCloudBackupPasskeyImport(resolveEntropy),
+                useCloudBackupPasskeyImport('algorand', resolveEntropy),
             )
 
             const summary = await result.current.importPasskeys([

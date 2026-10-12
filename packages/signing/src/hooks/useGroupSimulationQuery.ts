@@ -12,12 +12,11 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
     type PeraDisplayableTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { plannerAdapterForScope } from '../chain-adapter'
 
@@ -28,6 +27,7 @@ type UseGroupSimulationQueryParams = {
     groupTxs?: PeraTransaction[]
     /** Caller-side gate — typically "the group contains an app call". */
     enabled?: boolean
+    scope: ChainScope
 }
 
 export type UseGroupSimulationQueryResult = {
@@ -49,9 +49,8 @@ export const useGroupSimulationQuery = ({
     requestId,
     groupTxs,
     enabled = true,
+    scope,
 }: UseGroupSimulationQueryParams): UseGroupSimulationQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-
     const query = useQuery({
         queryKey: ['balance-impact-simulation', requestId, scope],
         enabled: enabled && !!requestId && !!groupTxs?.length,

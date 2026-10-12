@@ -12,7 +12,6 @@
 
 import { describe, expect, it } from 'vitest'
 import { assertBip44PathMatches, parseBip44Path } from '../bip44'
-import { DerivationTypes } from '../models'
 
 describe('parseBip44Path', () => {
     it.each([
@@ -44,12 +43,17 @@ describe('assertBip44PathMatches', () => {
         expect(() =>
             assertBip44PathMatches(
                 "m/44'/60'/2'/0/8",
-                {
-                    account: 2,
-                    change: 0,
-                    keyIndex: 7,
-                    derivationType: DerivationTypes.Peikert,
-                },
+                { account: 2, keyIndex: 7 },
+                60,
+            ),
+        ).toThrow(expect.objectContaining({ reason: 'mismatch' }))
+    })
+
+    it('rejects a path on the internal chain as a mismatch', () => {
+        expect(() =>
+            assertBip44PathMatches(
+                "m/44'/60'/2'/1/7",
+                { account: 2, keyIndex: 7 },
                 60,
             ),
         ).toThrow(expect.objectContaining({ reason: 'mismatch' }))

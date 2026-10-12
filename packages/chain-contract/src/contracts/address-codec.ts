@@ -28,6 +28,8 @@ export interface AddressCodec {
      * case (EIP-55) and on case-insensitive encodings such as base32.
      */
     areEqual(a: string, b: string): boolean
+    /** A short display form, as shown for an account with no name. */
+    truncate(address: string): string
     toPaymentUri(address: string, opts?: PaymentUriOpts): string
     parsePaymentUri(uri: string): ParsedPaymentUri | undefined
 }

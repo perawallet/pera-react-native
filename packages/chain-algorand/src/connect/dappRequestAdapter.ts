@@ -12,7 +12,11 @@
 
 import { arc0001SignTxnRequestSchema } from '../blockchain/arc0001/schema'
 import { ARC0001_MAX_TXN_B64_LENGTH } from '../blockchain/arc0001/limits'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getNetworkConfig,
     Networks,
@@ -24,6 +28,13 @@ import {
     type DappSigningParamsResult,
 } from '@perawallet/wallet-core-connections'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
+import {
+    accountType,
+    AccountTypes,
+    type AccountType,
+} from '../accounts/vocabulary'
+import { algorandAuthority } from '../accounts/authority'
+import { resolveAlgorandSigner } from '../accounts/signer-resolution'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isArc60WirePayload } from '../signing/message/arc60-wire'
 import { useAlgorandTransactionSigning } from './transactionSigning'
@@ -47,6 +58,37 @@ const BAKED_NETWORKS: Network[] = [
     Networks.betanet,
 ]
 
+// The webview bridge's account-type names, shared with the Pera webapp.
+const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
+    [AccountTypes.standalone]: 'Algo25',
+    [AccountTypes.hdWallet]: 'HDWallet',
+    [AccountTypes.hardware]: 'Hardware',
+    [AccountTypes.multisig]: 'Multisig',
+    [AccountTypes.watch]: 'Unsignable',
+    // Not aliased to `Algo25`: a dApp told `Algo25` expects a 64-byte Ed25519
+    // signature verifiable against a recoverable public key, and a quantum
+    // account yields neither.
+    [AccountTypes.quantum]: 'Quantum',
+}
+
+/**
+ * The bridge only lists signing accounts, so `Unsignable` and
+ * `RekeyedUnsignable` never emit in practice; they stay mapped so the wire
+ * format doesn't depend on that filter.
+ */
+const bridgeAccountTypeOf = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): string => {
+    if (algorandAuthority.isDelegated(account, scope)) {
+        return resolveAlgorandSigner(account, accounts, scope).kind === 'ok'
+            ? 'RekeyedSignable'
+            : 'RekeyedUnsignable'
+    }
+    return BRIDGE_ACCOUNT_TYPES[accountType(account)]
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
@@ -64,6 +106,7 @@ const isWithinTxnBounds = (txns: unknown): boolean =>
 
 export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    accountTypeOf: bridgeAccountTypeOf,
     // ARC-0001 requires a message that only echoes the dApp's own request. Other
     // signing errors wrap third-party text or interpolate held addresses.
     relayableErrorNames: ['Arc0001Error'],

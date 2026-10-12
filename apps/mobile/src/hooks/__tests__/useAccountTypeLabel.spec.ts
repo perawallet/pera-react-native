@@ -17,16 +17,19 @@ import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import {
     useAccountChainStateStore,
+    useAccountsStore,
     type MultiSigAccount,
     type DelegateTransition,
     type WalletAccount,
-    type AccountType,
 } from '@perawallet/wallet-core-accounts'
 import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
-import { custodyForType } from '@test-utils/accountCustody'
+import {
+    accountForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -55,25 +58,32 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-const accountOfType = (type: AccountType): WalletAccount =>
-    ({
-        custody: custodyForType(type),
-        address: `${type.toUpperCase()}_ADDR`,
-        keyPairId: 'key-1',
-    }) as WalletAccount
+const accountOfType = (type: AlgorandAccountKind): WalletAccount =>
+    accountForType(type)
 
 const rekeyedAccount: WalletAccount = {
+    ...accountForType('standalone', 'REKEYED_ADDR'),
     id: 'rekeyed-account',
-    custody: { kind: 'local', seed: null },
-    address: 'REKEYED_ADDR',
-    keyPairId: 'key-1',
 }
+
+const participant = accountForType('standalone', 'A')
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
     custody: { kind: 'multisig' },
-    address: 'MULTISIG_ADDR',
-    multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'], version: 1 },
+    chains: {
+        algorand: {
+            address: 'MULTISIG_ADDR',
+            native: {
+                family: 'algorand',
+                multisig: {
+                    threshold: 2,
+                    addresses: ['A', 'B', 'C'],
+                    version: 1,
+                },
+            },
+        },
+    },
 }
 
 describe('useAccountTypeLabel', () => {
@@ -81,16 +91,17 @@ describe('useAccountTypeLabel', () => {
         registerAlgorandAccountsAdapter()
         useNetworkStore.getState().setNetwork('mainnet')
         useAccountChainStateStore.getState().resetState()
-        seedAuthority(rekeyedAccount.address, 'AUTH_ADDR')
+        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseDelegatedTransition.mockReturnValue(null)
+        useAccountsStore.setState({ accounts: [] })
     })
 
     it('turns rekeyed when the network moves to the scope that holds the authority', () => {
         useAccountChainStateStore.getState().resetState()
         seedAuthority(
-            rekeyedAccount.address,
+            'REKEYED_ADDR',
             'AUTH_ADDR',
             scopeForLegacyNetwork('testnet'),
         )
@@ -131,6 +142,7 @@ describe('useAccountTypeLabel', () => {
 
     it('uses a plain shared account label for a signable multisig account', () => {
         mockUseCanSignWith.mockReturnValue(true)
+        useAccountsStore.setState({ accounts: [multisigAccount, participant] })
         const { result } = renderHook(() =>
             useAccountTypeLabel(multisigAccount),
         )
@@ -156,8 +168,8 @@ describe('useAccountTypeLabel', () => {
     it('splits the signer qualifier for a rekeyed signable account', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseDelegatedTransition.mockReturnValue({
-            from: 'watch',
-            to: 'hardware',
+            from: accountForType('watch'),
+            to: accountForType('hardware'),
         })
         const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({

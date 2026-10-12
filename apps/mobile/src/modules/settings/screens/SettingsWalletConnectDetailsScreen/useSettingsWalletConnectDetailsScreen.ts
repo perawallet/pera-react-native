@@ -12,7 +12,11 @@
 
 import { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
     type Optional,
@@ -65,7 +69,7 @@ export const useSettingsWalletConnectDetailsScreen = (
         () =>
             connection.accounts
                 .map(address =>
-                    accounts.find(account => account.address === address),
+                    findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address),
                 )
                 .filter(account => account !== undefined),
         [connection.accounts, accounts],

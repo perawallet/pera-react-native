@@ -49,13 +49,13 @@ describe('resolveDestinationAssetId', () => {
         expect(
             resolveDestinationAssetId(
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toBe(31_566_704n)
         expect(
             resolveDestinationAssetId(
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
-                'testnet',
+                { chainId: 'algorand', networkId: 'testnet' },
             ),
         ).toBe(10_458_941n)
     })
@@ -67,23 +67,23 @@ describe('resolveDestinationAssetId', () => {
         expect(
             resolveDestinationAssetId(
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
-                'betanet',
+                { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toBeNull()
         expect(
             resolveDestinationAssetId(
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
-                'custom',
+                { chainId: 'algorand', networkId: 'custom' },
             ),
         ).toBeNull()
     })
 
     it('needs no known id at all for an ALGO destination', () => {
         expect(
-            resolveDestinationAssetId(
-                pairWithDestination('ALGO', 'ALGO'),
-                'betanet',
-            ),
+            resolveDestinationAssetId(pairWithDestination('ALGO', 'ALGO'), {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
         ).toBe(ALGO_ASSET_NAME)
     })
 })

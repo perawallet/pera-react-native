@@ -18,23 +18,31 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
 import { arbitraryDataPayloadFor } from '../arbitraryDataPayload'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import {
+    hardwareAccount,
+    watchAccount,
+} from '../../../__tests__/algorandAccounts'
+import { algorandAddressOf } from '../../../accounts/vocabulary'
 
 const hdAccount = {
-    address: 'HD_ADDR',
-    keyPairId: 'key-hd-child',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 1,
-        derivationType: 9,
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'HD_ADDR',
+            keyPairId: 'key-hd-child',
+        },
     },
 } as unknown as WalletAccount
 
-const algo25Account = {
-    address: 'ALGO25_ADDR',
-    keyPairId: 'key-algo25-ed25519',
+const standaloneAccount = {
     custody: { kind: 'local', seed: null },
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'ALGO25_ADDR',
+            keyPairId: 'key-algo25-ed25519',
+        },
+    },
 } as unknown as WalletAccount
 
 const b64 = (text: string) => encodeToBase64(new TextEncoder().encode(text))
@@ -55,7 +63,7 @@ describe('arbitraryDataPayloadFor', () => {
     })
 
     test('builds the same payload for an Algo25 account', () => {
-        const payload = arbitraryDataPayloadFor(algo25Account, b64('hello'))
+        const payload = arbitraryDataPayloadFor(standaloneAccount, b64('hello'))
 
         expect(payload).toEqual(
             arbitraryDataPayloadFor(hdAccount, b64('hello')),
@@ -65,8 +73,13 @@ describe('arbitraryDataPayloadFor', () => {
     test('does not follow a rekey: the requested account is still signable', () => {
         // The dApp verifies against the requested address's own pubkey.
         const original = {
-            ...algo25Account,
-            address: 'ORIGINAL_ADDR',
+            ...standaloneAccount,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    ...standaloneAccount.chains[ALGORAND_CHAIN_ID],
+                    address: 'ORIGINAL_ADDR',
+                },
+            },
         } as unknown as WalletAccount
         seedAuthority('ORIGINAL_ADDR', 'AUTH_ADDR')
 
@@ -75,44 +88,17 @@ describe('arbitraryDataPayloadFor', () => {
         ).not.toThrow()
     })
 
-    test.each([
-        [
-            'a watch-rekeyed account',
-            { address: 'W', custody: { kind: 'watch' } },
-            'A',
-        ],
-        ['a watch account', { address: 'W', custody: { kind: 'watch' } }],
-        [
-            'a hardware wallet account',
-            {
-                address: 'HW',
-                custody: {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: 'd',
-                        deviceName: 'L',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
-                },
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'L',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
-            },
-        ],
+    test.each<[string, WalletAccount, string?]>([
+        ['a watch-rekeyed account', watchAccount('W'), 'A'],
+        ['a watch account', watchAccount('W')],
+        ['a hardware wallet account', hardwareAccount('HW')],
     ])('rejects %s', (_name, account, authority) => {
-        if (authority) seedAuthority(account.address, authority)
+        if (authority) {
+            seedAuthority(algorandAddressOf(account) as string, authority)
+        }
 
-        expect(() =>
-            arbitraryDataPayloadFor(
-                account as unknown as WalletAccount,
-                b64('hello'),
-            ),
-        ).toThrow(/Cannot sign arbitrary data/)
+        expect(() => arbitraryDataPayloadFor(account, b64('hello'))).toThrow(
+            /Cannot sign arbitrary data/,
+        )
     })
 })

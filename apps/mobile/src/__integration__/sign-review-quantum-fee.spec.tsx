@@ -50,7 +50,7 @@ import {
 import {
     useAccountChainStateStore,
     useAccountsStore,
-    type QuantumAccount,
+    type LocalAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
@@ -61,26 +61,29 @@ import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { addressOf } from './__fixtures__/accounts'
 
 /**
- * Seed the real algo25 signer (mints the key + registers the account exactly as
- * the harness does), then flip its account type to Quantum. `isQuantumAccount`
- * keys off `type === 'quantum'`, so the pipeline's resolved signer — and the
- * per-transaction lookup by sender — both resolve to a Quantum account.
+ * Seed the real algo25 signer, then re-register its address as a Quantum
+ * account. The scheme premium follows a loaded key's seed, so the account
+ * names a key the keystore doesn't hold and its quantum custody stands in, as
+ * it does for any key not yet loaded. The review only renders; nothing signs.
  */
 const seedQuantumSigner = async (): Promise<void> => {
     const account = await seedAlgo25Signer()
-    const quantumAccount: QuantumAccount = {
+    const quantumAccount: LocalAccount = {
         id: account.id,
         custody: { kind: 'local', seed: 'quantum' },
-        address: REVIEW_SIGNER_ADDRESS,
-        keyPairId: account.keyPairId ?? '',
+        chains: {
+            algorand: {
+                address: REVIEW_SIGNER_ADDRESS,
+                keyPairId: 'review-quantum-key',
+            },
+        },
         name: account.name,
     }
     useAccountsStore.getState().setAccounts([quantumAccount])
-    useAccountsStore
-        .getState()
-        .setSelectedAccountAddress(quantumAccount.address)
+    useAccountsStore.getState().setSelectedAccountId(quantumAccount.id)
 }
 
 /**
@@ -91,18 +94,20 @@ const seedQuantumSigner = async (): Promise<void> => {
  */
 const seedQuantumRekeyedToStandard = async (): Promise<void> => {
     const signer = await seedAlgo25Signer()
-    const rekeyedQuantum: QuantumAccount = {
+    const rekeyedQuantum: LocalAccount = {
         id: 'rekeyed-quantum',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: 'unused-once-rekeyed',
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: 'unused-once-rekeyed',
+            },
+        },
         name: 'Rekeyed Quantum',
     }
-    seedAuthority(rekeyedQuantum.address, signer.address)
+    seedAuthority(addressOf(rekeyedQuantum), addressOf(signer))
     useAccountsStore.getState().setAccounts([signer, rekeyedQuantum])
-    useAccountsStore
-        .getState()
-        .setSelectedAccountAddress(rekeyedQuantum.address)
+    useAccountsStore.getState().setSelectedAccountId(rekeyedQuantum.id)
 }
 
 /**
@@ -115,13 +120,13 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     const rekeyedWatch: WatchAccount = {
         id: 'rekeyed-watch',
         custody: { kind: 'watch' },
-        address: REVIEW_RECEIVER_ADDRESS,
+        chains: { algorand: { address: REVIEW_RECEIVER_ADDRESS } },
         name: 'Rekeyed Watch',
     }
-    seedAuthority(rekeyedWatch.address, REVIEW_SIGNER_ADDRESS)
+    seedAuthority(addressOf(rekeyedWatch), REVIEW_SIGNER_ADDRESS)
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, rekeyedWatch])
-    store.setSelectedAccountAddress(rekeyedWatch.address)
+    store.setSelectedAccountId(rekeyedWatch.id)
 }
 
 describe('Flow: quantum-fee explainer on the signing review surface', () => {

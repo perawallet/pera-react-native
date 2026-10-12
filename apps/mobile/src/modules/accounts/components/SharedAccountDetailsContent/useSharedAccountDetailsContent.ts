@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -36,7 +40,12 @@ export const useSharedAccountDetailsContent = (
     const { contacts, setSelectedContact } = useContacts()
 
     const accountAddressSet = useMemo(
-        () => new Set(accounts.map(a => a.address)),
+        () =>
+            new Set(
+                accounts.flatMap(
+                    a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address ?? [],
+                ),
+            ),
         [accounts],
     )
 

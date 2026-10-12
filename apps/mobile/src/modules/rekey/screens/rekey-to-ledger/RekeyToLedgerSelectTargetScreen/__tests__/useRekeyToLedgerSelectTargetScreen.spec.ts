@@ -13,12 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRekeyToLedgerSelectTargetScreen } from '../useRekeyToLedgerSelectTargetScreen'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const sourceAccount = { address: 'SRC', name: 'Src' } as WalletAccount
-const targetA = { address: 'A', name: 'A' } as WalletAccount
-const targetB = { address: 'B', name: 'B' } as WalletAccount
+import {
+    registerTargetFixtureChain,
+    sourceAccount,
+    targetA,
+    targetB,
+} from '../../../__tests__/authorityTargetFixture'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -33,20 +33,11 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockUseAuthorityTargets = vi.fn(
-    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
-        targetA,
-        targetB,
-    ],
-)
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useFindAccountByAddress: (address: string) =>
-        address === 'SRC' ? sourceAccount : undefined,
-    useAuthorityTargets: (
-        source: WalletAccount | undefined,
-        kind: string,
-        options?: object,
-    ) => mockUseAuthorityTargets(source, kind, options),
+// The real target lookup, so the screen lists what the fixture chain accepts.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
 }))
 
 describe('useRekeyToLedgerSelectTargetScreen', () => {
@@ -54,20 +45,47 @@ describe('useRekeyToLedgerSelectTargetScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('returns the targets the chain accepts for the resolved source', () => {
+    it('lists the targets the chain accepts under its hardware kinds', () => {
+        const adapter = registerTargetFixtureChain(
+            [
+                { id: 'fixture-hardware', category: 'hardware' },
+                { id: 'fixture-standard', category: 'standard' },
+            ],
+            { 'fixture-hardware': ['A'], 'fixture-standard': ['B'] },
+        )
+
         const { result } = renderHook(() =>
             useRekeyToLedgerSelectTargetScreen(),
         )
 
-        expect(result.current.targets).toEqual([targetA, targetB])
-        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
+        expect(result.current.targets).toEqual([targetA])
+        expect(adapter.authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'fixture-hardware',
+            targetA,
             sourceAccount,
-            'hardware',
-            undefined,
+            [sourceAccount, targetA, targetB],
+            expect.objectContaining({ chainId: 'algorand' }),
         )
     })
 
+    it('lists nothing when the chain files no kind under hardware', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-standard', category: 'standard' }],
+            { 'fixture-standard': ['A', 'B'] },
+        )
+
+        const { result } = renderHook(() =>
+            useRekeyToLedgerSelectTargetScreen(),
+        )
+
+        expect(result.current.targets).toEqual([])
+    })
+
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-hardware', category: 'hardware' }],
+            { 'fixture-hardware': ['A'] },
+        )
         const { result } = renderHook(() =>
             useRekeyToLedgerSelectTargetScreen(),
         )

@@ -11,10 +11,13 @@
  */
 
 import {
-    isQuantumAccount,
+    hasCustody,
+    signingKeyOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
+    FALCON_CHILD_KEY_TYPE,
     PQ_DERIVATION_CANONICAL,
     type PQDerivation,
     type useKMS,
@@ -23,7 +26,9 @@ import {
 type GetKey = ReturnType<typeof useKMS>['getKey']
 
 /**
- * Whether `account`'s quantum signing child is legacy-derivation.
+ * Whether `account`'s quantum signing child is legacy-derivation. Judged from
+ * the keystore entry the account signs with, since only a quantum child
+ * carries a derivation stamp.
  *
  * Deliberately `!== CANONICAL` rather than `=== LEGACY`: a canonical child is
  * always stamped at mint time, but migration 0004 swallows per-key stamping
@@ -44,10 +49,13 @@ type GetKey = ReturnType<typeof useKMS>['getKey']
 export const isLegacyQuantumChild = (
     getKey: GetKey,
     account: WalletAccount,
+    chainId: ChainId,
 ): boolean => {
-    if (!isQuantumAccount(account)) return false
-    const key = getKey(account.keyPairId)
-    if (!key) return false
+    if (!hasCustody(account, 'local')) return false
+    const keyPairId = signingKeyOn(account, chainId)
+    if (!keyPairId) return false
+    const key = getKey(keyPairId)
+    if (key?.type !== FALCON_CHILD_KEY_TYPE) return false
     const pqDerivation = (
         key.metadata as { pqDerivation?: PQDerivation } | undefined
     )?.pqDerivation

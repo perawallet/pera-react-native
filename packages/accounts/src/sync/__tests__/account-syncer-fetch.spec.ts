@@ -73,7 +73,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it("persists the chain's account state as the chain-state row and holdings", async () => {
-        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -117,7 +117,7 @@ describe('fetchAndPersistAccount', () => {
             chainData: priorChainState,
         })
 
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -130,7 +130,7 @@ describe('fetchAndPersistAccount', () => {
         fetchAccountState().mockRejectedValue(new Error('429'))
 
         await expect(
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
         ).rejects.toThrow('429')
 
         expect(mockUpsertAccountChainState).not.toHaveBeenCalled()
@@ -141,7 +141,7 @@ describe('fetchAndPersistAccount', () => {
         mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
 
         await expect(
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
         ).rejects.toThrow('db locked')
 
         expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
@@ -164,7 +164,7 @@ describe('fetchAndPersistAccount', () => {
             mockGetAccountChainStateRow.mockResolvedValue(priorRow())
             mockRefreshAccountHoldings.mockResolvedValue(false)
 
-            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+            const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
             expect(result).toEqual({
                 changed: false,
@@ -189,7 +189,7 @@ describe('fetchAndPersistAccount', () => {
                 }),
             )
 
-            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+            const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
             expect(result.changed).toBe(true)
             expect(result.holdingsChanged).toBe(false)
@@ -201,7 +201,7 @@ describe('fetchAndPersistAccount', () => {
             )
             mockRefreshAccountHoldings.mockResolvedValue(false)
 
-            const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+            const result = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
             expect(result.changed).toBe(true)
         })
@@ -209,8 +209,8 @@ describe('fetchAndPersistAccount', () => {
 
     it('coalesces concurrent fetches for the same account', async () => {
         const [a, b] = await Promise.all([
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
-            fetchAndPersistAccount('ADDR1', 'mainnet'),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
         ])
 
         expect(a).toEqual(b)
@@ -232,7 +232,7 @@ describe('ensureAccountFetched', () => {
             chainData: snapshot().chainState,
         })
 
-        await ensureAccountFetched('ADDR1', 'mainnet')
+        await ensureAccountFetched('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).not.toHaveBeenCalled()
     })
@@ -240,7 +240,7 @@ describe('ensureAccountFetched', () => {
     it('fetches when there is no chain-state row yet', async () => {
         mockGetAccountChainStateRow.mockResolvedValue(undefined)
 
-        await ensureAccountFetched('ADDR1', 'mainnet')
+        await ensureAccountFetched('ADDR1', MAINNET_SCOPE)
 
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
@@ -254,7 +254,7 @@ describe('ensureAccountFetched', () => {
         fetchAccountState().mockRejectedValue(new Error('algod down'))
 
         await expect(
-            ensureAccountFetched('ADDR1', 'mainnet'),
+            ensureAccountFetched('ADDR1', MAINNET_SCOPE),
         ).resolves.toBeUndefined()
     })
 })

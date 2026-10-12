@@ -11,21 +11,52 @@
  */
 
 import {
+    accountPresentationChainAdapters,
     accountsChainAdapters,
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
 import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
+import {
+    algorandAccountPresentation,
+    algorandAccountsAdapter,
+    algorandAddressCodec,
+} from '@perawallet/wallet-core-chain-algorand/accounts'
+import { algorandDeviceAdapter } from '@perawallet/wallet-core-chain-algorand/device'
+import { algorandMultisigAdapter } from '@perawallet/wallet-core-chain-algorand/multisig'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 
-// Unit specs skip the app bootstrap, so signer resolution over real accounts
-// has no adapter unless a spec registers one.
+// Unit specs skip the app bootstrap, so signer resolution and account copy
+// over real accounts have no adapter unless a spec registers one.
 export const registerAlgorandAccountsAdapter = (): void => {
     accountsChainAdapters.reset()
     accountsChainAdapters.register(algorandAccountsAdapter)
+    accountPresentationChainAdapters.reset()
+    accountPresentationChainAdapters.register(algorandAccountPresentation)
+}
+
+/** Registers Algorand accounts with the devices API the way the app bootstrap does. */
+export const registerAlgorandDeviceAdapter = (): void => {
+    deviceChainAdapters.reset()
+    deviceChainAdapters.register(algorandDeviceAdapter)
+}
+
+/** Lets `getAccountDisplayName` truncate an unnamed account's address as the app does. */
+export const registerAlgorandAddressCodec = (): void => {
+    if (!addressCodecs.has(algorandAddressCodec.chainId)) {
+        addressCodecs.register(algorandAddressCodec)
+    }
+}
+
+/** Lets a multisig fixture's address derive from its parameters. */
+export const registerAlgorandMultisigAdapter = (): void => {
+    multisigChainAdapters.reset()
+    multisigChainAdapters.register(algorandMultisigAdapter)
 }
 
 /**

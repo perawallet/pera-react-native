@@ -11,9 +11,9 @@
  */
 
 import {
+    type ChainCapabilityRequirement,
     useChainCapabilityCheck,
     useSelectedChainMode,
-    type ChainCapabilityRequirement,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     isRestrictedIn,

@@ -12,10 +12,9 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     decodeFromBase64,
@@ -160,6 +159,8 @@ export type UseSwapCosignResolverArgs = {
      * (e.g. the error-toast dispatcher) so this hook stays free of UI deps.
      */
     reportError: (error: unknown) => void
+    /** The scope swaps run on: its network gates submission, its chain settles it. */
+    scope: ChainScope
 }
 
 /**
@@ -181,8 +182,9 @@ export type UseSwapCosignResolverArgs = {
 export const useSwapCosignResolver = ({
     isAppActive,
     reportError,
+    scope,
 }: UseSwapCosignResolverArgs): void => {
-    const { network } = useNetwork()
+    const network = legacyNetworkOf(scope)
     const deviceId = useDeviceID(network)
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
@@ -301,7 +303,7 @@ export const useSwapCosignResolver = ({
 
     useEffect(() => {
         setSubmissionSettledHandler(
-            LEGACY_CHAIN_ID,
+            scope.chainId,
             'cosign',
             (txIds, network, status) =>
                 settleCosignAttempt(
@@ -312,9 +314,8 @@ export const useSwapCosignResolver = ({
                     { markConfirmed, updateSwapStatus, removeHandoff },
                 ),
         )
-        return () =>
-            setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'cosign', null)
-    }, [markConfirmed, updateSwapStatus, removeHandoff])
+        return () => setSubmissionSettledHandler(scope.chainId, 'cosign', null)
+    }, [scope.chainId, markConfirmed, updateSwapStatus, removeHandoff])
 
     useHandoffResolver<
         SwapHandoffRecord,

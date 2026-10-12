@@ -23,6 +23,8 @@ const CONTRACT_SUITES = {
         '../assets/src/__tests__/assets-adapter-contract.ts',
     '@perawallet/wallet-core-accounts/testing':
         '../accounts/src/__tests__/adapter-contract.ts',
+    '@perawallet/wallet-core-backup/testing':
+        '../backup/src/__tests__/testing.ts',
     '@perawallet/wallet-core-card/testing':
         '../card/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-chain-contract/testing':

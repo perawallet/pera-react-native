@@ -22,6 +22,7 @@ import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandMessageSignerAdapter } from '../../adapter'
 import {
     messageAccount,
+    messageAddress,
     otherMessageAddress,
     signWithMessageKey,
     siwaAuthPayload,
@@ -38,17 +39,17 @@ messageSignerContractTests(() => algorandMessageSignerAdapter, {
     account: messageAccount,
     accounts: [messageAccount],
     requests: [
-        arbitraryDataMessageRequest(scope, messageAccount.address, 'aGVsbG8='),
+        arbitraryDataMessageRequest(scope, messageAddress, 'aGVsbG8='),
         authDataMessageRequest(
             scope,
-            messageAccount.address,
-            siwaAuthPayload(messageAccount.address),
+            messageAddress,
+            siwaAuthPayload(messageAddress),
         ),
     ],
-    malformedRequest: authDataMessageRequest(scope, messageAccount.address, {
-        ...siwaAuthPayload(messageAccount.address),
+    malformedRequest: authDataMessageRequest(scope, messageAddress, {
+        ...siwaAuthPayload(messageAddress),
         authData: {
-            ...siwaAuthPayload(messageAccount.address).authData,
+            ...siwaAuthPayload(messageAddress).authData,
             data: 'bm90IGNhbm9uaWNhbCBqc29u',
         },
     }),

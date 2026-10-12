@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Network,
@@ -82,6 +83,8 @@ const PERIODIC_SYNC_MS = 5 * 60 * 1000
 const LOCAL_CHANGE_DEBOUNCE_MS = 2000
 
 export type BackupSyncManagerDeps = {
+    /** The chain whose account entries the backup carries; its items record none. */
+    chainId: ChainId
     importAccounts: SyncEngineDeps['importAccounts']
     importContacts: ContactImportFn
     /** Hook-bound 25-word phrase resolver, injected from RootComponent. */
@@ -249,6 +252,7 @@ export class BackupSyncManager {
                         listAccounts: () => this.deps.sources.listAccounts(),
                         serializeAccount: account =>
                             serializeAccountForBackup(account, {
+                                chainId: this.deps.chainId,
                                 updatedAt: Date.now(),
                                 hashAddress,
                                 resolveMnemonic: this.deps.resolveMnemonic,

@@ -11,129 +11,53 @@
  */
 
 import {
-    isStandaloneAccount,
     standaloneSecretOf,
-    isHardwareWalletAccount,
-    isHDWalletAccount,
-    isMultisigAccount,
-    isQuantumAccount,
-    isWatchAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupAdapterFor, type BackupHdContext } from '../../chain-adapter'
 import {
     accountItemKey,
     secretsItemKey,
-    BackupAccountType,
     BackupItemType,
-    type AddressBackupPayload,
     type SecretsBackupPayload,
 } from '../models'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { SerializedAccount } from './types'
 
 type SerializeParams = {
+    /** The chain whose entry on the account the items record. */
+    chainId: ChainId
     /** Epoch millis to stamp on the address payload (LWW). */
     updatedAt: number
     /** Secrets payload from KMS, or null for secret-less account types. */
     secrets: SecretsBackupPayload | null
     hashAddress: ItemKeyHasher
-    /** Resolved HD derivation data; REQUIRED for hdWallet accounts (the account
+    /** Resolved HD derivation data; REQUIRED for HD accounts (the account
      *  carries neither its derived public key nor the seed's first address). */
-    hd?: { seedFirstDerivedAddress: string; publicKeyHex: string }
-}
-
-const nameValue = (a: WalletAccount): string | null => a.name ?? null
-
-/** Maps a supported WalletAccount to its address payload, or null when HD context is absent. */
-const toAddressPayload = (
-    a: WalletAccount,
-    updatedAt: number,
-    hd?: { seedFirstDerivedAddress: string; publicKeyHex: string },
-): AddressBackupPayload | null => {
-    if (isStandaloneAccount(a)) {
-        // A private-key account has no backup item yet.
-        if (standaloneSecretOf(a) !== 'mnemonic') return null
-        return {
-            type: BackupAccountType.algo25,
-            address: a.address,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    if (isQuantumAccount(a)) {
-        return {
-            type: BackupAccountType.quantum,
-            address: a.address,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    if (isWatchAccount(a)) {
-        return {
-            type: BackupAccountType.watch,
-            address: a.address,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    if (isHardwareWalletAccount(a)) {
-        return {
-            type: BackupAccountType.hardware,
-            address: a.address,
-            deviceId: a.hardwareDetails.deviceId,
-            deviceName: a.hardwareDetails.deviceName,
-            accountIndex: a.hardwareDetails.accountIndex,
-            manufacturer: a.hardwareDetails.manufacturer,
-            transportType: a.hardwareDetails.transportType,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    if (isMultisigAccount(a)) {
-        return {
-            type: BackupAccountType.multisig,
-            address: a.address,
-            participantAddresses: a.multisigDetails.addresses,
-            threshold: a.multisigDetails.threshold,
-            version: a.multisigDetails.version,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    if (isHDWalletAccount(a)) {
-        if (!hd) return null
-        return {
-            type: BackupAccountType.hdWallet,
-            address: a.address,
-            seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
-            publicKey: hd.publicKeyHex,
-            account: a.hdWalletDetails.account,
-            change: a.hdWalletDetails.change,
-            keyIndex: a.hdWalletDetails.keyIndex,
-            derivationType: a.hdWalletDetails.derivationType,
-            customName: nameValue(a),
-            updatedAt,
-        }
-    }
-    const exhaustive: never = a
-    return exhaustive
+    hd?: BackupHdContext
 }
 
 export const serializeAccountItems = (
     account: WalletAccount,
-    { updatedAt, secrets, hd, hashAddress }: SerializeParams,
+    { chainId, updatedAt, secrets, hd, hashAddress }: SerializeParams,
 ): SerializedAccount | null => {
-    const addressPayload = toAddressPayload(account, updatedAt, hd)
-    if (addressPayload === null || !account.address) return null
+    // A standalone key stored as a raw private key has no backup item.
+    if (standaloneSecretOf(account) === 'privateKey') return null
+    const addressPayload = backupAdapterFor(chainId).serializeAccount(account, {
+        updatedAt,
+        hd,
+    })
+    if (addressPayload === null) return null
 
     const address = {
-        key: accountItemKey(hashAddress(account.address)),
+        key: accountItemKey(hashAddress(addressPayload.address)),
         type: BackupItemType.ACCOUNT,
         payload: addressPayload,
     }
     const secretsItem = secrets
         ? {
-              key: secretsItemKey(hashAddress(account.address)),
+              key: secretsItemKey(hashAddress(addressPayload.address)),
               type: BackupItemType.ACCOUNT,
               payload: secrets,
           }

@@ -15,13 +15,13 @@ import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardw
 /**
  * An account selectable in the Ledger import "N accounts found" list.
  * `derived` = an address derived on the Ledger device.
- * `rekeyed`  = an account rekeyed TO `authAccount` (a derived Ledger account);
- *              it is never device-verified — its `authAccount` is.
+ * `delegated` = an account whose authority is `authAccount` (a derived Ledger
+ *               account); it is never device-verified — its `authAccount` is.
  */
 export type LedgerSelectableAccount =
     | { kind: 'derived'; account: HardwareWalletDerivedAccount }
     | {
-          kind: 'rekeyed'
+          kind: 'delegated'
           address: string
           authAccount: HardwareWalletDerivedAccount
       }

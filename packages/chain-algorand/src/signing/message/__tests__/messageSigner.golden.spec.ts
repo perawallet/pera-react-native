@@ -27,6 +27,7 @@ import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandMessageSignerAdapter } from '../../adapter'
 import {
     messageAccount,
+    messageAddress,
     messageKeyPair,
     signWithMessageKey,
     siwaAuthPayload,
@@ -72,7 +73,7 @@ describe('Algorand message signatures stay byte-identical', () => {
 
     it('signs MX data as the captured signature and as algosdk.signBytes', async () => {
         const signatures = await signAll([
-            arbitraryDataMessageRequest(scope, messageAccount.address, HELLO),
+            arbitraryDataMessageRequest(scope, messageAddress, HELLO),
         ])
 
         expect(signatures).toEqual([GOLDEN_MX_HELLO])
@@ -83,8 +84,8 @@ describe('Algorand message signatures stay byte-identical', () => {
 
     it('signs an MX batch item by item, in order', async () => {
         const signatures = await signAll([
-            arbitraryDataMessageRequest(scope, messageAccount.address, HELLO),
-            arbitraryDataMessageRequest(scope, messageAccount.address, BINARY),
+            arbitraryDataMessageRequest(scope, messageAddress, HELLO),
+            arbitraryDataMessageRequest(scope, messageAddress, BINARY),
         ])
 
         expect(signatures).toEqual([GOLDEN_MX_HELLO, GOLDEN_MX_BINARY])
@@ -96,11 +97,11 @@ describe('Algorand message signatures stay byte-identical', () => {
     })
 
     it('signs an ARC-60 request as the captured signature and as the spec derivation', async () => {
-        const { authData, metadata } = siwaAuthPayload(messageAccount.address)
+        const { authData, metadata } = siwaAuthPayload(messageAddress)
 
         const [signature] = await signMessages(
             [
-                authDataMessageRequest(scope, messageAccount.address, {
+                authDataMessageRequest(scope, messageAddress, {
                     authData,
                     metadata,
                 }),

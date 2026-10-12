@@ -17,6 +17,13 @@ import {
     type ContextFingerprints,
 } from '../useNotifyWebViewOnContextChange'
 
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { debug: vi.fn() },
 }))

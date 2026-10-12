@@ -20,7 +20,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     useAccountAssetBalanceQuery,
     useFindAccountByAddress,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -39,7 +39,7 @@ const mockSuccessToast = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockOpenFundingTypeSheet = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -174,13 +174,14 @@ const tx = (id: string, dateTime: string): CardTransaction =>
 // Auto funding needs a connected account that can sign the AutoDraw LSig, so
 // the stored type alone is not enough — the account has to be resolvable.
 const LOCAL_ACCOUNT = {
-    address: 'LINKED_ADDR',
+    id: 'linked-account',
+    chains: { algorand: { address: 'LINKED_ADDR', keyPairId: 'key-1' } },
     custody: { kind: 'local', seed: null },
-    keyPairId: 'key-1',
 } as WalletAccount
 
 const LEDGER_ACCOUNT = {
-    address: 'LINKED_ADDR',
+    id: 'linked-account',
+    chains: { algorand: { address: 'LINKED_ADDR' } },
     custody: {
         kind: 'hardware',
         device: {
@@ -251,11 +252,14 @@ describe('usePeraCardOverview', () => {
         setLinkedUsdc(null)
         setLinkedAlgo(null)
         vi.mocked(useFindAccountByAddress).mockImplementation(
-            address => [LOCAL_ACCOUNT].find(a => a.address === address) ?? null,
+            address =>
+                [LOCAL_ACCOUNT].find(
+                    a => a.chains.algorand?.address === address,
+                ) ?? null,
         )
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        vi.mocked(useSelectedAccountId).mockReturnValue({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         })
     })
 
@@ -329,7 +333,9 @@ describe('usePeraCardOverview', () => {
         setLinkedUsdc('500')
         vi.mocked(useFindAccountByAddress).mockImplementation(
             address =>
-                [LEDGER_ACCOUNT].find(a => a.address === address) ?? null,
+                [LEDGER_ACCOUNT].find(
+                    a => a.chains.algorand?.address === address,
+                ) ?? null,
         )
 
         const { result } = renderHook(() => usePeraCardOverview())
@@ -419,9 +425,7 @@ describe('usePeraCardOverview', () => {
 
         result.current.onFundLinkedAccount()
 
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'LINKED_ADDR',
-        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('linked-account')
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
             params: { destinationTokenId: 'USDC_ALGORAND' },
@@ -438,9 +442,7 @@ describe('usePeraCardOverview', () => {
 
         result.current.onFundLinkedAccount()
 
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'LINKED_ADDR',
-        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('linked-account')
         // The spec runs on the default (mainnet) network, where USDC is 31566704.
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
@@ -481,7 +483,7 @@ describe('usePeraCardOverview', () => {
 
         result.current.onFundLinkedAccount()
 
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 

@@ -12,9 +12,12 @@
 
 import { useEffect, useRef } from 'react'
 import {
+    chainAccountOf,
     isMultisigAccount,
+    multisigParametersOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useNetwork,
     useOnNetworkSwitch,
@@ -62,17 +65,24 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
 
         pendingNetworkRef.current = null
 
-        const multisigAccounts = accountsRef.current.filter(isMultisigAccount)
+        const multisigAccounts = accountsRef.current
+            .filter(isMultisigAccount)
+            .flatMap(account => {
+                const parameters = multisigParametersOf(
+                    account,
+                    LEGACY_CHAIN_ID,
+                )
+                return parameters ? [{ account, parameters }] : []
+            })
         if (multisigAccounts.length === 0) return
 
         const run = async () => {
             const results = await Promise.allSettled(
-                multisigAccounts.map(account =>
+                multisigAccounts.map(({ parameters }) =>
                     createMultisigAccount(network, {
-                        version: account.multisigDetails.version,
-                        threshold: account.multisigDetails.threshold,
-                        participant_addresses:
-                            account.multisigDetails.addresses,
+                        version: parameters.version,
+                        threshold: parameters.threshold,
+                        participant_addresses: parameters.addresses,
                         device_id: deviceId,
                     }),
                 ),
@@ -81,7 +91,10 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
                 if (result.status === 'rejected') {
                     logger.warn('Multisig network-switch sync failed', {
                         source: 'useSyncMultisigAccountsOnNetworkSwitch',
-                        address: multisigAccounts[index].address,
+                        address: chainAccountOf(
+                            multisigAccounts[index].account,
+                            LEGACY_CHAIN_ID,
+                        )?.address,
                         network,
                         error: result.reason,
                     })

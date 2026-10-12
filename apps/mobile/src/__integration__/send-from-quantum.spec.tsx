@@ -45,8 +45,8 @@ import {
 import {
     useAccountsStore,
     type WalletAccount,
-    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
@@ -90,7 +90,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
@@ -99,12 +99,16 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'quantum-sender-1',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: keyResult!.signKeyId,
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: keyResult!.signKeyId,
+            },
+        },
         name: 'Quantum sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 

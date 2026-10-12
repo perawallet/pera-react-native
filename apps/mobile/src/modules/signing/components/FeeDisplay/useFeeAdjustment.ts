@@ -16,7 +16,8 @@ import type {
     PeraDisplayableTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import {
     useSigningPipeline,
     type FeeAdjustment,
@@ -26,7 +27,7 @@ import {
 
 export type UseFeeAdjustmentResult = {
     isAdjusted: boolean
-    /** ALGO display units; Decimal(0) when not adjusted */
+    /** Native asset display units; Decimal(0) when not adjusted */
     originalFee: Decimal
     adjustedFee: Decimal
 }
@@ -40,8 +41,8 @@ const NOT_ADJUSTED: UseFeeAdjustmentResult = {
 /**
  * Surfaces the fee raises the signing pipeline applied to a dApp's
  * transactions (today's only rule: the post-quantum minimum). Fees
- * are stored in µAlgo on the sign request and exposed here as ALGO
- * `Decimal`s ready for display.
+ * are stored in native base units on the sign request and exposed here in
+ * display units, ready for display.
  *
  * - Group-total mode (no `transaction`): sums every adjustment so the footer
  *   can show the aggregate original → adjusted delta.
@@ -55,6 +56,7 @@ export const useFeeAdjustment = (
     transaction?: PeraDisplayableTransaction,
 ): UseFeeAdjustmentResult => {
     const { feeAdjustments, currentRequest } = useSigningPipeline()
+    const { decimals: nativeDecimals } = useNativeAsset()
 
     return useMemo(() => {
         if (feeAdjustments.length === 0) {
@@ -73,8 +75,14 @@ export const useFeeAdjustment = (
             )
             return {
                 isAdjusted: true,
-                originalFee: microAlgosToAlgos(totalOriginal),
-                adjustedFee: microAlgosToAlgos(totalAdjusted),
+                originalFee: baseUnitsToDisplayUnits(
+                    totalOriginal,
+                    nativeDecimals,
+                ),
+                adjustedFee: baseUnitsToDisplayUnits(
+                    totalAdjusted,
+                    nativeDecimals,
+                ),
             }
         }
 
@@ -99,10 +107,16 @@ export const useFeeAdjustment = (
 
         return {
             isAdjusted: true,
-            originalFee: microAlgosToAlgos(match.originalFee),
-            adjustedFee: microAlgosToAlgos(match.adjustedFee),
+            originalFee: baseUnitsToDisplayUnits(
+                match.originalFee,
+                nativeDecimals,
+            ),
+            adjustedFee: baseUnitsToDisplayUnits(
+                match.adjustedFee,
+                nativeDecimals,
+            ),
         }
-    }, [feeAdjustments, currentRequest, transaction])
+    }, [feeAdjustments, currentRequest, transaction, nativeDecimals])
 }
 
 const matchesTransaction = (

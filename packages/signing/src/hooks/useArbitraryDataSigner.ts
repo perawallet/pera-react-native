@@ -11,35 +11,47 @@
  */
 
 import { useCallback } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { arbitraryDataMessageRequest, signMessages } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
 export type UseArbitraryDataSignerResult = {
-    signArbitraryData: LocalArbitrarySigningFunction
+    signArbitraryData: (
+        chainId: ChainId,
+        ...args: Parameters<LocalArbitrarySigningFunction>
+    ) => ReturnType<LocalArbitrarySigningFunction>
 }
 
-// Sign requests carry no chain yet, so every caller resolves the legacy one.
+// The caller names the request's chain; the signer resolves the account's address there.
 export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
 
-    const signArbitraryData = useCallback<LocalArbitrarySigningFunction>(
-        async (account, data) => {
-            const scope = getSelectedScope(LEGACY_CHAIN_ID)
+    const signArbitraryData = useCallback<
+        UseArbitraryDataSignerResult['signArbitraryData']
+    >(
+        async (chainId, account, data) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
+                )
+            }
+            const scope = getSelectedScope(chainId)
             const signed = await signMessages(
                 [data]
                     .flat()
                     .map(item =>
-                        arbitraryDataMessageRequest(
-                            scope,
-                            account.address,
-                            item,
-                        ),
+                        arbitraryDataMessageRequest(scope, address, item),
                     ),
                 { account, accounts },
                 {

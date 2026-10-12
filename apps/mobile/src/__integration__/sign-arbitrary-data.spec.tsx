@@ -33,6 +33,7 @@ import {
     seedQuantumSigner,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { addressOf } from './__fixtures__/accounts'
 
 describe('Flow: arbitrary-data (algo_signData) signing review', () => {
     beforeAll(async () => {
@@ -149,7 +150,7 @@ describe('Flow: arbitrary-data (algo_signData) signing review', () => {
     it('blocks a quantum signer with a terminal notice instead of the confirm control', async () => {
         const quantum = await seedQuantumSigner()
         const { request, approve, reject } = buildArbitraryDataSignRequest({
-            messages: [{ signer: quantum.address }],
+            messages: [{ signer: addressOf(quantum) }],
         })
 
         renderSignReview(request)

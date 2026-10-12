@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -32,7 +32,10 @@ export const TransactionFeeRow = ({
         >
             <AssetAmount
                 asset={nativeAsset}
-                value={microAlgosToAlgos(transaction.fee ?? 0n)}
+                value={baseUnitsToDisplayUnits(
+                    transaction.fee ?? 0n,
+                    nativeAsset.decimals,
+                )}
                 showSymbol
                 ignorePrivacyMode
             />

@@ -13,10 +13,15 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    addressOn,
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useRampPairsQuery,
     rampTokenAssetId,
@@ -45,21 +50,27 @@ type UseOnrampPairSelectionContentResult = {
 export const useOnrampPairSelectionContent = ({
     variant,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { resolve } = useBottomSheetResult<string>()
     const { network } = useNetwork()
     const { data: pairs, isLoading } = useRampPairsQuery()
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const [searchFilter, setSearchFilter] = useState('')
 
+    const selectedAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
+
     const balanceMap = useMemo((): Map<string, Decimal> => {
-        if (!selectedAccount?.address) return new Map()
+        if (!selectedAddress) return new Map()
         const assetBalances =
-            accountBalances.get(selectedAccount.address)?.assetBalances ?? []
+            accountBalances.get(selectedAddress)?.assetBalances ?? []
         return new Map(assetBalances.map(item => [item.assetId, item.amount]))
-    }, [accountBalances, selectedAccount?.address])
+    }, [accountBalances, selectedAddress])
 
     const items = useMemo((): OnrampSelectableToken[] => {
         const seen = new Set<string>()

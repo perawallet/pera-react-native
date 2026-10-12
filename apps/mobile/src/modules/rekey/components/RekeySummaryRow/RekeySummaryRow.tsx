@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { AccountIcon } from '@components/AccountIcon'
 import { useStyles } from './styles'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 export type RekeySummaryRowProps = {
     account: WalletAccount | null
@@ -35,7 +38,9 @@ export const RekeySummaryRow = ({
 
     if (!account) return null
 
-    const truncated = truncateAlgorandAddress(account.address)
+    const truncated = truncateAlgorandAddress(
+        chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '',
+    )
 
     return (
         <PWListItemLayout

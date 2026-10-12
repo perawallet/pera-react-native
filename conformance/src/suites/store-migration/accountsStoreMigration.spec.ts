@@ -16,6 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
     accountsChainAdapters,
+    chainAccountOf,
     hydrateAccountChainStates,
     isWatchAccount,
     useAccountChainStateStore,
@@ -32,6 +33,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
     migrations,
@@ -64,6 +66,7 @@ import {
     STORE_FIXTURES,
     type FixtureAccounts,
     type PersistedPayload,
+    type StoreFixture,
 } from './fixtures'
 
 const STORE_KEY = 'accounts-store'
@@ -73,21 +76,42 @@ const LEGACY_RECORD_FIELDS = [
     'credentials',
     'rekeyAddress',
     'rekeyAddressByNetwork',
+    'address',
+    'keyPairId',
+    'hdWalletDetails',
+    'hardwareDetails',
+    'multisigDetails',
 ]
 
-type PersistedRecord = Record<string, unknown> & { address: string }
+type PersistedRecord = Record<string, unknown> & {
+    id: string
+    address?: string
+    chains?: { algorand?: { address: string } }
+}
 type PersistedState = {
     accounts: PersistedRecord[]
+    selectedAccountId?: string | null
+    manualAccountOrder?: string[]
     authorities?: Record<string, Record<string, string>>
     unscopedAuthorities?: Record<string, string>
 }
 
-// The store's own persist storage: the platform key-value store, JSON-encoded
-// the way every version wrote it.
+const addressOf = (account: WalletAccount): string | undefined =>
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+
+// The platform key-value store under the accounts store, JSON-encoded the way
+// every version wrote it. Seeded and read directly: the store's own persist
+// storage drops every write until the store has hydrated.
 const storage = () => {
-    const persistStorage = useAccountsStore.persist.getOptions().storage
-    if (!persistStorage) throw new Error('the accounts store is not persisted')
-    return persistStorage
+    const keyValue = getProvider().keyValueStorage
+    return {
+        getItem: (key: string): unknown => {
+            const raw = keyValue.getItem(key)
+            return typeof raw === 'string' ? JSON.parse(raw) : null
+        },
+        setItem: (key: string, value: unknown) =>
+            keyValue.setItem(key, JSON.stringify(value)),
+    }
 }
 
 const readPersisted = (): PersistedState =>
@@ -167,8 +191,11 @@ describe('accounts-store migration conformance', () => {
     // the record or already holds it in the store's own maps.
     const expectAuthorityDurable = (): void => {
         const state = readPersisted()
+        // Before the migration the record carries its address on top, after it
+        // only in its chain entry.
         const record = state.accounts.find(
-            ({ address }) => address === rekeyed.address,
+            ({ address, chains }) =>
+                (address ?? chains?.algorand?.address) === rekeyed.address,
         )
         const onRecord =
             record?.rekeyAddress === algo25.address ||
@@ -197,7 +224,7 @@ describe('accounts-store migration conformance', () => {
     const heldAccount = (address: string): WalletAccount => {
         const account = useAccountsStore
             .getState()
-            .accounts.find(candidate => candidate.address === address)
+            .accounts.find(candidate => addressOf(candidate) === address)
         if (!account) throw new Error(`${address} is no longer held`)
         return account
     }
@@ -215,7 +242,7 @@ describe('accounts-store migration conformance', () => {
             accounts,
             LEGACY_CHAIN_ID,
         )
-        expect(signer.address).toBe(expectedSigner.address)
+        expect(addressOf(signer)).toBe(expectedSigner.address)
 
         const txn = await buildTxn(composer => {
             composer.addPayment({
@@ -248,17 +275,30 @@ describe('accounts-store migration conformance', () => {
         await submitAndConfirm(bytes)
     }
 
-    const expectAccountsBehave = async (phase: string): Promise<void> => {
-        const accounts = useAccountsStore.getState().accounts
-        expect(accounts.map(account => account.address)).toEqual([
+    const expectAccountsBehave = async (
+        phase: string,
+        fixture: StoreFixture,
+    ): Promise<void> => {
+        const { accounts, selectedAccountId, manualAccountOrder } =
+            useAccountsStore.getState()
+        expect(accounts.map(addressOf)).toEqual([
             algo25.address,
             hd.address,
             quantum.address,
             rekeyed.address,
             fixtureAccounts.watch.address,
         ])
+        // Selection and order move from addresses to the same accounts' ids.
+        expect(selectedAccountId).toBe(fixtureAccounts.algo25.id)
+        expect(manualAccountOrder).toEqual(accounts.map(account => account.id))
         expect(isWatchAccount(heldAccount(fixtureAccounts.watch.address))).toBe(
             true,
+        )
+        // Derived, not minted: every context that migrates the payload must
+        // agree on it, and a restart must not change it.
+        expect(heldAccount(fixtureAccounts.watch.address).id).toBe(
+            fixture.migratedWatchId?.(fixtureAccounts) ??
+                fixtureAccounts.watch.id,
         )
 
         for (const account of [algo25, hd, quantum]) {
@@ -270,27 +310,26 @@ describe('accounts-store migration conformance', () => {
         const delegated = accountsChainAdapters
             .get(LEGACY_CHAIN_ID)
             .authority?.accountsDelegatedTo(algo25.address, accounts)
-        expect(delegated?.map(account => account.address)).toEqual([
-            rekeyed.address,
-        ])
+        expect(delegated?.map(addressOf)).toEqual([rekeyed.address])
 
         const persisted = readPersisted()
         for (const record of persisted.accounts) {
             for (const field of LEGACY_RECORD_FIELDS) {
-                expect(
-                    record,
-                    `${record.address} kept ${field}`,
-                ).not.toHaveProperty(field)
+                expect(record, `${record.id} kept ${field}`).not.toHaveProperty(
+                    field,
+                )
             }
             // v4 renamed the Algorand-specific seed scheme.
             expect(
                 (record.custody as { seed?: unknown }).seed,
-                `${record.address} kept the algo25 seed scheme`,
+                `${record.id} kept the algo25 seed scheme`,
             ).not.toBe('algo25')
         }
         expect(persisted.authorities?.[toScopeKey(scope)]).toEqual({
             [rekeyed.address]: algo25.address,
         })
+        expect(persisted).not.toHaveProperty('selectedAccountAddress')
+        expect(persisted.selectedAccountId).toBe(fixtureAccounts.algo25.id)
     }
 
     describe.each(STORE_FIXTURES)('$name payload', fixture => {
@@ -309,7 +348,7 @@ describe('accounts-store migration conformance', () => {
         afterAll(() => teardown())
 
         it('keeps every account signing on the first launch', async () => {
-            await expectAccountsBehave(`${fixture.name} first launch`)
+            await expectAccountsBehave(`${fixture.name} first launch`, fixture)
         })
 
         // Nothing has synced, and the chain-state slice is memory-only: the
@@ -319,7 +358,10 @@ describe('accounts-store migration conformance', () => {
             async ordinal => {
                 useAccountChainStateStore.getState().resetState()
                 await launch(db)
-                await expectAccountsBehave(`${fixture.name} ${ordinal} restart`)
+                await expectAccountsBehave(
+                    `${fixture.name} ${ordinal} restart`,
+                    fixture,
+                )
             },
         )
     })

@@ -34,7 +34,12 @@ const {
     mockOfflineKeyRegistration: vi.fn(),
     mockEncodeTransaction: vi.fn((tx: unknown) => tx),
     mockDecodeTransaction: vi.fn((tx: unknown) => tx),
-    mockAllAccounts: { current: [] as { address: string; id: string }[] },
+    mockAllAccounts: {
+        current: [] as {
+            id: string
+            chains: { algorand: { address: string } }
+        }[],
+    },
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
     mockResolveSignerForAccount: vi.fn(
         (_account?: unknown, _accounts?: unknown) =>
@@ -61,6 +66,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         network: mockNetwork.current,
         networkConfig: { genesisId: `${mockNetwork.current}-v1.0` },
     }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork.current,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -72,6 +81,11 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockAllAccounts.current,
+    findAccountByAddressOn: (
+        accounts: typeof mockAllAccounts.current,
+        chainId: 'algorand',
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     resolveAuthAccount: (account: unknown) => mockResolveAuthAccount(account),
     resolveSignerForAccount: (account: unknown, accounts: unknown) =>
         mockResolveSignerForAccount(account, accounts),
@@ -127,7 +141,10 @@ const seedSenderInWallet = () => {
     mockResolveSignerForAccount.mockReturnValue({ kind: 'ok' })
     mockNetwork.current = 'mainnet'
     mockAllAccounts.current = [
-        { address: VALID_ADDRESS, id: 'wallet-account-1' },
+        {
+            id: 'wallet-account-1',
+            chains: { algorand: { address: VALID_ADDRESS } },
+        },
     ]
 }
 

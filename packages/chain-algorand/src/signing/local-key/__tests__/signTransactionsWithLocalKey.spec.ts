@@ -19,6 +19,7 @@ import {
     SIGN_BATCH_SIZE,
     signTransactionsWithLocalKey,
 } from '../signTransactionsWithLocalKey'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
 const OTHER = 'SMYOGL34R6IPDMI6TGHYDDWIGH6Z3EDGTNDKLWYVHPGDTW5D5XAYGKY25U'
@@ -30,11 +31,18 @@ const txn = (id: number): PeraTransaction =>
         bytesToSign: () => new Uint8Array([2, id]),
     }) as unknown as PeraTransaction
 
-const algo25Account = (address = SENDER): WalletAccount => ({
+const standaloneAccount = (
+    address = SENDER,
+    keyPairId = 'key-1',
+): WalletAccount => ({
     id: 'acct',
     custody: { kind: 'local', seed: null },
-    address,
-    keyPairId: 'key-1',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address,
+            keyPairId,
+        },
+    },
 })
 
 const deps = (
@@ -56,7 +64,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps(),
             group,
             [2, 0],
-            algo25Account(),
+            standaloneAccount(),
         )
 
         expect(result).toHaveLength(3)
@@ -72,13 +80,13 @@ describe('signTransactionsWithLocalKey', () => {
             deps(),
             [txn(0)],
             [0],
-            algo25Account(),
+            standaloneAccount(),
         )
         const signedByAuth = await signTransactionsWithLocalKey(
             deps(),
             [txn(0)],
             [0],
-            algo25Account(OTHER),
+            standaloneAccount(OTHER),
         )
 
         expect(signedBySender[0].sgnr).toBeUndefined()
@@ -95,7 +103,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ getPQSigningInfo }),
             group,
             group.map((_, index) => index),
-            algo25Account(),
+            standaloneAccount(),
         )
 
         expect(getPQSigningInfo).toHaveBeenCalledTimes(1)
@@ -113,7 +121,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ yieldBetweenBatches }),
             group,
             group.map((_, index) => index),
-            algo25Account(),
+            standaloneAccount(),
         )
 
         expect(yieldBetweenBatches).toHaveBeenCalledTimes(2)
@@ -123,7 +131,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ yieldBetweenBatches }),
             [txn(0)],
             [0],
-            algo25Account(),
+            standaloneAccount(),
         )
         expect(yieldBetweenBatches).not.toHaveBeenCalled()
     })
@@ -138,7 +146,10 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ getPQSigningInfo }),
             [txn(0)],
             [0],
-            { ...algo25Account(), custody: { kind: 'local', seed: 'quantum' } },
+            {
+                ...standaloneAccount(),
+                custody: { kind: 'local', seed: 'quantum' },
+            },
         )
 
         expect(signed.pqsig).toBeDefined()
@@ -148,7 +159,7 @@ describe('signTransactionsWithLocalKey', () => {
     test('rejects an account type with no local signing key', async () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
-                ...algo25Account(),
+                ...standaloneAccount(),
                 custody: { kind: 'watch' },
             } as WalletAccount),
         ).rejects.toBeTruthy()
@@ -163,7 +174,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ signPayloads }),
             [txn(0)],
             [0],
-            { ...algo25Account(), keyPairId: 'key-for-this-account' },
+            standaloneAccount(SENDER, 'key-for-this-account'),
         )
 
         expect(signPayloads).toHaveBeenCalledWith('key-for-this-account', [
@@ -183,7 +194,7 @@ describe('signTransactionsWithLocalKey', () => {
             deps({ signPayloads }),
             group,
             group.map((_, index) => index),
-            algo25Account(),
+            standaloneAccount(),
         )
 
         expect(result.map(stx => stx.sig?.[0])).toEqual(
@@ -194,7 +205,7 @@ describe('signTransactionsWithLocalKey', () => {
     test('rejects a hardware-wallet account, which signs through the pipeline', async () => {
         await expect(
             signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
-                ...algo25Account(),
+                ...standaloneAccount(),
                 custody: {
                     kind: 'hardware',
                     device: {

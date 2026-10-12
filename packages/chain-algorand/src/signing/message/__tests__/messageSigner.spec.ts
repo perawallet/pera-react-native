@@ -44,12 +44,14 @@ import {
 } from '../messageSigner'
 import {
     messageAccount,
+    messageAddress,
     otherMessageAddress,
     siwaAuthPayload,
 } from './messageFixtures'
+import { watchAccount } from '../../../__tests__/algorandAccounts'
 
 const scope = getSelectedScope(ALGORAND_CHAIN_ID)
-const { address } = messageAccount
+const address = messageAddress
 const context = { account: messageAccount, accounts: [messageAccount] }
 
 const b64 = (bytes: Uint8Array | string) =>
@@ -288,10 +290,7 @@ describe('algorand message signer', () => {
         })
 
         it('keeps the MX refusal for an account that cannot sign data', () => {
-            const watch = {
-                address,
-                custody: { kind: 'watch' },
-            } as unknown as WalletAccount
+            const watch = watchAccount(address)
 
             expect(() =>
                 planAlgorandMessage(mxRequest(b64('hello')), {

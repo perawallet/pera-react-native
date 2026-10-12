@@ -40,13 +40,12 @@ import { useIsCardAutoFundingActive } from '../useIsCardAutoFundingActive'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localAccount = {
-    address: 'LOCAL',
+    chains: { algorand: { address: 'LOCAL', keyPairId: 'key-1' } },
     custody: { kind: 'local', seed: null },
-    keyPairId: 'key-1',
 } as WalletAccount
 
 const ledgerAccount = {
-    address: 'LEDGER',
+    chains: { algorand: { address: 'LEDGER' } },
     custody: {
         kind: 'hardware',
         device: {
@@ -71,7 +70,7 @@ describe('useIsCardAutoFundingActive', () => {
         vi.mocked(useFindAccountByAddress).mockImplementation(
             address =>
                 [localAccount, ledgerAccount].find(
-                    a => a.address === address,
+                    a => a.chains.algorand?.address === address,
                 ) ?? null,
         )
     })

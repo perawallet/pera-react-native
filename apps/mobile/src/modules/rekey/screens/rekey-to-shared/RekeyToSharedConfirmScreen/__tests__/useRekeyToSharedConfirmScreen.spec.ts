@@ -66,17 +66,17 @@ vi.mock('@modules/webview', () => ({
 }))
 
 const mockSourceAccount = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC' } },
     name: 'Source',
     custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
 const mockTargetAccount = {
-    address: 'TGT',
+    chains: { algorand: { address: 'TGT' } },
     name: 'Target',
     custody: { kind: 'multisig' } as WalletAccount['custody'],
 }
 const mockAuthAccount = {
-    address: 'AUTH',
+    chains: { algorand: { address: 'AUTH' } },
     name: 'Auth',
     custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }

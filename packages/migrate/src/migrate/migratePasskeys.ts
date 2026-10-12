@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    signingKeyOn,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     entropyChildIdOf,
     entropyToMnemonic,
@@ -36,6 +40,7 @@ import {
     nativePasskeyEntryExists,
     type NativePasskeyWriter,
 } from '@perawallet/wallet-core-passkeys'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type PasskeysMigrationResult = {
     imported: number
@@ -132,12 +137,15 @@ type MigrationContext = {
     dispose: () => Promise<void>
 }
 
-const createMigrationContext = (): MigrationContext => {
+const createMigrationContext = (chainId: ChainId): MigrationContext => {
     const keyById = new Map(
         getKeystoreStore().state.keys.map(key => [key.id, key]),
     )
     const accountByAddress = new Map(
-        useAccountsStore.getState().accounts.map(acc => [acc.address, acc]),
+        useAccountsStore.getState().accounts.flatMap(acc => {
+            const address = chainAccountOf(acc, chainId)?.address
+            return address === undefined ? [] : [[address, acc] as const]
+        }),
     )
     const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
     const writePasskey = createNativePasskeyWriter()
@@ -145,7 +153,10 @@ const createMigrationContext = (): MigrationContext => {
     return {
         hasAccount: address => accountByAddress.has(address),
         resolveSeedKeyId: address => {
-            const keyPairId = accountByAddress.get(address)?.keyPairId
+            const account = accountByAddress.get(address)
+            const keyPairId = account
+                ? signingKeyOn(account, chainId)
+                : undefined
             if (!keyPairId) return undefined
             const parentKeyId = (
                 keyById.get(keyPairId)?.metadata as
@@ -320,11 +331,12 @@ const migrateSinglePasskey = async (
  */
 export const migratePasskeys = async (
     passkeys: LegacyPasskey[],
+    chainId: ChainId,
 ): Promise<PasskeysMigrationResult> => {
     const result: PasskeysMigrationResult = { imported: 0, skipped: 0 }
     if (passkeys.length === 0) return result
 
-    const ctx = createMigrationContext()
+    const ctx = createMigrationContext(chainId)
     const writtenIds = new Set<string>()
 
     try {

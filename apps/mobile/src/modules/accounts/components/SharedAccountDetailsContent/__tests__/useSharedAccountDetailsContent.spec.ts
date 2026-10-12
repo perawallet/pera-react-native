@@ -16,7 +16,9 @@ import { useSharedAccountDetailsContent } from '../useSharedAccountDetailsConten
 
 type StoredContact = { addresses: { algorand: string }; name: string }
 
-const mockAccounts = vi.fn<() => { address: string }[]>(() => [])
+const mockAccounts = vi.fn<
+    () => { chains: { algorand: { address: string } } }[]
+>(() => [])
 const mockContacts = vi.fn<() => StoredContact[]>(() => [])
 const mockDismiss = vi.fn()
 const mockNavigate = vi.fn()
@@ -61,7 +63,9 @@ describe('useSharedAccountDetailsContent', () => {
     })
 
     it('isUserIncluded is true when a wallet account is a participant', () => {
-        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'ADDR1' } } },
+        ])
 
         const { result } = renderHook(() =>
             useSharedAccountDetailsContent(['ADDR1', 'ADDR2']),
@@ -71,7 +75,9 @@ describe('useSharedAccountDetailsContent', () => {
     })
 
     it('isUserIncluded is false when no wallet account is a participant', () => {
-        mockAccounts.mockReturnValue([{ address: 'OTHER' }])
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'OTHER' } } },
+        ])
 
         const { result } = renderHook(() =>
             useSharedAccountDetailsContent(['ADDR1', 'ADDR2']),
@@ -81,7 +87,9 @@ describe('useSharedAccountDetailsContent', () => {
     })
 
     it('isUserIncluded is false when there are no participant addresses', () => {
-        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'ADDR1' } } },
+        ])
 
         const { result } = renderHook(() => useSharedAccountDetailsContent([]))
 
@@ -89,7 +97,9 @@ describe('useSharedAccountDetailsContent', () => {
     })
 
     it('isAddressInWallet is true for wallet accounts and false otherwise', () => {
-        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'ADDR1' } } },
+        ])
 
         const { result } = renderHook(() =>
             useSharedAccountDetailsContent(['ADDR1', 'ADDR2']),

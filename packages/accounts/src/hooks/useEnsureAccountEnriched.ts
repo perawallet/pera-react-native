@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getAccountHoldings } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
@@ -36,8 +38,10 @@ import { invalidateAccountQueriesForAddresses } from './querykeys'
  * moment to guarantee its data is current; both fetchers skip already-fresh
  * assets, so repeat views are cheap.
  */
-export const useEnsureAccountEnriched = (address?: string): void => {
-    const { network } = useNetwork()
+export const useEnsureAccountEnriched = (
+    address: string | undefined,
+    scope: ChainScope,
+): void => {
     const queryClient = useQueryClient()
 
     useEffect(() => {
@@ -53,7 +57,7 @@ export const useEnsureAccountEnriched = (address?: string): void => {
         void (async () => {
             try {
                 // 1. Holdings + balance (deduped with the read hooks' fetch).
-                await ensureAccountFetched(address, network)
+                await ensureAccountFetched(address, scope)
                 if (cancelled) return
                 invalidate()
 
@@ -62,20 +66,20 @@ export const useEnsureAccountEnriched = (address?: string): void => {
                 // list from churning/re-pinning repeatedly mid-load.
                 const holdings = await getAccountHoldings({
                     accountAddress: address,
-                    scope: scopeForLegacyNetwork(network),
+                    scope,
                 })
                 const ids = holdings.map(h => h.assetId)
                 if (ids.length === 0) return
 
                 await Promise.allSettled([
-                    fetchAndPersistAssets(ids, scopeForLegacyNetwork(network)),
-                    fetchAndPersistPrices(ids, network),
+                    fetchAndPersistAssets(ids, scope),
+                    fetchAndPersistPrices(ids, legacyNetworkOf(scope)),
                 ])
                 invalidate()
             } catch (error) {
                 logger.warn('Account enrichment failed', {
                     address,
-                    network,
+                    scope,
                     error:
                         error instanceof Error
                             ? { message: error.message, stack: error.stack }
@@ -87,5 +91,5 @@ export const useEnsureAccountEnriched = (address?: string): void => {
         return () => {
             cancelled = true
         }
-    }, [address, network, queryClient])
+    }, [address, scope, queryClient])
 }

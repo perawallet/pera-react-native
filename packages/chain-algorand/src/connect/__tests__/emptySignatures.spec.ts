@@ -22,6 +22,7 @@ import {
     msgpackRawEncode,
 } from 'algosdk'
 import { generateKey } from 'falcon-1024'
+import '../../__tests__/registerAlgorandAccounts'
 import {
     accountsChainAdapters,
     useAccountChainStateStore,
@@ -31,8 +32,13 @@ import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
+import {
+    standaloneAccount,
+    multisigAccount,
+    quantumAccount,
+    watchAccount,
+} from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
-import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { deriveQuantumAddress } from '../../blockchain/pq/quantumAdapter'
 import { algorandEmptySignaturesFor } from '../emptySignatures'
 
@@ -57,10 +63,6 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => ({ state: { keys: [] } }),
-}))
-
 // Signer resolution reads the selected network through the provider, which
 // this node environment can't load.
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -76,24 +78,12 @@ const [ED_A, ED_B, ED_C] = Array.from({ length: 3 }, () =>
     generateAccount().addr.toString(),
 )
 
-const algo25 = (address: string, authorityAddress?: string): WalletAccount => {
-    if (authorityAddress) seedAuthority(address, authorityAddress)
-    return {
-        custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: `kp-${address}`,
-    } as WalletAccount
-}
+const algo25 = (address: string, authorityAddress?: string): WalletAccount =>
+    standaloneAccount(address, { authorityAddress })
 
-const quantum = (address: string): WalletAccount =>
-    ({
-        custody: { kind: 'local', seed: 'quantum' },
-        address,
-        keyPairId: `kp-${address}`,
-    }) as WalletAccount
+const quantum = (address: string): WalletAccount => quantumAccount(address)
 
-const watch = (address: string): WalletAccount =>
-    ({ custody: { kind: 'watch' }, address }) as WalletAccount
+const watch = (address: string): WalletAccount => watchAccount(address)
 
 const fieldsOf = (value: string | undefined): Map<string, unknown> =>
     msgpackRawDecodeAsMap(decodeFromBase64(value ?? '')) as Map<string, unknown>
@@ -171,6 +161,7 @@ describe('algorandEmptySignaturesFor', () => {
                 ...quantum(PQ_ADDRESS),
                 chains: {
                     algorand: {
+                        ...quantum(PQ_ADDRESS).chains.algorand,
                         address: PQ_ADDRESS,
                         native: {
                             family: 'algorand',
@@ -205,15 +196,11 @@ describe('algorandEmptySignaturesFor', () => {
 
     it('lists every participant key, unsigned, for a multisig account', () => {
         state.accounts = [
-            {
-                custody: { kind: 'multisig' },
-                address: ED_C,
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: [ED_A, ED_B],
-                    version: 1,
-                },
-            } as WalletAccount,
+            multisigAccount(ED_C, {
+                threshold: 2,
+                addresses: [ED_A, ED_B],
+                version: 1,
+            }),
         ]
 
         const msig = fieldsOf(algorandEmptySignaturesFor([ED_C])[ED_C]).get(

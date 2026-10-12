@@ -35,7 +35,9 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const mockAccounts = vi.fn<() => { address: string }[]>(() => [])
+const mockAccounts = vi.fn<
+    () => { chains: { algorand: { address: string } } }[]
+>(() => [])
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<
@@ -242,7 +244,9 @@ describe('useCreateMultisigScreen', () => {
     })
 
     it('isParticipantInWallet is true only for addresses that are wallet accounts', () => {
-        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'ADDR1' } } },
+        ])
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         expect(result.current.isParticipantInWallet('ADDR1')).toBe(true)
@@ -301,7 +305,9 @@ describe('useCreateMultisigScreen', () => {
         })
 
         it('does not save a wallet account as a contact', async () => {
-            mockAccounts.mockReturnValue([{ address: ADDR }])
+            mockAccounts.mockReturnValue([
+                { chains: { algorand: { address: ADDR } } },
+            ])
             mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 

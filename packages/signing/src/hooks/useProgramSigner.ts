@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
-import { canSignProgram } from '@perawallet/wallet-core-accounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    canSignProgram,
+    chainAccountOf,
+    signingKeyOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
-import { plannerAdapterFor } from '../chain-adapter'
+import { plannerAdapterForScope } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 
 /** The account cannot sign a program (hardware/watch/multisig/rekeyed). */
@@ -31,9 +34,8 @@ export class ProgramSigningUnsupportedError extends AppError {
     }
 }
 
-export const useProgramSigner = () => {
+export const useProgramSigner = (scope: ChainScope) => {
     const { signDataWithKey } = useKMS()
-    const { network } = useNetwork()
 
     /** Signs the program payload for `program` with the account's own key. */
     const signProgram = useCallback(
@@ -45,21 +47,19 @@ export const useProgramSigner = () => {
             // auth account: hardware/watch have no program-signing path, and a
             // rekeyed account's own key would be rejected at draw time
             // (signing via the auth account is deferred — see canSignProgram).
-            // The keyPairId re-check only narrows the type.
-            if (
-                !canSignProgram(account, LEGACY_CHAIN_ID) ||
-                !account.keyPairId
-            ) {
-                throw new ProgramSigningUnsupportedError(account.address)
+            // The signing-key re-check only narrows the type.
+            const keyPairId = signingKeyOn(account, scope.chainId)
+            if (!canSignProgram(account, scope.chainId) || !keyPairId) {
+                throw new ProgramSigningUnsupportedError(
+                    chainAccountOf(account, scope.chainId)?.address ?? '',
+                )
             }
-            const [sig] = await signDataWithKey(
-                account.keyPairId,
-                SIGNING_KEY_DOMAIN,
-                [plannerAdapterFor(network).programPayload(program)],
-            )
+            const [sig] = await signDataWithKey(keyPairId, SIGNING_KEY_DOMAIN, [
+                plannerAdapterForScope(scope).programPayload(program),
+            ])
             return sig
         },
-        [signDataWithKey, network],
+        [signDataWithKey, scope],
     )
 
     return { signProgram }

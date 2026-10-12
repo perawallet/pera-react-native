@@ -19,9 +19,29 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountsStore: {
         getState: () => ({
-            accounts: [{ address: 'ADDR1' }, { address: 'ADDR2' }],
+            accounts: [
+                {
+                    id: '1',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'ADDR1' } },
+                },
+                {
+                    id: '2',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'ADDR2' } },
+                },
+                {
+                    id: '3',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xABC' } },
+                },
+            ],
         }),
     },
 }))
@@ -47,7 +67,7 @@ vi.mock('../polling', () => ({
 }))
 
 describe('createSyncStorePorts', () => {
-    it('reads accounts and the active network from the stores', () => {
+    it('reads Algorand account addresses and the active network from the stores', () => {
         const ports = createSyncStorePorts()
 
         expect(ports.getAccountAddresses()).toEqual(['ADDR1', 'ADDR2'])

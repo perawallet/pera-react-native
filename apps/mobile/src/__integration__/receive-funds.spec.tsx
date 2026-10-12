@@ -26,19 +26,24 @@ import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/
 
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const PRIMARY_ACCOUNT: WalletAccount = {
     id: 'primary-1',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'primary-keypair',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'primary-keypair',
+        },
+    },
     name: 'Primary',
 }
 
 const SECONDARY_ACCOUNT: WalletAccount = {
     id: 'secondary-1',
     custody: { kind: 'watch' },
-    address: HD_TEST_ADDRESS,
+    chains: { algorand: { address: HD_TEST_ADDRESS } },
     name: 'Hardware backup',
 }
 
@@ -68,7 +73,7 @@ describe('Flow: Receive funds', () => {
         // value the QR encodes — that's what the user actually scans.
         const qr = screen.getByTestId('QRCode') as HTMLElement
         expect(qr).toBeTruthy()
-        expect(qr.getAttribute('value')).toContain(PRIMARY_ACCOUNT.address)
+        expect(qr.getAttribute('value')).toContain(addressOf(PRIMARY_ACCOUNT))
         expect(screen.getByTestId('receive_copy_address_button')).toBeTruthy()
         expect(screen.getByTestId('receive_share_address_button')).toBeTruthy()
     })
@@ -82,7 +87,7 @@ describe('Flow: Receive funds', () => {
         fireEvent.click(screen.getByTestId('receive_copy_address_button'))
 
         expect(vi.mocked(Clipboard.setStringAsync)).toHaveBeenCalledWith(
-            PRIMARY_ACCOUNT.address,
+            addressOf(PRIMARY_ACCOUNT),
         )
     })
 
@@ -117,10 +122,11 @@ describe('Flow: Receive funds', () => {
         // Navigation pushes the QR screen for the picked account; the
         // react-native-qrcode-svg mock renders under the hardcoded testid.
         await waitFor(() => screen.getByTestId('QRCode'))
-        expect(useReceiveFundsStore.getState().selectedAccount?.address).toBe(
-            SECONDARY_ACCOUNT.address,
+        const { selectedAccount } = useReceiveFundsStore.getState()
+        expect(selectedAccount ? addressOf(selectedAccount) : undefined).toBe(
+            addressOf(SECONDARY_ACCOUNT),
         )
         const qr = screen.getByTestId('QRCode') as HTMLElement
-        expect(qr.getAttribute('value')).toContain(SECONDARY_ACCOUNT.address)
+        expect(qr.getAttribute('value')).toContain(addressOf(SECONDARY_ACCOUNT))
     })
 })

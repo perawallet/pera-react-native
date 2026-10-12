@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { DEVICE_ACCOUNT_TYPE_RANK } from '../models'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
@@ -20,7 +19,7 @@ import type {
 const MAX_CURRENCY_LENGTH = 8
 
 /**
- * Collapse repeated addresses, the higher-precedence account type winning and
+ * Collapse repeated addresses, the higher-ranked registration winning and
  * equal ranks keeping the last occurrence — v3 specifies last-wins
  * server-side, so ties resolve the way the backend would. Sending a clean
  * array keeps the request auditable and removes the dependency on that
@@ -32,11 +31,7 @@ const dedupeByAddress = (
     const byAddress = new Map<string, DeviceAccountRegistration>()
     for (const account of accounts) {
         const incumbent = byAddress.get(account.address)
-        if (
-            incumbent === undefined ||
-            DEVICE_ACCOUNT_TYPE_RANK[account.accountType] >=
-                DEVICE_ACCOUNT_TYPE_RANK[incumbent.accountType]
-        ) {
+        if (incumbent === undefined || account.rank >= incumbent.rank) {
             byAddress.set(account.address, account)
         }
     }

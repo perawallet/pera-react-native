@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 vi.mock('../legacyKeyConversion', () => ({
     algo25SecretKeyToIndices: vi.fn(() => new Uint16Array(25).fill(1)),
@@ -31,7 +32,7 @@ const buildLegacyAccount = (
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: new Uint8Array(32).fill(9),
-        hdWalletId: null,
+        hdSeedId: null,
         ledger: null,
         joint: null,
         authAddress: null,
@@ -43,13 +44,17 @@ const buildArgs = (
 ): MigrateAccountArgs =>
     ({
         account: buildLegacyAccount(),
-        hdWalletsById: new Map(),
+        hdSeedsById: new Map(),
         importedHdRoots: new Map(),
         importAccount: vi.fn().mockResolvedValue({
             id: 'imported-id',
             custody: { kind: 'local', seed: null },
-            address: 'ADDR_LEGACY',
-            keyPairId: 'kp',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_LEGACY',
+                    keyPairId: 'kp',
+                },
+            },
         }),
         createHdWalletAccount:
             vi.fn() as unknown as MigrateAccountArgs['createHdWalletAccount'],
@@ -82,8 +87,12 @@ describe('migrateAlgo25Account', () => {
         const importAccount = vi.fn().mockResolvedValue({
             id: 'i',
             custody: { kind: 'local', seed: null },
-            address: 'ADDR_LEGACY',
-            keyPairId: 'kp',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_LEGACY',
+                    keyPairId: 'kp',
+                },
+            },
         })
         const args = buildArgs({ importAccount })
 
@@ -94,7 +103,7 @@ describe('migrateAlgo25Account', () => {
         )
         expect(importAccount).toHaveBeenCalledWith({
             mnemonicIndices: expect.objectContaining({ length: 25 }),
-            type: 'standalone',
+            seed: null,
         })
     })
 
@@ -102,8 +111,12 @@ describe('migrateAlgo25Account', () => {
         const created = {
             id: 'created',
             custody: { kind: 'local', seed: null },
-            address: 'ADDR_LEGACY',
-            keyPairId: 'kp',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'ADDR_LEGACY',
+                    keyPairId: 'kp',
+                },
+            },
         }
         const args = buildArgs({
             importAccount: vi.fn().mockResolvedValue(created),
@@ -120,8 +133,12 @@ describe('migrateAlgo25Account', () => {
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
                 custody: { kind: 'local', seed: null },
-                address: 'ADDR_DIFFERENT',
-                keyPairId: 'kp',
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: 'ADDR_DIFFERENT',
+                        keyPairId: 'kp',
+                    },
+                },
             }),
         })
 
@@ -148,8 +165,12 @@ describe('migrateAlgo25Account', () => {
             importAccount: vi.fn().mockResolvedValue({
                 id: 'mismatch',
                 custody: { kind: 'local', seed: null },
-                address: 'ADDR_DIFFERENT',
-                keyPairId: 'kp',
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: 'ADDR_DIFFERENT',
+                        keyPairId: 'kp',
+                    },
+                },
             }),
         })
 

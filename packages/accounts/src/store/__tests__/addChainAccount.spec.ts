@@ -34,7 +34,11 @@ import { accountsChainAdapters } from '../../chain-adapter'
 import { buildAccount } from '../../credentials'
 import { DuplicateAccountError, WalletCannotDeriveError } from '../../errors'
 import type { HdIndex, WalletAccount } from '../../models'
-import { buildTestAccount } from '../../__tests__/accountFactory'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+} from '../../__tests__/accountFactory'
 import {
     FAKE_CHAIN_ID,
     fakeAccountsChain,
@@ -124,7 +128,6 @@ describe('addChainAccount', () => {
         accountsChainAdapters.register({
             ...fakeAccountsChain().adapter,
             chainId: FIXTURE_CHAIN_ID,
-            legacyDetails: () => ({}),
         })
         kms = createFakeChainKeyStore()
         derive = vi
@@ -132,7 +135,7 @@ describe('addChainAccount', () => {
             .mockImplementation(kms.deriveFromSeed)
         useNetworkStore.getState().setMode('live')
         state().resetState()
-        holder = { ...buildTestAccount('hdWallet'), name: 'Main' }
+        holder = testAccount('hd', 'HD-ADDR', { name: 'Main' })
         state().setAccounts([holder])
     })
 
@@ -148,10 +151,10 @@ describe('addChainAccount', () => {
         expect(result).toEqual(stored)
         expect(stored.id).toBe(holder.id)
         expect(stored.name).toBe('Main')
-        expect(stored.chains?.[FAKE_CHAIN_ID]).toEqual(
-            holder.chains?.[FAKE_CHAIN_ID],
+        expect(stored.chains[FAKE_CHAIN_ID]).toEqual(
+            holder.chains[FAKE_CHAIN_ID],
         )
-        expect(stored.chains?.[FIXTURE_CHAIN_ID]).toEqual({
+        expect(stored.chains[FIXTURE_CHAIN_ID]).toEqual({
             address: await fixtureAddressAt(ORIGIN),
             keyPairId: 'hd-seed-fx-0-0',
         })
@@ -175,7 +178,7 @@ describe('addChainAccount', () => {
             seed: 'bip39',
             hd: FREE,
         })
-        expect(Object.keys(result.chains ?? {})).toEqual([FIXTURE_CHAIN_ID])
+        expect(Object.keys(result.chains)).toEqual([FIXTURE_CHAIN_ID])
     })
 
     test('derives the same address after the account is removed and added again', async () => {
@@ -184,8 +187,8 @@ describe('addChainAccount', () => {
 
         const again = await add(FREE)
 
-        expect(again.chains?.[FIXTURE_CHAIN_ID]).toEqual(
-            first.chains?.[FIXTURE_CHAIN_ID],
+        expect(again.chains[FIXTURE_CHAIN_ID]).toEqual(
+            first.chains[FIXTURE_CHAIN_ID],
         )
     })
 
@@ -194,7 +197,7 @@ describe('addChainAccount', () => {
 
         const result = await add(ORIGIN)
 
-        expect(result.chains?.[FIXTURE_CHAIN_ID]?.address).toMatch(/^tfx/)
+        expect(result.chains[FIXTURE_CHAIN_ID]?.address).toMatch(/^tfx/)
     })
 
     test.each(['algo25-seed', 'quantum-seed', 'device-1'])(
@@ -202,9 +205,13 @@ describe('addChainAccount', () => {
         async walletId => {
             state().setAccounts([
                 holder,
-                buildTestAccount('standalone'),
-                buildTestAccount('quantum'),
-                buildTestAccount('hardware'),
+                buildTestAccount(TEST_CUSTODY.local, {
+                    [FAKE_CHAIN_ID]: { address: 'S', keyPairId: 'algo25-key' },
+                }),
+                buildTestAccount(TEST_CUSTODY.explicit, {
+                    [FAKE_CHAIN_ID]: { address: 'Q', keyPairId: 'quantum-key' },
+                }),
+                testAccount('hardware'),
             ])
             const before = state().accounts
 

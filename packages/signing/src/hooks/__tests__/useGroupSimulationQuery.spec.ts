@@ -15,11 +15,14 @@ import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
+    ChainScope,
     PeraDisplayableTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockSimulate = vi.fn()
 
@@ -54,6 +57,7 @@ describe('useGroupSimulationQuery', () => {
         const { result } = renderHook(
             () =>
                 useGroupSimulationQuery({
+                    scope: SCOPE,
                     requestId: 'req-1',
                     groupTxs,
                     enabled: false,
@@ -70,6 +74,7 @@ describe('useGroupSimulationQuery', () => {
         const { result } = renderHook(
             () =>
                 useGroupSimulationQuery({
+                    scope: SCOPE,
                     requestId: 'req-1',
                     groupTxs: [],
                     enabled: true,
@@ -85,6 +90,7 @@ describe('useGroupSimulationQuery', () => {
         const { result } = renderHook(
             () =>
                 useGroupSimulationQuery({
+                    scope: SCOPE,
                     requestId: 'req-1',
                     groupTxs,
                     enabled: true,
@@ -104,6 +110,7 @@ describe('useGroupSimulationQuery', () => {
         const { result } = renderHook(
             () =>
                 useGroupSimulationQuery({
+                    scope: SCOPE,
                     requestId: 'req-1',
                     groupTxs,
                     enabled: true,

@@ -57,6 +57,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useSelectedChainMode: () => 'live',
     useNetwork: () => ({ network: 'mainnet' }),
 }))
@@ -68,6 +70,10 @@ const { accountBalancesMock } = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: () => accountBalancesMock(),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
@@ -129,10 +135,11 @@ const VALID_ADDRESS =
 
 const mockAccount: WalletAccount = {
     id: 'bidali-webview-web-account',
-    address: VALID_ADDRESS,
+    chains: {
+        algorand: { address: VALID_ADDRESS, keyPairId: 'test-key-pair-id' },
+    },
     name: 'Test',
     custody: { kind: 'local', seed: null },
-    keyPairId: 'test-key-pair-id',
 }
 
 const balancesWith = (algo: string, usdc: string): AccountBalances =>

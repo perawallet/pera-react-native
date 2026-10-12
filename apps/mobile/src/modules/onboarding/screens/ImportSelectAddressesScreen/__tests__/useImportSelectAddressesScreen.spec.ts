@@ -25,8 +25,8 @@ const {
     mockAllAccounts,
     mockRouteParams,
     mockSetAccounts,
-    mockSetSelectedAccountAddress,
-    mockDiscoverRekeyedAccounts,
+    mockSetSelectedAccountId,
+    mockDiscoverDelegatedAccounts,
     mockExitAccountFlow,
     mockExitFailedAccountFlow,
     mockCommitImport,
@@ -39,8 +39,8 @@ const {
     mockAllAccounts: { current: [] as WalletAccount[] },
     mockRouteParams: { current: {} as Record<string, unknown> },
     mockSetAccounts: vi.fn(),
-    mockSetSelectedAccountAddress: vi.fn(),
-    mockDiscoverRekeyedAccounts: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
+    mockDiscoverDelegatedAccounts: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockExitFailedAccountFlow: vi.fn(),
     mockCommitImport: vi.fn(),
@@ -71,12 +71,12 @@ vi.mock('../../../hooks', () => ({
         exitAccountFlow: mockExitAccountFlow,
         exitFailedAccountFlow: mockExitFailedAccountFlow,
     }),
-    // Mirrors the real useRekeyScanNotice: swallow discoverRekeyedAccounts
+    // Mirrors the real useDelegationScanNoticeResult: swallow discoverDelegatedAccounts
     // failures into the sentinel instead of letting them throw.
-    useRekeyScanNotice: () => ({
+    useDelegationScanNoticeResult: () => ({
         scanRekeyed: async (accountAddresses: string[]) => {
             try {
-                return await mockDiscoverRekeyedAccounts({ accountAddresses })
+                return await mockDiscoverDelegatedAccounts({ accountAddresses })
             } catch {
                 mockShowToast({
                     type: 'info',
@@ -95,11 +95,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAllAccounts: () => mockAllAccounts.current,
     useSetAccounts: () => ({ setAccounts: mockSetAccounts }),
-    useSelectedAccountAddress: () => ({
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
     }),
     useAccountDiscovery: () => ({
-        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+        discoverDelegatedAccounts: mockDiscoverDelegatedAccounts,
     }),
     useHDImportSession: () => ({
         commitImport: mockCommitImport,
@@ -129,34 +129,20 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 const sampleDiscovered = [
     {
         id: '1',
-        address: 'ADDR-A',
+        chains: { algorand: { address: 'ADDR-A', keyPairId: 'w-1' } },
         custody: {
             kind: 'local',
             seed: 'bip39',
             hd: { account: 1, keyIndex: 0 },
         },
-        keyPairId: 'w-1',
-        hdWalletDetails: {
-            account: 1,
-            change: 0,
-            keyIndex: 0,
-            derivationType: 9,
-        },
     },
     {
         id: '2',
-        address: 'ADDR-B',
+        chains: { algorand: { address: 'ADDR-B', keyPairId: 'w-1' } },
         custody: {
             kind: 'local',
             seed: 'bip39',
             hd: { account: 2, keyIndex: 0 },
-        },
-        keyPairId: 'w-1',
-        hdWalletDetails: {
-            account: 2,
-            change: 0,
-            keyIndex: 0,
-            derivationType: 9,
         },
     },
 ]
@@ -171,7 +157,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
             accounts: sampleDiscovered,
         }
         mockCommitImport.mockResolvedValue([sampleDiscovered[0]])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
     })
 
     test('Continue commits the import with selected accounts and marks backup', async () => {
@@ -186,7 +172,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
             selectedAccounts: [sampleDiscovered[0]],
         })
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[0])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR-A')
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
     })
 
     test('single imported account navigates to NameAccount for naming', async () => {
@@ -303,16 +289,15 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         vi.clearAllMocks()
         mockAllAccounts.current = []
         mockRouteParams.current = { accounts: sampleDiscovered }
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
         useAccountsStore.getState().setAccounts([])
     })
 
     test('reads the store fresh inside the deferred write so a concurrent add is not dropped', async () => {
         const concurrent = {
             id: 'c',
-            address: 'CONCURRENT',
+            chains: { algorand: { address: 'CONCURRENT', keyPairId: 'kp-c' } },
             custody: { kind: 'local', seed: null },
-            keyPairId: 'kp-c',
         } as WalletAccount
         // Lands after render (useAllAccounts snapshot) but before the
         // deferred commit — e.g. background sync or another import flow.
@@ -341,11 +326,13 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
             accounts: sampleDiscovered,
         }
         mockCommitImport.mockResolvedValue([sampleDiscovered[0]])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockDiscoverDelegatedAccounts.mockResolvedValue([])
     })
 
     test('names the account instead of exiting when only the rekey scan fails', async () => {
-        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
         await act(async () => {

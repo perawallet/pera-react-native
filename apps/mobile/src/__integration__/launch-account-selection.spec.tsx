@@ -21,20 +21,19 @@ import {
 import { SettingsLaunchScreen } from '@modules/settings/screens/SettingsLaunchScreen'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const TRADING: WalletAccount = {
     id: 'a-1',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'a-key',
+    chains: { algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' } },
     name: 'Trading',
 }
 
 const SAVINGS: WalletAccount = {
     id: 'a-2',
     custody: { kind: 'local', seed: null },
-    address: HD_TEST_ADDRESS,
-    keyPairId: 'b-key',
+    chains: { algorand: { address: HD_TEST_ADDRESS, keyPairId: 'b-key' } },
     name: 'Savings',
 }
 
@@ -51,17 +50,15 @@ describe('launch account selection', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([TRADING, SAVINGS])
-        useAccountsStore.getState().setSelectedAccountAddress(TRADING.address)
+        useAccountsStore.getState().setSelectedAccountId(TRADING.id)
     })
 
     it('keeps the last used account across a cold start by default', () => {
-        useAccountsStore.getState().setSelectedAccountAddress(SAVINGS.address)
+        useAccountsStore.getState().setSelectedAccountId(SAVINGS.id)
 
         coldStart()
 
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            SAVINGS.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(SAVINGS.id)
     })
 
     it('pins an account through the Launch Settings screen', async () => {
@@ -72,33 +69,29 @@ describe('launch account selection', () => {
         await waitFor(() => {
             expect(
                 screen.getByTestId(
-                    `settings_launch_account-${SAVINGS.address}`,
+                    `settings_launch_account-${addressOf(SAVINGS)}`,
                 ),
             ).toBeTruthy()
         })
         fireEvent.click(
-            screen.getByTestId(`settings_launch_account-${SAVINGS.address}`),
+            screen.getByTestId(`settings_launch_account-${addressOf(SAVINGS)}`),
         )
 
         await waitFor(() => {
-            expect(useAccountsStore.getState().launchAccountAddress).toBe(
-                SAVINGS.address,
-            )
+            expect(useAccountsStore.getState().launchAccountId).toBe(SAVINGS.id)
         })
     })
 
     it('selects the pinned account on the next cold start', () => {
         useAccountsStore
             .getState()
-            .setLaunchAccountPreference('specific', SAVINGS.address)
+            .setLaunchAccountPreference('specific', SAVINGS.id)
         // The user wandered off to another account before closing the app.
-        useAccountsStore.getState().setSelectedAccountAddress(TRADING.address)
+        useAccountsStore.getState().setSelectedAccountId(TRADING.id)
 
         coldStart()
 
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            SAVINGS.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(SAVINGS.id)
     })
 
     // Deep links resolve from mounted UI, strictly after bootstrap — so a
@@ -108,39 +101,31 @@ describe('launch account selection', () => {
     it('lets a deep link override the pin for that session only', () => {
         useAccountsStore
             .getState()
-            .setLaunchAccountPreference('specific', SAVINGS.address)
+            .setLaunchAccountPreference('specific', SAVINGS.id)
 
         coldStart()
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            SAVINGS.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(SAVINGS.id)
 
         // What useDeepLink does on a notification tap.
-        useAccountsStore.getState().setSelectedAccountAddress(TRADING.address)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            TRADING.address,
-        )
+        useAccountsStore.getState().setSelectedAccountId(TRADING.id)
+        expect(useAccountsStore.getState().selectedAccountId).toBe(TRADING.id)
 
         coldStart()
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            SAVINGS.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(SAVINGS.id)
     })
 
     it('falls back to last used once the pinned account is removed', () => {
         useAccountsStore
             .getState()
-            .setLaunchAccountPreference('specific', SAVINGS.address)
+            .setLaunchAccountPreference('specific', SAVINGS.id)
 
         useAccountsStore.getState().setAccounts([TRADING])
 
         expect(useAccountsStore.getState().launchAccountMode).toBe('lastUsed')
-        expect(useAccountsStore.getState().launchAccountAddress).toBeNull()
+        expect(useAccountsStore.getState().launchAccountId).toBeNull()
 
         coldStart()
 
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            TRADING.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(TRADING.id)
     })
 })

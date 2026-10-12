@@ -37,8 +37,8 @@ import type { PQSchemeId } from '@perawallet/wallet-core-kms'
  * single `pqMultiplier` and a boolean `isPQSigner`. One multiplier cannot
  * express two schemes with very different signature sizes (Falcon-1024 is
  * ~1.2 KB, ML-DSA-65 ~3.3 KB), and `isPQSigner` is derived from
- * `isQuantumAccount(authAccount)` in the fee path, where the account carries
- * no scheme — so the scheme is not even retrievable there. Supporting a
+ * `usesNonPrimaryScheme(signer)` in the fee path, which answers only whether
+ * the scheme is the chain's primary one, not which scheme it is. Supporting a
  * second scheme means making the multiplier scheme-keyed and threading the
  * scheme (not a boolean) into fee calculation.
  * 2. **Key ids.** `quantumSignKeyId(seedId, derivation)`

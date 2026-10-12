@@ -14,9 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
+    findAccountByAddressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useClaimAssets } from '@modules/transactions/hooks'
@@ -65,7 +67,9 @@ export const useAssetClaimDetailScreen =
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
-        const account = accounts.find(acc => acc.address === accountAddress)
+        const account = accountAddress
+            ? findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, accountAddress)
+            : undefined
 
         // The opt-in this claim performs raises the account's minimum balance,
         // so a claim the backend says is unaffordable can only be unblocked by

@@ -13,27 +13,26 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSettingsLaunchScreen } from '../useSettingsLaunchScreen'
 
 const alice: WalletAccount = {
     id: '1',
     name: 'Alice',
     custody: { kind: 'local', seed: null },
-    address: 'ALICE-ADDR',
-    keyPairId: 'kp-1',
+    chains: { algorand: { address: 'ALICE-ADDR', keyPairId: 'kp-1' } },
 }
 const bob: WalletAccount = {
     id: '2',
     name: 'Bob',
     custody: { kind: 'local', seed: null },
-    address: 'BOB-ADDR',
-    keyPairId: 'kp-2',
+    chains: { algorand: { address: 'BOB-ADDR', keyPairId: 'kp-2' } },
 }
 
 const storeState = vi.hoisted(() => ({
     current: {
         launchAccountMode: 'lastUsed' as string,
-        launchAccountAddress: null as string | null,
+        launchAccountId: null as string | null,
         setLaunchAccountPreference: vi.fn(),
     },
 }))
@@ -42,6 +41,8 @@ const mockAccounts = vi.hoisted(() => ({ current: [] as WalletAccount[] }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     LaunchAccountModes: { lastUsed: 'lastUsed', specific: 'specific' },
     useAllAccounts: () => mockAccounts.current,
+    chainAccountOf: (account: WalletAccount, chainId: ChainId) =>
+        account.chains[chainId],
     useAccountsStore: (selector: (state: unknown) => unknown) =>
         selector(storeState.current),
 }))
@@ -52,7 +53,7 @@ describe('useSettingsLaunchScreen', () => {
         mockAccounts.current = [alice, bob]
         storeState.current = {
             launchAccountMode: 'lastUsed',
-            launchAccountAddress: null,
+            launchAccountId: null,
             setLaunchAccountPreference:
                 storeState.current.setLaunchAccountPreference,
         }
@@ -66,7 +67,7 @@ describe('useSettingsLaunchScreen', () => {
 
     it('shows the account picker under specific', () => {
         storeState.current.launchAccountMode = 'specific'
-        storeState.current.launchAccountAddress = 'BOB-ADDR'
+        storeState.current.launchAccountId = '2'
 
         const { result } = renderHook(() => useSettingsLaunchScreen())
 
@@ -91,11 +92,11 @@ describe('useSettingsLaunchScreen', () => {
 
         expect(
             storeState.current.setLaunchAccountPreference,
-        ).toHaveBeenCalledWith('specific', 'ALICE-ADDR')
+        ).toHaveBeenCalledWith('specific', '1')
     })
 
     it('restores the previous pin when specific is re-chosen', () => {
-        storeState.current.launchAccountAddress = 'BOB-ADDR'
+        storeState.current.launchAccountId = '2'
 
         const { result } = renderHook(() => useSettingsLaunchScreen())
 
@@ -103,12 +104,12 @@ describe('useSettingsLaunchScreen', () => {
 
         expect(
             storeState.current.setLaunchAccountPreference,
-        ).toHaveBeenCalledWith('specific', 'BOB-ADDR')
+        ).toHaveBeenCalledWith('specific', '2')
     })
 
     it('does not re-pin when specific is already active', () => {
         storeState.current.launchAccountMode = 'specific'
-        storeState.current.launchAccountAddress = 'BOB-ADDR'
+        storeState.current.launchAccountId = '2'
 
         const { result } = renderHook(() => useSettingsLaunchScreen())
 
@@ -126,10 +127,10 @@ describe('useSettingsLaunchScreen', () => {
 
         expect(
             storeState.current.setLaunchAccountPreference,
-        ).toHaveBeenCalledWith('specific', 'BOB-ADDR')
+        ).toHaveBeenCalledWith('specific', '2')
     })
 
-    it('leaves the address undefined when there are no accounts to pin', () => {
+    it('leaves the account undefined when there are no accounts to pin', () => {
         mockAccounts.current = []
 
         const { result } = renderHook(() => useSettingsLaunchScreen())

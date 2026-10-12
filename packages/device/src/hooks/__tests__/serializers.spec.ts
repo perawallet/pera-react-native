@@ -12,7 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 import { toDeviceRegistrationRequest } from '../serializers'
-import { DeviceAccountTypes, type DeviceRegistration } from '../../models'
+import type { DeviceRegistration } from '../../models'
+
+// The chain names the kinds and ranks them; serialization only compares ranks.
+const SIGNING = { accountType: 'signing-kind', rank: 2 } as const
+const WATCH = { accountType: 'watch-kind', rank: 1 } as const
 
 const baseRegistration: DeviceRegistration = {
     pushToken: 'fcm-token',
@@ -29,7 +33,7 @@ describe('toDeviceRegistrationRequest', () => {
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.quantum,
+                    ...SIGNING,
                     receiveNotifications: true,
                 },
             ],
@@ -43,7 +47,7 @@ describe('toDeviceRegistrationRequest', () => {
             accounts: [
                 {
                     address: 'ADDR_A',
-                    account_type: 'quantum',
+                    account_type: 'signing-kind',
                     receive_notifications: true,
                 },
             ],
@@ -95,7 +99,7 @@ describe('toDeviceRegistrationRequest', () => {
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.watch,
+                    ...WATCH,
                     receiveNotifications: false,
                 },
             ],
@@ -108,6 +112,7 @@ describe('toDeviceRegistrationRequest', () => {
             'platform',
             'push_token',
         ])
+        // `rank` decides deduplication locally and never reaches the wire.
         expect(Object.keys(request.accounts[0]).sort()).toEqual([
             'account_type',
             'address',
@@ -115,18 +120,18 @@ describe('toDeviceRegistrationRequest', () => {
         ])
     })
 
-    it('deduplicates repeated addresses, the higher-precedence type winning', () => {
+    it('deduplicates repeated addresses, the higher-ranked registration winning', () => {
         const request = toDeviceRegistrationRequest({
             ...baseRegistration,
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.algo25,
+                    ...SIGNING,
                     receiveNotifications: true,
                 },
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.watch,
+                    ...WATCH,
                     receiveNotifications: false,
                 },
             ],
@@ -135,24 +140,24 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
-                account_type: 'algo25',
+                account_type: 'signing-kind',
                 receive_notifications: true,
             },
         ])
     })
 
-    it('registers a duplicated address as quantum when the watch entry comes first', () => {
+    it('registers a duplicated address under the higher rank when the watch entry comes first', () => {
         const request = toDeviceRegistrationRequest({
             ...baseRegistration,
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.watch,
+                    ...WATCH,
                     receiveNotifications: true,
                 },
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.quantum,
+                    ...SIGNING,
                     receiveNotifications: true,
                 },
             ],
@@ -161,24 +166,24 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
-                account_type: 'quantum',
+                account_type: 'signing-kind',
                 receive_notifications: true,
             },
         ])
     })
 
-    it('registers a duplicated address as quantum when the watch entry comes last', () => {
+    it('registers a duplicated address under the higher rank when the watch entry comes last', () => {
         const request = toDeviceRegistrationRequest({
             ...baseRegistration,
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.quantum,
+                    ...SIGNING,
                     receiveNotifications: true,
                 },
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.watch,
+                    ...WATCH,
                     receiveNotifications: true,
                 },
             ],
@@ -187,7 +192,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
-                account_type: 'quantum',
+                account_type: 'signing-kind',
                 receive_notifications: true,
             },
         ])
@@ -199,12 +204,12 @@ describe('toDeviceRegistrationRequest', () => {
             accounts: [
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.algo25,
+                    ...SIGNING,
                     receiveNotifications: true,
                 },
                 {
                     address: 'ADDR_A',
-                    accountType: DeviceAccountTypes.algo25,
+                    ...SIGNING,
                     receiveNotifications: false,
                 },
             ],
@@ -213,7 +218,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
-                account_type: 'algo25',
+                account_type: 'signing-kind',
                 receive_notifications: false,
             },
         ])

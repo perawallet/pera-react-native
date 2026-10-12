@@ -10,10 +10,19 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
-import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
+import { beforeEach, describe, test, expect } from 'vitest'
+import type {
+    ChainCapabilities,
+    ChainDescriptor,
+    SigningScheme,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountCustody, WalletAccount } from '../../models'
-import { credentialScheme, type SchemeChain } from '../credentialScheme'
+import {
+    credentialScheme,
+    usesNonPrimaryScheme,
+    type SchemeChain,
+} from '../credentialScheme'
 
 type Keys = NonNullable<Parameters<typeof credentialScheme>[2]>
 
@@ -115,17 +124,6 @@ describe('credentialScheme', () => {
         expect(credentialScheme(algo25(), algorand, [])).toBeNull()
     })
 
-    test("reads a legacy record's top-level key on the legacy chain", () => {
-        const legacy = {
-            id: 'a',
-            address: 'ADDR',
-            keyPairId: 'missing',
-            custody: { kind: 'local', seed: null },
-        } as WalletAccount
-
-        expect(credentialScheme(legacy, algorand, [])).toBe('ed25519')
-    })
-
     test('has no scheme when the chain does not support the seed scheme', () => {
         expect(
             credentialScheme(quantum('missing'), chainWith(['ed25519']), []),
@@ -159,17 +157,62 @@ describe('credentialScheme', () => {
         ).toBeNull()
     })
 
-    test('has no scheme for a watch account or one without a custody', () => {
+    test('has no scheme for a watch account', () => {
         expect(
             credentialScheme(account({ kind: 'watch' }), algorand, []),
         ).toBeNull()
+    })
+})
+
+describe('usesNonPrimaryScheme', () => {
+    beforeEach(() => {
+        getProvider().chains.register(
+            algorand as unknown as ChainDescriptor,
+            {} as ChainCapabilities,
+        )
+    })
+
+    test("is true for a key that signs with a scheme after the chain's primary", () => {
         expect(
-            credentialScheme(
-                { id: 'a', address: 'ADDR', custody: { kind: 'watch' } },
-                algorand,
-                [],
+            usesNonPrimaryScheme(
+                quantum('child'),
+                'algorand',
+                seedWithChild('quantum', 'falcon-1024'),
             ),
-        ).toBeNull()
+        ).toBe(true)
+    })
+
+    test("is false for a key that signs with the chain's primary scheme", () => {
+        expect(
+            usesNonPrimaryScheme(
+                algo25('child'),
+                'algorand',
+                seedWithChild('algo25', 'ed25519'),
+            ),
+        ).toBe(false)
+    })
+
+    test('follows the loaded seed over the custody', () => {
+        expect(
+            usesNonPrimaryScheme(
+                quantum('child'),
+                'algorand',
+                seedWithChild('algo25', 'ed25519'),
+            ),
+        ).toBe(false)
+    })
+
+    test("prices a quantum custody's key by its seed while the keystore is not loaded", () => {
+        expect(usesNonPrimaryScheme(quantum('missing'), 'algorand', [])).toBe(
+            true,
+        )
+    })
+
+    test('is false for an account that cannot sign on the chain', () => {
+        expect(
+            usesNonPrimaryScheme(account({ kind: 'watch' }), 'algorand', []),
+        ).toBe(false)
+        expect(usesNonPrimaryScheme(quantum(), 'algorand', [])).toBe(false)
     })
 
     describe('a standalone key on another chain', () => {

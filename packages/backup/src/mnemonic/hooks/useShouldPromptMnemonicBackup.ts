@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
+    chainAccountOf,
     useAccountFundedNetworksQuery,
     useAccountsDelegatedTo,
     type WalletAccount,
@@ -23,16 +24,22 @@ import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 // badge), so they can never disagree.
 export const useShouldPromptMnemonicBackup = (
     account: WalletAccount | null | undefined,
+    scope: ChainScope,
 ): boolean => {
-    const requiresBackup = useRequiresMnemonicBackup(account)
+    const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
     // Funding on ANY network counts, not just the one currently selected: the
     // passphrase is the same secret whichever chain the balance sits on, and a
     // warning that disappears on a network switch teaches the wrong lesson.
-    const { isFunded } = useAccountFundedNetworksQuery(account?.address)
-    const rekeyedToThisAccount = useAccountsDelegatedTo(account?.address)
-    // Accounts belong to the legacy chain until WalletAccount carries a chain id.
+    const address = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
+    const { isFunded } = useAccountFundedNetworksQuery(address, scope)
+    const delegatedToThisAccount = useAccountsDelegatedTo(
+        address,
+        scope.chainId,
+    )
     const canBackUpMnemonic = useChainCapability(
-        LEGACY_CHAIN_ID,
+        scope.chainId,
         'mnemonicBackup',
     )
 
@@ -42,6 +49,6 @@ export const useShouldPromptMnemonicBackup = (
     return (
         canBackUpMnemonic &&
         requiresBackup &&
-        (isFunded || rekeyedToThisAccount.length > 0)
+        (isFunded || delegatedToThisAccount.length > 0)
     )
 }

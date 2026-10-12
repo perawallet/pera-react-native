@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
@@ -79,11 +79,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         return () => clearActiveWalletConnectV1Delivery(v1Handler)
     }, [])
 
-    useConnectionSigningAdapter(
-        registry,
-        // Every legacy network is the same chain, so reading it once is safe.
-        scopeForLegacyNetwork(useNetworkStore.getState().network).chainId,
-    )
+    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID)
     useConnectionsBoot(registry)
     const proposals = useProposalQueue(registry)
     useConnectionErrorToasts(registry, proposals)

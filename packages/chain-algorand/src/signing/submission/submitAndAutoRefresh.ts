@@ -34,6 +34,7 @@ import type {
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
 import { toRound } from '../submission-ledger'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 import {
     CONFIRMATION_ROUNDS_TO_WAIT,
     LANDING_CHECK_ROUNDS_TO_WAIT,
@@ -315,7 +316,7 @@ export const submitAndAutoRefresh = async (
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
     const accounts = useAccountsStore.getState().accounts
-    const walletAddresses = accounts.map(a => a.address)
+    const walletAddresses = accounts.flatMap(a => algorandAddressOf(a) ?? [])
 
     const { txIds } = await submitAndAutoRefreshCore({
         algokit,

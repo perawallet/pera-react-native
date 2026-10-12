@@ -38,6 +38,7 @@ import {
     validateArc60AuthRequest,
     verifyAuthenticatorDomain,
 } from '../arc60'
+import { watchAccount } from '../../../__tests__/algorandAccounts'
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s)
 
@@ -142,7 +143,7 @@ const NO_ACCOUNTS: WalletAccount[] = []
 const rekeyedData = encodeToBase64(
     utf8(buildSiwa({ account_address: 'REKEYED_ADDR' })),
 )
-const REKEYED_ACCOUNTS = [{ address: 'REKEYED_ADDR' }] as WalletAccount[]
+const REKEYED_ACCOUNTS = [watchAccount('REKEYED_ADDR')]
 
 beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
@@ -233,7 +234,7 @@ describe('validateArc60AuthRequest', () => {
         // SIWA proves control of account_address, and on chain that control
         // moved to the auth address; the old key must not keep authenticating.
         seedAuthority(SIGNER, 'AUTH_ADDR')
-        const rekeyedSelf = [{ address: SIGNER }] as WalletAccount[]
+        const rekeyedSelf = [watchAccount(SIGNER)]
         expect(() =>
             validateArc60AuthRequest(
                 {

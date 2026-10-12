@@ -13,9 +13,11 @@
 import { useCallback } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
+    chainAccountOf,
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     dedupeSecondaryLabel,
     truncateAlgorandAddress,
@@ -42,9 +44,14 @@ export const RekeyedToRow = ({
     undoLabel,
 }: RekeyedToRowProps) => {
     const { copyToClipboard } = useClipboard()
-    const address = authAccount?.address ?? authAddress
+    const address =
+        (authAccount &&
+            chainAccountOf(authAccount, LEGACY_CHAIN_ID)?.address) ??
+        authAddress
     const truncated = truncateAlgorandAddress(address)
-    const title = authAccount ? getAccountDisplayName(authAccount) : truncated
+    const title = authAccount
+        ? getAccountDisplayName(authAccount, LEGACY_CHAIN_ID)
+        : truncated
     const secondary = dedupeSecondaryLabel(title, truncated)
 
     const handleCopyAddress = useCallback(() => {

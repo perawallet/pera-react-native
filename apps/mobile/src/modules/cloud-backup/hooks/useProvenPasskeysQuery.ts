@@ -17,6 +17,7 @@ import {
     useProvenPasskeysStore,
     type BackupPasskey,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type UseProvenPasskeysQueryResult = {
     passkeys: BackupPasskey[]
@@ -32,7 +33,7 @@ export type UseProvenPasskeysQueryResult = {
  *  here and the store is the read side: a sync tick running the same sweep in
  *  the background refreshes an open screen without a refetch. */
 export const useProvenPasskeysQuery = (): UseProvenPasskeysQueryResult => {
-    const listPasskeyMetadata = useListPasskeyMetadataForBackup()
+    const listPasskeyMetadata = useListPasskeyMetadataForBackup(LEGACY_CHAIN_ID)
     const provenPasskeys = useProvenPasskeysStore(state => state.provenPasskeys)
 
     const sweep = useCallback(

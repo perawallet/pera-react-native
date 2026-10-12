@@ -12,10 +12,13 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     canSignArbitraryData,
-    canSignArc60,
+    findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -27,6 +30,7 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
+    canSignMessage,
     isAuthDataWirePayload,
     legacyArbitraryDataWireSchema,
     parseAuthDataWireRequest,
@@ -44,10 +48,12 @@ import { useRequiredParams } from './useRequiredParams'
 
 // Auth-data and legacy arbitrary-data requests share one page answer.
 const webviewDataSignRequestBase = (
+    chainId: ChainId,
     messageId: string,
     webview: Nullable<WebView>,
 ) => ({
     id: generateOrderedUniqueId(),
+    chainId,
     transport: 'callback' as const,
     sourceType: 'webview' as const,
     transportId: messageId,
@@ -111,15 +117,24 @@ export const useDataSigningHandler = (
                         LEGACY_CHAIN_ID,
                         message.params,
                     )
-                    const account = allAccounts.find(
-                        a => a.address === authData.signer,
+                    const account = findAccountByAddressOn(
+                        allAccounts,
+                        LEGACY_CHAIN_ID,
+                        authData.signer,
                     )
-                    if (!account || !canSignArc60(account)) {
+                    if (
+                        !account ||
+                        !canSignMessage(LEGACY_CHAIN_ID, account, 'authData')
+                    ) {
                         sendInvalidSigner(message.id)
                         return
                     }
                     addSignRequest({
-                        ...webviewDataSignRequestBase(message.id, webview),
+                        ...webviewDataSignRequestBase(
+                            LEGACY_CHAIN_ID,
+                            message.id,
+                            webview,
+                        ),
                         type: 'auth-data',
                         // The verified webview origin — NOT the dApp-asserted
                         // metadata — is what the analyzer checks the sign-in
@@ -158,8 +173,10 @@ export const useDataSigningHandler = (
             // Preflight parity with the WC transport: a signer that can't sign
             // raw bytes (Ledger, watch) must be rejected before the review
             // sheet, not after the user slides.
-            const signerAccount = allAccounts.find(
-                account => account.address === signer,
+            const signerAccount = findAccountByAddressOn(
+                allAccounts,
+                LEGACY_CHAIN_ID,
+                signer,
             )
             if (!signerAccount || !canSignArbitraryData(signerAccount)) {
                 sendErrorToWebview(
@@ -183,7 +200,11 @@ export const useDataSigningHandler = (
             const metadata = message.params!['metadata'] as SignRequestSource
             try {
                 addSignRequest({
-                    ...webviewDataSignRequestBase(message.id, webview),
+                    ...webviewDataSignRequestBase(
+                        LEGACY_CHAIN_ID,
+                        message.id,
+                        webview,
+                    ),
                     type: 'arbitrary-data',
                     sourceMetadata: metadata,
                     // Platform-observed origin, not page-asserted — gates the

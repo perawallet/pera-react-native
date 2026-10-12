@@ -11,11 +11,13 @@
  */
 
 import { fromCallback } from 'xstate'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    isHardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
-import { findSignerAccount } from '../utils/findSignerAccount'
 import { resolveSigningAccount } from '../utils/resolveSigningAccount'
 import {
     classifyLedgerErrorKind,
@@ -145,10 +147,10 @@ export const hardwareSignActor = fromCallback<
     void (async () => {
         try {
             for (const group of groups) {
-                const signerAccount = findSignerAccount(
+                const signerAccount = findAccountByAddressOn(
                     allAccounts,
-                    group.signerAddress,
                     scope.chainId,
+                    group.signerAddress,
                 )
                 if (!signerAccount) {
                     throw new HardwareWalletError('signer_not_found')

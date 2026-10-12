@@ -11,15 +11,21 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 
 export const usePaymentSummaryHeader = (
     transaction: PeraDisplayableTransaction,
 ) => {
+    const { decimals: nativeDecimals } = useNativeAsset()
     const amount = useMemo(
-        () => microAlgosToAlgos(transaction.paymentTransaction?.amount ?? 0n),
-        [transaction],
+        () =>
+            baseUnitsToDisplayUnits(
+                transaction.paymentTransaction?.amount ?? 0n,
+                nativeDecimals,
+            ),
+        [transaction, nativeDecimals],
     )
 
     return {

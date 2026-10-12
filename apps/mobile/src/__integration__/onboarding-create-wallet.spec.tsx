@@ -75,8 +75,8 @@ describe('Flow: Onboarding → Create wallet', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            accounts[0].address,
+        expect(useAccountsStore.getState().selectedAccountId).toBe(
+            accounts[0].id,
         )
     })
 

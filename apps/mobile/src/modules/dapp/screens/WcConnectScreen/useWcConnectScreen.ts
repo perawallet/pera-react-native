@@ -12,10 +12,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-    useSelectedAccountAddress,
+    chainAccountOf,
+    useSelectedAccountId,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import {
     openValidatedBrowserUrl,
@@ -58,13 +63,15 @@ type UseWcConnectScreenResult = {
 // The active account when it is signable, otherwise nothing pre-checked
 // rather than a row that can't be granted.
 const initialSelection = (
-    activeAddress: string | null | undefined,
+    activeAccountId: string | null | undefined,
     accounts: WalletAccount[],
+    chainId: ChainId,
 ): Set<string> => {
-    if (activeAddress && accounts.some(a => a.address === activeAddress)) {
-        return new Set([activeAddress])
-    }
-    return new Set()
+    const active = activeAccountId
+        ? accounts.find(a => a.id === activeAccountId)
+        : undefined
+    const address = active && chainAccountOf(active, chainId)?.address
+    return address ? new Set([address]) : new Set()
 }
 
 // Compared as ORIGINS: a peer url routinely carries a path or trailing slash
@@ -84,8 +91,8 @@ const isDistinctFromPeerUrl = (
 export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const { approval, isLoading, approve, reject, deliveryError } =
         useDappRequest()
-    const accounts = useSigningAccounts()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const accounts = useSigningAccounts(LEGACY_CHAIN_ID)
+    const { selectedAccountId } = useSelectedAccountId()
 
     const proposal =
         approval?.kind === 'connection-proposal' ? approval : undefined
@@ -102,8 +109,10 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         if (hasSeededRef.current || !proposal || accounts.length === 0) return
         hasSeededRef.current = true
         if (proposal.requesterOrigin) return
-        setSelected(initialSelection(selectedAccountAddress, accounts))
-    }, [proposal, selectedAccountAddress, accounts])
+        setSelected(
+            initialSelection(selectedAccountId, accounts, LEGACY_CHAIN_ID),
+        )
+    }, [proposal, selectedAccountId, accounts])
     const [isConnecting, setIsConnecting] = useState(false)
 
     const toggle = useCallback((address: string): void => {

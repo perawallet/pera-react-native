@@ -12,6 +12,7 @@
 
 import {
     chainAccountOf,
+    findAccountByAddressOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -34,7 +35,6 @@ import {
     SigningError,
 } from '../pipeline/errors'
 import { plannerAdapterForScope } from '../chain-adapter'
-import { findSignerAccount } from './utils/findSignerAccount'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import { resolveSignerCredential } from './utils/resolveSignerCredential'
 import type {
@@ -67,10 +67,10 @@ export const buildGroupSignerMap = (
     const map: GroupSignerMap = new Map()
     for (const group of groups) {
         if (map.has(group.signerAddress)) continue
-        const signerAccount = findSignerAccount(
+        const signerAccount = findAccountByAddressOn(
             allAccounts,
-            group.signerAddress,
             chainId,
+            group.signerAddress,
         )
         if (!signerAccount) {
             throw new CannotSignError(
@@ -249,7 +249,11 @@ const buildUnsignedTransactionGroups = (
             )
         }
         const [signer] = signers
-        const account = findSignerAccount(allAccounts, signer, scope.chainId)
+        const account = findAccountByAddressOn(
+            allAccounts,
+            scope.chainId,
+            signer,
+        )
         if (!account) continue
         // The wallet's spelling, so the group key and every later lookup agree.
         const signerAddress =
@@ -328,7 +332,11 @@ const buildSignableGroups = (
             isCosigner: request.sourceType === 'multisig-cosign',
         })
 
-        const knownAddresses = new Set(allAccounts.map(a => a.address))
+        const knownAddresses = new Set(
+            allAccounts.flatMap(
+                a => chainAccountOf(a, scope.chainId)?.address ?? [],
+            ),
+        )
         const rawBytes = request.rawTransactionsBase64
 
         // Group transactions by sender, preserving original position

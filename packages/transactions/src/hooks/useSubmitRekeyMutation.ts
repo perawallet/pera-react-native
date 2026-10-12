@@ -12,13 +12,11 @@
 
 import { useMutation } from '@tanstack/react-query'
 
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-    type PeraTransaction,
+import type {
+    ChainScope,
+    PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getOpenSubmissionAttemptsForIntent,
     STALE_OPEN_ATTEMPT_MS,
@@ -41,6 +39,7 @@ export type SubmitRekeyParams = {
 }
 
 export type UseSubmitRekeyMutationOptions = {
+    scope: ChainScope
     /**
      * Localized strings shown in the signing pipeline's review UI. The
      * hook lives in a package and intentionally doesn't know about app
@@ -80,12 +79,13 @@ export type UseSubmitRekeyMutationResult = {
  * in `resolveMinFeeForSender` too.
  */
 export const useSubmitRekeyMutation = ({
+    scope,
     signingMetadata,
 }: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
     const { addSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee(LEGACY_CHAIN_ID)
+    const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
@@ -102,9 +102,6 @@ export const useSubmitRekeyMutation = ({
         }: SubmitRekeyParams): Promise<string[]> => {
             // A still-open ledger row for the same rekey may land any
             // moment — a rebuild would mint a new txid algod cannot dedupe.
-            const scope = scopeForLegacyNetwork(
-                useNetworkStore.getState().network,
-            )
             const openAttempts = await getOpenSubmissionAttemptsForIntent({
                 scope,
                 sender: sourceAddress,
@@ -132,7 +129,7 @@ export const useSubmitRekeyMutation = ({
                 // (pre-rekey) — resolveMinFeeForSender resolves the
                 // effective signer via getSignerFor, so this is the correct
                 // fee basis even when undoing a rekey to a quantum auth.
-                const resolvedMinFee = resolveMinFeeForSender({
+                const resolvedMinFee = resolveMinFeeForSender(scope.chainId, {
                     senderAddress: sourceAddress,
                     accounts,
                     suggestedMinFee,
@@ -153,12 +150,13 @@ export const useSubmitRekeyMutation = ({
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
             const signed = await requestRekeySignatures(
                 addSignRequest,
+                scope.chainId,
                 signingMetadata,
                 [unsignedTxn],
             )
 
             try {
-                return await submitAndAutoRefresh(LEGACY_CHAIN_ID, signed, {
+                return await submitAndAutoRefresh(scope.chainId, signed, {
                     flow: 'rekey',
                     intentKey: { kind: 'rekey', address: sourceAddress },
                     sender: sourceAddress,

@@ -15,6 +15,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { algorandAddressOf, algorandKeyOf } from '../../accounts/vocabulary'
 
 const MX_PREFIX = new TextEncoder().encode('MX')
 
@@ -24,8 +25,11 @@ export const arbitraryDataPayloadFor = (
 ): Uint8Array => {
     // Sign with the requested account's own key. Rekey is NOT
     // followed: the dApp verifies against this account's pubkey.
-    if (!canSignArbitraryData(account) || !account.keyPairId) {
-        throw new Error(`Cannot sign arbitrary data for ${account.address}`)
+    const keyPairId = algorandKeyOf(account)
+    if (!canSignArbitraryData(account) || !keyPairId) {
+        throw new Error(
+            `Cannot sign arbitrary data for ${algorandAddressOf(account)}`,
+        )
     }
 
     // Legacy algo_signData: dApps verify against `MX || data`.

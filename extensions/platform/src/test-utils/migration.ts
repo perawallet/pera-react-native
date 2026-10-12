@@ -54,7 +54,7 @@ export const createEmptyLegacyMigrationData = (
     auth: { pin: null },
     accounts: [],
     undecodableAccounts: [],
-    hdWallets: [],
+    hdSeeds: [],
     contacts: [],
     notificationFilters: [],
     walletConnectV1: [],

@@ -11,10 +11,12 @@
  */
 
 import { useMemo } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type {
+    ChainScope,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import { plannerAdapterFor } from '../chain-adapter'
+import { needsSimulation } from '../chain-adapter'
 import {
     isUnsignedTransactionRequest,
     type TransactionSignRequest,
@@ -45,8 +47,9 @@ type UseImpactTransactionsResult = {
  * simulation and append the flattened inner txns. Simulation is best-effort:
  * any failure falls back to the top-level group so the sheet never blocks on it.
  */
-export const useImpactTransactions = (): UseImpactTransactionsResult => {
-    const { network } = useNetwork()
+export const useImpactTransactions = (
+    scope: ChainScope,
+): UseImpactTransactionsResult => {
     const { allTransactions, signableAddresses, currentRequest } =
         useSigningPipeline()
     const request = currentRequest as Optional<TransactionSignRequest>
@@ -59,14 +62,15 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
             : undefined
 
     const hasAppCall = useMemo(
-        () => plannerAdapterFor(network).needsSimulation(allTransactions),
-        [network, allTransactions],
+        () => needsSimulation(scope.chainId, allTransactions),
+        [scope.chainId, allTransactions],
     )
 
     const simulation = useGroupSimulationQuery({
         requestId: request?.id,
         groupTxs,
         enabled: hasAppCall,
+        scope,
     })
 
     if (simulation.isError) {

@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),
@@ -641,12 +642,16 @@ describe('submitAndAutoRefresh (public)', () => {
         .fn()
         .mockReturnValue([new Uint8Array([1])])
 
-    const algo25Account = (address: string): WalletAccount =>
+    const standaloneAccount = (address: string): WalletAccount =>
         ({
             id: address,
-            address,
             custody: { kind: 'local', seed: null },
-            keyPairId: 'kp',
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address,
+                    keyPairId: 'kp',
+                },
+            },
         }) as WalletAccount
 
     beforeEach(() => {
@@ -660,7 +665,9 @@ describe('submitAndAutoRefresh (public)', () => {
     })
 
     test('submits the group through the real path and confirms in the background', async () => {
-        useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
+        useAccountsStore
+            .getState()
+            .setAccounts([standaloneAccount(PUBLIC_WALLET)])
         const onConfirmed = vi.fn()
         setOnConfirmedHandler(onConfirmed)
 

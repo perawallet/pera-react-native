@@ -13,10 +13,15 @@
 import { useCallback, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
-    useSelectedAccountAddress,
+    addressOn,
     useAccountsStore,
+    useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useCreateRampOrderMutation,
     useEnsureRampDestination,
@@ -78,7 +83,11 @@ export const useOnrampConfirm = ({
 }: UseOnrampConfirmParams): UseOnrampConfirmResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const { senderAddress } = useOnramp()
     const { request: requestBottomSheet } = useBottomSheet()
     const { errorToast } = useToast()
@@ -117,13 +126,17 @@ export const useOnrampConfirm = ({
         try {
             // v2 safety: re-read the selected account at call time in case it
             // changed (or was removed) since the form first rendered.
+            const currentAccount = useAccountsStore
+                .getState()
+                .getSelectedAccount()
             const currentAddress =
-                useAccountsStore.getState().selectedAccountAddress ??
-                selectedAccountAddress
+                (currentAccount
+                    ? addressOn(currentAccount, scope)
+                    : undefined) ?? selectedAccountAddress
 
             const destinationAssetId = resolveDestinationAssetId(
                 selectedPair,
-                network,
+                scope,
             )
 
             // No known USDC id on this network — the destination asset is
@@ -221,7 +234,7 @@ export const useOnrampConfirm = ({
         sourceAmount,
         destinationAmount,
         selectedAccountAddress,
-        network,
+        scope,
         isMeld,
         senderAddress,
         isTermsAccepted,

@@ -11,9 +11,13 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useRampHistoryInfiniteQuery,
     type OnrampStatus,
@@ -39,7 +43,11 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
 
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const accountAddress = selectedAccountAddress ?? ''
 
     const {

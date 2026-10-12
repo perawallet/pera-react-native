@@ -57,6 +57,11 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 })
 
 const mockFindAccountByAddress = vi.fn()
+const SIGNER_ACCOUNT = {
+    id: 'signer',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
+}
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useFindAccountByAddress: (address: string) =>
         mockFindAccountByAddress(address),
@@ -70,8 +75,8 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 }))
 
 const mockIsQuantumDataSigningBlocked = vi.fn()
-vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
-    useIsQuantumDataSigningBlocked: (request: unknown) =>
+vi.mock('@hooks/useIsDataSigningBlocked', () => ({
+    useIsDataSigningBlocked: (request: unknown) =>
         mockIsQuantumDataSigningBlocked(request),
 }))
 
@@ -197,24 +202,24 @@ describe('useArc60SigningScreen', () => {
 
     it('blocks confirmation when the signer is a quantum account', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.isSigningBlocked).toBe(true)
         expect(result.current.canConfirm).toBe(false)
     })
 
     it('allows confirmation of the same request when the signer is not quantum', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(false)
+        expect(result.current.isSigningBlocked).toBe(false)
         expect(result.current.canConfirm).toBe(true)
     })
 
@@ -231,7 +236,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('blocks confirmation when the sign-in domain differs from the browser-verified origin', async () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',
@@ -255,7 +260,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('allows confirmation when the sign-in domain matches the browser-verified origin', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',
@@ -273,7 +278,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('does not block a mismatched domain when no origin was verified (WalletConnect)', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',

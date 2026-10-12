@@ -19,7 +19,7 @@ import { useLanguage } from '@hooks/useLanguage'
 export type LedgerAccountSelectionRowProps = {
     address: string
     accountIndex: number
-    variant?: 'derived' | 'rekeyed'
+    variant?: 'derived' | 'delegated'
     isSelected: boolean
     isImported: boolean
     /** Address held as a watch account — selecting it upgrades the entry. */
@@ -43,7 +43,7 @@ export const LedgerAccountSelectionRow = ({
     const { t } = useLanguage()
 
     const badgeTitle =
-        variant === 'rekeyed'
+        variant === 'delegated'
             ? t('ledger.select_accounts.rekeyed_label')
             : isUpgradeable
               ? t('ledger.select_accounts.watch_account_label')

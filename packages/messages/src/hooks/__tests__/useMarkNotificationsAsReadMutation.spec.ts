@@ -17,21 +17,22 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
+const scopeState = vi.hoisted(() => ({
+    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
-                'mainnet',
-        ),
+        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -50,9 +51,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 describe('useMarkNotificationsAsReadMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-        } as ReturnType<typeof useNetwork>)
+        scopeState.current = scopeForLegacyNetwork('mainnet')
         vi.mocked(useDeviceID).mockReturnValue('test-device-id')
     })
 
@@ -60,7 +59,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(),
+            () => useMarkNotificationsAsReadMutation(scopeState.current),
             {
                 wrapper: createWrapper(),
             },
@@ -82,7 +81,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
         vi.mocked(updateLastSeenNotification).mockRejectedValue(mockError)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(),
+            () => useMarkNotificationsAsReadMutation(scopeState.current),
             {
                 wrapper: createWrapper(),
             },
@@ -104,7 +103,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(),
+            () => useMarkNotificationsAsReadMutation(scopeState.current),
             { wrapper: createWrapper() },
         )
 
@@ -123,12 +122,11 @@ describe('useMarkNotificationsAsReadMutation', () => {
         it.each([Networks.betanet, Networks.custom])(
             'no-ops markAsRead and flags isUnavailableOnNetwork on %s',
             async network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                scopeState.current = scopeForLegacyNetwork(network)
 
                 const { result } = renderHook(
-                    () => useMarkNotificationsAsReadMutation(),
+                    () =>
+                        useMarkNotificationsAsReadMutation(scopeState.current),
                     { wrapper: createWrapper() },
                 )
 
@@ -152,7 +150,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
     // list read on every render instead of on unmount.
     it('keeps a stable markAsRead identity across re-renders', () => {
         const { result, rerender } = renderHook(
-            () => useMarkNotificationsAsReadMutation(),
+            () => useMarkNotificationsAsReadMutation(scopeState.current),
             { wrapper: createWrapper() },
         )
 

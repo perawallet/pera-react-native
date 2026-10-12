@@ -24,11 +24,9 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     authorityOf,
     canSignWith,
     useAccountsStore,
-    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -41,6 +39,7 @@ import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 import { isElementDisabled } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS, ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
+import { addressOf } from './__fixtures__/accounts'
 
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const REKEYED_ADDRESS = ALGO25_TEST_ADDRESS
@@ -153,17 +152,15 @@ describe('Flow: Ledger rekeyed-account import', () => {
         await waitFor(
             () => {
                 const accounts = useAccountsStore.getState().accounts
-                const watch = accounts.find(a => a.address === REKEYED_ADDRESS)
-                const hw = accounts.find(a => a.address === LEDGER_ADDRESS)
-                expect(watch ? accountType(watch) : undefined).toBe(
-                    AccountTypes.watch,
+                const watch = accounts.find(
+                    a => addressOf(a) === REKEYED_ADDRESS,
                 )
+                const hw = accounts.find(a => addressOf(a) === LEDGER_ADDRESS)
+                expect(watch?.custody).toEqual({ kind: 'watch' })
                 expect(
                     authorityOf(watch!, getSelectedScope(LEGACY_CHAIN_ID)),
                 ).toBe(LEDGER_ADDRESS)
-                expect(hw ? accountType(hw) : undefined).toBe(
-                    AccountTypes.hardware,
-                )
+                expect(hw?.custody).toMatchObject({ kind: 'hardware' })
                 expect(canSignWith(watch!, accounts, LEGACY_CHAIN_ID)).toBe(
                     true,
                 )

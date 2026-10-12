@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigChainAdapter, MultisigParameters } from '../chain-adapter'
 import type { MultisigSignRequest } from '../models'
 
@@ -21,6 +22,10 @@ export interface MultisigContractFixtures {
     rawTransactionBase64: string
     /** Rejected by the chain's address format. */
     malformedAddress: string
+    /** A scheme the chain signs with whose subsignatures a slot verifies. */
+    participantScheme: SigningScheme
+    /** A scheme the chain signs with that a slot can't verify, when it has one. */
+    nonParticipantScheme?: SigningScheme
 }
 
 const signRequestFor = (
@@ -60,7 +65,13 @@ export const multisigContractTests = (
     makeAdapter: () => MultisigChainAdapter,
     fixtures: MultisigContractFixtures,
 ): void => {
-    const { parameters, rawTransactionBase64, malformedAddress } = fixtures
+    const {
+        parameters,
+        rawTransactionBase64,
+        malformedAddress,
+        participantScheme,
+        nonParticipantScheme,
+    } = fixtures
 
     describe(`MultisigChainAdapter contract: ${makeAdapter().chainId}`, () => {
         it('derives the same address for the same parameters', () => {
@@ -165,6 +176,19 @@ export const multisigContractTests = (
                     new Set([participant]),
                 ),
             ).toEqual({ kind: 'address-mismatch' })
+        })
+
+        it('accepts its participant scheme and refuses any other', () => {
+            const adapter = makeAdapter()
+
+            expect(adapter.acceptsParticipantScheme(participantScheme)).toBe(
+                true,
+            )
+            if (nonParticipantScheme !== undefined) {
+                expect(
+                    adapter.acceptsParticipantScheme(nonParticipantScheme),
+                ).toBe(false)
+            }
         })
     })
 }

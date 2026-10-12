@@ -390,13 +390,13 @@ export const signingMachine = setup({
                             return {
                                 groups,
                                 allAccounts: context.allAccounts,
+                                scope: context.deps.scope,
                                 hardwareWalletRegistry: assertDefined(
                                     context.deps.hardwareWalletRegistry,
                                     'hardwareWalletRegistry',
                                 ),
                                 encodeTransaction:
                                     context.deps.encodeTransaction,
-                                scope: context.deps.scope,
                                 totalTxs: groups.reduce(
                                     (sum, g) =>
                                         sum +
@@ -518,8 +518,8 @@ export const signingMachine = setup({
                         'signerAddress',
                     ),
                     allAccounts: context.allAccounts,
-                    createTransport: context.deps.createTransport,
                     scope: context.deps.scope,
+                    createTransport: context.deps.createTransport,
                 }),
                 onDone: {
                     target: 'completed',

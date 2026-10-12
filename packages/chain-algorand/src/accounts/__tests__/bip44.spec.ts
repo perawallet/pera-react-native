@@ -14,21 +14,15 @@ import { describe, expect, test } from 'vitest'
 import {
     ALGORAND_COIN_TYPE,
     assertAlgorandBip44PathMatches,
-    hdPathMatchesDetails,
+    hdPathMatchesIndex,
     parseAlgorandBip44Path,
 } from '../bip44'
 import {
-    DerivationTypes,
     InvalidBip44PathError,
-    type HDWalletDetails,
+    type HdIndex,
 } from '@perawallet/wallet-core-accounts'
 
-const details: HDWalletDetails = {
-    account: 0,
-    change: 0,
-    keyIndex: 3,
-    derivationType: DerivationTypes.Peikert,
-}
+const details: HdIndex = { account: 0, keyIndex: 3 }
 
 describe('parseAlgorandBip44Path', () => {
     test('parses a canonical Algorand BIP44 path with apostrophe hardening', () => {
@@ -95,17 +89,25 @@ describe('parseAlgorandBip44Path', () => {
     })
 })
 
-describe('hdPathMatchesDetails', () => {
+describe('hdPathMatchesIndex', () => {
     test('returns true for a matching path', () => {
-        expect(hdPathMatchesDetails("m/44'/283'/0'/0/3", details)).toBe(true)
+        expect(hdPathMatchesIndex("m/44'/283'/0'/0/3", details)).toBe(true)
     })
 
     test('returns false for a mismatching keyIndex', () => {
-        expect(hdPathMatchesDetails("m/44'/283'/0'/0/99", details)).toBe(false)
+        expect(hdPathMatchesIndex("m/44'/283'/0'/0/99", details)).toBe(false)
+    })
+
+    test('returns false for a mismatching account', () => {
+        expect(hdPathMatchesIndex("m/44'/283'/1'/0/3", details)).toBe(false)
+    })
+
+    test('returns false for a non-zero change level', () => {
+        expect(hdPathMatchesIndex("m/44'/283'/0'/1/3", details)).toBe(false)
     })
 
     test('propagates malformed-path errors', () => {
-        expect(() => hdPathMatchesDetails('bad', details)).toThrow(
+        expect(() => hdPathMatchesIndex('bad', details)).toThrow(
             InvalidBip44PathError,
         )
     })

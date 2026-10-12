@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     BACKUP_ACCESS_DOMAIN,
     SeedScheme,
@@ -31,12 +32,15 @@ import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
  */
 export const resolveBackupSeedKeyId = async (
     seedAddress: string,
+    chainId: ChainId,
 ): Promise<string | null> => {
     const keys = getKeystoreStore().state.keys
 
     for (const key of keys) {
         if (seedSchemeOf(key) !== SeedScheme.Bip39) continue
-        if ((await backupSeedReference(key.id)) !== seedAddress) continue
+        if ((await backupSeedReference(key.id, chainId)) !== seedAddress) {
+            continue
+        }
         if (!canAccess(key, BACKUP_ACCESS_DOMAIN)) return null
         return entropyChildIdOf(key.id, keys) ? key.id : null
     }
@@ -49,24 +53,29 @@ export const resolveBackupSeedKeyId = async (
  * an account's `keyPairId` and derives its seed's first-derived address; this
  * one starts from that same address and reads the matching seed's entropy.
  */
-export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
-    return useCallback<SeedEntropyResolver>(async seedAddress => {
-        const seedKeyId = await resolveBackupSeedKeyId(seedAddress)
-        if (seedKeyId === null) return null
+export const useResolveSeedEntropyForBackup = (
+    chainId: ChainId,
+): SeedEntropyResolver => {
+    return useCallback<SeedEntropyResolver>(
+        async seedAddress => {
+            const seedKeyId = await resolveBackupSeedKeyId(seedAddress, chainId)
+            if (seedKeyId === null) return null
 
-        const entropyId = entropyChildIdOf(
-            seedKeyId,
-            getKeystoreStore().state.keys,
-        )
-        if (!entropyId) return null
+            const entropyId = entropyChildIdOf(
+                seedKeyId,
+                getKeystoreStore().state.keys,
+            )
+            if (!entropyId) return null
 
-        // `withSecret` zeroes its buffer once the handler returns, so the
-        // handler copies the bytes out rather than handing back the
-        // reference itself.
-        const entropy = await withSecret(
-            entropyId,
-            secret => new Uint8Array(secret),
-        )
-        return entropy == null ? null : { seedKeyId, entropy }
-    }, [])
+            // `withSecret` zeroes its buffer once the handler returns, so the
+            // handler copies the bytes out rather than handing back the
+            // reference itself.
+            const entropy = await withSecret(
+                entropyId,
+                secret => new Uint8Array(secret),
+            )
+            return entropy == null ? null : { seedKeyId, entropy }
+        },
+        [chainId],
+    )
 }

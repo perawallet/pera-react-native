@@ -45,6 +45,7 @@ import {
     clearCustomNetwork,
     getExpectedGenesisHash,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
 import { fetchAssets } from '@perawallet/wallet-core-chain-algorand/assets'
@@ -268,7 +269,7 @@ describe.each(FIXTURES)(
 
             const result = await fetchTransactionHistory({
                 accountAddress: ADDRESS,
-                network,
+                scope: scopeForLegacyNetwork(network),
             })
 
             const ids = result.transactions.map(transaction => transaction.id)

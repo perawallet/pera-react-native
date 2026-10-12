@@ -26,12 +26,14 @@ import {
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import { validateTransactionGroupIntegrity } from '../validateTransactionGroupIntegrity'
 import {
     assignFeeToGroup,
     assignMinimumFeesToGroup,
+    groupHasQuantumSigner,
 } from '../assignMinimumFeesToGroup'
 
 const quantumAddress = makeTestAddress(1)
@@ -42,18 +44,26 @@ const receiverAddress = makeTestAddress(9)
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'q1',
-        address: quantumAddress.toString(),
         custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: quantumAddress.toString(),
+                keyPairId: 'kp-quantum',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
 const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
         id: 'a1',
-        address: algoAddress.toString(),
         custody: { kind: 'local', seed: null },
-        keyPairId: 'kp-algo25',
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: algoAddress.toString(),
+                keyPairId: 'kp-algo25',
+            },
+        },
         ...overrides,
     }) as WalletAccount
 
@@ -257,6 +267,34 @@ describe('assignMinimumFeesToGroup', () => {
         expect(
             rawTransactionsMatch(before, result.transactions.map(encode)),
         ).toBe(true)
+    })
+
+    test('leaves quantum custody with no key on Algorand untouched', () => {
+        const transactions = [makePayment(quantumAddress, 1000n)]
+        // It still resolves as a signer: its key on another chain counts.
+        const keyless = quantum({
+            chains: {
+                [ALGORAND_CHAIN_ID]: { address: quantumAddress.toString() },
+                other: { address: 'OTHER', keyPairId: 'kp-other' },
+            },
+        })
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions,
+            signableIndices: [0],
+            accounts: [keyless],
+        })
+
+        expect(result.transactions).toBe(transactions)
+        expect(result.adjustments).toEqual([])
+        expect(
+            groupHasQuantumSigner({
+                transactions,
+                signableIndices: [0],
+                accounts: [keyless],
+            }),
+        ).toBe(false)
     })
 
     test('leaves a co-signed partition untouched even when a quantum fee is below the PQ minimum', () => {

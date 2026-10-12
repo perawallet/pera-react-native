@@ -66,6 +66,14 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // `validate.ts` imports this eagerly; only the sign-transactions path is
     // driven from this file, so it is unused.
     parseAuthDataWireRequest: vi.fn(),
+    // Mirrors a chain's `canSign`: a flag per message kind on the account
+    // itself, no rekey hop. `mockHasMessageSigner` stands in for a chain with
+    // no message signer registered.
+    canSignMessage: (_chainId: string, account: MockAccount, kind: string) =>
+        mockHasMessageSigner &&
+        (kind === 'authData'
+            ? account.canArc60 === true
+            : account.canSignData === true),
     // Mirrors the real predicate: the class name, or the marker the
     // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
@@ -82,10 +90,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     }),
 }))
 
-// A minimal double of `WalletAccount` — just the fields the two capability
-// checks below and the adapter's own signer lookups read.
+// A minimal double of `WalletAccount` — just the fields the message signer's
+// capability check and the adapter's own signer lookups read.
 type MockAccount = {
-    address: string
+    chains: Record<string, { address: string }>
     authority?: string
     /** Limits `authority` to one network; absent means every network. */
     authorityNetwork?: string
@@ -93,7 +101,13 @@ type MockAccount = {
     canArc60?: boolean
 }
 
+const mockAccount = (
+    address: string,
+    flags: Omit<MockAccount, 'chains'> = {},
+): MockAccount => ({ chains: { algorand: { address } }, ...flags })
+
 let mockAccounts: MockAccount[] = []
+let mockHasMessageSigner = true
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockAccounts,
@@ -102,13 +116,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account.authorityNetwork === scope.networkId
             ? (account.authority ?? null)
             : null,
-    // Mirrors the real `canSignArbitraryData`: a flag on the account itself,
-    // no rekey hop.
-    canSignArbitraryData: (account: MockAccount) =>
-        account.canSignData === true,
-    // Mirrors the real `canSignArc60`: account-local, because the signature
-    // verifies against the signer's own key.
-    canSignArc60: (account: MockAccount) => account.canArc60 === true,
+    chainAccountOf: (account: MockAccount, chainId: string) =>
+        account.chains[chainId],
+    findAccountByAddressOn: (
+        accounts: MockAccount[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(account => account.chains[chainId]?.address === address),
 }))
 
 const { enqueueInboundRequest, useConnectionSigningAdapter } =
@@ -121,6 +135,7 @@ const { enqueueInboundRequest, useConnectionSigningAdapter } =
 const fixtureAdapter = (): DappRequestChainAdapter => ({
     chainId: CHAIN_ID,
     relayableErrorNames: [],
+    accountTypeOf: () => 'Fixture',
     parseSigningParams: () => ({ ok: true, payload: [] }),
     resolveReportedNetwork: scope => scope.networkId,
     emptySignaturesFor: () => ({}),
@@ -204,6 +219,7 @@ const makeRegistry = () => {
 describe('useConnectionSigningAdapter', () => {
     beforeEach(() => {
         mockAccounts = []
+        mockHasMessageSigner = true
         mockSelectedNetwork.current = 'mainnet'
         mockAddSignRequest.mockClear()
         mockRemoveSignRequest.mockClear()
@@ -772,7 +788,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         it('withdraws a sign-data request by its connection and correlation id', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
             send(
@@ -817,7 +833,7 @@ describe('useConnectionSigningAdapter', () => {
 
     describe('sign-data', () => {
         it('enqueues an ARC-60 sign request', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -848,7 +864,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         it('stamps the ARC-60 request with the source type the handler declared', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -875,7 +891,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         it('threads the transport-verified origin onto the ARC-60 request so the domain-mismatch warning can fire', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -906,7 +922,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         it('threads the transport-verified origin onto a legacy arbitrary-data request', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -934,7 +950,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         it('enqueues a legacy arbitrary-data sign request', () => {
-            mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -947,6 +963,7 @@ describe('useConnectionSigningAdapter', () => {
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'arbitrary-data',
+                    chainId: CHAIN_ID,
                     data: payload,
                     // The connection's peer identity, stamped as the
                     // anti-spoofing dApp identity shown on the signing sheet.
@@ -958,7 +975,7 @@ describe('useConnectionSigningAdapter', () => {
         it('rejects a signer outside the connection approved accounts', () => {
             // The security property: a session approved for PRIMARY_SIGNER
             // must not sign for REKEYED_SIGNER.
-            mockAccounts = [{ address: REKEYED_SIGNER, canSignData: true }]
+            mockAccounts = [mockAccount(REKEYED_SIGNER, { canSignData: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -999,7 +1016,7 @@ describe('useConnectionSigningAdapter', () => {
 
         it('rejects a signer that cannot sign arbitrary data', () => {
             // A watch account: present and authorized, but keyless.
-            mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: false }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: false })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -1022,7 +1039,32 @@ describe('useConnectionSigningAdapter', () => {
         it('rejects an ARC-60 signer that cannot sign ARC-60', () => {
             // A multisig account: present and authorized, but a threshold
             // signature can never be represented in a single ARC-60 response.
-            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: false }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: false })]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+
+            const message = signDataMessage(
+                {
+                    type: 'auth-data',
+                    authData: {
+                        data: 'ZGF0YQ==',
+                        signer: PRIMARY_SIGNER,
+                        domain: 'example.com',
+                        authenticatorData: new Uint8Array([1, 2, 3]),
+                    },
+                    metadata: { scope: 1, encoding: 'base64' },
+                },
+                [PRIMARY_SIGNER],
+            )
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('rejects an ARC-60 signer on a chain with no message signer', () => {
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
+            mockHasMessageSigner = false
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
@@ -1054,8 +1096,8 @@ describe('useConnectionSigningAdapter', () => {
             // membership check, this would be wrongly rejected as an
             // unauthorized signer.
             mockAccounts = [
-                { address: REKEYED_SIGNER, authority: PRIMARY_SIGNER },
-                { address: PRIMARY_SIGNER, canArc60: true },
+                mockAccount(REKEYED_SIGNER, { authority: PRIMARY_SIGNER }),
+                mockAccount(PRIMARY_SIGNER, { canArc60: true }),
             ]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1083,12 +1125,11 @@ describe('useConnectionSigningAdapter', () => {
 
         it('reads the rekey on the selected network', () => {
             mockAccounts = [
-                {
-                    address: REKEYED_SIGNER,
+                mockAccount(REKEYED_SIGNER, {
                     authority: PRIMARY_SIGNER,
                     authorityNetwork: 'testnet',
-                },
-                { address: PRIMARY_SIGNER, canArc60: true },
+                }),
+                mockAccount(PRIMARY_SIGNER, { canArc60: true }),
             ]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1124,12 +1165,11 @@ describe('useConnectionSigningAdapter', () => {
             // its auth account cannot sign for it: an ARC-60 signature
             // verifies against the named signer's own key.
             mockAccounts = [
-                {
-                    address: PRIMARY_SIGNER,
+                mockAccount(PRIMARY_SIGNER, {
                     canArc60: false,
                     authority: REKEYED_SIGNER,
-                },
-                { address: REKEYED_SIGNER, canArc60: true },
+                }),
+                mockAccount(REKEYED_SIGNER, { canArc60: true }),
             ]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1155,8 +1195,8 @@ describe('useConnectionSigningAdapter', () => {
 
         it('responds with signatures in request order', async () => {
             mockAccounts = [
-                { address: PRIMARY_SIGNER, canSignData: true },
-                { address: REKEYED_SIGNER, canSignData: true },
+                mockAccount(PRIMARY_SIGNER, { canSignData: true }),
+                mockAccount(REKEYED_SIGNER, { canSignData: true }),
             ]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1208,7 +1248,7 @@ describe('useConnectionSigningAdapter', () => {
             // Same retryable-failure property as sign-transactions:
             // `approve` must let a failed delivery reject back to the caller
             // rather than swallowing it.
-            mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: true })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 

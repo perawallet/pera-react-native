@@ -170,8 +170,12 @@ const flushFrame = async () => {
 }
 
 describe('useAccountNfts', () => {
+    const ACCOUNT_ADDRESS =
+        'ACCOUNT_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
-        address: 'ACCOUNT_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        id: 'account',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: ACCOUNT_ADDRESS } },
     }
 
     beforeEach(() => {
@@ -199,7 +203,8 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({
                     sortMode: 'titleAsc',
                     includeOptedInOnly: false,
@@ -212,7 +217,8 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({ includeOptedInOnly: true }),
             )
         })
@@ -225,7 +231,8 @@ describe('useAccountNfts', () => {
             })
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenLastCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({ search: 'cool' }),
             )
         })
@@ -236,7 +243,8 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({ sortMode: undefined }),
             )
         })
@@ -244,14 +252,16 @@ describe('useAccountNfts', () => {
         it('enables the opt-in rounds query only for the recentlyAdded mode', () => {
             renderHook(() => useAccountNfts())
             expect(mockUseAccountOptInRoundsQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 false,
             )
 
             mockSortMode = 'recentlyAdded'
             renderHook(() => useAccountNfts())
             expect(mockUseAccountOptInRoundsQuery).toHaveBeenLastCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 true,
             )
         })
@@ -609,7 +619,7 @@ describe('useAccountNfts', () => {
             })
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
-                [mockAccount.address],
+                [ACCOUNT_ADDRESS],
                 'mainnet',
             )
             expect(mockInvalidateQueries).not.toHaveBeenCalled()

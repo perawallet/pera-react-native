@@ -14,7 +14,6 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
-import { accountType } from '../../utils'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { SingleKeyAccountsUnsupportedError } from '../../errors'
 import type { MintedAccount } from '../../chain-adapter'
@@ -23,10 +22,16 @@ import {
     usePendingAccountCreationStore,
 } from '../../store/pendingAccountCreation'
 import {
+    FAKE_CHAIN_ID,
+    FAKE_EXPLICIT_SEED,
+    FAKE_HD_SEED,
+    FAKE_SINGLE_SEED,
     fakeAccountsChain,
     MAINNET_SCOPE,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
+import { testAccount } from '../../__tests__/accountFactory'
+import { addressOn, signingKeyOn } from '../../credentials'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -71,15 +76,6 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-const mockRegisterDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useRegisterDeviceMutation: vi.fn(() => ({
-        mutateAsync: mockRegisterDeviceMutation,
-    })),
-    useDeviceID: vi.fn(() => 'device-id'),
-}))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         deviceInfo: {
@@ -117,29 +113,12 @@ describe('useCreateAccount', () => {
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
     })
 
-    test('does not touch the device API — registration is the single writer', async () => {
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        await act(async () => {
-            await result.current.saveAccount({
-                id: 'ACC1',
-                address: 'ADDR1',
-                custody: { kind: 'local', seed: null },
-                keyPairId: 'WALLET1-ed25519',
-            })
-        })
-
-        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
-    })
-
     test('creates new HD wallet account when no existing key', async () => {
         uuidSpies.v7
             .mockImplementationOnce(() => 'WALLET1')
             .mockImplementationOnce(() => 'ACC1')
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         let created: any
         await act(async () => {
@@ -160,11 +139,17 @@ describe('useCreateAccount', () => {
             MAINNET_ED25519,
         )
         expect(created.id).toBe('ACC1')
-        expect(created.address).toBeTruthy()
-        expect(accountType(created)).toBe('hdWallet')
-        // keyPairId is the deterministic derived child id; the seed parent
+        expect(addressOn(created, MAINNET_SCOPE)).toBeTruthy()
+        expect(created.custody).toEqual({
+            kind: 'local',
+            seed: FAKE_HD_SEED,
+            hd: { account: 0, keyIndex: 0 },
+        })
+        // The key is the deterministic derived child id; the seed parent
         // is reachable via metadata.parentKeyId on the child.
-        expect(created.keyPairId).toBe('WALLET1-acc0-idx0-dt9')
+        expect(signingKeyOn(created, FAKE_CHAIN_ID)).toBe(
+            'WALLET1-acc0-idx0-dt9',
+        )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
@@ -175,7 +160,7 @@ describe('useCreateAccount', () => {
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
         deriveAccount().mockRejectedValueOnce(new Error('derive boom'))
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
@@ -201,7 +186,7 @@ describe('useCreateAccount', () => {
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         let created: any
         await act(async () => {
@@ -213,18 +198,14 @@ describe('useCreateAccount', () => {
         })
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
-        // keyPairId is the deterministic derived child id of the existing
-        // seed at (account=1, keyIndex=0), derived with the chain's Peikert type.
-        expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
-        expect(created.hdWalletDetails.account).toBe(1)
         expect(created.custody).toEqual({
             kind: 'local',
-            seed: 'bip39',
+            seed: FAKE_HD_SEED,
             hd: { account: 1, keyIndex: 0 },
         })
         expect(created.chains).toEqual({
-            algorand: {
-                address: created.address,
+            [FAKE_CHAIN_ID]: {
+                address: addressOn(created, MAINNET_SCOPE),
                 keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9',
             },
         })
@@ -240,7 +221,7 @@ describe('useCreateAccount', () => {
         })
         deriveAccount().mockRejectedValueOnce(new Error('Derivation failed'))
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
@@ -260,7 +241,7 @@ describe('useCreateAccount', () => {
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         await act(async () => {
             await expect(
@@ -280,7 +261,7 @@ describe('useCreateAccount', () => {
         // straight to the chain's key derivation, which reads the live store.
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
-        const { result } = renderHook(() => useCreateAccount())
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
         let created: any
         await act(async () => {
@@ -300,40 +281,37 @@ describe('useCreateAccount', () => {
             0,
             MAINNET_ED25519,
         )
-        expect(accountType(created)).toBe('hdWallet')
-        expect(created.keyPairId).toBe('IMPORTED_SEED-acc0-idx0-dt9')
+        expect(created.custody).toMatchObject({ seed: FAKE_HD_SEED })
+        expect(signingKeyOn(created, FAKE_CHAIN_ID)).toBe(
+            'IMPORTED_SEED-acc0-idx0-dt9',
+        )
     })
 
     describe('single-key accounts', () => {
         const mintedAccount = (isNewSeed: boolean): MintedAccount => ({
-            account: {
-                id: 'ACC1',
-                address: 'ADDR1',
-                custody: { kind: 'local', seed: null },
-                keyPairId: 'SEED1-ed25519',
-            },
+            account: testAccount('local', 'ADDR1', { id: 'ACC1' }),
             seedKeyId: 'SEED1',
             isNewSeed,
         })
         const createOp = () =>
             vi.mocked(fakeAccountsChain().adapter.singleKeyAccounts!.create)
 
-        test('returns the adapter account, passing the keystore, kind, id and scope', async () => {
+        test('returns the adapter account, passing the seed, id and scope', async () => {
             createOp().mockResolvedValue(mintedAccount(false))
 
-            const { result } = renderHook(() => useCreateAccount())
+            const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
             let account: any
             await act(async () => {
-                account = await result.current.buildStandaloneAccount({
+                account = await result.current.buildSingleKeyAccount({
+                    seed: FAKE_SINGLE_SEED,
                     id: 'SEED1',
                 })
             })
 
             expect(account).toEqual(mintedAccount(false).account)
             expect(createOp()).toHaveBeenCalledWith(
-                kmsMock,
-                { kind: 'standalone', id: 'SEED1' },
+                { seed: FAKE_SINGLE_SEED, id: 'SEED1' },
                 MAINNET_SCOPE,
             )
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -344,10 +322,12 @@ describe('useCreateAccount', () => {
                 .mockResolvedValueOnce(mintedAccount(true))
                 .mockResolvedValueOnce(mintedAccount(false))
 
-            const { result } = renderHook(() => useCreateAccount())
+            const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
             await act(async () => {
-                await result.current.buildQuantumWalletAccount()
+                await result.current.buildSingleKeyAccount({
+                    seed: FAKE_EXPLICIT_SEED,
+                })
             })
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,
@@ -356,7 +336,9 @@ describe('useCreateAccount', () => {
             expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('SEED1')
 
             await act(async () => {
-                await result.current.buildQuantumWalletAccount()
+                await result.current.buildSingleKeyAccount({
+                    seed: FAKE_EXPLICIT_SEED,
+                })
             })
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,
@@ -366,10 +348,12 @@ describe('useCreateAccount', () => {
         test('create variants persist the account and clear the pending rollback', async () => {
             createOp().mockResolvedValue(mintedAccount(true))
 
-            const { result } = renderHook(() => useCreateAccount())
+            const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
             await act(async () => {
-                await result.current.createStandaloneAccount({})
+                await result.current.createSingleKeyAccount({
+                    seed: FAKE_SINGLE_SEED,
+                })
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([
@@ -383,11 +367,13 @@ describe('useCreateAccount', () => {
         test('propagates adapter failures and stores nothing', async () => {
             createOp().mockRejectedValue(new Error('keystore unavailable'))
 
-            const { result } = renderHook(() => useCreateAccount())
+            const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
             await act(async () => {
                 await expect(
-                    result.current.createQuantumWalletAccount(),
+                    result.current.createSingleKeyAccount({
+                        seed: FAKE_EXPLICIT_SEED,
+                    }),
                 ).rejects.toThrow('keystore unavailable')
             })
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -396,11 +382,13 @@ describe('useCreateAccount', () => {
         test('fails closed on a chain without single-key accounts', async () => {
             registerFakeAccountsChain({ singleKeyAccounts: undefined })
 
-            const { result } = renderHook(() => useCreateAccount())
+            const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
             await act(async () => {
                 await expect(
-                    result.current.createQuantumWalletAccount(),
+                    result.current.createSingleKeyAccount({
+                        seed: FAKE_EXPLICIT_SEED,
+                    }),
                 ).rejects.toBeInstanceOf(SingleKeyAccountsUnsupportedError)
             })
             expect(useAccountsStore.getState().accounts).toHaveLength(0)

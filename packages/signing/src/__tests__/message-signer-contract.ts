@@ -11,7 +11,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
     MessageRequest,
@@ -49,6 +52,7 @@ export const messageSignerContractTests = (
 ): void => {
     const { account, accounts, requests, otherSigner } = fixtures
     const context: MessagePlanContext = { account, accounts }
+    const ownAddress = chainAccountOf(account, fixtures.scope.chainId)?.address
     const plan = (request: MessageRequest) =>
         makeAdapter().plan(request, context)
     const signaturesFor = (request: MessageRequest): Signature[] =>
@@ -95,7 +99,7 @@ export const messageSignerContractTests = (
                 expect(planned.length).toBeGreaterThan(0)
                 planned.forEach((item, index) => {
                     expect(item.requestIndex).toBe(index)
-                    expect(item.signer).toBe(account.address)
+                    expect(item.signer).toBe(ownAddress)
                     expect(item.payload.length).toBeGreaterThan(0)
                 })
             }
@@ -135,7 +139,7 @@ export const messageSignerContractTests = (
                 )
 
                 expect(signed.scope).toEqual(request.scope)
-                expect(signed.signature.signer).toBe(account.address)
+                expect(signed.signature.signer).toBe(ownAddress)
                 expect(signed.signature.bytes.length).toBeGreaterThan(0)
             }
         })

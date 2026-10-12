@@ -44,6 +44,7 @@ export const fixtureCodec: AddressCodec = {
     },
     normalize: address => address.toLowerCase(),
     areEqual: (a, b) => a.toLowerCase() === b.toLowerCase(),
+    truncate: address => `${address.slice(0, 6)}...${address.slice(-4)}`,
     toPaymentUri: (address, opts) => {
         const query = new URLSearchParams()
         if (opts?.amount) query.set('amount', opts.amount.toString())

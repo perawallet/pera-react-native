@@ -12,16 +12,16 @@
 
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
-import { useLanguage } from '@hooks/useLanguage'
-import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
 import {
     formatNumber,
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
-    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
+import { useLanguage } from '@hooks/useLanguage'
+import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -107,7 +107,10 @@ export const WarningItem = ({
                             <PWText style={styles.warningMessage}>
                                 {t('transactions.warning.high_fee_warning', {
                                     fee: formatNumber(
-                                        microAlgosToAlgos(warning.totalFee),
+                                        baseUnitsToDisplayUnits(
+                                            warning.totalFee,
+                                            nativeAsset.decimals,
+                                        ),
                                         nativeAsset.decimals,
                                     ),
                                 })}

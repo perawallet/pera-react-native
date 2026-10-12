@@ -18,8 +18,8 @@ import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
-    useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
+import { useSenderBalances } from '@modules/transactions/hooks'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -62,7 +62,11 @@ vi.mock('@modules/bottom-sheet', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesQuery: vi.fn(),
-    useAccountInformationQuery: vi.fn(),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
+    findAccountByAddressOn: vi.fn(() => undefined),
     useAccountAssetBalanceQuery: vi.fn(() => ({
         data: {
             assetId: '0',
@@ -70,11 +74,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             algoValue: new Decimal(100),
         },
     })),
-    isRekeyedAccount: vi.fn(() => false),
+    isDelegatedAccount: vi.fn(() => false),
     // Consumed by the shared useSendDestinationRouter that useInputScreen now
     // calls for the deeplink-prefill direct-navigation path.
     useAllAccounts: vi.fn(() => []),
-    useOnChainAccountInformationQuery: vi.fn(() => ({
+    useOnChainAccountStateQuery: vi.fn(() => ({
         data: undefined,
         isFetching: false,
         isSuccess: false,
@@ -136,6 +140,7 @@ const mockSendFundsState = {
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(() => mockSendFundsState),
+    useSenderBalances: vi.fn(),
 }))
 
 describe('useInputScreen', () => {
@@ -151,7 +156,9 @@ describe('useInputScreen', () => {
         mockSendFundsState.shouldContinueToConfirm = false
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
-            address: 'test-addr',
+            id: 'test-account',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'test-addr' } },
         })
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([
@@ -179,12 +186,10 @@ describe('useInputScreen', () => {
             minFee: 1000n,
             isPending: false,
         })
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: true,
         })
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
@@ -213,12 +218,10 @@ describe('useInputScreen', () => {
             minFee: 3000n,
             isPending: false,
         })
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue('close')
 
@@ -319,8 +322,10 @@ describe('useInputScreen', () => {
     })
 
     it('shows toast when value exceeds total balance', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 10_000_000n, minBalance: 0n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 10_000_000n,
+            minBalance: 0n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -339,12 +344,10 @@ describe('useInputScreen', () => {
     })
 
     it('opens insufficient-balance confirm when value exceeds MBR but within total balance', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 1_000_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 1_000_000n,
+            hasOptedInAssets: true,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -360,12 +363,10 @@ describe('useInputScreen', () => {
     })
 
     it('continues past MBR when insufficient-balance confirm resolves true', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 1_000_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 1_000_000n,
+            hasOptedInAssets: true,
         })
         mockRequestBottomSheet.mockResolvedValue(true)
 
@@ -384,12 +385,10 @@ describe('useInputScreen', () => {
     })
 
     it('does not navigate when insufficient-balance confirm is dismissed', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 1_000_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 1_000_000n,
+            hasOptedInAssets: true,
         })
         mockRequestBottomSheet.mockResolvedValue(undefined)
 
@@ -405,8 +404,10 @@ describe('useInputScreen', () => {
     })
 
     it('proceeds on next if valid', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100_000_000n, minBalance: 0n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 0n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -425,8 +426,10 @@ describe('useInputScreen', () => {
         // Value-bearing deeplink: ALGO receiver already known, so tapping Next
         // must jump straight to Confirm instead of pushing SelectDestination.
         mockSendFundsState.destination = 'RECEIVERADDR'
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100_000_000n, minBalance: 0n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 0n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -445,8 +448,10 @@ describe('useInputScreen', () => {
         mockSendFundsState.amount = new Decimal('5')
         mockSendFundsState.destination = 'RECEIVERADDR'
         mockSendFundsState.shouldContinueToConfirm = true
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100_000_000n, minBalance: 0n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 0n,
+            hasOptedInAssets: false,
         })
 
         renderHook(() => useInputScreen())
@@ -460,9 +465,7 @@ describe('useInputScreen', () => {
         mockSendFundsState.amount = new Decimal('5')
         mockSendFundsState.destination = 'RECEIVERADDR'
         mockSendFundsState.shouldContinueToConfirm = true
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: undefined,
-        })
+        ;(useSenderBalances as Mock).mockReturnValue(undefined)
 
         renderHook(() => useInputScreen())
         await act(async () => {})
@@ -560,8 +563,10 @@ describe('useInputScreen', () => {
     })
 
     it('shows toast when value exceeds zero balance', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 0n, minBalance: 0n },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 0n,
+            minBalance: 0n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -579,12 +584,10 @@ describe('useInputScreen', () => {
     })
 
     it('opens close-account confirm when the whole ALGO balance is sent and no opted-in ASAs', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -599,12 +602,10 @@ describe('useInputScreen', () => {
     })
 
     it('offers the close for an amount that only the close can cover', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue('close')
 
@@ -620,12 +621,10 @@ describe('useInputScreen', () => {
     })
 
     it('offers the min-balance confirm, not a close, for a partial spend that dips into the MBR', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 2_004_000n,
-                minBalance: 1_600_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 2_004_000n,
+            minBalance: 1_600_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue(true)
 
@@ -641,12 +640,10 @@ describe('useInputScreen', () => {
     })
 
     it('does not offer a close when an app opt-in holds the minimum balance up', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 328_500n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 328_500n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue(true)
 
@@ -661,12 +658,10 @@ describe('useInputScreen', () => {
     })
 
     it('sends max without closing when the user keeps the account open', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue('keepOpen')
 
@@ -686,12 +681,10 @@ describe('useInputScreen', () => {
     })
 
     it('confirms close account when the user chooses to close', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue('close')
 
@@ -710,12 +703,10 @@ describe('useInputScreen', () => {
     })
 
     it('does not confirm close account when confirm is dismissed', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
         mockRequestBottomSheet.mockResolvedValue(undefined)
 
@@ -732,12 +723,10 @@ describe('useInputScreen', () => {
     })
 
     it('resets isCloseAccount when amount is within maxAmount on next', async () => {
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 100_000n,
-                assets: [],
-            },
+        ;(useSenderBalances as Mock).mockReturnValue({
+            amount: 100_000_000n,
+            minBalance: 100_000n,
+            hasOptedInAssets: false,
         })
 
         const { result } = renderHook(() => useInputScreen())

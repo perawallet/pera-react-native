@@ -25,6 +25,10 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     useAllAccounts: vi.fn(() => []),
 }))
 
@@ -62,6 +66,7 @@ const isPushSupported = vi.fn(() => true)
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         pushNotification: { isSupported: isPushSupported },
+        chains: { has: () => false },
     }),
 }))
 
@@ -121,7 +126,10 @@ describe('useSettingsNotificationsScreen', () => {
 
     it('delegates the toggle to useAccountNotificationToggle', async () => {
         mocks.toggleAccountNotification.mockResolvedValue(true)
-        const mockAccount = { id: '1', address: 'ADDR1' }
+        const mockAccount = {
+            id: '1',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 
@@ -143,7 +151,10 @@ describe('useSettingsNotificationsScreen', () => {
     it('still delegates while offline rather than swallowing the toggle', async () => {
         onlineManager.setOnline(false)
         mocks.toggleAccountNotification.mockResolvedValue(false)
-        const mockAccount = { id: '1', address: 'ADDR1' }
+        const mockAccount = {
+            id: '1',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 

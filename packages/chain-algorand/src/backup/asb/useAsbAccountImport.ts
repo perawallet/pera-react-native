@@ -24,6 +24,7 @@ import {
     AsbAccountKind,
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 
 export type UseAsbAccountImportResult = {
     importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
@@ -34,7 +35,8 @@ export type UseAsbAccountImportResult = {
  *
  * - `single` (algo25): delegates to `useImportAlgo25FromSeed`, which
  *   rebuilds a 25-word mnemonic from the seed and feeds it through the
- *   standard import path. Shared with the Pera Web flow.
+ *   standard import path. Shared with the Pera Web flow. ARC-35 has no
+ *   post-quantum key representation, so no quantum account arrives here.
  * - `watch`: persist directly via the accounts store, mirroring
  *   `useWatchAccountScreen`.
  *
@@ -76,7 +78,7 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             }
             const currentAccounts = useAccountsStore.getState().accounts
             const isDuplicate = currentAccounts.some(
-                a => a.address === account.address,
+                a => algorandAddressOf(a) === account.address,
             )
             if (isDuplicate) {
                 throw new DuplicateAccountError(account.address)

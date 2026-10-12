@@ -11,17 +11,25 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
-import { renderHook, act } from '@testing-library/react'
 import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
+import { renderHook, act } from '@testing-library/react'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    hdAccount as buildHdAccount,
+    ledgerAccount,
+    watchAccount as watch,
+} from '../../__tests__/accounts'
 import {
     useProgramSigner,
     ProgramSigningUnsupportedError,
 } from '../useProgramSigner'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockSignDataWithKey = vi.fn()
 
@@ -32,17 +40,9 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     }),
 }))
 
-const hdAccount = {
-    address: 'HD_ADDR',
+const hdAccount = buildHdAccount('HD_ADDR', {
     keyPairId: 'key-hd-child',
-    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 1,
-        derivationType: 9,
-    },
-} as unknown as WalletAccount
+})
 
 // A minimal but valid program blob (version byte + pushint 1).
 const PROGRAM = new Uint8Array([0x04, 0x81, 0x01])
@@ -60,7 +60,7 @@ describe('useProgramSigner', () => {
     })
 
     test('signs the planner payload with the account key and domain', async () => {
-        const { result } = renderHook(() => useProgramSigner())
+        const { result } = renderHook(() => useProgramSigner(SCOPE))
 
         await act(async () => {
             await result.current.signProgram(hdAccount, PROGRAM)
@@ -76,12 +76,9 @@ describe('useProgramSigner', () => {
     })
 
     test('rejects watch accounts with the typed error', async () => {
-        const watchAccount = {
-            address: 'WATCH_ADDR',
-            custody: { kind: 'watch' },
-        } as unknown as WalletAccount
+        const watchAccount = watch('WATCH_ADDR')
 
-        const { result } = renderHook(() => useProgramSigner())
+        const { result } = renderHook(() => useProgramSigner(SCOPE))
 
         await expect(
             act(async () => {
@@ -95,9 +92,9 @@ describe('useProgramSigner', () => {
     // against the auth-addr and rejects at draw time — refuse it up front.
     test('rejects rekeyed accounts with the typed error', async () => {
         const rekeyedAccount = hdAccount
-        seedAuthority(hdAccount.address, 'AUTH_ADDR')
+        seedAuthority('HD_ADDR', 'AUTH_ADDR')
 
-        const { result } = renderHook(() => useProgramSigner())
+        const { result } = renderHook(() => useProgramSigner(SCOPE))
 
         await expect(
             act(async () => {
@@ -108,28 +105,9 @@ describe('useProgramSigner', () => {
     })
 
     test('rejects hardware wallet accounts with the typed error', async () => {
-        const hwAccount = {
-            address: 'HW_ADDR',
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'L',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'd',
-                deviceName: 'L',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as unknown as WalletAccount
+        const hwAccount = ledgerAccount('HW_ADDR')
 
-        const { result } = renderHook(() => useProgramSigner())
+        const { result } = renderHook(() => useProgramSigner(SCOPE))
 
         await expect(
             act(async () => {

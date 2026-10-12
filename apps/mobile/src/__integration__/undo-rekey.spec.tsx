@@ -77,6 +77,7 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -104,28 +105,31 @@ const seedRekeyedSource = async (): Promise<{
     const authAccount: WalletAccount = {
         id: 'undo-auth',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Auth',
     }
     const source: WalletAccount = {
         id: 'undo-source',
         custody: { kind: 'local', seed: null },
-        address: REKEY_TARGET_ADDRESS,
-        keyPairId: '',
+        chains: { algorand: { address: REKEY_TARGET_ADDRESS } },
         name: 'Rekeyed source',
     }
-    seedAuthority(source.address, ALGO25_TEST_ADDRESS)
+    seedAuthority(addressOf(source), ALGO25_TEST_ADDRESS)
     useAccountsStore.getState().setAccounts([source, authAccount])
-    useAccountsStore.getState().setSelectedAccountAddress(source.address)
+    useAccountsStore.getState().setSelectedAccountId(source.id)
     // The source pays the undo fee — the confirm screen's fee preflight
     // reads this chain-state row and disables the CTA without it.
     await seedAlgorandAccountState({
-        accountAddress: source.address,
+        accountAddress: addressOf(source),
         scope: MAINNET_SCOPE,
         nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
-        authAddress: authAccount.address,
+        authAddress: addressOf(authAccount),
     })
     return { source, authAccount }
 }
@@ -235,11 +239,14 @@ describe('Flow: Undo rekey end-to-end', () => {
                 response: { amount: 5_000_000, 'min-balance': 100_000 },
             }),
         )
-        await fetchAndPersistAccount(REKEY_TARGET_ADDRESS, 'mainnet')
+        await fetchAndPersistAccount(
+            REKEY_TARGET_ADDRESS,
+            scopeForLegacyNetwork('mainnet'),
+        )
 
         const synced = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === REKEY_TARGET_ADDRESS)
+            .accounts.find(a => addressOf(a) === REKEY_TARGET_ADDRESS)
         expect(authorityOf(synced!, MAINNET_SCOPE)).toBeNull()
     })
 

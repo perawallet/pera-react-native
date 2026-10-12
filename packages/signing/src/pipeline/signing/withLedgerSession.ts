@@ -179,27 +179,29 @@ export type LedgerSessionOptions = {
 }
 
 /**
- * Connects to and verifies the account's device, runs `operation`, and tears
- * the session down whatever the outcome. Failures reach `callbacks.onError`
+ * Connects to and verifies the account's device holds `address`, runs
+ * `operation`, and tears the session down whatever the outcome. Failures reach `callbacks.onError`
  * already classified; a missing transport provider throws before any session
  * exists and bypasses `onError`.
  */
 export const withLedgerSession = async <T>(
     hwAccount: HardwareWalletAccount,
+    address: string,
     options: LedgerSessionOptions,
     operation: (session: LedgerSession) => Promise<T>,
 ): Promise<T> => {
     const { registry, callbacks } = options
+    const { device, accountIndex } = hwAccount.custody
 
     const transportProvider = registry?.getProvider(
-        hwAccount.hardwareDetails.manufacturer,
-        hwAccount.hardwareDetails.transportType,
+        device.manufacturer,
+        device.transportType,
     )
     if (!transportProvider) {
         throw new HardwareWalletError('transport_unavailable')
     }
 
-    const { deviceId, accountIndex } = hwAccount.hardwareDetails
+    const { deviceId } = device
     let transport: Optional<HardwareWalletTransport>
     let guard: Optional<DisconnectGuard>
     const signal = callbacks?.signal
@@ -218,7 +220,7 @@ export const withLedgerSession = async <T>(
             transportProvider,
             deviceId,
             accountIndex,
-            hwAccount.address,
+            address,
             callbacks,
         )
         throwIfAborted(signal)

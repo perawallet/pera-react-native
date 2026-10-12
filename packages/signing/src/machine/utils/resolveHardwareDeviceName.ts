@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    hardwareDeviceOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
-import { findSignerAccount } from './findSignerAccount'
 import { resolveSigningAccount } from './resolveSigningAccount'
 
 /**
@@ -34,10 +37,10 @@ export const resolveHardwareDeviceName = (
 ): string | null => {
     const firstGroup = groups[0]
     if (!firstGroup) return null
-    const signerAccount = findSignerAccount(
+    const signerAccount = findAccountByAddressOn(
         allAccounts,
-        firstGroup.signerAddress,
         chainId,
+        firstGroup.signerAddress,
     )
     if (!signerAccount) return null
 
@@ -56,8 +59,5 @@ export const resolveHardwareDeviceName = (
         return null
     }
 
-    return (
-        (accountForSigning as { hardwareDetails?: { deviceName?: string } })
-            .hardwareDetails?.deviceName ?? null
-    )
+    return hardwareDeviceOf(accountForSigning)?.device.deviceName ?? null
 }

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     BACKUP_ACCESS_DOMAIN,
     canAccess,
@@ -161,7 +162,7 @@ const zeroPrivateKeys = (passkeys: readonly { privateKey: Uint8Array }[]) => {
     for (const passkey of passkeys) zeroBytes(passkey.privateKey)
 }
 
-const sweepPasskeys = async (): Promise<LocalPasskey[]> => {
+const sweepPasskeys = async (chainId: ChainId): Promise<LocalPasskey[]> => {
     const keys = await collectCandidateKeys()
 
     const caches = createSweepCaches()
@@ -197,7 +198,7 @@ const sweepPasskeys = async (): Promise<LocalPasskey[]> => {
             const seedAddress =
                 seedKeyId === undefined
                     ? undefined
-                    : await backupSeedReference(seedKeyId)
+                    : await backupSeedReference(seedKeyId, chainId)
             passkeys.push({ ...rest, seedAddress })
         } catch (error) {
             logSkippedPasskey(rest.credentialId, error)
@@ -219,33 +220,35 @@ const withoutPrivateKey = ({
     ...passkey
 }: LocalPasskey): BackupPasskey => passkey
 
-export const useListPasskeysForBackup = (): (() => Promise<LocalPasskey[]>) => {
+export const useListPasskeysForBackup = (
+    chainId: ChainId,
+): (() => Promise<LocalPasskey[]>) => {
     const setProvenPasskeys = useProvenPasskeysStore(
         state => state.setProvenPasskeys,
     )
 
     return useCallback(async () => {
-        const passkeys = await sweepPasskeys()
+        const passkeys = await sweepPasskeys(chainId)
         // Re-deriving costs a PBKDF2 per owning seed, so the metadata is cached
         // for the review screens and overview counts to read synchronously
         // instead of re-running the sweep on a render path. Never the keys.
         setProvenPasskeys(passkeys.map(withoutPrivateKey))
         return passkeys
-    }, [setProvenPasskeys])
+    }, [setProvenPasskeys, chainId])
 }
 
 /** For callers that only show which credentials can be backed up. Proving one
  *  still reads its key, but every key is zeroed before this resolves, so none
  *  outlives the sweep. */
-export const useListPasskeyMetadataForBackup = (): (() => Promise<
-    BackupPasskey[]
->) => {
+export const useListPasskeyMetadataForBackup = (
+    chainId: ChainId,
+): (() => Promise<BackupPasskey[]>) => {
     const setProvenPasskeys = useProvenPasskeysStore(
         state => state.setProvenPasskeys,
     )
 
     return useCallback(async () => {
-        const passkeys = await sweepPasskeys()
+        const passkeys = await sweepPasskeys(chainId)
         let metadata: BackupPasskey[]
         try {
             metadata = passkeys.map(withoutPrivateKey)
@@ -254,5 +257,5 @@ export const useListPasskeyMetadataForBackup = (): (() => Promise<
         }
         setProvenPasskeys(metadata)
         return metadata
-    }, [setProvenPasskeys])
+    }, [setProvenPasskeys, chainId])
 }

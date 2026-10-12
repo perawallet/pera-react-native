@@ -12,7 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
-import type { StandaloneAccount } from '@perawallet/wallet-core-accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
@@ -27,11 +27,9 @@ export const MOCK_GROUP_ID = 'mockGroupId000000000000000000000000000000000'
 export const MOCK_TX_ID =
     'MOCKTXID0000000000000000000000000000000000000000000000'
 
-export const mockAlgo25Account: StandaloneAccount = {
+export const mockAlgo25Account: LocalAccount = {
     id: 'mock-algo25',
     custody: { kind: 'local', seed: null },
-    address: MOCK_ADDRESS,
-    keyPairId: 'mock-keypair-algo25',
     chains: {
         algorand: { address: MOCK_ADDRESS, keyPairId: 'mock-keypair-algo25' },
     },

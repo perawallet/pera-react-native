@@ -14,7 +14,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, MultisigEvent } from '@analytics'
@@ -58,7 +62,10 @@ export const useMultisigInvitationDetailContent = ({
 
     const isUserIncluded = useMemo(() => {
         const participantSet = new Set(renderedInvitation.participantAddresses)
-        return accounts.some(a => participantSet.has(a.address))
+        return accounts.some(a => {
+            const address = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+            return address !== undefined && participantSet.has(address)
+        })
     }, [accounts, renderedInvitation])
 
     const handleAccept = useCallback(() => {

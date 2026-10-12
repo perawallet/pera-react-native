@@ -75,7 +75,7 @@ describe('registerChain', () => {
             chains: { ethereum: { address: ADDRESS, keyPairId } },
         })
 
-        expect(account.address).toBe(ADDRESS)
+        expect(account.chains.ethereum?.address).toBe(ADDRESS)
         expect(account.custody).toEqual(custody)
     })
 })

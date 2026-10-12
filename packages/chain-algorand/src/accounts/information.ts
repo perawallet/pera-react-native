@@ -10,25 +10,9 @@
  limitations under the License
  */
 
-import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandClient } from '../blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
-import {
-    fetchAccountAssetOptInRounds,
-    fetchOnChainAccountInformation,
-} from './endpoints'
-import { mapOnChainAccountInformation } from './mappers'
-
-export const fetchAccountInformation = async (
-    address: string,
-    network: Network,
-): Promise<AccountInformation> =>
-    mapOnChainAccountInformation(
-        await fetchOnChainAccountInformation(
-            getAlgorandClient(network),
-            address,
-        ),
-    )
+import { fetchAccountAssetOptInRounds } from './endpoints'
 
 export const fetchAssetOptInRounds = (
     address: string,

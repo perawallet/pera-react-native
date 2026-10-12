@@ -12,7 +12,6 @@
 
 import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
-    microAlgosToAlgos,
     baseUnitsToDisplayUnits,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -54,7 +53,10 @@ export const TxTypeDetails = ({
     switch (txType) {
         case 'payment': {
             if (tx.paymentTransaction) {
-                const amount = microAlgosToAlgos(tx.paymentTransaction.amount)
+                const amount = baseUnitsToDisplayUnits(
+                    tx.paymentTransaction.amount,
+                    nativeAsset.decimals,
+                )
                 secondary = (
                     <AssetAmount
                         asset={nativeAsset}

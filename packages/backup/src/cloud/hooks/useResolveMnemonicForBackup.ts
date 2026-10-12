@@ -11,25 +11,31 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     BACKUP_ACCESS_DOMAIN,
     mnemonicIndexToWord,
     useKMS,
 } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import { signingKeyOn } from '@perawallet/wallet-core-accounts'
 import type { SerializeMnemonicResolver } from '../sync/types'
 
 /** Resolves null when the phrase is unavailable, which skips that account
  *  rather than backing it up without its secret. Words are materialized only
  *  inside the KMS session; the index buffer it hands over is zeroed on exit. */
-export const useResolveMnemonicForBackup = (): SerializeMnemonicResolver => {
+export const useResolveMnemonicForBackup = (
+    chainId: ChainId,
+): SerializeMnemonicResolver => {
     const { executeWithMnemonic } = useKMS()
 
     return useCallback<SerializeMnemonicResolver>(
         async account => {
+            const keyPairId = signingKeyOn(account, chainId)
+            if (!keyPairId) return null
             try {
                 return await executeWithMnemonic(
-                    account.keyPairId,
+                    keyPairId,
                     BACKUP_ACCESS_DOMAIN,
                     indices =>
                         Array.from(indices, mnemonicIndexToWord).join(' '),
@@ -44,6 +50,6 @@ export const useResolveMnemonicForBackup = (): SerializeMnemonicResolver => {
         },
         // `executeWithMnemonic` is re-created on every KMS render, so this
         // resolver is not stable — the sync manager holds it behind a ref.
-        [executeWithMnemonic],
+        [executeWithMnemonic, chainId],
     )
 }

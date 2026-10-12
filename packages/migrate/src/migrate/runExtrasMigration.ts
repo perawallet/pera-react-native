@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { WalletConnectV1SessionKeyStore } from '@perawallet/wallet-core-walletconnect'
 import type {
@@ -71,16 +72,18 @@ export const EXTRAS_STEP_NAMES: ExtrasMigrationStepName[] = [
 ]
 
 export type ExtrasMigrationOptions = {
+    chainId: ChainId
+    /** Defaults to every extras step. */
+    steps?: ExtrasMigrationStepName[]
     /** Defaults to the keystore, as the v1 handler and blob importer do. */
     walletConnectSessionKeys?: WalletConnectV1SessionKeyStore
 }
 
 export const runExtrasMigration = async (
     data: LegacyMigrationData,
-    steps?: ExtrasMigrationStepName[],
-    options: ExtrasMigrationOptions = {},
+    options: ExtrasMigrationOptions,
 ): Promise<ExtrasMigrationResult> => {
-    const enabled = new Set(steps ?? EXTRAS_STEP_NAMES)
+    const enabled = new Set(options.steps ?? EXTRAS_STEP_NAMES)
     const result: ExtrasMigrationResult = {
         preferences: false,
         swaps: false,
@@ -140,13 +143,17 @@ export const runExtrasMigration = async (
         await runAsyncStep(result, 'walletConnect', async () => {
             result.walletConnect = await migrateWalletConnect(
                 data.walletConnectV1,
+                options.chainId,
                 { sessionKeys: options.walletConnectSessionKeys },
             )
         })
 
     if (enabled.has('passkeys'))
         await runAsyncStep(result, 'passkeys', async () => {
-            result.passkeys = await migratePasskeys(data.passkeys)
+            result.passkeys = await migratePasskeys(
+                data.passkeys,
+                options.chainId,
+            )
         })
 
     if (enabled.has('stashed'))

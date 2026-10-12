@@ -17,10 +17,8 @@ import {
 } from '@perawallet/wallet-core-card'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainAccountOf,
-    isStandaloneAccount,
-    isHardwareWalletAccount,
-    isHDWalletAccount,
+    findAccountByAddressOn,
+    useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -33,27 +31,14 @@ import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
 import { useCardScope } from './useCardScope'
 
-// A standalone key holds one chain's account, so it can only fund a card on that chain.
-const isFundingSourceKind = (
-    account: WalletAccount,
-    scope: ChainScope,
-): boolean =>
-    (isStandaloneAccount(account) &&
-        chainAccountOf(account, scope.chainId) !== undefined) ||
-    isHDWalletAccount(account) ||
-    isHardwareWalletAccount(account)
-
 /**
- * Accounts eligible as the card's funding source: standard, HD, and Ledger
- * accounts the card contract can draw from — watch-only and multisig (by
- * type) are excluded, and so is any account the chain refuses.
+ * Accounts eligible as the card's funding source: those the card's chain
+ * says its contract can draw from and whose key can sign the card's proofs.
  */
 export const isEligibleFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
-): boolean =>
-    isFundingSourceKind(account, scope) &&
-    getCardFundingSourceEligibility(account, scope).canFund
+): boolean => getCardFundingSourceEligibility(account, scope).canFund
 
 /**
  * Funding sources that can also sign the ownership proof card creation needs —
@@ -64,7 +49,6 @@ export const isSigningCapableFundingSource = (
     account: WalletAccount,
     scope: ChainScope,
 ): boolean => {
-    if (!isFundingSourceKind(account, scope)) return false
     const { canFund, canProveOwnership } = getCardFundingSourceEligibility(
         account,
         scope,
@@ -115,6 +99,11 @@ export const useCardFundingSourcePicker = ({
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
+    const accounts = useAllAccounts()
+    const connectedAccountId = connectedAddress
+        ? (findAccountByAddressOn(accounts, scope.chainId, connectedAddress)
+              ?.id ?? null)
+        : null
 
     const pickFundingSource = useCallback(async (): Promise<
         Nullable<WalletAccount>
@@ -130,7 +119,7 @@ export const useCardFundingSourcePicker = ({
                 accountFilter: isOffered,
                 // Fresh on first connect (null → nothing highlighted);
                 // the connected source is highlighted on "Change".
-                selectedAddress: connectedAddress,
+                selectedAccountId: connectedAccountId,
             }),
             options: {
                 size: 'full',
@@ -152,7 +141,7 @@ export const useCardFundingSourcePicker = ({
                 return null
             }
         }
-    }, [request, handleCreateAccount, connectedAddress, isOffered])
+    }, [request, handleCreateAccount, connectedAccountId, isOffered])
 
     return { pickFundingSource }
 }

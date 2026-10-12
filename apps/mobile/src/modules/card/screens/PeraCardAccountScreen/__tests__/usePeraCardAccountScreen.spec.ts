@@ -15,7 +15,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockState = vi.hoisted(() => ({
     connectedAddress: null as string | null,
-    accounts: [] as Array<{ address: string; name?: string }>,
+    accounts: [] as Array<{
+        chains: { algorand: { address: string } }
+        name?: string
+    }>,
 }))
 const mockNavigate = vi.fn()
 const { mockPublishPickerKind, mockCardPicker, mockSessionGuard } = vi.hoisted(
@@ -92,7 +95,9 @@ describe('usePeraCardAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockState.connectedAddress = null
-        mockState.accounts = [{ address: 'ADDR_A', name: 'Main' }]
+        mockState.accounts = [
+            { chains: { algorand: { address: 'ADDR_A' } }, name: 'Main' },
+        ]
     })
 
     it('exposes the Pera Card title for the selection trigger', () => {

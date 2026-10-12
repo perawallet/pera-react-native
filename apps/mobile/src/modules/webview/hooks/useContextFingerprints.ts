@@ -11,10 +11,14 @@
  */
 
 import { useMemo } from 'react'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ContextFingerprints } from './useNotifyWebViewOnContextChange'
 
@@ -33,7 +37,9 @@ export function useContextFingerprints(): ContextFingerprints {
     return useMemo(
         () => ({
             settings: `${isDarkMode}-${preferredCurrency}-${network}-${currentLanguage}`,
-            accounts: accounts.map(a => a.address).join(','),
+            accounts: accounts
+                .map(a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address)
+                .join(','),
         }),
         [isDarkMode, preferredCurrency, network, currentLanguage, accounts],
     )

@@ -25,6 +25,8 @@ export const fakeMessageSignerAdapter = (
     overrides: Partial<MessageSignerChainAdapter> = {},
 ): MessageSignerChainAdapter => ({
     chainId: LEGACY_CHAIN_ID,
+    canSign: vi.fn(() => true),
+    signsVerifiably: vi.fn(() => true),
     supports: vi.fn(() => true),
     describe: vi.fn(notStubbed('describe')),
     plan: vi.fn(notStubbed('plan')),

@@ -14,16 +14,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import {
+    AccountError,
+    chainAccountOf,
     DuplicateAccountError,
-    type AccountKeystore,
     type MintedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     algo25SignKeyId,
     mnemonicWordsToIndices,
     quantumAddressCandidates,
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
+    SeedScheme,
 } from '@perawallet/wallet-core-kms'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -32,11 +36,19 @@ import { algorandAccountExists } from '../discovery'
 import { algorandQuantumDerivation } from '../quantum'
 import { algorandSingleKeyAccounts } from '../single-key-accounts'
 
+const keystore = vi.hoisted(() => ({
+    getKey: vi.fn(),
+    createAlgo25Key: vi.fn(),
+    createQuantumKey: vi.fn(),
+    discardMintedSeed: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
     return {
         ...actual,
+        kmsCore: keystore,
         quantumAddressCandidates: vi.fn(actual.quantumAddressCandidates),
     }
 })
@@ -61,7 +73,7 @@ const LEGACY_ADDRESS =
 const ALGO25_ADDRESS =
     'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
 
-const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
+const scope = scopeForLegacyNetwork('mainnet')
 const ALGO25_PUBLIC_KEY = new Uint8Array(32).fill(7)
 const QUANTUM_PUBLIC_KEY = new Uint8Array(1793).fill(9)
 // Stored so a realm without keystore access can still describe the account.
@@ -75,13 +87,8 @@ const QUANTUM_NATIVE = {
 
 const seedKey = (id: string) => ({ id }) as never
 
-const keystore = {
-    getKey: vi.fn(),
-    createAlgo25Key: vi.fn(),
-    createQuantumKey: vi.fn(),
-    removeKeyAndChildren: vi.fn(),
-}
-const port = keystore as unknown as AccountKeystore
+const entryOf = (account: WalletAccount) =>
+    chainAccountOf(account, ALGORAND_CHAIN_ID)
 
 /** `'error'` makes the probe for that address reject. */
 const mockOnChain = (existence: Record<string, boolean | 'error'>) =>
@@ -96,11 +103,10 @@ const importQuantum = (
     save: (minted: MintedAccount) => Promise<void> = async () => {},
 ) =>
     algorandSingleKeyAccounts.importMnemonic(
-        port,
-        { kind: 'quantum', mnemonicIndices: MNEMONIC_INDICES, isHeld },
+        { seed: SeedScheme.Quantum, mnemonicIndices: MNEMONIC_INDICES, isHeld },
         scope,
         save,
-    ) as Promise<{ address: string; keyPairId: string }[]>
+    ) as Promise<WalletAccount[]>
 
 describe('algorandSingleKeyAccounts', () => {
     beforeEach(() => {
@@ -126,15 +132,14 @@ describe('algorandSingleKeyAccounts', () => {
                 }
             },
         )
-        keystore.removeKeyAndChildren.mockResolvedValue(undefined)
+        keystore.discardMintedSeed.mockResolvedValue(undefined)
         mockOnChain({ [CANONICAL_ADDRESS]: false, [LEGACY_ADDRESS]: false })
     })
 
     describe('create', () => {
         it('mints a new algo25 seed and points the account at its ed25519 child', async () => {
             const minted = await algorandSingleKeyAccounts.create(
-                port,
-                { kind: 'standalone', id: 'SEED1' },
+                { seed: null, id: 'SEED1' },
                 scope,
             )
 
@@ -147,9 +152,8 @@ describe('algorandSingleKeyAccounts', () => {
                 ALGO25_PUBLIC_KEY,
                 { scheme: 'ed25519', networkId: 'mainnet' },
             )
-            expect(minted.account).toMatchObject({
-                address,
-                keyPairId: algo25SignKeyId('SEED1'),
+            expect(minted.account).toEqual({
+                id: expect.any(String),
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
@@ -167,32 +171,28 @@ describe('algorandSingleKeyAccounts', () => {
             })
 
             const minted = await algorandSingleKeyAccounts.create(
-                port,
-                { kind: 'standalone', id: 'SEED1' },
+                { seed: null, id: 'SEED1' },
                 scope,
             )
 
             expect(keystore.createAlgo25Key).not.toHaveBeenCalled()
             expect(minted.isNewSeed).toBe(false)
-            expect(minted.account.keyPairId).toBe(algo25SignKeyId('SEED1'))
+            expect(entryOf(minted.account)?.keyPairId).toBe(
+                algo25SignKeyId('SEED1'),
+            )
         })
 
         it('propagates an algo25 mint failure', async () => {
             keystore.createAlgo25Key.mockRejectedValue(new Error('boom'))
 
             await expect(
-                algorandSingleKeyAccounts.create(
-                    port,
-                    { kind: 'standalone' },
-                    scope,
-                ),
+                algorandSingleKeyAccounts.create({ seed: null }, scope),
             ).rejects.toThrow('boom')
         })
 
         it('mints a quantum key on the Algorand derivation and uses its sign key id', async () => {
             const minted = await algorandSingleKeyAccounts.create(
-                port,
-                { kind: 'quantum' },
+                { seed: SeedScheme.Quantum },
                 scope,
             )
 
@@ -201,9 +201,8 @@ describe('algorandSingleKeyAccounts', () => {
                 chain: algorandQuantumDerivation,
             })
             expect(minted.isNewSeed).toBe(true)
-            expect(minted.account).toMatchObject({
-                address: CANONICAL_ADDRESS,
-                keyPairId: 'QSEED1-quantum-pqk1',
+            expect(minted.account).toEqual({
+                id: expect.any(String),
                 custody: { kind: 'local', seed: 'quantum' },
                 chains: {
                     algorand: {
@@ -215,13 +214,22 @@ describe('algorandSingleKeyAccounts', () => {
             })
         })
 
+        it('refuses a bip39 seed, which mints HD accounts instead', async () => {
+            await expect(
+                algorandSingleKeyAccounts.create(
+                    { seed: SeedScheme.Bip39 },
+                    scope,
+                ),
+            ).rejects.toBeInstanceOf(AccountError)
+            expect(keystore.createAlgo25Key).not.toHaveBeenCalled()
+        })
+
         it('propagates a quantum mint failure', async () => {
             keystore.createQuantumKey.mockRejectedValue(new Error('boom'))
 
             await expect(
                 algorandSingleKeyAccounts.create(
-                    port,
-                    { kind: 'quantum' },
+                    { seed: SeedScheme.Quantum },
                     scope,
                 ),
             ).rejects.toThrow('boom')
@@ -234,9 +242,8 @@ describe('algorandSingleKeyAccounts', () => {
             const save = vi.fn(async () => {})
 
             const account = await algorandSingleKeyAccounts.importMnemonic(
-                port,
                 {
-                    kind: 'standalone',
+                    seed: null,
                     mnemonicIndices: indices,
                     isHeld: () => false,
                 },
@@ -249,7 +256,6 @@ describe('algorandSingleKeyAccounts', () => {
             })
             expect(keystore.getKey).not.toHaveBeenCalled()
             expect(account).toMatchObject({
-                keyPairId: algo25SignKeyId('SEED1'),
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
@@ -267,8 +273,6 @@ describe('algorandSingleKeyAccounts', () => {
             const accounts = await importQuantum()
 
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(CANONICAL_ADDRESS)
-            expect(accounts[0].keyPairId).toBe('QSEED1-quantum-pqk1')
             expect(accounts[0].custody).toEqual({
                 kind: 'local',
                 seed: 'quantum',
@@ -293,7 +297,7 @@ describe('algorandSingleKeyAccounts', () => {
 
             const accounts = await importQuantum()
 
-            expect(accounts.map(a => a.address)).toEqual([
+            expect(accounts.map(a => entryOf(a)?.address)).toEqual([
                 CANONICAL_ADDRESS,
                 LEGACY_ADDRESS,
             ])
@@ -308,8 +312,11 @@ describe('algorandSingleKeyAccounts', () => {
             const accounts = await importQuantum()
 
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(LEGACY_ADDRESS)
-            expect(accounts[0].keyPairId).toBe('QSEED1-quantum')
+            expect(entryOf(accounts[0])).toEqual({
+                address: LEGACY_ADDRESS,
+                keyPairId: 'QSEED1-quantum',
+                native: QUANTUM_NATIVE,
+            })
         })
 
         it('imports both derivations when the on-chain probe fails', async () => {
@@ -330,9 +337,11 @@ describe('algorandSingleKeyAccounts', () => {
                 address => address === LEGACY_ADDRESS,
             )
 
-            expect(accounts.map(a => a.address)).toEqual([CANONICAL_ADDRESS])
+            expect(accounts.map(a => entryOf(a)?.address)).toEqual([
+                CANONICAL_ADDRESS,
+            ])
             expect(keystore.createQuantumKey).toHaveBeenCalledTimes(1)
-            expect(keystore.removeKeyAndChildren).not.toHaveBeenCalled()
+            expect(keystore.discardMintedSeed).not.toHaveBeenCalled()
         })
 
         it('rejects as a duplicate, minting nothing, when every candidate is held', async () => {
@@ -365,21 +374,38 @@ describe('algorandSingleKeyAccounts', () => {
             const first = await importQuantum()
             const second = await importQuantum()
 
-            expect(second[0].address).toBe(first[0].address)
+            expect(entryOf(second[0])?.address).toBe(entryOf(first[0])?.address)
         })
     })
 
-    describe('findQuantumAccountForMnemonic', () => {
+    describe('findAlternateImportKinds', () => {
         const find = () =>
-            algorandSingleKeyAccounts.findQuantumAccountForMnemonic(
+            algorandSingleKeyAccounts.findAlternateImportKinds(
+                null,
                 MNEMONIC_INDICES,
                 scope,
             )
+        const quantumAt = (address: string) => [
+            { seed: SeedScheme.Quantum, address },
+        ]
 
-        it('returns null when the algo25 account exists', async () => {
+        it('offers nothing for a quantum import', async () => {
+            mockOnChain({ [CANONICAL_ADDRESS]: true })
+
+            await expect(
+                algorandSingleKeyAccounts.findAlternateImportKinds(
+                    SeedScheme.Quantum,
+                    MNEMONIC_INDICES,
+                    scope,
+                ),
+            ).resolves.toEqual([])
+            expect(algorandAccountExists).not.toHaveBeenCalled()
+        })
+
+        it('returns nothing when the algo25 account exists', async () => {
             mockOnChain({ [ALGO25_ADDRESS]: true, [CANONICAL_ADDRESS]: true })
 
-            await expect(find()).resolves.toBeNull()
+            await expect(find()).resolves.toEqual([])
             expect(algorandAccountExists).toHaveBeenCalledTimes(1)
             expect(algorandAccountExists).toHaveBeenCalledWith(
                 ALGO25_ADDRESS,
@@ -390,37 +416,37 @@ describe('algorandSingleKeyAccounts', () => {
         it('returns the canonical quantum address when it exists on chain', async () => {
             mockOnChain({ [CANONICAL_ADDRESS]: true, [LEGACY_ADDRESS]: true })
 
-            await expect(find()).resolves.toBe(CANONICAL_ADDRESS)
+            await expect(find()).resolves.toEqual(quantumAt(CANONICAL_ADDRESS))
         })
 
         it('returns the legacy quantum address when only it exists on chain', async () => {
             mockOnChain({ [LEGACY_ADDRESS]: true })
 
-            await expect(find()).resolves.toBe(LEGACY_ADDRESS)
+            await expect(find()).resolves.toEqual(quantumAt(LEGACY_ADDRESS))
         })
 
-        it('returns null when no account for these words exists on chain', async () => {
-            await expect(find()).resolves.toBeNull()
+        it('returns nothing when no account for these words exists on chain', async () => {
+            await expect(find()).resolves.toEqual([])
         })
 
-        it('returns null when a probe fails rather than blocking the import', async () => {
+        it('returns nothing when a probe fails rather than blocking the import', async () => {
             mockOnChain({ [ALGO25_ADDRESS]: 'error' })
-            await expect(find()).resolves.toBeNull()
+            await expect(find()).resolves.toEqual([])
 
             mockOnChain({
                 [CANONICAL_ADDRESS]: 'error',
                 [LEGACY_ADDRESS]: true,
             })
-            await expect(find()).resolves.toBeNull()
+            await expect(find()).resolves.toEqual([])
         })
 
-        it('returns null when Falcon keygen is unavailable rather than blocking the import', async () => {
+        it('returns nothing when Falcon keygen is unavailable rather than blocking the import', async () => {
             vi.mocked(quantumAddressCandidates).mockImplementationOnce(() => {
                 throw new Error('falcon-1024 failed to load')
             })
             mockOnChain({ [CANONICAL_ADDRESS]: true })
 
-            await expect(find()).resolves.toBeNull()
+            await expect(find()).resolves.toEqual([])
         })
 
         it('does not derive quantum keys when the algo25 account exists', async () => {

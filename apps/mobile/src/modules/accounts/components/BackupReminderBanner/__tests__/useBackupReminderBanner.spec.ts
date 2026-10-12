@@ -32,14 +32,7 @@ import { useBackupReminderBanner } from '../useBackupReminderBanner'
 const accountHD: WalletAccount = {
     id: 'hd-account',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    address: 'HD1',
-    keyPairId: 'kp',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9,
-    },
+    chains: { algorand: { address: 'HD1', keyPairId: 'kp' } },
 }
 
 describe('useBackupReminderBanner', () => {

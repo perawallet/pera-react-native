@@ -174,7 +174,7 @@ registerPreview({
         <PWView>
             <SelectableAccountCheckboxRow
                 title={mockAlgo25Account.name ?? 'Mock Algo25 Account'}
-                subtitle={mockAlgo25Account.address}
+                subtitle={MOCK_ADDRESS}
                 isSelected={true}
                 onToggle={() => undefined}
             />

@@ -12,9 +12,11 @@
 
 import { useCallback, type ReactNode } from 'react'
 import {
+    chainAccountOf,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
@@ -189,7 +191,7 @@ export const AccountSelection = ({
     return (
         <CopyableText
             {...triggerProps}
-            copyValue={account.address}
+            copyValue={chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''}
         >
             {display}
         </CopyableText>

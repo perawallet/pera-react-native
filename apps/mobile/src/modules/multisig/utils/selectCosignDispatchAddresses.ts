@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 type SelectCosignDispatchAddressesParams = {
     /** Local-key (Algo25/HD) unsigned participants, in dispatch order. */
@@ -21,6 +25,7 @@ type SelectCosignDispatchAddressesParams = {
     threshold: number
     /** Participants already recorded as `signed` by the backend. */
     signedCount: number
+    chainId: ChainId
 }
 
 /**
@@ -42,6 +47,7 @@ export const selectCosignDispatchAddresses = ({
     inFlightAddresses,
     threshold,
     signedCount,
+    chainId,
 }: SelectCosignDispatchAddressesParams): string[] => {
     const slots = threshold - signedCount - inFlightAddresses.size
     if (slots <= 0) return []
@@ -49,8 +55,9 @@ export const selectCosignDispatchAddresses = ({
     const result: string[] = []
     for (const account of localKeySigners) {
         if (result.length >= slots) break
-        if (inFlightAddresses.has(account.address)) continue
-        result.push(account.address)
+        const address = chainAccountOf(account, chainId)?.address
+        if (address === undefined || inFlightAddresses.has(address)) continue
+        result.push(address)
     }
     return result
 }

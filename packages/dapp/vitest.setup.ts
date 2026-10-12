@@ -40,12 +40,15 @@ vi.mock(
     async () => await import('../kms/src/constants'),
 )
 // Reached only through the connections barrel's signing-adapter, which these
-// specs never exercise; `utils` is the mmkv-free half it imports.
-vi.mock(
-    '@perawallet/wallet-core-accounts',
-    async () => await import('../accounts/src/utils'),
-)
-// `accounts/src/utils` reads the selected network through the chain-shared
+// specs never exercise. Its account lookups reach the accounts store, the
+// mmkv wall again, so they are stubbed rather than real.
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => [],
+    authorityOf: () => null,
+    chainAccountOf: () => undefined,
+    findAccountByAddressOn: () => undefined,
+}))
+// The signing-adapter reads the selected network through the chain-shared
 // barrel, which is the mmkv wall again; no spec here resolves a signer.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),

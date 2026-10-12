@@ -74,15 +74,24 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mockSelectedAccountAddress,
-    }),
+    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
-        getState: () => ({
-            selectedAccountAddress: mockSelectedAccountAddress,
-        }),
+        getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
 }))
+
+const selectedAccountMock = () =>
+    mockSelectedAccountAddress === null
+        ? null
+        : {
+              id: 'selected',
+              custody: { kind: 'watch' },
+              chains: { algorand: { address: mockSelectedAccountAddress } },
+          }
 
 // The order-review sheet (imported transitively by the form hook) pulls in
 // AddressDisplay → AccountIcon → the full accounts module, which this hook

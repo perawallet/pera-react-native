@@ -20,7 +20,10 @@ import {
     type SignedMessage,
     type SigningRequest,
 } from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { LocalKeySigningDeps, WithChain } from './chain-adapter'
 import { CannotSignError } from './pipeline/errors'
 import type {
@@ -69,6 +72,9 @@ export type BuildSiwxAuthDataArgs = {
     now?: Date
 }
 
+/** What a message signer is asked to sign. */
+export type MessageSignKind = 'arbitraryData' | 'authData'
+
 export type MessagePlanContext = {
     /** The record `request.signer` names, signed with its own key and never followed through rekey. */
     account: WalletAccount
@@ -107,13 +113,21 @@ export const authDataMessageRequest = (
 /** The chain-specific legs of signing a message; registered by the chain package. */
 export interface MessageSignerChainAdapter {
     chainId: ChainId
+    /** Whether `account` can sign `kind` on this chain, judged from the account alone. */
+    canSign(account: WalletAccount, kind: MessageSignKind): boolean
+    /**
+     * Whether a requester can verify the signature `account` makes for
+     * `kind`. A key of a scheme the message format doesn't carry still passes
+     * {@link canSign}, so the review blocks it instead of refusing the request.
+     */
+    signsVerifiably(account: WalletAccount, kind: MessageSignKind): boolean
     /** A method the chain doesn't list is refused by omission. */
     supports(method: string): boolean
     /** What the review shows. Never throws for a supported method, even on a payload `plan` refuses. */
     describe(request: MessageRequest): MessageSummary
     /**
-     * The bytes to sign, `requestIndex` 0..n-1 in order, each `signer ===
-     * context.account.address`.
+     * The bytes to sign, `requestIndex` 0..n-1 in order, each signer the
+     * account's own address on the request's chain.
      * @throws for an unsupported method, a malformed payload, a signer other
      * than `context.account`, or the chain's own refusals.
      */
@@ -144,6 +158,24 @@ export interface MessageSignerChainAdapter {
 
 export const messageSignerChainAdapters =
     createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
+
+/** False on a chain with no message signer: it signs nothing. */
+export const canSignMessage = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).canSign(account, kind)
+
+/** False on a chain with no message signer, so a review blocks the request. */
+export const signsMessageVerifiably = (
+    chainId: ChainId,
+    account: WalletAccount,
+    kind: MessageSignKind,
+): boolean =>
+    messageSignerChainAdapters.has(chainId) &&
+    messageSignerChainAdapters.get(chainId).signsVerifiably(account, kind)
 
 /** The refusal gate: with no signer registered, nothing is signed or passed through unsigned. */
 export const messageSignerFor = (
@@ -188,6 +220,8 @@ export const signMessages = async (
     }
     const { account } = context
     const planned = requests.map(request => {
+        const own = chainAccountOf(account, request.scope.chainId)
+        const address = own?.address ?? ''
         const adapter = messageSignerFor(request.scope.chainId, request.signer)
         if (!adapter.supports(request.method)) {
             throw new CannotSignError(
@@ -197,25 +231,30 @@ export const signMessages = async (
         }
         const plan = adapter.plan(request, context)
         // Message signing never follows rekey: only the account's own key signs.
-        if (plan.some(item => item.signer !== account.address)) {
+        if (plan.some(item => item.signer !== address)) {
             throw new CannotSignError(
-                account.address,
+                address,
                 'a message must be signed by the account it names',
             )
         }
-        return { adapter, request, plan }
+        return { adapter, request, plan, address, keyPairId: own?.keyPairId }
     })
-    if (!account.keyPairId) {
+    const [{ address, keyPairId }] = planned
+    if (!keyPairId) {
+        throw new CannotSignError(address, 'the account has no signing key')
+    }
+    // The key store signs the batch in one call, under one key.
+    if (planned.some(item => item.keyPairId !== keyPairId)) {
         throw new CannotSignError(
-            account.address,
-            'the account has no signing key',
+            address,
+            'messages signed together must share a signing key',
         )
     }
 
     const payloads = planned.flatMap(({ plan }) =>
         plan.map(item => item.payload),
     )
-    const results = await deps.signPayloads(account.keyPairId, payloads)
+    const results = await deps.signPayloads(keyPairId, payloads)
     if (results.length !== payloads.length) {
         throw new Error('The key store returned the wrong number of signatures')
     }

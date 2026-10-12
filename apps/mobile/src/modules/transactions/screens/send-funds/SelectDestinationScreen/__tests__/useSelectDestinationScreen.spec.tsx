@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -17,7 +18,7 @@ import {
     canSignWith,
     useAccountBalancesQuery,
     useAllAccounts,
-    useOnChainAccountInformationQuery,
+    useOnChainAccountStateQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
@@ -55,6 +56,7 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -79,8 +81,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignWith: mockCanSignWith,
     useAccountBalancesQuery: vi.fn(),
     useAllAccounts: mockUseAllAccounts,
-    useOnChainAccountInformationQuery: vi.fn(),
-    useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
+    useOnChainAccountStateQuery: vi.fn(),
+    useSelectedAccount: vi.fn(() => ({
+        id: 'sender',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'SENDERADDR' } },
+    })),
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -132,7 +143,7 @@ describe('useSelectDestinationScreen', () => {
 
         ;(useAllAccounts as Mock).mockReturnValue([])
         ;(canSignWith as Mock).mockReturnValue(false)
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
             isSuccess: false,
@@ -184,7 +195,10 @@ describe('useSelectDestinationScreen', () => {
 
     it('navigates to ExpressSend for internal signable account not opted in', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: INTERNAL_SIGNABLE_ADDR, name: 'Signable' },
+            {
+                chains: { algorand: { address: INTERNAL_SIGNABLE_ADDR } },
+                name: 'Signable',
+            },
         ])
         mockCanSignWith.mockReturnValue(true)
 
@@ -200,7 +214,10 @@ describe('useSelectDestinationScreen', () => {
 
     it('navigates to ARC59SendSummary for internal watch account not opted in', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
+            {
+                chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
+                name: 'Watch',
+            },
         ])
         mockCanSignWith.mockReturnValue(false)
 
@@ -215,10 +232,14 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ConfirmTransaction for external account already opted in on-chain', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: {
-                assets: [
-                    { assetId: BigInt(ASA_ID), amount: 100n, isFrozen: false },
+                holdings: [
+                    {
+                        assetId: ASA_ID,
+                        amount: new Decimal(100),
+                        isFrozen: false,
+                    },
                 ],
             },
             isFetching: false,
@@ -237,8 +258,8 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ARC59SendSummary for external account not opted in on-chain', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-            data: { assets: [] },
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+            data: { holdings: [] },
             isFetching: false,
             isSuccess: true,
             isError: false,
@@ -255,7 +276,7 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('falls back to ARC59SendSummary when on-chain query fails for external account', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
             isSuccess: false,
@@ -279,7 +300,10 @@ describe('useSelectDestinationScreen', () => {
         it('blocks the inbox route with a toast for a local unsignable receiver', () => {
             mockGetArc59Config.mockReturnValue(null)
             mockUseAllAccounts.mockReturnValue([
-                { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
+                {
+                    chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
+                    name: 'Watch',
+                },
             ])
             mockCanSignWith.mockReturnValue(false)
 
@@ -298,8 +322,8 @@ describe('useSelectDestinationScreen', () => {
 
         it('blocks the inbox route with a toast for an external receiver not opted in', async () => {
             mockGetArc59Config.mockReturnValue(null)
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { assets: [] },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: { holdings: [] },
                 isFetching: false,
                 isSuccess: true,
                 isError: false,
@@ -366,8 +390,8 @@ describe('useSelectDestinationScreen', () => {
         })
 
         it('routes an unopted-in external prefilled receiver through ARC59', async () => {
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { assets: [] },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: { holdings: [] },
                 isFetching: false,
                 isSuccess: true,
                 isError: false,

@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import type {
-    WalletAccount,
-    HardwareWalletAccount,
+import {
+    chainAccountOf,
+    hasCustody,
+    type HardwareWalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletRegistry,
     HardwareWalletTransport,
@@ -69,7 +70,31 @@ export type HardwareStrategyOptions = {
     encodeTransaction: EncodeTransactionFunction
     /** Read at auth-data sign time, for the signer / rekey cross-check. */
     getAllAccounts: () => WalletAccount[]
+    /** The chain the device signs for; the account's address there is the one verified. */
     chainId: ChainId
+}
+
+/** A hardware account and the address it signs for on the request's chain. */
+type HardwareSigner = {
+    account: HardwareWalletAccount
+    address: string
+}
+
+const toHardwareSigner = (
+    account: WalletAccount,
+    chainId: ChainId,
+): HardwareSigner => {
+    const address = chainAccountOf(account, chainId)?.address
+    if (!hasCustody(account, 'hardware')) {
+        throw new CannotSignError(
+            address ?? '',
+            'Account is not a hardware wallet',
+        )
+    }
+    if (!address) {
+        throw new CannotSignError('', `Account has no address on ${chainId}`)
+    }
+    return { account, address }
 }
 
 /**
@@ -77,18 +102,7 @@ export type HardwareStrategyOptions = {
  */
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
-    account: WalletAccount,
-): {
-    hwAccount: HardwareWalletAccount
-    data: PeraTransactionsSignableData
-} => {
-    if (!isHardwareWalletAccount(account)) {
-        throw new CannotSignError(
-            account.address,
-            'Account is not a hardware wallet',
-        )
-    }
-
+): PeraTransactionsSignableData => {
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
@@ -106,7 +120,7 @@ const validateAndExtract = (
         throw new HardwareWalletError('unsupported_data_type')
     }
 
-    return { hwAccount: account as HardwareWalletAccount, data: group.data }
+    return group.data
 }
 
 /**
@@ -115,14 +129,14 @@ const validateAndExtract = (
 const signTransactions = async (
     transport: HardwareWalletTransport,
     data: PeraTransactionsSignableData,
-    hwAccount: HardwareWalletAccount,
+    signer: HardwareSigner,
     encodeTransaction: EncodeTransactionFunction,
     planner: PlannerChainAdapter,
     guard: DisconnectGuard,
     callbacks?: SigningCallbacks,
 ): Promise<PeraSignedTransaction[]> => {
     const { transactions, indicesToSign } = data
-    const { accountIndex } = hwAccount.hardwareDetails
+    const { accountIndex } = signer.account.custody
 
     callbacks?.onSigningStart?.()
     const signed: PeraSignedTransaction[] = []
@@ -164,7 +178,7 @@ const signTransactions = async (
         signed.push(
             planner.assembleSignedTransaction(txn, {
                 sig: signature,
-                signerAddress: hwAccount.address,
+                signerAddress: signer.address,
             }),
         )
     }
@@ -188,38 +202,43 @@ type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
  * `indicesToSign` is an unsigned `{ txn }` placeholder.
  */
 const signTransactionsOnHardwareWallet = (
-    hwAccount: HardwareWalletAccount,
+    signer: HardwareSigner,
     transactions: PeraTransaction[],
     indicesToSign: number[],
     options: SignTransactionsOnHardwareWalletOptions,
 ): Promise<PeraSignedTransaction[]> => {
     const { encodeTransaction, planner, callbacks } = options
 
-    return withLedgerSession(hwAccount, options, ({ transport, guard }) =>
-        signTransactions(
-            transport,
-            { type: 'transactions', transactions, indicesToSign },
-            hwAccount,
-            encodeTransaction,
-            planner,
-            guard,
-            callbacks,
-        ),
+    return withLedgerSession(
+        signer.account,
+        signer.address,
+        options,
+        ({ transport, guard }) =>
+            signTransactions(
+                transport,
+                { type: 'transactions', transactions, indicesToSign },
+                signer,
+                encodeTransaction,
+                planner,
+                guard,
+                callbacks,
+            ),
     )
 }
 
 /** Gates on minimum app version and host-side validation before signing. */
 const signAuthDataOnHardwareWallet = (
-    hwAccount: HardwareWalletAccount,
+    signer: HardwareSigner,
     authData: AuthData,
     metadata: AuthDataMetadata,
     options: SignAuthDataOnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
     const { messageSigner, getAllAccounts, callbacks } = options
-    const { accountIndex } = hwAccount.hardwareDetails
+    const { accountIndex } = signer.account.custody
 
     return withLedgerSession(
-        hwAccount,
+        signer.account,
+        signer.address,
         options,
         async ({ transport, guard }) => {
             // Early version gate — the device-side error is the fallback.
@@ -241,7 +260,7 @@ const signAuthDataOnHardwareWallet = (
                         accountIndex,
                         data: authData.data,
                         signerPublicKey: messageSigner.signerPublicKey(
-                            hwAccount.address,
+                            signer.address,
                         ),
                         domain: authData.domain,
                         authenticatorData: authData.authenticatorData,
@@ -277,7 +296,7 @@ export const createHardwareStrategy = (
 
     return {
         canSign: (account: WalletAccount): boolean => {
-            return isHardwareWalletAccount(account)
+            return hasCustody(account, 'hardware')
         },
 
         sign: async (
@@ -285,19 +304,14 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            if (!isHardwareWalletAccount(account)) {
-                throw new CannotSignError(
-                    account.address,
-                    'Account is not a hardware wallet',
-                )
-            }
+            const signer = toHardwareSigner(account, chainId)
 
             if (group.data.type === 'auth-data') {
                 // Resolved before any Ledger session so a chain with no
                 // message signer is refused without a device prompt.
-                const messageSigner = messageSignerFor(chainId, account.address)
+                const messageSigner = messageSignerFor(chainId, signer.address)
                 const signature = await signAuthDataOnHardwareWallet(
-                    account,
+                    signer,
                     group.data.authData,
                     group.data.metadata,
                     {
@@ -309,15 +323,15 @@ export const createHardwareStrategy = (
                 )
                 return {
                     signedData: { type: 'auth-data', signature },
-                    signers: [{ address: account.address }],
+                    signers: [{ address: signer.address }],
                     originalIndices: group.originalIndices,
                 }
             }
 
-            const { hwAccount, data } = validateAndExtract(group, account)
+            const data = validateAndExtract(group)
 
             const signed = await signTransactionsOnHardwareWallet(
-                hwAccount,
+                signer,
                 data.transactions,
                 data.indicesToSign,
                 {
@@ -332,7 +346,7 @@ export const createHardwareStrategy = (
             // `responses[].signatures`. Without them, Ledger cosigns send
             // `signatures: [[]]` and the backend rejects the length mismatch.
             const signerInfo: SignerInfo = {
-                address: account.address,
+                address: signer.address,
                 signatures: signed.map(stx =>
                     stx.sig ? encodeToBase64(stx.sig) : null,
                 ),

@@ -16,6 +16,8 @@ import {
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60DataSigningView'
 
@@ -23,7 +25,11 @@ export const Arc60SigningDetailsScreen = () => {
     const { currentRequest, resolved } = useSigningPipeline()
     const request = currentRequest as Optional<AuthDataSignRequest>
 
-    const account = useFindAccountByAddress(request?.authData.signer ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(
+        request?.authData.signer ?? '',
+        scope,
+    )
     const parsed =
         resolved?.kind.type === 'auth-data' ? resolved.kind.parsed : null
 

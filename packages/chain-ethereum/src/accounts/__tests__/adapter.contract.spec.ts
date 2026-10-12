@@ -19,10 +19,7 @@ import {
     type AccountStateContractFixtures,
 } from '@perawallet/wallet-core-accounts/testing/account-state'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
-import {
-    DerivationTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { createEthereumAccountStateOps } from '../account-state'
 import { createEthereumAccountsAdapter } from '../adapter'
@@ -128,15 +125,14 @@ accountStateContractTests(
 
 const signing: WalletAccount = {
     id: 'signing',
-    address: FUNDED,
     custody: { kind: 'local', seed: null },
-    keyPairId: 'signing-key',
+    chains: { ethereum: { address: FUNDED, keyPairId: 'signing-key' } },
 }
 
 const watch: WalletAccount = {
     id: 'watch',
-    address: EMPTY,
     custody: { kind: 'watch' },
+    chains: { ethereum: { address: EMPTY } },
 }
 
 accountsContractTests(
@@ -147,12 +143,7 @@ accountsContractTests(
     {
         ...sharedFixtures,
         hdPath: {
-            details: {
-                account: 1,
-                change: 0,
-                keyIndex: 3,
-                derivationType: DerivationTypes.Peikert,
-            },
+            details: { account: 1, keyIndex: 3 },
             matching: "m/44'/60'/1'/0/3",
             mismatched: "m/44'/60'/1'/0/4",
             malformed: "m/44'/283'/1'/0/3",

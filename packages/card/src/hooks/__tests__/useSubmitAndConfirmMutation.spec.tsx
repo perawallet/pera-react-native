@@ -34,7 +34,7 @@ const SCOPE = scopeForLegacyNetwork('testnet')
 const PARAMS = {
     unsignedTxs: [],
     source: { name: 'test', description: 'test' },
-} as unknown as SignAndSubmitGroupParams
+} as unknown as Omit<SignAndSubmitGroupParams, 'chainId'>
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={new QueryClient()}>
@@ -54,7 +54,7 @@ describe('useSubmitAndConfirmMutation', () => {
         })
     })
 
-    it('submits, then waits for the first transaction to land before resolving', async () => {
+    it("submits on the scope's chain, then waits for the first transaction to land before resolving", async () => {
         const order: string[] = []
         mocks.submit.mockImplementation(async () => {
             order.push('submit')
@@ -70,7 +70,10 @@ describe('useSubmitAndConfirmMutation', () => {
             submitted = await result.current.mutateAsync(PARAMS)
         })
 
-        expect(mocks.submit).toHaveBeenCalledWith(PARAMS)
+        expect(mocks.submit).toHaveBeenCalledWith({
+            ...PARAMS,
+            chainId: SCOPE.chainId,
+        })
         expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith(
             SCOPE,
             'TX1',

@@ -28,7 +28,6 @@ import '../../__tests__/registerAlgorandAccounts'
 import {
     useAccountChainStateStore,
     useAccountsStore,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     scopeForLegacyNetwork,
@@ -54,6 +53,10 @@ vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
 }))
 
 import { buildAlgorandTransfer } from '../transfer-builder'
+import {
+    quantumAccount,
+    standaloneAccount,
+} from '../../__tests__/algorandAccounts'
 
 const scope = scopeForLegacyNetwork('testnet')
 const SUGGESTED_MIN_FEE = 1000n
@@ -66,19 +69,9 @@ const ALGO: AssetRef = { chainId: 'algorand' as ChainId, assetId: '0' }
 const USDC: AssetRef = { chainId: 'algorand' as ChainId, assetId: '31566704' }
 
 const accounts = [
-    {
-        id: 'a1',
-        address: ED25519,
-        custody: { kind: 'local', seed: null },
-        keyPairId: 'kp-algo25',
-    },
-    {
-        id: 'q1',
-        address: QUANTUM,
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-    },
-] as WalletAccount[]
+    standaloneAccount(ED25519, { id: 'a1', keyPairId: 'kp-algo25' }),
+    quantumAccount(QUANTUM, { id: 'q1', keyPairId: 'kp-quantum' }),
+]
 
 // The send flow's rule: a fee override only above the node's suggestion.
 const todaysTransfer = (

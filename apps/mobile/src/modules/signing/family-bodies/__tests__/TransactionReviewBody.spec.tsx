@@ -149,9 +149,12 @@ describe('TransactionReviewBody', () => {
         mockPipeline.warnings = []
         vi.mocked(useFindAccountByAddress).mockImplementation(address =>
             address === FIXTURE_SENDER
-                ? ({ address, name: SIGNER_NAME } as ReturnType<
-                      typeof useFindAccountByAddress
-                  >)
+                ? ({
+                      id: 'signer',
+                      name: SIGNER_NAME,
+                      custody: { kind: 'watch' },
+                      chains: { algorand: { address } },
+                  } as ReturnType<typeof useFindAccountByAddress>)
                 : null,
         )
     })

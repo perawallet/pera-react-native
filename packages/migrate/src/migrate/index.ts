@@ -20,6 +20,7 @@ export type {
     MigrateAccountArgs,
     MigrationDeps,
     MigrationResult,
+    MigrationRunOptions,
 } from './types'
 export { addKeylessAccountToStore } from './accountStoreOps'
 export {

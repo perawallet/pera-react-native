@@ -27,9 +27,13 @@ import { cardAdapterFor } from '../chain-adapter'
 export const useSubmitAndConfirmMutation = (scope: ChainScope) => {
     const { submit } = useSignAndSubmitGroup()
 
-    return useMutation<{ txIds: string[] }, Error, SignAndSubmitGroupParams>({
+    return useMutation<
+        { txIds: string[] },
+        Error,
+        Omit<SignAndSubmitGroupParams, 'chainId'>
+    >({
         mutationFn: async params => {
-            const result = await submit(params)
+            const result = await submit({ ...params, chainId: scope.chainId })
             const [txId] = result.txIds
             if (txId !== undefined) {
                 await cardAdapterFor(scope).awaitConfirmation(scope, txId)

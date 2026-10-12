@@ -17,7 +17,7 @@ import {
     TransactionType,
     type Address,
 } from 'algosdk'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import {
     scopeForLegacyNetwork,
     type PeraTransactionType,
@@ -66,8 +66,8 @@ const TARGET = makeTestAddress(9)
 
 const context: AnalysisContext = {
     scope: scopeForLegacyNetwork('mainnet'),
-    accounts: [WALLET, SECOND].map(
-        address => ({ address: address.toString() }) as WalletAccount,
+    accounts: [WALLET, SECOND].map(address =>
+        standaloneAccount(address.toString()),
     ),
 }
 

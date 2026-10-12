@@ -55,6 +55,7 @@ import {
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
+import { addressOf } from './__fixtures__/accounts'
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
 
 // The seeded Algo25 signer is the multisig's (only) participant; the sender
@@ -64,19 +65,26 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
     custody: { kind: 'multisig' },
-    address: MSIG_ADDRESS,
-    name: 'Shared',
-    multisigDetails: {
-        threshold: 1,
-        addresses: [REVIEW_SIGNER_ADDRESS],
-        version: 1,
+    chains: {
+        algorand: {
+            address: MSIG_ADDRESS,
+            native: {
+                family: 'algorand',
+                multisig: {
+                    threshold: 1,
+                    addresses: [REVIEW_SIGNER_ADDRESS],
+                    version: 1,
+                },
+            },
+        },
     },
+    name: 'Shared',
 }
 
 const rekeyedSender: WalletAccount = {
     id: 'rekeyed-to-msig',
     custody: { kind: 'watch' },
-    address: REKEY_TARGET_ADDRESS,
+    chains: { algorand: { address: REKEY_TARGET_ADDRESS } },
     name: 'Rekeyed to shared',
 }
 
@@ -143,7 +151,7 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
         )
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
-        seedAuthority(rekeyedSender.address, MSIG_ADDRESS)
+        seedAuthority(addressOf(rekeyedSender), MSIG_ADDRESS)
         // The propose transport requires a registered device id before it
         // creates the backend sign-request (handoff precondition).
         useDeviceStore.getState().resetState()

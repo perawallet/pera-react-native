@@ -112,7 +112,8 @@ const renderRestore = (
     renderHook(
         () =>
             useRestoreCloudBackupMutation(
-                options as Parameters<typeof useRestoreCloudBackupMutation>[0],
+                { chainId: 'algorand', networkId: 'mainnet' },
+                options as Parameters<typeof useRestoreCloudBackupMutation>[1],
             ),
         { wrapper: createWrapper() },
     )
@@ -141,9 +142,15 @@ describe('useRestoreCloudBackupMutation', () => {
             importAccounts: importAccountsMock,
             importContacts: expect.any(Function),
             importPasskeys: importPasskeysMock,
-            importSettings: applyBackupSettings,
+            importSettings: expect.any(Function),
             onProgress: expect.any(Function),
         })
+        const { importSettings } = restoreCloudBackupMock.mock.calls[0][0]
+        importSettings({ language: 'de' })
+        expect(applyBackupSettings).toHaveBeenCalledWith(
+            { language: 'de' },
+            'algorand',
+        )
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',
             salt: SALT,

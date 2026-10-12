@@ -24,11 +24,7 @@ import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountSc
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
@@ -40,6 +36,7 @@ import {
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { addressOf } from './__fixtures__/accounts'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -170,11 +167,11 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accountType(accounts[0])).toBe(AccountTypes.standalone)
-        expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            ALGO25_TEST_ADDRESS,
-        )
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
+        expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
+        expect(
+            addressOf(useAccountsStore.getState().getSelectedAccount()!),
+        ).toBe(ALGO25_TEST_ADDRESS)
     })
 
     it('Given the Algo25 word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME', async () => {
@@ -255,8 +252,8 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         // synchronously); confirm it survived.
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-        expect(accountType(accounts[0])).toBe(AccountTypes.standalone)
+        expect(addressOf(accounts[0])).toBe(ALGO25_TEST_ADDRESS)
+        expect(accounts[0].custody).toEqual({ kind: 'local', seed: null })
     })
 
     it('Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored', async () => {
@@ -268,8 +265,12 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             {
                 id: 'existing-algo25-1',
                 custody: { kind: 'local', seed: null },
-                address: ALGO25_TEST_ADDRESS,
-                keyPairId: 'pre-seeded',
+                chains: {
+                    algorand: {
+                        address: ALGO25_TEST_ADDRESS,
+                        keyPairId: 'pre-seeded',
+                    },
+                },
             },
         ])
 
@@ -289,7 +290,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         // store still contains a single entry for that address.
         const matching = useAccountsStore
             .getState()
-            .accounts.filter(a => a.address === ALGO25_TEST_ADDRESS)
+            .accounts.filter(a => addressOf(a) === ALGO25_TEST_ADDRESS)
         expect(matching).toHaveLength(1)
         // And only the original pre-seeded entry remains overall.
         expect(useAccountsStore.getState().accounts).toHaveLength(1)

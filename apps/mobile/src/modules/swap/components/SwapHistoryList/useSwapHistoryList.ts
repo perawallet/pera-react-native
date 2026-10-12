@@ -11,12 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import {
     useSwapHistoryInfiniteQuery,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 
@@ -43,6 +47,7 @@ export const useSwapHistoryList = ({
     address,
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { networkConfig } = useNetwork()
     const { pushWebView } = useWebView()
 
@@ -53,7 +58,7 @@ export const useSwapHistoryList = ({
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-    } = useSwapHistoryInfiniteQuery(address, VISIBLE_SWAP_STATUSES)
+    } = useSwapHistoryInfiniteQuery(address, scope, VISIBLE_SWAP_STATUSES)
 
     const keyExtractor = useCallback(
         (item: SwapHistoryItem) => item.idStr ?? String(item.id),

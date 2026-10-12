@@ -12,9 +12,12 @@
 
 import { useCallback } from 'react'
 import {
+    addressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
@@ -55,6 +58,7 @@ export const useSettingsNotificationsScreen =
         const { isEnabled, isLoading, isPushServiceUnavailable, openSettings } =
             useSystemNotificationPermission()
         const accounts = useAllAccounts()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { isAccountEnabled, disabledAccounts } =
             useNotificationPreferences()
         const { toggleAccountNotification, isTogglePending } =
@@ -66,13 +70,15 @@ export const useSettingsNotificationsScreen =
 
         const handleAccountNotificationToggle = useCallback(
             (account: WalletAccount, enabled: boolean) => {
+                const address = addressOn(account, scope)
+                if (address === undefined) return
                 trackEvent(SettingsEvent.ChangeNotificationFilter, {
-                    [AnalyticsMetadataKey.AccountAddress]: account.address,
+                    [AnalyticsMetadataKey.AccountAddress]: address,
                     [AnalyticsMetadataKey.AllowNotifications]: enabled,
                 })
-                void toggleAccountNotification(account.address, enabled)
+                void toggleAccountNotification(address, enabled)
             },
-            [toggleAccountNotification],
+            [toggleAccountNotification, scope],
         )
 
         return {

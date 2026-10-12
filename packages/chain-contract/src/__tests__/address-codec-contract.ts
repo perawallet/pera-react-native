@@ -68,6 +68,18 @@ export const addressCodecContractTests = (
             }
         })
 
+        it('truncates an address to a shorter form that keeps its ends', () => {
+            const codec = makeCodec()
+            const address = derive(codec)
+
+            const truncated = codec.truncate(address)
+
+            expect(truncated.length).toBeLessThan(address.length)
+            const [head, tail] = truncated.split('...')
+            expect(address.startsWith(head)).toBe(true)
+            expect(address.endsWith(tail)).toBe(true)
+        })
+
         it('rejects the empty string and every invalid fixture', () => {
             const codec = makeCodec()
 

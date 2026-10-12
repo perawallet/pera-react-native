@@ -14,13 +14,17 @@
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Address, SignedTransaction } from 'algosdk'
 import { generateKey } from 'falcon-1024'
+import '../../__tests__/registerAlgorandAccounts'
 import {
     accountsChainAdapters,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '../../accounts/adapter'
-import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
+import {
+    standaloneAccount,
+    quantumAccount,
+} from '../../__tests__/algorandAccounts'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { groupTransactions } from '../../blockchain'
 import { findFundedIndices, type SimulateSignedGroup } from '../feeCoverage'
@@ -33,10 +37,6 @@ const pq = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
     resolvePQSigningInfo: () => pq.resolve(),
-}))
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => ({ state: { keys: [] } }),
 }))
 
 // Signer resolution reads the selected network through the provider, which
@@ -54,22 +54,13 @@ const algoAddress = makeTestAddress(2)
 const externalAddress = makeTestAddress(3)
 
 const quantum = (): WalletAccount =>
-    ({
-        address: quantumAddress.toString(),
-        custody: { kind: 'local', seed: 'quantum' },
-        keyPairId: 'kp-quantum',
-    }) as WalletAccount
+    quantumAccount(quantumAddress.toString(), { keyPairId: 'kp-quantum' })
 
-const algo25 = (authorityAddress?: string): WalletAccount => {
-    if (authorityAddress) {
-        seedAuthority(algoAddress.toString(), authorityAddress)
-    }
-    return {
-        address: algoAddress.toString(),
-        custody: { kind: 'local', seed: null },
+const algo25 = (authorityAddress?: string): WalletAccount =>
+    standaloneAccount(algoAddress.toString(), {
         keyPairId: 'kp-algo25',
-    } as WalletAccount
-}
+        authorityAddress,
+    })
 
 const payment = (sender: Address): PeraTransaction =>
     makeTestPaymentTx(sender, { receiver: makeTestAddress(9), amount: 1n })
@@ -155,6 +146,26 @@ describe('findFundedIndices', () => {
             transactions,
             signableIndices: [0, 2],
             accounts: [quantum(), algo25()],
+            network: 'testnet',
+            simulate,
+        })
+
+        expect(simulate).not.toHaveBeenCalled()
+        expect(funded.size).toBe(0)
+    })
+
+    test('simulates nothing for quantum custody with no key on Algorand', async () => {
+        // It still resolves as a signer: its key on another chain counts.
+        const keyless = quantumAccount(quantumAddress.toString(), {
+            keyPairId: null,
+        })
+        keyless.chains.other = { address: 'OTHER', keyPairId: 'kp-other' }
+        const simulate = passing()
+
+        const funded = await findFundedIndices({
+            transactions: [payment(quantumAddress)],
+            signableIndices: [0],
+            accounts: [keyless],
             network: 'testnet',
             simulate,
         })

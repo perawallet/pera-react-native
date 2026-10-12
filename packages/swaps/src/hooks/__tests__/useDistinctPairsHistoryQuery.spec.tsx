@@ -14,12 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useDistinctPairsHistoryQuery } from '../useDistinctPairsHistoryQuery'
 import { fetchDistinctPairsHistory } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchDistinctPairsHistory: vi.fn(),
@@ -52,7 +51,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
 
     test('returns distinct pairs on success', async () => {
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS'),
+            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -68,7 +67,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS'),
+            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -82,7 +81,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS'),
+            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 

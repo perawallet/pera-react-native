@@ -12,8 +12,7 @@
 
 import {
     createChainAdapterRegistry,
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
+    type ChainAdapterRegistry,
     type ChainId,
     type ChainScope,
     type Arc0001ResolveContext,
@@ -27,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-import type { Network } from '@perawallet/wallet-core-config'
+import { isDebug, type Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
@@ -58,6 +57,7 @@ import type {
     SourceMetadata,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
+import { chainIdOfSignRequest } from './models/chain'
 
 export type RequestStructure = 'single' | 'list'
 
@@ -144,7 +144,7 @@ export interface ReviewerChainAdapter {
         authorizerByIndex?: Map<number, string>,
     ): TransactionWarning[]
     resolveAllSignerAddresses(request: SignRequest): string[]
-    getRekeyedUnsignableReason(
+    getDelegatedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
     ): DelegatedUnsignableReason | null
@@ -184,10 +184,10 @@ export const resolveAllSignerAddresses: WithChain<
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).resolveAllSignerAddresses(...args)
 
-export const getRekeyedUnsignableReason: WithChain<
-    ReviewerChainAdapter['getRekeyedUnsignableReason']
+export const getDelegatedUnsignableReason: WithChain<
+    ReviewerChainAdapter['getDelegatedUnsignableReason']
 > = (chainId, ...args) =>
-    reviewerChainAdapters.get(chainId).getRekeyedUnsignableReason(...args)
+    reviewerChainAdapters.get(chainId).getDelegatedUnsignableReason(...args)
 
 export const decodeArbitraryDataForDisplay: WithChain<
     ReviewerChainAdapter['decodeArbitraryDataForDisplay']
@@ -828,20 +828,44 @@ export interface PlannerChainAdapter {
     ): boolean
 }
 
-export const plannerChainAdapters =
+const plannerRegistry =
     createChainAdapterRegistry<PlannerChainAdapter>('planner')
+let plannersForHooks: readonly PlannerChainAdapter[] | undefined
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
-    plannerAdapterForScope(scopeForLegacyNetwork(network))
+export const plannerChainAdapters: ChainAdapterRegistry<PlannerChainAdapter> = {
+    ...plannerRegistry,
+    register: adapter => {
+        if (
+            isDebug &&
+            plannersForHooks &&
+            !plannersForHooks.includes(adapter)
+        ) {
+            throw new Error(
+                `The ${adapter.chainId} planner registered after planner hooks first ran; chains must register before React mounts`,
+            )
+        }
+        plannerRegistry.register(adapter)
+    },
+    reset: () => {
+        plannerRegistry.reset()
+        plannersForHooks = undefined
+    },
+}
+
+/**
+ * Every registered planner, in registration order, fixed at first use. A hook
+ * that runs each planner's hook from this list calls the same hooks on every
+ * render whatever chain it serves. Bootstrap registers every chain before
+ * React mounts; a debug build throws if a planner registers later.
+ */
+export const registeredPlanners = (): readonly PlannerChainAdapter[] => {
+    plannersForHooks ??= plannerRegistry.list()
+    return plannersForHooks
+}
 
 export const plannerAdapterForScope = (
     scope: ChainScope,
 ): PlannerChainAdapter => plannerChainAdapters.get(scope.chainId)
-
-// For callers with no network in hand: every legacy network maps to this chain.
-export const legacyPlannerAdapter = (): PlannerChainAdapter =>
-    plannerChainAdapters.get(LEGACY_CHAIN_ID)
 
 /** The local-key signing legs; the KMS primitive is chosen by scheme, never by account type. */
 export interface LocalKeySignerChainAdapter {
@@ -868,22 +892,52 @@ export const localKeySignerAdapterFor = (
     scope: ChainScope,
 ): LocalKeySignerChainAdapter => localKeySignerChainAdapters.get(scope.chainId)
 
+/** The suggested minimum, so no fee override, on a chain with no planner. */
 export const resolveMinFeeForSender = (
+    chainId: ChainId,
     params: ResolveMinFeeForSenderParams,
-): bigint => legacyPlannerAdapter().minFeeForSender(params)
+): bigint =>
+    plannerChainAdapters.has(chainId)
+        ? plannerChainAdapters.get(chainId).minFeeForSender(params)
+        : params.suggestedMinFee
 
+const NO_BALANCE_IMPACT: BalanceImpact = {
+    deltas: [],
+    totalFeeMicroAlgos: 0n,
+    hasCloseRemainder: false,
+    closedAssetIds: [],
+    createdAssets: [],
+}
+
+/** No impact on a chain with no planner: there is nothing to compute it from. */
 export const computeBalanceImpact = (
+    chainId: ChainId,
     transactions: PeraDisplayableTransaction[],
     userAddresses: Set<string>,
 ): BalanceImpact =>
-    legacyPlannerAdapter().computeBalanceImpact(transactions, userAddresses)
+    plannerChainAdapters.has(chainId)
+        ? plannerChainAdapters
+              .get(chainId)
+              .computeBalanceImpact(transactions, userAddresses)
+        : NO_BALANCE_IMPACT
+
+/** False on a chain with no planner: nothing there needs simulating. */
+export const needsSimulation = (
+    chainId: ChainId,
+    transactions: PeraDisplayableTransaction[],
+): boolean =>
+    plannerChainAdapters.has(chainId) &&
+    plannerChainAdapters.get(chainId).needsSimulation(transactions)
 
 export const encodeProgramAccount = (
+    chainId: ChainId,
     program: Uint8Array,
     sig: Uint8Array,
     signerAddress: string,
 ): Uint8Array =>
-    legacyPlannerAdapter().encodeProgramAccount(program, sig, signerAddress)
+    plannerChainAdapters
+        .get(chainId)
+        .encodeProgramAccount(program, sig, signerAddress)
 
 export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
@@ -892,11 +946,21 @@ export const classifyHandoffPoll = (
     plannerAdapterForScope(context.scope).classifyHandoffPoll(detail, context)
 
 export const completeMultisigHandoff = (
+    chainId: ChainId,
     args: CompleteMultisigHandoffArgs,
-): Promise<void> => legacyPlannerAdapter().completeMultisigHandoff(args)
+): Promise<void> =>
+    plannerChainAdapters.get(chainId).completeMultisigHandoff(args)
 
+/** False on a chain with no planner: it has no multisig to be unsignable. */
 export const isSignRequestMultisigUnsignable = (
     request: SignRequest,
     accounts: WalletAccount[],
-): boolean =>
-    legacyPlannerAdapter().isSignRequestMultisigUnsignable(request, accounts)
+): boolean => {
+    const chainId = chainIdOfSignRequest(request)
+    return (
+        plannerChainAdapters.has(chainId) &&
+        plannerChainAdapters
+            .get(chainId)
+            .isSignRequestMultisigUnsignable(request, accounts)
+    )
+}

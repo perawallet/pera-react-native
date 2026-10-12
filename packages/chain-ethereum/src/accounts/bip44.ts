@@ -14,7 +14,7 @@ import {
     assertBip44PathMatches,
     parseBip44Path,
     type Bip44Coordinates,
-    type HDWalletDetails,
+    type HdIndex,
 } from '@perawallet/wallet-core-accounts'
 
 export const ETHEREUM_COIN_TYPE = 60
@@ -24,5 +24,5 @@ export const parseEthereumBip44Path = (hdPath: string): Bip44Coordinates =>
 
 export const assertEthereumBip44PathMatches = (
     hdPath: string,
-    details: HDWalletDetails,
-): void => assertBip44PathMatches(hdPath, details, ETHEREUM_COIN_TYPE)
+    index: HdIndex,
+): void => assertBip44PathMatches(hdPath, index, ETHEREUM_COIN_TYPE)

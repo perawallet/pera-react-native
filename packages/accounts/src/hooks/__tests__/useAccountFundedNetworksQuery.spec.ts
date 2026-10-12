@@ -18,7 +18,10 @@ import {
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountFundedNetworksQuery } from '../useAccountFundedNetworksQuery'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockGetAccountFundedNetworks = vi.fn()
 vi.mock('../../db', () => ({
@@ -30,10 +33,6 @@ const mockEnsureAccountFetched = vi.fn(() => Promise.resolve())
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: (...args: unknown[]) =>
         mockEnsureAccountFetched(...(args as [])),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const wrapper = () => {
@@ -57,7 +56,7 @@ describe('useAccountFundedNetworksQuery', () => {
         mockGetAccountFundedNetworks.mockResolvedValue(['testnet'])
 
         const { result } = renderHook(
-            () => useAccountFundedNetworksQuery('ADDR1'),
+            () => useAccountFundedNetworksQuery('ADDR1', SCOPE),
             { wrapper: wrapper() },
         )
 
@@ -67,13 +66,11 @@ describe('useAccountFundedNetworksQuery', () => {
         expect(result.current.fundedNetworks).toEqual(['testnet'])
         expect(mockGetAccountFundedNetworks).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
+            chainId: 'algorand',
         })
         // Only the selected network can be force-fetched; the rest are whatever
         // earlier syncs persisted.
-        expect(mockEnsureAccountFetched).toHaveBeenCalledWith(
-            'ADDR1',
-            'mainnet',
-        )
+        expect(mockEnsureAccountFetched).toHaveBeenCalledWith('ADDR1', SCOPE)
     })
 
     it('serves from SQLite while offline', async () => {
@@ -81,7 +78,7 @@ describe('useAccountFundedNetworksQuery', () => {
         mockGetAccountFundedNetworks.mockResolvedValue([])
 
         const { result } = renderHook(
-            () => useAccountFundedNetworksQuery('ADDR1'),
+            () => useAccountFundedNetworksQuery('ADDR1', SCOPE),
             { wrapper: wrapper() },
         )
 
@@ -91,7 +88,7 @@ describe('useAccountFundedNetworksQuery', () => {
 
     it('does not query without an address', () => {
         const { result } = renderHook(
-            () => useAccountFundedNetworksQuery(undefined),
+            () => useAccountFundedNetworksQuery(undefined, SCOPE),
             { wrapper: wrapper() },
         )
 

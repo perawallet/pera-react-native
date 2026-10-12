@@ -24,8 +24,12 @@ import {
     useSendLoginOtpMutation,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    chainAccountOf,
+} from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -195,7 +199,11 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     const hasEscrowCard =
                         useCardStore.getState().escrowCardAddress !== null ||
                         (await restoreEscrowCardAsync(
-                            accounts.map(account => account.address),
+                            accounts.flatMap(
+                                account =>
+                                    chainAccountOf(account, LEGACY_CHAIN_ID)
+                                        ?.address ?? [],
+                            ),
                         ).catch(() => null)) !== null
                     if (!hasEscrowCard) {
                         navigation.navigate('PeraCard', {

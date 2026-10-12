@@ -12,12 +12,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
     queryKeyReferencesScope,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountHoldingsLite,
     type AccountHoldingsFilters,
@@ -56,6 +54,7 @@ export type UseAccountAssetsQueryResult = {
  */
 export const useAccountAssetsQuery = (
     address: string | undefined,
+    scope: ChainScope,
     {
         filters,
         sortMode = 'balanceDesc',
@@ -63,9 +62,6 @@ export const useAccountAssetsQuery = (
         enabled = true,
     }: UseAccountAssetsQueryParams = {},
 ): UseAccountAssetsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const query = useQuery({
         queryKey: getAccountHoldingsPageQueryKey(address ?? '', scope, {
             filters,
@@ -96,7 +92,7 @@ export const useAccountAssetsQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountHoldingsLite({
                 accountAddress: address as string,
                 scope,

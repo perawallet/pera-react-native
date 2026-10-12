@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     isSignRequestMultisigUnsignable,
     useSigningPipeline,
     useSigningRequest,
@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
     isSignRequestMultisigUnsignable: vi.fn(() => false),
-    getRekeyedUnsignableReason: vi.fn(() => null),
+    getDelegatedUnsignableReason: vi.fn(() => null),
     isExternalCallbackSource: vi.fn(
         (sourceType?: string) =>
             sourceType === 'walletconnect' ||
@@ -126,7 +126,7 @@ describe('useSigningActionButtons', () => {
         // clearAllMocks keeps implementations — pin the gates back to their
         // permissive defaults so cases from one describe can't leak.
         ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
-        ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
+        ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
         setupPipeline()
@@ -575,7 +575,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('blocks a sender rekeyed to an address outside the wallet', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue({
                 kind: 'authMissing',
                 senderAddress: 'SND',
                 authAddress: 'AUTH',
@@ -596,7 +596,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('blocks a sender rekeyed to a watch-only account', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue({
                 kind: 'authIsWatch',
                 senderAddress: 'SND',
                 authAddress: 'AUTH',
@@ -617,7 +617,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('shows no notice for a signable sender', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
 
             const { result } = renderHook(() => useSigningActionButtons())
 

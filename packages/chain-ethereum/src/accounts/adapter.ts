@@ -14,9 +14,12 @@ import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { createEthereumAccountStateOps } from './account-state'
 import { assertEthereumBip44PathMatches } from './bip44'
-import { toEthereumChainState } from './chain-state'
+import {
+    summarizeEthereumChainState,
+    toEthereumChainState,
+} from './chain-state'
 import { ethereumHdKeyId } from './hd-derivation'
-import { ethereumLegacyDetails } from './legacy-details'
+import { ethereumKindIdOf, ethereumLocalKeyKinds } from './local-key-kinds'
 import { revealEthereumPrivateKey } from './private-key'
 import {
     getEthereumAuthAccount,
@@ -30,10 +33,12 @@ export const createEthereumAccountsAdapter = (
 ): AccountsChainAdapter => ({
     ...createEthereumAccountStateOps(ctx),
     toChainState: toEthereumChainState,
+    summarizeChainState: summarizeEthereumChainState,
     hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
         ethereumHdKeyId(seedKeyId, account, keyIndex),
     assertHdPathMatches: assertEthereumBip44PathMatches,
-    legacyDetails: ethereumLegacyDetails,
+    localKeyKinds: ethereumLocalKeyKinds,
+    kindIdOf: ethereumKindIdOf,
     revealPrivateKey: revealEthereumPrivateKey,
     resolveSigner: resolveEthereumSigner,
     getAuthAccount: getEthereumAuthAccount,

@@ -141,8 +141,9 @@ const EditContactHost = () => {
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'sender-key',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'sender-key' },
+    },
     name: 'Sender',
 }
 
@@ -205,9 +206,7 @@ describe('Flow: Contacts CRUD', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SENDER_ACCOUNT])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(SENDER_ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(SENDER_ACCOUNT.id)
         resetContacts()
         isCloudBackupEnabledMock.mockReturnValue(false)
         useBackupSyncStateStore.getState().setSyncState(null)

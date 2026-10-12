@@ -11,7 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { ObservedChainState } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountsChainAdapter,
+    ObservedChainState,
+} from '@perawallet/wallet-core-accounts'
 import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
 
 export const toAlgorandChainState = (
@@ -27,3 +30,12 @@ export const toAlgorandChainState = (
         ? { authAddress: observed.authorityAddress }
         : {}),
 })
+
+export const summarizeAlgorandChainState: AccountsChainAdapter['summarizeChainState'] =
+    chainState =>
+        chainState.family === 'algorand'
+            ? {
+                  reserveBalance: chainState.minBalance,
+                  heldTokenCount: chainState.totalAssetsOptedIn,
+              }
+            : { reserveBalance: new Decimal(0), heldTokenCount: 0 }

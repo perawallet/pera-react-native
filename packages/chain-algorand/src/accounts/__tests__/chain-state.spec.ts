@@ -12,7 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { toAlgorandChainState } from '../chain-state'
+import {
+    summarizeAlgorandChainState,
+    toAlgorandChainState,
+} from '../chain-state'
 
 describe('toAlgorandChainState', () => {
     it('leaves the authority out when null', () => {
@@ -31,5 +34,32 @@ describe('toAlgorandChainState', () => {
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
         })
+    })
+})
+
+describe('summarizeAlgorandChainState', () => {
+    it('reads the minimum balance as the reserve and the opted-in assets as held tokens', () => {
+        const state = {
+            family: 'algorand',
+            minBalance: new Decimal(200000),
+            status: 'Offline',
+            totalAssetsOptedIn: 2,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+        } as const
+
+        expect(summarizeAlgorandChainState(state)).toEqual({
+            reserveBalance: new Decimal(200000),
+            heldTokenCount: 2,
+        })
+    })
+
+    it('reads another family as no reserve and no tokens', () => {
+        expect(
+            summarizeAlgorandChainState({
+                family: 'evm',
+                nonce: { latest: 0, pending: 0 },
+            }),
+        ).toEqual({ reserveBalance: new Decimal(0), heldTokenCount: 0 })
     })
 })

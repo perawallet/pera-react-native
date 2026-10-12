@@ -12,14 +12,20 @@
 
 import type {
     ChainDescriptor,
+    ChainId,
     SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveSeedKeyFrom,
-    SeedScheme,
     seedSchemeOf,
+    type SeedScheme,
 } from '@perawallet/wallet-core-kms'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
+import { accountsChainAdapters } from '../chain-adapter'
+import { localKeyKindOf } from '../import-formats'
 import type { WalletAccount } from '../models'
 import { signingKeyOn } from './accessors'
 
@@ -63,8 +69,19 @@ export const credentialScheme = (
         case 'local': {
             const keyPairId = signingKeyOn(account, chain.id)
             if (!keyPairId) return null
-            const seed = loadedSeedScheme(keys, keyPairId) ?? custody.seed
-            const scheme = seed === SeedScheme.Quantum ? 'falcon-1024' : primary
+            const loaded = loadedSeedScheme(keys, keyPairId)
+            // A loaded seed no kind is stored under is a standalone key's: the
+            // keystore files it under a scheme of its own, the custody under
+            // none. A chain with no accounts adapter declares no key kinds, so
+            // its keys sign with its primary scheme.
+            const kindOf = () =>
+                loaded === null
+                    ? localKeyKindOf(chain.id, custody.seed)
+                    : (localKeyKindOf(chain.id, loaded) ??
+                      localKeyKindOf(chain.id, null))
+            const scheme = accountsChainAdapters.has(chain.id)
+                ? (kindOf()?.signingScheme ?? null)
+                : primary
             return scheme && chain.signing.schemes.includes(scheme)
                 ? scheme
                 : null
@@ -73,4 +90,19 @@ export const credentialScheme = (
             return null
         }
     }
+}
+
+/**
+ * Whether `account` signs on `chainId` with a scheme other than the chain's
+ * primary one. Fees are priced per signature by scheme, so this is what makes
+ * an account pay a scheme premium.
+ */
+export const usesNonPrimaryScheme = (
+    account: WalletAccount,
+    chainId: ChainId,
+    keys?: KeystoreSnapshot,
+): boolean => {
+    const chain = getProvider().chains.get(chainId).descriptor
+    const scheme = credentialScheme(account, chain, keys)
+    return scheme !== null && scheme !== chain.signing.schemes[0]
 }

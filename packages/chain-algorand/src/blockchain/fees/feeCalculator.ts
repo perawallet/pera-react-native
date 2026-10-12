@@ -15,7 +15,7 @@ export type CalculateMinTxnFeeParams = {
     baseMinFee: bigint
     /**
      * Whether the transaction is signed by a post-quantum signer. Callers
-     * derive this from the auth account (e.g. `isQuantumAccount(authAccount)`)
+     * derive this from the resolved signer (`usesNonPrimaryScheme`)
      * — this package intentionally does not import account types.
      */
     isPQSigner: boolean

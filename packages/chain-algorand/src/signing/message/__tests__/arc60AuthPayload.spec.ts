@@ -32,29 +32,31 @@ import {
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
 } from '../arc60-errors'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const MATCHING_HD_PATH = "m/44'/283'/0'/0/1"
 
 const hdAccount = {
-    address: 'HD_ADDR',
-    keyPairId: 'key-hd-child',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 1,
-        derivationType: 9,
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'HD_ADDR',
+            keyPairId: 'key-hd-child',
+        },
     },
 } as unknown as WalletAccount
 
-const algo25Account = {
-    address: 'ALGO25_ADDR',
-    keyPairId: 'key-algo25-ed25519',
+const standaloneAccount = {
     custody: { kind: 'local', seed: null },
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'ALGO25_ADDR',
+            keyPairId: 'key-algo25-ed25519',
+        },
+    },
 } as unknown as WalletAccount
 
 const hardwareAccount = {
-    address: 'HW_ADDR',
     custody: {
         kind: 'hardware',
         device: {
@@ -65,20 +67,26 @@ const hardwareAccount = {
         },
         accountIndex: 0,
     },
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'd',
-        deviceName: 'L',
-        accountIndex: 0,
-        transportType: 'ble',
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'HW_ADDR',
+        },
     },
 } as unknown as WalletAccount
 
 const quantumAccount = {
-    address: 'QUANTUM_ADDR',
-    keyPairId: 'key-quantum-falcon',
     custody: { kind: 'local', seed: 'quantum' },
+    chains: {
+        [ALGORAND_CHAIN_ID]: {
+            address: 'QUANTUM_ADDR',
+            keyPairId: 'key-quantum-falcon',
+        },
+    },
 } as unknown as WalletAccount
+
+const atAddress = (account: WalletAccount, address: string) => ({
+    [ALGORAND_CHAIN_ID]: { ...account.chains[ALGORAND_CHAIN_ID], address },
+})
 
 const domain = 'arc60.io'
 const rpIdHash = sha256(new TextEncoder().encode(domain))
@@ -169,7 +177,7 @@ describe('arc60AuthPayloadFor', () => {
 
     test('rejects hdPath on Algo25 accounts', () => {
         expect(() =>
-            sign(algo25Account, {
+            sign(standaloneAccount, {
                 ...validAuthData,
                 data: dataFor('ALGO25_ADDR'),
                 signer: 'ALGO25_ADDR',
@@ -183,7 +191,7 @@ describe('arc60AuthPayloadFor', () => {
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
 
-        const payload = sign(algo25Account, {
+        const payload = sign(standaloneAccount, {
             ...validAuthData,
             data: encodeToBase64(algo25Siwa),
             signer: 'ALGO25_ADDR',
@@ -226,8 +234,9 @@ describe('arc60AuthPayloadFor', () => {
         // Once ORIG_ADDR is rekeyed, control belongs to AUTH_ADDR on chain;
         // a proof made with ORIG_ADDR's old key must not authenticate it.
         const original = {
-            ...algo25Account,
-            address: 'ORIG_ADDR',
+            ...standaloneAccount,
+            chains: atAddress(standaloneAccount, 'ORIG_ADDR'),
+            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 
@@ -247,8 +256,13 @@ describe('arc60AuthPayloadFor', () => {
 
     test('rejects a watch-rekeyed account even when the auth has keys', () => {
         const watchSource = {
-            address: 'WATCH_ADDR',
             custody: { kind: 'watch' },
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: 'WATCH_ADDR',
+                },
+            },
+            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
         seedAuthority('WATCH_ADDR', 'AUTH_ADDR')
 
@@ -285,7 +299,7 @@ describe('arc60AuthPayloadFor', () => {
     test('rejects a Ledger account (raw-byte signing unsupported on device)', () => {
         const ledger = {
             ...hardwareAccount,
-            address: 'LED_ADDR',
+            chains: atAddress(hardwareAccount, 'LED_ADDR'),
         } as unknown as WalletAccount
 
         expect(() =>
@@ -299,12 +313,13 @@ describe('arc60AuthPayloadFor', () => {
 
     test('rejects a rekey revoked since the list was last read', () => {
         const rekeyed = {
-            ...algo25Account,
-            address: 'ORIG_ADDR',
+            ...standaloneAccount,
+            chains: atAddress(standaloneAccount, 'ORIG_ADDR'),
+            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
         const authAccount = {
-            ...algo25Account,
-            address: 'AUTH_ADDR',
+            ...standaloneAccount,
+            chains: atAddress(standaloneAccount, 'AUTH_ADDR'),
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 

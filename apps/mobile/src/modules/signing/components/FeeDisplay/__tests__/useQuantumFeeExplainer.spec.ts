@@ -54,8 +54,9 @@ const quantumAccount = (authority?: string): WalletAccount => {
     return {
         id: 'quantum-id',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_ADDRESS,
-        keyPairId: 'quantum-key',
+        chains: {
+            algorand: { address: QUANTUM_ADDRESS, keyPairId: 'quantum-key' },
+        },
         name: 'Quantum',
     } as WalletAccount
 }
@@ -65,8 +66,9 @@ const standardAccount = (authority?: string): WalletAccount => {
     return {
         id: 'standard-id',
         custody: { kind: 'local', seed: null },
-        address: STANDARD_ADDRESS,
-        keyPairId: 'standard-key',
+        chains: {
+            algorand: { address: STANDARD_ADDRESS, keyPairId: 'standard-key' },
+        },
         name: 'Standard',
     } as WalletAccount
 }
@@ -200,6 +202,25 @@ describe('useQuantumFeeExplainer', () => {
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
+    // It still resolves as a signer: its key on another chain counts.
+    it('returns false for quantum custody with no key on Algorand', () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                ...quantumAccount(),
+                chains: {
+                    algorand: { address: QUANTUM_ADDRESS },
+                    other: { address: 'OTHER', keyPairId: 'other-key' },
+                },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
 
         expect(result.current.isQuantumFee).toBe(false)
     })

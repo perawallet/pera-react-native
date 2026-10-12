@@ -112,16 +112,19 @@ export const CloudBackupAccountsReviewScreen = () => {
                             count={notBackedUpAccounts.length}
                         />
                         <PWView>
-                            {notBackedUpAccounts.map((account, index) => (
-                                <Fragment key={account.address}>
-                                    {index > 0 && <ListItemDivider />}
-                                    <NotBackedUpAccountRow
-                                        account={account}
-                                        isBusy={isBusy(account.address)}
-                                        onBackUp={onBackUp}
-                                    />
-                                </Fragment>
-                            ))}
+                            {notBackedUpAccounts.map(
+                                ({ account, address }, index) => (
+                                    <Fragment key={account.id}>
+                                        {index > 0 && <ListItemDivider />}
+                                        <NotBackedUpAccountRow
+                                            account={account}
+                                            address={address}
+                                            isBusy={isBusy(address)}
+                                            onBackUp={onBackUp}
+                                        />
+                                    </Fragment>
+                                ),
+                            )}
                         </PWView>
                     </PWView>
                 )}

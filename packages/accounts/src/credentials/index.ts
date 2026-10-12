@@ -15,20 +15,22 @@ export {
     authorityOf,
     chainAccountOf,
     custodyOf,
+    hardwareDetailsOf,
     hardwareDeviceOf,
     hasCustody,
+    hasRecoverySeed,
     hdIndexOf,
     isKeyReferenced,
     seedOf,
     signingKeyOn,
     standaloneSecretOf,
 } from './accessors'
+export { buildAccount, type BuildAccountInput } from './buildAccount'
 export {
-    buildAccount,
-    type AccountForCustody,
-    type BuildAccountInput,
-} from './buildAccount'
-export { credentialScheme, type SchemeChain } from './credentialScheme'
+    credentialScheme,
+    usesNonPrimaryScheme,
+    type SchemeChain,
+} from './credentialScheme'
 export {
     canDerive,
     canImportRawKey,

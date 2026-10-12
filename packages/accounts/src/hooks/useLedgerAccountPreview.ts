@@ -12,8 +12,6 @@
 
 import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -23,39 +21,46 @@ import {
 import {
     ALGO_ASSET_NAME,
     baseUnitsToDisplayUnits,
-    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
     LedgerAccountPreviewAsset,
-    LedgerAccountRekeyRelationship,
+    LedgerAccountDelegation,
     UseLedgerAccountPreviewResult,
 } from '../models'
 import { recordAuthority } from '../store/recordAuthority'
-import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
-import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
+import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
+import { useDelegatedAddressesQuery } from './useDelegatedAddressesQuery'
 
 export const useLedgerAccountPreview = (
     address: string,
+    scope: ChainScope,
 ): UseLedgerAccountPreviewResult => {
     const nativeAsset = useNativeAsset()
-    const onChain = useOnChainAccountInformationQuery(address)
-    const rekeyed = useRekeyedAddressesQuery(address)
+    const onChain = useOnChainAccountStateQuery(address, scope)
+    const delegated = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const authorityAddress = onChain.data?.authorityAddress
 
-    // The sheet's synthetic watch row reads its rekey state from the slice.
+    // The sheet's synthetic watch row reads its delegation state from the slice.
     useEffect(() => {
         if (authorityAddress && authorityAddress !== address) {
             recordAuthority(scope, address, authorityAddress)
         }
     }, [scope, address, authorityAddress])
 
+    const heldAssets = useMemo(
+        () =>
+            (onChain.data?.holdings ?? []).filter(
+                holding => holding.assetId !== nativeAsset.assetId,
+            ),
+        [onChain.data, nativeAsset.assetId],
+    )
     const assetIds = useMemo(
-        () => (onChain.data?.assets ?? []).map(a => String(a.assetId)),
-        [onChain.data],
+        () => heldAssets.map(holding => holding.assetId),
+        [heldAssets],
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
@@ -68,7 +73,7 @@ export const useLedgerAccountPreview = (
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
         if (!onChain.data) return undefined
 
-        const algoBalance = microAlgosToAlgos(onChain.data.amount)
+        const algoBalance = onChain.data.nativeBalance
         const algoUsdPrice =
             prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
@@ -90,8 +95,8 @@ export const useLedgerAccountPreview = (
             isFrozen: false,
         })
 
-        for (const holding of onChain.data.assets) {
-            const id = String(holding.assetId)
+        for (const holding of heldAssets) {
+            const id = holding.assetId
             const meta = assets?.get(id)
             const hasKnownDecimals = meta?.decimals !== undefined
             const decimals = meta?.decimals ?? 0
@@ -121,15 +126,18 @@ export const useLedgerAccountPreview = (
             })
         }
 
-        let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
+        let delegation: LedgerAccountDelegation = { kind: 'none' }
         if (authorityAddress && authorityAddress !== address) {
-            rekey = { kind: 'delegatedTo', authorityAddress }
+            delegation = { kind: 'delegatedTo', authorityAddress }
         } else if (
-            !rekeyed.isError &&
-            rekeyed.rekeyedAddresses &&
-            rekeyed.rekeyedAddresses.length > 0
+            !delegated.isError &&
+            delegated.delegatedAddresses &&
+            delegated.delegatedAddresses.length > 0
         ) {
-            rekey = { kind: 'canSignFor', addresses: rekeyed.rekeyedAddresses }
+            delegation = {
+                kind: 'canSignFor',
+                addresses: delegated.delegatedAddresses,
+            }
         }
 
         return {
@@ -137,16 +145,17 @@ export const useLedgerAccountPreview = (
             algoBalance,
             totalFiatValue: usdToPreferred(totalUsd),
             assets: previewAssets,
-            rekey,
+            delegation,
         }
     }, [
         address,
         authorityAddress,
         onChain.data,
+        heldAssets,
         assets,
         prices,
-        rekeyed.rekeyedAddresses,
-        rekeyed.isError,
+        delegated.delegatedAddresses,
+        delegated.isError,
         usdToPreferred,
     ])
 

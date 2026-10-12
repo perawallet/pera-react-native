@@ -43,9 +43,9 @@ export class AccountError extends AppError {
 }
 
 /**
- * Account has no HD wallet details
+ * The wallet holds no HD seed under the id given.
  */
-export class NoHDWalletError extends AccountError {
+export class NoHdSeedError extends AccountError {
     constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
             messageKey: 'errors.account.no_hd_wallet',
@@ -73,12 +73,12 @@ export class WalletCannotDeriveError extends AccountError {
 }
 
 /**
- * Rekey target account not found in local accounts
+ * Delegation target account not found in local accounts
  */
 export class DelegationTargetNotFoundError extends AccountError {
     constructor(authorityAddress: string) {
         super(
-            `Rekey target account ${authorityAddress} not found in local accounts`,
+            `Delegation target account ${authorityAddress} not found in local accounts`,
             undefined,
             {
                 params: { authorityAddress },
@@ -105,7 +105,7 @@ export class HDImportSessionNotFoundError extends AccountError {
 /**
  * The address derived from the import flow already exists in the wallet.
  *
- * Surfaced from the standard-mnemonic import path so the UI can show a specific
+ * Surfaced from the single-key import path so the UI can show a specific
  * "already imported" toast instead of the generic failure message. HD
  * imports get the same protection at the selection screen (already-
  * imported addresses render a chip rather than a checkbox).
@@ -133,7 +133,7 @@ export class DuplicateAccountError extends AccountError {
  *
  * - `'malformed'`: the path string isn't a well-formed BIP44 path for the chain.
  * - `'mismatch'`: the path parses cleanly but points to a different
- *   account/change/keyIndex than the HDWalletDetails being compared against.
+ *   account/change/keyIndex than the HD index being compared against.
  */
 export type Bip44PathFailureReason = 'malformed' | 'mismatch'
 
@@ -170,21 +170,9 @@ class ChainFeatureUnsupportedError extends AccountError {
     }
 }
 
-export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Rekey', chainId)
-    }
-}
-
 export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Private-key import', chainId)
-    }
-}
-
-export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Post-quantum accounts', chainId)
     }
 }
 
@@ -194,21 +182,21 @@ export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedEr
     }
 }
 
+export class HdAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('HD accounts', chainId)
+    }
+}
+
+export class MultisigUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Multisig accounts', chainId)
+    }
+}
+
 export class RootKeyDiscoveryUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(chainId: ChainId) {
         super('Discovery from an in-memory root key', chainId)
-    }
-}
-
-export class AccountInformationUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Account information', chainId)
-    }
-}
-
-export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(derivationType: number, chainId: ChainId) {
-        super(`HD derivation type ${derivationType}`, chainId)
     }
 }
 

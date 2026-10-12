@@ -14,12 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useTopPairsQuery } from '../useTopPairsQuery'
 import { fetchTopPairs } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchTopPairs: vi.fn(),
@@ -49,7 +48,7 @@ describe('swaps/useTopPairsQuery', () => {
     })
 
     test('returns top pairs on success', async () => {
-        const { result } = renderHook(() => useTopPairsQuery(), {
+        const { result } = renderHook(() => useTopPairsQuery(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -60,19 +59,19 @@ describe('swaps/useTopPairsQuery', () => {
     })
 
     test('passes limit to fetchTopPairs', async () => {
-        const { result } = renderHook(() => useTopPairsQuery(3), {
+        const { result } = renderHook(() => useTopPairsQuery(SCOPE, 3), {
             wrapper: createWrapper(),
         })
 
         await waitFor(() => expect(result.current.isFetched).toBe(true))
 
-        expect(fetchTopPairs).toHaveBeenCalledWith('mainnet', 3)
+        expect(fetchTopPairs).toHaveBeenCalledWith(SCOPE, 3)
     })
 
     test('sets isError on failure', async () => {
         vi.mocked(fetchTopPairs).mockRejectedValue(new Error('Network error'))
 
-        const { result } = renderHook(() => useTopPairsQuery(), {
+        const { result } = renderHook(() => useTopPairsQuery(SCOPE), {
             wrapper: createWrapper(),
         })
 

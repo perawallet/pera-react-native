@@ -19,6 +19,8 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
 type SortOption = {
@@ -48,17 +50,22 @@ type UseAccountSortContentResult = {
     sortMode: AccountSortMode
     sortedAccounts: WalletAccount[]
     handleSortModeChange: (mode: AccountSortMode) => void
-    handleReorder: (orderedAddresses: string[]) => void
+    handleReorder: (orderedIds: string[]) => void
     commitChanges: () => void
     t: (key: string) => string
 }
 
 export const useAccountSortContent = (): UseAccountSortContentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const { accountValueTotals } = useAccountValueTotalsQuery(accounts, true)
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        accounts,
+        scope,
+        true,
+    )
     const { sortedAccounts, sortMode, setSortMode, setManualAccountOrder } =
-        useSortedAccounts(accounts, accountValueTotals)
+        useSortedAccounts(accounts, accountValueTotals, scope.chainId)
 
     // Snapshot sort state on open; upstream changes are intentionally ignored
     // while the sheet is mounted, so edits aren't clobbered by late updates.
@@ -70,11 +77,11 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
     }, [])
 
     const handleReorder = useCallback(
-        (orderedAddresses: string[]) => {
-            const byAddress = new Map(accounts.map(a => [a.address, a]))
+        (orderedIds: string[]) => {
+            const byId = new Map(accounts.map(a => [a.id, a]))
             setDraftAccounts(
-                orderedAddresses
-                    .map(address => byAddress.get(address))
+                orderedIds
+                    .map(id => byId.get(id))
                     .filter((a): a is WalletAccount => a !== undefined),
             )
         },
@@ -84,7 +91,7 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
     const commitChanges = useCallback(() => {
         setSortMode(draftSortMode)
         if (draftSortMode === AccountSortModes.manual) {
-            setManualAccountOrder(draftAccounts.map(a => a.address))
+            setManualAccountOrder(draftAccounts.map(a => a.id))
         }
     }, [draftSortMode, draftAccounts, setSortMode, setManualAccountOrder])
 

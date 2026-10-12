@@ -251,13 +251,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signAuthData } = useAuthDataSigner()
     const allAccounts = useAllAccounts()
-    const {
-        proposeSignRequest,
-        addSignatures,
-        getMsigMetadata,
-        getDeviceId,
-        createDraftSignRequest,
-    } = useMultisigTransportAdapters()
+    const { adaptersFor: multisigAdaptersFor } = useMultisigTransportAdapters()
 
     // Stable ref so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
@@ -268,15 +262,13 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             const scope = getSelectedScope(chainIdOfSignRequest(request))
             return {
                 signTransactions,
-                signArbitraryData,
-                signAuthData,
+                signArbitraryData: (account, data) =>
+                    signArbitraryData(scope.chainId, account, data),
+                signAuthData: (account, authData, metadata) =>
+                    signAuthData(scope.chainId, account, authData, metadata),
                 createTransport: createTransportSelector({
                     scope,
-                    proposeSignRequest,
-                    addSignatures,
-                    getMsigMetadata,
-                    getDeviceId,
-                    createDraftSignRequest,
+                    ...multisigAdaptersFor(scope),
                 }),
                 scope,
                 // Hardware-wallet actor consumes this. The device adds the
@@ -292,11 +284,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signTransactions,
             signArbitraryData,
             signAuthData,
-            proposeSignRequest,
-            addSignatures,
-            getMsigMetadata,
-            getDeviceId,
-            createDraftSignRequest,
+            multisigAdaptersFor,
             allAccounts,
         ],
     )

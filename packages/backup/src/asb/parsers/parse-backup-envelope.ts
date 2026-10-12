@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import type { AsbBackupEnvelope } from '../models'
 
-export const parseBackupEnvelope = (raw: string): AsbBackupEnvelope =>
-    backupAdapterFor().secureBackup.parseEnvelope(raw)
+export const parseBackupEnvelope = (
+    raw: string,
+    chainId: ChainId,
+): AsbBackupEnvelope =>
+    backupAdapterFor(chainId).secureBackup.parseEnvelope(raw)

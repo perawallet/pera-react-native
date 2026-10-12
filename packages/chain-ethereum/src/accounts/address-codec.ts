@@ -53,6 +53,10 @@ const parseBaseUnits = (raw: string): Decimal | undefined => {
 
 const normalize = (address: string): string => getAddress(address)
 
+// `0x` plus four hex digits, then the last four: the form wallets show.
+const TRUNCATED_HEAD = 6
+const TRUNCATED_TAIL = 4
+
 export const ethereumAddressCodec: AddressCodec = {
     chainId: ETHEREUM_CHAIN_ID,
     fromPublicKey: (publicKey, opts) => {
@@ -72,6 +76,10 @@ export const ethereumAddressCodec: AddressCodec = {
     isValid: address => isAddress(address),
     normalize,
     areEqual: (a, b) => a.toLowerCase() === b.toLowerCase(),
+    truncate: address =>
+        address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
+            ? address
+            : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`,
     toPaymentUri: (address, opts) => {
         if (
             opts?.amount &&

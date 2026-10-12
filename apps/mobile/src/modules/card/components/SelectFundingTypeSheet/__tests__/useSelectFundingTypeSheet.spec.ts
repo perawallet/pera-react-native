@@ -130,9 +130,8 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
 
 const connectedAccount = {
-    address: 'ADDR1',
+    chains: { algorand: { address: 'ADDR1', keyPairId: 'key-1' } },
     custody: { kind: 'local', seed: null },
-    keyPairId: 'key-1',
 } as unknown as WalletAccount
 
 const CARD = 'ESCROWCARD1'
@@ -341,7 +340,7 @@ describe('useSelectFundingTypeSheet', () => {
     it('flags a Ledger connected account (drives the Ledger-specific hint)', () => {
         mockAccounts = [
             {
-                address: 'ADDR1',
+                chains: { algorand: { address: 'ADDR1' } },
                 custody: {
                     kind: 'hardware',
                     device: {

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Optional } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory } from '../history-adapter'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 import { backfillMissingCloseAmounts } from './close-amount-backfill'
@@ -19,9 +19,8 @@ import { backfillSwapAssetFacts } from './swap-asset-facts-backfill'
 
 export async function fetchAndPersistTransactions(
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
-    const scope = scopeForLegacyNetwork(network)
     const latestRoundTime = await getLatestTransactionRoundTime({
         accountAddress: address,
         scope,
@@ -38,7 +37,7 @@ export async function fetchAndPersistTransactions(
 
     const result = await fetchTransactionHistory({
         accountAddress: address,
-        network,
+        scope,
         afterTime,
     })
 
@@ -53,10 +52,10 @@ export async function fetchAndPersistTransactions(
     // Heal close rows whose swept amount the backend/derivation couldn't
     // provide (rows cached before the close_amount column, receiver-only
     // perspectives). Best-effort and bounded; never fails the sync.
-    await backfillMissingCloseAmounts({ network })
+    await backfillMissingCloseAmounts({ scope })
 
     // Likewise for swap rows cached without their per-side asset facts. The
     // fetch above only asks for transactions newer than the newest cached one,
     // so nothing else ever revisits them.
-    await backfillSwapAssetFacts({ network, accountAddress: address })
+    await backfillSwapAssetFacts({ scope, accountAddress: address })
 }

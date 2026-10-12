@@ -11,12 +11,12 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     buildDeviceAccountRegistrations,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+    useDevice,
+} from '@perawallet/wallet-core-device'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
-import { useDevice } from '@perawallet/wallet-core-device'
 import { assertOnline } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from './useErrorToast'
 import { useLanguage } from './useLanguage'

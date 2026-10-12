@@ -14,6 +14,7 @@ import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import {
     getAccountDisplayName,
     useSelectedAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
@@ -23,6 +24,7 @@ import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -51,10 +53,13 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const styles = useStyles()
 
     const account = useSelectedAccount()
+    const accountAddress = account
+        ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+        : undefined
     const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')
     const { displayName: accountDisplayName } = useResolvedAddress(
-        account?.address ?? '',
-        { enabled: !!account?.address },
+        accountAddress ?? '',
+        { enabled: !!accountAddress },
     )
 
     // Screen-view tracking (screen_asset_detail) is centralized in the
@@ -71,7 +76,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     // Dedupe compares rendered strings, so both sides must share the same
     // ('short') truncation — a 'long'-format secondary would never match and
     // the address would render twice again.
-    const headerPrimary = getAccountDisplayName(account)
+    const headerPrimary = getAccountDisplayName(account, LEGACY_CHAIN_ID)
     const headerSecondary = dedupeSecondaryLabel(
         headerPrimary,
         accountDisplayName,

@@ -13,7 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    accountType,
+    chainAccountOf,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
@@ -99,8 +99,9 @@ export const createSigningStrategySelector = (
         if (custody === 'hardware') return hardwareStrategy
         if (custody === 'local') return localStrategy
         throw new CannotSignError(
-            account.address,
-            `No signing capability found for account type: ${accountType(account)}`,
+            chainAccountOf(account, options.scope.chainId)?.address ??
+                account.id,
+            `No signing capability found for account custody: ${custody}`,
         )
     }
 

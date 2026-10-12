@@ -81,7 +81,14 @@ vi.mock('@perawallet/wallet-core-card', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [{ address: 'ACCOUNT_A' }, { address: 'ACCOUNT_B' }],
+    useAllAccounts: () => [
+        { chains: { algorand: { address: 'ACCOUNT_A' } } },
+        { chains: { algorand: { address: 'ACCOUNT_B' } } },
+    ],
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({

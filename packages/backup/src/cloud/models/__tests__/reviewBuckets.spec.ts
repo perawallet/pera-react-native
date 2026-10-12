@@ -11,8 +11,9 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
     applyDeltas,
     buildLocalItems,
@@ -358,8 +359,7 @@ describe('areKeysDeletedFromBackup', () => {
 const algo25 = {
     id: '1',
     custody: { kind: 'local', seed: null },
-    address: 'ADDR',
-    keyPairId: 'kp-1',
+    chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
     name: 'Main',
 } as WalletAccount
 
@@ -371,10 +371,8 @@ const hdChild = (address: string, keyIndex: number) =>
             seed: 'bip39',
             hd: { account: 0, keyIndex: keyIndex },
         },
-        address,
-        keyPairId: `kp-${address}`,
+        chains: { algorand: { address, keyPairId: `kp-${address}` } },
         name: address,
-        hdWalletDetails: { account: 0, change: 0, keyIndex, derivationType: 9 },
     }) as WalletAccount
 
 /** Mirrors a successful push: `pushDirty` advances every accepted item's
@@ -395,6 +393,7 @@ const backedUpAfterSync = async (
 ) => {
     const local = await buildLocalItems(accounts, account =>
         serializeAccountForBackup(account, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic: async () => 'w1 w2',
@@ -409,11 +408,15 @@ const backedUpAfterSync = async (
     const reconciled = reconcile(createEmptySyncState('did:pera:x'), local, 1)
     return deriveBackupAccountReview(
         uploaded ? markUploaded(reconciled) : reconciled,
-        accounts.map(account => account.address),
+        accounts.flatMap(account => account.chains.algorand?.address ?? []),
     ).backedUp
 }
 
 describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
+    beforeEach(() => {
+        registerFakeBackupAdapter()
+    })
+
     it('reports one account for a single algo25 account', async () => {
         expect((await backedUpAfterSync([algo25])).size).toBe(1)
     })

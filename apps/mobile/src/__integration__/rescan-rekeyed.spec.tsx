@@ -16,8 +16,8 @@
 //               ─► candidate rows ─► import ─► persisted as watch accounts
 //
 // No signing pipeline is involved — this exercises the indexer discovery
-// (`fetchRekeyedAddresses`) and the store persistence
-// (`addRekeyedWatchAccounts`).
+// (`fetchDelegatedAddresses`) and the store persistence
+// (`addDelegatedWatchAccounts`).
 
 import { useEffect } from 'react'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -32,16 +32,14 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    AccountTypes,
     authorityOf,
     useAccountsStore,
     type WalletAccount,
-    accountType,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
+import { DelegatedSweepSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/DelegatedSweepSelectScreen'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
@@ -51,12 +49,17 @@ import {
     HD_TEST_ADDRESS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'rescan-source-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'rescan-source-key',
+        },
+    },
     name: 'Source',
 }
 
@@ -65,7 +68,7 @@ const SOURCE: WalletAccount = {
 const TabBarStub = () => null
 
 const renderRescan = () =>
-    renderWithNavigation(RescanRekeyedSelectScreen, 'RescanRekeyedSelect', {
+    renderWithNavigation(DelegatedSweepSelectScreen, 'RescanRekeyedSelect', {
         initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
         additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
     })
@@ -106,7 +109,7 @@ const renderFromAccountOptions = () =>
             { name: 'RescanRekeyed', component: NestedNavigateRedirect },
             {
                 name: 'RescanRekeyedSelect',
-                component: RescanRekeyedSelectScreen,
+                component: DelegatedSweepSelectScreen,
             },
             { name: 'TabBar', component: TabBarStub },
         ],
@@ -123,7 +126,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         useAccountsStore.getState().setAccounts([SOURCE])
-        useAccountsStore.getState().setSelectedAccountAddress(SOURCE.address)
+        useAccountsStore.getState().setSelectedAccountId(SOURCE.id)
     })
 
     it('Given the indexer reports accounts rekeyed to the source, when the user imports the candidates, then they are persisted as watch accounts pointing at the source', async () => {
@@ -159,17 +162,17 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         await waitFor(() => {
             const addresses = useAccountsStore
                 .getState()
-                .accounts.map(a => a.address)
+                .accounts.map(a => addressOf(a))
             expect(addresses).toContain(HD_TEST_ADDRESS)
             expect(addresses).toContain(REKEY_TARGET_ADDRESS)
         })
 
         const imported = useAccountsStore
             .getState()
-            .accounts.filter(a => a.address !== ALGO25_TEST_ADDRESS)
+            .accounts.filter(a => addressOf(a) !== ALGO25_TEST_ADDRESS)
         expect(imported).toHaveLength(2)
         imported.forEach(account => {
-            expect(accountType(account)).toBe(AccountTypes.watch)
+            expect(account.custody).toEqual({ kind: 'watch' })
             expect(
                 authorityOf(account, getSelectedScope(LEGACY_CHAIN_ID)),
             ).toBe(ALGO25_TEST_ADDRESS)
@@ -211,15 +214,13 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         await waitFor(() => {
             const addresses = useAccountsStore
                 .getState()
-                .accounts.map(a => a.address)
+                .accounts.map(a => addressOf(a))
             expect(addresses).toContain(HD_TEST_ADDRESS)
         })
         const imported = useAccountsStore
             .getState()
-            .accounts.find(a => a.address === HD_TEST_ADDRESS)
-        expect(imported ? accountType(imported) : undefined).toBe(
-            AccountTypes.watch,
-        )
+            .accounts.find(a => addressOf(a) === HD_TEST_ADDRESS)
+        expect(imported?.custody).toEqual({ kind: 'watch' })
         expect(authorityOf(imported!, getSelectedScope(LEGACY_CHAIN_ID))).toBe(
             ALGO25_TEST_ADDRESS,
         )

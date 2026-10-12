@@ -14,12 +14,13 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import {
+    accountPresentationChainAdapters,
+    type LocalAccount,
     type WalletAccount,
-    accountType,
-    type HDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -40,12 +41,11 @@ vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
 }))
 
 const mockBuildHdWalletAccount = vi.fn()
-const mockBuildAlgo25WalletAccount = vi.fn()
-const mockBuildQuantumWalletAccount = vi.fn()
+const mockBuildSingleKeyAccount = vi.fn()
 const mockBuildNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
-const mockHasMultipleHDWallets = vi.fn(() => false)
+const mockHasMultipleHdSeeds = vi.fn(() => false)
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -55,19 +55,19 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useCreateAccount: () => ({
             buildHdWalletAccount: mockBuildHdWalletAccount,
-            buildStandaloneAccount: mockBuildAlgo25WalletAccount,
-            buildQuantumWalletAccount: mockBuildQuantumWalletAccount,
+            buildSingleKeyAccount: mockBuildSingleKeyAccount,
         }),
         useAllAccounts: () => mockUseAllAccounts(),
         useCreateNextHDAccount: () => ({
             buildNextHDAccount: mockBuildNextHDAccount,
             hasHDWallet: mockUseAllAccounts().some(
-                (a: WalletAccount) => accountType(a) === 'hdWallet',
+                (a: WalletAccount) =>
+                    a.custody.kind === 'local' && a.custody.seed === 'bip39',
             ),
         }),
-        useHDWalletGroups: () => ({
-            hdWalletGroups: [],
-            hasMultipleHDWallets: mockHasMultipleHDWallets(),
+        useHdSeedGroups: () => ({
+            hdSeedGroups: [],
+            hasMultipleHdSeeds: mockHasMultipleHdSeeds(),
         }),
     }
 })
@@ -175,21 +175,15 @@ vi.mock('@analytics', async () => ({
     trackEvent: mockTrackEvent,
 }))
 
-const HD_ACCOUNT: HDWalletAccount = {
+const HD_ACCOUNT: LocalAccount = {
     id: 'hd-1',
-    address: 'HD_ADDRESS',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9 as const,
-    },
-    keyPairId: 'wallet-1',
+    chains: { algorand: { address: 'HD_ADDRESS', keyPairId: 'wallet-1' } },
 }
 
 describe('useAddAccountScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })
@@ -490,7 +484,7 @@ describe('useAddAccountScreen', () => {
     it('universal wallet option creates account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -543,7 +537,7 @@ describe('useAddAccountScreen', () => {
 
         const newAccount = {
             id: 'new-id',
-            address: 'NEW_ADDRESS',
+            chains: { algorand: { address: 'NEW_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -575,11 +569,11 @@ describe('useAddAccountScreen', () => {
     it('algo25 option creates algo25 account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'algo25-id',
-            address: 'ALGO25_ADDRESS',
+            chains: { algorand: { address: 'ALGO25_ADDRESS' } },
             custody: { kind: 'local', seed: null },
             canSign: true,
         }
-        mockBuildAlgo25WalletAccount.mockResolvedValue(newAccount)
+        mockBuildSingleKeyAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -591,14 +585,16 @@ describe('useAddAccountScreen', () => {
             algo25Option.onPress()
         })
 
-        expect(mockBuildAlgo25WalletAccount).toHaveBeenCalledWith({})
+        expect(mockBuildSingleKeyAccount).toHaveBeenCalledWith({
+            seed: null,
+        })
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
     })
 
     it('algo25 option shows error toast on failure', async () => {
-        mockBuildAlgo25WalletAccount.mockRejectedValue(
+        mockBuildSingleKeyAccount.mockRejectedValue(
             new Error('Creation failed'),
         )
 
@@ -664,6 +660,20 @@ describe('useAddAccountScreen', () => {
         ).toBeUndefined()
     })
 
+    it('offers no key-kind create row on a chain with no account presentation', () => {
+        accountPresentationChainAdapters.reset()
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const testIDs = [
+            ...result.current.mainOptions,
+            ...result.current.otherOptions,
+        ].map(o => o.testID)
+        expect(testIDs).not.toContain('add_account_create_quantum_button')
+        expect(testIDs).not.toContain('add_account_create_algo25_button')
+        expect(testIDs).toContain('add_account_import_button')
+    })
+
     it('places the quantum option directly after the first account option', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
@@ -715,11 +725,11 @@ describe('useAddAccountScreen', () => {
     it('quantum option creates quantum account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'quantum-id',
-            address: 'QUANTUM_ADDRESS',
+            chains: { algorand: { address: 'QUANTUM_ADDRESS' } },
             custody: { kind: 'local', seed: 'quantum' },
             canSign: true,
         }
-        mockBuildQuantumWalletAccount.mockResolvedValue(newAccount)
+        mockBuildSingleKeyAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -731,14 +741,16 @@ describe('useAddAccountScreen', () => {
             quantumOption.onPress()
         })
 
-        expect(mockBuildQuantumWalletAccount).toHaveBeenCalled()
+        expect(mockBuildSingleKeyAccount).toHaveBeenCalledWith({
+            seed: 'quantum',
+        })
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
     })
 
     it('quantum option tracks the quantum-account press event', async () => {
-        mockBuildQuantumWalletAccount.mockResolvedValue(null)
+        mockBuildSingleKeyAccount.mockResolvedValue(null)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -756,9 +768,7 @@ describe('useAddAccountScreen', () => {
     })
 
     it('quantum option shows error toast on failure', async () => {
-        mockBuildQuantumWalletAccount.mockRejectedValue(
-            new Error('Keygen failed'),
-        )
+        mockBuildSingleKeyAccount.mockRejectedValue(new Error('Keygen failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -778,7 +788,7 @@ describe('useAddAccountScreen', () => {
 
     it('creatingTitleKey reflects the quantum title while a quantum account is created', async () => {
         let resolveCreate: (value: unknown) => void
-        mockBuildQuantumWalletAccount.mockImplementation(
+        mockBuildSingleKeyAccount.mockImplementation(
             () =>
                 new Promise(resolve => {
                     resolveCreate = resolve
@@ -805,13 +815,16 @@ describe('useAddAccountScreen', () => {
         )
 
         await act(async () => {
-            resolveCreate!({ id: 'q', address: 'ADDR' })
+            resolveCreate!({
+                id: 'q',
+                chains: { algorand: { address: 'ADDR' } },
+            })
         })
     })
 
     it('creatingTitleKey stays the default while an algo25 account is created', async () => {
         let resolveCreate: (value: unknown) => void
-        mockBuildAlgo25WalletAccount.mockImplementation(
+        mockBuildSingleKeyAccount.mockImplementation(
             () =>
                 new Promise(resolve => {
                     resolveCreate = resolve
@@ -833,7 +846,10 @@ describe('useAddAccountScreen', () => {
         )
 
         await act(async () => {
-            resolveCreate!({ id: 'a', address: 'ADDR' })
+            resolveCreate!({
+                id: 'a',
+                chains: { algorand: { address: 'ADDR' } },
+            })
         })
     })
 
@@ -842,7 +858,7 @@ describe('useAddAccountScreen', () => {
 
         const newAccount = {
             id: 'new-hd',
-            address: 'NEW_HD_ADDRESS',
+            chains: { algorand: { address: 'NEW_HD_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -926,7 +942,10 @@ describe('useAddAccountScreen', () => {
 
         // After the promise resolves, closeCreatingAccount is called
         await act(async () => {
-            resolveCreate!({ id: 'test', address: 'ADDR' })
+            resolveCreate!({
+                id: 'test',
+                chains: { algorand: { address: 'ADDR' } },
+            })
         })
 
         expect(result.current.isCreatingAccount).toBe(false)
@@ -984,7 +1003,7 @@ describe('useAddAccountScreen', () => {
 
     it('add account navigates to SelectHDWallet when multiple HD wallets exist', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockHasMultipleHDWallets.mockReturnValue(true)
+        mockHasMultipleHdSeeds.mockReturnValue(true)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -1002,11 +1021,11 @@ describe('useAddAccountScreen', () => {
 
     it('add account does not navigate to SelectHDWallet when single HD wallet exists', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockHasMultipleHDWallets.mockReturnValue(false)
+        mockHasMultipleHdSeeds.mockReturnValue(false)
 
         const newAccount = {
             id: 'new-hd',
-            address: 'NEW_HD_ADDRESS',
+            chains: { algorand: { address: 'NEW_HD_ADDRESS' } },
             custody: {
                 kind: 'local',
                 seed: 'bip39',

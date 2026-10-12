@@ -19,7 +19,10 @@ import {
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountSummaryQuery } from '../useAccountSummaryQuery'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockGetAccountPortfolioTotals = vi.fn()
 vi.mock('../../db', () => ({
@@ -30,10 +33,6 @@ vi.mock('../../db', () => ({
 // The query self-heals an unsynced account before reading; stub it out.
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
@@ -72,9 +71,12 @@ describe('useAccountSummaryQuery', () => {
             missingMetadataCount: 0,
         })
 
-        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountSummaryQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -92,9 +94,12 @@ describe('useAccountSummaryQuery', () => {
             missingMetadataCount: 0,
         })
 
-        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountSummaryQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -113,18 +118,24 @@ describe('useAccountSummaryQuery', () => {
             missingMetadataCount: 12,
         })
 
-        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountSummaryQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.isComplete).toBe(false)
     })
 
     it('is disabled (no query) without an address', () => {
-        const { result } = renderHook(() => useAccountSummaryQuery(undefined), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountSummaryQuery(undefined, SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
         expect(mockGetAccountPortfolioTotals).not.toHaveBeenCalled()
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
     })
@@ -138,9 +149,12 @@ describe('useAccountSummaryQuery', () => {
             holdingsCount: 5,
         })
 
-        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountSummaryQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(10))

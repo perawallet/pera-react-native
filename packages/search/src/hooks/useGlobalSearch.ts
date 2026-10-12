@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react'
 import {
     useAllAccounts,
     useOwnedAssets,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 import type {
@@ -34,6 +35,13 @@ import {
 
 const DEFAULT_DEBOUNCE_MS = 300
 
+// Search spans every chain the account is on, so a query matches any of its addresses.
+const addressesOf = (account: WalletAccount): string[] =>
+    Object.values(account.chains).flatMap(entry => entry?.address ?? [])
+
+const sortKeyOf = (account: WalletAccount): string =>
+    account.name ?? addressesOf(account)[0] ?? ''
+
 export type RemoteAssetsOptions = {
     /** Restrict remote asset results to collectibles (NFTs). */
     hasCollectible?: boolean
@@ -42,6 +50,9 @@ export type RemoteAssetsOptions = {
      *  (accounts, contacts, owned assets) remain empty until the user types. */
     showOnEmptyQuery?: boolean
 }
+
+// Search reaches chain scopes only through accounts, so it borrows that type.
+type ChainScope = Parameters<typeof useOwnedAssets>[0]
 
 export type UseGlobalSearchOptions = {
     debounceMs?: number
@@ -75,6 +86,7 @@ export type UseGlobalSearchResult = {
 }
 
 export const useGlobalSearch = (
+    chainScope: ChainScope,
     options?: UseGlobalSearchOptions,
 ): UseGlobalSearchResult => {
     const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS
@@ -96,7 +108,7 @@ export const useGlobalSearch = (
     const { findContacts } = useContacts()
 
     const { assets: allOwnedAssets, isLoading: isOwnedAssetsLoading } =
-        useOwnedAssets({ enabled: includesAssets })
+        useOwnedAssets(chainScope, { enabled: includesAssets })
 
     const ownedAssets = useMemo<PeraAsset[]>(() => {
         if (!includesAssets) return []
@@ -129,13 +141,12 @@ export const useGlobalSearch = (
             ? accounts
                   .filter(
                       account =>
-                          account.address.toLowerCase().includes(lowered) ||
-                          account.name?.toLowerCase().includes(lowered),
+                          addressesOf(account).some(address =>
+                              address.toLowerCase().includes(lowered),
+                          ) || account.name?.toLowerCase().includes(lowered),
                   )
                   .slice()
-                  .sort((a, b) =>
-                      compare(a.name ?? a.address, b.name ?? b.address),
-                  )
+                  .sort((a, b) => compare(sortKeyOf(a), sortKeyOf(b)))
             : []
 
         const matchingContacts = includesContacts

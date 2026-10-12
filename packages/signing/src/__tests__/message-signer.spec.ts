@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     ChainAdapterNotRegisteredError,
+    type ChainId,
     type MessageRequest,
     type SigningRequest,
 } from '@perawallet/wallet-core-chain-contract'
@@ -22,14 +23,19 @@ import {
     arbitraryDataMessageRequest,
     authDataMessageRequest,
     buildSiwxAuthData,
+    canSignMessage,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     messageSignerFor,
     parseAuthDataWireRequest,
+    signsMessageVerifiably,
     signMessages,
     type MessageSignerChainAdapter,
 } from '../message-signer'
-import { registerFakeMessageSignerAdapter } from './fakeMessageSignerAdapter'
+import {
+    fakeMessageSignerAdapter,
+    registerFakeMessageSignerAdapter,
+} from './fakeMessageSignerAdapter'
 
 const CHAIN = 'algorand'
 
@@ -101,6 +107,35 @@ describe('messageSignerFor', () => {
     })
 })
 
+describe('canSignMessage and signsMessageVerifiably', () => {
+    const account = { id: 'a' } as never
+
+    it("answer from the chain's message signer", () => {
+        const overrides: Partial<MessageSignerChainAdapter> = {
+            canSign: vi.fn(() => true),
+            signsVerifiably: vi.fn(() => false),
+        }
+        registerFakeMessageSignerAdapter(overrides)
+
+        expect(canSignMessage(CHAIN, account, 'authData')).toBe(true)
+        expect(signsMessageVerifiably(CHAIN, account, 'arbitraryData')).toBe(
+            false,
+        )
+        expect(overrides.canSign).toHaveBeenCalledWith(account, 'authData')
+        expect(overrides.signsVerifiably).toHaveBeenCalledWith(
+            account,
+            'arbitraryData',
+        )
+    })
+
+    it('fail closed on a chain with no message signer', () => {
+        messageSignerChainAdapters.reset()
+
+        expect(canSignMessage(CHAIN, account, 'authData')).toBe(false)
+        expect(signsMessageVerifiably(CHAIN, account, 'authData')).toBe(false)
+    })
+})
+
 describe('message request builders', () => {
     const scope = { chainId: CHAIN, networkId: 'mainnet' }
 
@@ -131,17 +166,16 @@ describe('message request builders', () => {
 describe('signMessages', () => {
     const scope = { chainId: CHAIN, networkId: 'mainnet' }
     const account = {
-        address: 'ADDR',
-        keyPairId: 'key-1',
         custody: { kind: 'local', seed: null },
+        chains: { [CHAIN]: { address: 'ADDR', keyPairId: 'key-1' } },
     } as unknown as WalletAccount
     const context = { account, accounts: [account] }
 
     const request = (data: string): MessageRequest =>
-        arbitraryDataMessageRequest(scope, account.address, data)
+        arbitraryDataMessageRequest(scope, 'ADDR', data)
     const planOf = (
         request: MessageRequest,
-        signer = account.address,
+        signer = 'ADDR',
     ): SigningRequest[] => [
         {
             requestIndex: 0,
@@ -247,9 +281,44 @@ describe('signMessages', () => {
         expect(signPayloads).not.toHaveBeenCalled()
     })
 
+    it('refuses a batch whose requests need different keys, since one key signs it', async () => {
+        arrange()
+        const OTHER = 'other' as ChainId
+        messageSignerChainAdapters.register(
+            fakeMessageSignerAdapter({
+                chainId: OTHER,
+                plan: vi.fn(message => planOf(message)),
+            }),
+        )
+        const twoKeys = {
+            ...account,
+            chains: {
+                [CHAIN]: { address: 'ADDR', keyPairId: 'key-1' },
+                [OTHER]: { address: 'ADDR', keyPairId: 'key-2' },
+            },
+        } as unknown as WalletAccount
+        const elsewhere = arbitraryDataMessageRequest(
+            { chainId: OTHER, networkId: 'mainnet' },
+            'ADDR',
+            'b',
+        )
+
+        await expect(
+            signMessages(
+                [request('a'), elsewhere],
+                { account: twoKeys, accounts: [twoKeys] },
+                { signPayloads },
+            ),
+        ).rejects.toThrow(/share a signing key/)
+        expect(signPayloads).not.toHaveBeenCalled()
+    })
+
     it('refuses an account with no key pair', async () => {
         arrange()
-        const keyless = { ...account, keyPairId: undefined }
+        const keyless = {
+            ...account,
+            chains: { [CHAIN]: { address: 'ADDR' } },
+        } as unknown as WalletAccount
 
         await expect(
             signMessages(

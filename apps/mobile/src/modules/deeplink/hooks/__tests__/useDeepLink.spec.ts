@@ -71,7 +71,7 @@ vi.mock('../../parser', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const { microAlgosToAlgos } = await vi.importActual<
+    const { baseUnitsToDisplayUnits } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
 
@@ -92,7 +92,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
-        microAlgosToAlgos,
+        baseUnitsToDisplayUnits,
     }
 })
 
@@ -149,7 +149,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
             : mockOnlineKeyRegistration(params),
 }))
 
-// Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
+// Re-mocks only what useDeepLink consumes. Keeps
 // `isValidAlgorandAddress` / `useNetwork` consistent with the global
 // vitest.setup.ts contract.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
@@ -168,6 +168,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useNetwork: () => ({
         network: 'mainnet',
         networkConfig: { genesisId: 'mainnet-v1.0' },
@@ -178,13 +180,24 @@ const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'addr1' }),
-    useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
+    useSelectedAccount: () => ({
+        id: 'selected',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'addr1' } },
+    }),
+    useSelectedAccountId: () => ({ setSelectedAccountId: vi.fn() }),
+    useAccountsStore: { getState: () => ({ accounts: [] }) },
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
+    hdIndexOf: () => undefined,
     useAllAccounts: () => [
         {
-            address: 'A'.repeat(58),
             id: 'mock',
             custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'A'.repeat(58) } },
         },
     ],
     resolveAuthAccount: (account: unknown) => account,
@@ -194,10 +207,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         kind: 'ok',
         signer: account,
     }),
-    resolveImportAccountType: (mnemonic: string) => {
+    detectImportKind: (_chainId: string, mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/\s+/).length
-        if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
-        if (wordCount === 25) return { success: true, accountType: 'algo25' }
+        if (wordCount === 24) return { success: true, seed: 'bip39' }
+        if (wordCount === 25) return { success: true, seed: null }
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
@@ -1835,7 +1848,7 @@ describe('useDeepLink', () => {
         expect(mockImportAccount).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
             screen: 'ImportAccount',
-            params: { accountType: 'hdWallet' },
+            params: { accountType: 'bip39' },
         })
     })
 
@@ -1861,7 +1874,7 @@ describe('useDeepLink', () => {
         )
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
             screen: 'ImportAccount',
-            params: { accountType: 'algo25' },
+            params: { accountType: null },
         })
     })
 

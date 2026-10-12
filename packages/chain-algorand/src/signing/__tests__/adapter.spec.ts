@@ -19,6 +19,7 @@ import {
     groupTransactions,
     useFetchSuggestedMinFee,
 } from '../../blockchain'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
@@ -203,5 +204,52 @@ describe('algorandMessageSignerAdapter.signerPublicKey', () => {
         expect(() =>
             algorandMessageSignerAdapter.signerPublicKey('not-an-address'),
         ).toThrow()
+    })
+})
+
+describe('algorandMessageSignerAdapter.signsVerifiably', () => {
+    const accountWith = (custody: WalletAccount['custody']): WalletAccount => ({
+        id: 'a1',
+        custody,
+        chains: { algorand: { address: senderA.toString(), keyPairId: 'k1' } },
+    })
+
+    test.each(['arbitraryData', 'authData'] as const)(
+        "refuses a quantum account's %s signature, which no dApp can verify",
+        kind => {
+            expect(
+                algorandMessageSignerAdapter.signsVerifiably(
+                    accountWith({ kind: 'local', seed: 'quantum' }),
+                    kind,
+                ),
+            ).toBe(false)
+        },
+    )
+
+    test.each([
+        ['standalone', { kind: 'local', seed: null }],
+        ['HD', { kind: 'local', seed: 'bip39' }],
+        ['watch', { kind: 'watch' }],
+        ['multisig', { kind: 'multisig' }],
+        [
+            'Ledger',
+            {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+        ],
+    ] as const)('accepts a %s account', (_, custody) => {
+        expect(
+            algorandMessageSignerAdapter.signsVerifiably(
+                accountWith(custody as WalletAccount['custody']),
+                'authData',
+            ),
+        ).toBe(true)
     })
 })

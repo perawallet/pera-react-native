@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryResult } from '../models/types'
 import { fetchTransactionHistory } from '../history-adapter'
@@ -23,7 +23,7 @@ import {
 
 type FetchHistoryPage = (params: {
     accountAddress: string
-    network: Network
+    scope: ChainScope
     afterTime: string
     beforeTime: string
     limit: number
@@ -34,7 +34,7 @@ const defaultFetchHistory: FetchHistoryPage = params =>
 
 type BackfillParams = {
     db?: Database
-    network: Network
+    scope: ChainScope
     accountAddress: string
     /** Injectable for tests; defaults to the account history endpoint. */
     fetchHistory?: FetchHistoryPage
@@ -96,11 +96,10 @@ const groupIntoWindows = (
  */
 export async function backfillSwapAssetFacts({
     db,
-    network,
+    scope,
     accountAddress,
     fetchHistory = defaultFetchHistory,
 }: BackfillParams): Promise<void> {
-    const scope = scopeForLegacyNetwork(network)
     let windows: Window[]
     try {
         const rows = await getSwapRowsMissingAssetFacts({
@@ -118,7 +117,7 @@ export async function backfillSwapAssetFacts({
         try {
             const { transactions } = await fetchHistory({
                 accountAddress,
-                network,
+                scope,
                 afterTime,
                 beforeTime,
                 limit: PAGE_LIMIT,

@@ -56,21 +56,34 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mockSelectedAccountAddress,
-    }),
+    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
-        getState: () => ({
-            selectedAccountAddress: mockSelectedAccountAddress,
-        }),
+        getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
 }))
+
+const selectedAccountMock = () =>
+    mockSelectedAccountAddress === null
+        ? null
+        : {
+              id: 'selected',
+              custody: { kind: 'watch' },
+              chains: { algorand: { address: mockSelectedAccountAddress } },
+          }
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: mockNetwork }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
 }))
 
 // The order-review sheet (imported transitively by the confirm hook) pulls in

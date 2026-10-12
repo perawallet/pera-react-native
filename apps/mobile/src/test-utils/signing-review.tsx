@@ -54,10 +54,10 @@ import {
 } from '@perawallet/wallet-core-kms'
 import {
     buildAccount,
-    quantumDerivationFor,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
@@ -123,7 +123,7 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
         },
     })
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -137,7 +137,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
@@ -156,7 +156,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     })
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, account])
-    store.setSelectedAccountAddress(account.address)
+    store.setSelectedAccountId(account.id)
     return account
 }
 
@@ -223,6 +223,7 @@ export const buildTransactionSignRequest = ({
     const request: PeraTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         txs: txs ?? [buildPaymentTransaction()],
@@ -250,6 +251,7 @@ export const buildArbitraryDataSignRequest = ({
     const request: ArbitraryDataSignRequest = {
         id: `review-data-${Math.round(Math.random() * 1e9)}`,
         type: 'arbitrary-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         data: (messages ?? [{ message: 'Sign me' }]).map(m => ({
@@ -315,6 +317,7 @@ export const buildArc60SignRequest = ({
     const request: AuthDataSignRequest = {
         id: `review-arc60-${Math.round(Math.random() * 1e9)}`,
         type: 'auth-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         verifiedOrigin,

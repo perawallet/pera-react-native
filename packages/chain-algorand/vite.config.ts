@@ -41,6 +41,7 @@ export default defineConfig(
             'backup/index': resolve(__dirname, 'src/backup/index.ts'),
             'connect/index': resolve(__dirname, 'src/connect/index.ts'),
             'descriptor/index': resolve(__dirname, 'src/descriptor/index.ts'),
+            'device/index': resolve(__dirname, 'src/device/index.ts'),
         },
     }),
 )

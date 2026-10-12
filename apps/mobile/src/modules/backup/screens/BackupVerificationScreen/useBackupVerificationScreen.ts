@@ -20,9 +20,12 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    findAddressHolder,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
@@ -62,10 +65,11 @@ export const useBackupVerificationScreen =
         )
 
         const address = route.params?.address
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const account = useMemo<WalletAccount | null>(() => {
             if (!address) return null
-            return accounts.find(a => a.address === address) ?? null
-        }, [address, accounts])
+            return findAddressHolder(accounts, scope, address) ?? null
+        }, [address, accounts, scope])
 
         const { picks, isLoading, error } = useRandomMnemonicForAddress(
             address,
@@ -73,7 +77,7 @@ export const useBackupVerificationScreen =
             VERIFICATION_WORD_COUNT,
         )
 
-        const markBackupComplete = useMarkMnemonicBackupComplete()
+        const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
         const { t } = useLanguage()
         const { showToast } = useToast()
 

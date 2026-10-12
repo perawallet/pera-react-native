@@ -24,6 +24,7 @@ import { Decimal } from 'decimal.js'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { createTestQueryClient } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -43,9 +44,13 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 // USDC-like ASA with 6 decimals — same shape as the asset used in
 // existing send-asa / view-transactions fixtures so the math is easy to
@@ -73,16 +78,21 @@ const USDC_ASSET = {
 const ACCOUNT_A: WalletAccount = {
     id: 'portfolio-a',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'portfolio-a-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'portfolio-a-key',
+        },
+    },
     name: 'Trading',
 }
 
 const ACCOUNT_B: WalletAccount = {
     id: 'portfolio-b',
     custody: { kind: 'local', seed: null },
-    address: HD_TEST_ADDRESS,
-    keyPairId: 'portfolio-b-key',
+    chains: {
+        algorand: { address: HD_TEST_ADDRESS, keyPairId: 'portfolio-b-key' },
+    },
     name: 'Long-term',
 }
 
@@ -112,14 +122,14 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // ALGO balances (in micro-ALGO base units, matching what the
         // sync service writes after fetching from algod).
         await seedAlgorandAccountState({
-            accountAddress: ACCOUNT_A.address,
+            accountAddress: addressOf(ACCOUNT_A),
             scope: scopeForLegacyNetwork(NETWORK),
             nativeBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 1,
             minBalance: new Decimal(100_000),
         })
         await seedAlgorandAccountState({
-            accountAddress: ACCOUNT_B.address,
+            accountAddress: addressOf(ACCOUNT_B),
             scope: scopeForLegacyNetwork(NETWORK),
             nativeBalance: new Decimal(4_000_000), // 4 ALGO
             totalAssetsOptedIn: 1,
@@ -131,13 +141,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // are. The home-screen reads pull it from the holdings table, so it
         // must be seeded here rather than only on the account_chain_state row.
         await insertAssetHolding({
-            accountAddress: ACCOUNT_A.address,
+            accountAddress: addressOf(ACCOUNT_A),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
             amount: '10000000', // 10 ALGO
         })
         await insertAssetHolding({
-            accountAddress: ACCOUNT_B.address,
+            accountAddress: addressOf(ACCOUNT_B),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
             amount: '4000000', // 4 ALGO
@@ -146,13 +156,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // ASA holdings — both accounts hold USDC. Amounts are in base
         // units (USDC has 6 decimals → 1 USDC = 1_000_000 base units).
         await insertAssetHolding({
-            accountAddress: ACCOUNT_A.address,
+            accountAddress: addressOf(ACCOUNT_A),
             assetId: USDC_ASSET.assetId,
             scope: scopeForLegacyNetwork(NETWORK),
             amount: '50000000', // 50 USDC
         })
         await insertAssetHolding({
-            accountAddress: ACCOUNT_B.address,
+            accountAddress: addressOf(ACCOUNT_B),
             assetId: USDC_ASSET.assetId,
             scope: scopeForLegacyNetwork(NETWORK),
             amount: '20000000', // 20 USDC
@@ -185,18 +195,19 @@ describe('Flow: Dashboard portfolio aggregation', () => {
 
         const { result } = renderHook(
             () => {
-                const accounts = useSigningAccounts()
-                const balances = useAccountBalancesQuery(accounts, true)
-                const portfolio = useAccountValueTotalsQuery(accounts)
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const accounts = useSigningAccounts(scope.chainId)
+                const balances = useAccountBalancesQuery(accounts, scope, true)
+                const portfolio = useAccountValueTotalsQuery(accounts, scope)
                 return { accounts, balances, portfolio }
             },
             { wrapper },
         )
 
         // Both signing accounts make it through useSigningAccounts.
-        expect(result.current.accounts.map(a => a.address)).toEqual([
-            ACCOUNT_A.address,
-            ACCOUNT_B.address,
+        expect(result.current.accounts.map(a => addressOf(a))).toEqual([
+            addressOf(ACCOUNT_A),
+            addressOf(ACCOUNT_B),
         ])
 
         // Wait for both balance queries + asset metadata + prices to
@@ -213,10 +224,10 @@ describe('Flow: Dashboard portfolio aggregation', () => {
 
         // Per-account assetBalances cover both ALGO and USDC.
         const balanceA = result.current.balances.accountBalances.get(
-            ACCOUNT_A.address,
+            addressOf(ACCOUNT_A),
         )
         const balanceB = result.current.balances.accountBalances.get(
-            ACCOUNT_B.address,
+            addressOf(ACCOUNT_B),
         )
         expect(balanceA?.assetBalances.map(b => b.assetId).sort()).toEqual(
             ['0', USDC_ASSET.assetId].sort(),
@@ -229,10 +240,10 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // accounts — proves the aggregation crosses the per-account
         // boundary rather than collapsing on a single one.
         const totalA = result.current.portfolio.accountValueTotals.get(
-            ACCOUNT_A.address,
+            addressOf(ACCOUNT_A),
         )?.usdValue
         const totalB = result.current.portfolio.accountValueTotals.get(
-            ACCOUNT_B.address,
+            addressOf(ACCOUNT_B),
         )?.usdValue
         expect(totalA).toBeDefined()
         expect(totalB).toBeDefined()
@@ -262,9 +273,10 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         )
         const { result } = renderHook(
             () => {
-                const accounts = useSigningAccounts()
-                const balances = useAccountBalancesQuery(accounts, true)
-                const portfolio = useAccountValueTotalsQuery(accounts)
+                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const accounts = useSigningAccounts(scope.chainId)
+                const balances = useAccountBalancesQuery(accounts, scope, true)
+                const portfolio = useAccountValueTotalsQuery(accounts, scope)
                 return { accounts, balances, portfolio }
             },
             { wrapper },

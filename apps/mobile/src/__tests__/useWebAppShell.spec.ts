@@ -95,6 +95,7 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
         ...original,
         getKeystore: () => ({ ready: mocks.keystoreReady() }),
         getProvider: () => ({
+            chains: { has: () => false },
             database: {},
             initialize: mocks.platformInitialize,
         }),

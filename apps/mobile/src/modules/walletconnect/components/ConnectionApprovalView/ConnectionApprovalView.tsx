@@ -13,13 +13,16 @@
 import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
+    chainAccountOf,
     useAccountBalancesQuery,
     useSigningAccounts,
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { Network } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWFlatList, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -34,15 +37,21 @@ export type ConnectionApprovalViewProps = {
 export const ConnectionApprovalView = ({
     proposal,
 }: ConnectionApprovalViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
-    const signingAccounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts(scope.chainId)
     // Honor the user's account-overview sort order instead of raw store order.
-    const { accountBalances } = useAccountBalancesQuery(signingAccounts, true)
+    const { accountBalances } = useAccountBalancesQuery(
+        signingAccounts,
+        scope,
+        true,
+    )
     const { sortedAccounts } = useSortedAccounts(
         signingAccounts,
         accountBalances,
+        scope.chainId,
     )
     const {
         selectedAccounts,
@@ -60,11 +69,13 @@ export const ConnectionApprovalView = ({
         ({ item }: { item: WalletAccount }) => (
             <ConnectionApprovalAccountRow
                 account={item}
-                isSelected={selectedAccounts.includes(item.address)}
+                isSelected={selectedAccounts.includes(
+                    chainAccountOf(item, scope.chainId)?.address ?? '',
+                )}
                 onPress={handleAccountPress}
             />
         ),
-        [selectedAccounts, handleAccountPress],
+        [selectedAccounts, handleAccountPress, scope.chainId],
     )
 
     return (

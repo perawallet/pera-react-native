@@ -15,10 +15,7 @@ import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract
 import { renderHook, act } from '@testing-library/react'
 import { createWrapper } from '@test-utils'
 import { PeraNetworkError, type Network } from '@perawallet/wallet-core-shared'
-import {
-    DeviceAccountTypes,
-    type DeviceAccountRegistration,
-} from '../../models'
+import type { DeviceAccountRegistration } from '../../models'
 
 // Mock the registration transport and the raw endpoint separately:
 // `registerDevice` (the hook return value) always goes through the mutation,
@@ -98,7 +95,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 const accounts: DeviceAccountRegistration[] = [
     {
         address: 'ADDR_A',
-        accountType: DeviceAccountTypes.quantum,
+        accountType: 'signing-kind',
+        rank: 2,
         receiveNotifications: true,
     },
 ]
@@ -802,7 +800,8 @@ describe('services/device/hooks', () => {
         const accountsB: DeviceAccountRegistration[] = [
             {
                 address: 'ADDR_B',
-                accountType: DeviceAccountTypes.watch,
+                accountType: 'watch-kind',
+                rank: 1,
                 receiveNotifications: false,
             },
         ]
@@ -901,14 +900,16 @@ describe('services/device/hooks', () => {
         const accountsA: DeviceAccountRegistration[] = [
             {
                 address: 'ADDR_A',
-                accountType: DeviceAccountTypes.algo25,
+                accountType: 'signing-kind',
+                rank: 2,
                 receiveNotifications: false,
             },
         ]
         const accountsB: DeviceAccountRegistration[] = [
             {
                 address: 'ADDR_A',
-                accountType: DeviceAccountTypes.algo25,
+                accountType: 'signing-kind',
+                rank: 2,
                 receiveNotifications: true,
             },
         ]

@@ -11,12 +11,13 @@
  */
 
 import {
-    hasSigningKeys,
+    findAccountByAddressOn,
     isHardwareWalletAccount,
-    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import { canSignAsParticipant } from './participantEligibility'
 
 /**
  * Returns the local-signable participants of a multisig sign request that
@@ -43,6 +44,7 @@ import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 export const getLocalUnsignedSigners = (
     signRequest: MultisigSignRequest,
     allAccounts: WalletAccount[],
+    chainId: ChainId,
 ): WalletAccount[] => {
     const transactionList = signRequest.transactionLists[0]
     if (!transactionList) return []
@@ -57,18 +59,14 @@ export const getLocalUnsignedSigners = (
         .participantAddresses) {
         if (respondedAddresses.has(participantAddress)) continue
 
-        const account = allAccounts.find(a => a.address === participantAddress)
-        if (!account) continue
-        if (!hasSigningKeys(account) && !isHardwareWalletAccount(account))
-            continue
-        // Quantum participants carry their own keyPairId (hasSigningKeys is
-        // true), but multisig slots verify Ed25519 signatures only, and
-        // algosdk's own PQ signer rejects multisig signing outright — so a
-        // quantum participant can never contribute a usable subsignature.
-        // Mirrors packages/chain-algorand/src/signing/multisig/multisigParticipants.ts's
-        // getLocalParticipants; keep both in agreement rather than admitting
-        // quantum here instead.
-        if (isQuantumAccount(account)) continue
+        const account = findAccountByAddressOn(
+            allAccounts,
+            chainId,
+            participantAddress,
+        )
+        // A key minted under another scheme holds its own keyPairId but can
+        // never contribute a usable subsignature.
+        if (!account || !canSignAsParticipant(account, chainId)) continue
 
         result.push(account)
     }

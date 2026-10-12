@@ -54,9 +54,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 describe('useMarkMnemonicBackupComplete', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules()
         mockUseAccountsStore.mockReset()
+        const { registerFakeBackupAdapter } =
+            await import('../../../__tests__/fakeBackupAdapter')
+        registerFakeBackupAdapter()
     })
 
     test('marks the wallet root id when account is Algo25', async () => {
@@ -65,14 +68,16 @@ describe('useMarkMnemonicBackupComplete', () => {
             await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
+            id: 'account-1',
             custody: { kind: 'local', seed: null },
-            address: 'ADDR',
-            keyPairId: 'kp-1',
+            chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
         }
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(account)
         })
@@ -86,47 +91,39 @@ describe('useMarkMnemonicBackupComplete', () => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useMarkMnemonicBackupComplete } =
             await import('../useMarkMnemonicBackupComplete')
-
-        const hdDetails = {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: 9 as const,
-        }
         const a1: WalletAccount = {
+            id: 'a1-2',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'HD1',
-            keyPairId: 'kp-shared',
-            hdWalletDetails: hdDetails,
+            chains: { algorand: { address: 'HD1', keyPairId: 'kp-shared' } },
         }
         const a2: WalletAccount = {
+            id: 'a2-3',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 1 },
             },
-            address: 'HD2',
-            keyPairId: 'kp-shared',
-            hdWalletDetails: { ...hdDetails, keyIndex: 1 },
+            chains: { algorand: { address: 'HD2', keyPairId: 'kp-shared' } },
         }
         const a3: WalletAccount = {
+            id: 'a3-4',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'HD3',
-            keyPairId: 'kp-other',
-            hdWalletDetails: hdDetails,
+            chains: { algorand: { address: 'HD3', keyPairId: 'kp-other' } },
         }
 
         mockUseAccountsStore.mockReturnValue([a1, a2, a3])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(a1)
         })
@@ -142,13 +139,16 @@ describe('useMarkMnemonicBackupComplete', () => {
             await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
+            id: 'account-5',
             custody: { kind: 'watch' },
-            address: 'WATCH',
+            chains: { algorand: { address: 'WATCH' } },
         }
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('algorand'),
+        )
         act(() => {
             result.current(account)
         })

@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     AccountAlgoValues,
     AccountSortMode,
@@ -19,6 +20,7 @@ import type {
 } from '../models'
 import { getAccountDisplayName } from '../utils'
 import { useAccountsStore } from '../store'
+import { chainAccountOf } from '../credentials'
 
 type UseSortedAccountsResult = {
     sortedAccounts: WalletAccount[]
@@ -28,9 +30,11 @@ type UseSortedAccountsResult = {
     setManualAccountOrder: (order: string[]) => void
 }
 
+/** `accountBalances` is keyed by each account's address on `chainId`, which also names unnamed accounts. */
 export const useSortedAccounts = (
     accounts: WalletAccount[],
     accountBalances: AccountAlgoValues,
+    chainId: ChainId,
 ): UseSortedAccountsResult => {
     const sortMode = useAccountsStore(state => state.sortMode)
     const manualAccountOrder = useAccountsStore(
@@ -43,55 +47,41 @@ export const useSortedAccounts = (
 
     const sortedAccounts = useMemo(() => {
         const sorted = [...accounts]
+        const nameOf = (account: WalletAccount) =>
+            getAccountDisplayName(account, chainId)
+        const valueOf = (account: WalletAccount) => {
+            const address = chainAccountOf(account, chainId)?.address
+            return (
+                (address
+                    ? accountBalances.get(address)?.algoValue
+                    : undefined) ?? new Decimal(-1)
+            )
+        }
 
         switch (sortMode) {
             case 'alphabeticalAsc': {
-                sorted.sort((a, b) =>
-                    getAccountDisplayName(a).localeCompare(
-                        getAccountDisplayName(b),
-                    ),
-                )
+                sorted.sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
                 break
             }
             case 'alphabeticalDesc': {
-                sorted.sort((a, b) =>
-                    getAccountDisplayName(b).localeCompare(
-                        getAccountDisplayName(a),
-                    ),
-                )
+                sorted.sort((a, b) => nameOf(b).localeCompare(nameOf(a)))
                 break
             }
             case 'balanceAsc': {
-                sorted.sort((a, b) => {
-                    const aVal =
-                        accountBalances.get(a.address)?.algoValue ??
-                        new Decimal(-1)
-                    const bVal =
-                        accountBalances.get(b.address)?.algoValue ??
-                        new Decimal(-1)
-                    return aVal.minus(bVal).toNumber()
-                })
+                sorted.sort((a, b) => valueOf(a).minus(valueOf(b)).toNumber())
                 break
             }
             case 'balanceDesc': {
-                sorted.sort((a, b) => {
-                    const aVal =
-                        accountBalances.get(a.address)?.algoValue ??
-                        new Decimal(-1)
-                    const bVal =
-                        accountBalances.get(b.address)?.algoValue ??
-                        new Decimal(-1)
-                    return bVal.minus(aVal).toNumber()
-                })
+                sorted.sort((a, b) => valueOf(b).minus(valueOf(a)).toNumber())
                 break
             }
             case 'manual': {
                 const orderMap = new Map(
-                    manualAccountOrder.map((addr, i) => [addr, i]),
+                    manualAccountOrder.map((id, i) => [id, i]),
                 )
                 sorted.sort((a, b) => {
-                    const aIdx = orderMap.get(a.address) ?? Infinity
-                    const bIdx = orderMap.get(b.address) ?? Infinity
+                    const aIdx = orderMap.get(a.id) ?? Infinity
+                    const bIdx = orderMap.get(b.id) ?? Infinity
                     return aIdx - bIdx
                 })
                 break
@@ -99,7 +89,7 @@ export const useSortedAccounts = (
         }
 
         return sorted
-    }, [accounts, sortMode, accountBalances, manualAccountOrder])
+    }, [accounts, sortMode, accountBalances, manualAccountOrder, chainId])
 
     return {
         sortedAccounts,

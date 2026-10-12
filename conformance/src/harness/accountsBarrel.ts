@@ -15,8 +15,8 @@ import { vi } from 'vitest'
 /**
  * The accounts barrel's hook-free modules, loaded for real, for a setup file's
  * `vi.mock('@perawallet/wallet-core-accounts')`. The app's own signer
- * (`signTransactionsWithLocalKey`) imports the barrel for its account-type
- * guards, and the barrel drags every accounts hook (multisig, staking,
+ * (`signTransactionsWithLocalKey`) imports the barrel for its account
+ * accessors and guards, and the barrel drags every accounts hook (multisig, staking,
  * currencies) along with them — none of which is reachable from a Node suite.
  *
  * Deliberately NOT the whole barrel: `./hooks`, `./db`, `./sync`, `./store`,
@@ -31,17 +31,19 @@ import { vi } from 'vitest'
 export const hookFreeAccountsModules = async (): Promise<object> => {
     const [
         models,
+        credentials,
+        multisig,
         utils,
         signerResolution,
         constants,
         errors,
         bip44,
         chainAdapter,
-        credentialScheme,
-        accessors,
         accountChainState,
     ] = await Promise.all([
         vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/credentials'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/multisig'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
         vi.importActual<object>(
             '@perawallet/wallet-core-accounts/signer-resolution',
@@ -53,25 +55,19 @@ export const hookFreeAccountsModules = async (): Promise<object> => {
             '@perawallet/wallet-core-accounts/chain-adapter',
         ),
         vi.importActual<object>(
-            '@perawallet/wallet-core-accounts/credentials/credentialScheme',
-        ),
-        vi.importActual<object>(
-            '@perawallet/wallet-core-accounts/credentials/accessors',
-        ),
-        vi.importActual<object>(
             '@perawallet/wallet-core-accounts/store/accountChainState',
         ),
     ])
     return {
         ...models,
+        ...credentials,
+        ...multisig,
         ...utils,
         ...signerResolution,
         ...constants,
         ...errors,
         ...bip44,
         ...chainAdapter,
-        ...credentialScheme,
-        ...accessors,
         ...accountChainState,
     }
 }

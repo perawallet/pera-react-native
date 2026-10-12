@@ -13,6 +13,19 @@
 // @vitest-environment node
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type {
+    MultisigSignRequest,
+    SignerResponse,
+} from '@perawallet/wallet-core-multisig'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 
 vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
     const actual = await importOriginal()
@@ -24,33 +37,23 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual }
 })
 
-import {
-    useAccountChainStateStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
-import type {
-    MultisigSignRequest,
-    SignerResponse,
-} from '@perawallet/wallet-core-multisig'
 import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 
 beforeEach(() => {
     useAccountChainStateStore.getState().resetState()
+    registerAlgorandMultisigAdapter()
 })
 
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: null },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildQuantumAccount = (address: string): WalletAccount => ({
     id: `quantum-${address}`,
     custody: { kind: 'local', seed: 'quantum' },
-    address,
-    keyPairId: `kp-${address}`,
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
@@ -65,14 +68,7 @@ const buildHardwareAccount = (address: string): WalletAccount => ({
         },
         accountIndex: 0,
     },
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address } },
 })
 
 const buildSignRequest = (
@@ -107,15 +103,23 @@ const buildSignRequest = (
 })
 
 describe('getLocalUnsignedSigners', () => {
+    beforeEach(() => {
+        registerAlgorandAccountsAdapter()
+    })
+
     it('returns local-key accounts whose address is a pending participant', () => {
         const a = buildAlgo25Account('A')
         const b = buildAlgo25Account('B')
         const accounts = [a, b]
         const signRequest = buildSignRequest(['A', 'B', 'C'])
 
-        const result = getLocalUnsignedSigners(signRequest, accounts)
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            accounts,
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['A', 'B'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A', 'B'])
     })
 
     it('excludes participants that already signed', () => {
@@ -126,9 +130,9 @@ describe('getLocalUnsignedSigners', () => {
             [{ address: 'A', response: 'signed' }],
         )
 
-        const result = getLocalUnsignedSigners(signRequest, [a, b])
+        const result = getLocalUnsignedSigners(signRequest, [a, b], 'algorand')
 
-        expect(result.map(x => x.address)).toEqual(['B'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['B'])
     })
 
     it('excludes participants that declined', () => {
@@ -139,9 +143,9 @@ describe('getLocalUnsignedSigners', () => {
             [{ address: 'B', response: 'declined' }],
         )
 
-        const result = getLocalUnsignedSigners(signRequest, [a, b])
+        const result = getLocalUnsignedSigners(signRequest, [a, b], 'algorand')
 
-        expect(result.map(x => x.address)).toEqual(['A'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A'])
     })
 
     it('includes hardware-wallet participants', () => {
@@ -149,9 +153,13 @@ describe('getLocalUnsignedSigners', () => {
         const ledger = buildHardwareAccount('L')
         const signRequest = buildSignRequest(['A', 'L'])
 
-        const result = getLocalUnsignedSigners(signRequest, [a, ledger])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [a, ledger],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['A', 'L'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A', 'L'])
     })
 
     it('orders non-hardware participants before hardware ones', () => {
@@ -159,9 +167,13 @@ describe('getLocalUnsignedSigners', () => {
         const ledger = buildHardwareAccount('L')
         const signRequest = buildSignRequest(['L', 'A'])
 
-        const result = getLocalUnsignedSigners(signRequest, [ledger, a])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [ledger, a],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['A', 'L'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A', 'L'])
     })
 
     it('excludes watch-only participants even when included in accounts', () => {
@@ -169,22 +181,26 @@ describe('getLocalUnsignedSigners', () => {
         const watch: WalletAccount = {
             id: 'watch-w',
             custody: { kind: 'watch' },
-            address: 'W',
+            chains: { algorand: { address: 'W' } },
         }
         const signRequest = buildSignRequest(['A', 'W'])
 
-        const result = getLocalUnsignedSigners(signRequest, [a, watch])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [a, watch],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['A'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A'])
     })
 
     it('excludes participant addresses that the user does not hold locally', () => {
         const a = buildAlgo25Account('A')
         const signRequest = buildSignRequest(['A', 'STRANGER'])
 
-        const result = getLocalUnsignedSigners(signRequest, [a])
+        const result = getLocalUnsignedSigners(signRequest, [a], 'algorand')
 
-        expect(result.map(x => x.address)).toEqual(['A'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A'])
     })
 
     it('excludes a watch participant rekeyed to a local-key account (multisig slot needs participant key)', () => {
@@ -192,12 +208,16 @@ describe('getLocalUnsignedSigners', () => {
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-local',
             custody: { kind: 'watch' },
-            address: 'PARTICIPANT',
+            chains: { algorand: { address: 'PARTICIPANT' } },
         }
         seedAuthority('PARTICIPANT', 'AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
-        const result = getLocalUnsignedSigners(signRequest, [auth, rekeyed])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [auth, rekeyed],
+            'algorand',
+        )
 
         expect(result).toEqual([])
     })
@@ -207,12 +227,16 @@ describe('getLocalUnsignedSigners', () => {
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-hardware',
             custody: { kind: 'watch' },
-            address: 'PARTICIPANT',
+            chains: { algorand: { address: 'PARTICIPANT' } },
         }
         seedAuthority('PARTICIPANT', 'AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
-        const result = getLocalUnsignedSigners(signRequest, [auth, rekeyed])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [auth, rekeyed],
+            'algorand',
+        )
 
         expect(result).toEqual([])
     })
@@ -223,9 +247,15 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildHardwareAccount('AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
-        const result = getLocalUnsignedSigners(signRequest, [participant, auth])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [participant, auth],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['PARTICIPANT'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual([
+            'PARTICIPANT',
+        ])
     })
 
     it('includes a local-key participant even when rekeyed to another local-key account', () => {
@@ -234,9 +264,15 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildAlgo25Account('AUTH')
         const signRequest = buildSignRequest(['PARTICIPANT'])
 
-        const result = getLocalUnsignedSigners(signRequest, [participant, auth])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [participant, auth],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['PARTICIPANT'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual([
+            'PARTICIPANT',
+        ])
     })
 
     it('excludes a quantum participant even though it carries its own signing keys', () => {
@@ -247,7 +283,11 @@ describe('getLocalUnsignedSigners', () => {
         const quantum = buildQuantumAccount('Q')
         const signRequest = buildSignRequest(['Q'])
 
-        const result = getLocalUnsignedSigners(signRequest, [quantum])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [quantum],
+            'algorand',
+        )
 
         expect(result).toEqual([])
     })
@@ -257,9 +297,13 @@ describe('getLocalUnsignedSigners', () => {
         const a = buildAlgo25Account('A')
         const signRequest = buildSignRequest(['Q', 'A'])
 
-        const result = getLocalUnsignedSigners(signRequest, [quantum, a])
+        const result = getLocalUnsignedSigners(
+            signRequest,
+            [quantum, a],
+            'algorand',
+        )
 
-        expect(result.map(x => x.address)).toEqual(['A'])
+        expect(result.map(x => x.chains.algorand?.address)).toEqual(['A'])
     })
 
     it('returns empty when transactionLists is empty', () => {
@@ -267,7 +311,7 @@ describe('getLocalUnsignedSigners', () => {
         const signRequest = buildSignRequest(['A'])
         signRequest.transactionLists = []
 
-        const result = getLocalUnsignedSigners(signRequest, [a])
+        const result = getLocalUnsignedSigners(signRequest, [a], 'algorand')
 
         expect(result).toEqual([])
     })

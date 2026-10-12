@@ -21,6 +21,10 @@ const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -59,7 +63,9 @@ const mockAssetBalances = [
 describe('useAccountAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseSelectedAccount.mockReturnValue({ address: 'TEST_ADDRESS' })
+        mockUseSelectedAccount.mockReturnValue({
+            chains: { algorand: { address: 'TEST_ADDRESS' } },
+        })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],

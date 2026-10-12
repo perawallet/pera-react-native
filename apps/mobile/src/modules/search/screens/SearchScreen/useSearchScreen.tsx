@@ -14,16 +14,20 @@ import { useCallback, useMemo, useState } from 'react'
 import { useWindowDimensions } from 'react-native'
 import {
     type WalletAccount,
+    findAccountByAddressOn,
+    useAllAccounts,
     useResolveAssetHolderAddress,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
     useGlobalSearch,
     type SearchScope,
 } from '@perawallet/wallet-core-search'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
@@ -84,6 +88,7 @@ type SectionConfig = {
 }
 
 export const useSearchScreen = (): UseSearchScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const [scopes, setScopes] = useState<SearchScope[]>([...SEARCH_SCOPES])
     const toggleScope = useCallback((scope: SearchScope) => {
         setScopes(prev =>
@@ -93,13 +98,15 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         )
     }, [])
     const { value, setValue, results, hasResults, isLoading } = useGlobalSearch(
+        scope,
         {
             scopes,
         },
     )
     const navigation = useAppNavigation()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const resolveAssetHolderAddress = useResolveAssetHolderAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
+    const accounts = useAllAccounts()
+    const resolveAssetHolderAddress = useResolveAssetHolderAddress(scope)
     const { setSelectedContact } = useContacts()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -140,7 +147,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 toRow: (account: WalletAccount) => ({
                     type: 'account',
                     account,
-                    key: `account-${account.address}`,
+                    key: `account-${account.id}`,
                 }),
             },
             {
@@ -203,13 +210,13 @@ export const useSearchScreen = (): UseSearchScreenResult => {
 
     const onAccountPress = useCallback(
         (account: WalletAccount) => {
-            setSelectedAccountAddress(account.address)
+            setSelectedAccountId(account.id)
             navigation.navigate('TabBar', {
                 screen: 'Home',
                 params: { screen: 'AccountDetails' },
             })
         },
-        [navigation, setSelectedAccountAddress],
+        [navigation, setSelectedAccountId],
     )
 
     const onContactPress = useCallback(
@@ -227,8 +234,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             // and opt-out — so hand the selection to the real holder first or
             // the asset gets attributed to the account searched from.
             const holderAddress = await resolveAssetHolderAddress(asset.assetId)
-            if (holderAddress) {
-                setSelectedAccountAddress(holderAddress)
+            const holder = holderAddress
+                ? findAccountByAddressOn(accounts, scope.chainId, holderAddress)
+                : undefined
+            if (holder) {
+                setSelectedAccountId(holder.id)
             }
 
             navigation.navigate('TabBar', {
@@ -241,7 +251,13 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 },
             })
         },
-        [navigation, resolveAssetHolderAddress, setSelectedAccountAddress],
+        [
+            accounts,
+            navigation,
+            resolveAssetHolderAddress,
+            setSelectedAccountId,
+            scope.chainId,
+        ],
     )
 
     return {

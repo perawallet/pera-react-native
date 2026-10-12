@@ -14,8 +14,6 @@ import { useEffect, useRef, useState } from 'react'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { getCurrentApproval } from '@perawallet/wallet-core-browser-runtime'
 import { requireSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome'
-import { useVaultLockState } from '@modules/vault'
-import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import {
     getKeystore,
     getProvider,
@@ -42,6 +40,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
+import { useVaultLockState } from '@modules/vault'
+import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { queryClient } from '@providers/QueryProvider'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 

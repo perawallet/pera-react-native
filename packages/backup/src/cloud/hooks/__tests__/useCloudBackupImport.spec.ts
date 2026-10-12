@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 // Type-only, so it survives the `vi.mock` below and still holds every fixture
 // to the real payload schema — the drift this spec previously hid.
 import type { PulledAccount } from '../../restore/pullBackupItems'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // --- hoisted mock state + spies -------------------------------------------
 
@@ -22,6 +23,7 @@ const {
     storeState,
     setAccountsMock,
     importAccountMock,
+    importScopes,
     updateAccountMock,
     persistHDMasterKeyMock,
     seedKeysState,
@@ -41,9 +43,10 @@ const {
         }
     }
     return {
-        storeState: { accounts: [] as { address: string }[] },
+        storeState: { accounts: [] as WalletAccount[] },
         setAccountsMock: vi.fn(),
         importAccountMock: vi.fn(),
+        importScopes: [] as unknown[],
         updateAccountMock: vi.fn(),
         persistHDMasterKeyMock: vi.fn(),
         // The keystore's seed keys, as `useKMS().keys` exposes them.
@@ -70,13 +73,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     const { buildAccount } = await vi.importActual<
         Pick<typeof import('@perawallet/wallet-core-accounts'), 'buildAccount'>
     >('@perawallet/wallet-core-accounts/build-account')
-    // Same source module as `buildAccount`, so they share one registry.
-    const { accountsChainAdapters } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-accounts')
-    >('@perawallet/wallet-core-accounts/chain-adapter')
-    const { stubAccountsAdapter } =
-        await import('../../../__tests__/stubAccountsAdapter')
-    accountsChainAdapters.register(stubAccountsAdapter)
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {
             accounts: storeState.accounts,
@@ -87,19 +83,38 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     useAccountsStore.getState = () => ({ accounts: storeState.accounts })
 
     return {
-        AccountTypes: {
-            standalone: 'standalone',
-            hdWallet: 'hdWallet',
-            hardware: 'hardware',
-            multisig: 'multisig',
-            watch: 'watch',
-            quantum: 'quantum',
-        },
         buildAccount,
         DuplicateAccountError,
-        deriveHdAccount: deriveHdAccountMock,
+        // Stands in for the chain's record encoding of the parameters.
+        withMultisigParameters: (
+            account: WalletAccount,
+            chainId: 'algorand',
+            parameters: unknown,
+        ) => ({
+            ...account,
+            chains: {
+                ...account.chains,
+                [chainId]: {
+                    ...account.chains[chainId],
+                    native: { family: 'algorand', multisig: parameters },
+                },
+            },
+        }),
+        findAddressHolder: (
+            accounts: WalletAccount[],
+            scope: { chainId: string },
+            address: string,
+        ) =>
+            accounts.find(
+                account =>
+                    account.chains[scope.chainId as 'algorand']?.address ===
+                    address,
+            ),
         useAccountsStore,
-        useImportAccount: () => importAccountMock,
+        useImportAccount: (scope: unknown) => {
+            importScopes.push(scope)
+            return importAccountMock
+        },
         useUpdateAccount: () => updateAccountMock,
     }
 })
@@ -135,17 +150,23 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-shared')
     >()),
     generateOrderedUniqueId: () => `id-${idCounter++}`,
-    logger: { warn: vi.fn() },
+    logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
 // Imported after mocks are registered.
 import {
     ChainAdapterNotRegisteredError,
     addressCodecs,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { backupChainAdapters } from '../../../chain-adapter'
-import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import {
+    FakeBackupKinds,
+    fakeBackupAdapter,
+} from '../../../__tests__/fakeBackupAdapter'
 import { useCloudBackupImport } from '../useCloudBackupImport'
+import { chainBackupKind } from '../../models'
+import { UnsupportedBackupAccountTypeError } from '../../sync/types'
 
 // --- helpers ---------------------------------------------------------------
 
@@ -165,11 +186,13 @@ const derivedAt = (
 })
 
 const appendedKeyPairIds = (): (string | undefined)[] =>
-    (setAccountsMock.mock.calls.at(-1)?.[0] as { keyPairId?: string }[]).map(
-        account => account.keyPairId,
+    (setAccountsMock.mock.calls.at(-1)?.[0] as WalletAccount[]).map(
+        account => account.chains.algorand?.keyPairId,
     )
 
-const renderImport = () => renderHook(() => useCloudBackupImport()).result
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const renderImport = () => renderHook(() => useCloudBackupImport(SCOPE)).result
 
 const A_HEX_96 = 'aa'.repeat(96)
 const ENTROPY_HEX = 'bb'.repeat(32)
@@ -182,6 +205,23 @@ const captureIndices = (args: { mnemonicIndices?: Uint16Array }) => {
         submittedIndices = Array.from(args.mnemonicIndices)
 }
 
+/** An account the wallet already holds; its id is its address. */
+const held = (
+    address: string,
+    custody: WalletAccount['custody'] = { kind: 'watch' },
+): WalletAccount => ({
+    id: address,
+    custody,
+    chains: {
+        algorand: {
+            address,
+            ...(custody.kind === 'local'
+                ? { keyPairId: `key-${address}` }
+                : {}),
+        },
+    },
+})
+
 const watchAccount = (address: string): PulledAccount => ({
     address,
     addressPayload: { type: 'watch', address, customName: null },
@@ -190,6 +230,7 @@ const watchAccount = (address: string): PulledAccount => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    importScopes.length = 0
     storeState.accounts = []
     idCounter = 0
     callOrder.length = 0
@@ -227,13 +268,16 @@ beforeEach(() => {
     )
     // Default: each append to the store updates the live accounts list so
     // subsequent duplicate checks see prior writes.
-    setAccountsMock.mockImplementation((next: { address: string }[]) => {
+    setAccountsMock.mockImplementation((next: WalletAccount[]) => {
         storeState.accounts = next
     })
     importAccountMock.mockImplementation(
         async (args: { mnemonicIndices?: Uint16Array }) => {
             captureIndices(args)
-            const account = { address: 'ALGO25_ADDR', type: 'algo25' }
+            const account = held('ALGO25_ADDR', {
+                kind: 'local',
+                seed: null,
+            })
             storeState.accounts = [...storeState.accounts, account]
             return account
         },
@@ -248,22 +292,23 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: 'My Algo25',
                 },
                 secretsPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     mnemonic: 'abandon ability able',
                     address: 'ALGO25_ADDR',
                 },
             },
         ])
 
+        expect(importScopes.at(-1)).toEqual(SCOPE)
         expect(submittedIndices).toEqual([0, 1, 2])
         expect(importAccountMock).toHaveBeenCalledWith({
             mnemonicIndices: expect.any(Uint16Array),
-            type: 'standalone',
+            seed: null,
         })
         expect(updateAccountMock).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'My Algo25' }),
@@ -279,8 +324,8 @@ describe('useCloudBackupImport', () => {
             async (args: { mnemonicIndices?: Uint16Array }) => {
                 captureIndices(args)
                 const accounts = [
-                    { address: 'PQ_CANONICAL', type: 'quantum' },
-                    { address: 'PQ_LEGACY', type: 'quantum' },
+                    held('PQ_CANONICAL', { kind: 'local', seed: 'quantum' }),
+                    held('PQ_LEGACY', { kind: 'local', seed: 'quantum' }),
                 ]
                 storeState.accounts = [...storeState.accounts, ...accounts]
                 return accounts
@@ -292,12 +337,12 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'PQ_CANONICAL',
                 addressPayload: {
-                    type: 'quantum',
+                    type: FakeBackupKinds.quantum,
                     address: 'PQ_CANONICAL',
                     customName: 'My PQ',
                 },
                 secretsPayload: {
-                    type: 'quantum',
+                    type: FakeBackupKinds.quantum,
                     mnemonic: 'about above absent',
                     address: 'PQ_CANONICAL',
                 },
@@ -307,12 +352,12 @@ describe('useCloudBackupImport', () => {
         expect(submittedIndices).toEqual([3, 4, 5])
         expect(importAccountMock).toHaveBeenCalledWith({
             mnemonicIndices: expect.any(Uint16Array),
-            type: 'quantum',
+            seed: 'quantum',
         })
         // The name belongs to the backed-up address, not to the sibling
         // derivation the probe happened to adopt alongside it.
         expect(updateAccountMock).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'PQ_CANONICAL', name: 'My PQ' }),
+            expect.objectContaining({ id: 'PQ_CANONICAL', name: 'My PQ' }),
         )
         expect(updateAccountMock).toHaveBeenCalledTimes(1)
         expect(summary.imported).toBe(2)
@@ -326,7 +371,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: null,
                 },
@@ -347,12 +392,12 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ALGO25_ADDR',
                 addressPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
                     customName: null,
                 },
                 secretsPayload: {
-                    type: 'algo25',
+                    type: FakeBackupKinds.standalone,
                     mnemonic: 'not a word',
                     address: 'ALGO25_ADDR',
                 },
@@ -376,7 +421,6 @@ describe('useCloudBackupImport', () => {
         const appended = setAccountsMock.mock.calls[0][0]
         expect(appended).toContainEqual(
             expect.objectContaining({
-                address: 'WATCH_ADDR',
                 custody: { kind: 'watch' },
                 chains: { algorand: { address: 'WATCH_ADDR' } },
             }),
@@ -407,15 +451,7 @@ describe('useCloudBackupImport', () => {
         const appended = setAccountsMock.mock.calls[0][0]
         expect(appended).toContainEqual(
             expect.objectContaining({
-                address: 'LEDGER_ADDR',
                 name: 'My Ledger',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'DE:AD:BE:EF',
-                    deviceName: 'Ledger Nano X',
-                    accountIndex: 3,
-                    transportType: 'ble',
-                },
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -454,12 +490,6 @@ describe('useCloudBackupImport', () => {
         const appended = setAccountsMock.mock.calls[0][0]
         expect(appended).toContainEqual(
             expect.objectContaining({
-                address: 'MSIG_ADDR',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['A', 'B'],
-                    version: 1,
-                },
                 custody: { kind: 'multisig' },
                 chains: {
                     algorand: {
@@ -505,7 +535,7 @@ describe('useCloudBackupImport', () => {
     })
 
     test('skips an already-present address as skippedDuplicate, not imported', async () => {
-        storeState.accounts = [{ address: 'WATCH_ADDR' }]
+        storeState.accounts = [held('WATCH_ADDR')]
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
@@ -535,14 +565,115 @@ describe('useCloudBackupImport', () => {
         expect(
             setAccountsMock.mock.calls.some(call =>
                 call[0].some(
-                    (a: { address: string }) => a.address === 'GOOD_ADDR',
+                    (a: WalletAccount) =>
+                        a.chains.algorand?.address === 'GOOD_ADDR',
                 ),
             ),
         ).toBe(true)
     })
 
+    test("records an item of a kind the chain's adapter doesn't decode as that item's typed failure, importing the rest", async () => {
+        const unknownKind = chainBackupKind('fixtureChainAccount')
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'FIX_ADDR',
+                addressPayload: {
+                    type: unknownKind,
+                    address: 'FIX_ADDR',
+                    customName: null,
+                },
+                secretsPayload: {
+                    type: unknownKind,
+                    mnemonic: 'abandon ability able',
+                    address: 'FIX_ADDR',
+                },
+            },
+            watchAccount('GOOD_ADDR'),
+        ])
+
+        expect(summary.imported).toBe(1)
+        expect(summary.failed).toEqual([
+            {
+                address: 'FIX_ADDR',
+                reason: new UnsupportedBackupAccountTypeError(
+                    'fixtureChainAccount',
+                    'algorand',
+                ).message,
+            },
+        ])
+        expect(importAccountMock).not.toHaveBeenCalled()
+    })
+
+    test('refuses an item naming a parent seed for a kind the adapter decodes as a single key', async () => {
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'ALGO25_ADDR',
+                addressPayload: {
+                    type: FakeBackupKinds.standalone,
+                    address: 'ALGO25_ADDR',
+                    seedFirstDerivedAddress: 'FIRST',
+                    publicKey: '00',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                    customName: null,
+                },
+                secretsPayload: {
+                    type: FakeBackupKinds.standalone,
+                    mnemonic: 'abandon ability able',
+                    address: 'ALGO25_ADDR',
+                },
+            },
+        ])
+
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toHaveLength(1)
+        expect(importAccountMock).not.toHaveBeenCalled()
+    })
+
+    test('never derives an HD-shaped item whose kind the adapter does not decode', async () => {
+        const unknownKind = chainBackupKind('fixtureHdAccount')
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'FIRST',
+                addressPayload: {
+                    type: unknownKind,
+                    address: 'FIRST',
+                    seedFirstDerivedAddress: 'FIRST',
+                    publicKey: '00',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                    customName: null,
+                },
+                secretsPayload: null,
+            },
+        ])
+
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toEqual([
+            {
+                address: 'FIRST',
+                reason: new UnsupportedBackupAccountTypeError(
+                    'fixtureHdAccount',
+                    'algorand',
+                ).message,
+            },
+        ])
+        expect(deriveHdAccountMock).not.toHaveBeenCalled()
+        expect(setAccountsMock).not.toHaveBeenCalled()
+    })
+
     test('reports progress per backup entry, counting duplicates and failures', async () => {
-        storeState.accounts = [{ address: 'DUPE_ADDR' }]
+        storeState.accounts = [held('DUPE_ADDR')]
         isValidAddressMock.mockImplementation(
             (addr?: string) => addr !== 'BAD_ADDR',
         )
@@ -591,7 +722,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'HD_KEY_ADDR',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'HD_KEY_ADDR',
                     seedFirstDerivedAddress: 'SEED_FIRST_DERIVED',
                     publicKey: 'pk',
@@ -628,7 +759,6 @@ describe('useCloudBackupImport', () => {
         const appended = setAccountsMock.mock.calls.at(-1)?.[0]
         expect(appended).toContainEqual(
             expect.objectContaining({
-                address: 'HD_KEY_ADDR',
                 name: 'HD One',
                 custody: {
                     kind: 'local',
@@ -652,7 +782,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -672,7 +802,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ADDR-0-1',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'bb',
@@ -702,7 +832,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -722,7 +852,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'ADDR-0-1',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'bb',
@@ -766,7 +896,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',
@@ -821,7 +951,7 @@ describe('useCloudBackupImport', () => {
             {
                 address: 'FIRST',
                 addressPayload: {
-                    type: 'hdWallet',
+                    type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
                     seedFirstDerivedAddress: 'FIRST',
                     publicKey: 'aa',

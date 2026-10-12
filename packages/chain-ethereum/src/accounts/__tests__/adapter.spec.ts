@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { createFakeChainKeyStore } from '@perawallet/wallet-core-chain-contract/testing'
 import { createEthereumAccountsAdapter } from '../adapter'
@@ -52,6 +53,26 @@ describe('createEthereumAccountsAdapter', () => {
             family: 'evm',
             nonce: { latest: 0, pending: 0 },
         })
+    })
+
+    it('summarizes an account as holding no reserve', () => {
+        expect(
+            adapter.summarizeChainState(
+                adapter.toChainState({ authorityAddress: null }),
+            ),
+        ).toEqual({ reserveBalance: new Decimal(0), heldTokenCount: 0 })
+    })
+
+    it.each([
+        [
+            'an HD',
+            { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+            'hd',
+        ],
+        ['a private-key', { kind: 'local', seed: null }, 'standalone'],
+        ['a watch', { kind: 'watch' }, 'watch'],
+    ] as const)('names %s account by its custody', (_, custody, kindId) => {
+        expect(adapter.kindIdOf({ id: 'a', custody, chains: {} })).toBe(kindId)
     })
 
     it('reveals a private key through the keystore export', () => {

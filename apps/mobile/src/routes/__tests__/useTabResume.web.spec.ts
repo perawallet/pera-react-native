@@ -17,14 +17,14 @@ import { Decimal } from 'decimal.js'
 const {
     mockTakeTabResumeIntent,
     mockTakeTabResumeResult,
-    mockSetSelectedAccountAddress,
+    mockSetSelectedAccountId,
     mockOpenSendFunds,
     mockSuccessToast,
     surfaceState,
 } = vi.hoisted(() => ({
     mockTakeTabResumeIntent: vi.fn(),
     mockTakeTabResumeResult: vi.fn(),
-    mockSetSelectedAccountAddress: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     mockOpenSendFunds: vi.fn(),
     mockSuccessToast: vi.fn(),
     surfaceState: { current: 'popup' as string },
@@ -47,12 +47,28 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ successToast: mockSuccessToast }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [{ address: 'LEDGER_ADDR' }],
-    useSelectedAccountAddress: () => ({
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
-    }),
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    type TestAccount = {
+        id: string
+        chains: Record<string, { address: string }>
+    }
+    return {
+        useAllAccounts: (): TestAccount[] => [
+            {
+                id: 'ledger-id',
+                chains: { algorand: { address: 'LEDGER_ADDR' } },
+            },
+        ],
+        findAccountByAddressOn: (
+            accounts: TestAccount[],
+            chainId: string,
+            address: string,
+        ) => accounts.find(a => a.chains[chainId]?.address === address),
+        useSelectedAccountId: () => ({
+            setSelectedAccountId: mockSetSelectedAccountId,
+        }),
+    }
+})
 
 vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
@@ -91,7 +107,7 @@ describe('useTabResume (web)', () => {
         await flush()
 
         expect(navigate).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('reopens the swap on the same account with its pair and amount', async () => {
@@ -118,11 +134,9 @@ describe('useTabResume (web)', () => {
                 },
             }),
         )
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'LEDGER_ADDR',
-        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
         expect(
-            mockSetSelectedAccountAddress.mock.invocationCallOrder[0],
+            mockSetSelectedAccountId.mock.invocationCallOrder[0],
         ).toBeLessThan(navigate.mock.invocationCallOrder[0])
     })
 
@@ -149,9 +163,7 @@ describe('useTabResume (web)', () => {
                 shouldContinueToConfirm: true,
             }),
         )
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'LEDGER_ADDR',
-        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
     })
 
     it.each([
@@ -196,7 +208,7 @@ describe('useTabResume (web)', () => {
 
         expect(navigate).not.toHaveBeenCalled()
         expect(mockOpenSendFunds).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 })
 

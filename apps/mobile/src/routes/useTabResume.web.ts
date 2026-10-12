@@ -18,9 +18,11 @@ import {
 } from '@perawallet/wallet-core-browser-runtime'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
+    findAccountByAddressOn,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
@@ -73,7 +75,7 @@ export const useTabResume = (
     navigate: (screen: 'TabBar', params?: object) => void,
 ): (() => void) => {
     const accounts = useAllAccounts()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const openSendFunds = useSendFundsDeeplink()
     const canSwap = useCapability({ platform: 'swapTab', anyChain: 'swap' })
 
@@ -89,15 +91,17 @@ export const useTabResume = (
                 return
             }
             if (!intent) return
-            const { accountAddress } = intent
-            if (!accounts.some(account => account.address === accountAddress)) {
-                return
-            }
+            const account = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                intent.accountAddress,
+            )
+            if (!account) return
             // The Swap tab isn't registered while the capability is off.
             if (intent.flow === 'swap' && !canSwap) return
             // Before the screen mounts: Swap resets its form when the account
             // changes, and Send signs with the selected account.
-            setSelectedAccountAddress(accountAddress)
+            setSelectedAccountId(account.id)
 
             if (intent.flow === 'swap') {
                 navigate('TabBar', {
@@ -118,7 +122,7 @@ export const useTabResume = (
                 shouldContinueToConfirm: true,
             })
         })()
-    }, [accounts, setSelectedAccountAddress, navigate, openSendFunds, canSwap])
+    }, [accounts, setSelectedAccountId, navigate, openSendFunds, canSwap])
 }
 
 /**

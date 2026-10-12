@@ -11,7 +11,10 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinimumFeeCalculator } from '../useMinimumFeeCalculator'
 
@@ -35,7 +38,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('returns the planner hook assigner, called with the request untouched', async () => {
-        const { result } = renderHook(() => useMinimumFeeCalculator())
+        const { result } = renderHook(() => useMinimumFeeCalculator('algorand'))
         const params = { transactions, signableIndices: [0] }
 
         const outcome = await result.current.assignFeeToGroup(params)
@@ -43,5 +46,32 @@ describe('useMinimumFeeCalculator', () => {
         expect(result.current.assignFeeToGroup).toBe(assignFeeToGroup)
         expect(assignFeeToGroup).toHaveBeenCalledWith(params)
         expect(outcome).toBe(assigned)
+    })
+
+    it('keeps the fees of a group on a chain with no planner', async () => {
+        const { result } = renderHook(() =>
+            useMinimumFeeCalculator('fixturehex' as ChainId),
+        )
+
+        const outcome = await result.current.assignFeeToGroup({ transactions })
+
+        expect(outcome.transactions).toBe(transactions)
+        expect(outcome.adjustments).toEqual([])
+        expect(assignFeeToGroup).not.toHaveBeenCalled()
+        expect(chainHook).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls the same hooks when the chain changes between renders', () => {
+        const { result, rerender } = renderHook(
+            ({ chainId }: { chainId: ChainId }) =>
+                useMinimumFeeCalculator(chainId),
+            { initialProps: { chainId: 'algorand' as ChainId } },
+        )
+        expect(result.current.assignFeeToGroup).toBe(assignFeeToGroup)
+
+        rerender({ chainId: 'fixturehex' as ChainId })
+
+        expect(result.current.assignFeeToGroup).not.toBe(assignFeeToGroup)
+        expect(chainHook).toHaveBeenCalledTimes(2)
     })
 })

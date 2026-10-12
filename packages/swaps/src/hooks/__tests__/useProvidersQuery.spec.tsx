@@ -14,12 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useProvidersQuery } from '../useProvidersQuery'
 import { fetchProviders } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchProviders: vi.fn(),
@@ -49,7 +48,7 @@ describe('swaps/useProvidersQuery', () => {
     })
 
     test('returns providers on success', async () => {
-        const { result } = renderHook(() => useProvidersQuery(), {
+        const { result } = renderHook(() => useProvidersQuery(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -62,7 +61,7 @@ describe('swaps/useProvidersQuery', () => {
     test('data is undefined while pending', () => {
         vi.mocked(fetchProviders).mockReturnValue(new Promise(() => {}))
 
-        const { result } = renderHook(() => useProvidersQuery(), {
+        const { result } = renderHook(() => useProvidersQuery(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -73,7 +72,7 @@ describe('swaps/useProvidersQuery', () => {
     test('sets isError on failure', async () => {
         vi.mocked(fetchProviders).mockRejectedValue(new Error('Network error'))
 
-        const { result } = renderHook(() => useProvidersQuery(), {
+        const { result } = renderHook(() => useProvidersQuery(SCOPE), {
             wrapper: createWrapper(),
         })
 

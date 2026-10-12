@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -67,7 +68,9 @@ type ResolvedKey =
     | { privateKey: Uint8Array; parentKeyId?: string }
     | { skip: PasskeySkipReason }
 
+/** `chainId` names the chain whose first-derived address the payloads carry as `seedAddress`. */
 export const useCloudBackupPasskeyImport = (
+    chainId: ChainId,
     resolveSeedEntropy: SeedEntropyResolver,
 ): UseCloudBackupPasskeyImportResult => {
     const autofill = usePasskeyAutofillService()
@@ -142,7 +145,7 @@ export const useCloudBackupPasskeyImport = (
             if (!seedIds.has(seedAddress)) {
                 seedIds.set(
                     seedAddress,
-                    await resolveBackupSeedKeyId(seedAddress),
+                    await resolveBackupSeedKeyId(seedAddress, chainId),
                 )
             }
             const seedKeyId = seedIds.get(seedAddress) ?? null

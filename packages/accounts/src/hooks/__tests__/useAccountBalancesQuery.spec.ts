@@ -12,6 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
@@ -24,6 +25,9 @@ import {
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
+import { testAccount } from '../../__tests__/accountFactory'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 // Mock DB layer. The hook now reads enriched, pre-joined holdings (asset
 // metadata + USD price per row) via getAccountHoldingsPage, and ALGO is itself
@@ -58,10 +62,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         },
     }
 })
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
 
@@ -111,13 +111,10 @@ const createWrapper = () => {
         )
 }
 
-const account: WalletAccount = {
-    address: 'ADDR1',
-    name: 'Account 1',
+const account: WalletAccount = testAccount('local', 'ADDR1', {
     id: '1',
-    custody: { kind: 'local', seed: null },
-    canSign: true,
-} as WalletAccount
+    name: 'Account 1',
+})
 
 // Restore the global onlineManager singleton so an offline test can't leak
 // its state into subsequent tests.
@@ -140,7 +137,7 @@ describe('useAccountBalances', () => {
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -152,9 +149,12 @@ describe('useAccountBalances', () => {
     })
 
     it('returns empty data when no accounts provided', () => {
-        const { result } = renderHook(() => useAccountBalancesQuery([]), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([], SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         expect(result.current.accountBalances.size).toBe(0)
         expect(result.current.isPending).toBe(false)
@@ -168,7 +168,7 @@ describe('useAccountBalances', () => {
 
         const { result, rerender } = renderHook(
             ({ accounts }: { accounts: WalletAccount[] }) =>
-                useAccountBalancesQuery(accounts),
+                useAccountBalancesQuery(accounts, SCOPE),
             {
                 wrapper: createWrapper(),
                 initialProps: { accounts: [account] },
@@ -186,7 +186,7 @@ describe('useAccountBalances', () => {
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -206,7 +206,7 @@ describe('useAccountBalances', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -227,7 +227,7 @@ describe('useAccountBalances', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -257,7 +257,7 @@ describe('useAccountBalances', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -278,7 +278,7 @@ describe('useAccountBalances', () => {
         }
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account], true, filters),
+            () => useAccountBalancesQuery([account], SCOPE, true, filters),
             { wrapper: createWrapper() },
         )
 
@@ -300,7 +300,7 @@ describe('useAccountBalances', () => {
 
         const { result, rerender } = renderHook(
             ({ hideNfts }: { hideNfts: boolean }) =>
-                useAccountBalancesQuery([account], true, { hideNfts }),
+                useAccountBalancesQuery([account], SCOPE, true, { hideNfts }),
             { wrapper: createWrapper(), initialProps: { hideNfts: false } },
         )
 
@@ -326,7 +326,7 @@ describe('useAccountBalances', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -348,7 +348,7 @@ describe('useAccountBalances', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -366,12 +366,12 @@ describe('useAccountBalances', () => {
     })
 
     it('falls back to fetchAndPersistAccount when the chain-state row is missing', async () => {
-        const newAccount = { ...account, address: 'NEW_ADDR' } as WalletAccount
+        const newAccount = testAccount('local', 'NEW_ADDR', { id: '2' })
         mockGetAccountChainStateRow.mockReturnValueOnce(undefined)
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_656_000, 1)])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([newAccount]),
+            () => useAccountBalancesQuery([newAccount], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -379,7 +379,7 @@ describe('useAccountBalances', () => {
 
         expect(mockFetchAndPersistAccount).toHaveBeenCalledWith(
             'NEW_ADDR',
-            'mainnet',
+            SCOPE,
         )
         const algo = result.current.accountBalances
             .get('NEW_ADDR')
@@ -393,7 +393,7 @@ describe('useAccountBalances', () => {
         })
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([account], SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -404,7 +404,7 @@ describe('useAccountBalances', () => {
     describe('fiatValue', () => {
         const renderBalances = async () => {
             const { result } = renderHook(
-                () => useAccountBalancesQuery([account]),
+                () => useAccountBalancesQuery([account], SCOPE),
                 { wrapper: createWrapper() },
             )
             await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -479,7 +479,7 @@ describe('useAccountAssetBalanceQuery', () => {
         ])
 
         const { result } = renderHook(
-            () => useAccountAssetBalanceQuery(account, '123'),
+            () => useAccountAssetBalanceQuery(account, '123', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -493,7 +493,7 @@ describe('useAccountAssetBalanceQuery', () => {
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result } = renderHook(
-            () => useAccountAssetBalanceQuery(account, '123'),
+            () => useAccountAssetBalanceQuery(account, '123', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -503,7 +503,7 @@ describe('useAccountAssetBalanceQuery', () => {
 
     it('does not query when account is undefined', () => {
         const { result } = renderHook(
-            () => useAccountAssetBalanceQuery(undefined, '123'),
+            () => useAccountAssetBalanceQuery(undefined, '123', SCOPE),
             { wrapper: createWrapper() },
         )
 

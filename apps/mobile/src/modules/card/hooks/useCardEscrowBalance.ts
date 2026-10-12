@@ -16,7 +16,7 @@ import {
     getCardSettlementAssetId,
     useCardStore,
 } from '@perawallet/wallet-core-card'
-import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
+import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useCardScope } from './useCardScope'
@@ -41,21 +41,23 @@ export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
 
-    const { data: accountInformation, isPending } =
-        useOnChainAccountInformationQuery(escrowCardAddress ?? '')
+    const { data: accountState, isPending } = useOnChainAccountStateQuery(
+        escrowCardAddress ?? '',
+        scope,
+    )
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
 
     const balance = useMemo(() => {
         if (usdcAssetId === null) return ZERO_BALANCE
-        const holding = accountInformation?.assets.find(
-            asset => String(asset.assetId) === usdcAssetId,
+        const holding = accountState?.holdings.find(
+            asset => asset.assetId === usdcAssetId,
         )
         if (holding === undefined) return ZERO_BALANCE
         return baseUnitsToDisplayUnits(
             holding.amount,
             assets.get(usdcAssetId)?.decimals ?? USDC_FALLBACK_DECIMALS,
         )
-    }, [accountInformation, assets, usdcAssetId])
+    }, [accountState, assets, usdcAssetId])
 
     return {
         balance,

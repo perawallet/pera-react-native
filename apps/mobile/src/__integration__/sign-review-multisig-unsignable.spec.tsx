@@ -43,13 +43,20 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const unsignableMultisig: MultiSigAccount = {
     id: 'msig-unsignable',
     custody: { kind: 'multisig' },
-    address: MSIG_ADDRESS,
-    name: 'Shared (unsignable)',
-    multisigDetails: {
-        threshold: 1,
-        addresses: [REVIEW_SIGNER_ADDRESS],
-        version: 1,
+    chains: {
+        algorand: {
+            address: MSIG_ADDRESS,
+            native: {
+                family: 'algorand',
+                multisig: {
+                    threshold: 1,
+                    addresses: [REVIEW_SIGNER_ADDRESS],
+                    version: 1,
+                },
+            },
+        },
     },
+    name: 'Shared (unsignable)',
 }
 
 describe('Flow: multisig-unsignable transaction review', () => {

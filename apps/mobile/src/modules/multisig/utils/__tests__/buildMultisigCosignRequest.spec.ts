@@ -92,12 +92,13 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
 
         expect(result.type).toBe('transactions')
+        expect(result.chainId).toBe('algorand')
         expect(result.transport).toBe('callback')
         expect(result.sourceType).toBe('multisig-cosign')
         expect(result.signRequestId).toBe('sr-42')
@@ -109,7 +110,7 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
@@ -125,7 +126,7 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
@@ -143,14 +144,14 @@ describe('buildMultisigCosignRequest', () => {
         const a = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
         const b = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
@@ -168,14 +169,14 @@ describe('buildMultisigCosignRequest', () => {
         const first = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
         const second = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction,
             localAccounts: [],
         })
@@ -191,7 +192,7 @@ describe('buildMultisigCosignRequest', () => {
             buildMultisigCosignRequest({
                 signRequest,
                 signerAddress: 'A',
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 decodeTransaction,
                 localAccounts: [],
             }),
@@ -205,7 +206,7 @@ describe('buildMultisigCosignRequest', () => {
         buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            network,
+            scope: { chainId: 'algorand', networkId: network },
             decodeTransaction: vi.fn(() => txFrom()),
             localAccounts,
         })
@@ -218,7 +219,7 @@ describe('buildMultisigCosignRequest', () => {
         buildMultisigCosignRequest({
             signRequest,
             signerAddress: 'A',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             decodeTransaction: vi.fn(() => txFrom()),
             localAccounts: [],
         })
@@ -235,10 +236,12 @@ describe('buildMultisigCosignRequest', () => {
         // where a watch account is rekeyed to a shared multisig (see the
         // sign-multisig-rekeyed integration test).
         vi.mocked(authorityOf).mockImplementation(account =>
-            account.address === 'REKEYED_SENDER' ? 'MULTISIG' : null,
+            account.chains.algorand?.address === 'REKEYED_SENDER'
+                ? 'MULTISIG'
+                : null,
         )
         const senders = authorizedSendersFor([
-            { address: 'REKEYED_SENDER' },
+            { chains: { algorand: { address: 'REKEYED_SENDER' } } },
         ] as WalletAccount[])
 
         expect(senders).toEqual(new Set(['MULTISIG', 'REKEYED_SENDER']))
@@ -248,10 +251,12 @@ describe('buildMultisigCosignRequest', () => {
     // stands alone for any sender whose auth-addr is S — not only sender === S.
     it("does not authorize an account the co-signer's own key authorizes", () => {
         vi.mocked(authorityOf).mockImplementation(account =>
-            account.address === 'REKEYED_TO_SIGNER' ? 'A' : null,
+            account.chains.algorand?.address === 'REKEYED_TO_SIGNER'
+                ? 'A'
+                : null,
         )
         const senders = authorizedSendersFor([
-            { address: 'REKEYED_TO_SIGNER' },
+            { chains: { algorand: { address: 'REKEYED_TO_SIGNER' } } },
         ] as WalletAccount[])
 
         expect(senders).toEqual(new Set(['MULTISIG']))
@@ -259,14 +264,14 @@ describe('buildMultisigCosignRequest', () => {
 
     it("reads the sender's rekey on the request's own network", () => {
         vi.mocked(authorityOf).mockImplementation((account, scope) =>
-            account.address === 'REKEYED_ELSEWHERE' &&
+            account.chains.algorand?.address === 'REKEYED_ELSEWHERE' &&
             scope?.networkId === 'testnet'
                 ? 'MULTISIG'
                 : null,
         )
         const accounts = [
-            { address: 'REKEYED_ELSEWHERE' },
-        ] as unknown as WalletAccount[]
+            { chains: { algorand: { address: 'REKEYED_ELSEWHERE' } } },
+        ] as WalletAccount[]
 
         expect(authorizedSendersFor(accounts, 'testnet')).toEqual(
             new Set(['MULTISIG', 'REKEYED_ELSEWHERE']),
@@ -279,8 +284,8 @@ describe('buildMultisigCosignRequest', () => {
 
     it('does not authorize a local sender the joint account does not authorize', () => {
         const senders = authorizedSendersFor([
-            { address: 'OTHER_LOCAL' },
-        ] as unknown as WalletAccount[])
+            { chains: { algorand: { address: 'OTHER_LOCAL' } } },
+        ] as WalletAccount[])
 
         expect(senders).toEqual(new Set(['MULTISIG']))
     })
@@ -295,7 +300,7 @@ describe('buildMultisigCosignRequest', () => {
             buildMultisigCosignRequest({
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
             }),
@@ -309,7 +314,7 @@ describe('buildMultisigCosignRequest', () => {
             buildMultisigCosignRequest({
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
             }),

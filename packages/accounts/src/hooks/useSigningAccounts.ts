@@ -11,19 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '../store'
 import { canSignWith } from '../signer-resolution'
 import { useSelectedChainStates } from './useSelectedChainStates'
 
-export const useSigningAccounts = () => {
+/** Held accounts something held can sign for on `chainId`. */
+export const useSigningAccounts = (chainId: ChainId) => {
     const accounts = useAccountsStore(state => state.accounts)
-    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
+    const chainStates = useSelectedChainStates(chainId)
     return useMemo(
         () =>
-            accounts.filter(account =>
-                canSignWith(account, accounts, LEGACY_CHAIN_ID),
-            ),
-        [accounts, chainStates],
+            accounts.filter(account => canSignWith(account, accounts, chainId)),
+        [accounts, chainId, chainStates],
     )
 }

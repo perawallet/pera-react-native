@@ -13,7 +13,10 @@
 import type { Platform } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
@@ -24,11 +27,7 @@ import {
     type XoOrder,
     type XoQuote,
 } from '@perawallet/wallet-core-onramp'
-import {
-    ALGO_ASSET_NAME,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_NAME, type Nullable } from '@perawallet/wallet-core-shared'
 
 /** Payment-method ids excluded on the given platform (matches the web filter). */
 export const getExcludedPaymentMethodIds = (
@@ -49,13 +48,15 @@ export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
  */
 export const resolveDestinationAssetId = (
     pair: RampPair,
-    network: Network,
+    scope: ChainScope,
 ): Nullable<bigint | typeof ALGO_ASSET_NAME> => {
     const { destinationToken } = pair
-    if (isNativeRampToken(destinationToken, network)) return ALGO_ASSET_NAME
+    if (isNativeRampToken(destinationToken, legacyNetworkOf(scope))) {
+        return ALGO_ASSET_NAME
+    }
 
     // No known USDC id on this network — there is no ASA to opt into.
-    const usdcAssetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
+    const usdcAssetId = getKnownAssetId('USDC', scope)
     return usdcAssetId === null ? null : BigInt(usdcAssetId)
 }
 

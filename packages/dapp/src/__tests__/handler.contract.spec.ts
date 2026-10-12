@@ -20,6 +20,7 @@ const ORIGIN = 'https://contract.example'
 dappRequestChainAdapters.register({
     chainId: 'algorand',
     relayableErrorNames: [],
+    accountTypeOf: () => 'Fixture',
     parseSigningParams: (_type, params) => ({ ok: true, payload: params.txns }),
     resolveReportedNetwork: scope => scope.networkId,
     emptySignaturesFor: () => ({}),

@@ -38,8 +38,7 @@ import { useAutoDrawSwitch } from '../useAutoDrawSwitch'
 const localAccount: WalletAccount = {
     id: 'a1',
     custody: { kind: 'local', seed: null },
-    address: 'FUNDINGADDR',
-    keyPairId: 'kp1',
+    chains: { algorand: { address: 'FUNDINGADDR', keyPairId: 'kp1' } },
 } as WalletAccount
 
 const ledgerAccount: WalletAccount = {
@@ -54,7 +53,7 @@ const ledgerAccount: WalletAccount = {
         },
         accountIndex: 0,
     },
-    address: 'LEDGERADDR',
+    chains: { algorand: { address: 'LEDGERADDR' } },
 } as WalletAccount
 
 beforeEach(() => {

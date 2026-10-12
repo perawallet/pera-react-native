@@ -16,6 +16,7 @@ import type {
     LegacyHDKey,
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
+import { algorandAddressOf } from '../../accounts/vocabulary'
 import { hdWalletEntropyToIndices } from './legacyKeyConversion'
 import type {
     ImportedHdRoot,
@@ -36,9 +37,10 @@ export const migrateHdAccount = async (
         keyIndex: childKey.keyIndex,
     })
 
-    if (created.address !== account.address) {
+    const createdAddress = algorandAddressOf(created)
+    if (createdAddress !== account.address) {
         throw new Error(
-            `Derived address ${created.address} did not match legacy address ${account.address}`,
+            `Derived address ${createdAddress} did not match legacy address ${account.address}`,
         )
     }
 
@@ -47,12 +49,12 @@ export const migrateHdAccount = async (
 
 const lookupHdParentAndChild = ({
     account,
-    hdWalletsById,
+    hdSeedsById,
 }: MigrateAccountArgs): { parent: LegacyHDWallet; childKey: LegacyHDKey } => {
-    const walletId = account.hdWalletId
-    if (!walletId) throw new Error('HD account missing hdWalletId')
+    const walletId = account.hdSeedId
+    if (!walletId) throw new Error('HD account missing hdSeedId')
 
-    const parent = hdWalletsById.get(walletId)
+    const parent = hdSeedsById.get(walletId)
     if (!parent)
         throw new Error(`HD parent wallet ${walletId} not found in payload`)
 

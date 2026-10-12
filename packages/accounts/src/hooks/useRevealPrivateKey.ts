@@ -16,7 +16,6 @@ import { accountsChainAdapters } from '../chain-adapter'
 import { standaloneSecretOf } from '../credentials/accessors'
 import { PrivateKeyRevealUnsupportedError } from '../errors'
 import { useAccountsStore } from '../store'
-import { isStandaloneAccount } from '../utils'
 
 export type UseRevealPrivateKeyResult = {
     /**
@@ -40,7 +39,7 @@ export const useRevealPrivateKey = (): UseRevealPrivateKeyResult => {
         const account = useAccountsStore
             .getState()
             .accounts.find(a => a.id === accountId)
-        const entries = Object.entries(account?.chains ?? {})
+        const entries = account ? Object.entries(account.chains) : []
         const [chainId, entry] = entries.length === 1 ? entries[0]! : []
         const keyPairId = entry?.keyPairId
         const adapter =
@@ -49,7 +48,6 @@ export const useRevealPrivateKey = (): UseRevealPrivateKeyResult => {
                 : undefined
         if (
             !account ||
-            !isStandaloneAccount(account) ||
             standaloneSecretOf(account) !== 'privateKey' ||
             !keyPairId ||
             !adapter?.revealPrivateKey

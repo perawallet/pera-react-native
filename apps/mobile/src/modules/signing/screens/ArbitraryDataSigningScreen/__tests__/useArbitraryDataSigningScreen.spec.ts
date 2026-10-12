@@ -52,8 +52,8 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 }))
 
 const mockIsQuantumDataSigningBlocked = vi.fn()
-vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
-    useIsQuantumDataSigningBlocked: (request: unknown) =>
+vi.mock('@hooks/useIsDataSigningBlocked', () => ({
+    useIsDataSigningBlocked: (request: unknown) =>
         mockIsQuantumDataSigningBlocked(request),
 }))
 
@@ -81,7 +81,7 @@ describe('useArbitraryDataSigningScreen', () => {
         expect(mockIsQuantumDataSigningBlocked).toHaveBeenCalledWith(
             mockPipeline.currentRequest,
         )
-        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.isSigningBlocked).toBe(true)
     })
 
     it('never advances the pipeline from handleApprove when quantum-blocked', async () => {

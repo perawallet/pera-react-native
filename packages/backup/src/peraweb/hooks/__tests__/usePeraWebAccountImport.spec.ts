@@ -34,7 +34,8 @@ const account = (
 })
 
 const renderImport = () =>
-    renderHook(() => usePeraWebAccountImport()).result.current.importAccount
+    renderHook(() => usePeraWebAccountImport('algorand')).result.current
+        .importAccount
 
 beforeEach(() => {
     vi.clearAllMocks()

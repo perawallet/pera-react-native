@@ -27,7 +27,8 @@ import {
     entropyChildIdOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     derivePasskeyCredential,
@@ -41,7 +42,6 @@ import {
     HD_TEST_MNEMONIC_24_ALT_INDICES,
     HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
 // checks a BIP39 checksum, so these don't need to form a valid mnemonic.
@@ -118,7 +118,7 @@ export const seedHDWalletAccounts = async (params?: {
         name: string,
     ): Promise<WalletAccount> => {
         const derived = await deriveHdAccount(
-            useNetworkStore.getState().network,
+            getSelectedScope(LEGACY_CHAIN_ID),
             seedKeyId,
             { account, keyIndex },
         )
@@ -212,7 +212,7 @@ export const seedPasskey = async (params: {
     }))
 
     const firstDerived = await deriveHdAccount(
-        useNetworkStore.getState().network,
+        getSelectedScope(LEGACY_CHAIN_ID),
         seedKeyId,
         { account: 0, keyIndex: 0 },
     )

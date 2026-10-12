@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleDetail } from '../useCollectibleDetail'
@@ -222,10 +223,17 @@ const makeAssetWithMedia = (
     }) as PeraAsset
 
 describe('useCollectibleDetail', () => {
-    const mockAccount = { address: 'ACCOUNT_ADDRESS' }
+    const mockAccount = {
+        id: 'account',
+        custody: { kind: 'local', seed: null },
+        chains: {
+            algorand: { address: 'ACCOUNT_ADDRESS', keyPairId: 'account-key' },
+        },
+    }
 
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         useRemoteConfigStore.getState().resetState()
         Object.assign(mockCapabilities, { inAppWebView: true })
         mockGetImageBase64.mockResolvedValue('base64data')

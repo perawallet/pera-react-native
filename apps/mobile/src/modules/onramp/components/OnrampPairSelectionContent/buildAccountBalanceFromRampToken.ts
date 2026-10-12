@@ -17,13 +17,16 @@ import {
     isNativeAssetId,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     rampTokenAssetId,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 
 // RampToken carries no tier, so the known-safe listings are mapped here rather
 // than fabricating one on the domain model. The native asset is matched on the
@@ -40,13 +43,10 @@ const RAMP_TOKEN_VERIFICATION_TIER: Record<string, PeraAssetVerificationTier> =
 export const buildAccountBalanceFromRampToken = (
     token: RampToken,
     balance: Nullable<Decimal>,
-    network: Network,
+    scope: ChainScope,
 ): AssetWithAccountBalance => {
-    const assetId = rampTokenAssetId(token, network)
-    const isNative = isNativeAssetId(
-        scopeForLegacyNetwork(network).chainId,
-        assetId,
-    )
+    const assetId = rampTokenAssetId(token, legacyNetworkOf(scope))
+    const isNative = isNativeAssetId(scope.chainId, assetId)
 
     const asset: PeraAsset = {
         assetId,

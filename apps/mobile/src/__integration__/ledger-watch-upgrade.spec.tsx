@@ -24,8 +24,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    accountType,
-    AccountTypes,
     canSignWith,
     isHardwareWalletAccount,
     useAccountsStore,
@@ -48,7 +46,7 @@ const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-1',
     name: 'My Cold Wallet',
     custody: { kind: 'watch' },
-    address: LEDGER_ADDRESS,
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 const renderImportFlow = () =>
@@ -136,12 +134,12 @@ describe('Flow: Ledger import upgrades a watch account', () => {
                 const accounts = useAccountsStore.getState().accounts
                 expect(accounts).toHaveLength(1)
                 const upgraded = accounts[0]
-                expect(accountType(upgraded)).toBe(AccountTypes.hardware)
+                expect(upgraded.custody).toMatchObject({ kind: 'hardware' })
                 expect(upgraded.name).toBe('My Cold Wallet')
                 expect(upgraded.id).toBe('watch-1')
                 expect(
                     isHardwareWalletAccount(upgraded) &&
-                        upgraded.hardwareDetails.deviceId,
+                        upgraded.custody.device.deviceId,
                 ).toBe('test-device-id')
                 expect(canSignWith(upgraded, accounts, LEGACY_CHAIN_ID)).toBe(
                     true,

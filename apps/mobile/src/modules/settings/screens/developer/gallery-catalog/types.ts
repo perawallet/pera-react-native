@@ -17,6 +17,7 @@ import type {
     BottomSheetRequest,
 } from '@modules/bottom-sheet'
 import type { IconName } from '@components/core/PWIcon'
+import type { RootStackParamList } from '@routes/types'
 
 export type GalleryCategoryId =
     | 'screens'
@@ -25,8 +26,16 @@ export type GalleryCategoryId =
     | 'components'
     | 'tools'
 
+/** A root route with that route's own params, so an entry can't drift from its screen. */
+export type GalleryNavigateTarget = {
+    [Name in keyof RootStackParamList]: {
+        name: Name
+        params?: RootStackParamList[Name]
+    }
+}[keyof RootStackParamList]
+
 export type GalleryLaunch =
-    | { kind: 'navigate'; target: { name: string; params?: object } }
+    | { kind: 'navigate'; target: GalleryNavigateTarget }
     | { kind: 'sheet'; request: () => BottomSheetRequest }
     | {
           kind: 'sheetByType'

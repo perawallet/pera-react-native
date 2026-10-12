@@ -12,13 +12,19 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useCreateNextHDAccount } from '../useCreateNextHDAccount'
 import type { WalletAccount } from '../../models'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+} from '../../__tests__/accountFactory'
+import { MAINNET_SCOPE } from '../../__tests__/fakeAccountsChain'
 
 const mockCreateAccount = {
     createHdWalletAccount: vi.fn(),
-    createStandaloneAccount: vi.fn(),
+    buildHdWalletAccount: vi.fn(),
 }
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
@@ -30,58 +36,65 @@ vi.mock('../useCreateAccount', () => ({
     useCreateAccount: () => mockCreateAccount,
 }))
 
-// HD accounts now reference their derived child via keyPairId; the seed
-// (wallet identifier) is the parent. We mock seedIdOf so tests can declare
-// "this child belongs to that seed".
+// child key id → seed id: the seed (the wallet identifier) is the parent of
+// each account's key.
 const parentMap: Map<string, string> = new Map()
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({
-        seedIdOf: (childId?: string) =>
-            childId ? parentMap.get(childId) : undefined,
-    }),
-}))
+vi.mock('../../credentials', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../credentials')>()
+    return {
+        ...actual,
+        seedOf: (account: WalletAccount) => {
+            const keyPairId = actual.signingKeyOn(account, 'algorand')
+            return keyPairId ? parentMap.get(keyPairId) : undefined
+        },
+    }
+})
 
-const HD_ACCOUNT = {
-    id: 'hd-1',
-    address: 'HD_ADDRESS',
-    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9 as const,
-    },
-    keyPairId: 'wallet-1-acc0-idx0-dt9',
-}
+const hd = (id: string, keyPairId: string, account: number): WalletAccount =>
+    buildTestAccount(
+        {
+            kind: 'local',
+            seed: TEST_CUSTODY.hd.seed,
+            hd: { account, keyIndex: 0 },
+        },
+        { algorand: { address: `${id}-ADDR`, keyPairId } },
+        { id },
+    )
+
+const HD_ACCOUNT = hd('hd-1', 'wallet-1-acc0-idx0-dt9', 0)
 
 describe('useCreateNextHDAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         parentMap.clear()
-        parentMap.set(HD_ACCOUNT.keyPairId, 'wallet-1')
+        parentMap.set('wallet-1-acc0-idx0-dt9', 'wallet-1')
     })
 
-    test('hasHDWallet is false when no HD wallet accounts exist', () => {
-        mockUseAllAccounts.mockReturnValue([])
+    test('hasHDWallet is false when no HD account exists', () => {
+        mockUseAllAccounts.mockReturnValue([testAccount('local', 'SINGLE')])
 
-        const { result } = renderHook(() => useCreateNextHDAccount())
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
 
         expect(result.current.hasHDWallet).toBe(false)
     })
 
-    test('hasHDWallet is true when HD wallet accounts exist', () => {
+    test('hasHDWallet is true when an HD account exists', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
-        const { result } = renderHook(() => useCreateNextHDAccount())
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
 
         expect(result.current.hasHDWallet).toBe(true)
     })
 
-    test('createNextHDAccount returns null when no HD wallet accounts exist', async () => {
-        mockUseAllAccounts.mockReturnValue([])
-
-        const { result } = renderHook(() => useCreateNextHDAccount())
+    test('createNextHDAccount returns null when no HD account exists', async () => {
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
 
         let account: Nullable<WalletAccount> = null
         await act(async () => {
@@ -92,39 +105,28 @@ describe('useCreateNextHDAccount', () => {
         expect(mockCreateAccount.createHdWalletAccount).not.toHaveBeenCalled()
     })
 
-    test('createNextHDAccount calculates correct next keyIndex', async () => {
-        const secondHDAccount = {
-            ...HD_ACCOUNT,
-            id: 'hd-2',
-            address: 'HD_ADDRESS_2',
-            keyPairId: 'wallet-1-acc1-idx0-dt9',
-            hdWalletDetails: {
-                ...HD_ACCOUNT.hdWalletDetails,
-                account: 1,
-            },
-        }
-        // Both children resolve to the same seed.
-        parentMap.set(secondHDAccount.keyPairId, 'wallet-1')
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT, secondHDAccount])
+    test('createNextHDAccount takes the account index after the wallet highest', async () => {
+        parentMap.set('wallet-1-acc1-idx0-dt9', 'wallet-1')
+        parentMap.set('wallet-2-acc5-idx0-dt9', 'wallet-2')
+        mockUseAllAccounts.mockReturnValue([
+            HD_ACCOUNT,
+            hd('hd-2', 'wallet-1-acc1-idx0-dt9', 1),
+            // Another wallet's higher index does not count.
+            hd('other', 'wallet-2-acc5-idx0-dt9', 5),
+        ])
+        const created = hd('new-hd', 'wallet-1-acc2-idx0-dt9', 2)
+        mockCreateAccount.createHdWalletAccount.mockResolvedValue(created)
 
-        const newAccount = {
-            id: 'new-hd',
-            address: 'NEW_HD_ADDRESS',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            keyPairId: 'wallet-1-acc2-idx0-dt9',
-        }
-        mockCreateAccount.createHdWalletAccount.mockResolvedValue(newAccount)
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
 
-        const { result } = renderHook(() => useCreateNextHDAccount())
-
+        let account: Nullable<WalletAccount> = null
         await act(async () => {
-            await result.current.createNextHDAccount()
+            account = await result.current.createNextHDAccount()
         })
 
+        expect(account).toBe(created)
         expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
             account: 2,
@@ -132,28 +134,38 @@ describe('useCreateNextHDAccount', () => {
         })
     })
 
-    test('createNextHDAccount uses walletId from first HD account', async () => {
+    test('buildNextHDAccount builds the same slot without saving', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockCreateAccount.createHdWalletAccount.mockResolvedValue({
-            id: 'new',
-            address: 'NEW',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        })
 
-        const { result } = renderHook(() => useCreateNextHDAccount())
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
 
         await act(async () => {
-            await result.current.createNextHDAccount()
+            await result.current.buildNextHDAccount()
         })
 
-        expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
+        expect(mockCreateAccount.buildHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
             account: 1,
             keyIndex: 0,
         })
+        expect(mockCreateAccount.createHdWalletAccount).not.toHaveBeenCalled()
+    })
+
+    test('returns null when the first HD account has no seed in the keystore', async () => {
+        parentMap.clear()
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
+
+        let account: Nullable<WalletAccount> = HD_ACCOUNT
+        await act(async () => {
+            account = await result.current.createNextHDAccount()
+        })
+
+        expect(account).toBeNull()
     })
 })

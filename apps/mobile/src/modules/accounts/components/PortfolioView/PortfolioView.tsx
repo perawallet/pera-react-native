@@ -45,8 +45,11 @@ import {
     type AccountBalanceHistoryItem,
     useAccountValueTotalsQuery,
     useAccountBalancesHistoryQuery,
+    addressOn,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -59,14 +62,15 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
 
-    const accounts = useSigningAccounts()
+    const accounts = useSigningAccounts(scope.chainId)
     const { portfolioAlgoValue, portfolioUsdValue, isPending } =
-        useAccountValueTotalsQuery(accounts)
+        useAccountValueTotalsQuery(accounts, scope)
     const portfolioPreferredValue = useMemo(() => {
         return usdToPreferred(portfolioUsdValue)
     }, [portfolioUsdValue, usdToPreferred])
@@ -80,11 +84,15 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !isChartShown)
     }
 
-    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
+    const addresses = useMemo(
+        () => accounts.flatMap(a => addressOn(a, scope) ?? []),
+        [accounts, scope],
+    )
 
     const { data: historyData } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        scope,
         isChartShown,
     )
 

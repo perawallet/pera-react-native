@@ -11,13 +11,14 @@
  */
 
 import { useMemo } from 'react'
-import { useLanguage } from '@hooks/useLanguage'
-import { useCapability } from '@hooks/useCapability'
-import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
-import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
-import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { config } from '@perawallet/wallet-core-config'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
+import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
+import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { routeCapabilities } from '@routes/capabilities'
 import { withLanguageParam } from '@modules/webview'
 import type { IconName } from '@components/core'
@@ -44,7 +45,7 @@ export const useSettingsOptions = () => {
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
-    const canRekey = useCapability(REKEY_REQUIREMENT)
+    const canRekey = useCapability(rekeyRequirementFor(LEGACY_CHAIN_ID))
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
         const sections: SettingsOptionSection[] = [

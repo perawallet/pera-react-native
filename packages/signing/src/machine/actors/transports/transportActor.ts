@@ -11,7 +11,11 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningResult,
@@ -20,7 +24,7 @@ import type {
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
 import { plannerAdapterForScope } from '../../../chain-adapter'
-import { findSignerAccount } from '../../utils/findSignerAccount'
+import { CannotSignError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -54,10 +58,10 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             scope,
         } = input
 
-        const signerAccount = findSignerAccount(
+        const signerAccount = findAccountByAddressOn(
             allAccounts,
-            signerAddress,
             scope.chainId,
+            signerAddress,
         )
         if (!signerAccount) {
             throw new Error(
@@ -83,10 +87,18 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             scope.chainId,
         )
 
+        const authAddress = chainAccountOf(authAccount, scope.chainId)?.address
+        if (authAddress === undefined) {
+            throw new CannotSignError(
+                signerAddress,
+                `its signing account has no address on chain ${scope.chainId}`,
+            )
+        }
+
         const transport = createTransport(source, authAccount)
         const merged =
             plannerAdapterForScope(scope).mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, authAccount.address)
+        return transport.send(merged, source, authAddress)
     },
 )

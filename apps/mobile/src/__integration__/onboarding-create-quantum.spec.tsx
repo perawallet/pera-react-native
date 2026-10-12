@@ -13,17 +13,13 @@
 // End-to-end proof that a user can CREATE a brand-new Quantum account from the
 // Add Account screen. Unlike the import flow, create runs a fresh mock-Falcon
 // keygen (buildQuantumWalletAccount), so the derived address is
-// non-deterministic — we assert on the persisted account *type*
-// (AccountTypes.quantum), not a pinned address.
+// non-deterministic — we assert on the persisted custody (a quantum seed),
+// not a pinned address.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -74,14 +70,16 @@ describe('create quantum account', () => {
 
         // handleFinish persists the built account via saveAccount. The
         // fresh keygen yields a non-deterministic address, so assert on the
-        // account type rather than a pinned address.
+        // custody rather than a pinned address.
         await waitFor(
             () => {
                 expect(
                     useAccountsStore
                         .getState()
                         .accounts.some(
-                            a => accountType(a) === AccountTypes.quantum,
+                            a =>
+                                a.custody.kind === 'local' &&
+                                a.custody.seed === 'quantum',
                         ),
                 ).toBe(true)
             },

@@ -10,16 +10,49 @@
  limitations under the License
  */
 
+import type { Key } from '@algorandfoundation/keystore-core'
 import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import { expiresAtOf } from '../utils'
+import { createAlgo25Key, type Algo25KeyParams } from './algo25Key'
 import { createKmsCore } from './createKmsCore'
+import { createQuantumKey, type QuantumKeyParams } from './quantumKey'
+import { parentIdOf } from './resolveSeed'
 
 const core = createKmsCore({
     keyStore: () => getProvider().key.store,
     keys: () => getKeystoreStore().state.keys,
 })
+
+/** `null` for a missing key or a seed past its expiry; unlike `useKMS().getKey`, never removes it. */
+const getKey = (keyId: string): Key | null => {
+    const keys = getKeystoreStore().state.keys
+    const key = keys.find(k => k.id === keyId)
+    if (!key) return null
+    const parentId = parentIdOf(key)
+    const seed = parentId ? keys.find(k => k.id === parentId) : key
+    const expiresAt = seed ? expiresAtOf(seed) : undefined
+    return expiresAt && Date.now() > expiresAt.getTime() ? null : key
+}
+
+/**
+ * Removes a seed a creation flow just minted, with its direct children, when
+ * the account it backs can't be saved. Never for a wallet's seed: the
+ * passkey main key hangs off those, and `useKMS().removeKeyAndChildren`
+ * re-mints it.
+ */
+const discardMintedSeed = async (seedKeyId: string): Promise<void> => {
+    const keyStore = getProvider().key.store
+    const children = getKeystoreStore().state.keys.filter(
+        k => parentIdOf(k) === seedKeyId,
+    )
+    for (const child of children) {
+        await keyStore.remove(child.id)
+    }
+    await keyStore.remove(seedKeyId)
+}
 
 /**
  * The KMS for callers that can't use hooks, such as chain adapters. Every
@@ -30,4 +63,10 @@ export const kmsCore = {
     deriveFromSeed: core.deriveFromSeed,
     importRawKey: core.importRawKey,
     sign: core.sign,
+    getKey,
+    createAlgo25Key: (params?: Algo25KeyParams) =>
+        createAlgo25Key(getProvider().key.store, params),
+    createQuantumKey: (params: QuantumKeyParams) =>
+        createQuantumKey(getProvider().key.store, params),
+    discardMintedSeed,
 }

@@ -18,6 +18,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() => true),
@@ -69,7 +70,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -98,7 +99,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -122,7 +123,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -148,7 +149,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                 }),
             { wrapper: createWrapper() },
         )
@@ -167,7 +168,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                 }),
             { wrapper: createWrapper() },
         )
@@ -199,7 +200,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    network: Networks.mainnet,
+                    scope: scopeForLegacyNetwork(Networks.mainnet),
                     onSuccess: mockOnSuccess,
                 }),
             { wrapper: createWrapper() },
@@ -232,7 +233,7 @@ describe('useCsvExportMutation', () => {
                 const { result, rerender } = renderHook(
                     () =>
                         useCsvExportMutation({
-                            network,
+                            scope: scopeForLegacyNetwork(network),
                             onSuccess: mockOnSuccess,
                             onError: mockOnError,
                         }),
@@ -264,7 +265,10 @@ describe('useCsvExportMutation', () => {
             network => {
                 vi.mocked(useChainCapability).mockReturnValue(true)
                 const { result } = renderHook(
-                    () => useCsvExportMutation({ network }),
+                    () =>
+                        useCsvExportMutation({
+                            scope: scopeForLegacyNetwork(network),
+                        }),
                     { wrapper: createWrapper() },
                 )
 

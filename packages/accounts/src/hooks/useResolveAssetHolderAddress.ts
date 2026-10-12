@@ -12,12 +12,12 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getAssetHolderAddresses } from '../db'
 import { useAllAccounts } from './useAllAccounts'
-import { useSelectedAccountAddress } from './useSelectedAccountAddress'
+import { chainAccountOf } from '../credentials'
+import { useAccountsStore } from '../store'
 import { getAssetHoldersQueryKey } from './querykeys'
 
 const ASSET_HOLDERS_STALE_TIME_MS = 60_000
@@ -38,15 +38,27 @@ export type ResolveAssetHolderAddress = (
  * holder first, or the detail screen attributes the asset to whichever account
  * happened to be selected.
  */
-export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+export const useResolveAssetHolderAddress = (
+    scope: ChainScope,
+): ResolveAssetHolderAddress => {
+    const selectedAccount = useAccountsStore(state =>
+        state.getSelectedAccount(),
+    )
+    const selectedAccountAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
 
     const knownAddresses = useMemo(
-        () => new Set(accounts.map(account => account.address)),
-        [accounts],
+        () =>
+            new Set(
+                accounts.flatMap(
+                    account =>
+                        chainAccountOf(account, scope.chainId)?.address ?? [],
+                ),
+            ),
+        [accounts, scope.chainId],
     )
 
     return useCallback(

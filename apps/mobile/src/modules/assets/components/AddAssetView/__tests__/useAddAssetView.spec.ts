@@ -16,7 +16,12 @@ import { Decimal } from 'decimal.js'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
-const mockAccount = { address: 'test-address', name: 'Test Account' }
+const mockAccount = {
+    id: 'test-account',
+    name: 'Test Account',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const { mockGetSelectedAccount } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn(() => mockAccount),

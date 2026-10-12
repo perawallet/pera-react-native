@@ -12,11 +12,11 @@
 
 import { useMutation } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
+    legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
+    addressOn,
     isMultisigAccount,
     useSelectedAccount,
     useSignerFor,
@@ -34,13 +34,15 @@ import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
-export const useExecuteSwapMutation = () => {
+export const useExecuteSwapMutation = (scope: ChainScope) => {
     const { addSignRequest } = useSigningRequest()
-    const { network } = useNetwork()
     const account = useSelectedAccount()
-    const signer = useSignerFor(account?.address)
-    const { assetOptInMinBalance } = useFeeConfig(LEGACY_CHAIN_ID)
-    const deviceId = useDeviceID(network)
+    const signer = useSignerFor(
+        account ? addressOn(account, scope) : undefined,
+        scope.chainId,
+    )
+    const { assetOptInMinBalance } = useFeeConfig(scope.chainId)
+    const deviceId = useDeviceID(legacyNetworkOf(scope))
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
         usePrepareTransactionsMutation()
@@ -48,7 +50,6 @@ export const useExecuteSwapMutation = () => {
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
         mutationFn: async variables => {
-            const scope = scopeForLegacyNetwork(network)
             const adapter = swapAdapterFor(scope)
             if (
                 account &&

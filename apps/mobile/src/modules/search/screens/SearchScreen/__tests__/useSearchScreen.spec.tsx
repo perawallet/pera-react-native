@@ -20,13 +20,19 @@ import { useSearchScreen } from '../useSearchScreen'
 const {
     mockNavigate,
     mockResolveAssetHolderAddress,
-    mockSetSelectedAccountAddress,
+    mockSetSelectedAccountId,
     mockSearchResults,
     mockWindowDimensions,
+    HOLDER_ACCOUNT,
 } = vi.hoisted(() => ({
+    HOLDER_ACCOUNT: {
+        id: 'holder-account',
+        custody: { kind: 'watch' as const },
+        chains: { algorand: { address: 'HOLDER_ADDRESS' } },
+    },
     mockNavigate: vi.fn(),
     mockResolveAssetHolderAddress: vi.fn(),
-    mockSetSelectedAccountAddress: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     mockSearchResults: vi.fn(),
     mockWindowDimensions: vi.fn(),
 }))
@@ -41,9 +47,15 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: () => ({
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
     }),
+    useAllAccounts: () => [HOLDER_ACCOUNT],
+    findAccountByAddressOn: (
+        accounts: WalletAccount[],
+        chainId: 'algorand',
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     useResolveAssetHolderAddress: () => mockResolveAssetHolderAddress,
 }))
 
@@ -78,7 +90,12 @@ const assets = (count: number): PeraAsset[] =>
 const accounts = (count: number): WalletAccount[] =>
     Array.from(
         { length: count },
-        (_, i) => ({ address: `ADDR${i}` }) as WalletAccount,
+        (_, i) =>
+            ({
+                id: `account-${i}`,
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: `ADDR${i}` } },
+            }) as WalletAccount,
     )
 
 const setResults = (results: {
@@ -202,11 +219,9 @@ describe('useSearchScreen', () => {
         await result.current.onAssetPress(asset(PeraAssetType.collectible))
 
         expect(mockResolveAssetHolderAddress).toHaveBeenCalledWith('31566704')
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'HOLDER_ADDRESS',
-        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith(HOLDER_ACCOUNT.id)
         expect(
-            mockSetSelectedAccountAddress.mock.invocationCallOrder[0],
+            mockSetSelectedAccountId.mock.invocationCallOrder[0],
         ).toBeLessThan(mockNavigate.mock.invocationCallOrder[0])
     })
 
@@ -215,7 +230,7 @@ describe('useSearchScreen', () => {
 
         await result.current.onAssetPress(asset(PeraAssetType.standard_asset))
 
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalled()
     })
 })

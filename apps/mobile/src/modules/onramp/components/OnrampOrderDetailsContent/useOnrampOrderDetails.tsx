@@ -13,8 +13,12 @@
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useCancelRampOrderMutation,
     toOnrampUserMessage,
@@ -90,7 +94,11 @@ export const useOnrampOrderDetails = (
     const { request: requestBottomSheet } = useBottomSheet()
     const { successToast, errorToast } = useToast()
     const deviceId = useDeviceID(network)
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const { mutateAsync: cancelOrder, isPending: isCancelling } =
         useCancelRampOrderMutation()
 

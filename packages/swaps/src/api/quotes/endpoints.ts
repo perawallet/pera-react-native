@@ -12,7 +12,10 @@
 
 import { Decimal } from 'decimal.js'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     type Network,
@@ -89,12 +92,12 @@ export const calculateSwapAmount = async (
 
 export const createQuotes = async (
     data: CreateQuotesRequest,
-    network: Network,
+    scope: ChainScope,
     providers: SwapProviderItem[],
 ): Promise<SwapQuote[]> => {
     const response = await queryClient<CreateQuotesApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'POST',
         url: `/v2/dex-swap/quotes/`,
         data,
@@ -126,7 +129,7 @@ export const createQuotes = async (
         }
     }
 
-    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
+    const { nativeAssetId } = swapAdapterFor(scope)
     return parsed.results.map(quote => ({
         id: quote.id,
         quoteIdStr: quote.quote_id_str,

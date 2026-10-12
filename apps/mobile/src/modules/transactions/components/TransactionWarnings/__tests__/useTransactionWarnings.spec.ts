@@ -20,8 +20,12 @@ const SENDER = 'SENDER_ADDR'
 const TARGET = 'TARGET_ADDR'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [{ address: SENDER }],
-    useSigningAccounts: () => [{ address: SENDER }],
+    useAllAccounts: () => [{ chains: { algorand: { address: SENDER } } }],
+    useSigningAccounts: () => [{ chains: { algorand: { address: SENDER } } }],
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 // Only the close fields matter here; the rest of the displayable shape is

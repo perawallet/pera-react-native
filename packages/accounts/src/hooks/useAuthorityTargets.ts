@@ -11,40 +11,63 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
-    type AuthorityTargetKind,
+    type AuthorityTargetCategory,
 } from '../chain-adapter'
 import type { WalletAccount } from '../models'
+import { useAccountChainStateStore } from '../store'
 import { useAllAccounts } from './useAllAccounts'
-import { useSelectedChainStates } from './useSelectedChainStates'
-
-export type UseAuthorityTargetsOptions = {
-    isQuantumTargetEnabled?: boolean
-}
 
 /**
- * Held accounts that `source`'s signing authority can move to. Empty when the
+ * Held accounts that `source`'s signing authority can move to under any of
+ * the target kinds the scope's chain files under `category`. Empty when the
  * source is missing or the chain can't move authority.
  */
 export const useAuthorityTargets = (
     source: WalletAccount | null | undefined,
-    kind: AuthorityTargetKind,
-    { isQuantumTargetEnabled = false }: UseAuthorityTargetsOptions = {},
+    category: AuthorityTargetCategory,
+    scope: ChainScope,
 ): WalletAccount[] => {
     const accounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const chainStates = useSelectedChainStates(LEGACY_CHAIN_ID)
+    const chainStates = useAccountChainStateStore(
+        state => state.states[toScopeKey(scope)],
+    )
 
     return useMemo(() => {
-        const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
+        const authority = accountsChainAdapters.get(scope.chainId).authority
         if (!source || !authority) return []
+        const kindIds = authority.targetKinds
+            .filter(kind => kind.category === category)
+            .map(kind => kind.id)
         return accounts.filter(target =>
-            authority.isEligibleTarget(kind, target, source, accounts, scope, {
-                isQuantumTargetEnabled,
-            }),
+            kindIds.some(kindId =>
+                authority.isEligibleTarget(
+                    kindId,
+                    target,
+                    source,
+                    accounts,
+                    scope,
+                ),
+            ),
         )
-    }, [accounts, scope, chainStates, source, kind, isQuantumTargetEnabled])
+    }, [accounts, scope, chainStates, source, category])
 }
+
+/**
+ * The target categories the scope's chain lists a kind under, in the order
+ * it lists them; empty when the chain can't move authority. The app shows a
+ * category's flow only when it's here.
+ */
+export const useAuthorityTargetCategories = (
+    scope: ChainScope,
+): readonly AuthorityTargetCategory[] =>
+    useMemo(() => {
+        const authority = accountsChainAdapters.get(scope.chainId).authority
+        if (!authority) return []
+        return [...new Set(authority.targetKinds.map(kind => kind.category))]
+    }, [scope.chainId])

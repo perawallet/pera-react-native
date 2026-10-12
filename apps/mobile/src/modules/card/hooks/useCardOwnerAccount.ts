@@ -15,6 +15,8 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -25,5 +27,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  */
 export const useCardOwnerAccount = (): Nullable<WalletAccount> => {
     const ownerAddress = useCardStore(state => state.escrowCardOwner)
-    return useFindAccountByAddress(ownerAddress ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    return useFindAccountByAddress(ownerAddress ?? '', scope)
 }

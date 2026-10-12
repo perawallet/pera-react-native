@@ -93,7 +93,7 @@ describe('fetchAndPersistAccount chain-state row', () => {
     })
 
     it('persists nativeBalanceBaseUnits and chainState as the row', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const row = await readRow()
         expect(row.nativeBalance).toEqual(new Decimal(1_500_000))
@@ -101,7 +101,7 @@ describe('fetchAndPersistAccount chain-state row', () => {
     })
 
     it('hands the chain-state slice the same variant it persists', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const { chainData } = await readRow()
         expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toEqual(chainData)
@@ -109,7 +109,7 @@ describe('fetchAndPersistAccount chain-state row', () => {
     })
 
     it('replaces the row when a later sync changes the account', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
         vi.mocked(
             fakeAccountsChain().adapter.fetchAccountState,
         ).mockResolvedValue(
@@ -126,7 +126,7 @@ describe('fetchAndPersistAccount chain-state row', () => {
             }),
         )
 
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         const row = await readRow()
         expect(row.nativeBalance).toEqual(new Decimal(3_000_000))
@@ -135,9 +135,9 @@ describe('fetchAndPersistAccount chain-state row', () => {
     })
 
     it('reports no change for a repeat sync, across the JSON round-trip', async () => {
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
-        const second = await fetchAndPersistAccount('ADDR1', 'mainnet')
+        const second = await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
 
         expect(second.changed).toBe(false)
     })

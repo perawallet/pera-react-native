@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import { renderHook, act } from '@testing-library/react'
+import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '../useSigningRequest'
 import { SigningRequestScopeProvider } from '../SigningRequestScope'
 import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
@@ -23,7 +24,6 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
 } from '../../constants'
-import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SignRequest,
     TransactionSignRequest,
@@ -67,8 +67,10 @@ vi.mock('../useAuthDataSigner', () => ({
 
 vi.mock('../useMultisigTransportAdapters', () => ({
     useMultisigTransportAdapters: vi.fn(() => ({
-        proposeSignRequest: vi.fn(),
-        addSignatures: vi.fn(),
+        adaptersFor: () => ({
+            proposeSignRequest: vi.fn(),
+            addSignatures: vi.fn(),
+        }),
     })),
 }))
 

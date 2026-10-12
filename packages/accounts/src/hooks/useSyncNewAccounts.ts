@@ -12,7 +12,8 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { chainAccountOf } from '../credentials'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAccountsStore } from '../store'
 import { syncAndEnrichNewAccount } from '../sync/account-syncer'
@@ -38,19 +39,25 @@ type UseSyncNewAccountsOptions = {
     isEnabled?: boolean
 }
 
-export const useSyncNewAccounts = ({
-    isEnabled = true,
-}: UseSyncNewAccountsOptions = {}): void => {
+export const useSyncNewAccounts = (
+    scope: ChainScope,
+    { isEnabled = true }: UseSyncNewAccountsOptions = {},
+): void => {
     const queryClient = useQueryClient()
-    const { network } = useNetwork()
     const accounts = useAccountsStore(state => state.accounts)
 
     // The store array gets a new reference on every write (including each
     // background sync tick), so key the effect on the joined address set —
     // it only fires when membership actually changes.
+    const { chainId } = scope
     const addressesKey = useMemo(
-        () => accounts.map(account => account.address).join('\n'),
-        [accounts],
+        () =>
+            accounts
+                .flatMap(
+                    account => chainAccountOf(account, chainId)?.address ?? [],
+                )
+                .join('\n'),
+        [accounts, chainId],
     )
 
     const knownAddresses = useRef<Nullable<Set<string>>>(null)
@@ -74,7 +81,7 @@ export const useSyncNewAccounts = ({
         knownAddresses.current = new Set(addresses)
 
         added.forEach(address => {
-            void syncAndEnrichNewAccount(address, network, queryClient)
+            void syncAndEnrichNewAccount(address, scope, queryClient)
         })
-    }, [isEnabled, addressesKey, network, queryClient])
+    }, [isEnabled, addressesKey, scope, queryClient])
 }

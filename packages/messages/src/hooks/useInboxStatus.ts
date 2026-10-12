@@ -15,13 +15,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { config } from '@perawallet/wallet-core-config'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
@@ -47,8 +44,7 @@ type UseInboxStatusResult = {
 // both endpoints at full rate.
 const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 
-export const useInboxStatus = (): UseInboxStatusResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network)
     const isUnavailableOnNetwork = !useChainCapability(
@@ -100,7 +96,7 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         ),
     })
 
-    const { data: inboxData } = useInboxQuery()
+    const { data: inboxData } = useInboxQuery(scope)
 
     if (isUnavailableOnNetwork) {
         // The zeros here are meaningless — there is no backend to have

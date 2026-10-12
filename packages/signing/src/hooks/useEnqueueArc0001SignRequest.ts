@@ -11,11 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type {
+    Arc0001ResolveResult,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { plannerAdapterFor } from '../chain-adapter'
+import { plannerAdapterForScope } from '../chain-adapter'
 import type { SourceType } from '../pipeline/types'
 import type { SignRequestSource, TransactionSignRequest } from '../models'
 
@@ -70,18 +72,23 @@ export type EnqueueArc0001SignRequest = (
 // Bridges an ARC-0001 resolver result to the signing pipeline. Transports
 // (WC, webview, future deeplinks) hand in the resolved subset plus a response
 // interface; the planner builds the TransactionSignRequest.
-export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
-    const { network } = useNetwork()
+export const useEnqueueArc0001SignRequest = (
+    scope: ChainScope,
+): EnqueueArc0001SignRequest => {
     const { addSignRequest, removeSignRequest } = useSigningRequest()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
+    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
 
     return useCallback(
         (resolved, transport) =>
-            plannerAdapterFor(network).enqueueDappRequest(resolved, transport, {
-                assignFeeToGroup,
-                addSignRequest,
-                removeSignRequest,
-            }),
-        [network, addSignRequest, removeSignRequest, assignFeeToGroup],
+            plannerAdapterForScope(scope).enqueueDappRequest(
+                resolved,
+                transport,
+                {
+                    assignFeeToGroup,
+                    addSignRequest,
+                    removeSignRequest,
+                },
+            ),
+        [scope, addSignRequest, removeSignRequest, assignFeeToGroup],
     )
 }

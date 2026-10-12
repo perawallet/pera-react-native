@@ -21,7 +21,20 @@ import {
     mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
 
-import type { GalleryEntry, GallerySection } from './types'
+import type {
+    GalleryEntry,
+    GalleryNavigateTarget,
+    GallerySection,
+} from './types'
+
+// Each step's params are checked by its own screen, not here: the stack and
+// screen names arrive as arguments, which the route types can't follow.
+const rekeyStep = (
+    root: string,
+    screen: string,
+    params: object,
+): GalleryNavigateTarget =>
+    ({ name: root, params: { screen, params } }) as GalleryNavigateTarget
 
 const rekeyFlow = (
     root: string,
@@ -36,13 +49,9 @@ const rekeyFlow = (
         label: `${label} · Intro`,
         launch: {
             kind: 'navigate',
-            target: {
-                name: root,
-                params: {
-                    screen: introScreen,
-                    params: { sourceAddress: MOCK_ADDRESS },
-                },
-            },
+            target: rekeyStep(root, introScreen, {
+                sourceAddress: MOCK_ADDRESS,
+            }),
         },
     },
     {
@@ -50,13 +59,9 @@ const rekeyFlow = (
         label: `${label} · Select target`,
         launch: {
             kind: 'navigate',
-            target: {
-                name: root,
-                params: {
-                    screen: selectScreen,
-                    params: { sourceAddress: MOCK_ADDRESS },
-                },
-            },
+            target: rekeyStep(root, selectScreen, {
+                sourceAddress: MOCK_ADDRESS,
+            }),
         },
     },
     {
@@ -64,16 +69,10 @@ const rekeyFlow = (
         label: `${label} · Confirm`,
         launch: {
             kind: 'navigate',
-            target: {
-                name: root,
-                params: {
-                    screen: confirmScreen,
-                    params: {
-                        sourceAddress: MOCK_ADDRESS,
-                        targetAddress: MOCK_ADDRESS_2,
-                    },
-                },
-            },
+            target: rekeyStep(root, confirmScreen, {
+                sourceAddress: MOCK_ADDRESS,
+                targetAddress: MOCK_ADDRESS_2,
+            }),
         },
     },
     {
@@ -81,13 +80,9 @@ const rekeyFlow = (
         label: `${label} · Success`,
         launch: {
             kind: 'navigate',
-            target: {
-                name: root,
-                params: {
-                    screen: successScreen,
-                    params: { sourceAddress: MOCK_ADDRESS },
-                },
-            },
+            target: rekeyStep(root, successScreen, {
+                sourceAddress: MOCK_ADDRESS,
+            }),
         },
     },
 ]
@@ -294,7 +289,7 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'AddAccount',
                         params: {
                             screen: 'ImportInfo',
-                            params: { accountType: 'standalone' },
+                            params: { accountType: null },
                         },
                     },
                 },
@@ -308,7 +303,7 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'AddAccount',
                         params: {
                             screen: 'ImportAccount',
-                            params: { accountType: 'standalone' },
+                            params: { accountType: null },
                         },
                     },
                 },
@@ -318,10 +313,12 @@ export const getScreenSections = (): GallerySection[] => [
                 label: 'Search accounts',
                 launch: {
                     kind: 'navigate',
+                    // Previews the screen with no discovery request, which its
+                    // route type doesn't allow.
                     target: {
                         name: 'AddAccount',
                         params: { screen: 'SearchAccounts' },
-                    },
+                    } as GalleryNavigateTarget,
                 },
             },
             {

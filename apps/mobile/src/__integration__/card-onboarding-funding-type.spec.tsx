@@ -149,21 +149,13 @@ const LEDGER_ACCOUNT: HardwareWalletAccount = {
         },
         accountIndex: 0,
     },
-    address: LEDGER_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'test-device-id',
-        deviceName: 'Ledger Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
+    chains: { algorand: { address: LEDGER_ADDRESS } },
 }
 
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
     custody: { kind: 'local', seed: null },
-    address: FUNDING_ADDRESS,
-    keyPairId: '',
+    chains: { algorand: { address: FUNDING_ADDRESS } },
     name: 'Main Account',
 }
 
@@ -182,7 +174,12 @@ const seedFundingSigner = async (): Promise<void> => {
     })
     FUNDING_ACCOUNT = {
         ...FUNDING_ACCOUNT,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: FUNDING_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
     }
 }
 

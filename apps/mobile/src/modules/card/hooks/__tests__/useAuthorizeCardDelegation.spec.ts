@@ -36,6 +36,13 @@ vi.mock('@components/ConfirmActionContent', () => ({
 vi.mock('@perawallet/wallet-core-card', () => ({
     AUTO_FUNDING_PER_TX_LIMIT_USD: new Decimal(400),
 }))
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     formatCurrency: () => '$400',
     truncateAlgorandAddress: (address: string) => address,

@@ -18,13 +18,17 @@ import type { OnboardingStackParamList } from '../../routes/types'
 import {
     consumePendingImportMnemonic,
     DuplicateAccountError,
-    MNEMONIC_WORD_COUNT,
-    useFindQuantumAccountForMnemonic,
+    localKeyKindOf,
+    type LocalKeySeed,
+    useFindAlternateImportKinds,
     useImportAccount,
-    type ImportAccountType,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
@@ -35,7 +39,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     deferToNextCycle,
     logger,
-    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useCapability } from '@hooks/useCapability'
@@ -58,22 +62,26 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         params: { accountType },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
-    const importAccount = useImportAccount()
-    const findQuantumAccount = useFindQuantumAccountForMnemonic()
-    const isQuantumAccountsEnabled = useCapability({
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const importAccount = useImportAccount(scope)
+    const findAlternateImportKinds = useFindAlternateImportKinds(scope)
+    const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',
     })
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
     const { showToast, errorToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
     const { readText } = useClipboard()
 
-    const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
+    const importKind = localKeyKindOf(scope.chainId, accountType)
+    const mnemonicLength = importKind?.mnemonicWordCounts[0] ?? 0
 
-    const isQuantum = accountType === 'quantum'
+    const isQuantum =
+        importKind !== undefined &&
+        isPostQuantumScheme(importKind.signingScheme)
     const titleKey = isQuantum
         ? 'onboarding.import_account.quantum_title'
         : 'onboarding.import_account.title'
@@ -139,24 +147,27 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [])
 
     // A quantum passphrase is also 25 words, so importing one as a standard
-    // account would mint a different, empty account. Null means import nothing.
+    // account would mint a different, empty account. Undefined means import nothing.
     // Without platform quantum support there is no Falcon to derive with.
     const resolveImportType = useCallback(
         async (
             mnemonicIndices: Uint16Array,
-        ): Promise<Nullable<ImportAccountType>> => {
-            if (accountType !== 'standalone' || !isQuantumAccountsEnabled) {
+        ): Promise<Optional<LocalKeySeed>> => {
+            if (accountType !== null || !isQuantumEnabled) {
                 return accountType
             }
-            const quantumAddress = await findQuantumAccount(mnemonicIndices)
-            if (!quantumAddress) return accountType
+            const [alternate] = await findAlternateImportKinds(
+                accountType,
+                mnemonicIndices,
+            )
+            if (!alternate) return accountType
 
             const choice =
                 await requestBottomSheet<QuantumPassphraseDetectedContentResult>(
                     {
                         contents: (
                             <QuantumPassphraseDetectedContent
-                                address={quantumAddress}
+                                address={alternate.address}
                             />
                         ),
                         options: {
@@ -166,12 +177,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         },
                     },
                 )
-            return choice === 'import-quantum' ? 'quantum' : null
+            return choice === 'import-quantum' ? alternate.seed : undefined
         },
         [
             accountType,
-            findQuantumAccount,
-            isQuantumAccountsEnabled,
+            findAlternateImportKinds,
+            isQuantumEnabled,
             requestBottomSheet,
         ],
     )
@@ -194,13 +205,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             }
 
             try {
-                const importType = await resolveImportType(mnemonicIndices)
-                if (!importType) return
+                const seed = await resolveImportType(mnemonicIndices)
+                if (seed === undefined) return
 
-                const result = await importAccount({
-                    mnemonicIndices,
-                    type: importType,
-                })
+                const result = await importAccount({ mnemonicIndices, seed })
 
                 if (Array.isArray(result)) {
                     // Quantum import: one 25-word phrase backs up every
@@ -217,10 +225,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         walletKeyId: result.walletKeyId,
                     })
                 } else {
-                    markBackupComplete(result as WalletAccount)
-                    navigation.replace('SearchAccounts', {
-                        account: result as WalletAccount,
-                    })
+                    markBackupComplete(result)
+                    navigation.replace('SearchAccounts', { account: result })
                 }
             } catch (e) {
                 logger.error('Import account failed', { error: e })

@@ -58,7 +58,11 @@ export type CardManualDepositBuildParams = {
 }
 
 export type CardFundingSourceEligibility = {
-    /** The chain's card contract can draw from the account. */
+    /**
+     * The chain's card contract can draw from the account, and it holds a key
+     * (local or hardware) of the scheme the card's proofs are signed with.
+     * Watch and multisig accounts never qualify.
+     */
     canFund: boolean
     /** The account can sign the sign-in proof card creation needs. */
     canProveOwnership: boolean

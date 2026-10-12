@@ -38,7 +38,11 @@ import {
     SubmissionError,
 } from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+} from '../../__tests__/accounts'
 import type {
     SignableAnalysis,
     SigningResult,
@@ -49,11 +53,7 @@ import type { TransactionSignRequest } from '../../models'
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-const mockAlgo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: null },
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAlgo25Account = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockTx = {
     sender: { toString: () => MOCK_ADDRESS },
@@ -528,10 +528,7 @@ describe('signingMachine', () => {
         const MULTISIG_ADDRESS =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
-        const mockMultisigAccount: WalletAccount = {
-            custody: { kind: 'multisig' },
-            address: MULTISIG_ADDRESS,
-        } as unknown as WalletAccount
+        const mockMultisigAccount = multisigAccount(MULTISIG_ADDRESS)
 
         const mockTxFromMultisig = {
             sender: { toString: () => MULTISIG_ADDRESS },
@@ -783,26 +780,7 @@ describe('signingMachine', () => {
         const HW_ADDRESS =
             'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 
-        const hwAccount = {
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'device-1',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
-            },
-            address: HW_ADDRESS,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as unknown as WalletAccount
+        const hwAccount = ledgerAccount(HW_ADDRESS)
 
         const hwTx = {
             sender: { toString: () => HW_ADDRESS },

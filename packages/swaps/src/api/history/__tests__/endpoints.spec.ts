@@ -64,7 +64,10 @@ describe('fetchSwapHistory', () => {
             },
         })
 
-        const result = await fetchSwapHistory('ADDRESS', 'mainnet')
+        const result = await fetchSwapHistory('ADDRESS', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
@@ -85,7 +88,13 @@ describe('fetchSwapHistory', () => {
             data: { results: [], next: null, previous: null },
         })
 
-        await fetchSwapHistory('ADDRESS', 'mainnet', 'completed', 'cursor1', 25)
+        await fetchSwapHistory(
+            'ADDRESS',
+            { chainId: 'algorand', networkId: 'mainnet' },
+            'completed',
+            'cursor1',
+            25,
+        )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
@@ -112,7 +121,10 @@ describe('fetchDistinctPairsHistory', () => {
             data: { results: [distinctPairItem] },
         })
 
-        const result = await fetchDistinctPairsHistory('ADDRESS', 'mainnet')
+        const result = await fetchDistinctPairsHistory('ADDRESS', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
@@ -130,7 +142,11 @@ describe('fetchDistinctPairsHistory', () => {
             data: { results: [] },
         })
 
-        await fetchDistinctPairsHistory('ADDRESS', 'mainnet', 'completed')
+        await fetchDistinctPairsHistory(
+            'ADDRESS',
+            { chainId: 'algorand', networkId: 'mainnet' },
+            'completed',
+        )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',

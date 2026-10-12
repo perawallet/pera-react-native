@@ -15,6 +15,8 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from './capability-defaults'
+import { keyKindOptionI18nKeys } from './accounts/key-kind-options'
+import { accountPresentationI18nKeys } from './accounts/presentation'
 import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
@@ -31,6 +33,8 @@ export const chainModule: ChainModule = {
     register: _ctx => registerChain(),
     i18nKeys: () => [
         ...new Set([
+            ...accountPresentationI18nKeys(),
+            ...keyKindOptionI18nKeys(),
             ...ALGORAND_TRANSFER_TITLE_KEYS,
             ...ALGORAND_MESSAGE_TITLE_KEYS,
             ...ALGORAND_HISTORY_SUMMARY_KEYS,

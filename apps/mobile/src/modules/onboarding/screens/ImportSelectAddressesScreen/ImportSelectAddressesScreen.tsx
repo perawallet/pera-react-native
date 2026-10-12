@@ -29,8 +29,10 @@ import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
 import {
     getAccountDisplayName,
-    type HDWalletAccount,
+    chainAccountOf,
+    type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const ImportSelectAddressesScreen = () => {
     const styles = useStyles()
@@ -48,20 +50,21 @@ export const ImportSelectAddressesScreen = () => {
         t,
     } = useImportSelectAddressesScreen()
 
-    const renderItem = ({ item }: { item: HDWalletAccount }) => {
-        const isImported = alreadyImportedAddresses.has(item.address)
-        const isSelected = selectedAddresses.has(item.address)
+    const renderItem = ({ item }: { item: LocalAccount }) => {
+        const address = chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+        const isImported = alreadyImportedAddresses.has(address)
+        const isSelected = selectedAddresses.has(address)
 
         return (
             <SelectableAccountCheckboxRow
-                title={getAccountDisplayName(item)}
+                title={getAccountDisplayName(item, LEGACY_CHAIN_ID)}
                 isSelected={isSelected}
                 isImported={isImported}
                 importedLabel={t(
                     'onboarding.import_select_addresses.already_imported',
                 )}
-                onToggle={() => toggleSelection(item.address)}
-                checkboxTestID={`import_select_addresses_item_checkbox_${item.address}`}
+                onToggle={() => toggleSelection(address)}
+                checkboxTestID={`import_select_addresses_item_checkbox_${address}`}
             />
         )
     }
@@ -153,7 +156,7 @@ export const ImportSelectAddressesScreen = () => {
                             <PWFlatList
                                 data={accounts}
                                 renderItem={renderItem}
-                                keyExtractor={item => item.address}
+                                keyExtractor={item => item.id}
                                 extraData={selectedAddresses}
                                 cardLayout
                                 showsVerticalScrollIndicator={false}

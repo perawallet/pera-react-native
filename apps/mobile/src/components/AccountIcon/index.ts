@@ -16,5 +16,5 @@ export type {
     AccountIconSize,
     AccountDisplayState,
 } from './AccountIcon'
-export { accountGlyphForType } from './useAccountIcon'
+export { accountGlyphFor } from './useAccountIcon'
 export type { AccountGlyph } from './useAccountIcon'

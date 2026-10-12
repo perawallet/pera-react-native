@@ -590,7 +590,7 @@ describe('pullBackupItems with an item kind it does not know', () => {
         readItems.mockReset()
     })
 
-    it('restores the known items and reports the unknown account kind as one skipped item', async () => {
+    it("passes an account kind the format doesn't define on to the chain's import, skipping nothing", async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 4,
@@ -639,11 +639,19 @@ describe('pullBackupItems with an item kind it does not know', () => {
                     address: 'ADDR',
                 },
             },
+            {
+                address: 'FIXADDR',
+                addressPayload: {
+                    type: 'fixtureChainAccount',
+                    address: 'FIXADDR',
+                    customName: null,
+                    updatedAt: 1,
+                },
+                secretsPayload: null,
+            },
         ])
         expect(result.contacts).toEqual([{ address: 'CADDR', name: 'Alice' }])
-        expect(result.skipped).toEqual([
-            { key: accountKey('FIXADDR'), reason: 'parse' },
-        ])
+        expect(result.skipped).toEqual([])
         expect(result.manifestItems).toHaveProperty([accountKey('FIXADDR')])
     })
 

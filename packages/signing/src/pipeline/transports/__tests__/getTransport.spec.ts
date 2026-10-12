@@ -21,7 +21,10 @@ import {
     algodBackedTransport,
     registerFakeBroadcaster,
 } from '../../../__tests__/fakeBroadcaster'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    algo25Account as algo25,
+    multisigAccount as multisig,
+} from '../../../__tests__/accounts'
 import type {
     SigningResult,
     SignedTransactionData,
@@ -35,21 +38,13 @@ const ALGORAND_TESTNET: ChainScope = {
     networkId: 'testnet',
 }
 
-const algo25Account: WalletAccount = {
-    custody: { kind: 'local', seed: null },
-    address: 'ADDR',
-    keyPairId: 'key-1',
-} as WalletAccount
+const algo25Account = algo25('ADDR', { keyPairId: 'key-1' })
 
-const multisigAccount: WalletAccount = {
-    custody: { kind: 'multisig' },
-    address: 'MSIG',
-    multisigDetails: {
-        version: 1,
-        threshold: 2,
-        addresses: ['A', 'B'],
-    },
-} as unknown as WalletAccount
+const multisigAccount = multisig('MSIG', {
+    version: 1,
+    threshold: 2,
+    addresses: ['A', 'B'],
+})
 
 const MSIG_METADATA = {
     version: 1,

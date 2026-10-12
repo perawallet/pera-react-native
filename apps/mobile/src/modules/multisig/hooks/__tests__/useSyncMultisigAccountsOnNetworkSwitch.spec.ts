@@ -14,10 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import type {
     MultiSigAccount,
-    MultiSigDetails,
     WalletAccount,
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
 const {
@@ -40,6 +40,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async () => {
     const { useEffect, useRef } = await import('react')
     return {
         useNetwork: () => ({ network: networkMock.current }),
+        useSelectedScope: (chainId: string) => ({
+            chainId,
+            networkId: networkMock.current,
+        }),
         useOnNetworkSwitch: (handler: (from: Network, to: Network) => void) => {
             const network = networkMock.current
             const handlerRef = useRef(handler)
@@ -62,6 +66,12 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     isMultisigAccount: (account: { custody?: { kind: string } }) =>
         account.custody?.kind === 'multisig',
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
+    multisigParametersOf: (account: WalletAccount, chainId: 'algorand') => {
+        const native = account.chains[chainId]?.native
+        return native?.family === 'algorand' ? native.multisig : undefined
+    },
     useAllAccounts: () => accountsMock.current,
 }))
 
@@ -75,7 +85,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { useSyncMultisigAccountsOnNetworkSwitch } from '../useSyncMultisigAccountsOnNetworkSwitch'
 
-const DETAILS: MultiSigDetails = {
+const DETAILS: MultisigParameters = {
     threshold: 2,
     addresses: ['P1', 'P2'],
     version: 1,
@@ -83,19 +93,20 @@ const DETAILS: MultiSigDetails = {
 
 const multisigAccount = (
     address: string,
-    multisigDetails: MultiSigDetails = DETAILS,
+    multisig: MultisigParameters = DETAILS,
 ): MultiSigAccount => ({
     id: `multisig-${address}`,
     custody: { kind: 'multisig' },
-    address,
     name: address,
-    multisigDetails,
+    chains: {
+        algorand: { address, native: { family: 'algorand', multisig } },
+    },
 })
 
 const watchAccount = (address: string): WatchAccount => ({
     id: `watch-${address}`,
     custody: { kind: 'watch' },
-    address,
+    chains: { algorand: { address } },
 })
 
 const renderSync = () =>

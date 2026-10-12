@@ -99,11 +99,16 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         new Decimal(percent).div(100).toString(),
 }))
 
-let mockSelectedAccount: { address: string } = { address: 'TESTADDRESS123' }
+const accountAt = (address: string) => ({
+    chains: { algorand: { address } },
+})
+let mockSelectedAccount = accountAt('TESTADDRESS123')
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
+        account.chains.algorand?.address,
     useSelectedAccount: () => mockSelectedAccount,
     useAccountAssetBalanceQuery: () => ({
         data: mockPayBalance ? { amount: mockPayBalance } : null,
@@ -116,7 +121,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useNativeAsset: () => ({ assetId: '0' }),
+    useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     useAssetsQuery: () => ({
         data: new Map([
             [
@@ -161,6 +166,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
@@ -230,7 +236,7 @@ describe('useSwapForm', () => {
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
-        mockSelectedAccount = { address: 'TESTADDRESS123' }
+        mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
@@ -560,7 +566,7 @@ describe('useSwapForm', () => {
         })
         expect(result.current.payAmount).not.toBeNull()
 
-        mockSelectedAccount = { address: 'OTHERADDRESS456' }
+        mockSelectedAccount = accountAt('OTHERADDRESS456')
         rerender()
 
         expect(result.current.payAmount).toBeNull()

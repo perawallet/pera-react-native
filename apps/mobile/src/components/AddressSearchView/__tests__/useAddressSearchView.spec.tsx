@@ -26,7 +26,7 @@ import {
     useAllAccounts,
     useSortedAccounts,
     useAccountValueTotalsQuery,
-    AccountTypes,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
@@ -35,25 +35,22 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    accountType: ({ custody }: { custody: { kind: string; seed?: string } }) =>
-        custody.kind !== 'local'
-            ? custody.kind
-            : custody.seed === 'bip39'
-              ? 'hdWallet'
-              : custody.seed,
-    useAllAccounts: vi.fn(),
-    useSortedAccounts: vi.fn(),
-    useAccountValueTotalsQuery: vi.fn(),
-    AccountTypes: {
-        standalone: 'standalone',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const addressOn = (account: {
+        chains?: Record<string, { address?: string }>
+    }) => account.chains?.algorand?.address
+    return {
+        addressOn,
+        findAddressHolder: (
+            accounts: Array<{ chains?: Record<string, { address?: string }> }>,
+            _scope: unknown,
+            address: string,
+        ) => accounts.find(a => addressOn(a) === address),
+        useAllAccounts: vi.fn(),
+        useSortedAccounts: vi.fn(),
+        useAccountValueTotalsQuery: vi.fn(),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
@@ -130,8 +127,8 @@ describe('useAddressSearchView', () => {
 
     it('returns account items with section header when accounts match', () => {
         const accounts = [
-            { address: 'ABC123', name: 'Account 1' },
-            { address: 'DEF456', name: 'Account 2' },
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -166,8 +163,8 @@ describe('useAddressSearchView', () => {
 
     it('matches an account by its custom name, not just its address', () => {
         const accounts = [
-            { address: 'ABC123', name: 'Savings' },
-            { address: 'DEF456', name: 'Spending' },
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Savings' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Spending' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -188,15 +185,17 @@ describe('useAddressSearchView', () => {
         expect(accountItems).toHaveLength(1)
         expect(accountItems[0]).toEqual(
             expect.objectContaining({
-                account: expect.objectContaining({ address: 'ABC123' }),
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'ABC123' } },
+                }),
             }),
         )
     })
 
     it('excludes account matching excludeAddress', () => {
         const accounts = [
-            { address: 'ABC123', name: 'Account 1' },
-            { address: 'DEF456', name: 'Account 2' },
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -216,20 +215,22 @@ describe('useAddressSearchView', () => {
         expect(accountItems).toHaveLength(1)
         expect(accountItems[0]).toEqual(
             expect.objectContaining({
-                account: expect.objectContaining({ address: 'DEF456' }),
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'DEF456' } },
+                }),
             }),
         )
     })
 
-    it('excludes accounts whose type is listed in excludeTypes', () => {
+    it('offers only the accounts the filter accepts', () => {
         const accounts = [
             {
-                address: 'STD_ADDR',
+                chains: { algorand: { address: 'STD_ADDR' } },
                 name: 'Standard',
                 custody: { kind: 'local', seed: null },
             },
             {
-                address: 'QUANTUM_ADDR',
+                chains: { algorand: { address: 'QUANTUM_ADDR' } },
                 name: 'Quantum',
                 custody: { kind: 'local', seed: 'quantum' },
             },
@@ -241,7 +242,8 @@ describe('useAddressSearchView', () => {
         const { result } = renderHook(() =>
             useAddressSearchView({
                 chainFamily: 'algorand',
-                excludeTypes: [AccountTypes.quantum],
+                accountFilter: account =>
+                    (account.custody as { seed?: string }).seed !== 'quantum',
             }),
         )
 
@@ -252,7 +254,9 @@ describe('useAddressSearchView', () => {
         expect(accountItems).toHaveLength(1)
         expect(accountItems[0]).toEqual(
             expect.objectContaining({
-                account: expect.objectContaining({ address: 'STD_ADDR' }),
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'STD_ADDR' } },
+                }),
             }),
         )
     })
@@ -340,7 +344,9 @@ describe('useAddressSearchView', () => {
     })
 
     it('returns section header and foreign address item when address is valid and not in wallet', () => {
-        const accounts = [{ address: 'ABC123', name: 'Account 1' }]
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+        ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
@@ -376,7 +382,7 @@ describe('useAddressSearchView', () => {
     it('returns the matched wallet account when typed address is in user wallet', () => {
         const accounts = [
             {
-                address: 'OWN_ADDRESS',
+                chains: { algorand: { address: 'OWN_ADDRESS' } },
                 name: 'My Account',
                 custody: { kind: 'local', seed: null },
             },
@@ -399,7 +405,7 @@ describe('useAddressSearchView', () => {
             expect.objectContaining({
                 type: 'account',
                 account: expect.objectContaining({
-                    address: 'OWN_ADDRESS',
+                    chains: { algorand: { address: 'OWN_ADDRESS' } },
                     name: 'My Account',
                 }),
             }),
@@ -408,8 +414,8 @@ describe('useAddressSearchView', () => {
 
     it('shows all matching accounts when no value entered', () => {
         const accounts = [
-            { address: 'ABC123', name: 'Account 1' },
-            { address: 'DEF456', name: 'Account 2' },
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -428,7 +434,9 @@ describe('useAddressSearchView', () => {
     })
 
     it('orders items as address, accounts, then contacts', () => {
-        const accounts = [{ address: 'ABC123', name: 'Account 1' }]
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+        ]
         const contacts = [
             { addresses: { algorand: 'CONT123' }, name: 'Friend' },
         ]
@@ -462,7 +470,12 @@ describe('useAddressSearchView', () => {
     })
 
     it('excludes a contact whose address is already a wallet account', () => {
-        const accounts = [{ address: 'SHARED_ADDR', name: 'My Account' }]
+        const accounts = [
+            {
+                chains: { algorand: { address: 'SHARED_ADDR' } },
+                name: 'My Account',
+            },
+        ]
         const contacts = [
             { addresses: { algorand: 'SHARED_ADDR' }, name: 'Same As Account' },
             { addresses: { algorand: 'CONT_ONLY' }, name: 'Contact Only' },
@@ -491,7 +504,9 @@ describe('useAddressSearchView', () => {
         expect(accountItems).toHaveLength(1)
         expect(accountItems[0]).toEqual(
             expect.objectContaining({
-                account: expect.objectContaining({ address: 'SHARED_ADDR' }),
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'SHARED_ADDR' } },
+                }),
             }),
         )
         expect(contactItems).toHaveLength(1)
@@ -503,7 +518,12 @@ describe('useAddressSearchView', () => {
     })
 
     it('excludes a contact whose address is a wallet account even when searching by contact name', () => {
-        const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR_XYZ' } },
+                name: 'My Account',
+            },
+        ]
         const contacts = [
             { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Alice' },
             { addresses: { algorand: 'CONT_ONLY' }, name: 'Alice Other' },
@@ -534,7 +554,12 @@ describe('useAddressSearchView', () => {
     })
 
     it('excludes a contact whose address matches excludeAddress', () => {
-        const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR_XYZ' } },
+                name: 'My Account',
+            },
+        ]
         const contacts = [
             { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Me' },
             { addresses: { algorand: 'CONT_ONLY' }, name: 'Someone Else' },
@@ -565,7 +590,12 @@ describe('useAddressSearchView', () => {
     })
 
     it('excludes and selects contacts by their address in the requested family', () => {
-        const accounts = [{ address: 'OWN_ADDR', name: 'My Account' }]
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR' } },
+                name: 'My Account',
+            },
+        ]
         const otherFamily = 'other' as ChainFamily
         const contacts = [
             {
@@ -775,8 +805,8 @@ describe('useAddressSearchView', () => {
 
     describe('account ordering', () => {
         const storeOrder = [
-            { address: 'ZEBRA1', name: 'Zebra' },
-            { address: 'APPLE1', name: 'Apple' },
+            { chains: { algorand: { address: 'ZEBRA1' } }, name: 'Zebra' },
+            { chains: { algorand: { address: 'APPLE1' } }, name: 'Apple' },
         ]
 
         const mockSortedAs = (accounts: typeof storeOrder) =>
@@ -797,17 +827,26 @@ describe('useAddressSearchView', () => {
             expect(
                 itemsOfType(result.current.matchingItems, 'account').map(
                     item =>
-                        (item as { account: { address: string } }).account
-                            .address,
+                        (item as { account: WalletAccount }).account.chains
+                            .algorand?.address,
                 ),
             ).toEqual(['APPLE1', 'ZEBRA1'])
         })
 
         it('keeps the sorted order once a search narrows the list', () => {
             const accounts = [
-                { address: 'ZEBRA1', name: 'Shared Zebra' },
-                { address: 'APPLE1', name: 'Shared Apple' },
-                { address: 'OTHER1', name: 'Unrelated' },
+                {
+                    chains: { algorand: { address: 'ZEBRA1' } },
+                    name: 'Shared Zebra',
+                },
+                {
+                    chains: { algorand: { address: 'APPLE1' } },
+                    name: 'Shared Apple',
+                },
+                {
+                    chains: { algorand: { address: 'OTHER1' } },
+                    name: 'Unrelated',
+                },
             ]
             vi.mocked(useAllAccounts).mockReturnValue(
                 accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -825,8 +864,8 @@ describe('useAddressSearchView', () => {
             expect(
                 itemsOfType(result.current.matchingItems, 'account').map(
                     item =>
-                        (item as { account: { address: string } }).account
-                            .address,
+                        (item as { account: WalletAccount }).account.chains
+                            .algorand?.address,
                 ),
             ).toEqual(['APPLE1', 'ZEBRA1'])
         })

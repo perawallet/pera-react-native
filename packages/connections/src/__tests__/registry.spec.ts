@@ -40,6 +40,7 @@ import { memoryStore } from './handler-contract'
 const fixtureAdapter: DappRequestChainAdapter = {
     chainId: 'algorand',
     relayableErrorNames: [],
+    accountTypeOf: () => 'Fixture',
     parseSigningParams: () => ({ ok: true, payload: [] }),
     resolveReportedNetwork: scope => scope.networkId,
     emptySignaturesFor: () => ({}),

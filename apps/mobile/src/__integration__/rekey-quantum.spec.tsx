@@ -49,8 +49,8 @@ import {
 import {
     useAccountsStore,
     type WalletAccount,
-    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import {
     useKMS,
     type Algo25KeyResult,
@@ -83,6 +83,7 @@ import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
+import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -156,22 +157,30 @@ const seedRekeyInAccounts = async (): Promise<{
     const source: WalletAccount = {
         id: 'rekey-in-source',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: key!.seedKey.id ?? '',
+            },
+        },
         name: 'Source',
     }
     const quantumTarget: WalletAccount = {
         id: 'rekey-in-quantum-target',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: 'rekey-in-quantum-target-key',
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: 'rekey-in-quantum-target-key',
+            },
+        },
         name: 'Quantum target',
     }
     useAccountsStore.getState().setAccounts([source, quantumTarget])
-    useAccountsStore.getState().setSelectedAccountAddress(source.address)
+    useAccountsStore.getState().setSelectedAccountId(source.id)
 
     await seedAlgorandAccountState({
-        accountAddress: source.address,
+        accountAddress: addressOf(source),
         scope: MAINNET_SCOPE,
         nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
@@ -191,22 +200,30 @@ const seedRekeyOutAccounts = async (): Promise<{
     const quantumSource: WalletAccount = {
         id: 'rekey-out-quantum-source',
         custody: { kind: 'local', seed: 'quantum' },
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: 'rekey-out-quantum-source-key',
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: 'rekey-out-quantum-source-key',
+            },
+        },
         name: 'Quantum source',
     }
     const target: WalletAccount = {
         id: 'rekey-out-target',
         custody: { kind: 'local', seed: null },
-        address: HD_TEST_ADDRESS,
-        keyPairId: 'rekey-out-target-key',
+        chains: {
+            algorand: {
+                address: HD_TEST_ADDRESS,
+                keyPairId: 'rekey-out-target-key',
+            },
+        },
         name: 'Target',
     }
     useAccountsStore.getState().setAccounts([quantumSource, target])
-    useAccountsStore.getState().setSelectedAccountAddress(quantumSource.address)
+    useAccountsStore.getState().setSelectedAccountId(quantumSource.id)
 
     await seedAlgorandAccountState({
-        accountAddress: quantumSource.address,
+        accountAddress: addressOf(quantumSource),
         scope: MAINNET_SCOPE,
         nativeBalance: new Decimal(5_000_000),
         minBalance: new Decimal(100_000),
@@ -225,7 +242,7 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            chain: quantumDerivationFor('mainnet'),
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
@@ -234,12 +251,15 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
     const { quantumSource, target } = await seedRekeyOutAccounts()
     const signableSource: WalletAccount = {
         ...quantumSource,
-        keyPairId: keyResult!.signKeyId,
+        chains: {
+            algorand: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: keyResult!.signKeyId,
+            },
+        },
     }
     useAccountsStore.getState().setAccounts([signableSource, target])
-    useAccountsStore
-        .getState()
-        .setSelectedAccountAddress(signableSource.address)
+    useAccountsStore.getState().setSelectedAccountId(signableSource.id)
 
     return { quantumSource: signableSource, target }
 }
@@ -306,7 +326,9 @@ describe('rekey quantum account', () => {
 
         await waitFor(() => {
             expect(
-                screen.getByTestId(`rekey-target-row-${quantumTarget.address}`),
+                screen.getByTestId(
+                    `rekey-target-row-${addressOf(quantumTarget)}`,
+                ),
             ).toBeTruthy()
         })
     })
@@ -318,7 +340,7 @@ describe('rekey quantum account', () => {
             RekeyToStandardSelectTargetScreen,
             'RekeyToStandardSelectTarget',
             {
-                initialParams: { sourceAddress: source.address },
+                initialParams: { sourceAddress: addressOf(source) },
                 additionalScreens: REKEY_SCREENS,
             },
         )
@@ -329,7 +351,9 @@ describe('rekey quantum account', () => {
             ).toBeTruthy()
         })
         expect(
-            screen.queryByTestId(`rekey-target-row-${quantumTarget.address}`),
+            screen.queryByTestId(
+                `rekey-target-row-${addressOf(quantumTarget)}`,
+            ),
         ).toBeNull()
     })
 
@@ -349,8 +373,8 @@ describe('rekey quantum account', () => {
             'RekeyToStandardConfirm',
             {
                 initialParams: {
-                    sourceAddress: quantumSource.address,
-                    targetAddress: target.address,
+                    sourceAddress: addressOf(quantumSource),
+                    targetAddress: addressOf(target),
                 },
                 additionalScreens: REKEY_SCREENS,
             },
@@ -400,8 +424,8 @@ describe('rekey quantum account', () => {
             'RekeyToStandardConfirm',
             {
                 initialParams: {
-                    sourceAddress: quantumSource.address,
-                    targetAddress: target.address,
+                    sourceAddress: addressOf(quantumSource),
+                    targetAddress: addressOf(target),
                 },
                 additionalScreens: REKEY_SCREENS,
             },

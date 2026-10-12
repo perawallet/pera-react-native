@@ -13,9 +13,9 @@
 import nacl from 'tweetnacl'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { AuthDataPayload } from '@perawallet/wallet-core-signing'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { standaloneAccount } from '../../../__tests__/algorandAccounts'
 import { encodeAlgorandAddress } from '../../../blockchain'
 import { ARC60_SCOPE_AUTH } from '../arc60'
 
@@ -25,11 +25,11 @@ export const messageKeyPair = nacl.sign.keyPair.fromSeed(
 
 const addressOf = (publicKey: Uint8Array) => encodeAlgorandAddress(publicKey)
 
-export const messageAccount = {
-    address: addressOf(messageKeyPair.publicKey),
+export const messageAddress = addressOf(messageKeyPair.publicKey)
+
+export const messageAccount = standaloneAccount(messageAddress, {
     keyPairId: 'message-key',
-    custody: { kind: 'local', seed: null },
-} as unknown as WalletAccount
+})
 
 export const otherMessageAddress = addressOf(
     nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(8)).publicKey,

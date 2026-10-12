@@ -137,13 +137,13 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
 export const rekeyLegacyNetworkRecord = <V>(
     record: Readonly<Record<string, V>> | null | undefined,
 ): Partial<Record<ChainScopeKey, V>> => {
-    const rekeyed: Partial<Record<ChainScopeKey, V>> = {}
+    const byScopeKey: Partial<Record<ChainScopeKey, V>> = {}
     for (const [key, value] of Object.entries(record ?? {})) {
         try {
-            rekeyed[toScopeKey(scopeFromNetworkColumn(key))] = value
+            byScopeKey[toScopeKey(scopeFromNetworkColumn(key))] = value
         } catch {
             // Unreadable key: dropped, see above.
         }
     }
-    return rekeyed
+    return byScopeKey
 }

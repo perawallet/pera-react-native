@@ -21,9 +21,12 @@ import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useAccountBalancesHistoryQuery,
+    addressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TrendIndicator } from '@components/TrendIndicator'
 
@@ -43,16 +46,17 @@ export const WealthTrend = ({
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const addresses = useMemo(
         () =>
-            account
-                ? [account.address]
-                : accounts.map((a: WalletAccount) => a.address),
-        [account, accounts],
+            (account ? [account] : accounts).flatMap(
+                (a: WalletAccount) => addressOn(a, scope) ?? [],
+            ),
+        [account, accounts, scope],
     )
 
     const { data, isPending, isUnavailableOnNetwork } =
-        useAccountBalancesHistoryQuery(addresses, period, enabled)
+        useAccountBalancesHistoryQuery(addresses, period, scope, enabled)
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
     // value is flat for an all-ALGO account no matter what the price does.

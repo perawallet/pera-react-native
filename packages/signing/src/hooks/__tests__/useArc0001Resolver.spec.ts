@@ -12,21 +12,26 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
+import type {
+    Arc0001ResolveResult,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import { algo25Account, multisigAccount } from '../../__tests__/accounts'
 import { useArc0001Resolver } from '../useArc0001Resolver'
 
-const mockAccounts = vi.fn<() => Array<{ address: string }>>()
-const mockIsMultisig = vi.fn((account: { address: string }) =>
-    account.address.startsWith('MSIG'),
-)
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+const mockAccounts = vi.fn<() => WalletAccount[]>()
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useSigningAccounts: () => mockAccounts(),
     useAllAccounts: () => mockAccounts(),
-    isMultisigAccount: (account: { address: string }) =>
-        mockIsMultisig(account),
 }))
 
 const resolved = {
@@ -38,13 +43,16 @@ describe('useArc0001Resolver', () => {
     const resolve = vi.fn(() => resolved)
 
     beforeEach(() => {
-        mockAccounts.mockReturnValue([{ address: 'A' }, { address: 'MSIG1' }])
+        mockAccounts.mockReturnValue([
+            algo25Account('A'),
+            multisigAccount('MSIG1'),
+        ])
         resolve.mockClear()
         registerFakePlannerAdapter({ resolveDappRequest: resolve })
     })
 
     it('binds the wallet signing and multisig addresses into the planner call', () => {
-        const { result } = renderHook(() => useArc0001Resolver())
+        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
         const request = { transactions: [{ txn: 'abc' }] }
 
         const outcome = result.current(request)
@@ -59,7 +67,7 @@ describe('useArc0001Resolver', () => {
     })
 
     it('passes authorizedAddresses and maxTransactions through', () => {
-        const { result } = renderHook(() => useArc0001Resolver())
+        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
         const authorizedAddresses = new Set(['A'])
 
         result.current(

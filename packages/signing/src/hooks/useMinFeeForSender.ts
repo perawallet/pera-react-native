@@ -10,20 +10,26 @@
  limitations under the License
  */
 
-import {
-    legacyPlannerAdapter,
-    type MinFeeForSenderResult,
-} from '../chain-adapter'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { MinFeeForSenderResult } from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
+
+const NO_MIN_FEE: MinFeeForSenderResult = {
+    minFee: undefined,
+    isPending: false,
+}
 
 /**
  * PQ-aware minimum fee for display and fee inputs: resolves the effective
  * signer of `senderAddress` and applies the remote-config PQ multiplier.
  * Keeps UI fee displays in agreement with fees applied when building
- * transactions.
+ * transactions. No fee on a chain with no planner.
  */
 export const useMinFeeForSender = (
     senderAddress: string | undefined,
-): MinFeeForSenderResult => {
-    const useChainMinFeeForSender = legacyPlannerAdapter().useMinFeeForSender
-    return useChainMinFeeForSender(senderAddress)
-}
+    chainId: ChainId,
+): MinFeeForSenderResult =>
+    // Only the chain's own planner sees the sender.
+    usePlannerHook(chainId, NO_MIN_FEE, (planner, isChain) =>
+        planner.useMinFeeForSender(isChain ? senderAddress : undefined),
+    )

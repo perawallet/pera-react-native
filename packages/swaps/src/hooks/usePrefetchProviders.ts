@@ -13,18 +13,18 @@
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
 
 type UsePrefetchProvidersResult = () => void
 
-export const usePrefetchProviders = (): UsePrefetchProvidersResult => {
+export const usePrefetchProviders = (
+    scope: ChainScope,
+): UsePrefetchProvidersResult => {
     const queryClient = useQueryClient()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
 
     return useCallback(() => {

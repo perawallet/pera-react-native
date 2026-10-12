@@ -24,13 +24,13 @@ import { decryptItemPayload } from '../crypto/itemPayload'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     isAccountItemKey,
+    isChainHdAddressPayload,
     passkeyPartnerKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
-    BackupAccountType,
     BackupItemStatus,
     type AddressBackupPayload,
     type BackupId,
@@ -248,12 +248,11 @@ export const importFromBackup = async ({
     collect(fetched, deps, collected)
 
     const addressPayload = collected.addressPayloads.get(address)
-    if (addressPayload?.type === BackupAccountType.hdWallet) {
+    const parentSeed = addressPayload && parentSeedOf(addressPayload)
+    if (parentSeed) {
         // Hashed, not matched: the seed is filed under an account this device
         // may not hold, so nothing caches that address.
-        const seedKey = secretsItemKey(
-            deps.hashAddress(addressPayload.seedFirstDerivedAddress),
-        )
+        const seedKey = secretsItemKey(deps.hashAddress(parentSeed))
         if (state.items[seedKey]?.status === BackupItemStatus.ACTIVE) {
             collect(
                 await deps.readItems(
@@ -283,6 +282,14 @@ export const importFromBackup = async ({
     }
     return { state: { ...state, items }, summary }
 }
+
+/** The seed an HD child's item derives from, filed under its first derived
+ *  address. Read off the item's shape rather than its chain's kind, so an
+ *  item of a kind no registered adapter decodes still keeps its seed. */
+const parentSeedOf = (payload: AddressBackupPayload): string | undefined =>
+    isChainHdAddressPayload(payload)
+        ? payload.seedFirstDerivedAddress
+        : undefined
 
 const otherLiveAddressKeys = (
     state: SyncState,
@@ -364,25 +371,21 @@ const secretKeyToDelete = async (
     const own = payloads.get(addressKey)
     if (!own) return null
 
-    if (own.type !== BackupAccountType.hdWallet) {
+    const ownSeed = parentSeedOf(own)
+    if (!ownSeed) {
         return liveKeyUnder(state, address, BACKUP_SECRETS_KEY_PREFIX)
     }
 
     // Hashed, not matched: the seed is filed under an account this device may
     // not hold, so nothing caches that address.
-    const seedKey = secretsItemKey(
-        deps.hashAddress(own.seedFirstDerivedAddress),
-    )
+    const seedKey = secretsItemKey(deps.hashAddress(ownSeed))
     if (!isLive(seedKey)) return null
 
     const stillDerives = others.some(key => {
         const payload = payloads.get(key)
         // Unreadable sibling: assume it needs the seed.
         if (!payload) return true
-        return (
-            payload.type === BackupAccountType.hdWallet &&
-            payload.seedFirstDerivedAddress === own.seedFirstDerivedAddress
-        )
+        return parentSeedOf(payload) === ownSeed
     })
     return stillDerives ? null : seedKey
 }

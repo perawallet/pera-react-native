@@ -16,7 +16,10 @@ import type {
     ParsedPaymentUri,
 } from '@perawallet/wallet-core-chain-contract'
 import { deriveQuantumAddress, encodeAlgorandAddress } from '../blockchain'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    isValidAlgorandAddress,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
 
@@ -66,6 +69,7 @@ export const algorandAddressCodec: AddressCodec = {
     isValid: address => isValidAlgorandAddress(address),
     normalize: address => address,
     areEqual: (a, b) => a === b,
+    truncate: address => truncateAlgorandAddress(address),
     toPaymentUri: (address, opts) => {
         if (
             opts?.amount &&

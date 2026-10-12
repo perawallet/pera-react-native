@@ -12,75 +12,107 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    multisigChainAdapters,
+    type MultisigChainAdapter,
+} from '@perawallet/wallet-core-multisig'
 import { useMultisigDetailsBackfill } from '../useMultisigDetailsBackfill'
-
-import type { WalletAccount } from '../../models'
+import { withMultisigParameters } from '../../multisig'
+import { testAccount } from '../../__tests__/accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    fakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 
 const mocks = vi.hoisted(() => ({
     updateAccount: vi.fn(),
     useMultisigAccountDetailQuery: vi.fn(),
-    multisigAdapterFor: vi.fn(),
     deriveAddress: vi.fn(),
+    isMultisigEnabled: true,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useChainCapability: () => mocks.isMultisigEnabled,
 }))
 
 vi.mock('../useUpdateAccount', () => ({
     useUpdateAccount: () => mocks.updateAccount,
 }))
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-multisig')
+    >()),
     useMultisigAccountDetailQuery: mocks.useMultisigAccountDetailQuery,
-    multisigAdapterFor: mocks.multisigAdapterFor,
 }))
 
-const detailLessMultisig = {
+// Only address derivation is under test here; the accounts fake stores the parameters.
+const fakeMultisigAdapter = {
+    chainId: FAKE_CHAIN_ID,
+    deriveAddress: mocks.deriveAddress,
+} as Partial<MultisigChainAdapter> as MultisigChainAdapter
+
+const PARAMETERS = {
+    version: 1,
+    threshold: 2,
+    addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+}
+
+const detailLessMultisig = testAccount('multisig', 'MSIG_ADDR', {
     id: 'msig-id',
-    custody: { kind: 'multisig' },
-    address: 'MSIG_ADDR',
     name: 'Shared Account #4',
-} as unknown as WalletAccount
+})
+
+const serverDetail = (participantAddresses = PARAMETERS.addresses) => ({
+    data: {
+        threshold: PARAMETERS.threshold,
+        participantAddresses,
+        version: PARAMETERS.version,
+    },
+    isFetching: false,
+})
 
 describe('useMultisigDetailsBackfill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.multisigAdapterFor.mockReturnValue({
-            deriveAddress: mocks.deriveAddress,
-        })
-        // default: server data legitimately derives the account's address
+        mocks.isMultisigEnabled = true
+        multisigChainAdapters.reset()
+        multisigChainAdapters.register(fakeMultisigAdapter)
+        // Default: the server data legitimately derives the account's address.
         mocks.deriveAddress.mockReturnValue('MSIG_ADDR')
     })
 
-    it('enables the detail query only when a multisig account lacks details', () => {
+    it('enables the detail query only when a multisig account lacks its parameters', () => {
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
             data: undefined,
             isFetching: true,
         })
 
-        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
-
-        expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'MSIG_ADDR', enabled: true }),
+        const { result } = renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
         )
+
+        expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith({
+            network: 'mainnet',
+            address: 'MSIG_ADDR',
+            enabled: true,
+        })
+        expect(result.current.isBackfilling).toBe(true)
     })
 
-    it('does not fetch when details already exist', () => {
+    it('does not fetch when the parameters already exist', () => {
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
             data: undefined,
             isFetching: false,
         })
+        const complete = withMultisigParameters(
+            detailLessMultisig,
+            FAKE_CHAIN_ID,
+            PARAMETERS,
+        )
 
-        const complete = {
-            custody: { kind: 'multisig' },
-            address: 'MSIG_ADDR',
-            name: 'Shared Account #4',
-            multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
-        } as unknown as WalletAccount
-
-        renderHook(() => useMultisigDetailsBackfill(complete))
+        renderHook(() => useMultisigDetailsBackfill(complete, MAINNET_SCOPE))
 
         expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith(
             expect.objectContaining({ enabled: false }),
@@ -88,48 +120,59 @@ describe('useMultisigDetailsBackfill', () => {
         expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
 
-    it('writes fetched threshold + participants back into the account once', () => {
+    it('does not fetch for an account that is not a multisig', () => {
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
-            data: {
-                threshold: 2,
-                participantAddresses: ['ADDR1', 'ADDR2', 'ADDR3'],
-                version: 1,
-            },
+            data: undefined,
             isFetching: false,
         })
 
-        const { rerender } = renderHook(() =>
-            useMultisigDetailsBackfill(detailLessMultisig),
+        renderHook(() =>
+            useMultisigDetailsBackfill(
+                testAccount('local', 'LOCAL'),
+                MAINNET_SCOPE,
+            ),
         )
 
-        expect(mocks.multisigAdapterFor).toHaveBeenCalledWith('mainnet')
-        expect(mocks.deriveAddress).toHaveBeenCalledWith({
-            version: 1,
-            threshold: 2,
-            addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
-        })
-        expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
-        const details = {
-            threshold: 2,
-            addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
-            version: 1,
-        }
-        expect(mocks.updateAccount).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'msig-id',
-                custody: { kind: 'multisig' },
-                address: 'MSIG_ADDR',
-                name: 'Shared Account #4',
-                multisigDetails: details,
-                chains: {
-                    algorand: {
-                        address: 'MSIG_ADDR',
-                        native: { family: 'algorand', multisig: details },
-                    },
-                },
-            }),
+        expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ enabled: false }),
         )
-        expect(mocks.updateAccount.mock.calls[0][0]).not.toHaveProperty('type')
+    })
+
+    it('stays inert on a chain without the multisig capability', () => {
+        mocks.isMultisigEnabled = false
+        mocks.useMultisigAccountDetailQuery.mockReturnValue(serverDetail())
+
+        renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
+        )
+
+        expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ enabled: false }),
+        )
+        expect(mocks.updateAccount).not.toHaveBeenCalled()
+    })
+
+    it('writes the fetched parameters onto the chain entry once', () => {
+        mocks.useMultisigAccountDetailQuery.mockReturnValue(serverDetail())
+
+        const { rerender } = renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
+        )
+
+        expect(mocks.deriveAddress).toHaveBeenCalledWith(PARAMETERS)
+        expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
+        expect(mocks.updateAccount).toHaveBeenCalledWith({
+            ...detailLessMultisig,
+            chains: {
+                [FAKE_CHAIN_ID]: {
+                    address: 'MSIG_ADDR',
+                    native: fakeAccountsChain().adapter.multisigNative!.withParameters(
+                        undefined,
+                        PARAMETERS,
+                    ),
+                },
+            },
+        })
 
         rerender()
         expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
@@ -137,16 +180,13 @@ describe('useMultisigDetailsBackfill', () => {
 
     it('refuses to backfill when the participant set does not derive the address', () => {
         mocks.deriveAddress.mockReturnValue('A_DIFFERENT_ADDRESS')
-        mocks.useMultisigAccountDetailQuery.mockReturnValue({
-            data: {
-                threshold: 2,
-                participantAddresses: ['EVIL1', 'EVIL2'],
-                version: 1,
-            },
-            isFetching: false,
-        })
+        mocks.useMultisigAccountDetailQuery.mockReturnValue(
+            serverDetail(['EVIL1', 'EVIL2']),
+        )
 
-        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
+        renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
+        )
 
         expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
@@ -155,35 +195,28 @@ describe('useMultisigDetailsBackfill', () => {
         mocks.deriveAddress.mockImplementation(() => {
             throw new Error('invalid address')
         })
-        mocks.useMultisigAccountDetailQuery.mockReturnValue({
-            data: {
-                threshold: 2,
-                participantAddresses: ['NOT_AN_ADDRESS'],
-                version: 1,
-            },
-            isFetching: false,
-        })
+        mocks.useMultisigAccountDetailQuery.mockReturnValue(
+            serverDetail(['NOT_AN_ADDRESS']),
+        )
 
-        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
+        renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
+        )
 
         expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
 
     it('fails closed on a chain with no multisig adapter', () => {
-        mocks.multisigAdapterFor.mockImplementation(() => {
-            throw new ChainAdapterNotRegisteredError('multisig', 'algorand')
-        })
-        mocks.useMultisigAccountDetailQuery.mockReturnValue({
-            data: {
-                threshold: 2,
-                participantAddresses: ['ADDR1', 'ADDR2'],
-                version: 1,
-            },
-            isFetching: false,
-        })
+        multisigChainAdapters.reset()
+        mocks.useMultisigAccountDetailQuery.mockReturnValue(serverDetail())
 
-        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
+        renderHook(() =>
+            useMultisigDetailsBackfill(detailLessMultisig, MAINNET_SCOPE),
+        )
 
+        expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ enabled: false }),
+        )
         expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
 })

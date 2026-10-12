@@ -56,7 +56,11 @@ import {
     CardEscrowUnavailableError,
 } from '../useCardManualDeposit'
 
-const account = { address: 'FUNDINGADDR' } as WalletAccount
+const account: WalletAccount = {
+    id: 'funding',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'FUNDINGADDR' } },
+}
 const ESCROW = 'ESCROWCARDADDR'
 
 describe('useCardManualDeposit', () => {
@@ -118,6 +122,21 @@ describe('useCardManualDeposit', () => {
 
         await expect(
             result.current.deposit({ account, amount: new Decimal('1') }),
+        ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
+        expect(mockBuildDeposit).not.toHaveBeenCalled()
+    })
+
+    it('refuses to deposit from an account with no address on the card chain', async () => {
+        const { result } = renderHook(() => useCardManualDeposit())
+
+        await expect(
+            result.current.deposit({
+                account: {
+                    ...account,
+                    chains: { ethereum: { address: '0xF' } },
+                },
+                amount: new Decimal('1'),
+            }),
         ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
         expect(mockBuildDeposit).not.toHaveBeenCalled()
     })

@@ -12,6 +12,10 @@
 
 export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
 export {
+    useSenderBalances,
+    type SenderBalances,
+} from './send-funds/useSenderBalances'
+export {
     useClaimAssetsStore,
     useClaimAssets,
 } from './claim-assets/useClaimAssets'

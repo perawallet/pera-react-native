@@ -23,7 +23,7 @@ const buildData = (
             { address: 'A', secretKey: new Uint8Array(32).fill(1) },
             { address: 'B', secretKey: null },
         ],
-        hdWallets: [
+        hdSeeds: [
             {
                 walletId: 'w1',
                 entropy: new Uint8Array(32).fill(2),
@@ -44,8 +44,8 @@ describe('scrubLegacyPayloadSecrets', () => {
 
         expect(data.auth.pin?.every(b => b === 0)).toBe(true)
         expect(data.accounts[0].secretKey?.every(b => b === 0)).toBe(true)
-        expect(data.hdWallets[0].entropy?.every(b => b === 0)).toBe(true)
-        expect(data.hdWallets[0].keys[0].privateKey?.every(b => b === 0)).toBe(
+        expect(data.hdSeeds[0].entropy?.every(b => b === 0)).toBe(true)
+        expect(data.hdSeeds[0].keys[0].privateKey?.every(b => b === 0)).toBe(
             true,
         )
     })
@@ -54,7 +54,7 @@ describe('scrubLegacyPayloadSecrets', () => {
         const data = buildData({
             auth: { pin: null },
             accounts: [{ address: 'B', secretKey: null } as never],
-            hdWallets: [{ walletId: 'w', entropy: null, keys: [] } as never],
+            hdSeeds: [{ walletId: 'w', entropy: null, keys: [] } as never],
         })
 
         expect(() => scrubLegacyPayloadSecrets(data)).not.toThrow()

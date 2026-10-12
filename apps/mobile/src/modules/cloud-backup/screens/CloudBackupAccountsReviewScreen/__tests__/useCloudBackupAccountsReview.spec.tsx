@@ -31,7 +31,12 @@ const {
     deleteFromBackupMock: vi.fn(),
     addFromBackupMock: vi.fn(),
     backUpAccountMock: vi.fn(),
-    notBackedUpMock: { current: [{ address: 'B' }] as { address: string }[] },
+    notBackedUpMock: {
+        current: [{ account: { id: 'B' }, address: 'B' }] as {
+            account: { id: string }
+            address: string
+        }[],
+    },
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -55,7 +60,7 @@ vi.mock('../../../hooks/useBackupAccountReview', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
-    notBackedUpMock.current = [{ address: 'B' }]
+    notBackedUpMock.current = [{ account: { id: 'B' }, address: 'B' }]
 })
 
 describe('useCloudBackupAccountsReview', () => {

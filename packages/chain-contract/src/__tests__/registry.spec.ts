@@ -84,12 +84,24 @@ describe('createChainAdapterRegistry', () => {
         expect(registry.get('algorand')).toBe(first)
     })
 
+    it('lists each adapter once, in registration order', () => {
+        const algorand: TestAdapter = { chainId: 'algorand', label: 'a' }
+        const ethereum: TestAdapter = { chainId: 'ethereum', label: 'e' }
+
+        registry.register(algorand)
+        registry.register(ethereum)
+        registry.register(algorand)
+
+        expect(registry.list()).toEqual([algorand, ethereum])
+    })
+
     it('forgets every registration on reset', () => {
         registry.register({ chainId: 'algorand', label: 'a' })
 
         registry.reset()
 
         expect(registry.has('algorand')).toBe(false)
+        expect(registry.list()).toEqual([])
     })
 
     it('keeps registries for different features independent', () => {

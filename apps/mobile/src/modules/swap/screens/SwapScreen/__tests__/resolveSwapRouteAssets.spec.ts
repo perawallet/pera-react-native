@@ -34,21 +34,36 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 describe('resolveSwapRouteAssets', () => {
     it('returns null when no asset params are present', () => {
-        expect(resolveSwapRouteAssets(undefined, 'mainnet')).toBeNull()
-        expect(resolveSwapRouteAssets({}, 'mainnet')).toBeNull()
+        expect(
+            resolveSwapRouteAssets(undefined, {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBeNull()
+        expect(
+            resolveSwapRouteAssets(
+                {},
+                { chainId: 'algorand', networkId: 'mainnet' },
+            ),
+        ).toBeNull()
     })
 
     it('keeps a distinct output asset (ALGO -> token)', () => {
         expect(
             resolveSwapRouteAssets(
                 { assetInId: '0', assetOutId: TOKEN },
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })
 
     it('falls back to USDC when the output is missing (ALGO page → ALGO/USDC)', () => {
-        expect(resolveSwapRouteAssets({ assetInId: '0' }, 'mainnet')).toEqual({
+        expect(
+            resolveSwapRouteAssets(
+                { assetInId: '0' },
+                { chainId: 'algorand', networkId: 'mainnet' },
+            ),
+        ).toEqual({
             assetInId: '0',
             assetOutId: USDC_MAINNET,
         })
@@ -58,24 +73,34 @@ describe('resolveSwapRouteAssets', () => {
         expect(
             resolveSwapRouteAssets(
                 { assetInId: '0', assetOutId: '0' },
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: USDC_MAINNET })
     })
 
     it('uses the network-specific USDC id on testnet', () => {
-        expect(resolveSwapRouteAssets({ assetInId: '0' }, 'testnet')).toEqual({
+        expect(
+            resolveSwapRouteAssets(
+                { assetInId: '0' },
+                { chainId: 'algorand', networkId: 'testnet' },
+            ),
+        ).toEqual({
             assetInId: '0',
             assetOutId: USDC_TESTNET,
         })
     })
 
     it('returns null on a network with no known USDC to default the output to', () => {
-        expect(resolveSwapRouteAssets({ assetInId: '0' }, 'betanet')).toBeNull()
+        expect(
+            resolveSwapRouteAssets(
+                { assetInId: '0' },
+                { chainId: 'algorand', networkId: 'betanet' },
+            ),
+        ).toBeNull()
         expect(
             resolveSwapRouteAssets(
                 { assetInId: '0', assetOutId: '0' },
-                'custom',
+                { chainId: 'algorand', networkId: 'custom' },
             ),
         ).toBeNull()
     })
@@ -86,14 +111,17 @@ describe('resolveSwapRouteAssets', () => {
         expect(
             resolveSwapRouteAssets(
                 { assetInId: '0', assetOutId: TOKEN },
-                'betanet',
+                { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })
 
     it('defaults the input to ALGO when only an output is provided', () => {
         expect(
-            resolveSwapRouteAssets({ assetOutId: TOKEN }, 'mainnet'),
+            resolveSwapRouteAssets(
+                { assetOutId: TOKEN },
+                { chainId: 'algorand', networkId: 'mainnet' },
+            ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })
 
@@ -101,7 +129,7 @@ describe('resolveSwapRouteAssets', () => {
         expect(
             resolveSwapRouteAssets(
                 { assetInId: '', assetOutId: TOKEN },
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })

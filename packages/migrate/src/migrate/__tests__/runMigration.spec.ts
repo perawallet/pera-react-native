@@ -23,7 +23,7 @@ const emptyLegacyData = (): LegacyMigrationData =>
     ({
         auth: { pin: null },
         accounts: [],
-        hdWallets: [],
+        hdSeeds: [],
     }) as unknown as LegacyMigrationData
 
 import { runMigration } from '../runMigration'
@@ -33,7 +33,7 @@ import {
     ALL_MIGRATION_STEPS,
     MIGRATION_STEP_TARGET_VERSIONS,
 } from '../stepVersions'
-import type { MigrationDeps } from '../types'
+import type { MigrationDeps, MigrationRunOptions } from '../types'
 
 vi.mock('../runMigrationLoop', () => ({ runMigrationLoop: vi.fn() }))
 vi.mock('../runExtrasMigration', () => ({ runExtrasMigration: vi.fn() }))
@@ -67,7 +67,8 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
     return service
 }
 
-const buildDeps = (): MigrationDeps => ({
+const buildDeps = (): MigrationRunOptions => ({
+    chainId: 'algorand',
     importAccount: vi.fn() as unknown as MigrationDeps['importAccount'],
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
@@ -255,7 +256,7 @@ describe('runMigration', () => {
         },
     )
 
-    it('passes accounts + hdWallets + deps into runMigrationLoop', async () => {
+    it('passes accounts + hdSeeds + deps into runMigrationLoop', async () => {
         const data: LegacyMigrationData = emptyLegacyData()
         const migration = buildMigrationService({
             getLegacyData: vi.fn().mockResolvedValue(data),
@@ -266,8 +267,9 @@ describe('runMigration', () => {
 
         expect(mockedRunMigrationLoop).toHaveBeenCalledWith({
             accounts: data.accounts,
-            hdWallets: data.hdWallets,
+            hdSeeds: data.hdSeeds,
             isRerun: false,
+            chainId: 'algorand',
             importAccount: deps.importAccount,
             createHdWalletAccount: deps.createHdWalletAccount,
             createHDWalletKey: deps.createHDWalletKey,
@@ -337,8 +339,11 @@ describe('step-version orchestration', () => {
         expect(mockedRunMigrationLoop).not.toHaveBeenCalled()
         expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
             expect.anything(),
-            ['deviceIdentifiers'],
-            { walletConnectSessionKeys: undefined },
+            {
+                chainId: 'algorand',
+                steps: ['deviceIdentifiers'],
+                walletConnectSessionKeys: undefined,
+            },
         )
         expect(result.completed).toBe(true)
     })
@@ -358,8 +363,7 @@ describe('step-version orchestration', () => {
 
         expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
             expect.anything(),
-            expect.anything(),
-            { walletConnectSessionKeys },
+            expect.objectContaining({ walletConnectSessionKeys }),
         )
         expect(mockedRunMigrationLoop).toHaveBeenCalledTimes(1)
         expect(mockedRunMigrationLoop.mock.calls[0][0]).not.toHaveProperty(

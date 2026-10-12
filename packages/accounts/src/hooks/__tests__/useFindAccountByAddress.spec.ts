@@ -15,6 +15,15 @@ import { renderHook } from '@testing-library/react'
 import { useFindAccountByAddress } from '../useFindAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+} from '../../__tests__/accountFactory'
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -34,36 +43,60 @@ describe('useFindAccountByAddress', () => {
         useAccountsStore.setState({ accounts: [] })
     })
 
-    test('finds account by address', () => {
+    test('finds the account holding the address on the scope', () => {
         const accounts: WalletAccount[] = [
-            {
-                id: '1',
-                address: 'A',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-                name: 'A',
-            },
-            {
-                id: '2',
-                address: 'B',
-                custody: { kind: 'local', seed: null },
-                canSign: true,
-                name: 'B',
-            },
+            testAccount('local', 'A', { id: '1' }),
+            testAccount('local', 'B', { id: '2' }),
         ]
         useAccountsStore.setState({ accounts })
 
-        const { result } = renderHook(() => useFindAccountByAddress('A'))
-        expect(result.current).toEqual(accounts[0])
-
-        const { result: result2 } = renderHook(() =>
-            useFindAccountByAddress('C'),
+        const { result } = renderHook(() =>
+            useFindAccountByAddress('A', MAINNET_SCOPE),
         )
-        expect(result2.current).toBeNull()
+        expect(result.current).toBe(accounts[0])
+
+        const { result: missing } = renderHook(() =>
+            useFindAccountByAddress('C', MAINNET_SCOPE),
+        )
+        expect(missing.current).toBeNull()
     })
 
-    test('handles empty store', () => {
-        const { result } = renderHook(() => useFindAccountByAddress('A'))
+    test('does not match an equal address string held on another chain', () => {
+        const onOther = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { ethereum: { address: 'SAME' } },
+            { id: 'other' },
+        )
+        const onFake = testAccount('watch', 'SAME', { id: 'fake' })
+        useAccountsStore.setState({ accounts: [onOther] })
+
+        const { result, rerender } = renderHook(() =>
+            useFindAccountByAddress('SAME', MAINNET_SCOPE),
+        )
+        expect(result.current).toBeNull()
+
+        useAccountsStore.setState({ accounts: [onOther, onFake] })
+        rerender()
+        expect(result.current).toBe(onFake)
+    })
+
+    test("compares through the chain's codec", () => {
+        fakeAccountsChain().codec.areEqual = (a, b) =>
+            a.toLowerCase() === b.toLowerCase()
+        const account = testAccount('watch', 'MIXED')
+        useAccountsStore.setState({ accounts: [account] })
+
+        const { result } = renderHook(() =>
+            useFindAccountByAddress('mixed', MAINNET_SCOPE),
+        )
+
+        expect(result.current).toBe(account)
+    })
+
+    test('handles an empty store', () => {
+        const { result } = renderHook(() =>
+            useFindAccountByAddress('A', MAINNET_SCOPE),
+        )
         expect(result.current).toBeNull()
     })
 })

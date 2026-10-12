@@ -69,12 +69,17 @@ import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
     custody: { kind: 'local', seed: null },
-    address: ALGO25_TEST_ADDRESS,
-    keyPairId: 'funding-account-key',
+    chains: {
+        algorand: {
+            address: ALGO25_TEST_ADDRESS,
+            keyPairId: 'funding-account-key',
+        },
+    },
     name: 'Main Account',
 }
 
@@ -105,14 +110,14 @@ const openFundingTypeSheet = async () => {
 describe('Flow: Card funding type switch', () => {
     beforeEach(() => {
         useAccountsStore.getState().setAccounts([ACCOUNT])
-        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT.address)
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT.id)
         const store = useCardStore.getState()
         store.resetState()
-        store.setConnectedFundingSourceAddress(ACCOUNT.address)
+        store.setConnectedFundingSourceAddress(addressOf(ACCOUNT))
         // A card exists for the connected account on the active network.
         store.setEscrowCard({
             cardAddress: CARD_ADDRESS,
-            ownerAddress: ACCOUNT.address,
+            ownerAddress: addressOf(ACCOUNT),
             network: useNetworkStore.getState().network,
             txId: 'CARD_TX_ID',
         })
@@ -152,7 +157,7 @@ describe('Flow: Card funding type switch', () => {
 
         await waitFor(() =>
             expect(enableAutoDraw).toHaveBeenCalledWith(
-                expect.objectContaining({ address: ACCOUNT.address }),
+                expect.objectContaining({ id: ACCOUNT.id }),
                 CARD_ADDRESS,
             ),
         )

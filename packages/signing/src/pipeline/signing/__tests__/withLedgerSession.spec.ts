@@ -41,30 +41,12 @@ import {
     SigningError,
 } from '../../errors'
 import { withLedgerSession } from '../withLedgerSession'
+import { ledgerAccount } from '../../../__tests__/accounts'
 
 const ADDRESS = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const makeAccount = (): HardwareWalletAccount =>
-    ({
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 3,
-        },
-        address: ADDRESS,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            accountIndex: 3,
-            transportType: 'ble',
-        },
-    }) as HardwareWalletAccount
+    ledgerAccount(ADDRESS, 3) as HardwareWalletAccount
 
 const makeTransport = (
     overrides?: Partial<HardwareWalletTransport>,
@@ -120,6 +102,7 @@ describe('withLedgerSession', () => {
 
         const result = await withLedgerSession(
             makeAccount(),
+            ADDRESS,
             { registry, callbacks: { onPhaseChange } },
             operation,
         )
@@ -147,6 +130,7 @@ describe('withLedgerSession', () => {
 
         const promise = withLedgerSession(
             makeAccount(),
+            ADDRESS,
             {
                 registry: createHardwareWalletRegistry(),
                 callbacks: { onError },
@@ -170,6 +154,7 @@ describe('withLedgerSession', () => {
         await expect(
             withLedgerSession(
                 makeAccount(),
+                ADDRESS,
                 {
                     registry,
                     callbacks: { signal: controller.signal, onError },
@@ -195,6 +180,7 @@ describe('withLedgerSession', () => {
         await expect(
             withLedgerSession(
                 makeAccount(),
+                ADDRESS,
                 { registry, callbacks: { onError } },
                 operation,
             ),
@@ -210,7 +196,7 @@ describe('withLedgerSession', () => {
         vi.mocked(provider.connect).mockReturnValue(new Promise(() => {}))
 
         await expect(
-            withLedgerSession(makeAccount(), { registry }, vi.fn()),
+            withLedgerSession(makeAccount(), ADDRESS, { registry }, vi.fn()),
         ).rejects.toBeInstanceOf(LedgerDeviceNotFoundError)
     })
 
@@ -220,6 +206,7 @@ describe('withLedgerSession', () => {
         await expect(
             withLedgerSession(
                 makeAccount(),
+                ADDRESS,
                 { registry, callbacks: { onError } },
                 async () => {
                     throw new LedgerAppOutdatedError()
@@ -234,6 +221,7 @@ describe('withLedgerSession', () => {
 
         const promise = withLedgerSession(
             makeAccount(),
+            ADDRESS,
             { registry, callbacks: { onError } },
             async () => {
                 throw new Error('boom')
@@ -259,7 +247,12 @@ describe('withLedgerSession', () => {
         })
         registry = makeRegistry(makeProvider(transport))
 
-        await withLedgerSession(makeAccount(), { registry }, async () => 'ok')
+        await withLedgerSession(
+            makeAccount(),
+            ADDRESS,
+            { registry },
+            async () => 'ok',
+        )
 
         expect(order).toEqual(['unsubscribe', 'disconnect'])
     })
@@ -275,11 +268,16 @@ describe('withLedgerSession', () => {
         registry = makeRegistry(makeProvider(transport))
 
         await expect(
-            withLedgerSession(makeAccount(), { registry }, ({ guard }) => {
-                const pending = guard.race(new Promise<never>(() => {}))
-                fireDisconnect()
-                return pending
-            }),
+            withLedgerSession(
+                makeAccount(),
+                ADDRESS,
+                { registry },
+                ({ guard }) => {
+                    const pending = guard.race(new Promise<never>(() => {}))
+                    fireDisconnect()
+                    return pending
+                },
+            ),
         ).rejects.toBeInstanceOf(LedgerDisconnectedError)
     })
 
@@ -294,6 +292,7 @@ describe('withLedgerSession', () => {
 
         const promise = withLedgerSession(
             makeAccount(),
+            ADDRESS,
             { registry, callbacks: { signal: controller.signal } },
             () =>
                 new Promise<string>(resolve => {
@@ -317,7 +316,12 @@ describe('withLedgerSession', () => {
         vi.mocked(transport.disconnect).mockRejectedValue(new Error('ble gone'))
 
         await expect(
-            withLedgerSession(makeAccount(), { registry }, async () => 'ok'),
+            withLedgerSession(
+                makeAccount(),
+                ADDRESS,
+                { registry },
+                async () => 'ok',
+            ),
         ).resolves.toBe('ok')
     })
 })

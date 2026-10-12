@@ -17,9 +17,9 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockAccount: WalletAccount = {
     id: 'watch-test-account',
-    address: 'test-address-123',
     name: 'Test Account',
     custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address-123' } },
 }
 
 describe('useReceiveFunds', () => {

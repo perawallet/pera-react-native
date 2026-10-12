@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import {
     type AssetWithAccountBalance,
     buildAccount,
+    chainAccountOf,
     useAccountBalancesQuery,
     useAuthorityOf,
     type WalletAccount,
@@ -31,6 +32,7 @@ type UseRekeyedAccountInfoContentParams = {
 }
 
 export type UseRekeyedAccountInfoContentResult = {
+    address: string
     rekeyedAccountBalances: AssetWithAccountBalance[]
     rekeyedAccountAlgoValue: Decimal
     authAddress: Optional<string>
@@ -41,9 +43,11 @@ export type UseRekeyedAccountInfoContentResult = {
 export function useRekeyedAccountInfoContent({
     account,
 }: UseRekeyedAccountInfoContentParams): UseRekeyedAccountInfoContentResult {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
-        useAccountBalancesQuery([account], true)
+        useAccountBalancesQuery([account], scope, true)
     const isNativeAssetId = useIsNativeAssetId()
+    const address = chainAccountOf(account, scope.chainId)?.address
     const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
@@ -52,16 +56,21 @@ export function useRekeyedAccountInfoContent({
             // Display-only synth account, keyed by its address.
             id: authority,
             custody: { kind: 'watch' },
-            chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address: authority } },
+            chainId: scope.chainId,
+            chains: { [scope.chainId]: { address: authority } },
         })
-    }, [authority])
+    }, [authority, scope.chainId])
 
     const { accountBalances: authBalances, isPending: isAuthPending } =
-        useAccountBalancesQuery(authAccount ? [authAccount] : [], !!authAccount)
+        useAccountBalancesQuery(
+            authAccount ? [authAccount] : [],
+            scope,
+            !!authAccount,
+        )
 
     const rekeyedAccountData = useMemo(() => {
-        const balanceData = rekeyedBalances.get(account.address)
+        const balanceData =
+            address === undefined ? undefined : rekeyedBalances.get(address)
         if (!balanceData) {
             return {
                 balances: [],
@@ -79,15 +88,18 @@ export function useRekeyedAccountInfoContent({
             balances: sorted,
             algoValue: balanceData.algoValue,
         }
-    }, [isNativeAssetId, rekeyedBalances, account.address])
+    }, [isNativeAssetId, rekeyedBalances, address])
 
     const authAccountAlgoValue = useMemo(() => {
-        if (!authAccount) return new Decimal(0)
-        const balanceData = authBalances.get(authAccount.address)
+        const authAddress =
+            authAccount && chainAccountOf(authAccount, scope.chainId)?.address
+        if (!authAddress) return new Decimal(0)
+        const balanceData = authBalances.get(authAddress)
         return balanceData?.algoValue ?? new Decimal(0)
-    }, [authBalances, authAccount])
+    }, [authBalances, authAccount, scope.chainId])
 
     return {
+        address: address ?? '',
         rekeyedAccountBalances: rekeyedAccountData.balances,
         rekeyedAccountAlgoValue: rekeyedAccountData.algoValue,
         authAddress: authority ?? undefined,

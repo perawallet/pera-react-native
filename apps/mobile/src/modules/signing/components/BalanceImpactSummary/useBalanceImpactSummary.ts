@@ -26,6 +26,8 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
@@ -77,13 +79,19 @@ export type UseBalanceImpactSummaryResult = {
 type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const { transactions, signableAddresses, isSimulating, simulationFailed } =
-        useImpactTransactions()
+        useImpactTransactions(scope)
 
     const impact = useMemo(
-        () => computeBalanceImpact(transactions, signableAddresses),
-        [transactions, signableAddresses],
+        () =>
+            computeBalanceImpact(
+                scope.chainId,
+                transactions,
+                signableAddresses,
+            ),
+        [transactions, signableAddresses, scope.chainId],
     )
 
     const assetIds = useMemo(

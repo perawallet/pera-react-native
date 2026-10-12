@@ -12,9 +12,12 @@
 
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     fetchTransactionsCsv,
     CsvExportError,
@@ -26,8 +29,7 @@ import {
  * Parameters for the useCsvExportMutation hook.
  */
 export type UseCsvExportMutationParams = {
-    /** The network to export from */
-    network: Network
+    scope: ChainScope
     /** Callback when export succeeds - receives the result for sharing */
     onSuccess?: (result: CsvExportResult) => void
     /** Callback when export fails */
@@ -85,7 +87,7 @@ export type UseCsvExportMutationResult = {
  *
  * const MyComponent = () => {
  *     const { exportCsv, isLoading } = useCsvExportMutation({
- *         network: 'mainnet',
+ *         scope,
  *         onSuccess: async (result) => {
  *             await Share.share({
  *                 title: `Transactions - ${result.accountAddress}`,
@@ -107,9 +109,9 @@ export type UseCsvExportMutationResult = {
 export const useCsvExportMutation = (
     params: UseCsvExportMutationParams,
 ): UseCsvExportMutationResult => {
-    const { network, onSuccess, onError } = params
+    const { scope, onSuccess, onError } = params
     const isUnavailableOnNetwork = !useChainCapability(
-        scopeForLegacyNetwork(network).chainId,
+        scope.chainId,
         'csvExport',
     )
 
@@ -125,7 +127,7 @@ export const useCsvExportMutation = (
                 dateRange: exportParams.dateRange,
                 filename: exportParams.filename,
                 assetId: exportParams.assetId,
-                network,
+                network: legacyNetworkOf(scope),
             })
         },
         onSuccess: result => {

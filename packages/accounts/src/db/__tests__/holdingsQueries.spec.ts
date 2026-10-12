@@ -486,13 +486,15 @@ describe('account holdings queries', () => {
         })
 
         it('falls back to the adapter native asset when its seeded row is gone', () => {
-            expect(assetFromHoldingLiteRow(unsyncedRow('0'))).toBe(
+            expect(assetFromHoldingLiteRow(unsyncedRow('0'), 'algorand')).toBe(
                 nativeAssetFor('algorand'),
             )
         })
 
         it('stays null for an ASA whose metadata has not synced', () => {
-            expect(assetFromHoldingLiteRow(unsyncedRow('100'))).toBeNull()
+            expect(
+                assetFromHoldingLiteRow(unsyncedRow('100'), 'algorand'),
+            ).toBeNull()
         })
     })
 })

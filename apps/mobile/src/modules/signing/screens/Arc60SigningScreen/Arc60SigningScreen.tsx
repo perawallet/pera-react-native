@@ -35,7 +35,7 @@ export const Arc60SigningScreen = () => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
-        isQuantumBlocked,
+        isSigningBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -43,7 +43,7 @@ export const Arc60SigningScreen = () => {
 
     if (!request || !parsed) return null
 
-    if (isQuantumBlocked) {
+    if (isSigningBlocked) {
         return (
             <PWScreen
                 scroll='never'

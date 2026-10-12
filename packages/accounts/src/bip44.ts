@@ -11,12 +11,16 @@
  */
 
 import { InvalidBip44PathError } from './errors'
-import type { HDWalletDetails } from './models'
+import type { HdIndex } from './models'
 
-export type Bip44Coordinates = Pick<
-    HDWalletDetails,
-    'account' | 'change' | 'keyIndex'
->
+export type Bip44Coordinates = {
+    account: number
+    change: number
+    keyIndex: number
+}
+
+/** Pera's HD accounts all derive on the external chain. */
+const HD_CHANGE = 0
 
 /**
  * Parses `m/44'/<coinType>'/<account>'/<change>/<keyIndex>`. `m/` is optional
@@ -73,22 +77,31 @@ export const parseBip44Path = (
     return { account, change, keyIndex }
 }
 
+/** Throws {@link InvalidBip44PathError} (`reason: 'malformed'`) when the path doesn't parse; a mismatch returns false. */
+export const bip44PathMatchesIndex = (
+    hdPath: string,
+    index: HdIndex,
+    coinType: number,
+): boolean => {
+    const parsed = parseBip44Path(hdPath, coinType)
+    return (
+        parsed.account === index.account &&
+        parsed.change === HD_CHANGE &&
+        parsed.keyIndex === index.keyIndex
+    )
+}
+
 /** Throws {@link InvalidBip44PathError}: `'malformed'` when unparseable, `'mismatch'` when it names other coordinates. */
 export const assertBip44PathMatches = (
     hdPath: string,
-    details: HDWalletDetails,
+    index: HdIndex,
     coinType: number,
 ): void => {
-    const parsed = parseBip44Path(hdPath, coinType)
-    if (
-        parsed.account !== details.account ||
-        parsed.change !== details.change ||
-        parsed.keyIndex !== details.keyIndex
-    ) {
+    if (!bip44PathMatchesIndex(hdPath, index, coinType)) {
         throw new InvalidBip44PathError(
             hdPath,
             'mismatch',
-            `does not match HD wallet (account=${details.account}, change=${details.change}, keyIndex=${details.keyIndex})`,
+            `does not match HD wallet (account=${index.account}, change=${HD_CHANGE}, keyIndex=${index.keyIndex})`,
         )
     }
 }

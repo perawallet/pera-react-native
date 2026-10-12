@@ -14,7 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     BackupAccountType,
     deriveBackupContactReview,
@@ -50,6 +54,7 @@ import {
     seedHDWalletAccounts,
 } from './__fixtures__/cloudBackup'
 import { ALGO25_TEST_MNEMONIC } from './__fixtures__/onboarding'
+import { addressOf } from './__fixtures__/accounts'
 
 type SetupOptions = {
     /** Device id the backup is registered under; the manager signs with this
@@ -86,17 +91,22 @@ const setupSyncedBackup = async ({
         buildSyncHandlers({ backupId })
     server.use(...handlers)
 
-    const importHook = renderQueryHook(() => useCloudBackupImport())
+    const importHook = renderQueryHook(() =>
+        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+    )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
     const hdHook = withHdResolver
-        ? renderQueryHook(() => useResolveHdSeedForBackup())
+        ? renderQueryHook(() => useResolveHdSeedForBackup(LEGACY_CHAIN_ID))
         : null
 
     const manager = initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
@@ -147,8 +157,8 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         } = await setupSyncedBackup()
         await manager.syncNow()
 
-        const addressKey = accountKey(account.address)
-        const secretKey = secretsKey(account.address)
+        const addressKey = accountKey(addressOf(account))
+        const secretKey = secretsKey(addressOf(account))
         expect(getItem(addressKey)).toBeDefined()
 
         const secretItem = getItem(secretKey)
@@ -159,7 +169,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             key: secretKey,
         })
         expect(JSON.parse(plaintext)).toMatchObject({
-            type: BackupAccountType.algo25,
+            type: 'algo25',
             mnemonic: ALGO25_TEST_MNEMONIC,
         })
 
@@ -201,30 +211,30 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         } = await setupSyncedBackup({ withHdResolver: true })
         await manager.syncNow()
 
-        expect(getItem(accountKey(first.address))).toBeDefined()
-        expect(getItem(accountKey(second.address))).toBeDefined()
-        expect(getItem(secretsKey(second.address))).toBeUndefined()
+        expect(getItem(accountKey(addressOf(first)))).toBeDefined()
+        expect(getItem(accountKey(addressOf(second)))).toBeDefined()
+        expect(getItem(secretsKey(addressOf(second)))).toBeUndefined()
 
-        const seedItem = getItem(secretsKey(first.address))
+        const seedItem = getItem(secretsKey(addressOf(first)))
         expect(seedItem).toBeDefined()
         const plaintext = decryptItemPayload(seedItem!.payload, {
             encryptionKey,
             backupId,
-            key: secretsKey(first.address),
+            key: secretsKey(addressOf(first)),
         })
         expect(JSON.parse(plaintext)).toMatchObject({
             type: BackupAccountType.hdSeed,
         })
 
-        const addrItem = getItem(accountKey(first.address))!
+        const addrItem = getItem(accountKey(addressOf(first)))!
         const addrPlain = decryptItemPayload(addrItem.payload, {
             encryptionKey,
             backupId,
-            key: accountKey(first.address),
+            key: accountKey(addressOf(first)),
         })
         expect(JSON.parse(addrPlain)).toMatchObject({
-            type: BackupAccountType.hdWallet,
-            seedFirstDerivedAddress: first.address,
+            type: 'hdWallet',
+            seedFirstDerivedAddress: addressOf(first),
         })
     })
     it('deletes the account from the server when the user chooses Delete', async () => {
@@ -233,16 +243,16 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             await setupSyncedBackup()
 
         await manager.syncNow()
-        expect(getItem(accountKey(account.address))).toBeDefined()
+        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
 
-        expect(await manager.deleteAccountFromBackup(account.address)).toBe(
+        expect(await manager.deleteAccountFromBackup(addressOf(account))).toBe(
             'settled',
         )
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(account.address))).toBeUndefined()
-        expect(getItem(secretsKey(account.address))).toBeUndefined()
+        expect(getItem(accountKey(addressOf(account)))).toBeUndefined()
+        expect(getItem(secretsKey(addressOf(account)))).toBeUndefined()
     })
 
     it('leaves the server copy alone when the user chooses Keep it', async () => {
@@ -251,12 +261,12 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             await setupSyncedBackup()
 
         await manager.syncNow()
-        expect(await manager.keepAccountInBackup(account.address)).toBe(true)
+        expect(await manager.keepAccountInBackup(addressOf(account))).toBe(true)
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(account.address))).toBeDefined()
-        expect(getItem(secretsKey(account.address))).toBeDefined()
+        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(secretsKey(addressOf(account)))).toBeDefined()
     })
     it('keeps the server copy when an account leaves the device without a choice', async () => {
         const account = await seedAlgo25Account()
@@ -264,14 +274,14 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             await setupSyncedBackup()
 
         await manager.syncNow()
-        expect(getItem(accountKey(account.address))).toBeDefined()
+        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
 
         // No review action and no removal flow: the shape of a device wipe.
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(account.address))).toBeDefined()
-        expect(getItem(secretsKey(account.address))).toBeDefined()
+        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(secretsKey(addressOf(account)))).toBeDefined()
     })
     it('keeps the shared HD seed until its last account leaves the backup', async () => {
         const { first, second } = await seedHDWalletAccounts()
@@ -283,20 +293,20 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
 
         // The seed rides under the FIRST derived address, so deleting that
         // account must not take the key material its sibling still needs.
-        expect(await manager.deleteAccountFromBackup(first.address)).toBe(
+        expect(await manager.deleteAccountFromBackup(addressOf(first))).toBe(
             'settled',
         )
 
-        expect(getItem(accountKey(first.address))).toBeUndefined()
-        expect(getItem(accountKey(second.address))).toBeDefined()
-        expect(getItem(secretsKey(first.address))).toBeDefined()
+        expect(getItem(accountKey(addressOf(first)))).toBeUndefined()
+        expect(getItem(accountKey(addressOf(second)))).toBeDefined()
+        expect(getItem(secretsKey(addressOf(first)))).toBeDefined()
 
-        expect(await manager.deleteAccountFromBackup(second.address)).toBe(
+        expect(await manager.deleteAccountFromBackup(addressOf(second))).toBe(
             'settled',
         )
 
-        expect(getItem(accountKey(second.address))).toBeUndefined()
-        expect(getItem(secretsKey(first.address))).toBeUndefined()
+        expect(getItem(accountKey(addressOf(second)))).toBeUndefined()
+        expect(getItem(secretsKey(addressOf(first)))).toBeUndefined()
     })
 })
 

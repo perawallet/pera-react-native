@@ -66,6 +66,7 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
 
 const NATIVE_ASSET_ID = '0'
 
@@ -88,12 +89,16 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'sender-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
         name: 'Sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 
@@ -203,9 +208,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         expect(sendSpy).toHaveBeenCalled()
 
         // Sender state survived the screen transitions.
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            sender.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
     })
 
     it('Given the recipient-info lookup is still in flight, when the confirmation screen mounts, then the confirm button is disabled but not in the loading state', async () => {
@@ -309,8 +312,12 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const authAccount: WalletAccount = {
             id: 'auth-1',
             custody: { kind: 'local', seed: null },
-            address: ALGO25_TEST_ADDRESS,
-            keyPairId: authKey!.seedKey.id ?? '',
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: authKey!.seedKey.id ?? '',
+                },
+            },
             name: 'Auth (signer)',
         }
         // The rekeyed account has no signing key of its own —
@@ -319,15 +326,12 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-1',
             custody: { kind: 'local', seed: null },
-            address: HD_TEST_ADDRESS,
-            keyPairId: '',
+            chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'Rekeyed sender',
         }
-        seedAuthority(rekeyedAccount.address, authAccount.address)
+        seedAuthority(addressOf(rekeyedAccount), addressOf(authAccount))
         useAccountsStore.getState().setAccounts([rekeyedAccount, authAccount])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(rekeyedAccount.address)
+        useAccountsStore.getState().setSelectedAccountId(rekeyedAccount.id)
 
         useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
@@ -343,11 +347,11 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // fails to resolve an auth account.
         server.use(
             mockAlgodAccountInformation({
-                address: rekeyedAccount.address,
+                address: addressOf(rekeyedAccount),
                 response: {
                     amount: 5_000_000,
                     'min-balance': 100_000,
-                    'auth-addr': authAccount.address,
+                    'auth-addr': addressOf(authAccount),
                 },
             }),
             // Receiver = the auth address itself in this scenario;
@@ -648,7 +652,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const signSpy = vi
             .spyOn(getProvider().key.store, 'sign')
             .mockRejectedValue(
-                new KeyNotFoundError(sender.keyPairId ?? 'child'),
+                new KeyNotFoundError(keyPairIdOf(sender) ?? 'child'),
             )
         onTestFinished(() => signSpy.mockRestore())
         const sendSpy = vi.fn(() =>
@@ -696,9 +700,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         await waitFor(() => {
             expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            sender.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
     })
 
     it('Given the keystore throws an untyped error while signing, when the user confirms the send, then the toast carries the signing-specific copy rather than the generic banner', async () => {
@@ -754,9 +756,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         await waitFor(() => {
             expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
         })
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            sender.address,
-        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
     })
 
     // Kept last on purpose. A missing auth account fails inside the local-key
@@ -774,15 +774,12 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-orphan',
             custody: { kind: 'local', seed: null },
-            address: HD_TEST_ADDRESS,
-            keyPairId: '',
+            chains: { algorand: { address: HD_TEST_ADDRESS } },
             name: 'Rekeyed sender (orphan)',
         }
-        seedAuthority(rekeyedAccount.address, ALGO25_TEST_ADDRESS)
+        seedAuthority(addressOf(rekeyedAccount), ALGO25_TEST_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedAccount])
-        useAccountsStore
-            .getState()
-            .setSelectedAccountAddress(rekeyedAccount.address)
+        useAccountsStore.getState().setSelectedAccountId(rekeyedAccount.id)
 
         useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
@@ -795,7 +792,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // "chain disagrees with the wallet about the rekey."
         server.use(
             mockAlgodAccountInformation({
-                address: rekeyedAccount.address,
+                address: addressOf(rekeyedAccount),
                 response: {
                     amount: 5_000_000,
                     'min-balance': 100_000,

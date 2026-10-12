@@ -18,7 +18,11 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -56,8 +60,10 @@ export const AccountStructureTree = ({
             </PWView>
 
             {accounts.map((account, index) => {
-                const isMain = account.address === mainAccountAddress
-                const truncated = truncateAlgorandAddress(account.address)
+                const address =
+                    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
+                const isMain = address === mainAccountAddress
+                const truncated = truncateAlgorandAddress(address)
                 const hasRealName = !!account.name && account.name !== truncated
                 const fallbackLabel = isMain
                     ? t('account_info.main_address')
@@ -68,7 +74,7 @@ export const AccountStructureTree = ({
                     <PWView
                         // A multisig can list the same address more than once,
                         // so address alone isn't a unique key.
-                        key={`${account.address}-${index}`}
+                        key={`${address}-${index}`}
                         style={styles.accountRowWithConnector}
                     >
                         <PWView style={styles.connectorContainer}>
@@ -89,7 +95,7 @@ export const AccountStructureTree = ({
                                 <PWText variant='bodyLarge'>
                                     {hasRealName ? account.name : fallbackLabel}
                                 </PWText>
-                                <CopyableText copyValue={account.address}>
+                                <CopyableText copyValue={address}>
                                     <PWText
                                         variant='body'
                                         style={styles.addressText}

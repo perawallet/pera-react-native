@@ -22,10 +22,14 @@ describe('chainIdOfSignRequest', () => {
         { type: 'transactions', txs: [] },
         { type: 'arbitrary-data', data: [] },
         { type: 'auth-data', authData: {}, metadata: {} },
-    ])('resolves a $type request to the Algorand chain', shape => {
-        const request = { ...base, ...shape } as unknown as SignRequest
+    ])('resolves a $type request to the chain it is stamped with', shape => {
+        const request = {
+            ...base,
+            ...shape,
+            chainId: 'ethereum',
+        } as unknown as SignRequest
 
-        expect(chainIdOfSignRequest(request)).toBe('algorand')
+        expect(chainIdOfSignRequest(request)).toBe('ethereum')
     })
 
     it("resolves a chain-neutral transaction request to its transactions' chain", () => {

@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    scopeKeyForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { useSyncCursorStore } from '../polling'
@@ -22,7 +28,11 @@ const cursorFor = (network: Network) =>
 
 export const createSyncStorePorts = (): SyncStorePorts => ({
     getAccountAddresses: () =>
-        useAccountsStore.getState().accounts.map(a => a.address),
+        useAccountsStore
+            .getState()
+            .accounts.flatMap(
+                a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address ?? [],
+            ),
     getActiveNetwork: () => useNetworkStore.getState().network,
     // The persisted map can be partial, and an absent key must read as
     // never-synced (null), not as undefined — which `!== null` would treat

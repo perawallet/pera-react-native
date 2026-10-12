@@ -73,6 +73,10 @@
     "./descriptor": {
       "types": "./dist/descriptor/index.d.ts",
       "default": "./dist/descriptor/index.js"
+    },
+    "./device": {
+      "types": "./dist/device/index.d.ts",
+      "default": "./dist/device/index.js"
     }
   },
   "scripts": {

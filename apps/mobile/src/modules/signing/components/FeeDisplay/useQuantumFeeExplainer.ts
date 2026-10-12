@@ -11,11 +11,15 @@
  */
 
 import {
-    isQuantumAccount,
+    chainAccountOf,
     useSignerFor,
+    usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useCapability } from '@hooks/useCapability'
 
@@ -50,11 +54,16 @@ export const useQuantumFeeExplainer = (
         ? transaction.authAddr?.publicKey
             ? encodeAlgorandAddress(transaction.authAddr.publicKey)
             : transaction.sender
-        : resolved?.signerAccount.address
+        : resolved
+          ? chainAccountOf(resolved.signerAccount, LEGACY_CHAIN_ID)?.address
+          : undefined
 
-    const signer = useSignerFor(authorizerAddress)
+    const signer = useSignerFor(authorizerAddress, LEGACY_CHAIN_ID)
 
-    const isQuantumFee = enabled && signer !== null && isQuantumAccount(signer)
+    const isQuantumFee =
+        enabled &&
+        signer !== null &&
+        usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
 
     return { isQuantumFee }
 }

@@ -114,6 +114,16 @@ describe('areEqual', () => {
     })
 })
 
+describe('truncate', () => {
+    it('keeps 0x with four hex digits and the last four', () => {
+        expect(codec.truncate(HARDHAT_ADDRESS)).toBe('0xf39F...2266')
+    })
+
+    it('leaves a string already that short as it is', () => {
+        expect(codec.truncate('0x1234abcd')).toBe('0x1234abcd')
+    })
+})
+
 describe('toPaymentUri', () => {
     it('writes a native payment with the chain id and the amount in wei', () => {
         expect(

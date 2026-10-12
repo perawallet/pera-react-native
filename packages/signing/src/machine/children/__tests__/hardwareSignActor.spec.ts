@@ -37,10 +37,9 @@ import type {
     SigningCallbacks,
     SigningResult,
 } from '../../../pipeline/types'
-import type {
-    HardwareWalletAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
 
 const HARDWARE_ADDRESS =
     'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
@@ -48,32 +47,9 @@ const HARDWARE_ADDRESS =
 const OTHER_ADDRESS =
     'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
 
-const hardwareAccount = {
-    custody: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-        accountIndex: 0,
-    },
-    address: HARDWARE_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-1',
-        deviceName: 'Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-} as unknown as HardwareWalletAccount
+const hardwareAccount = ledgerAccount(HARDWARE_ADDRESS)
 
-const nonHardwareAccount = {
-    custody: { kind: 'local', seed: null },
-    address: OTHER_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const nonHardwareAccount = algo25Account(OTHER_ADDRESS)
 
 const makeGroup = (
     signerAddress: string = HARDWARE_ADDRESS,
@@ -109,7 +85,8 @@ const makeInput = (
     overrides: Partial<HardwareSigningInput> = {},
 ): HardwareSigningInput => ({
     groups: [makeGroup()],
-    allAccounts: [hardwareAccount as unknown as WalletAccount],
+    allAccounts: [hardwareAccount],
+    scope: scopeForLegacyNetwork('mainnet'),
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
     scope: { chainId: 'algorand', networkId: 'mainnet' },

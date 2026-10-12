@@ -13,17 +13,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { WalletAccount } from '../../models'
 import { useAccountsStore } from '../store'
+import { testAccount } from '../../__tests__/accountFactory'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import { backfillAccountRecords } from '../backfillAccountRecords'
 
 const held = (address: string): WalletAccount =>
-    ({
-        id: address,
-        custody: { kind: 'local', seed: null },
-        address,
-        keyPairId: `kp-${address}`,
-        chains: { algorand: { address, keyPairId: `kp-${address}` } },
-    }) as WalletAccount
+    testAccount('local', address, { id: address })
 
 describe('backfillAccountRecords', () => {
     beforeEach(() => {
@@ -33,7 +28,7 @@ describe('backfillAccountRecords', () => {
     it("writes back each record its chain's backfillRecord changes", () => {
         registerFakeAccountsChain({
             backfillRecord: account =>
-                account.address === 'A'
+                account.id === 'A'
                     ? { ...account, name: 'backfilled' }
                     : account,
         })

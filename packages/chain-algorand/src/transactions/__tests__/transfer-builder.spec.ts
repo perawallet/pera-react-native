@@ -29,7 +29,6 @@ import '../../__tests__/registerAlgorandAccounts'
 import {
     useAccountChainStateStore,
     useAccountsStore,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     scopeForLegacyNetwork,
@@ -62,17 +61,16 @@ vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
 }))
 
 import { buildAlgorandTransfer } from '../transfer-builder'
+import { quantumAccount } from '../../__tests__/algorandAccounts'
 
 const SENDER = generateAccount().addr
 const RECEIVER = generateAccount().addr.toString()
 const QUANTUM = generateAccount().addr
 
-const quantum = {
+const quantum = quantumAccount(QUANTUM.toString(), {
     id: 'q1',
-    address: QUANTUM.toString(),
-    custody: { kind: 'local', seed: 'quantum' },
     keyPairId: 'kp-quantum',
-} as WalletAccount
+})
 
 const context = { scope: scopeForLegacyNetwork('testnet') }
 const ALGO: AssetRef = { chainId: 'algorand' as ChainId, assetId: '0' }

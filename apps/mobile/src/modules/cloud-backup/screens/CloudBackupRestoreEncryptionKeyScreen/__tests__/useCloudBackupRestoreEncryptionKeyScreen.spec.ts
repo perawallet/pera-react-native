@@ -43,10 +43,13 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
         (sel: (s: unknown) => unknown) => sel(restoreDraftState()),
         { getState: () => restoreDraftState() },
     ),
-    useRestoreCloudBackupMutation: (options: {
-        onSuccess: (result: unknown) => void
-        onError: (error: unknown) => void
-    }) => {
+    useRestoreCloudBackupMutation: (
+        _scope: unknown,
+        options: {
+            onSuccess: (result: unknown) => void
+            onError: (error: unknown) => void
+        },
+    ) => {
         ;(globalThis as Record<string, unknown>).__cbs = options
         return { mutate: restore, isPending: isRestoring }
     },

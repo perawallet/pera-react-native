@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { isQuantumAccount } from '@perawallet/wallet-core-accounts'
 import type {
     MessageRequest,
     MessageSummary,
@@ -24,6 +23,7 @@ import {
     type AuthDataPayload,
     type MessagePlanContext,
 } from '@perawallet/wallet-core-signing'
+import { algorandAddressOf, isQuantumAccount } from '../../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { decodeArbitraryDataForDisplay } from '../arbitraryDataDisplay'
 import { arbitraryDataPayloadFor } from './arbitraryDataPayload'
@@ -165,27 +165,28 @@ export const planAlgorandMessage = (
     context: MessagePlanContext,
 ): SigningRequest[] => {
     const { account } = context
+    const address = algorandAddressOf(account) ?? ''
     if (request.scope.chainId !== ALGORAND_CHAIN_ID) {
         throw new Error(
             `Not an Algorand message request: ${request.scope.chainId}`,
         )
     }
-    if (request.signer !== account.address) {
+    if (request.signer !== address) {
         throw new CannotSignError(
-            account.address,
+            address,
             `the request names ${request.signer} as its signer`,
         )
     }
     if (!supportsAlgorandMessageMethod(request.method)) {
         throw new CannotSignError(
-            account.address,
+            address,
             `unsupported message method ${request.method}`,
         )
     }
     return [
         {
             requestIndex: 0,
-            signer: account.address,
+            signer: address,
             scheme: isQuantumAccount(account) ? 'falcon-1024' : 'ed25519',
             payload: planPayload(request, context),
         },

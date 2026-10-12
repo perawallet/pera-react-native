@@ -12,9 +12,10 @@
 
 import {
     assertBip44PathMatches,
+    bip44PathMatchesIndex,
     parseBip44Path,
     type Bip44Coordinates,
-    type HDWalletDetails,
+    type HdIndex,
 } from '@perawallet/wallet-core-accounts'
 
 /** Algorand's SLIP-0044 coin type. */
@@ -27,19 +28,10 @@ export const parseAlgorandBip44Path = (
 ): ParsedAlgorandBip44Path => parseBip44Path(hdPath, ALGORAND_COIN_TYPE)
 
 /** Throws `InvalidBip44PathError` (`reason: 'malformed'`) when the path doesn't parse; a mismatch returns false. */
-export const hdPathMatchesDetails = (
-    path: string,
-    details: HDWalletDetails,
-): boolean => {
-    const parsed = parseAlgorandBip44Path(path)
-    return (
-        parsed.account === details.account &&
-        parsed.change === details.change &&
-        parsed.keyIndex === details.keyIndex
-    )
-}
+export const hdPathMatchesIndex = (path: string, index: HdIndex): boolean =>
+    bip44PathMatchesIndex(path, index, ALGORAND_COIN_TYPE)
 
 export const assertAlgorandBip44PathMatches = (
     path: string,
-    details: HDWalletDetails,
-): void => assertBip44PathMatches(path, details, ALGORAND_COIN_TYPE)
+    index: HdIndex,
+): void => assertBip44PathMatches(path, index, ALGORAND_COIN_TYPE)

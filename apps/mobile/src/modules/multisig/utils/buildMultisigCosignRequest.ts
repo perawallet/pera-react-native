@@ -11,11 +11,13 @@
  */
 
 import {
-    scopeForLegacyNetwork,
+    legacyNetworkOf,
+    type ChainScope,
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { decodeFromBase64, type Network } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
+    chainAccountOf,
     authorityOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -28,7 +30,7 @@ import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
-    network: Network
+    scope: ChainScope
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
@@ -43,7 +45,7 @@ type BuildMultisigCosignRequestParams = {
 export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
-    network,
+    scope,
     decodeTransaction,
     localAccounts,
 }: BuildMultisigCosignRequestParams): TransactionSignRequest => {
@@ -64,17 +66,15 @@ export const buildMultisigCosignRequest = ({
     const jointAuthorizedSenders = new Set([
         address,
         ...localAccounts
-            .filter(
+            .filter(account => authorityOf(account, scope) === address)
+            .flatMap(
                 account =>
-                    authorityOf(account, scopeForLegacyNetwork(network)) ===
-                    address,
-            )
-            .map(account => account.address),
+                    chainAccountOf(account, scope.chainId)?.address ?? [],
+            ),
     ])
-    const validation = multisigAdapterFor(network).validateSignRequest(
-        signRequest,
-        jointAuthorizedSenders,
-    )
+    const validation = multisigAdapterFor(
+        legacyNetworkOf(scope),
+    ).validateSignRequest(signRequest, jointAuthorizedSenders)
     switch (validation.kind) {
         case 'valid': {
             break
@@ -106,6 +106,7 @@ export const buildMultisigCosignRequest = ({
         // inline-error guards in SignRequestView keep cosigns apart as before.
         id: `${signRequest.id}:${signerAddress}`,
         type: 'transactions',
+        chainId: scope.chainId,
         transport: 'callback',
         // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
         // the standard review flow shows the review sheet automatically

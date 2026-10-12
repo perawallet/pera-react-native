@@ -18,6 +18,8 @@ import { BackupAccountRow } from '../../components/BackupAccountRow'
 
 type DeviceAccountRowProps = {
     account: WalletAccount
+    /** The account's backup item key. */
+    address: string
     isBackedUp: boolean
     isBusy: boolean
     onBackUp: (address: string) => void
@@ -25,6 +27,7 @@ type DeviceAccountRowProps = {
 
 const DeviceAccountRowComponent = ({
     account,
+    address,
     isBackedUp,
     isBusy,
     onBackUp,
@@ -32,13 +35,13 @@ const DeviceAccountRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(account.address),
-        [onBackUp, account.address],
+        () => onBackUp(address),
+        [onBackUp, address],
     )
 
     return (
         <BackupAccountRow
-            address={account.address}
+            address={address}
             account={account}
             isBackedUp={isBackedUp}
             trailing={
@@ -53,7 +56,7 @@ const DeviceAccountRowComponent = ({
                     />
                 )
             }
-            testID={`cloud_backup_account_${account.address}`}
+            testID={`cloud_backup_account_${address}`}
         />
     )
 }

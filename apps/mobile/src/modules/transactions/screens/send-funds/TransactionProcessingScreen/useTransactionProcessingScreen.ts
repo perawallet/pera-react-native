@@ -15,8 +15,10 @@ import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
 import {
-    accountType,
+    chainAccountOf,
+    hardwareDetailsOf,
     isHardwareWalletAccount,
+    accountKindIdOf,
     resolveAuthAccount,
     useAccountBalancesInvalidator,
     useAllAccounts,
@@ -33,6 +35,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
@@ -54,6 +57,7 @@ export type UseTransactionProcessingScreenResult = {
 
 export const useTransactionProcessingScreen =
     (): UseTransactionProcessingScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -77,13 +81,20 @@ export const useTransactionProcessingScreen =
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()
+        const accountKindId = useMemo(
+            () =>
+                selectedAccount
+                    ? accountKindIdOf(selectedAccount, scope.chainId)
+                    : undefined,
+            [selectedAccount, scope.chainId],
+        )
         const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
-        const { execute } = useTransactionSendFlow()
+        const { execute } = useTransactionSendFlow(scope)
 
         // Multisig propose returns via the `proposed` transport result instead
         // of resolving the algod submission Promise — `execute()` never settles
@@ -146,7 +157,9 @@ export const useTransactionProcessingScreen =
             ) {
                 registerTabResumeIntent({
                     flow: 'send',
-                    accountAddress: selectedAccount.address,
+                    accountAddress:
+                        chainAccountOf(selectedAccount, scope.chainId)
+                            ?.address ?? '',
                     assetId: selectedAssetId,
                     destination,
                     amount: amount.toString(),
@@ -162,9 +175,7 @@ export const useTransactionProcessingScreen =
                         [AnalyticsMetadataKey.AssetId]: selectedAssetId ?? '',
                         [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
                         [AnalyticsMetadataKey.TransactionId]: txId,
-                        [AnalyticsMetadataKey.AccountType]: selectedAccount
-                            ? accountType(selectedAccount)
-                            : undefined,
+                        [AnalyticsMetadataKey.AccountType]: accountKindId,
                     })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
@@ -204,19 +215,18 @@ export const useTransactionProcessingScreen =
                 return resolveAuthAccount(
                     selectedAccount,
                     allAccounts,
-                    LEGACY_CHAIN_ID,
+                    scope.chainId,
                 )
             } catch {
                 return selectedAccount
             }
-        }, [selectedAccount, allAccounts])
+        }, [selectedAccount, allAccounts, scope.chainId])
 
         const isHardwareSender =
             !!signingAccount && isHardwareWalletAccount(signingAccount)
         const hardwareDeviceName =
-            signingAccount && isHardwareWalletAccount(signingAccount)
-                ? (signingAccount.hardwareDetails.deviceName ?? null)
-                : null
+            (signingAccount && hardwareDetailsOf(signingAccount)?.deviceName) ??
+            null
 
         return { isHardwareSender, hardwareDeviceName }
     }

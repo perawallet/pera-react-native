@@ -35,7 +35,7 @@ export const migrateLegacyAccount = async (
         return addKeylessAccountToStore(buildMultiSigAccount(account))
     if (account.ledger !== null)
         return addKeylessAccountToStore(buildLedgerAccount(account))
-    if (account.hdWalletId !== null) return migrateHdAccount(args)
+    if (account.hdSeedId !== null) return migrateHdAccount(args)
     if (account.secretKey !== null && account.secretKey.length > 0)
         return migrateAlgo25Account(args)
 
@@ -76,7 +76,7 @@ export const classifyLegacyAccountRoute = (
     if (account.type === 'watch') return 'watch'
     if (account.joint !== null) return 'joint'
     if (account.ledger !== null) return 'ledger'
-    if (account.hdWalletId !== null) return 'hd'
+    if (account.hdSeedId !== null) return 'hd'
     if (account.secretKey !== null && account.secretKey.length > 0)
         return 'algo25'
     return 'unroutable'
@@ -85,6 +85,6 @@ export const classifyLegacyAccountRoute = (
 const buildUnroutableAccountError = (account: LegacyAccount): string =>
     `Cannot migrate ${truncateAlgorandAddress(account.address)}: type=${account.type}, ` +
     `secretKey=${describeBytes(account.secretKey)}, ` +
-    `hdWalletId=${account.hdWalletId ?? 'null'}, ` +
+    `hdSeedId=${account.hdSeedId ?? 'null'}, ` +
     `ledger=${account.ledger ? 'set' : 'null'}, ` +
     `joint=${account.joint ? 'set' : 'null'}`

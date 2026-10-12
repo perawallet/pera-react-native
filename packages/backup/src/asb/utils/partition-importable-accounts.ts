@@ -11,14 +11,16 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import type { AsbBackupAccount, AsbImportablePartition } from '../models'
 
 export const partitionImportableAccounts = (
     asbAccounts: AsbBackupAccount[],
     existingAccounts: WalletAccount[],
+    chainId: ChainId,
 ): AsbImportablePartition =>
-    backupAdapterFor().secureBackup.partitionImportable(
+    backupAdapterFor(chainId).secureBackup.partitionImportable(
         asbAccounts,
         existingAccounts,
     )

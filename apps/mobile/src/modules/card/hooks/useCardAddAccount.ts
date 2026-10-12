@@ -15,8 +15,10 @@ import { StackActions } from '@react-navigation/native'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
-    useHDWalletGroups,
+    useHdSeedGroups,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { navigationRef } from '@routes/navigationRef'
 import { useLanguage } from '@hooks/useLanguage'
@@ -60,14 +62,15 @@ export type UseCardAddAccountResult = {
 export const useCardAddAccount = (): UseCardAddAccountResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const { buildHdWalletAccount } = useCreateAccount()
-    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
-    const { hasMultipleHDWallets } = useHDWalletGroups()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { buildHdWalletAccount } = useCreateAccount(scope)
+    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount(scope)
+    const { hasMultipleHdSeeds } = useHdSeedGroups()
 
     const handleCreateAccount = useCallback(() => {
         const create = async () => {
             try {
-                if (hasMultipleHDWallets) {
+                if (hasMultipleHdSeeds) {
                     // Multiple wallets: let the user pick which one first.
                     navigateToAddAccount({
                         screen: 'SelectHDWallet',
@@ -101,7 +104,7 @@ export const useCardAddAccount = (): UseCardAddAccountResult => {
         }
         void create()
     }, [
-        hasMultipleHDWallets,
+        hasMultipleHdSeeds,
         hasHDWallet,
         buildNextHDAccount,
         buildHdWalletAccount,

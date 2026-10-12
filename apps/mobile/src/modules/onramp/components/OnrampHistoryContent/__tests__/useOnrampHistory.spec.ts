@@ -18,7 +18,11 @@ import {
 } from '@perawallet/wallet-core-onramp'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 import { useOnrampHistory } from '../useOnrampHistory'
 
@@ -38,8 +42,16 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccount: vi.fn(),
+    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
+        account.chains[scope.chainId]?.address,
 }))
+
+const accountAt = (address: string): WalletAccount => ({
+    id: address,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+})
 
 const makeItem = (id: string): RampHistoryItem =>
     ({
@@ -81,10 +93,7 @@ describe('useOnrampHistory', () => {
             network: 'mainnet',
         } as never)
         vi.mocked(useDeviceID).mockReturnValue('device-123')
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: 'ADDR',
-            setSelectedAccountAddress: vi.fn(),
-        })
+        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
         vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
             makeQueryResult(),
         )
@@ -148,11 +157,8 @@ describe('useOnrampHistory', () => {
         )
     })
 
-    it('falls back to empty accountAddress when selectedAccountAddress is null', () => {
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: vi.fn(),
-        })
+    it('falls back to empty accountAddress when no account is selected', () => {
+        vi.mocked(useSelectedAccount).mockReturnValue(null)
 
         renderHook(() => useOnrampHistory())
 

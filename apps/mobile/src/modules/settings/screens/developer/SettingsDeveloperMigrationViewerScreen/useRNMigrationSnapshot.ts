@@ -12,10 +12,12 @@
 
 import { useEffect, useState } from 'react'
 import {
+    chainAccountOf,
     useAccountsStore,
     type AccountSortMode,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetPreferencesStore,
     useCollectiblePreferencesStore,
@@ -177,7 +179,12 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
             swapTermsAccepted: !!preferences['swap-introduction-seen'],
         },
         auth,
-        accountsByAddress: new Map(accounts.map(a => [a.address, a] as const)),
+        accountsByAddress: new Map(
+            accounts.flatMap(a => {
+                const address = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+                return address === undefined ? [] : [[address, a] as const]
+            }),
+        ),
         manualAccountOrder,
         contactsByAddress: new Map(
             contacts.flatMap(c =>

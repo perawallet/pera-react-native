@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const mockRequiresBackup = vi.fn()
 vi.mock('../useRequiresMnemonicBackup', () => ({
@@ -21,7 +22,7 @@ vi.mock('../useRequiresMnemonicBackup', () => ({
 }))
 
 const mockFundedNetworks = vi.fn()
-const mockAccountsRekeyedTo = vi.fn()
+const mockAccountsDelegatedTo = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -32,7 +33,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountFundedNetworksQuery: (...args: unknown[]) =>
             mockFundedNetworks(...args),
         useAccountsDelegatedTo: (...args: unknown[]) =>
-            mockAccountsRekeyedTo(...args),
+            mockAccountsDelegatedTo(...args),
     }
 })
 
@@ -49,19 +50,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
     }
 })
 
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    address: 'HD1',
-    keyPairId: 'kp',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9,
-    },
+    chains: { algorand: { address: 'HD1', keyPairId: 'kp' } },
 }
 
 const fundedOn = (...networks: string[]) => ({
@@ -73,10 +70,11 @@ const fundedOn = (...networks: string[]) => ({
 
 describe('useShouldPromptMnemonicBackup', () => {
     beforeEach(() => {
+        registerFakeBackupAdapter()
         mockRequiresBackup.mockReset()
         mockFundedNetworks.mockReset()
-        mockAccountsRekeyedTo.mockReset()
-        mockAccountsRekeyedTo.mockReturnValue([])
+        mockAccountsDelegatedTo.mockReset()
+        mockAccountsDelegatedTo.mockReturnValue([])
         mockCanBackUpMnemonic.mockReset()
         mockCanBackUpMnemonic.mockReturnValue(true)
     })
@@ -87,7 +85,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockCanBackUpMnemonic.mockReturnValue(false)
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(false)
         expect(mockCanBackUpMnemonic).toHaveBeenCalledWith(
@@ -101,7 +99,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(false)
     })
@@ -111,7 +109,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReturnValue(fundedOn())
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(false)
     })
@@ -121,7 +119,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReturnValue(fundedOn('testnet'))
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(true)
     })
@@ -131,7 +129,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(true)
     })
@@ -139,34 +137,34 @@ describe('useShouldPromptMnemonicBackup', () => {
     test("true when an unfunded account is another account's rekey target", () => {
         mockRequiresBackup.mockReturnValue(true)
         mockFundedNetworks.mockReturnValue(fundedOn())
-        mockAccountsRekeyedTo.mockReturnValue([
+        mockAccountsDelegatedTo.mockReturnValue([
             {
                 id: 'a',
                 custody: { kind: 'local', seed: null },
-                address: 'A',
+                chains: { algorand: { address: 'A' } },
             },
         ])
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(true)
-        expect(mockAccountsRekeyedTo).toHaveBeenCalledWith(accountHD.address)
+        expect(mockAccountsDelegatedTo).toHaveBeenCalledWith('HD1', 'algorand')
     })
 
     test('false for a rekey target that no longer needs backup', () => {
         mockRequiresBackup.mockReturnValue(false)
         mockFundedNetworks.mockReturnValue(fundedOn())
-        mockAccountsRekeyedTo.mockReturnValue([
+        mockAccountsDelegatedTo.mockReturnValue([
             {
                 id: 'a',
                 custody: { kind: 'local', seed: null },
-                address: 'A',
+                chains: { algorand: { address: 'A' } },
             },
         ])
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(accountHD),
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
         )
         expect(result.current).toBe(false)
     })
@@ -176,10 +174,13 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockFundedNetworks.mockReturnValue(fundedOn())
 
         const { result } = renderHook(() =>
-            useShouldPromptMnemonicBackup(undefined),
+            useShouldPromptMnemonicBackup(undefined, SCOPE),
         )
         expect(result.current).toBe(false)
-        expect(mockFundedNetworks).toHaveBeenCalledWith(undefined)
-        expect(mockAccountsRekeyedTo).toHaveBeenCalledWith(undefined)
+        expect(mockFundedNetworks).toHaveBeenCalledWith(undefined, SCOPE)
+        expect(mockAccountsDelegatedTo).toHaveBeenCalledWith(
+            undefined,
+            'algorand',
+        )
     })
 })

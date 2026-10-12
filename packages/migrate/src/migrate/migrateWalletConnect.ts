@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
@@ -22,6 +23,7 @@ import {
     type WalletConnectV1SessionKeyStore,
 } from '@perawallet/wallet-core-walletconnect'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { migratedAddressOf } from './accountStoreOps'
 
 export type WalletConnectMigrationResult = {
     imported: number
@@ -150,6 +152,7 @@ const toConnection = (
  */
 export const migrateWalletConnect = async (
     sessions: LegacyWalletConnectV1Session[],
+    chainId: ChainId,
     options: { sessionKeys?: WalletConnectV1SessionKeyStore } = {},
 ): Promise<WalletConnectMigrationResult> => {
     const result: WalletConnectMigrationResult = { imported: 0, skipped: 0 }
@@ -158,7 +161,9 @@ export const migrateWalletConnect = async (
     }
 
     const migratedAddresses = new Set(
-        useAccountsStore.getState().accounts.map(account => account.address),
+        useAccountsStore
+            .getState()
+            .accounts.map(account => migratedAddressOf(account, chainId)),
     )
 
     const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()

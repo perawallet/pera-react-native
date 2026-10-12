@@ -24,7 +24,11 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { onlineManager } from '@tanstack/react-query'
 import { Notifier } from 'react-native-notifier'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
@@ -103,14 +107,19 @@ const setupBackup = async () => {
     const { handlers, getItem, seenDeviceIds } = buildSyncHandlers({ backupId })
     server.use(...handlers)
 
-    const importHook = renderQueryHook(() => useCloudBackupImport())
+    const importHook = renderQueryHook(() =>
+        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+    )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
-    const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
+    const mnemonicHook = renderQueryHook(() =>
+        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+    )
 
     initializeBackupSyncManager({
-        sources: createBackupSyncStoreSources(),
+        chainId: LEGACY_CHAIN_ID,
+        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

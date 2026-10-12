@@ -61,5 +61,7 @@ export const fakeMultisigAdapter = (
             ? { kind: 'valid' }
             : { kind: 'unauthorized-sender', txIndex }
     },
+    acceptsParticipantScheme: scheme => scheme === 'ed25519',
+    classifyParticipant: async () => 'unclassified',
     ...overrides,
 })

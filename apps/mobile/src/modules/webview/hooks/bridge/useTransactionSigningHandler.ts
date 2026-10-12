@@ -12,9 +12,10 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import type {
-    Arc0001SignTxnsOpts,
-    Arc0001WalletTransaction,
+import {
+    type Arc0001SignTxnsOpts,
+    type Arc0001WalletTransaction,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -22,6 +23,7 @@ import {
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -36,10 +38,11 @@ export const useTransactionSigningHandler = (
     webview: Nullable<WebView>,
     sourceUrl: string | null,
 ): BridgeHandler => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const resolveArc0001 = useArc0001Resolver()
-    const enqueueSignRequest = useEnqueueArc0001SignRequest()
+    const resolveArc0001 = useArc0001Resolver(scope)
+    const enqueueSignRequest = useEnqueueArc0001SignRequest(scope)
     const hasRequiredParams = useRequiredParams(webview)
 
     return useCallback(

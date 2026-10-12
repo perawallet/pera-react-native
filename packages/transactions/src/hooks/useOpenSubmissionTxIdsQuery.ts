@@ -11,8 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getOpenSubmissionAttempts } from '@perawallet/wallet-core-signing'
 import { transactionQueryKeys } from './querykeys'
 
@@ -31,11 +30,10 @@ export type UseOpenSubmissionTxIdsQueryResult = {
  * without a manual refresh.
  */
 export const useOpenSubmissionTxIdsQuery = ({
-    network,
+    scope,
 }: {
-    network: Network
+    scope: ChainScope
 }): UseOpenSubmissionTxIdsQueryResult => {
-    const scope = scopeForLegacyNetwork(network)
     const query = useQuery({
         queryKey: transactionQueryKeys.openSubmissionTxIds(scope),
         queryFn: async () => {

@@ -15,12 +15,11 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSwapHistoryInfiniteQuery } from '../useSwapHistoryInfiniteQuery'
 import { fetchSwapHistory } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     fetchSwapHistory: vi.fn(),
@@ -66,7 +65,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS'),
+            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -91,7 +90,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
             })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS'),
+            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 
@@ -108,7 +107,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
     })
 
     test('is disabled when address is empty', () => {
-        renderHook(() => useSwapHistoryInfiniteQuery(''), {
+        renderHook(() => useSwapHistoryInfiniteQuery('', SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -119,7 +118,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         vi.mocked(fetchSwapHistory).mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS'),
+            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 

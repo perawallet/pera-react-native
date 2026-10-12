@@ -11,35 +11,41 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountForBackup } from '../serializeAccountForBackup'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
     custody: { kind: 'local', seed: null },
-    address: 'ADDR',
-    keyPairId: 'kp-1',
+    chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
     name: 'Main',
 }
 
 const quantum: WalletAccount = {
     id: '4',
     custody: { kind: 'local', seed: 'quantum' },
-    address: 'QADDR',
-    keyPairId: 'kp-q',
+    chains: { algorand: { address: 'QADDR', keyPairId: 'kp-q' } },
     name: 'PQ',
 }
 
 describe('serializeAccountForBackup', () => {
+    beforeEach(() => {
+        backupChainAdapters.reset()
+        backupChainAdapters.register(fakeBackupAdapter())
+    })
+
     it('resolves the algo25 mnemonic through the injected resolver and emits address + secrets', async () => {
         const resolveMnemonic = vi.fn(async () => 'word-a word-b')
 
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -58,6 +64,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn(async () => 'q1 q2')
 
         const result = await serializeAccountForBackup(quantum, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -75,6 +82,7 @@ describe('serializeAccountForBackup', () => {
         const resolveMnemonic = vi.fn(async () => null)
 
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
             resolveMnemonic,
@@ -85,6 +93,7 @@ describe('serializeAccountForBackup', () => {
 
     it('skips a secret-bearing account when no resolver is injected', async () => {
         const result = await serializeAccountForBackup(algo25, {
+            chainId: 'algorand',
             updatedAt: 5,
             hashAddress,
         })
@@ -97,11 +106,12 @@ describe('serializeAccountForBackup', () => {
         const watch: WalletAccount = {
             id: '2',
             custody: { kind: 'watch' },
-            address: 'W',
+            chains: { algorand: { address: 'W' } },
             name: 'Watcher',
         }
 
         const result = await serializeAccountForBackup(watch, {
+            chainId: 'algorand',
             updatedAt: 1,
             hashAddress,
             resolveMnemonic: resolveMnemonic as never,
@@ -125,18 +135,12 @@ describe('serializeAccountForBackup', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 1 },
             },
-            address: 'CHILD',
-            keyPairId: 'kp',
+            chains: { algorand: { address: 'CHILD', keyPairId: 'kp' } },
             name: 'Child',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 1,
-                derivationType: 9,
-            },
         }
 
         const result = await serializeAccountForBackup(hd, {
+            chainId: 'algorand',
             updatedAt: 7,
             hashAddress,
             resolveHd: resolveHd as never,
@@ -164,17 +168,11 @@ describe('serializeAccountForBackup', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            address: 'CHILD',
-            keyPairId: 'kp',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
+            chains: { algorand: { address: 'CHILD', keyPairId: 'kp' } },
         }
 
         const result = await serializeAccountForBackup(hd, {
+            chainId: 'algorand',
             updatedAt: 1,
             hashAddress,
         })

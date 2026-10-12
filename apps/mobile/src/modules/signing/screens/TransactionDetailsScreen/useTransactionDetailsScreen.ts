@@ -23,8 +23,10 @@ import {
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
@@ -78,8 +80,6 @@ export const useTransactionDetailsScreen =
         const { groupTransactions } = useGroupTransactionsQuery({ groupId })
 
         const { hasInternet } = useNetworkStatus()
-        const { network } = useNetwork()
-
         // The signing flow's in-memory object is authoritative (unsigned txns
         // have no on-chain id). The indexer fetch enriches the history row
         // (note, inner txns), so prefer it once it lands; until then the
@@ -89,10 +89,10 @@ export const useTransactionDetailsScreen =
                 historyTransaction
                     ? mapHistoryItemToDisplayableTransaction(
                           historyTransaction,
-                          network,
+                          LEGACY_CHAIN_ID,
                       )
                     : null,
-            [historyTransaction, network],
+            [historyTransaction],
         )
         const transaction =
             paramTransaction ?? detailQuery.data ?? localTransaction ?? null

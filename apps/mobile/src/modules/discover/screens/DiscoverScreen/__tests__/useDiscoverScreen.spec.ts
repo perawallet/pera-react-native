@@ -34,6 +34,13 @@ vi.mock('@perawallet/wallet-core-migrate', () => ({
 vi.mock('@modules/webview/hooks/handlers', () => ({
     isSafeRelativePath: vi.fn(() => true),
 }))
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn() },
 }))

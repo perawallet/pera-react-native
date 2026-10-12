@@ -66,8 +66,8 @@ const LEGACY_ADDRESS = addressFromFalconSeed(entropy)
 type ChainState = 'canonical' | 'legacy' | 'none' | 'probe-fails'
 
 type StoredAccount = {
-    custody?: { kind: string; seed?: string }
-    address: string
+    custody?: { kind: string; seed?: string | null }
+    chains?: { algorand?: { address: string } }
 }
 
 const accountJson = (address: string, amount: number) => ({
@@ -192,7 +192,7 @@ const finishNaming = async (page: Page): Promise<void> => {
 const quantumAddressesOf = (accounts: StoredAccount[]): string[] =>
     accounts
         .filter(account => account.custody?.seed === 'quantum')
-        .map(account => account.address)
+        .flatMap(account => account.chains?.algorand?.address ?? [])
         .sort()
 
 const runQuantumImport = async (

@@ -11,11 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchAssetOptInRounds } from '../chain-adapter'
 import { getAccountOptInRoundsQueryKey } from './querykeys'
 
@@ -35,14 +31,12 @@ export type UseAccountOptInRoundsQueryResult = {
 
 export const useAccountOptInRoundsQuery = (
     address: string | undefined,
+    scope: ChainScope,
     enabled = true,
 ): UseAccountOptInRoundsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const { data, isPending, isFetching } = useQuery({
         queryKey: getAccountOptInRoundsQueryKey(address ?? '', scope),
-        queryFn: () => fetchAssetOptInRounds(address ?? '', network),
+        queryFn: () => fetchAssetOptInRounds(address ?? '', scope),
         enabled: !!address && enabled,
         staleTime: OPT_IN_ROUNDS_STALE_TIME_MS,
     })

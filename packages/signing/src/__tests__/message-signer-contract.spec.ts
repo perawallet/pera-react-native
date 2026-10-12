@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     ChainId,
     MessageRequest,
@@ -26,10 +29,14 @@ const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 const METHOD = 'fixture-text'
 const scope = { chainId: FIXTURE_CHAIN_ID, networkId: 'testnet' }
 
+const ADDRESS = 'FIXTURE_ACCOUNT'
+
 const account = {
-    address: 'FIXTURE_ACCOUNT',
-    keyPairId: 'fixture-key',
+    id: 'fixture',
     custody: { kind: 'local', seed: null },
+    chains: {
+        [FIXTURE_CHAIN_ID]: { address: ADDRESS, keyPairId: 'fixture-key' },
+    },
 } as unknown as WalletAccount
 
 const readText = (request: MessageRequest): string => {
@@ -60,13 +67,17 @@ const fixtureAdapter: MessageSignerChainAdapter = {
         if (request.method !== METHOD) {
             throw new Error('unsupported fixture method')
         }
-        if (request.signer !== context.account.address) {
+        const address = chainAccountOf(
+            context.account,
+            FIXTURE_CHAIN_ID,
+        )?.address
+        if (address === undefined || request.signer !== address) {
             throw new Error('not the account')
         }
         return [
             {
                 requestIndex: 0,
-                signer: context.account.address,
+                signer: address,
                 scheme: 'ed25519',
                 payload: new TextEncoder().encode(`FX${readText(request)}`),
             },
@@ -89,14 +100,14 @@ messageSignerContractTests(() => fixtureAdapter, {
         {
             scope,
             method: METHOD,
-            signer: account.address,
+            signer: ADDRESS,
             payload: { text: 'hello' },
         },
     ],
     malformedRequest: {
         scope,
         method: METHOD,
-        signer: account.address,
+        signer: ADDRESS,
         payload: { text: 7 },
     },
     unsupportedMethod: 'fixture-unknown',

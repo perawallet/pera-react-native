@@ -60,11 +60,19 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
     useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
 }))
 
 vi.mock('../../../hooks', () => ({
-    useCardFundingAccount: () => ({ address: 'ADDR' }),
+    useCardFundingAccount: () => ({
+        id: 'funding',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: 'ADDR' } },
+    }),
     useCardManualDeposit: () => ({ deposit: mockDeposit, isDepositing: false }),
     useCardErrorToast: () => mockDepositError,
 }))

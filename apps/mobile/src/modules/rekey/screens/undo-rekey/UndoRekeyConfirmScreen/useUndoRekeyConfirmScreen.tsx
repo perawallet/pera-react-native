@@ -55,12 +55,13 @@ export const useUndoRekeyConfirmScreen =
             useRoute<RouteProp<UndoRekeyStackParamList, 'UndoRekeyConfirm'>>()
         const { sourceAddress } = route.params
 
-        const source = useFindAccountByAddress(sourceAddress)
-        const sourceAuthority = useAuthorityOf(
-            source,
-            useSelectedScope(LEGACY_CHAIN_ID),
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
+        const sourceAuthority = useAuthorityOf(source, scope)
+        const currentAuth = useFindAccountByAddress(
+            sourceAuthority ?? '',
+            scope,
         )
-        const currentAuth = useFindAccountByAddress(sourceAuthority ?? '')
 
         const { t } = useLanguage()
         const handleRekeyError = useHandleRekeyError()
@@ -68,6 +69,7 @@ export const useUndoRekeyConfirmScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation(
             {
+                scope,
                 signingMetadata: {
                     name: t('rekey.signing.source_name'),
                     description: t('rekey.signing.source_description'),
@@ -79,10 +81,15 @@ export const useUndoRekeyConfirmScreen =
         const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
             sourceAddress,
             sourceAddress,
+            scope,
         )
         // The source pays the undo fee — block before any sign request is
         // created (and before the Ledger device prompt for hardware auths).
-        const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
+        const { isUnderfunded } = useRekeyFeePreflight(
+            sourceAddress,
+            feeAlgos,
+            scope,
+        )
 
         // Undoing the rekey of a shared account is a multisig propose whose
         // signing Promise never resolves — hand off to the pending-signatures
@@ -106,15 +113,15 @@ export const useUndoRekeyConfirmScreen =
             markSubmitted()
             try {
                 await submitAsync({
-                    sourceAddress: source.address,
-                    rekeyToAddress: source.address,
+                    sourceAddress,
+                    rekeyToAddress: sourceAddress,
                 })
                 // A multisig propose already handed off via the 'proposed'
                 // event; don't also show the success screen.
                 if (hasHandedOff()) return
                 navigation.navigate('UndoRekey', {
                     screen: 'UndoRekeySuccess',
-                    params: { sourceAddress: source.address },
+                    params: { sourceAddress },
                 })
             } catch (error) {
                 // After a propose handoff the signing Promise eventually
@@ -127,6 +134,7 @@ export const useUndoRekeyConfirmScreen =
             navigation,
             handleRekeyError,
             source,
+            sourceAddress,
             isUnderfunded,
             markSubmitted,
             hasHandedOff,
@@ -155,9 +163,9 @@ export const useUndoRekeyConfirmScreen =
                 navigation.goBack()
                 return
             }
-            const sourceName = getAccountDisplayName(source)
+            const sourceName = getAccountDisplayName(source, scope.chainId)
             const currentAuthName = currentAuth
-                ? getAccountDisplayName(currentAuth)
+                ? getAccountDisplayName(currentAuth, scope.chainId)
                 : ''
             const willBecomeNoAuth = isWatchAccount(source)
             const i18nPrefix = willBecomeNoAuth
@@ -189,6 +197,7 @@ export const useUndoRekeyConfirmScreen =
             handleRekeyError,
             navigation,
             submit,
+            scope.chainId,
         ])
 
         const handleContinuePress = useCallback(async () => {

@@ -81,12 +81,16 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'sender-1',
         custody: { kind: 'local', seed: null },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
         name: 'Sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 
@@ -99,12 +103,16 @@ const seedQuantumSender = (): WalletAccount => {
     const sender: WalletAccount = {
         id: 'quantum-1',
         custody: { kind: 'local', seed: 'quantum' },
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: 'quantum-key-1',
+        chains: {
+            algorand: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: 'quantum-key-1',
+            },
+        },
         name: 'Quantum sender',
     }
     useAccountsStore.getState().setAccounts([sender])
-    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    useAccountsStore.getState().setSelectedAccountId(sender.id)
     return sender
 }
 

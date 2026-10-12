@@ -58,13 +58,20 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
     custody: { kind: 'multisig' },
-    address: MSIG_ADDRESS,
-    name: 'Shared',
-    multisigDetails: {
-        threshold: 1,
-        addresses: [REVIEW_SIGNER_ADDRESS],
-        version: 1,
+    chains: {
+        algorand: {
+            address: MSIG_ADDRESS,
+            native: {
+                family: 'algorand',
+                multisig: {
+                    threshold: 1,
+                    addresses: [REVIEW_SIGNER_ADDRESS],
+                    version: 1,
+                },
+            },
+        },
     },
+    name: 'Shared',
 }
 
 // A schema-valid joint-accounts propose response (signRequestResponseSchema).

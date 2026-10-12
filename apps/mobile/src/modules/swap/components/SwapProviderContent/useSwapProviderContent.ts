@@ -14,6 +14,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     formatCurrency,
@@ -49,8 +51,9 @@ export const useSwapProviderContent = ({
     quotes,
     selectedProviderName,
 }: UseSwapProviderContentParams): UseSwapProviderContentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { preferredCurrency, usdToPreferred } = useCurrency()
-    const { data: providers } = useProvidersQuery()
+    const { data: providers } = useProvidersQuery(scope)
 
     const [userSelection, setUserSelection] =
         useState<Nullable<string>>(selectedProviderName)

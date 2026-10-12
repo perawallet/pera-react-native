@@ -31,6 +31,7 @@ import {
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { requestFeeDelegation } from '../api'
 import {
     FeeDelegationAttestationRequiredError,
@@ -91,6 +92,7 @@ const requestSignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
+            chainId: ALGORAND_CHAIN_ID,
             txs: unsignedTxs,
             groupContext,
             signableIndices,

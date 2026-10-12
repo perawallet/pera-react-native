@@ -14,16 +14,22 @@ import { useCallback, useMemo } from 'react'
 import {
     buildAccount,
     DuplicateAccountError,
+    findAddressHolder,
     useAccountsStore,
     useImportAccount,
     useUpdateAccount,
-    type HDWalletAccount,
     type HardwareWalletAccount,
+    type LocalAccount,
+    type LocalKeySeed,
     type MultiSigAccount,
     type WalletAccount,
     type WatchAccount,
+    withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     hexToBytes,
     kmsCore,
@@ -36,19 +42,22 @@ import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, type BackupChainAdapter } from '../../chain-adapter'
 import {
     BackupAccountType,
-    type Algo25AddressPayload,
+    isChainAddressPayload,
+    isChainHdAddressPayload,
+    isHdSeedSecretsPayload,
+    type ChainAddressPayload,
+    type ChainHdAddressPayload,
     type HardwareAddressPayload,
-    type HdWalletAddressPayload,
     type MultisigAddressPayload,
-    type QuantumAddressPayload,
     type SecretsBackupPayload,
     type WatchAddressPayload,
 } from '../models'
 import type { PulledAccount } from '../restore/pullBackupItems'
-import type {
-    ImportProgressFn,
-    ImportSummary,
-    SyncImportFn,
+import {
+    UnsupportedBackupAccountTypeError,
+    type ImportProgressFn,
+    type ImportSummary,
+    type SyncImportFn,
 } from '../sync/types'
 
 type ImportFailure = ImportSummary['failed'][number]
@@ -62,6 +71,7 @@ type ImportContext = Pick<
     'keys' | 'hasSeedWithEntropy' | 'persistHDMasterKey'
 > & {
     adapter: BackupChainAdapter
+    scope: ChainScope
     importAccount: ReturnType<typeof useImportAccount>
     updateAccount: ReturnType<typeof useUpdateAccount>
     appendAccount: (account: WalletAccount) => void
@@ -126,64 +136,55 @@ const buildMultisigAccount = (
     { adapter }: ImportContext,
     payload: MultisigAddressPayload,
 ): MultiSigAccount => {
-    const derived = multisigChainAdapters.get(adapter.chainId).deriveAddress({
+    const multisig = multisigChainAdapters.get(adapter.chainId)
+    const parameters = {
         version: payload.version,
         threshold: payload.threshold,
         addresses: payload.participantAddresses,
-    })
+    }
+    const derived = multisig.deriveAddress(parameters)
     if (derived !== payload.address) {
         throw new Error(
             `Multisig address mismatch: derived ${derived} != backup ${payload.address}`,
         )
     }
-    return buildAccount({
-        custody: { kind: 'multisig' },
-        chainId: adapter.chainId,
-        chains: {
-            [adapter.chainId]: {
-                address: payload.address,
-                native: {
-                    family: 'algorand',
-                    multisig: {
-                        version: payload.version,
-                        threshold: payload.threshold,
-                        addresses: payload.participantAddresses,
-                    },
-                },
-            },
-        },
-        ...nameField(payload.customName),
-    })
+    return withMultisigParameters(
+        buildAccount({
+            custody: { kind: 'multisig' },
+            chainId: adapter.chainId,
+            chains: { [adapter.chainId]: { address: payload.address } },
+            ...nameField(payload.customName),
+        }),
+        adapter.chainId,
+        parameters,
+    )
 }
+
+// Only a bip39 seed derives HD children.
+type HdSeed = Extract<LocalKeySeed, 'bip39'>
 
 const buildHdWalletAccount = async (
     { adapter }: ImportContext,
+    seed: HdSeed,
     seedKeyId: string,
-    payload: HdWalletAddressPayload,
-): Promise<HDWalletAccount> => {
-    const hdWalletDetails: HDWalletAccount['hdWalletDetails'] = {
-        account: payload.account,
-        change: payload.change,
-        keyIndex: payload.keyIndex,
-        derivationType:
-            payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
-    }
+    payload: ChainHdAddressPayload,
+): Promise<LocalAccount> => {
     // Derivation also commits the child key to the keystore, so no separate
     // `generateDerivedKey` call is needed here.
-    const derived = await adapter.deriveHdAccount(
-        kmsCore,
-        seedKeyId,
-        hdWalletDetails,
-    )
+    const derived = await adapter.deriveHdAccount(kmsCore, seedKeyId, {
+        account: payload.account,
+        keyIndex: payload.keyIndex,
+        derivationType: payload.derivationType,
+    })
     if (derived.address !== payload.address) {
         throw new Error(
-            `hdWallet address mismatch: derived ${derived.address} != backup ${payload.address}`,
+            `${payload.type} address mismatch: derived ${derived.address} != backup ${payload.address}`,
         )
     }
     return buildAccount({
         custody: {
             kind: 'local',
-            seed: 'bip39',
+            seed,
             hd: { account: payload.account, keyIndex: payload.keyIndex },
         },
         chainId: adapter.chainId,
@@ -199,17 +200,22 @@ const buildHdWalletAccount = async (
 
 /**
  * Routed through `useImportAccount` rather than minting keys here so keystore
- * custody stays in one place, and because quantum needs that path's
- * dual-derivation on-chain probe. Returns the accounts the wallet gained —
- * two for quantum (canonical + legacy derivation).
+ * custody stays in one place, and because some seed schemes need that path's
+ * on-chain probe across derivations. Returns the accounts the wallet gained,
+ * which can be more than one for a single phrase.
  */
 const importFromMnemonic = async (
-    { importAccount, updateAccount }: ImportContext,
-    addressPayload: Algo25AddressPayload | QuantumAddressPayload,
+    { importAccount, updateAccount, scope }: ImportContext,
+    seed: LocalKeySeed,
+    addressPayload: ChainAddressPayload,
     secretsPayload: SecretsBackupPayload | null,
 ): Promise<WalletAccount[]> => {
     const { type } = addressPayload
-    if (!secretsPayload || secretsPayload.type !== type) {
+    if (
+        !secretsPayload ||
+        isHdSeedSecretsPayload(secretsPayload) ||
+        secretsPayload.type !== type
+    ) {
         throw new Error(`${type} account missing mnemonic secret`)
     }
     const mnemonicIndices = mnemonicWordsToIndices(
@@ -220,24 +226,19 @@ const importFromMnemonic = async (
     }
     let result
     try {
-        result = await importAccount({
-            mnemonicIndices,
-            type: type === BackupAccountType.quantum ? 'quantum' : 'standalone',
-        })
+        result = await importAccount({ mnemonicIndices, seed })
     } finally {
         zeroBytes(mnemonicIndices)
     }
     const returned = Array.isArray(result) ? result : [result]
-    // `hdWallet` is the only import type that resolves to a pending handle
-    // instead of accounts, and it never reaches this path.
-    if (returned.some(account => !('address' in account))) {
+    // An HD import is the only one that resolves to a pending handle instead
+    // of accounts, and it never reaches this path.
+    if (returned.some(account => !('custody' in account))) {
         throw new Error(`Unexpected non-account result for ${type} import`)
     }
     const imported = returned as WalletAccount[]
     if (addressPayload.customName) {
-        const match = imported.find(
-            account => account.address === addressPayload.address,
-        )
+        const match = findAddressHolder(imported, scope, addressPayload.address)
         if (match) {
             updateAccount({ ...match, name: addressPayload.customName })
         }
@@ -286,7 +287,7 @@ const resolveHeldSeeds = async ({
 }: ImportContext): Promise<Map<string, string>> => {
     const held = new Map<string, string>()
     for (const seedKeyId of keys.keys()) {
-        // Only bip39 roots — algo25/quantum seeds have no entropy child and
+        // Only bip39 roots — single-key seeds have no entropy child and
         // nothing to derive an address path against.
         if (!hasSeedWithEntropy(seedKeyId)) continue
         try {
@@ -304,7 +305,7 @@ const resolveHeldSeeds = async ({
 }
 
 /**
- * Runs before the main loop so hdWallet children can derive against their
+ * Runs before the main loop so HD children can derive against their
  * parent. Failures are returned rather than thrown: a seed that can't be
  * persisted costs only its own accounts.
  */
@@ -319,7 +320,8 @@ const importSeeds = async (
     const failures: ImportFailure[] = []
 
     const hasSeedToImport = accounts.some(
-        account => account.secretsPayload?.type === BackupAccountType.hdSeed,
+        ({ secretsPayload }) =>
+            !!secretsPayload && isHdSeedSecretsPayload(secretsPayload),
     )
     if (!hasSeedToImport) {
         return { seedKeyIdByFirstDerivedAddress, failures }
@@ -328,7 +330,7 @@ const importSeeds = async (
     const heldSeedKeyIdByFirstDerivedAddress = await resolveHeldSeeds(context)
 
     for (const { address, secretsPayload } of accounts) {
-        if (secretsPayload?.type !== BackupAccountType.hdSeed) continue
+        if (!secretsPayload || !isHdSeedSecretsPayload(secretsPayload)) continue
         try {
             // The serializer always sets the seed payload's `address` to the
             // first-derived address.
@@ -356,7 +358,8 @@ const importSeeds = async (
 
 const importHdWalletAccount = async (
     context: ImportContext,
-    payload: HdWalletAddressPayload,
+    seed: HdSeed,
+    payload: ChainHdAddressPayload,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<void> => {
     const seedKeyId = seedKeyIdByFirstDerivedAddress.get(
@@ -364,17 +367,17 @@ const importHdWalletAccount = async (
     )
     if (!seedKeyId) {
         throw new Error(
-            `No parent seed for hdWallet (seedFirstDerivedAddress=${payload.seedFirstDerivedAddress})`,
+            `No parent seed for ${payload.type} (seedFirstDerivedAddress=${payload.seedFirstDerivedAddress})`,
         )
     }
     context.appendAccount(
-        await buildHdWalletAccount(context, seedKeyId, payload),
+        await buildHdWalletAccount(context, seed, seedKeyId, payload),
     )
 }
 
 /**
- * Returns how many accounts the wallet gained — two for quantum, none for an
- * hdSeed address entry. Throws `DuplicateAccountError` for an address the
+ * Returns how many accounts the wallet gained — possibly several for one
+ * recovery phrase, none for an hdSeed address entry. Throws `DuplicateAccountError` for an address the
  * wallet already holds, which the caller counts apart from a real failure.
  */
 const importOneAccount = async (
@@ -382,39 +385,31 @@ const importOneAccount = async (
     { address, addressPayload, secretsPayload }: PulledAccount,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<number> => {
-    const isDuplicate = useAccountsStore
-        .getState()
-        .accounts.some(account => account.address === address)
+    const isDuplicate = !!findAddressHolder(
+        useAccountsStore.getState().accounts,
+        context.scope,
+        address,
+    )
     if (isDuplicate) {
         throw new DuplicateAccountError(address)
     }
 
-    switch (addressPayload.type) {
-        case BackupAccountType.algo25:
-        case BackupAccountType.quantum: {
-            const imported = await importFromMnemonic(
-                context,
-                addressPayload,
-                secretsPayload,
-            )
-            return imported.length
-        }
+    if (isChainAddressPayload(addressPayload)) {
+        return importChainAccount(
+            context,
+            addressPayload,
+            secretsPayload,
+            seedKeyIdByFirstDerivedAddress,
+        )
+    }
 
+    switch (addressPayload.type) {
         case BackupAccountType.hdSeed: {
             // Seeds are persisted in the pre-pass (the secret rides on
             // secrets/<firstDerivedAddress>). A standalone hdSeed address entry
             // only appears when its first account was removed — nothing to
             // create.
             return 0
-        }
-
-        case BackupAccountType.hdWallet: {
-            await importHdWalletAccount(
-                context,
-                addressPayload,
-                seedKeyIdByFirstDerivedAddress,
-            )
-            return 1
         }
 
         case BackupAccountType.hardware: {
@@ -433,19 +428,61 @@ const importOneAccount = async (
         }
 
         default: {
-            const exhaustive: never = addressPayload
+            const unhandled: never = addressPayload
             throw new Error(
-                `Unsupported backup account type: ${String(
-                    (exhaustive as { type?: string }).type,
-                )}`,
+                `Unhandled backup item: ${JSON.stringify(unhandled)}`,
             )
         }
     }
 }
 
+/** Decoded by the chain's adapter alone: a kind it doesn't define fails here
+ *  rather than restoring as some other kind. */
+const importChainAccount = async (
+    context: ImportContext,
+    addressPayload: ChainAddressPayload,
+    secretsPayload: SecretsBackupPayload | null,
+    seedKeyIdByFirstDerivedAddress: Map<string, string>,
+): Promise<number> => {
+    const local = context.adapter.localKindOf(addressPayload.type)
+    if (!local) {
+        throw new UnsupportedBackupAccountTypeError(
+            addressPayload.type,
+            context.adapter.chainId,
+        )
+    }
+    if (!local.isHd) {
+        if (isChainHdAddressPayload(addressPayload)) {
+            throw new Error(
+                `${addressPayload.type} item names a parent seed for a single key`,
+            )
+        }
+        const imported = await importFromMnemonic(
+            context,
+            local.seed,
+            addressPayload,
+            secretsPayload,
+        )
+        return imported.length
+    }
+    if (!isChainHdAddressPayload(addressPayload)) {
+        throw new Error(`${addressPayload.type} item records no parent seed`)
+    }
+    if (local.seed !== 'bip39') {
+        throw new Error(`${addressPayload.type} item names no HD seed`)
+    }
+    await importHdWalletAccount(
+        context,
+        local.seed,
+        addressPayload,
+        seedKeyIdByFirstDerivedAddress,
+    )
+    return 1
+}
+
 /**
  * One account can fail twice — a corrupt seed in the pre-pass, then its
- * hdWallet child with "no parent seed". Keeps the first, which is more specific.
+ * HD child with "no parent seed". Keeps the first, which is more specific.
  */
 const dedupeFailuresByAddress = (
     failures: ImportFailure[],
@@ -501,8 +538,10 @@ const importBatch = async (
     return summary
 }
 
-const useImportContext = (): Omit<ImportContext, 'adapter'> => {
-    const importAccount = useImportAccount()
+const useImportContext = (
+    scope: ChainScope,
+): Omit<ImportContext, 'adapter'> => {
+    const importAccount = useImportAccount(scope)
     const updateAccount = useUpdateAccount()
     const { keys, hasSeedWithEntropy, persistHDMasterKey } = useKMS()
     // Reading the hook-subscribed snapshot would close over a single render's
@@ -512,6 +551,7 @@ const useImportContext = (): Omit<ImportContext, 'adapter'> => {
 
     return useMemo(
         () => ({
+            scope,
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
@@ -524,6 +564,7 @@ const useImportContext = (): Omit<ImportContext, 'adapter'> => {
                 ]),
         }),
         [
+            scope,
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
@@ -534,15 +575,20 @@ const useImportContext = (): Omit<ImportContext, 'adapter'> => {
     )
 }
 
-export const useCloudBackupImport = (): UseCloudBackupImportResult => {
-    const context = useImportContext()
+export const useCloudBackupImport = (
+    scope: ChainScope,
+): UseCloudBackupImportResult => {
+    const context = useImportContext(scope)
 
     // Resolved before the seed pre-pass so a build without the chain's adapter
     // refuses the whole restore instead of half-importing it.
     const importAccounts = useCallback(
         async (accounts: PulledAccount[], onProgress?: ImportProgressFn) =>
             importBatch(
-                { ...context, adapter: backupAdapterFor() },
+                {
+                    ...context,
+                    adapter: backupAdapterFor(context.scope.chainId),
+                },
                 accounts,
                 onProgress,
             ),

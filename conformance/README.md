@@ -62,12 +62,12 @@ each past version wrote and replays each one through the real rehydrate and
 rows. After every step each local key must sign for itself, the rekeyed
 account must sign through its authority, and LocalNet must accept both.
 
-Any change to `migrateAccountsState` or the store's `merge`, and any
-`STORE_VERSION` bump, adds the outgoing version's payload to `fixtures.ts`,
-written as plain JSON the way that version persisted it. A lanekeep rule could
-enforce this by failing a diff that touches `STORE_VERSION`,
-`migrateAccountsState` or `merge` in `packages/accounts/src/store/store.ts`
-without touching `fixtures.ts`; nothing enforces it yet.
+Any change to `migrateAccountsState`, and any `STORE_VERSION` bump, adds the
+outgoing version's payload to `fixtures.ts`, written as plain JSON the way that
+version persisted it. A lanekeep rule could enforce this by failing a diff that
+touches `STORE_VERSION` or `migrateAccountsState` in
+`packages/accounts/src/store/store.ts` without touching `fixtures.ts`; nothing
+enforces it yet.
 
 ## `dist/` dependency (CI-relevant)
 

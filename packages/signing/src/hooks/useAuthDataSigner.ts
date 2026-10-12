@@ -11,13 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { authDataMessageRequest, signMessages } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
 export type UseAuthDataSignerResult = {
     /**
@@ -25,25 +29,33 @@ export type UseAuthDataSignerResult = {
      * Rejects with the chain's own error for every refusal, so the caller can
      * surface a precise reason to the dApp.
      */
-    signAuthData: LocalAuthDataSigningFunction
+    signAuthData: (
+        chainId: ChainId,
+        ...args: Parameters<LocalAuthDataSigningFunction>
+    ) => ReturnType<LocalAuthDataSigningFunction>
 }
 
 // Local-key-only path. A Ledger account takes the hardware strategy instead,
-// so it never reaches this hook. Sign requests carry no chain yet, so every
-// caller resolves the legacy one.
+// so it never reaches this hook.
 export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
 
-    const signAuthData = useCallback<LocalAuthDataSigningFunction>(
-        async (account, authData, metadata) => {
+    const signAuthData = useCallback<UseAuthDataSignerResult['signAuthData']>(
+        async (chainId, account, authData, metadata) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
+                )
+            }
             const [signed] = await signMessages(
                 [
-                    authDataMessageRequest(
-                        getSelectedScope(LEGACY_CHAIN_ID),
-                        account.address,
-                        { authData, metadata },
-                    ),
+                    authDataMessageRequest(getSelectedScope(chainId), address, {
+                        authData,
+                        metadata,
+                    }),
                 ],
                 { account, accounts },
                 {

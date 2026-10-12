@@ -32,12 +32,7 @@ const mockSubmitAndAutoRefresh = vi.fn()
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
-const mockNetworkStoreGetState = vi.fn()
 const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: { getState: () => mockNetworkStoreGetState() },
-}))
 
 // Full replacement (not importActual): the real barrels pull in
 // platform-specific storage (react-native-mmkv) that can't load under
@@ -64,10 +59,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -113,7 +108,6 @@ describe('useSubmitRekeyMutation', () => {
             pqMultiplier: 3n,
         })
         mockUseAllAccounts.mockReturnValue([])
-        mockNetworkStoreGetState.mockReturnValue({ network: 'testnet' })
         // Default: no open ledger row — the previous attempt resolved, so
         // the rebuild is allowed to proceed.
         mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
@@ -134,7 +128,11 @@ describe('useSubmitRekeyMutation', () => {
         onlineManager.setOnline(false)
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper },
         )
 
@@ -166,7 +164,11 @@ describe('useSubmitRekeyMutation', () => {
         ])
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper },
         )
 
@@ -202,7 +204,11 @@ describe('useSubmitRekeyMutation', () => {
         mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper },
         )
 
@@ -232,7 +238,11 @@ describe('useSubmitRekeyMutation', () => {
         mockSubmitAndAutoRefresh.mockResolvedValueOnce(txIds)
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             {
                 wrapper,
             },
@@ -277,7 +287,11 @@ describe('useSubmitRekeyMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             {
                 wrapper,
             },
@@ -297,7 +311,11 @@ describe('useSubmitRekeyMutation', () => {
         mockBuildRekeyTx.mockRejectedValueOnce(buildError)
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             {
                 wrapper,
             },
@@ -326,7 +344,11 @@ describe('useSubmitRekeyMutation', () => {
         mockSubmitAndAutoRefresh.mockRejectedValueOnce(algodError)
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             {
                 wrapper,
             },
@@ -384,7 +406,11 @@ describe('useSubmitRekeyMutation', () => {
         )
 
         const { result, rerender } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper: productionLikeWrapper },
         )
 
@@ -422,7 +448,11 @@ describe('useSubmitRekeyMutation', () => {
         mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper },
         )
 
@@ -437,7 +467,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(mockBuildRekeyTx).toHaveBeenCalledWith(
             expect.objectContaining({ minFee: 3000n }),
         )
-        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
             senderAddress: 'SRC',
             accounts: [
                 { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },
@@ -456,7 +486,11 @@ describe('useSubmitRekeyMutation', () => {
         })
 
         const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            () =>
+                useSubmitRekeyMutation({
+                    scope: scopeForLegacyNetwork('testnet'),
+                    signingMetadata: SIGNING_METADATA,
+                }),
             { wrapper },
         )
 

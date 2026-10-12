@@ -15,12 +15,11 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import React from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCreateQuotesMutation } from '../useCreateQuotesMutation'
 import { createQuotes, fetchProviders } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     createQuotes: vi.fn(),
@@ -66,7 +65,7 @@ describe('swaps/useCreateQuotesMutation', () => {
     })
 
     test('calls createQuotes with correct args and returns data', async () => {
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
+        const { result } = renderHook(() => useCreateQuotesMutation(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -79,7 +78,7 @@ describe('swaps/useCreateQuotesMutation', () => {
         expect(fetchProviders).toHaveBeenCalledWith('mainnet')
         expect(createQuotes).toHaveBeenCalledWith(
             mockRequest,
-            'mainnet',
+            SCOPE,
             mockProviders,
         )
         expect(result.current.data).toEqual([mockQuote])
@@ -88,7 +87,7 @@ describe('swaps/useCreateQuotesMutation', () => {
     test('sets isError on failure', async () => {
         vi.mocked(createQuotes).mockRejectedValue(new Error('Network error'))
 
-        const { result } = renderHook(() => useCreateQuotesMutation(), {
+        const { result } = renderHook(() => useCreateQuotesMutation(SCOPE), {
             wrapper: createWrapper(),
         })
 

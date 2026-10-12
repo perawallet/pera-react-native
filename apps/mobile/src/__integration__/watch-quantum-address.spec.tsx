@@ -19,22 +19,19 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-    accountType,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+import { addressOf } from './__fixtures__/accounts'
 
 // A quantum-derived address is a standard 58-char Algorand address (Falcon
 // derivation, not ed25519) — the watch flow is address-based and has no
 // quantum-specific branch. Using this fixture as the watch target proves
 // quantum addresses are watchable (FR-6): the resulting account must
-// persist as AccountTypes.watch, NOT quantum.
+// persist with watch custody, NOT a quantum seed.
 const WATCH_TARGET_ADDRESS = QUANTUM_TEST_ADDRESS
 
 describe('watch quantum address', () => {
@@ -90,10 +87,10 @@ describe('watch quantum address', () => {
         })
         // The quantum-derived address has no quantum-specific branch in
         // the watch flow — it persists as a plain watch account.
-        expect(accountType(useAccountsStore.getState().accounts[0])).toBe(
-            AccountTypes.watch,
-        )
-        expect(useAccountsStore.getState().accounts[0].address).toBe(
+        expect(useAccountsStore.getState().accounts[0].custody).toEqual({
+            kind: 'watch',
+        })
+        expect(addressOf(useAccountsStore.getState().accounts[0])).toBe(
             WATCH_TARGET_ADDRESS,
         )
 
@@ -110,11 +107,13 @@ describe('watch quantum address', () => {
         })
         const watched = useAccountsStore
             .getState()
-            .accounts.find(account => account.address === WATCH_TARGET_ADDRESS)
-        expect(watched && accountType(watched)).toBe(AccountTypes.watch)
-        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-            WATCH_TARGET_ADDRESS,
-        )
+            .accounts.find(
+                account => addressOf(account) === WATCH_TARGET_ADDRESS,
+            )
+        expect(watched?.custody).toEqual({ kind: 'watch' })
+        expect(
+            addressOf(useAccountsStore.getState().getSelectedAccount()!),
+        ).toBe(WATCH_TARGET_ADDRESS)
     })
 
     it('Given a watch account with the quantum-derived address already exists, when the user enters that address, then the submit button stays disabled', async () => {
@@ -125,7 +124,7 @@ describe('watch quantum address', () => {
             {
                 id: 'existing-1',
                 custody: { kind: 'watch' },
-                address: WATCH_TARGET_ADDRESS,
+                chains: { algorand: { address: WATCH_TARGET_ADDRESS } },
             },
         ])
 

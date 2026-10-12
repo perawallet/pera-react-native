@@ -11,11 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
@@ -39,11 +35,9 @@ export type UseAccountFundedNetworksResult = {
  * polls the network in use.
  */
 export const useAccountFundedNetworksQuery = (
-    address?: string,
+    address: string | undefined,
+    scope: ChainScope,
 ): UseAccountFundedNetworksResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const query = useQuery({
         queryKey: getAccountFundedNetworksQueryKey(address ?? '', scope),
         enabled: !!address,
@@ -52,9 +46,10 @@ export const useAccountFundedNetworksQuery = (
         // useAccountSummaryQuery).
         networkMode: 'always',
         queryFn: async () => {
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountFundedNetworks({
                 accountAddress: address as string,
+                chainId: scope.chainId,
             })
         },
     })

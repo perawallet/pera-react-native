@@ -10,9 +10,14 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 
 // Ethereum has no delegated authority, so an account known only by one reads
 // as never synced; the next sync's snapshot carries the real nonce.
 export const toEthereumChainState: AccountsChainAdapter['toChainState'] =
     () => ({ family: 'evm', nonce: { latest: 0, pending: 0 } })
+
+// No reserve, and ERC-20 balances live in holdings rather than the chain state.
+export const summarizeEthereumChainState: AccountsChainAdapter['summarizeChainState'] =
+    () => ({ reserveBalance: new Decimal(0), heldTokenCount: 0 })

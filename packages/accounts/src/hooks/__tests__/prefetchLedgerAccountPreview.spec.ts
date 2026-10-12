@@ -14,72 +14,69 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 import { prefetchLedgerAccountPreview } from '../prefetchLedgerAccountPreview'
 import {
-    getOnChainAccountInformationQueryKey,
-    getRekeyedAddressesQueryKey,
+    getOnChainAccountStateQueryKey,
+    getDelegatedAddressesQueryKey,
 } from '../querykeys'
 
 import {
+    fakeAccountStateSnapshot,
     fakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
 const mocks = {
-    get fetchOnChainAccountInformation() {
-        return vi.mocked(fakeAccountsChain().adapter.fetchAccountInformation)
+    get fetchAccountState() {
+        return vi.mocked(fakeAccountsChain().adapter.fetchAccountState)
     },
-    get fetchRekeyedAddresses() {
-        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    get fetchDelegatedAddresses() {
+        return vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
     },
 }
 
 describe('prefetchLedgerAccountPreview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.fetchOnChainAccountInformation.mockResolvedValue({
-            address: 'ADDR',
-            amount: 0n,
-            minBalance: 0n,
-            status: 'Offline',
-            rewards: 0n,
-            assets: [],
-        })
-        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        mocks.fetchAccountState.mockResolvedValue(fakeAccountStateSnapshot())
+        mocks.fetchDelegatedAddresses.mockResolvedValue([])
     })
 
-    it('primes the on-chain info and rekeyed-addresses query caches', async () => {
+    it('primes the on-chain state and delegated-addresses query caches', async () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
-        await prefetchLedgerAccountPreview(queryClient, 'ADDR', 'mainnet')
+        await prefetchLedgerAccountPreview(queryClient, 'ADDR', MAINNET_SCOPE)
 
         expect(
             queryClient.getQueryData(
-                getOnChainAccountInformationQueryKey('ADDR', MAINNET_SCOPE),
+                getOnChainAccountStateQueryKey('ADDR', MAINNET_SCOPE),
             ),
         ).toBeDefined()
         expect(
             queryClient.getQueryData(
-                getRekeyedAddressesQueryKey('ADDR', MAINNET_SCOPE),
+                getDelegatedAddressesQueryKey('ADDR', MAINNET_SCOPE),
             ),
         ).toBeDefined()
-        expect(mocks.fetchOnChainAccountInformation).toHaveBeenCalledWith(
+        expect(mocks.fetchAccountState).toHaveBeenCalledWith(
             'ADDR',
             MAINNET_SCOPE,
+            { priorChainState: undefined },
         )
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledWith(
             'ADDR',
             MAINNET_SCOPE,
         )
     })
 
     it('never rejects when a fetch fails (best-effort)', async () => {
-        mocks.fetchRekeyedAddresses.mockRejectedValue(new Error('network'))
+        mocks.fetchDelegatedAddresses.mockRejectedValue(new Error('network'))
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
 
         await expect(
-            prefetchLedgerAccountPreview(queryClient, 'ADDR', 'mainnet'),
+            prefetchLedgerAccountPreview(queryClient, 'ADDR', MAINNET_SCOPE),
         ).resolves.toBeUndefined()
     })
 })

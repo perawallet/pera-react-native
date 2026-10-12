@@ -20,6 +20,15 @@ import {
     type SigningCallbacks,
     type SigningResult,
 } from '@perawallet/wallet-core-signing'
+import { algorandAddressOf } from '../../accounts/vocabulary'
+
+const requireAlgorandAddress = (account: WalletAccount): string => {
+    const address = algorandAddressOf(account)
+    if (!address) {
+        throw new CannotSignError(account.id, 'Account has no Algorand address')
+    }
+    return address
+}
 
 /**
  * Handles an `arbitrary-data` signable group for any strategy backed by a
@@ -41,11 +50,12 @@ export const signArbitraryDataCase = async (
     // from the account producing the signature (the build step already
     // rejects mixed signers, but the signing key must never be applied to
     // data attributed to another account).
-    const mismatched = data.data.find(m => m.signer !== account.address)
+    const address = requireAlgorandAddress(account)
+    const mismatched = data.data.find(m => m.signer !== address)
     if (mismatched) {
         throw new CannotSignError(
-            account.address,
-            `Arbitrary-data item claims signer ${mismatched.signer} but is being signed by ${account.address}`,
+            address,
+            `Arbitrary-data item claims signer ${mismatched.signer} but is being signed by ${address}`,
         )
     }
 
@@ -56,7 +66,7 @@ export const signArbitraryDataCase = async (
 
     return {
         signedData: { type: 'arbitrary-data', signatures },
-        signers: [{ address: account.address }],
+        signers: [{ address }],
         originalIndices,
     }
 }
@@ -74,13 +84,14 @@ export const signAuthDataCase = async (
     signAuthData: LocalAuthDataSigningFunction,
     callbacks?: SigningCallbacks,
 ): Promise<SigningResult> => {
+    const address = requireAlgorandAddress(account)
     callbacks?.onSigningStart?.()
     const signature = await signAuthData(account, data.authData, data.metadata)
     callbacks?.onSigningComplete?.()
 
     return {
         signedData: { type: 'auth-data', signature },
-        signers: [{ address: account.address }],
+        signers: [{ address }],
         originalIndices,
     }
 }

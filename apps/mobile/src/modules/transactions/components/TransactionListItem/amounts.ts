@@ -14,7 +14,6 @@ import type { Decimal } from 'decimal.js'
 import {
     ALGO_ASSET_NAME,
     type Nullable,
-    microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transactions'
@@ -46,18 +45,21 @@ export type AmountDisplay = {
 }
 
 /**
- * Creates an AmountDisplay for an ALGO amount (in microAlgos).
+ * Creates an AmountDisplay for a native asset amount (in base units).
  */
-export const createAlgoAmount = (
-    microAlgos: Decimal,
+export const createNativeAmount = (
+    baseUnits: Decimal,
     isOutgoing: boolean,
-    nativeAssetId: string,
+    nativeAsset: { assetId: string; decimals: number },
 ): AmountDisplay => {
-    const absValue = microAlgosToAlgos(microAlgos).abs()
+    const absValue = baseUnitsToDisplayUnits(
+        baseUnits,
+        nativeAsset.decimals,
+    ).abs()
 
     return {
         value: absValue,
-        assetId: nativeAssetId,
+        assetId: nativeAsset.assetId,
         currency: ALGO_ASSET_NAME,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }

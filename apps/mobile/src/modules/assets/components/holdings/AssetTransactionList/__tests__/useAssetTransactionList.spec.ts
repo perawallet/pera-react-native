@@ -99,10 +99,13 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 describe('useAssetTransactionList', () => {
+    const ACCOUNT_ADDRESS =
+        'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
-        address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        id: 'test-account',
         name: 'Test Account',
         custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: ACCOUNT_ADDRESS } },
     } as WalletAccount
 
     const mockAsset: PeraAsset = {
@@ -173,9 +176,9 @@ describe('useAssetTransactionList', () => {
             )
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '12345',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 isEnabled: true,
                 afterTime: undefined,
                 beforeTime: undefined,
@@ -539,7 +542,7 @@ describe('useAssetTransactionList', () => {
             })
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
-                [mockAccount.address],
+                [ACCOUNT_ADDRESS],
                 'mainnet',
             )
         })
@@ -584,16 +587,13 @@ describe('useAssetTransactionList', () => {
             result.current.handleExportCsv()
 
             expect(mockExportCsv).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '12345',
             })
         })
 
         it('does not call exportCsv if no account address', () => {
-            const accountWithoutAddress = {
-                ...mockAccount,
-                address: '',
-            }
+            const accountWithoutAddress = { ...mockAccount, chains: {} }
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
@@ -623,7 +623,7 @@ describe('useAssetTransactionList', () => {
             result.current.handleExportCsv()
 
             expect(mockExportCsv).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '99999',
             })
         })
@@ -670,7 +670,7 @@ describe('useAssetTransactionList', () => {
             const mockResult = {
                 filename: 'test.csv',
                 csvContent: 'data',
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: 12_345,
                 rowCount: 5,
             }

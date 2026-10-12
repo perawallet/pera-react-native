@@ -13,7 +13,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
 import type { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     percentToApiSlippage,
     useCreateQuotesMutation,
@@ -29,6 +32,7 @@ import {
     type Nullable,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Debounce so typing an amount doesn't fire a quote request per keystroke.
 const QUOTE_DEBOUNCE_MS = 500
@@ -78,6 +82,7 @@ export const useSwapQuotes = ({
     payDecimals,
     slippage,
 }: UseSwapQuotesParams): UseSwapQuotesResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
 
@@ -86,7 +91,7 @@ export const useSwapQuotes = ({
         isPending: isQuoteLoading,
         isError: isQuoteMutationError,
         reset: resetQuoteMutation,
-    } = useCreateQuotesMutation()
+    } = useCreateQuotesMutation(scope)
     const createQuotesRef = useRef(createQuotes)
     createQuotesRef.current = createQuotes
 

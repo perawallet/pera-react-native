@@ -20,19 +20,26 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AccountPicker } from '@components/AccountPicker'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const allAccounts = useAllAccounts()
-    const { accountValueTotals } = useAccountValueTotalsQuery(allAccounts)
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        allAccounts,
+        scope,
+    )
     // Same reason as the send flow's address picker: the switcher and the sort
     // sheet render the user's chosen order, so every account list has to.
     const { sortedAccounts: accounts } = useSortedAccounts(
         allAccounts,
         accountValueTotals,
+        scope.chainId,
     )
     const { setSelectedAccount } = useReceiveFunds()
     const navigation =

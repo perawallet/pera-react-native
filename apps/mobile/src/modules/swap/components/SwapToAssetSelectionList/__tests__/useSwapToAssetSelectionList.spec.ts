@@ -33,6 +33,8 @@ const mockGetAssetsQueryKey = vi.hoisted(() =>
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
+    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
+        account.chains.algorand?.address,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
@@ -109,7 +111,9 @@ describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetQueryData.mockReturnValue(undefined)
-        mockUseSelectedAccount.mockReturnValue({ address: 'TEST_ADDRESS' })
+        mockUseSelectedAccount.mockReturnValue({
+            chains: { algorand: { address: 'TEST_ADDRESS' } },
+        })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
@@ -167,6 +171,7 @@ describe('useSwapToAssetSelectionList', () => {
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
             31_566_704,
+            expect.objectContaining({ chainId: 'algorand' }),
             'USDC',
             true,
         )
@@ -177,6 +182,7 @@ describe('useSwapToAssetSelectionList', () => {
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
             31_566_704,
+            expect.objectContaining({ chainId: 'algorand' }),
             undefined,
             true,
         )

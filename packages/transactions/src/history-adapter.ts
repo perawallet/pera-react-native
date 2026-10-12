@@ -12,7 +12,6 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
     type Page,
@@ -22,7 +21,7 @@ import {
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
@@ -34,8 +33,7 @@ import type {
 export type FetchTransactionHistoryParams = {
     /** The account address to fetch transactions for */
     accountAddress: string
-    /** The network to fetch transactions from */
-    network: Network
+    scope: ChainScope
     /** Optional: Filter transactions to only show those involving a specific asset */
     assetId?: string
     /** Optional: Only return transactions confirmed after this date (YYYY-MM-DD) */
@@ -57,8 +55,7 @@ export type FetchMoreTransactionsParams = {
      * elsewhere, since the indexer has no absolute next-page URL to replay.
      */
     url: string
-    /** The network to fetch transactions from */
-    network: Network
+    scope: ChainScope
     /**
      * Indexer-backed networks only: it paginates by account, and its next-token
      * encodes no address the way a Pera pagination URL does.
@@ -99,14 +96,10 @@ export type AssetFactsResolver = (
 export interface HistoryChainAdapter {
     chainId: ChainId
     fetchHistory(
-        params: Omit<FetchTransactionHistoryParams, 'network'> & {
-            scope: ChainScope
-        },
+        params: FetchTransactionHistoryParams,
     ): Promise<TransactionHistoryResult>
     fetchMoreHistory(
-        params: Omit<FetchMoreTransactionsParams, 'network'> & {
-            scope: ChainScope
-        },
+        params: FetchMoreTransactionsParams,
     ): Promise<TransactionHistoryResult>
     /** Swept close amount in base units, as a decimal string; null when the transaction has no close leg. */
     fetchCloseAmount?(
@@ -142,41 +135,28 @@ export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
         ? historyChainAdapters.get(chainId).resolveAssetFacts
         : undefined) ?? keepFacts
 
-const adapterFor = (
-    network: Network,
-): { adapter: HistoryChainAdapter; scope: ChainScope } => {
-    const scope = scopeForLegacyNetwork(network)
-    return { adapter: historyChainAdapters.get(scope.chainId), scope }
-}
-
-export const fetchTransactionHistory = async ({
-    network,
-    ...params
-}: FetchTransactionHistoryParams): Promise<TransactionHistoryResult> => {
-    const { adapter, scope } = adapterFor(network)
-    return adapter.fetchHistory({ ...params, scope })
-}
+export const fetchTransactionHistory = async (
+    params: FetchTransactionHistoryParams,
+): Promise<TransactionHistoryResult> =>
+    historyChainAdapters.get(params.scope.chainId).fetchHistory(params)
 
 /** Takes a nextUrl on Pera-backed networks, a next-token on indexer-backed ones. */
-export const fetchMoreTransactions = async ({
-    network,
-    ...params
-}: FetchMoreTransactionsParams): Promise<TransactionHistoryResult> => {
-    const { adapter, scope } = adapterFor(network)
-    return adapter.fetchMoreHistory({ ...params, scope })
-}
+export const fetchMoreTransactions = async (
+    params: FetchMoreTransactionsParams,
+): Promise<TransactionHistoryResult> =>
+    historyChainAdapters.get(params.scope.chainId).fetchMoreHistory(params)
 
 /** Null when the chain has no lookup. */
 export const fetchCloseAmount = async (
     txId: string,
-    network: Network,
-): Promise<Nullable<string>> => {
-    const { adapter, scope } = adapterFor(network)
-    return adapter.fetchCloseAmount?.(txId, scope) ?? null
-}
+    scope: ChainScope,
+): Promise<Nullable<string>> =>
+    (await historyChainAdapters
+        .get(scope.chainId)
+        .fetchCloseAmount?.(txId, scope)) ?? null
 
 export const mapHistoryItemToDisplayableTransaction = (
     item: TransactionHistoryItem,
-    network: Network,
+    chainId: ChainId,
 ): Nullable<PeraDisplayableTransaction> =>
-    adapterFor(network).adapter.toDisplayable(item)
+    historyChainAdapters.get(chainId).toDisplayable(item)
