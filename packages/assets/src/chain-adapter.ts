@@ -18,6 +18,8 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    AppError,
+    ErrorCategory,
     isAlgoAssetName,
     type Nullable,
     type Optional,
@@ -60,17 +62,37 @@ export interface AssetsChainAdapter {
      * memoised consumers compare it by identity. Seeded, never fetched.
      */
     getNativeAsset(): PeraAsset
-    /** Fetches whatever is stale or missing for `assetIds` and persists it. */
-    syncAssets(assetIds: string[], scope: ChainScope): Promise<void>
-    /** Merged read of every per-asset source; persists the chain-intrinsic half. */
-    fetchAsset(assetId: string, scope: ChainScope): Promise<PeraAsset>
-    /** The chain's own record of the asset, with no third-party opinion merged in. */
-    fetchOnChainAsset(assetId: string, scope: ChainScope): Promise<PeraAsset>
-    fetchAssetAuthorities(
-        assetId: string,
+    /**
+     * Fetches whatever is stale or missing for `refs` and persists it. Accepts
+     * the native ref and skips it. Rejects a ref or a scope on another chain.
+     */
+    syncAssets(refs: AssetRef[], scope: ChainScope): Promise<void>
+    /**
+     * The asset as the chain's sources for `scope` describe it, with any
+     * third-party opinion (verification tier, logo) merged in. Persists the
+     * chain-intrinsic half. The native ref resolves to `getNativeAsset()`
+     * without a request. Rejects a ref or a scope on another chain.
+     */
+    getAssetMetadata(ref: AssetRef, scope: ChainScope): Promise<PeraAsset>
+    /**
+     * The chain's own record of the asset, with no third-party opinion merged
+     * in. Rejects a ref or a scope on another chain.
+     */
+    fetchOnChainAsset(ref: AssetRef, scope: ChainScope): Promise<PeraAsset>
+    /**
+     * Absent on a chain whose tokens carry no freeze or clawback authority.
+     * Rejects a ref or a scope on another chain.
+     */
+    fetchAssetAuthorities?(
+        ref: AssetRef,
         scope: ChainScope,
     ): Promise<AssetAuthorities>
-    searchAssets(
+    /**
+     * One page of assets matching `params.query`. Absent on a chain with no
+     * asset search, whose `assetSearch` capability stays off. Rejects a scope
+     * on another chain.
+     */
+    search?(
         params: AssetSearchParams,
         scope: ChainScope,
     ): Promise<AssetSearchPage>
@@ -111,17 +133,72 @@ export const displayCurrencyToAssetId = (
 ): Nullable<string> =>
     isAlgoAssetName(code) ? nativeAssetFor(chainId).assetId : null
 
+export class AssetSearchUnsupportedError extends AppError {
+    readonly chainId: ChainId
+
+    constructor(chainId: ChainId) {
+        super(`Asset search is not supported on ${chainId}.`, {
+            category: ErrorCategory.ASSETS,
+            recoverable: false,
+        })
+        this.name = 'AssetSearchUnsupportedError'
+        this.chainId = chainId
+    }
+}
+
+const NO_ASSET_AUTHORITIES: AssetAuthorities = {
+    hasFreeze: false,
+    hasClawback: false,
+    freezeAddress: null,
+    clawbackAddress: null,
+}
+
+const assetRefOn = (scope: ChainScope, assetId: string): AssetRef => ({
+    chainId: scope.chainId,
+    assetId,
+})
+
 // The wrappers below are async so a missing adapter rejects instead of
 // throwing synchronously past a caller's `.catch`.
 export const fetchAndPersistAssets = async (
     assetIds: string[],
     scope: ChainScope,
 ): Promise<void> => {
-    await assetsAdapterFor(scope).syncAssets(assetIds, scope)
+    await assetsAdapterFor(scope).syncAssets(
+        assetIds.map(id => assetRefOn(scope, id)),
+        scope,
+    )
 }
+
+export const fetchAssetMetadata = async (
+    assetId: string,
+    scope: ChainScope,
+): Promise<PeraAsset> =>
+    assetsAdapterFor(scope).getAssetMetadata(assetRefOn(scope, assetId), scope)
 
 export const fetchOnChainAsset = async (
     assetId: string,
     scope: ChainScope,
 ): Promise<PeraAsset> =>
-    assetsAdapterFor(scope).fetchOnChainAsset(assetId, scope)
+    assetsAdapterFor(scope).fetchOnChainAsset(assetRefOn(scope, assetId), scope)
+
+/** No authority, without a request, on a chain that declares no `fetchAssetAuthorities`. */
+export const fetchAssetAuthorities = async (
+    assetId: string,
+    scope: ChainScope,
+): Promise<AssetAuthorities> => {
+    const adapter = assetsAdapterFor(scope)
+    return adapter.fetchAssetAuthorities
+        ? adapter.fetchAssetAuthorities(assetRefOn(scope, assetId), scope)
+        : NO_ASSET_AUTHORITIES
+}
+
+/** Rejects with {@link AssetSearchUnsupportedError} on a chain that declares no `search`. */
+export const searchAssets = async (
+    params: AssetSearchParams,
+    scope: ChainScope,
+): Promise<AssetSearchPage> => {
+    const adapter = assetsAdapterFor(scope)
+    if (!adapter.search) throw new AssetSearchUnsupportedError(adapter.chainId)
+    return adapter.search(params, scope)
+}

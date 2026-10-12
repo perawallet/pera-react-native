@@ -260,6 +260,19 @@ describe('useGlobalSearch', () => {
         )
     })
 
+    test('searches remote assets on the chain scope it is given', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+
+        renderHook(() => useGlobalSearch(SCOPE, { debounceMs: 0 }), {
+            wrapper: makeWrapper(),
+        })
+
+        const lastCall = mockUseAssetSearchQuery.mock.calls.at(-1)
+        expect(lastCall?.[1]).toEqual(SCOPE)
+    })
+
     test('remote asset search is disabled by default (enabled=false)', () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])
@@ -274,7 +287,7 @@ describe('useGlobalSearch', () => {
             mockUseAssetSearchQuery.mock.calls[
                 mockUseAssetSearchQuery.mock.calls.length - 1
             ]
-        expect(lastCall?.[1]?.enabled).toBe(false)
+        expect(lastCall?.[2]?.enabled).toBe(false)
     })
 
     test('showOnEmptyQuery runs the remote search with no query and surfaces suggestions', () => {
@@ -317,7 +330,7 @@ describe('useGlobalSearch', () => {
                 mockUseAssetSearchQuery.mock.calls.length - 1
             ]
         expect(lastCall?.[0]).toBe('')
-        expect(lastCall?.[1]?.enabled).toBe(true)
+        expect(lastCall?.[2]?.enabled).toBe(true)
         expect(result.current.value).toBe('')
         expect(result.current.results.remoteAssets).toEqual(suggestions)
         expect(result.current.results.accounts).toEqual([])

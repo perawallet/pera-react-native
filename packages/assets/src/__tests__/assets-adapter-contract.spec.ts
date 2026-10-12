@@ -16,7 +16,9 @@ import {
     scopeForLegacyNetwork,
     type AssetPrice,
     type AssetRef,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { AssetAuthorities } from '../chain-adapter'
 import {
     PeraAssetType,
     PeraAssetVerificationTier,
@@ -44,24 +46,65 @@ const USDC: PeraAsset = {
     },
 }
 
-const knownToken = async (assetId: string): Promise<PeraAsset> => {
-    if (assetId !== USDC.assetId) throw new Error(`Unknown asset ${assetId}`)
+const FAKE_CHAIN_ID = scopeForLegacyNetwork('mainnet').chainId
+
+// A real chain rejects a scope or ref that isn't its own before any request.
+const check = (scope: ChainScope, refs: AssetRef[] = []): void => {
+    if (scope.chainId !== FAKE_CHAIN_ID) {
+        throw new Error('Not a fake-chain scope')
+    }
+    if (refs.some(r => r.chainId !== FAKE_CHAIN_ID)) {
+        throw new Error('Not a fake-chain asset')
+    }
+}
+
+const knownToken = async (ref: AssetRef, scope: ChainScope) => {
+    check(scope, [ref])
+    if (ref.assetId !== USDC.assetId) {
+        throw new Error(`Unknown asset ${ref.assetId}`)
+    }
     return USDC
+}
+
+const NO_AUTHORITIES: AssetAuthorities = {
+    hasFreeze: false,
+    hasClawback: false,
+    freezeAddress: null,
+    clawbackAddress: null,
 }
 
 assetMetadataContractTests(
     () =>
         fakeAssetsAdapter({
-            syncAssets: async ids => {
-                persisted.push(...ids)
+            syncAssets: async (refs, scope) => {
+                check(scope, refs)
+                persisted.push(...refs.map(r => r.assetId))
             },
-            fetchAsset: knownToken,
+            getAssetMetadata: async (ref, scope) => {
+                check(scope, [ref])
+                return ref.assetId === FAKE_NATIVE_ASSET.assetId
+                    ? FAKE_NATIVE_ASSET
+                    : knownToken(ref, scope)
+            },
             fetchOnChainAsset: knownToken,
+            fetchAssetAuthorities: async (ref, scope) => {
+                check(scope, [ref])
+                return NO_AUTHORITIES
+            },
+            search: async ({ query }, scope) => {
+                check(scope)
+                return {
+                    results: query === 'usdc' ? [USDC] : [],
+                    nextCursor: undefined,
+                }
+            },
         }),
     {
         scope: scopeForLegacyNetwork('mainnet'),
         nativeAssetId: FAKE_NATIVE_ASSET.assetId,
         token: TOKEN,
+        tokenAuthorities: NO_AUTHORITIES,
+        search: { query: 'usdc', hitAssetIds: [TOKEN.assetId] },
         handlers: [],
         persistedIds: () => persisted,
     },

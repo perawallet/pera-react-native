@@ -11,8 +11,12 @@
  */
 
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAssetTransferType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 
@@ -53,7 +57,8 @@ export const useAssetTransferSummaryHeader = (
         return transaction.assetTransferTransaction?.amount ?? 0n
     }, [transaction])
 
-    const { data: asset } = useSingleAssetDetailsQuery(assetId)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: asset } = useSingleAssetDetailsQuery(assetId, scope)
 
     const amount = useMemo(() => {
         return new Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))

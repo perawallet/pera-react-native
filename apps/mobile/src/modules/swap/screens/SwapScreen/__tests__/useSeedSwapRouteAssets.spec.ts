@@ -91,7 +91,10 @@ describe('useSeedSwapRouteAssets', () => {
         )
 
         // An ALGO route id is passed through as '' — the disabled sentinel.
-        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith('')
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith('', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 

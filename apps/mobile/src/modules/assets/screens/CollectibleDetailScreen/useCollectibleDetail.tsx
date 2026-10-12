@@ -97,6 +97,7 @@ export const useCollectibleDetail = (
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset, isPending } = useSingleAssetDetailsQuery(
         assetId,
+        scope,
         false,
     )
     const account = useSelectedAccount()

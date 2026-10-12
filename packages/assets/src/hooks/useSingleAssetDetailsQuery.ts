@@ -11,8 +11,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../models'
 import {
     getAssetDetailsQueryKey,
@@ -20,15 +22,13 @@ import {
 } from './querykeys'
 import { getAssetById } from '../db'
 import { assetBatchQueue } from '../services/assetBatchQueue'
-import { assetsAdapterFor } from '../chain-adapter'
+import { assetsAdapterFor, fetchAssetMetadata } from '../chain-adapter'
 
 export const useSingleAssetDetailsQuery = (
     assetId: string,
+    scope: ChainScope,
     useDB: boolean = true,
 ) => {
-    const { network } = useNetwork()
-    const scope = scopeForLegacyNetwork(network)
-
     return useQuery<PeraAsset, Error>({
         // The remote variant keeps a distinct entry — see
         // getRemoteAssetDetailsQueryKey for why it can't share the canonical
@@ -58,7 +58,10 @@ export const useSingleAssetDetailsQuery = (
             // lookups into one bulk fetch and persists, so the next read is
             // local.
             if (useDB) {
-                const fetched = await assetBatchQueue.enqueue(assetId, network)
+                const fetched = await assetBatchQueue.enqueue(
+                    assetId,
+                    toScopeKey(scope),
+                )
                 if (fetched) {
                     return fetched
                 }
@@ -66,7 +69,7 @@ export const useSingleAssetDetailsQuery = (
 
             // Last resort — and the whole path for useDB=false: merge the
             // per-asset detail endpoints.
-            return adapter.fetchAsset(assetId, scope)
+            return fetchAssetMetadata(assetId, scope)
         },
         staleTime: Infinity,
         enabled: !!assetId.length,

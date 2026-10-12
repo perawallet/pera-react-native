@@ -21,6 +21,7 @@ import {
     useNativeAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     isOutgoingFor,
     type TransactionHistoryItem,
@@ -84,7 +85,8 @@ export const useTransactionAmounts = (
     const { assetId: nativeAssetId, decimals: nativeDecimals } =
         useNativeAsset()
     const assetId = transaction.asset?.assetId?.toString() ?? ''
-    const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: assetDetails } = useSingleAssetDetailsQuery(assetId, scope)
     const isOutgoing = isOutgoingFor(transaction, userAddress)
 
     const allAmounts = useMemo((): AmountDisplay[] => {

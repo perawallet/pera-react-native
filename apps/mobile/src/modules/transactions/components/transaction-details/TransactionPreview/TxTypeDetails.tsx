@@ -15,13 +15,17 @@ import {
     baseUnitsToDisplayUnits,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
     useNativeAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
@@ -44,8 +48,10 @@ export const TxTypeDetails = ({
     const { displayName: senderDisplayName } = useResolvedAddress(tx.sender, {
         format: 'long',
     })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset } = useSingleAssetDetailsQuery(
         tx.assetTransferTransaction?.assetId?.toString() ?? '',
+        scope,
     )
 
     let secondary: Nullable<React.ReactNode> = null

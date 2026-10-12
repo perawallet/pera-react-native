@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 import { useWebView } from '@modules/webview'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
@@ -36,8 +42,10 @@ export const useTransactionFooter = (
           }
         : undefined
 
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset } = useSingleAssetDetailsQuery(
         transaction.assetTransferTransaction?.assetId?.toString() ?? '',
+        scope,
     )
 
     const assetUrl = useMemo(() => {

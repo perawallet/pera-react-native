@@ -24,6 +24,7 @@ import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -56,7 +57,11 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const accountAddress = account
         ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
         : undefined
-    const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: asset, isPending } = useSingleAssetDetailsQuery(
+        assetId ?? '',
+        scope,
+    )
     const { displayName: accountDisplayName } = useResolvedAddress(
         accountAddress ?? '',
         { enabled: !!accountAddress },
