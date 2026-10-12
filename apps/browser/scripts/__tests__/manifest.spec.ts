@@ -48,6 +48,20 @@ describe('stampManifest', () => {
         ).toEqual({ ...source, version: '1.4.2' })
     })
 
+    it('leaves the source manifest comments out of the shipped one', () => {
+        const stamped = stampManifest(
+            {
+                ...source,
+                permissions: ['storage'],
+                _comment_storage: 'Why storage is requested.',
+            },
+            { packageVersion: '1.4.2', appEnvironment: 'production' },
+        )
+
+        expect(Object.keys(stamped)).not.toContain('_comment_storage')
+        expect(stamped.permissions).toEqual(['storage'])
+    })
+
     it('keeps the pre-release tag in version_name', () => {
         const manifest = stampManifest(source, {
             packageVersion: '0.1.0-alpha.1',

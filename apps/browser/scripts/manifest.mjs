@@ -54,6 +54,13 @@ const toBuildPart = buildNumber => {
     return String(Number(buildNumber))
 }
 
+// JSON has no comments, so the source manifest documents itself in
+// `_comment_*` keys; they are notes for this repo, not for the store.
+const withoutComments = manifest =>
+    Object.fromEntries(
+        Object.entries(manifest).filter(([key]) => !key.startsWith('_comment')),
+    )
+
 /**
  * Mirrors mobile's app.config.builder.js: CI passes APP_VERSION (from the tag)
  * and BUILD_NUMBER, falling back to package.json locally. The build number is
@@ -70,7 +77,7 @@ export const stampManifest = (
         ...(buildNumber ? [toBuildPart(buildNumber)] : []),
     ].join('.')
     return {
-        ...manifest,
+        ...withoutComments(manifest),
         version,
         ...(version === marketingVersion
             ? {}
