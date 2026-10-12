@@ -42,7 +42,8 @@ const baseAsset = {
     fiatValue: new Decimal(10),
     usdPrice: new Decimal(2),
     verificationTier: 'verified' as const,
-    isAlgo: true,
+    isNative: true,
+    restriction: null,
 }
 
 const asaAsset = {
@@ -55,7 +56,8 @@ const asaAsset = {
     fiatValue: new Decimal(100),
     usdPrice: new Decimal(1),
     verificationTier: 'trusted' as const,
-    isAlgo: false,
+    isNative: false,
+    restriction: null,
 }
 
 beforeEach(() => {
@@ -89,7 +91,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(10),
                 assets: [baseAsset],
                 delegation: { kind: 'none' },
@@ -121,7 +123,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
                 delegation: { kind: 'delegatedTo', authorityAddress: 'AUTH' },
@@ -155,7 +157,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
                 delegation: { kind: 'canSignFor', addresses: ['R1', 'R2'] },
@@ -204,7 +206,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal('408.2'),
+                nativeBalance: new Decimal('408.2'),
                 totalFiatValue: new Decimal('48.45'),
                 assets: [{ ...baseAsset, usdPrice: new Decimal('0.6') }],
                 delegation: { kind: 'none' },
@@ -232,7 +234,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'MYADDR',
-                algoBalance: new Decimal(1),
+                nativeBalance: new Decimal(1),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
                 delegation: { kind: 'none' },
@@ -263,7 +265,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'WATCH_ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
                 delegation: {
@@ -292,7 +294,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(105),
                 assets: [baseAsset, asaAsset],
                 delegation: { kind: 'none' },
@@ -316,7 +318,9 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[0].usdPrice).toBeInstanceOf(Decimal)
             expect(assetItems[0].usdPrice.toString()).toBe('2')
             // ALGO holding: its ALGO value is the amount itself (5 * 2 / 2).
-            expect(assetItems[0].accountBalance.algoValue.toString()).toBe('5')
+            expect(assetItems[0].accountBalance.nativeValue.toString()).toBe(
+                '5',
+            )
         }
 
         if (assetItems[1].kind === 'asset') {
@@ -324,7 +328,9 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[1].usdPrice.toString()).toBe('1')
             // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
             //                            = 100 * 1 / 2 = 50.
-            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('50')
+            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
+                '50',
+            )
         }
     })
 
@@ -332,7 +338,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [
                     baseAsset,
@@ -362,11 +368,11 @@ describe('useLedgerAccountInfoContent', () => {
         }
     })
 
-    it('falls back to a zero algoValue when the ALGO USD price is unknown', () => {
+    it('falls back to a zero nativeValue when the ALGO USD price is unknown', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(0),
                 assets: [{ ...baseAsset, usdPrice: new Decimal(0) }, asaAsset],
                 delegation: { kind: 'none' },
@@ -382,7 +388,9 @@ describe('useLedgerAccountInfoContent', () => {
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
         if (assetItems[1].kind === 'asset') {
-            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('0')
+            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
+                '0',
+            )
         }
     })
 
@@ -390,7 +398,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(1),
+                nativeBalance: new Decimal(1),
                 totalFiatValue: new Decimal(1),
                 assets: [baseAsset, asaAsset],
                 delegation: { kind: 'canSignFor', addresses: ['R1'] },

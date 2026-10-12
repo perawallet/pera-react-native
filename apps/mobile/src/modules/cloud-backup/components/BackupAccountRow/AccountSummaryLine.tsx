@@ -26,7 +26,7 @@ export const AccountSummaryLine = ({ address }: { address: string }) => {
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const styles = useSummaryStyles()
-    const { holdingsCount, portfolioAlgoValue } = useAccountSummaryQuery(
+    const { holdingsCount, portfolioNativeValue } = useAccountSummaryQuery(
         address,
         scope,
     )
@@ -49,7 +49,7 @@ export const AccountSummaryLine = ({ address }: { address: string }) => {
             </PWText>
             <AssetAmount
                 asset={nativeAsset}
-                value={portfolioAlgoValue}
+                value={portfolioNativeValue}
                 density='compact'
                 variant='body'
                 weight={400}

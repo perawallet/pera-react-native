@@ -46,7 +46,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                             {
                                 assetId: '123',
                                 amount: new Decimal(1),
-                                algoValue: new Decimal(1),
+                                nativeValue: new Decimal(1),
                             },
                         ],
                     },

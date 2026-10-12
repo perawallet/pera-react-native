@@ -360,9 +360,9 @@ registerPreview({
                 assetId: MOCK_ASSET_ID,
                 asset: mockAsset,
                 amount: new Decimal('1234.56'),
-                algoValue: new Decimal('120.0'),
+                nativeValue: new Decimal('120.0'),
                 fiatValue: new Decimal('1234.56'),
-                isFrozen: false,
+                restriction: null,
             }}
             usdPrice={new Decimal('1.00')}
             showBalance={true}

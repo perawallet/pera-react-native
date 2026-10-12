@@ -412,10 +412,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverDelegatedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
-        useAccountOptInRoundsQuery: vi.fn(() => ({
-            optInRounds: new Map(),
+        useHoldingAcquisitionOrderQuery: vi.fn(() => ({
+            acquisitionOrder: new Map(),
             isPending: false,
         })),
+        HoldingRestrictions: { transferBlocked: 'transferBlocked' },
         useSelectedAccount: vi.fn(() => null),
         useSelectedAccountId: vi.fn(() => ({
             selectedAccountId: null,

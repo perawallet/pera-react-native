@@ -264,9 +264,9 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockOnAssetSelected).toHaveBeenCalledWith({
                 assetId: '31566704',
                 amount: new Decimal('500'),
-                algoValue: new Decimal(0),
+                nativeValue: new Decimal(0),
                 fiatValue: null,
-                isFrozen: false,
+                restriction: null,
             })
         })
 

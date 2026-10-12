@@ -86,7 +86,7 @@ export function useRekeyedAccountInfoContent({
 
         return {
             balances: sorted,
-            algoValue: balanceData.algoValue,
+            algoValue: balanceData.nativeValue,
         }
     }, [isNativeAssetId, rekeyedBalances, address])
 
@@ -95,7 +95,7 @@ export function useRekeyedAccountInfoContent({
             authAccount && chainAccountOf(authAccount, scope.chainId)?.address
         if (!authAddress) return new Decimal(0)
         const balanceData = authBalances.get(authAddress)
-        return balanceData?.algoValue ?? new Decimal(0)
+        return balanceData?.nativeValue ?? new Decimal(0)
     }, [authBalances, authAccount, scope.chainId])
 
     return {

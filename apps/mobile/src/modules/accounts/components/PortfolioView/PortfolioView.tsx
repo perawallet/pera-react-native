@@ -69,7 +69,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const { t } = useLanguage()
 
     const accounts = useSigningAccounts(scope.chainId)
-    const { portfolioAlgoValue, portfolioUsdValue, isPending } =
+    const { portfolioNativeValue, portfolioUsdValue, isPending } =
         useAccountValueTotalsQuery(accounts, scope)
     const portfolioPreferredValue = useMemo(() => {
         return usdToPreferred(portfolioUsdValue)
@@ -187,8 +187,8 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                         variant='h2'
                         value={
                             selectedPoint
-                                ? selectedPoint.algoValue
-                                : portfolioAlgoValue
+                                ? selectedPoint.nativeValue
+                                : portfolioNativeValue
                         }
                         asset={nativeAsset}
                         density='compact'

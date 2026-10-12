@@ -51,7 +51,7 @@ export const AccountOverviewHeader = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        portfolioAlgoValue,
+        portfolioNativeValue,
         portfolioPreferredValue,
         isPending,
         period,
@@ -84,8 +84,8 @@ export const AccountOverviewHeader = ({
                                 variant='h1'
                                 value={
                                     selectedPoint
-                                        ? new Decimal(selectedPoint.algoValue)
-                                        : portfolioAlgoValue
+                                        ? new Decimal(selectedPoint.nativeValue)
+                                        : portfolioNativeValue
                                 }
                                 asset={nativeAsset}
                                 style={styles.primaryCurrency}
@@ -203,7 +203,7 @@ export const AccountOverviewHeader = ({
         togglePrivacyMode,
         styles,
         selectedPoint,
-        portfolioAlgoValue,
+        portfolioNativeValue,
         portfolioPreferredValue,
         isPending,
         isBalanceComplete,

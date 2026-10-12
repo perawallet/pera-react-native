@@ -144,7 +144,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         }),
         useAccountBalancesQuery: () => ({
             accountBalances: new Map(),
-            portfolioAlgoValue: 0,
+            portfolioNativeValue: 0,
             isPending: false,
             isFetched: true,
             isRefetching: false,

@@ -443,9 +443,9 @@ describe('Flow: Opt out of an asset', () => {
             assetId: USDC_TEST_ASSET_ID,
             asset: USDC_TEST_ASSET,
             amount: new Decimal(0),
-            algoValue: new Decimal(0),
+            nativeValue: new Decimal(0),
             fiatValue: null,
-            isFrozen: false,
+            restriction: null,
         }
 
         // Pre-flight: confirm the seeded holding exists in the DB
@@ -524,9 +524,9 @@ describe('Flow: Opt out of an asset', () => {
             assetId: USDC_TEST_ASSET_ID,
             asset: USDC_TEST_ASSET,
             amount: new Decimal('1.5'),
-            algoValue: new Decimal(0),
+            nativeValue: new Decimal(0),
             fiatValue: null,
-            isFrozen: false,
+            restriction: null,
         }
 
         const sendSpy = vi.fn(() =>
