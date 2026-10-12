@@ -29,10 +29,7 @@ import {
     upsertNodeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    createEthereumAssetsAdapter,
-    NativePriceUnavailableError,
-} from '../adapter'
+import { createEthereumAssetsAdapter } from '../adapter'
 import { ETHEREUM_NATIVE_ASSET } from '../native-asset'
 import { ASSETS_PATH } from '../api/endpoints'
 import type { AssetItemResponse } from '../api/schema'
@@ -526,6 +523,8 @@ describe('prices', () => {
         usd_value: usdValue,
     })
     const pricedServices = ['assets', 'prices']
+    const ref = (assetId: string) => ({ chainId: 'ethereum', assetId }) as const
+    const ETH = ref(ETHEREUM_NATIVE_ASSET.assetId)
 
     it('reads USD prices from the v4 asset items, leaving an unpriced id out', async () => {
         server.use(
@@ -541,11 +540,28 @@ describe('prices', () => {
             testChainContext({ services: pricedServices }),
         )
 
-        const rows = await adapter.fetchUsdPrices([USDC, DAI], SCOPE)
+        const prices = await adapter.getPrices([ref(USDC), ref(DAI)], SCOPE)
 
-        expect(rows.map(row => [row.assetId, row.usdPrice.toFixed()])).toEqual([
-            [USDC, '1.0001'],
-        ])
+        expect(
+            prices.map(p => [p.assetRef.assetId, p.usdPrice.toFixed()]),
+        ).toEqual([[USDC, '1.0001']])
+    })
+
+    it('keys a price by the ref it was asked for, whatever its address case', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [USDC_CAIP19]: priced('1.000100000000000000000000') },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: pricedServices }),
+        )
+        const lower = ref(USDC.toLowerCase())
+
+        const prices = await adapter.getPrices([lower], SCOPE)
+
+        expect(prices.map(p => p.assetRef)).toEqual([lower])
     })
 
     it('drops ids that are not tokens before the request', async () => {
@@ -562,7 +578,10 @@ describe('prices', () => {
             testChainContext({ services: pricedServices }),
         )
 
-        await adapter.fetchUsdPrices([USDC, ZERO, 'not-an-address'], SCOPE)
+        await adapter.getPrices(
+            [ref(USDC), ref(ZERO), ref('not-an-address')],
+            SCOPE,
+        )
 
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
     })
@@ -579,11 +598,8 @@ describe('prices', () => {
             )
 
             await expect(
-                adapter.fetchUsdPrices([USDC], SCOPE),
+                adapter.getPrices([ref(USDC), ETH], SCOPE),
             ).resolves.toEqual([])
-            await expect(
-                adapter.fetchNativeUsdPrice(SCOPE),
-            ).rejects.toBeInstanceOf(NativePriceUnavailableError)
             expect(requests).toEqual([])
         },
     )
@@ -604,20 +620,19 @@ describe('prices', () => {
             testChainContext({ services: pricedServices }),
         )
 
-        const price = await adapter.fetchNativeUsdPrice(SCOPE)
+        const [price] = await adapter.getPrices([ETH], SCOPE)
 
-        expect(price.toFixed()).toBe('2500.12')
+        expect(price?.assetRef).toEqual(ETH)
+        expect(price?.usdPrice.toFixed()).toBe('2500.12')
     })
 
-    it('rejects an unpriced ETH rather than pricing it 0', async () => {
+    it('leaves an unpriced ETH out rather than pricing it 0', async () => {
         server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
         )
 
-        await expect(adapter.fetchNativeUsdPrice(SCOPE)).rejects.toBeInstanceOf(
-            NativePriceUnavailableError,
-        )
+        await expect(adapter.getPrices([ETH], SCOPE)).resolves.toEqual([])
     })
 
     it('takes at most one backend request worth of ids per price call', () => {

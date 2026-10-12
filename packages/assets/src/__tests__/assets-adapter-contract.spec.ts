@@ -11,7 +11,12 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    assetRefKey,
+    scopeForLegacyNetwork,
+    type AssetPrice,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     PeraAssetType,
     PeraAssetVerificationTier,
@@ -63,23 +68,37 @@ assetMetadataContractTests(
     'fake',
 )
 
-const PRICED = { assetId: '31566704', usdPrice: new Decimal('1.0001') }
-const UNPRICED_ID = '386192725'
-const ALGO_PRICE = new Decimal('0.25')
+const scope = scopeForLegacyNetwork('mainnet')
+const native: AssetRef = { chainId: scope.chainId, assetId: '0' }
+const priced: AssetPrice = {
+    assetRef: { chainId: scope.chainId, assetId: '31566704' },
+    usdPrice: new Decimal('1.0001'),
+}
+const unpriced: AssetRef = { chainId: scope.chainId, assetId: '386192725' }
+const nativeUsdPrice = new Decimal('0.25')
+
+const known = new Map<string, Decimal>([
+    [assetRefKey(native), nativeUsdPrice],
+    [assetRefKey(priced.assetRef), priced.usdPrice],
+])
+
+const fake = fakeAssetsAdapter({
+    getPrices: async (refs, requested) => {
+        if (requested.chainId !== scope.chainId) {
+            throw new Error('Not a fake-chain scope')
+        }
+        if (refs.some(r => r.chainId !== scope.chainId)) {
+            throw new Error('Not a fake-chain asset')
+        }
+        return refs.flatMap(assetRef => {
+            const usdPrice = known.get(assetRefKey(assetRef))
+            return usdPrice ? [{ assetRef, usdPrice }] : []
+        })
+    },
+})
 
 assetPriceContractTests(
-    () =>
-        fakeAssetsAdapter({
-            fetchUsdPrices: async ids =>
-                ids.includes(PRICED.assetId) ? [PRICED] : [],
-            fetchNativeUsdPrice: async () => ALGO_PRICE,
-        }),
-    {
-        scope: scopeForLegacyNetwork('mainnet'),
-        priced: PRICED,
-        unpricedAssetId: UNPRICED_ID,
-        nativeUsdPrice: ALGO_PRICE,
-        handlers: [],
-    },
+    () => fake,
+    { scope, priced, unpriced, nativeUsdPrice, handlers: [] },
     'fake',
 )

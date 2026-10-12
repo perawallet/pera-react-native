@@ -14,7 +14,7 @@ import type { AssetsChainAdapter } from '@perawallet/wallet-core-assets'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { ASSET_PRICES_MAX_IDS_PER_REQUEST } from '../pricing/endpoints'
-import { fetchNativeUsdPrice, fetchUsdPrices } from '../pricing/prices'
+import { fetchPeraUsdPrices } from '../pricing/provider'
 import {
     fetchAssetAuthorities,
     fetchAssetFromApis,
@@ -26,6 +26,7 @@ import { fetchAndPersistAssets } from './sync/asset-syncer'
 
 export const algorandAssetsAdapter: AssetsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    priceProvider: 'pera',
     maxPriceIdsPerRequest: ASSET_PRICES_MAX_IDS_PER_REQUEST,
     getNativeAsset: () => ALGORAND_NATIVE_ASSET,
     // Async so a scope that is not Algorand's rejects rather than throwing
@@ -39,8 +40,6 @@ export const algorandAssetsAdapter: AssetsChainAdapter = {
         fetchAssetAuthorities(assetId, algorandNetworkOf(scope)),
     searchAssets: async (params, scope) =>
         searchAssetPage({ ...params, network: algorandNetworkOf(scope) }),
-    fetchNativeUsdPrice: async scope =>
-        fetchNativeUsdPrice(algorandNetworkOf(scope)),
-    fetchUsdPrices: async (assetIds, scope) =>
-        fetchUsdPrices(assetIds, algorandNetworkOf(scope)),
+    getPrices: async (refs, scope) =>
+        fetchPeraUsdPrices(refs, algorandNetworkOf(scope)),
 }

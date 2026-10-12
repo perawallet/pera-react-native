@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export {
-    createEthereumAssetsAdapter,
-    NativePriceUnavailableError,
-} from './adapter'
+export { createEthereumAssetsAdapter } from './adapter'
 export { ETHEREUM_NATIVE_ASSET } from './native-asset'

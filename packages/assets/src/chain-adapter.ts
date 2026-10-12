@@ -12,16 +12,16 @@
 
 import {
     createChainAdapterRegistry,
+    type AssetPrice,
+    type AssetRef,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Decimal } from 'decimal.js'
 import {
     isAlgoAssetName,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import type { AssetPriceRow } from './db/pricesRepository'
 import type { DisplayableAsset, PeraAsset } from './models'
 
 export type AssetAuthorities = {
@@ -42,10 +42,18 @@ export type AssetSearchPage = {
     nextCursor: Optional<string>
 }
 
+/**
+ * Where a chain's prices come from. A chain adds its member in the change that
+ * adds the provider, like `ChainId`.
+ */
+export type PriceProvider = 'pera'
+
 /** The chain-specific asset and price sources; registered by the chain package. */
 export interface AssetsChainAdapter {
     chainId: ChainId
-    /** Most ids one price request may carry. */
+    /** The source `getPrices` reads. */
+    priceProvider: PriceProvider
+    /** Most refs one `getPrices` call may carry. */
     maxPriceIdsPerRequest: number
     /**
      * The chain's native asset. Must be the same instance on every call:
@@ -66,13 +74,13 @@ export interface AssetsChainAdapter {
         params: AssetSearchParams,
         scope: ChainScope,
     ): Promise<AssetSearchPage>
-    /** The native asset's price in USD. */
-    fetchNativeUsdPrice(scope: ChainScope): Promise<Decimal>
-    /** USD prices for the ids that have one; an unpriced id is left out. */
-    fetchUsdPrices(
-        assetIds: string[],
-        scope: ChainScope,
-    ): Promise<AssetPriceRow[]>
+    /**
+     * USD per whole unit for each ref the source has a price for, keyed by the
+     * requested ref. A ref with no known price is left out, never priced 0, so
+     * the caller can record the miss under `scope`. Resolves `[]` for no refs;
+     * rejects a ref or a scope on another chain.
+     */
+    getPrices(refs: AssetRef[], scope: ChainScope): Promise<AssetPrice[]>
 }
 
 export const assetsChainAdapters =

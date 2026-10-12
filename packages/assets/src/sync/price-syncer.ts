@@ -15,14 +15,23 @@ import {
     getStaleOrMissingPriceAssetIds,
     recordPriceMisses,
     clearPriceMisses,
+    type AssetPriceRow,
 } from '../db'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type AssetPrice,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 import { assetsAdapterFor } from '../chain-adapter'
 
 const PRICE_FETCH_CONCURRENCY = 5
+
+const toRows = (prices: AssetPrice[]): AssetPriceRow[] =>
+    prices.map(p => ({ assetId: p.assetRef.assetId, usdPrice: p.usdPrice }))
+
 // Below the sync service's 60 s price-resync cadence so the periodic pass
 // always refreshes, while the overlapping enrichment/post-submission callers
 // (which have no gate of their own) dedupe against it. Gates the native-asset
@@ -90,6 +99,10 @@ async function runPricePass(
     const scope = scopeForLegacyNetwork(network)
     const adapter = assetsAdapterFor(scope)
     const nativeId = adapter.getNativeAsset().assetId
+    const ref = (assetId: string): AssetRef => ({
+        chainId: scope.chainId,
+        assetId,
+    })
     // No Pera backend on this network — both price fetches below would only throw.
     if (!isPeraBackedNetwork(network)) return
 
@@ -102,8 +115,8 @@ async function runPricePass(
     })
     const batches = partition(staleIds, adapter.maxPriceIdsPerRequest)
 
-    // The native asset uses a different endpoint, so it doesn't compete with
-    // the throttled batches for the bulk-assets endpoint.
+    // Priced in its own call, outside the throttled batches and the miss gate,
+    // so neither failure sinks the other.
     let nativeSkippedFresh = false
     const nativeResult = await Promise.allSettled([
         (async () => {
@@ -117,11 +130,9 @@ async function runPricePass(
                 return
             }
 
-            const usdPrice = await adapter.fetchNativeUsdPrice(scope)
-            await upsertAssetPrices({
-                prices: [{ assetId: nativeId, usdPrice }],
-                scope,
-            })
+            const prices = await adapter.getPrices([ref(nativeId)], scope)
+            if (prices.length === 0) return
+            await upsertAssetPrices({ prices: toRows(prices), scope })
         })(),
     ])
 
@@ -134,8 +145,9 @@ async function runPricePass(
             slice.map(async batch => {
                 // An id the source has no price for is left out, not priced
                 // 0: persist it as a miss instead.
-                const prices = await adapter.fetchUsdPrices(batch, scope)
-                const pricedIds = new Set(prices.map(p => p.assetId))
+                const prices = await adapter.getPrices(batch.map(ref), scope)
+                const rows = toRows(prices)
+                const pricedIds = new Set(rows.map(p => p.assetId))
                 const hitIds = batch.filter(id => pricedIds.has(id))
                 const missedIds = batch.filter(id => !pricedIds.has(id))
                 if (missedIds.length > 0) {
@@ -144,7 +156,7 @@ async function runPricePass(
                 if (hitIds.length > 0) {
                     await clearPriceMisses({ assetIds: hitIds, scope })
                 }
-                await upsertAssetPrices({ prices, scope })
+                await upsertAssetPrices({ prices: rows, scope })
             }),
         )
         batchResults.push(...sliceResults)

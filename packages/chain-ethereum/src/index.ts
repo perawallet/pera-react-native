@@ -17,11 +17,7 @@ export {
     revealEthereumPrivateKey,
     type EthereumAccountStateOps,
 } from './accounts'
-export {
-    createEthereumAssetsAdapter,
-    ETHEREUM_NATIVE_ASSET,
-    NativePriceUnavailableError,
-} from './assets'
+export { createEthereumAssetsAdapter, ETHEREUM_NATIVE_ASSET } from './assets'
 export {
     createEvmClient,
     EvmError,
