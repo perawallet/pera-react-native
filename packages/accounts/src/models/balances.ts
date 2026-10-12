@@ -23,6 +23,11 @@ export type AssetWithAccountBalance = {
     algoValue: Decimal
     /** USD price per whole unit of the asset, joined from the DB read. */
     usdPrice?: Decimal
+    /**
+     * Holding value in USD (display units); `null` when the asset has no known
+     * USD price or its decimals haven't synced, so it is unknown, not 0.
+     */
+    fiatValue: Nullable<Decimal>
     /** Holding-level freeze from algod — frozen assets can't be transferred. */
     isFrozen: boolean
 }
@@ -42,6 +47,11 @@ export type AccountBalance = {
     algoValue: Decimal
     /** Total value of the account's holdings in USD (display units). */
     usdValue: Decimal
+    /**
+     * Account value in USD (display units); `null` when the native asset is
+     * held but unpriced. A non-native holding without a price adds nothing.
+     */
+    fiatValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -57,6 +67,12 @@ export type AccountBalances = Map<string, AccountBalance>
  * map satisfy it.
  */
 export type AccountAlgoValues = Map<string, Pick<AccountBalance, 'algoValue'>>
+
+/**
+ * Per-address fiat values for ranking and summing across chains;
+ * `AccountBalances` and `AccountValueTotalsMap` both satisfy it.
+ */
+export type AccountFiatValues = Map<string, Pick<AccountBalance, 'fiatValue'>>
 
 export type AccountBalanceResponse = {
     results: AccountAssetBalanceResponse[]

@@ -400,6 +400,66 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
     })
+
+    describe('fiatValue', () => {
+        const renderBalances = async () => {
+            const { result } = renderHook(
+                () => useAccountBalancesQuery([account]),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            return result.current.accountBalances.get('ADDR1')
+        }
+        const fiatOf = (
+            data: Awaited<ReturnType<typeof renderBalances>>,
+            assetId: string,
+        ) => data?.assetBalances.find(b => b.assetId === assetId)?.fiatValue
+
+        it('is null for an unpriced or unsynced holding and a Decimal otherwise', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(5_000_000, 2),
+                asaRow('456', 1000, 2, 10),
+                asaRow('999', 100, 0, null),
+                asaRow('777', 100, 0, 0),
+                asaRow('789', 1_000_000, null, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(fiatOf(data, '0')).toEqual(new Decimal(10))
+            expect(fiatOf(data, '456')).toEqual(new Decimal(100))
+            expect(fiatOf(data, '999')).toBeNull()
+            expect(fiatOf(data, '777')).toEqual(new Decimal(0))
+            expect(fiatOf(data, '789')).toBeNull()
+            expect(data?.fiatValue).toEqual(new Decimal(110))
+            expect(data?.fiatValue).toEqual(data?.usdValue)
+        })
+
+        it('is null for the account when the native asset is held but unpriced', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(1_000_000, null),
+                asaRow('456', 1000, 2, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(data?.fiatValue).toBeNull()
+            expect(fiatOf(data, '456')).toEqual(new Decimal(100))
+            expect(data?.usdValue).toEqual(new Decimal(100))
+            expect(data?.algoValue).toEqual(new Decimal(1))
+        })
+
+        it('is a Decimal for the account when the unpriced native balance is zero', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(0, null),
+                asaRow('456', 1000, 2, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(data?.fiatValue).toEqual(new Decimal(100))
+        })
+    })
 })
 
 describe('useAccountAssetBalanceQuery', () => {

@@ -157,4 +157,80 @@ describe('useAccountValueTotalsQuery', () => {
 
         expect(result.current.accountValueTotals).toBe(first)
     })
+
+    describe('fiatValue', () => {
+        const renderTotals = async () => {
+            const hook = renderHook(
+                () => useAccountValueTotalsQuery([makeAccount('A1')]),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() =>
+                expect(hook.result.current.isPending).toBe(false),
+            )
+            return hook
+        }
+        const a1 = (r: {
+            current: { accountValueTotals: Map<string, unknown> }
+        }) =>
+            r.current.accountValueTotals.get('A1') as {
+                fiatValue: Decimal | null
+                usdValue: Decimal | null
+                algoValue: Decimal
+            }
+
+        it('equals usdValue when the native price is known', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(0, 4)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery([
+                        makeAccount('A1'),
+                        makeAccount('A2'),
+                    ]),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            const map = result.current.accountValueTotals
+            expect(map.get('A1')?.fiatValue).toEqual(new Decimal(40))
+            expect(map.get('A2')?.fiatValue).toEqual(new Decimal(4))
+        })
+
+        it('is null when native is held and unpriced, leaving the existing values alone', async () => {
+            mockUseAssetPricesQuery.mockReturnValue(algoPrice(null))
+            mockGetAccountPortfolioTotals.mockResolvedValue(totals(7, 30))
+
+            const { result } = await renderTotals()
+
+            expect(a1(result).fiatValue).toBeNull()
+            expect(a1(result).algoValue).toEqual(new Decimal(7))
+            expect(a1(result).usdValue).toBeNull()
+        })
+
+        it('is a Decimal when no native is held and it is unpriced', async () => {
+            mockUseAssetPricesQuery.mockReturnValue(algoPrice(null))
+            mockGetAccountPortfolioTotals.mockResolvedValue(totals(0, 30))
+
+            const { result } = await renderTotals()
+
+            expect(a1(result).fiatValue).toEqual(new Decimal(30))
+        })
+
+        it('updates when the native price arrives as exactly zero', async () => {
+            mockUseAssetPricesQuery.mockReturnValue(algoPrice(null))
+            mockGetAccountPortfolioTotals.mockResolvedValue(totals(7, 30))
+            const { result, rerender } = await renderTotals()
+            expect(a1(result).fiatValue).toBeNull()
+
+            mockUseAssetPricesQuery.mockReturnValue(algoPrice(0))
+            rerender()
+
+            expect(a1(result).fiatValue).toEqual(new Decimal(30))
+        })
+    })
 })

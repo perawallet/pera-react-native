@@ -435,6 +435,7 @@ describe('Flow: Opt out of an asset', () => {
             asset: USDC_TEST_ASSET,
             amount: new Decimal(0),
             algoValue: new Decimal(0),
+            fiatValue: null,
             isFrozen: false,
         }
 
@@ -515,6 +516,7 @@ describe('Flow: Opt out of an asset', () => {
             asset: USDC_TEST_ASSET,
             amount: new Decimal('1.5'),
             algoValue: new Decimal(0),
+            fiatValue: null,
             isFrozen: false,
         }
 
