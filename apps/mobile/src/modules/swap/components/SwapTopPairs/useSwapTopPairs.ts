@@ -17,8 +17,7 @@ import {
     type TopPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 const TOP_PAIRS_LIMIT = 5
@@ -30,8 +29,7 @@ export type UseSwapTopPairsResult = {
     handlePairPress: (pair: TopPairItem) => void
 }
 
-export const useSwapTopPairs = (): UseSwapTopPairsResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     const { setFromAsset, setToAsset } = useSwaps(scope)
     const { analytics } = usePeraProvider()
     const {
@@ -45,14 +43,16 @@ export const useSwapTopPairs = (): UseSwapTopPairsResult => {
             analytics.logEvent('swap_top_pair_selected', {
                 assetIn: pair.assetA.unitName,
                 assetOut: pair.assetB.unitName,
+                chain_id: scope.chainId,
             })
             trackEvent(SwapEvent.SelectTopPair, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${pair.assetA.unitName}/${pair.assetB.unitName}`,
             })
             setFromAsset(pair.assetA.assetId)
             setToAsset(pair.assetB.assetId)
         },
-        [analytics, setFromAsset, setToAsset],
+        [analytics, scope.chainId, setFromAsset, setToAsset],
     )
 
     return {

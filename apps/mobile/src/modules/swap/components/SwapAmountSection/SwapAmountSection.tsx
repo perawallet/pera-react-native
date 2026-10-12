@@ -21,14 +21,17 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 type SwapAmountSectionPayProps = {
+    scope: ChainScope
     variant: 'pay'
     assetId: string
     balance: Nullable<Decimal>
     amount: Nullable<Decimal>
     onAmountChange: (amount: Nullable<Decimal>) => void
+    onAmountFocus?: () => void
     onAssetPress: () => void
     isLocalCurrencyInput?: boolean
     localCurrencySymbol?: string
@@ -37,6 +40,7 @@ type SwapAmountSectionPayProps = {
 }
 
 type SwapAmountSectionReceiveProps = {
+    scope: ChainScope
     variant: 'receive'
     assetId: string
     balance: Nullable<Decimal>
@@ -50,18 +54,18 @@ export type SwapAmountSectionProps =
     | SwapAmountSectionReceiveProps
 
 export const SwapAmountSection = (props: SwapAmountSectionProps) => {
-    const { variant, assetId, balance, amount, onAssetPress } = props
+    const { scope, variant, assetId, balance, amount, onAssetPress } = props
     const payProps = variant === 'pay' ? props : undefined
     const receiveProps = variant === 'receive' ? props : undefined
 
     const { t } = useLanguage()
-    const isNativeAssetId = useIsNativeAssetId()
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const isAlgo = isNativeAssetId(assetId)
+    const isNativeAsset = isNativeAssetId(scope.chainId, assetId)
     const isLoading = receiveProps?.isLoading ?? false
     const onAmountChange = payProps?.onAmountChange
+    const onAmountFocus = payProps?.onAmountFocus
     const isLocalCurrencyInput = payProps?.isLocalCurrencyInput ?? false
     const localCurrencySymbol = payProps?.localCurrencySymbol
     const fiatToAsset = payProps?.fiatToAsset
@@ -80,6 +84,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         assetId,
         amount,
         onAmountChange,
+        onAmountFocus,
         isLocalCurrencyInput,
         fiatToAsset,
         assetToFiat,
@@ -101,7 +106,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <AssetAmount
                         value={balance ?? new Decimal(0)}
                         asset={asset}
-                        symbolPosition={isAlgo ? 'start' : 'end'}
+                        symbolPosition={isNativeAsset ? 'start' : 'end'}
                         variant='body'
                         style={styles.balance}
                     />
@@ -173,7 +178,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <AssetAmount
                         value={amount ?? new Decimal(0)}
                         asset={asset}
-                        symbolPosition={isAlgo ? 'start' : 'end'}
+                        symbolPosition={isNativeAsset ? 'start' : 'end'}
                         style={styles.fiatValue}
                     />
                 ) : (

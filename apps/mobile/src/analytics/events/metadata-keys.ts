@@ -24,6 +24,7 @@ export enum AnalyticsMetadataKey {
     AssetInId = 'asset_in',
     AssetOutId = 'asset_out',
     AssetName = 'asset_name',
+    ChainId = 'chain_id',
     CountryId = 'country_id',
     DappName = 'dapp_name',
     DappUrl = 'dapp_url',

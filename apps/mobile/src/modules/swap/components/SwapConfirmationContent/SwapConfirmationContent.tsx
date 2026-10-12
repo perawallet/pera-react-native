@@ -16,6 +16,7 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@components/AccountDisplay'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { useSwapConfirmation } from './useSwapConfirmation'
 import { useSwapConfirmationActions } from './useSwapConfirmationActions'
@@ -38,17 +39,19 @@ export type SwapConfirmationResult =
     | { kind: 'error'; message: string; title?: string }
 
 export type SwapConfirmationContentProps = {
+    scope: ChainScope
     quote: SwapQuote
 }
 
 export const SwapConfirmationContent = ({
+    scope,
     quote,
 }: SwapConfirmationContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     const { swapStatus, handleSlideConfirm, handleClose } =
-        useSwapConfirmationActions({ quote })
+        useSwapConfirmationActions({ scope, quote })
 
     const {
         selectedAccount,
@@ -133,6 +136,7 @@ export const SwapConfirmationContent = ({
             <PWDivider style={styles.detailsDivider} />
 
             <SwapDetailsSection
+                scope={scope}
                 quote={quote}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}

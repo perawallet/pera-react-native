@@ -19,9 +19,8 @@ import {
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     pickBestByAmountOut,
@@ -73,6 +72,7 @@ type UseSwapFormResult = {
     hasInsufficientBalance: boolean
     isLocalCurrencyInput: boolean
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
+    handlePayAmountFocus: () => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
     handleOpenPayAssetSelection: () => void
@@ -93,9 +93,9 @@ export type SwapFormInitialPayAmount = {
 }
 
 export const useSwapForm = (
+    scope: ChainScope,
     initialPayAmount?: SwapFormInitialPayAmount,
 ): UseSwapFormResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         fromAsset,
         toAsset,
@@ -116,7 +116,7 @@ export const useSwapForm = (
     const selectedAddress = selectedAccount
         ? addressOn(selectedAccount, scope)
         : undefined
-    const nativeAsset = useNativeAsset()
+    const nativeAssetId = nativeAssetFor(scope.chainId).assetId
     const prefetchProviders = usePrefetchProviders(scope)
 
     useEffect(() => {
@@ -124,7 +124,7 @@ export const useSwapForm = (
     }, [prefetchProviders])
 
     const { mutateAsync: calculateSwapAmount } =
-        useCalculateSwapAmountMutation()
+        useCalculateSwapAmountMutation(scope)
     const calculateSwapAmountRef = useRef(calculateSwapAmount)
     calculateSwapAmountRef.current = calculateSwapAmount
 
@@ -159,6 +159,7 @@ export const useSwapForm = (
         reset: resetQuotes,
         refresh: refreshQuotes,
     } = useSwapQuotes({
+        scope,
         swapperAddress: selectedAddress ?? null,
         fromAssetId: fromAsset,
         toAssetId: toAsset,
@@ -308,6 +309,12 @@ export const useSwapForm = (
         [quotedAmount, resetQuotes],
     )
 
+    const handlePayAmountFocus = useCallback(() => {
+        trackEvent(SwapEvent.EnterNumbers, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
+    }, [scope.chainId])
+
     const handleSwapDirection = useCallback(() => {
         previousFromAssetRef.current = toAsset
         setFromAsset(toAsset)
@@ -390,11 +397,13 @@ export const useSwapForm = (
 
     const handleOpenPayAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectFromToken, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: fromAsset,
         })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
+                    scope={scope}
                     variant='from'
                     excludeAssetId={toAsset}
                 />
@@ -413,15 +422,24 @@ export const useSwapForm = (
         // The effect above also resets, but only after a paint; reset here
         // too so no frame shows the old amount against the new asset.
         resetAmounts()
-    }, [requestBottomSheet, toAsset, setFromAsset, fromAsset, resetAmounts])
+    }, [
+        requestBottomSheet,
+        scope,
+        toAsset,
+        setFromAsset,
+        fromAsset,
+        resetAmounts,
+    ])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectToToken, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: toAsset,
         })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
+                    scope={scope}
                     variant='to'
                     fromAssetId={fromAsset}
                     excludeAssetId={fromAsset}
@@ -438,16 +456,18 @@ export const useSwapForm = (
         setReceiveAmount(null)
         setSelectedProviderName(null)
         resetQuotes()
-    }, [requestBottomSheet, fromAsset, setToAsset, toAsset, resetQuotes])
+    }, [requestBottomSheet, scope, fromAsset, setToAsset, toAsset, resetQuotes])
 
     const handleOpenProvider = useCallback(async () => {
         trackEvent(SwapEvent.SelectProviderOpen, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.RouterName]:
                 selectedProviderName ?? undefined,
         })
         const result = await requestBottomSheet<SwapProviderResult>({
             contents: (
                 <SwapProviderContent
+                    scope={scope}
                     quotes={allQuotes}
                     selectedProviderName={selectedProviderName}
                 />
@@ -466,19 +486,21 @@ export const useSwapForm = (
         // undefined means the sheet was dismissed; null means Auto was applied.
         if (result === undefined) return
         setSelectedProviderName(result)
-    }, [requestBottomSheet, allQuotes, selectedProviderName])
+    }, [requestBottomSheet, scope, allQuotes, selectedProviderName])
 
     const handleOpenConfirm = useCallback(async () => {
         if (!selectedQuote) return
 
-        trackEvent(SwapEvent.ConfirmSwapButton)
+        trackEvent(SwapEvent.ConfirmSwapButton, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
         if (selectedAddress && payAmount) {
             registerTabResumeIntent({
                 flow: 'swap',
                 accountAddress: selectedAddress,
-                assetInId: fromAsset ?? nativeAsset.assetId,
+                assetInId: fromAsset ?? nativeAssetId,
                 assetOutId: toAsset,
                 payAmount: payAmount.toString(),
             })
@@ -486,7 +508,12 @@ export const useSwapForm = (
         let result: SwapConfirmationResult | undefined
         try {
             result = await requestBottomSheet<SwapConfirmationResult>({
-                contents: <SwapConfirmationContent quote={selectedQuote} />,
+                contents: (
+                    <SwapConfirmationContent
+                        scope={scope}
+                        quote={selectedQuote}
+                    />
+                ),
                 options: {
                     size: 'auto',
                     enablePanDownToClose: false,
@@ -543,6 +570,7 @@ export const useSwapForm = (
         completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
     }, [
+        scope,
         selectedQuote,
         requestBottomSheet,
         invalidateAccountBalances,
@@ -555,7 +583,7 @@ export const useSwapForm = (
         selectedAddress,
         payAmount,
         fromAsset,
-        nativeAsset.assetId,
+        nativeAssetId,
         toAsset,
     ])
 
@@ -571,7 +599,7 @@ export const useSwapForm = (
 
     const handleOpenConfig = useCallback(async () => {
         const result = await requestBottomSheet<SwapConfigurationResult>({
-            contents: <SwapConfigurationContent />,
+            contents: <SwapConfigurationContent scope={scope} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
@@ -589,6 +617,7 @@ export const useSwapForm = (
         }
     }, [
         requestBottomSheet,
+        scope,
         setSlippage,
         setIsLocalCurrencyInput,
         applyPercentageAmount,
@@ -609,6 +638,7 @@ export const useSwapForm = (
         hasInsufficientBalance,
         isLocalCurrencyInput,
         handlePayAmountChange,
+        handlePayAmountFocus,
         handleSwapDirection,
         handleMaxPress,
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),

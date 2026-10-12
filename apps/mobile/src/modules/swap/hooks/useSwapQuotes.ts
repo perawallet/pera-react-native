@@ -14,16 +14,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import {
     percentToApiSlippage,
     useCreateQuotesMutation,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import {
     isDecimalEqual,
     isNotFoundError,
@@ -32,12 +28,17 @@ import {
     type Nullable,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Debounce so typing an amount doesn't fire a quote request per keystroke.
 const QUOTE_DEBOUNCE_MS = 500
 
 type UseSwapQuotesParams = {
+    /** The chain scope the quotes are for: the swapping account's. */
+    scope: ChainScope
     /** When false, no quote is fetched (e.g. USDC selected in Add Funds). */
     enabled?: boolean
     /** Account that signs the swap; null until one is resolved. */
@@ -74,6 +75,7 @@ type UseSwapQuotesResult = {
  * receive-amount derivation on top of `allQuotes`.
  */
 export const useSwapQuotes = ({
+    scope,
     enabled = true,
     swapperAddress,
     fromAssetId,
@@ -82,9 +84,7 @@ export const useSwapQuotes = ({
     payDecimals,
     slippage,
 }: UseSwapQuotesParams): UseSwapQuotesResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const deviceId = useDeviceIdLookup()(scope)
 
     const {
         mutateAsync: createQuotes,
@@ -116,7 +116,7 @@ export const useSwapQuotes = ({
     // amount/dep change; only a pair/network change or reset() clears it.
     // State (not a ref) so the error surfaces in render as isQuoteError.
     const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
-    const pairKey = `${network}:${fromAssetId}:${toAssetId}`
+    const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toAssetId}`
 
     const debouncedPayAmount = useDebouncedValue(
         payAmount,

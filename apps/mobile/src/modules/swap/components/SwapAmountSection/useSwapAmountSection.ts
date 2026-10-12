@@ -19,7 +19,6 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { trackEvent, SwapEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseSwapAmountSectionParams = {
@@ -27,6 +26,8 @@ type UseSwapAmountSectionParams = {
     assetId: string
     amount: Nullable<Decimal>
     onAmountChange?: (amount: Nullable<Decimal>) => void
+    /** Called when the pay amount gains focus. */
+    onAmountFocus?: () => void
     isLocalCurrencyInput?: boolean
     fiatToAsset?: (fiat: Nullable<Decimal>) => Nullable<Decimal>
     assetToFiat?: (asset: Nullable<Decimal>) => Nullable<Decimal>
@@ -76,6 +77,7 @@ export const useSwapAmountSection = ({
     assetId,
     amount,
     onAmountChange,
+    onAmountFocus,
     isLocalCurrencyInput = false,
     fiatToAsset,
     assetToFiat,
@@ -141,10 +143,10 @@ export const useSwapAmountSection = ({
 
     const handleFocus = useCallback(() => {
         if (isPay) {
-            trackEvent(SwapEvent.EnterNumbers)
+            onAmountFocus?.()
         }
         setIsFocused(true)
-    }, [isPay])
+    }, [isPay, onAmountFocus])
     const handleBlur = useCallback(() => setIsFocused(false), [])
 
     const handleTextChange = useCallback(

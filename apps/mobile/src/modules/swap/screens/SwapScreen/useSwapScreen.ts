@@ -12,38 +12,51 @@
 
 import { useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { useSwaps } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapScope,
+    useSwapSigningAccounts,
+    useSwapsStore,
+} from '@perawallet/wallet-core-swaps'
 import {
     useSelectedAccount,
     useSelectedAccountId,
-    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    useAccountListPicker,
+    type AccountDrawerPickerProps,
+} from '@modules/accounts'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
 import type { SwapFormInitialPayAmount } from '@modules/swap/components/SwapForm/useSwapForm'
 import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 
 export type UseSwapScreenResult = {
+    /** Null when the selected account is on no chain that has swap. */
+    scope: Nullable<ChainScope>
     initialPayAmount: SwapFormInitialPayAmount | undefined
+    accountPicker: AccountDrawerPickerProps
 }
 
 export const useSwapScreen = (): UseSwapScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const route =
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
-    const { setFromAsset, setToAsset } = useSwaps(scope)
+    const setFromAsset = useSwapsStore(state => state.setFromAsset)
+    const setToAsset = useSwapsStore(state => state.setToAsset)
     const selectedAccount = useSelectedAccount()
-    const signingAccounts = useSigningAccounts(scope.chainId)
+    const scope = useSwapScope(selectedAccount)
+    const signingAccounts = useSwapSigningAccounts()
+    const accountPicker = useAccountListPicker(signingAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
 
-    const resolvedAssets = resolveSwapRouteAssets(route.params, scope)
+    const resolvedAssets = scope
+        ? resolveSwapRouteAssets(route.params, scope)
+        : null
     const assetInId = resolvedAssets?.assetInId
     const assetOutId = resolvedAssets?.assetOutId
 
-    useSeedSwapRouteAssets({ assetInId, assetOutId })
+    useSeedSwapRouteAssets({ assetInId, assetOutId, scope })
 
     useEffect(() => {
         if (
@@ -71,5 +84,5 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         [payAmount, assetInId],
     )
 
-    return { initialPayAmount }
+    return { scope, initialPayAmount, accountPicker }
 }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapTopPairItem } from './SwapTopPairItem'
@@ -18,10 +19,15 @@ import { useStyles } from './styles'
 
 const SKELETON_ROWS = 5
 
-export const SwapTopPairs = () => {
+export type SwapTopPairsProps = {
+    scope: ChainScope
+}
+
+export const SwapTopPairs = ({ scope }: SwapTopPairsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { pairs, isLoading, isError, handlePairPress } = useSwapTopPairs()
+    const { pairs, isLoading, isError, handlePairPress } =
+        useSwapTopPairs(scope)
 
     if (!isLoading && !isError && pairs.length === 0) {
         return null

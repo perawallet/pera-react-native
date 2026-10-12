@@ -18,7 +18,6 @@ import {
     AccountSelection,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
-    useSigningPicker,
 } from '@modules/accounts'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
@@ -33,7 +32,7 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { initialPayAmount } = useSwapScreen()
+    const { scope, initialPayAmount, accountPicker } = useSwapScreen()
 
     const hasShownIntroRef = useRef(false)
     useEffect(() => {
@@ -57,9 +56,8 @@ export const SwapScreen = () => {
         pushWebView({ url: config.swapSupportUrl })
     }, [pushWebView])
 
-    // One definition behind the drawer and the bottom-sheet fallback alike.
-    const accountPicker = useSigningPicker()
-    useAccountDrawerPickerKind('select')
+    // The drawer resolves the same 'swap' picker as the bottom-sheet fallback.
+    useAccountDrawerPickerKind('swap')
 
     return (
         // One page, so nothing to page between — the pager is here purely
@@ -93,9 +91,14 @@ export const SwapScreen = () => {
                     </PWText>
                 </PWView>
 
-                <PWView style={styles.formWrapper}>
-                    <SwapForm initialPayAmount={initialPayAmount} />
-                </PWView>
+                {scope && (
+                    <PWView style={styles.formWrapper}>
+                        <SwapForm
+                            scope={scope}
+                            initialPayAmount={initialPayAmount}
+                        />
+                    </PWView>
+                )}
             </PWView>
         </AccountDrawerPager>
     )

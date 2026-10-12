@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSwapExecution, useSwapQuotes } from '@modules/swap'
+import { useCardScope } from '../../hooks/useCardScope'
 
 const SWAPPING_STATUSES = new Set([
     'preparing',
@@ -89,11 +90,13 @@ export const useCardAddFundsSwap = ({
     amount,
     enabled,
 }: UseCardAddFundsSwapParams): UseCardAddFundsSwapResult => {
+    const cardScope = useCardScope()
     const {
         allQuotes,
         isQuoteFetching,
         refresh: refreshQuote,
     } = useSwapQuotes({
+        scope: cardScope,
         enabled,
         swapperAddress:
             (account && chainAccountOf(account, LEGACY_CHAIN_ID)?.address) ??

@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { useCapability } from '@hooks/useCapability'
 
 export type UseAssetActionButtonsResult = {
@@ -17,7 +20,9 @@ export type UseAssetActionButtonsResult = {
     canBuy: boolean
 }
 
-export const useAssetActionButtons = (): UseAssetActionButtonsResult => ({
-    canSwap: useCapability({ anyChain: 'swap' }),
+export const useAssetActionButtons = (
+    account: Nullable<WalletAccount>,
+): UseAssetActionButtonsResult => ({
+    canSwap: useSwapScope(account) !== null,
     canBuy: useCapability({ anyChain: 'onramp' }),
 })

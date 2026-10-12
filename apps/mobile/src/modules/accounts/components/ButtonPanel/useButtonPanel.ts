@@ -11,9 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCapability } from '@hooks/useCapability'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
 export type UseButtonPanelResult = {
@@ -26,9 +26,9 @@ export type UseButtonPanelResult = {
 
 export const useButtonPanel = (): UseButtonPanelResult => {
     const navigation = useAppNavigation()
-    const canSwap = useCapability({ anyChain: 'swap' })
-    const { openSendFunds, openReceiveFunds, openAccountOptions } =
+    const { account, openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
+    const canSwap = useSwapScope(account) !== null
 
     const handleSwap = useCallback(() => {
         trackEvent(HomeEvent.Swap)

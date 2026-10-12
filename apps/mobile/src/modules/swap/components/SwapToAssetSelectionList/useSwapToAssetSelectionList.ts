@@ -24,8 +24,7 @@ import {
     type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useAvailableAssetsQuery,
     type DexSwapAsset,
@@ -42,6 +41,7 @@ export type AvailableAssetWithBalance = {
 }
 
 type UseSwapToAssetSelectionListParams = {
+    scope: ChainScope
     fromAssetId: string
     isVisible?: boolean
     excludeAssetId?: string
@@ -58,12 +58,12 @@ type UseSwapToAssetSelectionListResult = {
 }
 
 export const useSwapToAssetSelectionList = ({
+    scope,
     fromAssetId,
     isVisible,
     excludeAssetId,
     onAssetSelected,
 }: UseSwapToAssetSelectionListParams): UseSwapToAssetSelectionListResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const queryClient = useQueryClient()
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)

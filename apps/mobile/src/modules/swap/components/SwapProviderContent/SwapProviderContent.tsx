@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
@@ -33,11 +34,13 @@ import { useStyles } from './styles'
 export type SwapProviderResult = Nullable<string>
 
 export type SwapProviderContentProps = {
+    scope: ChainScope
     quotes: SwapQuote[]
     selectedProviderName: Nullable<string>
 }
 
 export const SwapProviderContent = ({
+    scope,
     quotes,
     selectedProviderName,
 }: SwapProviderContentProps) => {
@@ -47,6 +50,7 @@ export const SwapProviderContent = ({
     const { resolve } = useBottomSheetResult<SwapProviderResult>()
 
     const { userSelection, rows, handleSelect } = useSwapProviderContent({
+        scope,
         quotes,
         selectedProviderName,
     })

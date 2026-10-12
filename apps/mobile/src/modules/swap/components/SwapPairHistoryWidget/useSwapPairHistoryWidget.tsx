@@ -17,8 +17,7 @@ import {
     type SwapDistinctPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
@@ -35,8 +34,9 @@ export type UseSwapPairHistoryWidgetResult = {
     handleSeeAllPress: () => void
 }
 
-export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useSwapPairHistoryWidget = (
+    scope: ChainScope,
+): UseSwapPairHistoryWidgetResult => {
     const selectedAccount = useSelectedAccount()
     const { setFromAsset, setToAsset } = useSwaps(scope)
     const address = selectedAccount
@@ -54,26 +54,34 @@ export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
     const handlePairPress = useCallback(
         (pair: SwapDistinctPairItem) => {
             trackEvent(SwapEvent.SelectHistory, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${pair.assetIn.unitName}/${pair.assetOut.unitName}`,
             })
             setFromAsset(String(pair.assetIn.assetId))
             setToAsset(String(pair.assetOut.assetId))
         },
-        [setFromAsset, setToAsset],
+        [scope.chainId, setFromAsset, setToAsset],
     )
 
     const handleSeeAllPress = useCallback(() => {
         if (!address) return
-        trackEvent(SwapEvent.HistorySeeAll)
+        trackEvent(SwapEvent.HistorySeeAll, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet<void>({
-            contents: <SwapHistoryContent address={address} />,
+            contents: (
+                <SwapHistoryContent
+                    scope={scope}
+                    address={address}
+                />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [address, requestBottomSheet])
+    }, [address, scope, requestBottomSheet])
 
     return {
         pairs: data ?? [],

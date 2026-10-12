@@ -12,12 +12,14 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'
 
 type SwapDetailsSectionProps = {
+    scope: ChainScope
     quote: SwapQuote
     rateDisplay: string
     minimumReceivedDisplay: string
@@ -28,6 +30,7 @@ type SwapDetailsSectionProps = {
 }
 
 export const SwapDetailsSection = ({
+    scope,
     quote,
     rateDisplay,
     minimumReceivedDisplay,
@@ -59,6 +62,7 @@ export const SwapDetailsSection = ({
             </DetailRow>
             <DetailRow label={t('swap.quote.provider')}>
                 <SwapProviderDisplay
+                    scope={scope}
                     providerName={quote.provider}
                     providerDisplayName={quote.providerDisplayName}
                     testID='swap-confirm-provider'

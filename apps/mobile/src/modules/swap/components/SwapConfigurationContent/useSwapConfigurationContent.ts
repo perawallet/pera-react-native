@@ -11,13 +11,12 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    useSwaps,
+    useSwapSettings,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { trackEvent, SwapEvent } from '@analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
     MAX_SLIPPAGE,
@@ -26,6 +25,7 @@ import {
 } from './constants'
 
 type UseSwapConfigurationContentParams = {
+    scope: ChainScope
     onApply: (result: SwapConfigurationResult) => void
 }
 
@@ -61,24 +61,28 @@ const isSlippageInvalid = (text: string): boolean => {
 }
 
 export const useSwapConfigurationContent = ({
+    scope,
     onApply,
 }: UseSwapConfigurationContentParams): UseSwapConfigurationContentResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { slippage, isLocalCurrencyInput } = useSwaps(scope)
+    const { slippage, isLocalCurrencyInput } = useSwapSettings()
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')
     const [useLocalCurrency, setUseLocalCurrencyState] =
         useState(isLocalCurrencyInput)
 
-    const setUseLocalCurrency = useCallback((value: boolean) => {
-        trackEvent(
-            value
-                ? SwapEvent.SettingsLocalCurrencyOn
-                : SwapEvent.SettingsLocalCurrencyOff,
-        )
-        setUseLocalCurrencyState(value)
-    }, [])
+    const setUseLocalCurrency = useCallback(
+        (value: boolean) => {
+            trackEvent(
+                value
+                    ? SwapEvent.SettingsLocalCurrencyOn
+                    : SwapEvent.SettingsLocalCurrencyOff,
+                { [AnalyticsMetadataKey.ChainId]: scope.chainId },
+            )
+            setUseLocalCurrencyState(value)
+        },
+        [scope.chainId],
+    )
 
     const setBalanceText = useCallback((text: string) => {
         setBalanceTextState(normalize(text))
@@ -102,7 +106,9 @@ export const useSwapConfigurationContent = ({
     const handleApply = useCallback(() => {
         if (!isApplyEnabled) return
 
-        trackEvent(SwapEvent.SettingsApply)
+        trackEvent(SwapEvent.SettingsApply, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
 
         const balanceValue = Number(balanceText)
         const balancePercentage =
@@ -122,7 +128,14 @@ export const useSwapConfigurationContent = ({
             slippageTolerance,
             useLocalCurrency,
         })
-    }, [balanceText, slippageText, useLocalCurrency, isApplyEnabled, onApply])
+    }, [
+        balanceText,
+        slippageText,
+        useLocalCurrency,
+        isApplyEnabled,
+        onApply,
+        scope.chainId,
+    ])
 
     return {
         balanceText,

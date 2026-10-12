@@ -60,7 +60,7 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
     const isFrozen = assetHolding?.isFrozen ?? false
     const nativeAsset = useNativeAsset()
-    const { canSwap, canBuy } = useAssetActionButtons()
+    const { canSwap, canBuy } = useAssetActionButtons(account)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)

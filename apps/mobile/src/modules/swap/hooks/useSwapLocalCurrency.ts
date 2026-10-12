@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useSwaps } from '@perawallet/wallet-core-swaps'
+import { useSwapSettings } from '@perawallet/wallet-core-swaps'
 import {
     areRatesUsable,
     assetToFiatAmount,
@@ -22,8 +22,6 @@ import { useAssetUsdRate } from '@perawallet/wallet-core-assets'
 
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseSwapLocalCurrencyResult = {
     isLocalCurrencyInput: boolean
@@ -42,8 +40,7 @@ type UseSwapLocalCurrencyResult = {
 export const useSwapLocalCurrency = (
     assetId: string,
 ): UseSwapLocalCurrencyResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { isLocalCurrencyInput } = useSwaps(scope)
+    const { isLocalCurrencyInput } = useSwapSettings()
     const { localCurrency, localCurrencySymbol, localRate } = useLocalCurrency()
     const { assetUsdPrice, assetDecimals } = useAssetUsdRate(assetId)
 

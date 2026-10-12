@@ -25,6 +25,7 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
@@ -89,14 +90,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountId } = useSelectedAccountId()
     // A link naming an address outside the wallet leaves the selection alone.
-    const selectAccountByAddress = (address: string) => {
-        const account = findAccountByAddressOn(
+    const findLinkedAccount = (address: string) =>
+        findAccountByAddressOn(
             useAccountsStore.getState().accounts,
             LEGACY_CHAIN_ID,
             address,
         )
+    const selectAccountByAddress = (address: string) => {
+        const account = findLinkedAccount(address)
         if (account) setSelectedAccountId(account.id)
     }
+    const swapChainOf = useSwapChainResolver()
     const { t } = useLanguage()
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
@@ -182,9 +186,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 return
             }
 
-            if (!isTypeAvailable(parsedData.type)) {
+            const refuseUnavailable = (type: DeeplinkType) => {
                 logger.warn('Blocked deeplink for an unavailable capability', {
-                    type: parsedData.type,
+                    type,
                 })
                 // A notification refusal stays silent, like the policy above.
                 if (source !== 'notification') {
@@ -194,6 +198,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     )
                 }
                 onError?.()
+            }
+
+            if (!isTypeAvailable(parsedData.type)) {
+                refuseUnavailable(parsedData.type)
                 return
             }
 
@@ -397,9 +405,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SWAP: {
-                    if (parsedData.address) {
-                        selectAccountByAddress(parsedData.address)
+                    // The swap runs on the account's chain, so the wallet-wide
+                    // check above isn't enough: the target account must have one.
+                    const target =
+                        (parsedData.address &&
+                            findLinkedAccount(parsedData.address)) ||
+                        useAccountsStore.getState().getSelectedAccount()
+                    if (!target || swapChainOf(target) === undefined) {
+                        refuseUnavailable(parsedData.type)
+                        return
                     }
+                    setSelectedAccountId(target.id)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Swap',
                         params: {

@@ -15,10 +15,7 @@ import type { OnboardingRequiredPayloads } from './contexts/onboarding'
 import type { BannersRequiredPayloads } from './contexts/banners'
 import type { AssetDetailsRequiredPayloads } from './contexts/asset-details'
 import type { CardRequiredPayloads } from './contexts/card'
-import type {
-    SwapRequiredPayloads,
-    SwapOptionalPayloads,
-} from './contexts/swap'
+import type { SwapRequiredPayloads } from './contexts/swap'
 import type { WalletConnectRequiredPayloads } from './contexts/wallet-connect'
 import type { SettingsRequiredPayloads } from './contexts/settings'
 import type { TransactionsRequiredPayloads } from './contexts/transactions'
@@ -48,7 +45,7 @@ export interface RequiredEventPayloads
 
 /** Events that MAY carry a payload (all fields optional). */
 export interface OptionalEventPayloads
-    extends SwapOptionalPayloads, NotificationsOptionalPayloads {}
+    extends NotificationsOptionalPayloads {}
 
 /** Event names that require a payload argument. */
 export type RequiredPayloadEvent = keyof RequiredEventPayloads

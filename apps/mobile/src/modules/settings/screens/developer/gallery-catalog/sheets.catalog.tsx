@@ -44,6 +44,7 @@ import { SendFundsInfoContent } from '@modules/transactions/components/send-fund
 import { ViewTextDetailsContent } from '@modules/transactions/components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
+import { SwapScopePreview } from './SwapScopePreview'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { SwapIntroductionContent } from '@modules/swap/components/SwapIntroductionContent'
 import { SigningCompletedContent } from '@modules/signing/components/SigningCompletedContent'
@@ -468,7 +469,14 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SwapAssetSelectionContent variant='from' />
+                                <SwapScopePreview>
+                                    {scope => (
+                                        <SwapAssetSelectionContent
+                                            scope={scope}
+                                            variant='from'
+                                        />
+                                    )}
+                                </SwapScopePreview>
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -487,10 +495,15 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SwapAssetSelectionContent
-                                    variant='to'
-                                    fromAssetId={String(MOCK_ASSET_ID)}
-                                />
+                                <SwapScopePreview>
+                                    {scope => (
+                                        <SwapAssetSelectionContent
+                                            scope={scope}
+                                            variant='to'
+                                            fromAssetId={String(MOCK_ASSET_ID)}
+                                        />
+                                    )}
+                                </SwapScopePreview>
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -509,7 +522,13 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SwapConfigurationContent />
+                                <SwapScopePreview>
+                                    {scope => (
+                                        <SwapConfigurationContent
+                                            scope={scope}
+                                        />
+                                    )}
+                                </SwapScopePreview>
                             </GallerySheetBoundary>
                         ),
                         options: { enablePanDownToClose: true },
@@ -529,7 +548,14 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SwapHistoryContent address={A} />
+                                <SwapScopePreview>
+                                    {scope => (
+                                        <SwapHistoryContent
+                                            scope={scope}
+                                            address={A}
+                                        />
+                                    )}
+                                </SwapScopePreview>
                             </GallerySheetBoundary>
                         ),
                         options: {
