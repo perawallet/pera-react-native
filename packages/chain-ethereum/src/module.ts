@@ -15,10 +15,15 @@ import { EVM_ERROR_I18N_KEYS } from './blockchain'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
 import { registerChain } from './register'
+import { ETHEREUM_TRANSFER_TITLE_KEYS } from './transfer'
 
 export const ethereumModule: ChainModule = {
     descriptor: ethereumDescriptor,
     capabilityDefaults: ethereumCapabilityDefaults,
     register: registerChain,
-    i18nKeys: () => [...EVM_ERROR_I18N_KEYS, 'errors.evm.invalid_private_key'],
+    i18nKeys: () => [
+        ...EVM_ERROR_I18N_KEYS,
+        'errors.evm.invalid_private_key',
+        ...ETHEREUM_TRANSFER_TITLE_KEYS,
+    ],
 }
