@@ -58,6 +58,8 @@ import {
 } from '../signing'
 import { algorandBackupAdapter, algorandMigrationAdapter } from '../backup'
 import { algorandCardAdapter } from '../card'
+import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
+import { algorandNodeBackends } from '../blockchain/node-backends'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
 import {
@@ -89,6 +91,7 @@ describe('registerChain', () => {
         accountsChainAdapters.reset()
         backupChainAdapters.reset()
         migrationChainAdapters.reset()
+        nodeBackendAdapters.reset()
     })
 
     it('registers the Algorand accounts adapter, address codec and key derivation', () => {
@@ -100,6 +103,14 @@ describe('registerChain', () => {
         expect(addressCodecs.get(ALGORAND_CHAIN_ID)).toBe(algorandAddressCodec)
         expect(keyDerivations.get(ALGORAND_CHAIN_ID)).toBe(
             algorandKeyDerivation,
+        )
+    })
+
+    it('registers the Algorand algod and indexer backends', () => {
+        registerChain()
+
+        expect(nodeBackendAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandNodeBackends,
         )
     })
 

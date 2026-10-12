@@ -28,7 +28,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

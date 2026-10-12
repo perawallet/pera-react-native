@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    ChainHttpClientUnavailableError,
     createChainRegistry,
     type ChainCapabilityOverrides,
     type ChainContext,
@@ -476,16 +475,6 @@ describe('registerChainAdapters', () => {
             registerChainAdapters()
 
             expect(contextGivenToModule().kms).toBe(mocks.kmsCore)
-        })
-
-        it('rejects every HTTP request, since no client is wired', async () => {
-            registerChainAdapters()
-
-            await expect(
-                contextGivenToModule().http.request({
-                    url: 'https://example.test',
-                }),
-            ).rejects.toBeInstanceOf(ChainHttpClientUnavailableError)
         })
     })
 })

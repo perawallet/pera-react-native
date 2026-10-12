@@ -19,7 +19,11 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts } from '../account-discovery'
-import { accountsAdapterFor, deriveHdAccount } from '../chain-adapter'
+import {
+    accountsAdapterFor,
+    deriveHdAccount,
+    requirePublicKeyGetter,
+} from '../chain-adapter'
 import type { HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
@@ -62,9 +66,9 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
-            const getPublicKey = accountsAdapterFor(
-                network,
-            ).createPublicKeyGetter(pending.rootKey)
+            const getPublicKey = requirePublicKeyGetter(
+                accountsAdapterFor(network),
+            )(pending.rootKey)
             return discoverAccounts({
                 getPublicKey,
                 walletKeyId: pending.walletKeyId,
