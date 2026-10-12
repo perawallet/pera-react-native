@@ -15,11 +15,14 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     ExecuteSwapParams,
     SwapExecutionContext,
+    SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandSwapAdapter } from '../adapter'
 
 const mocks = vi.hoisted(() => ({
+    explorerUrl: 'https://explorer.test' as string | undefined,
+    isQuantumSwapEnabled: vi.fn(),
     executeAlgorandSwap: vi.fn(),
     getAlgorandClient: vi.fn(),
     submitRawSignedTransactionGroup: vi.fn(),
@@ -34,6 +37,16 @@ vi.mock('../../blockchain', () => ({
     decodeTransaction: vi.fn(),
     decodeSignedTransaction: vi.fn(),
     encodeSignedTransactions: mocks.encodeSignedTransactions,
+    getMinimumFeeConfig: () => ({ assetMbr: 250_000n }),
+}))
+vi.mock('../quantumSwapGate', () => ({
+    isAlgorandQuantumSwapEnabled: mocks.isQuantumSwapEnabled,
+}))
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-config')
+    >()),
+    getAlgorandChainConfig: () => ({ explorerUrl: mocks.explorerUrl }),
 }))
 vi.mock('../../signing', () => ({
     submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
@@ -45,7 +58,6 @@ const scope = scopeForLegacyNetwork('testnet')
 
 const context: SwapExecutionContext = {
     scope,
-    assetOptInMinBalance: 100_000n,
     deviceId: 'device-1',
     addSignRequest: vi.fn(),
     prepareTransactions: vi.fn(),
@@ -56,6 +68,8 @@ const context: SwapExecutionContext = {
 describe('algorandSwapAdapter', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.explorerUrl = 'https://explorer.test'
+        mocks.isQuantumSwapEnabled.mockReturnValue(true)
         mocks.getAlgorandClient.mockImplementation((target: unknown) => ({
             target,
         }))
@@ -64,9 +78,33 @@ describe('algorandSwapAdapter', () => {
     it('serves the Algorand chain, paying with ALGO by default', () => {
         expect(algorandSwapAdapter.chainId).toBe(ALGORAND_CHAIN_ID)
         expect(algorandSwapAdapter.nativeAssetId).toBe('0')
+        expect(algorandSwapAdapter.defaultReceiveAssetId).toBe('31566704')
     })
 
-    it("executes with a client built from the context's scope and the opt-in balance as the asset MBR", async () => {
+    it('links a history item to its transaction group on the explorer', () => {
+        expect(
+            algorandSwapAdapter.swapExplorerUrl(scope, {
+                transactionGroupId: 'GROUP',
+            } as SwapHistoryItem),
+        ).toBe('https://explorer.test/tx-group/GROUP/')
+    })
+
+    it('has no history link without a group id or an explorer', () => {
+        expect(
+            algorandSwapAdapter.swapExplorerUrl(scope, {
+                transactionGroupId: null,
+            } as SwapHistoryItem),
+        ).toBeUndefined()
+
+        mocks.explorerUrl = undefined
+        expect(
+            algorandSwapAdapter.swapExplorerUrl(scope, {
+                transactionGroupId: 'GROUP',
+            } as SwapHistoryItem),
+        ).toBeUndefined()
+    })
+
+    it("executes with a client built from the context's scope, resolving the asset MBR and quantum gate itself", async () => {
         mocks.executeAlgorandSwap.mockResolvedValue({ kind: 'cancelled' })
 
         const result = await algorandSwapAdapter.executeSwap(params, context)
@@ -81,7 +119,8 @@ describe('algorandSwapAdapter', () => {
                 scope,
                 network: 'testnet',
                 algorandClient: { target: scope },
-                assetMbr: 100_000n,
+                assetMbr: 250_000n,
+                isQuantumSwapEnabled: true,
                 deviceId: 'device-1',
                 addSignRequest: context.addSignRequest,
                 prepareTransactions: context.prepareTransactions,

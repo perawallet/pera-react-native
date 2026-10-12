@@ -145,7 +145,9 @@ const SIGNING_SOURCE = {
     description: 'swap.signing.source_description',
 }
 
-const makeContext = (): AlgorandSwapExecutionContext => ({
+const makeContext = (
+    isQuantumSwapEnabled = false,
+): AlgorandSwapExecutionContext => ({
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     network: 'mainnet',
     algorandClient: {
@@ -159,6 +161,7 @@ const makeContext = (): AlgorandSwapExecutionContext => ({
         },
     } as unknown as AlgorandSwapExecutionContext['algorandClient'],
     assetMbr: 100_000n,
+    isQuantumSwapEnabled,
     deviceId: 'device-1',
     addSignRequest: mockAddSignRequest,
     decodeTransaction: mockDecodeTransaction,
@@ -192,12 +195,11 @@ const run = (
             quote,
             account,
             signer,
-            isQuantumSwapEnabled,
             signingSource: SIGNING_SOURCE,
             onProgress: mockOnProgress,
             isCancelled,
         },
-        makeContext(),
+        makeContext(isQuantumSwapEnabled),
     )
 
 const makePrepareResult = (
@@ -704,6 +706,7 @@ describe('executeAlgorandSwap', () => {
             failure: {
                 phase: 'prepare',
                 reason: 'insufficient-native-balance',
+                chainId: 'algorand',
                 shortfall: new Decimal(5000),
             },
         })
