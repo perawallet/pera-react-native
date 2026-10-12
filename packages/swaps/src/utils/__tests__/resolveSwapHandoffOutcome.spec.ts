@@ -318,7 +318,7 @@ describe('resolveSwapHandoffOutcome', () => {
         expect(deps.reportError).toHaveBeenCalledWith(error)
         expect(deps.declineSignRequest).toHaveBeenCalledWith('req-1')
         expect(deps.markConfirmed).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             deviceId: 'device-1',
             signRequestIds: ['req-1'],
         })

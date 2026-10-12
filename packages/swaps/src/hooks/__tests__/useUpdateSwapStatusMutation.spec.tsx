@@ -17,10 +17,6 @@ import React from 'react'
 import { useUpdateSwapStatusMutation } from '../useUpdateSwapStatusMutation'
 import { updateSwapStatus } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 vi.mock('../../api', () => ({
     updateSwapStatus: vi.fn(),
 }))
@@ -58,7 +54,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     })
 
     test('calls updateSwapStatus with swapId and data', async () => {
-        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
+        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
             wrapper: createWrapper(),
         })
 
@@ -74,7 +70,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
         expect(updateSwapStatus).toHaveBeenCalledWith(
             '42',
             { status: 'completed' },
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
         )
         expect(result.current.data).toEqual(mockResult)
     })
@@ -82,7 +78,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     test('sets isError on failure', async () => {
         vi.mocked(updateSwapStatus).mockRejectedValue(new Error('Server error'))
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
+        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
             wrapper: createWrapper(),
         })
 
@@ -99,7 +95,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     test('flags isError without re-throwing under the global throwOnError default', async () => {
         vi.mocked(updateSwapStatus).mockRejectedValue(new Error('Server error'))
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
+        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
             wrapper: createThrowOnErrorWrapper(),
         })
 

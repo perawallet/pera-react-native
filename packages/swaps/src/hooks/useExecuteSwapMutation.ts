@@ -12,61 +12,62 @@
 
 import { useMutation } from '@tanstack/react-query'
 import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
     addressOn,
+    getSignerFor,
     isMultisigAccount,
+    useAccountsStore,
     useSelectedAccount,
-    useSignerFor,
 } from '@perawallet/wallet-core-accounts'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
-    useFeeConfig,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
-import { swapAdapterFor, SwapCosignUnsupportedError } from '../chain-adapter'
+    swapAdapterFor,
+    SwapAccountUnsupportedError,
+    SwapCosignUnsupportedError,
+} from '../chain-adapter'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
+import { updateSwapStatus } from '../api'
 import { useSwapHandoffStore } from '../store'
-import { usePrepareTransactionsMutation } from './usePrepareTransactionsMutation'
-import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
+import { prepareSwapTransactions } from './usePrepareTransactionsMutation'
+import { useSwapScope } from './useSwapScope'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
-export const useExecuteSwapMutation = (scope: ChainScope) => {
+/** Runs on the selected account's swap scope, so the scope and the signer can't disagree. */
+export const useExecuteSwapMutation = () => {
     const { addSignRequest } = useSigningRequest()
     const account = useSelectedAccount()
-    const signer = useSignerFor(
-        account ? addressOn(account, scope) : undefined,
-        scope.chainId,
-    )
-    const { assetOptInMinBalance } = useFeeConfig(scope.chainId)
-    const deviceId = useDeviceID(legacyNetworkOf(scope))
+    const scope = useSwapScope(account)
+    const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
-    const { mutateAsync: prepareTransactions } =
-        usePrepareTransactionsMutation()
-    const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
         mutationFn: async variables => {
+            if (!account || !scope) {
+                throw new SwapAccountUnsupportedError()
+            }
             const adapter = swapAdapterFor(scope)
-            if (
-                account &&
-                isMultisigAccount(account) &&
-                !adapter.submitSignedGroup
-            ) {
+            if (isMultisigAccount(account) && !adapter.submitSignedGroup) {
                 throw new SwapCosignUnsupportedError(adapter.chainId)
             }
+            const address = addressOn(account, scope)
+            const signer = address
+                ? getSignerFor(
+                      address,
+                      useAccountsStore.getState().accounts,
+                      scope.chainId,
+                  )
+                : null
             return adapter.executeSwap(
                 { ...variables, account, signer },
                 {
                     scope,
-                    assetOptInMinBalance,
-                    deviceId,
+                    deviceId: deviceIdOf(scope),
                     addSignRequest,
-                    prepareTransactions,
-                    updateSwapStatus,
+                    prepareTransactions: data =>
+                        prepareSwapTransactions(data, scope),
+                    updateSwapStatus: ({ swapId, data }) =>
+                        updateSwapStatus(swapId, data, scope),
                     registerHandoff,
                 },
             )

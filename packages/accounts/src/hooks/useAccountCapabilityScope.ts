@@ -34,17 +34,22 @@ export const useCapabilityChainResolver = (
     capability: ChainCapability,
 ): ((account: WalletAccount) => ChainId | undefined) => {
     const check = useChainCapabilityCheck()
+    // Joined so the resolver keeps its identity until the enabled set changes.
+    const enabledKey = getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+        .filter(chainId => check({ chain: { chainId, capability } }))
+        .join()
     return useCallback(
-        (account: WalletAccount) =>
-            getProvider()
-                .chains.list()
-                .map(({ id }) => id)
-                .find(
-                    chainId =>
-                        chainAccountOf(account, chainId) !== undefined &&
-                        check({ chain: { chainId, capability } }),
-                ),
-        [check, capability],
+        (account: WalletAccount) => {
+            const enabled = enabledKey
+                ? (enabledKey.split(',') as ChainId[])
+                : []
+            return enabled.find(
+                chainId => chainAccountOf(account, chainId) !== undefined,
+            )
+        },
+        [enabledKey],
     )
 }
 

@@ -21,6 +21,7 @@ import type {
     ExecuteSwapResult,
     SwapExecutionContext,
 } from './execution'
+import type { SwapHistoryItem } from './models'
 
 /** The chain-specific legs of a swap; registered by the chain package. */
 export interface SwapChainAdapter {
@@ -30,6 +31,13 @@ export interface SwapChainAdapter {
      * stands for, and the default asset to pay with.
      */
     nativeAssetId: string
+    /** The asset a swap receives until the user picks one. */
+    defaultReceiveAssetId: string
+    /** Undefined when the item has nothing to link to or the network has no explorer. */
+    swapExplorerUrl(
+        scope: ChainScope,
+        item: SwapHistoryItem,
+    ): string | undefined
     /**
      * Validates, signs and broadcasts the backend-prepared swap for a quote.
      * Returns every expected failure as a result rather than throwing.
@@ -62,11 +70,27 @@ export class SwapCosignUnsupportedError extends AppError {
     }
 }
 
+/** The selected account is on no chain that has swap switched on. */
+export class SwapAccountUnsupportedError extends AppError {
+    constructor() {
+        super('The selected account cannot swap on any chain.', {
+            category: ErrorCategory.TRANSACTIONS,
+            recoverable: false,
+        })
+        this.name = 'SwapAccountUnsupportedError'
+    }
+}
+
 export const swapChainAdapters =
     createChainAdapterRegistry<SwapChainAdapter>('swap')
 
 export const swapAdapterFor = (scope: ChainScope): SwapChainAdapter =>
     swapChainAdapters.get(scope.chainId)
+
+export const swapExplorerUrlFor = (
+    scope: ChainScope,
+    item: SwapHistoryItem,
+): string | undefined => swapAdapterFor(scope).swapExplorerUrl(scope, item)
 
 /** Throws {@link SwapCosignUnsupportedError} when the chain can't finish a co-signed group. */
 export const submitCosignedSwapGroup = (

@@ -75,7 +75,7 @@ describe('swaps/useCreateQuotesMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(fetchProviders).toHaveBeenCalledWith('mainnet')
+        expect(fetchProviders).toHaveBeenCalledWith(SCOPE)
         expect(createQuotes).toHaveBeenCalledWith(
             mockRequest,
             SCOPE,

@@ -17,10 +17,6 @@ import React from 'react'
 import { useCalculatePeraFeeMutation } from '../useCalculatePeraFeeMutation'
 import { calculatePeraFee } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 vi.mock('../../api', () => ({
     calculatePeraFee: vi.fn(),
 }))
@@ -41,13 +37,13 @@ describe('useCalculatePeraFeeMutation', () => {
         vi.mocked(calculatePeraFee).mockReset()
     })
 
-    test('forwards the request and active network to calculatePeraFee', async () => {
+    test('forwards the request and scope to calculatePeraFee', async () => {
         vi.mocked(calculatePeraFee).mockResolvedValue({
             peraFee: '5000',
             peraFeeAssetId: '0',
         } as never)
 
-        const { result } = renderHook(() => useCalculatePeraFeeMutation(), {
+        const { result } = renderHook(() => useCalculatePeraFeeMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
             wrapper,
         })
 
@@ -63,7 +59,7 @@ describe('useCalculatePeraFeeMutation', () => {
         await waitFor(() => expect(calculatePeraFee).toHaveBeenCalled())
         expect(calculatePeraFee).toHaveBeenCalledWith(
             expect.objectContaining({ address: 'ADDR' }),
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
         )
     })
 })

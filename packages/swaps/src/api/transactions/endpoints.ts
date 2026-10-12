@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     prepareTransactionsResponseSchema,
     type PrepareTransactionsRequest,
@@ -20,11 +21,11 @@ import type { PrepareTransactionsResult } from '../../models'
 
 export const prepareTransactions = async (
     data: PrepareTransactionsRequest,
-    network: Network,
+    scope: ChainScope,
 ): Promise<PrepareTransactionsResult> => {
     const response = await queryClient<PrepareTransactionsApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v2/dex-swap/prepare-transactions/`,
         data,

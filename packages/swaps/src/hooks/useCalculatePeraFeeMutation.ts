@@ -11,16 +11,14 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { calculatePeraFee } from '../api'
 import type { CalculatePeraFeeRequest } from '../api'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
-export const useCalculatePeraFeeMutation = () => {
-    const { network } = useNetwork()
-
+export const useCalculatePeraFeeMutation = (scope: ChainScope) => {
     return useMutation({
         mutationFn: (data: CalculatePeraFeeRequest) =>
-            calculatePeraFee(data, network),
+            calculatePeraFee(data, scope),
         // Handled by the caller — opt out of the global throwOnError default.
         throwOnError: false,
     })

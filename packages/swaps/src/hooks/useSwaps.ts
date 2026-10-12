@@ -32,7 +32,9 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
     const fromAsset =
         useSwapsStore(state => state.fromAsset) ??
         swapAdapterFor(scope).nativeAssetId
-    const toAsset = useSwapsStore(state => state.toAsset)
+    const toAsset =
+        useSwapsStore(state => state.toAsset) ??
+        swapAdapterFor(scope).defaultReceiveAssetId
     const slippage = useSwapsStore(state => state.slippage)
     const isLocalCurrencyInput = useSwapsStore(
         state => state.isLocalCurrencyInput,

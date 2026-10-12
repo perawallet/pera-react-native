@@ -22,12 +22,10 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'swaps-store'
 
-// TODO: Replace toAsset with KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
-// once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
+// null resolves to the chain adapter's default pair; see useSwaps.
 const initialState = {
-    // null pays with the chain's native asset; see useSwaps.
     fromAsset: null as Nullable<string>,
-    toAsset: '31566704', // USDC mainnet
+    toAsset: null as Nullable<string>,
     slippage: null as Nullable<string>,
     isLocalCurrencyInput: false,
 }

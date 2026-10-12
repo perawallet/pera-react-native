@@ -11,22 +11,27 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { assertOnline } from '@perawallet/wallet-core-shared'
 import { prepareTransactions } from '../api'
 import type { PrepareTransactionsRequest } from '../api'
+import type { PrepareTransactionsResult } from '../models'
 
-export const usePrepareTransactionsMutation = () => {
-    const { network } = useNetwork()
+// Fails fast offline before building/quoting a swap, so the caller surfaces a
+// readable error instead of the mutation pausing and silently auto-resuming
+// against a stale quote on reconnect.
+export const prepareSwapTransactions = (
+    data: PrepareTransactionsRequest,
+    scope: ChainScope,
+): Promise<PrepareTransactionsResult> => {
+    assertOnline()
+    return prepareTransactions(data, scope)
+}
 
+export const usePrepareTransactionsMutation = (scope: ChainScope) => {
     return useMutation({
-        // OFF-004: fail fast offline before building/quoting a swap, so the
-        // caller surfaces a readable error instead of the mutation pausing and
-        // silently auto-resuming against a stale quote on reconnect.
-        mutationFn: (data: PrepareTransactionsRequest) => {
-            assertOnline()
-            return prepareTransactions(data, network)
-        },
+        mutationFn: (data: PrepareTransactionsRequest) =>
+            prepareSwapTransactions(data, scope),
         // Surfacing is handled by the caller — see `mutationDefaults`.
         throwOnError: false,
     })

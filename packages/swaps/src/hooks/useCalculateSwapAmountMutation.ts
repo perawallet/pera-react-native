@@ -11,16 +11,14 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { calculateSwapAmount } from '../api'
 import type { CalculateSwapAmountRequest } from '../api'
 
-export const useCalculateSwapAmountMutation = () => {
-    const { network } = useNetwork()
-    // Ambient like `network`, so it is injected here rather than threaded
-    // through callers.
-    const deviceId = useDeviceID(network)
+export const useCalculateSwapAmountMutation = (scope: ChainScope) => {
+    // Injected here rather than threaded through callers.
+    const deviceId = useDeviceIdLookup()(scope)
 
     return useMutation({
         // Omitted, not sent as null, while the device is unregistered: `device`
@@ -30,7 +28,7 @@ export const useCalculateSwapAmountMutation = () => {
         mutationFn: (data: Omit<CalculateSwapAmountRequest, 'device'>) =>
             calculateSwapAmount(
                 { ...data, ...(deviceId ? { device: deviceId } : {}) },
-                network,
+                scope,
             ),
         // Handled by the caller — opt out of the global throwOnError default.
         throwOnError: false,

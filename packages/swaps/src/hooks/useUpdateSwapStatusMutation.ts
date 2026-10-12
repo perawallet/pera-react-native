@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { updateSwapStatus } from '../api'
 import type { SwapStatusUpdateRequest } from '../api'
 
@@ -20,12 +20,10 @@ type UpdateSwapStatusParams = {
     data: SwapStatusUpdateRequest
 }
 
-export const useUpdateSwapStatusMutation = () => {
-    const { network } = useNetwork()
-
+export const useUpdateSwapStatusMutation = (scope: ChainScope) => {
     return useMutation({
         mutationFn: ({ swapId, data }: UpdateSwapStatusParams) =>
-            updateSwapStatus(swapId, data, network),
+            updateSwapStatus(swapId, data, scope),
         // Handled by the caller — opt out of the global throwOnError default.
         throwOnError: false,
     })

@@ -36,7 +36,6 @@ swapContractTests(() => adapter, {
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
         scope: scopeForLegacyNetwork('mainnet'),
-        assetOptInMinBalance: 0n,
         deviceId: null,
         addSignRequest: vi.fn(),
         prepareTransactions: vi.fn(),
