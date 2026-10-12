@@ -11,6 +11,8 @@
  */
 
 export * from './useSwaps'
+export * from './useSwapScope'
+export * from './useSwapSettings'
 export * from './useAvailableAssetsQuery'
 export * from './useSwapHistoryInfiniteQuery'
 export * from './useDistinctPairsHistoryQuery'
