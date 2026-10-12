@@ -44,7 +44,7 @@ export const useAddSignatureMutation = ({
 
     const mutation = useMutation({
         mutationFn: ({ responses }: AddSignatureMutationInput) =>
-            addSignature(network, signRequestId, responses),
+            addSignature(scopeForLegacyNetwork(network), signRequestId, responses),
         onSuccess: () => {
             void rqClient.invalidateQueries({
                 queryKey: getSignRequestDetailQueryKey(

@@ -124,7 +124,7 @@ describe('useDeclineSignRequestMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mocks.addSignature).toHaveBeenCalledWith('testnet', 'sr-456', [
+        expect(mocks.addSignature).toHaveBeenCalledWith({ chainId: 'algorand', networkId: 'testnet' }, 'sr-456', [
             {
                 address: 'DECLINER_ADDR',
                 response: 'declined',

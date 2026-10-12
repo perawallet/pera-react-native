@@ -285,13 +285,17 @@ describe('useWalletConnectHandoffResolver', () => {
 
             await resolveArgsOf(0).cancelRequest()
 
-            expect(mocks.addSignature).toHaveBeenCalledWith('testnet', 'sr-1', [
-                {
-                    address: 'PROPOSER_ADDR',
-                    response: 'declined',
-                    device_id: 'device-1',
-                },
-            ])
+            expect(mocks.addSignature).toHaveBeenCalledWith(
+                { chainId: 'algorand', networkId: 'testnet' },
+                'sr-1',
+                [
+                    {
+                        address: 'PROPOSER_ADDR',
+                        response: 'declined',
+                        device_id: 'device-1',
+                    },
+                ],
+            )
         })
 
         it('reports a past-threshold failure as undeliverable', async () => {
@@ -485,13 +489,17 @@ describe('useWalletConnectHandoffResolver', () => {
 
             await resolveArgsOf(0).cancelRequest()
 
-            expect(mocks.addSignature).toHaveBeenCalledWith('testnet', 'sr-1', [
-                {
-                    address: 'PINNED_ADDR',
-                    response: 'declined',
-                    device_id: 'device-1',
-                },
-            ])
+            expect(mocks.addSignature).toHaveBeenCalledWith(
+                { chainId: 'algorand', networkId: 'testnet' },
+                'sr-1',
+                [
+                    {
+                        address: 'PINNED_ADDR',
+                        response: 'declined',
+                        device_id: 'device-1',
+                    },
+                ],
+            )
         })
 
         it('skips the decline when neither the poll nor the handoff has a proposer address', async () => {

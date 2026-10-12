@@ -201,11 +201,11 @@ describe('addSignature', () => {
                 signatures: [['sig1']],
             },
         ]
-        await addSignature('testnet', 'sr-1', responses)
+        await addSignature({ chainId: 'algorand', networkId: 'testnet' }, 'sr-1', responses)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             method: 'POST',
             url: '/v1/joint-accounts/sign-requests/sr-1/responses/',
             data: responses,

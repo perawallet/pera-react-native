@@ -594,7 +594,7 @@ export type ResolveHandoffOutcomeArgs = {
     delivery: HandoffPeerDelivery
     /** Best-effort backend notification; a rejection is logged, not surfaced. */
     markConfirmed: (input: {
-        network: Network
+        scope: ChainScope
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>

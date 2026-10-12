@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -124,7 +123,7 @@ export const useWalletConnectHandoffResolver = ({
                 handoff.signRequestId,
             ),
             queryFn: () =>
-                getSignRequestsWithSignatures(legacyNetworkOf(handoff.scope), {
+                getSignRequestsWithSignatures(handoff.scope, {
                     device_id: handoff.deviceId,
                     proposed_sign_request_ids: [handoff.signRequestId],
                 }),
@@ -205,7 +204,7 @@ export const useWalletConnectHandoffResolver = ({
                 cancelRequest: async () => {
                     if (!proposerAddress || hasReachedThreshold) return
                     await addSignature(
-                        legacyNetworkOf(handoff.scope),
+                        handoff.scope,
                         handoff.signRequestId,
                         [
                             {

@@ -357,7 +357,7 @@ const deliverReady = async (
     // dApp already has the signed bytes — but worth logging.
     try {
         await markConfirmed({
-            network: algorandNetworkOf(handoff.scope),
+            scope: handoff.scope,
             deviceId: handoff.deviceId,
             signRequestIds: [handoff.signRequestId],
         })

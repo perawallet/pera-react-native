@@ -11,11 +11,11 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { markSignRequestsConfirmed } from '../api/endpoints'
 
 type MarkSignRequestsConfirmedInput = {
-    network: Network
+    scope: ChainScope
     deviceId: string
     signRequestIds: string[]
 }
@@ -35,18 +35,18 @@ type UseMarkSignRequestsConfirmedMutationResult = {
  * once the wallet has delivered the assembled signed transaction to the
  * dApp, so the backend skips its own broadcast for `type: 'sync'` requests.
  *
- * `network` is part of the mutation input rather than a hook parameter so a
+ * `scope` is part of the mutation input rather than a hook parameter so a
  * single mutation instance can serve handoffs on different networks.
  */
 export const useMarkSignRequestsConfirmedMutation =
     (): UseMarkSignRequestsConfirmedMutationResult => {
         const mutation = useMutation({
             mutationFn: ({
-                network,
+                scope,
                 deviceId,
                 signRequestIds,
             }: MarkSignRequestsConfirmedInput) =>
-                markSignRequestsConfirmed(network, {
+                markSignRequestsConfirmed(scope, {
                     device_id: deviceId,
                     proposed_sign_request_ids: signRequestIds,
                 }),
