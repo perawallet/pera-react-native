@@ -40,6 +40,14 @@ const resolveEntropy = vi.fn(async (seedAddress: string) =>
         : null,
 )
 
+const resolveSeedKeyId = vi.fn(async (seedAddress: string) =>
+    seedAddress === 'SEEDADDRESS' ? 'local-seed-id' : null,
+)
+vi.mock('../useResolveSeedEntropyForBackup', () => ({
+    resolveBackupSeedKeyId: (seedAddress: string) =>
+        resolveSeedKeyId(seedAddress),
+}))
+
 vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => {
     const actual =
         await importOriginal<
@@ -138,6 +146,7 @@ describe('useCloudBackupPasskeyImport', () => {
         engine.isEngine = false
         deriveEngineEntry.mockReset().mockResolvedValue('written')
         engineEntryExists.mockReset().mockReturnValue(false)
+        resolveSeedKeyId.mockClear()
     })
 
     describe('with a backed-up private key', () => {
@@ -481,7 +490,7 @@ describe('useCloudBackupPasskeyImport', () => {
             ])
 
             expect(summary.skipped[0]?.reason).toBe('already-present')
-            expect(resolveEntropy).not.toHaveBeenCalled()
+            expect(resolveSeedKeyId).not.toHaveBeenCalled()
             expect(deriveEngineEntry).not.toHaveBeenCalled()
         })
 
@@ -516,7 +525,7 @@ describe('useCloudBackupPasskeyImport', () => {
             expect(summary.imported).toBe(1)
         })
 
-        it('resolves each seed once and zeroes its entropy', async () => {
+        it('finds each seed once and never reads its entropy', async () => {
             const { result } = renderHook(() =>
                 useCloudBackupPasskeyImport(resolveEntropy),
             )
@@ -526,10 +535,8 @@ describe('useCloudBackupPasskeyImport', () => {
                 await withoutSecret({ identity: 'bob' }),
             ])
 
-            expect(resolveEntropy).toHaveBeenCalledTimes(1)
-            const resolved: ResolvedSeed | null =
-                await resolveEntropy.mock.results[0]!.value
-            expect(resolved!.entropy.every(byte => byte === 0)).toBe(true)
+            expect(resolveSeedKeyId).toHaveBeenCalledTimes(1)
+            expect(resolveEntropy).not.toHaveBeenCalled()
         })
     })
 

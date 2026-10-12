@@ -14,7 +14,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
-import { useResolveSeedEntropyForBackup } from '../useResolveSeedEntropyForBackup'
+import {
+    resolveBackupSeedKeyId,
+    useResolveSeedEntropyForBackup,
+} from '../useResolveSeedEntropyForBackup'
 
 const {
     keystoreKeys,
@@ -199,5 +202,46 @@ describe('useResolveSeedEntropyForBackup', () => {
 
         expect(await result.current('ADDR-9')).toBeNull()
         expect(withSecretMock).not.toHaveBeenCalled()
+    })
+})
+
+describe('resolveBackupSeedKeyId', () => {
+    const seedWithEntropy = [
+        { id: 'seed-1', type: 'hd-root-key', metadata: {} },
+        {
+            id: 'entropy-1',
+            type: 'secret-key',
+            metadata: { parentKeyId: 'seed-1', entropyKey: true },
+        },
+    ]
+
+    beforeEach(() => {
+        seedReferenceMock.mockReset().mockResolvedValue('ADDR-9')
+        backupChainAdapters.reset()
+        backupChainAdapters.register(
+            fakeBackupAdapter({ seedReference: seedReferenceMock }),
+        )
+        withSecretMock.mockClear()
+        canAccessMock.mockClear().mockReturnValue(true)
+    })
+
+    it('finds the matching seed without reading any secret', async () => {
+        keystoreKeys.mockReturnValue(seedWithEntropy)
+
+        expect(await resolveBackupSeedKeyId('ADDR-9')).toBe('seed-1')
+        expect(withSecretMock).not.toHaveBeenCalled()
+    })
+
+    it('returns null for a seed whose ACL denies the backup domain', async () => {
+        keystoreKeys.mockReturnValue(seedWithEntropy)
+        canAccessMock.mockReturnValue(false)
+
+        expect(await resolveBackupSeedKeyId('ADDR-9')).toBeNull()
+    })
+
+    it('returns null for a seed without an entropy child', async () => {
+        keystoreKeys.mockReturnValue([seedWithEntropy[0]])
+
+        expect(await resolveBackupSeedKeyId('ADDR-9')).toBeNull()
     })
 })

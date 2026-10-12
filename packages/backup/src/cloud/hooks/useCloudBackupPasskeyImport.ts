@@ -36,6 +36,7 @@ import type {
     PasskeyImportSummary,
     PasskeySkipReason,
 } from '../sync/types'
+import { resolveBackupSeedKeyId } from './useResolveSeedEntropyForBackup'
 
 /** The owning seed as this device knows it. `seedKeyId` is local — the id the
  *  restoring device minted, not the one the collecting device had — and is what
@@ -139,10 +140,10 @@ export const useCloudBackupPasskeyImport = (
             if (seedAddress == null || identity == null) return 'underivable'
 
             if (!seedIds.has(seedAddress)) {
-                // Only the seed's id is wanted; the engine reads the entropy itself.
-                const resolved = await resolveSeedEntropy(seedAddress)
-                if (resolved !== null) zeroBytes(resolved.entropy)
-                seedIds.set(seedAddress, resolved?.seedKeyId ?? null)
+                seedIds.set(
+                    seedAddress,
+                    await resolveBackupSeedKeyId(seedAddress),
+                )
             }
             const seedKeyId = seedIds.get(seedAddress) ?? null
             if (seedKeyId === null) return 'seed-missing'
@@ -161,7 +162,7 @@ export const useCloudBackupPasskeyImport = (
             })
             return result === 'written' ? null : 'pubkey-mismatch'
         },
-        [resolveSeedEntropy],
+        [],
     )
 
     const importPasskeys = useCallback<PasskeyImportFn>(
