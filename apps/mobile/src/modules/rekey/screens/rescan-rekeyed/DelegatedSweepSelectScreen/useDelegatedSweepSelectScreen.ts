@@ -15,7 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useRescanDelegatedAccounts,
     useSigningAccounts,
-    type RekeyedSweepCandidate,
+    type DelegatedSweepCandidate,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -27,7 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import type { RescanRekeyedStackParamList } from '../../../routes/rescan-rekeyed/types'
 
-export type UseRescanRekeyedSelectScreenResult = {
+export type UseDelegatedSweepSelectScreenResult = {
     /** True when scanning every signable key rather than a single one. */
     isSweep: boolean
     isLoading: boolean
@@ -48,8 +48,8 @@ export type UseRescanRekeyedSelectScreenResult = {
     handleRetry: () => void
 }
 
-export const useRescanRekeyedSelectScreen =
-    (): UseRescanRekeyedSelectScreenResult => {
+export const useDelegatedSweepSelectScreen =
+    (): UseDelegatedSweepSelectScreenResult => {
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation = useAppNavigation()
         const route =
@@ -84,7 +84,7 @@ export const useRescanRekeyedSelectScreen =
         } | null>(null)
         const [failedSourceCount, setFailedSourceCount] = useState(0)
         const [importedAddresses, setImportedAddresses] = useState<string[]>([])
-        const [candidates, setCandidates] = useState<RekeyedSweepCandidate[]>(
+        const [candidates, setCandidates] = useState<DelegatedSweepCandidate[]>(
             [],
         )
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(

@@ -178,7 +178,7 @@ async function doFetchAndPersistAccount(
     // Diff against the persisted balance row so the sync service can tell
     // whether the account changed at all this tick. ASA amount changes are
     // caught by refreshAccountHoldings below; this covers algo balance /
-    // opt-in counts / status / rekey.
+    // opt-in counts / status / authority.
     const balanceChanged =
         !prior ||
         prior.algoBalance.toString() !== algoBalance.toString() ||

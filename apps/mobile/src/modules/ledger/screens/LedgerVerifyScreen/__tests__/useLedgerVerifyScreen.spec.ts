@@ -157,7 +157,7 @@ const derived = (address: string, accountIndex: number) => ({
 const expectedAddressFor = (accountIndex: number): string => {
     const selected = routeParams.current.selectedAccounts as Array<
         | { kind: 'derived'; account: ReturnType<typeof derived> }
-        | { kind: 'rekeyed'; authAccount: ReturnType<typeof derived> }
+        | { kind: 'delegated'; authAccount: ReturnType<typeof derived> }
     >
     for (const sel of selected) {
         const acc = sel.kind === 'derived' ? sel.account : sel.authAccount
@@ -195,8 +195,8 @@ describe('useLedgerVerifyScreen', () => {
             transportType: 'ble',
             selectedAccounts: [
                 { kind: 'derived', account: d0 },
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-                { kind: 'rekeyed', address: 'REKEYED_B', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_B', authAccount: d0 },
             ],
         }
 
@@ -227,9 +227,9 @@ describe('useLedgerVerifyScreen', () => {
             deviceName: 'Nano',
             transportType: 'ble',
             selectedAccounts: [
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-                { kind: 'rekeyed', address: 'ALREADY', authAccount: d0 },
-                { kind: 'rekeyed', address: '!!bad', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+                { kind: 'delegated', address: 'ALREADY', authAccount: d0 },
+                { kind: 'delegated', address: '!!bad', authAccount: d0 },
             ],
         }
 
@@ -333,7 +333,11 @@ describe('useLedgerVerifyScreen', () => {
             deviceName: 'Nano',
             transportType: 'ble',
             selectedAccounts: [
-                { kind: 'rekeyed', address: 'REKEYED_X', authAccount: badAuth },
+                {
+                    kind: 'delegated',
+                    address: 'REKEYED_X',
+                    authAccount: badAuth,
+                },
             ],
         }
 
@@ -518,7 +522,11 @@ describe('useLedgerVerifyScreen', () => {
                 deviceName: 'Nano',
                 transportType: 'ble',
                 selectedAccounts: [
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 
@@ -554,7 +562,11 @@ describe('useLedgerVerifyScreen', () => {
                 deviceName: 'Nano',
                 transportType: 'ble',
                 selectedAccounts: [
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 
@@ -672,7 +684,11 @@ describe('useLedgerVerifyScreen', () => {
                 selectedAccounts: [
                     { kind: 'derived', account: d0 },
                     { kind: 'derived', account: derived('LEDGER1', 1) },
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 

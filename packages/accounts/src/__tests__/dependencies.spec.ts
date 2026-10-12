@@ -104,4 +104,17 @@ describe('accounts package dependencies', () => {
         expect(declared).not.toContain(DEVICE)
         expect(importers.map(([file]) => file)).toEqual([])
     })
+
+    // Case-sensitive on purpose: `useKeystoreKeys` contains "reKeys".
+    it("names no chain's delegation feature outside tests", () => {
+        const offending = Object.entries(sources)
+            .filter(
+                ([file]) =>
+                    !file.startsWith('./') && !file.includes('__tests__'),
+            )
+            .filter(([, source]) => /rekey|Rekey/.test(source))
+            .map(([file]) => file)
+
+        expect(offending).toEqual([])
+    })
 })

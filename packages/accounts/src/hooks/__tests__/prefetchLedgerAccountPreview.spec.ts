@@ -28,8 +28,10 @@ const mocks = {
     get fetchAccountState() {
         return vi.mocked(fakeAccountsChain().adapter.fetchAccountState)
     },
-    get fetchRekeyedAddresses() {
-        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    get fetchDelegatedAddresses() {
+        return vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
     },
 }
 
@@ -37,10 +39,10 @@ describe('prefetchLedgerAccountPreview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.fetchAccountState.mockResolvedValue(fakeAccountStateSnapshot())
-        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([])
     })
 
-    it('primes the on-chain state and rekeyed-addresses query caches', async () => {
+    it('primes the on-chain state and delegated-addresses query caches', async () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -61,14 +63,14 @@ describe('prefetchLedgerAccountPreview', () => {
             MAINNET_SCOPE,
             { priorResourceCount: 0 },
         )
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledWith(
             'ADDR',
             MAINNET_SCOPE,
         )
     })
 
     it('never rejects when a fetch fails (best-effort)', async () => {
-        mocks.fetchRekeyedAddresses.mockRejectedValue(new Error('network'))
+        mocks.fetchDelegatedAddresses.mockRejectedValue(new Error('network'))
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })

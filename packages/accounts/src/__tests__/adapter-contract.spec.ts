@@ -37,7 +37,7 @@ import {
     type AccountsContractFixtures,
 } from './adapter-contract'
 
-// A second chain with no rekey or single-key accounts, so the contract's
+// A second chain with no authority delegation or single-key accounts, so the contract's
 // refusal branches run in this package rather than only in a chain's. Its key
 // kind, copy and wire values are its own.
 const ORIGIN = 'https://fixturehex.test'

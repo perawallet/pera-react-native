@@ -53,7 +53,7 @@ export const useLegacyQuantumNotice = (
     // Only probe the indexer for a legacy account — canonical and non-quantum
     // accounts never need this check, and an empty address disables the query.
     const {
-        rekeyedAddresses,
+        delegatedAddresses,
         isLoading: isRekeyLookupLoading,
         isError: isRekeyLookupError,
     } = useDelegatedAddressesQuery(
@@ -64,7 +64,7 @@ export const useLegacyQuantumNotice = (
     const hasProvenNoDependents =
         !isRekeyLookupLoading &&
         !isRekeyLookupError &&
-        (rekeyedAddresses?.length ?? 0) === 0
+        (delegatedAddresses?.length ?? 0) === 0
 
     return {
         isLegacyQuantumAccount,

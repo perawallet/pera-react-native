@@ -24,7 +24,6 @@ import {
     algorandAccountExists,
     checkAlgorandActivity,
     createXHDGetPublicKey,
-    fetchAlgorandRekeyedAddresses,
 } from './discovery'
 import { fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
@@ -69,11 +68,6 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     decodeLegacyAuthority: decodeAlgorandLegacyAuthority,
     multisigNative: algorandMultisigNative,
     singleKeyAccounts: algorandSingleKeyAccounts,
-    fetchRekeyedAddresses: (authorityAddress, scope) =>
-        fetchAlgorandRekeyedAddresses(
-            authorityAddress,
-            algorandNetworkOf(scope),
-        ),
     authority: algorandAuthority,
     resolveSigner: resolveAlgorandSigner,
     getAuthAccount: getAlgorandAuthAccount,

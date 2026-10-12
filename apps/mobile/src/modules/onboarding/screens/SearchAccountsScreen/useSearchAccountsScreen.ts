@@ -34,7 +34,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useExitAccountFlow,
-    useRekeyScanNotice,
+    useDelegationScanNoticeResult,
     REKEY_SCAN_UNAVAILABLE,
 } from '../../hooks'
 
@@ -60,7 +60,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverAccounts } = useAccountDiscovery(scope)
     const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
     const { exitAccountFlow } = useExitAccountFlow()
-    const { scanRekeyed } = useRekeyScanNotice()
+    const { scanRekeyed } = useDelegationScanNoticeResult()
     const { setSelectedAccountId } = useSelectedAccountId()
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const allAccounts = useAllAccounts()

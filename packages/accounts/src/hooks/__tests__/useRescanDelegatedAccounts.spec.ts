@@ -15,7 +15,6 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRescanDelegatedAccounts } from '../useRescanDelegatedAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
-import { RekeyUnsupportedError } from '../../errors'
 import {
     fakeAccountsChain,
     registerFakeAccountsChain,
@@ -25,17 +24,19 @@ import { testAccount } from '../../__tests__/accountFactory'
 import { addressOn, authorityOf } from '../../credentials'
 
 const mocks = {
-    get fetchRekeyedAddresses() {
-        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    get fetchDelegatedAddresses() {
+        return vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
     },
     get isValidAddress() {
         return vi.mocked(fakeAccountsChain().codec.isValid)
     },
 }
 
-const rekey = vi.hoisted(() => ({ isAvailable: true }))
-vi.mock('../useIsRekeyAvailable', () => ({
-    useIsRekeyAvailable: () => rekey.isAvailable,
+const delegation = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsDelegationAvailable', () => ({
+    useIsDelegationAvailable: () => delegation.isAvailable,
 }))
 
 const setAccounts = (accounts: WalletAccount[]) =>
@@ -44,20 +45,23 @@ const setAccounts = (accounts: WalletAccount[]) =>
 describe('useRescanDelegatedAccounts — scan', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        rekey.isAvailable = true
+        delegation.isAvailable = true
         useAccountsStore.getState().resetState()
     })
 
     it('classifies discovered addresses into already-imported vs importable', async () => {
         setAccounts([testAccount('local', 'IN_WALLET')])
-        mocks.fetchRekeyedAddresses.mockResolvedValue(['IN_WALLET', 'NEW_ONE'])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([
+            'IN_WALLET',
+            'NEW_ONE',
+        ])
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         const scanResult = await result.current.scan('SOURCE')
 
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledWith(
             'SOURCE',
             MAINNET_SCOPE,
         )
@@ -67,8 +71,8 @@ describe('useRescanDelegatedAccounts — scan', () => {
         })
     })
 
-    it('scans nothing while rekey is unavailable', async () => {
-        rekey.isAvailable = false
+    it('scans nothing while delegation is unavailable', async () => {
+        delegation.isAvailable = false
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
@@ -83,23 +87,24 @@ describe('useRescanDelegatedAccounts — scan', () => {
             candidates: [],
             failedSources: [],
         })
-        expect(mocks.fetchRekeyedAddresses).not.toHaveBeenCalled()
+        expect(mocks.fetchDelegatedAddresses).not.toHaveBeenCalled()
     })
 
-    it('fails closed on a chain without rekey', async () => {
-        registerFakeAccountsChain({ fetchRekeyedAddresses: undefined })
+    it('resolves an empty classification on a chain without delegation', async () => {
+        registerFakeAccountsChain({ authority: undefined })
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
 
-        await expect(result.current.scan('SOURCE')).rejects.toBeInstanceOf(
-            RekeyUnsupportedError,
-        )
+        await expect(result.current.scan('SOURCE')).resolves.toEqual({
+            importedAddresses: [],
+            notImportedAddresses: [],
+        })
     })
 
     it('returns empty classification when the indexer reports nothing', async () => {
-        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
@@ -121,7 +126,7 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
 
     it('fans out one indexer scan per source key and merges classified results', async () => {
         setAccounts([testAccount('local', 'IN_WALLET')])
-        mocks.fetchRekeyedAddresses.mockImplementation(
+        mocks.fetchDelegatedAddresses.mockImplementation(
             async (source: string) =>
                 source === 'SOURCE_A' ? ['IN_WALLET', 'NEW_A'] : ['NEW_B'],
         )
@@ -131,7 +136,7 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
         )
         const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
 
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(2)
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledTimes(2)
         expect(sweep.importedAddresses).toEqual(['IN_WALLET'])
         expect(sweep.candidates).toEqual([
             { address: 'NEW_A', sourceAddress: 'SOURCE_A' },
@@ -143,7 +148,7 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
     it('lists a candidate found via two keys once', async () => {
         // An account has a single auth-addr, so this shouldn't happen — but
         // a duplicated indexer answer must not produce duplicate rows.
-        mocks.fetchRekeyedAddresses.mockResolvedValue(['NEW_SAME'])
+        mocks.fetchDelegatedAddresses.mockResolvedValue(['NEW_SAME'])
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
@@ -155,7 +160,7 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
     })
 
     it('keeps scanning the remaining keys when one source fails', async () => {
-        mocks.fetchRekeyedAddresses.mockImplementation(
+        mocks.fetchDelegatedAddresses.mockImplementation(
             async (source: string) => {
                 if (source === 'SOURCE_BAD') throw new Error('indexer down')
                 return ['NEW_OK']
@@ -177,18 +182,18 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
     })
 
     it('dedupes the source list before scanning', async () => {
-        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() =>
             useRescanDelegatedAccounts(MAINNET_SCOPE),
         )
         await result.current.scanAll(['SOURCE', 'SOURCE'])
 
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(1)
+        expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledTimes(1)
     })
 
     it('classifies against the store as it is after all scans settle', async () => {
-        mocks.fetchRekeyedAddresses.mockImplementation(async () => {
+        mocks.fetchDelegatedAddresses.mockImplementation(async () => {
             // An import lands while the sweep is in flight — classification
             // must see it as already-in-wallet.
             setAccounts([testAccount('local', 'LANDS_MID_SCAN')])
@@ -205,7 +210,7 @@ describe('useRescanDelegatedAccounts — scanAll', () => {
     })
 
     it('reports progress as each key settles', async () => {
-        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        mocks.fetchDelegatedAddresses.mockResolvedValue([])
         const progress: Array<[number, number]> = []
 
         const { result } = renderHook(() =>
@@ -296,7 +301,7 @@ describe('useRescanDelegatedAccounts — importSelected', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
-    it('persists only the valid addresses as rekeyed watch accounts', async () => {
+    it('persists only the valid addresses as delegated watch accounts', async () => {
         mocks.isValidAddress.mockImplementation(
             (addr: string) => addr !== 'INVALID',
         )

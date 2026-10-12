@@ -19,25 +19,25 @@ import {
 } from '../../__tests__/fakeAccountsChain'
 
 const mockBaseDiscoverAccounts = vi.fn()
-const mockBaseDiscoverRekeyedAccounts = vi.fn()
+const mockBaseDiscoverDelegatedAccounts = vi.fn()
 
 vi.mock('../../account-discovery', () => ({
     discoverAccounts: (...args: unknown[]) => mockBaseDiscoverAccounts(...args),
-    discoverRekeyedAccounts: (...args: unknown[]) =>
-        mockBaseDiscoverRekeyedAccounts(...args),
+    discoverDelegatedAccounts: (...args: unknown[]) =>
+        mockBaseDiscoverDelegatedAccounts(...args),
 }))
 
-const rekey = vi.hoisted(() => ({ isAvailable: true }))
-vi.mock('../useIsRekeyAvailable', () => ({
-    useIsRekeyAvailable: () => rekey.isAvailable,
+const delegation = vi.hoisted(() => ({ isAvailable: true }))
+vi.mock('../useIsDelegationAvailable', () => ({
+    useIsDelegationAvailable: () => delegation.isAvailable,
 }))
 
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        rekey.isAvailable = true
+        delegation.isAvailable = true
         mockBaseDiscoverAccounts.mockResolvedValue(['acc'])
-        mockBaseDiscoverRekeyedAccounts.mockResolvedValue(['rekeyed'])
+        mockBaseDiscoverDelegatedAccounts.mockResolvedValue(['delegated'])
     })
 
     describe('discoverAccounts', () => {
@@ -85,7 +85,7 @@ describe('useAccountDiscovery', () => {
         })
     })
 
-    describe('discoverRekeyedAccounts', () => {
+    describe('discoverDelegatedAccounts', () => {
         it('forwards the address list without touching key derivation', async () => {
             const { result } = renderHook(() =>
                 useAccountDiscovery(TESTNET_SCOPE),
@@ -93,7 +93,7 @@ describe('useAccountDiscovery', () => {
 
             let discovered: unknown
             await act(async () => {
-                discovered = await result.current.discoverRekeyedAccounts({
+                discovered = await result.current.discoverDelegatedAccounts({
                     accountAddresses: ['A', 'B'],
                 })
             })
@@ -101,28 +101,28 @@ describe('useAccountDiscovery', () => {
             expect(
                 fakeAccountsChain().derivation.deriveAccount,
             ).not.toHaveBeenCalled()
-            expect(mockBaseDiscoverRekeyedAccounts).toHaveBeenCalledWith({
+            expect(mockBaseDiscoverDelegatedAccounts).toHaveBeenCalledWith({
                 accountAddresses: ['A', 'B'],
                 scope: TESTNET_SCOPE,
             })
-            expect(discovered).toEqual(['rekeyed'])
+            expect(discovered).toEqual(['delegated'])
         })
 
-        it('finds nothing, without scanning, while rekey is unavailable', async () => {
-            rekey.isAvailable = false
+        it('finds nothing, without scanning, while delegation is unavailable', async () => {
+            delegation.isAvailable = false
             const { result } = renderHook(() =>
                 useAccountDiscovery(TESTNET_SCOPE),
             )
 
             let discovered: unknown
             await act(async () => {
-                discovered = await result.current.discoverRekeyedAccounts({
+                discovered = await result.current.discoverDelegatedAccounts({
                     accountAddresses: ['A'],
                 })
             })
 
             expect(discovered).toEqual([])
-            expect(mockBaseDiscoverRekeyedAccounts).not.toHaveBeenCalled()
+            expect(mockBaseDiscoverDelegatedAccounts).not.toHaveBeenCalled()
         })
     })
 })

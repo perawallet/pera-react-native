@@ -20,7 +20,7 @@ import { buildAccount, hdIndexOf } from './credentials'
 import { recordAuthority } from './store/recordAuthority'
 import {
     accountsChainAdapters,
-    fetchRekeyedAddresses,
+    fetchDelegatedAddresses,
     hdDeriveOpts,
     type GetPublicKey,
 } from './chain-adapter'
@@ -193,38 +193,31 @@ export async function discoverAccounts({
     })
 }
 
-type DiscoverRekeyedAccountsParams = {
+type DiscoverDelegatedAccountsParams = {
     /**
-     * Auth addresses to scan: every on-chain account whose auth-addr is one
-     * of these is returned as a watch-account candidate labeled with it.
+     * Authority addresses to scan: every on-chain account whose authority is
+     * one of these is returned as a watch-account candidate labeled with it.
      */
     accountAddresses: string[]
     scope: ChainScope
 }
 
-/**
- * Finds on-chain accounts rekeyed to any of `accountAddresses` on `scope`.
- *
- * Address-driven only. A derived-key gap scan used to live here as a
- * fallback when no addresses were passed, but its gap semantics were wrong
- * (the gap advanced on keys with no REKEYS found, not on inactive keys) and
- * every caller passes explicit addresses — removed rather than fixed.
- */
-export async function discoverRekeyedAccounts({
+/** Address-driven: every caller passes the authorities to scan. */
+export async function discoverDelegatedAccounts({
     accountAddresses,
     scope,
-}: DiscoverRekeyedAccountsParams): Promise<WalletAccount[]> {
+}: DiscoverDelegatedAccountsParams): Promise<WalletAccount[]> {
     const { chainId } = scope
 
     const tasks = accountAddresses.map(async address => {
-        const rekeyedAddresses = await fetchRekeyedAddresses(address, scope)
+        const delegatedAddresses = await fetchDelegatedAddresses(address, scope)
 
-        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => {
-            recordAuthority(scope, rekeyedAddress, address)
+        return delegatedAddresses.map((delegatedAddress): WalletAccount => {
+            recordAuthority(scope, delegatedAddress, address)
             return buildAccount({
                 custody: { kind: 'watch' },
                 chainId,
-                chains: { [chainId]: { address: rekeyedAddress } },
+                chains: { [chainId]: { address: delegatedAddress } },
             })
         })
     })

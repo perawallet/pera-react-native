@@ -15,6 +15,7 @@ import {
     createChainAdapterRegistry,
     keyDerivations,
     type ChainAccountNative,
+    type ChainCapability,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -29,7 +30,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
     MultisigUnsupportedError,
-    RekeyUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
@@ -73,6 +73,13 @@ export type AuthorityTargetKind = {
 
 /** Moving an account's signing authority to another account. */
 export type AccountAuthorityOps = {
+    /** Switches discovery of delegated accounts and new delegations; never signing. */
+    readonly capability: ChainCapability
+    /** On-chain accounts whose authority is `authorityAddress` on `scope`. */
+    fetchDelegatedAddresses(
+        authorityAddress: string,
+        scope: ChainScope,
+    ): Promise<string[]>
     /** Every kind `isEligibleTarget` answers for. */
     readonly targetKinds: readonly AuthorityTargetKind[]
     isDelegated(account: WalletAccount, scope: ChainScope): boolean
@@ -259,7 +266,7 @@ export type SingleKeyAccountOps = {
     ): Promise<readonly AlternateImportKind[]>
 }
 
-/** The chain-specific half of account state, discovery, creation and rekey; registered by the chain package. */
+/** The chain-specific half of account state, discovery, creation and delegation; registered by the chain package. */
 export interface AccountsChainAdapter {
     readonly chainId: ChainId
     fetchAccountState(
@@ -349,11 +356,6 @@ export interface AccountsChainAdapter {
         keyPairId: string,
         domain: string,
     ): Promise<Uint8Array>
-    /** Accounts whose signer is `authorityAddress`. Absent on a chain without rekey. */
-    fetchRekeyedAddresses?(
-        authorityAddress: string,
-        scope: ChainScope,
-    ): Promise<string[]>
     /** Absent on a chain whose signing authority can't move to another account. */
     readonly authority?: AccountAuthorityOps
     /** `account` need not be in `accounts`; whatever signs for it must be. */
@@ -409,16 +411,6 @@ export const deriveHdAccount = async (
             hdDeriveOpts(scope),
         )
 
-/** Throws {@link RekeyUnsupportedError} on a chain without rekey. */
-export const requireRekey = (
-    adapter: AccountsChainAdapter,
-): NonNullable<AccountsChainAdapter['fetchRekeyedAddresses']> => {
-    if (!adapter.fetchRekeyedAddresses) {
-        throw new RekeyUnsupportedError(adapter.chainId)
-    }
-    return adapter.fetchRekeyedAddresses.bind(adapter)
-}
-
 /** Throws {@link SingleKeyAccountsUnsupportedError} on a chain without single-key accounts. */
 export const requireSingleKeyAccounts = (
     adapter: AccountsChainAdapter,
@@ -439,15 +431,14 @@ export const requireMultisigNative = (
     return adapter.multisigNative
 }
 
-/** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
-export const fetchRekeyedAddresses = async (
+/** Empty, without a request, on a chain that declares no `authority`. */
+export const fetchDelegatedAddresses = async (
     authorityAddress: string,
     scope: ChainScope,
 ): Promise<string[]> =>
-    requireRekey(accountsChainAdapters.get(scope.chainId))(
-        authorityAddress,
-        scope,
-    )
+    accountsChainAdapters
+        .get(scope.chainId)
+        .authority?.fetchDelegatedAddresses(authorityAddress, scope) ?? []
 
 /** Empty on a chain without asset opt-in. */
 export const fetchAssetOptInRounds = async (

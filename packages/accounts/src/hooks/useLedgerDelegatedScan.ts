@@ -14,23 +14,23 @@ import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
-import { fetchRekeyedAddresses } from '../chain-adapter'
+import { fetchDelegatedAddresses } from '../chain-adapter'
 import { getDelegatedAddressesQueryKey } from './querykeys'
-import { useIsRekeyAvailable } from './useIsRekeyAvailable'
+import { useIsDelegationAvailable } from './useIsDelegationAvailable'
 import { useAllAccounts } from './useAllAccounts'
 import type { LedgerSelectableAccount } from '../models'
 import { chainAccountOf } from '../credentials'
 
 type UseLedgerDelegatedScanResult = {
-    rekeyed: LedgerSelectableAccount[]
+    delegated: LedgerSelectableAccount[]
     isScanning: boolean
 }
 
 /**
  * For each discovered Ledger (derived) account, scans the indexer for accounts
- * rekeyed to it and returns them as `rekeyed` selectables.
+ * delegated to it and returns them as `delegated` selectables.
  *
- * Shares the `rekeyed-addresses` query key with `prefetchLedgerAccountPreview`
+ * Shares the `delegated-addresses` query key with `prefetchLedgerAccountPreview`
  * so a prior prefetch supplies an immediate first value. A small `staleTime`
  * lets the prefetch actually pay off across this short-lived import session;
  * rescan flows invalidate the cache when fresher data is explicitly required.
@@ -41,14 +41,14 @@ export const useLedgerDelegatedScan = (
     scope: ChainScope,
 ): UseLedgerDelegatedScanResult => {
     const allAccounts = useAllAccounts()
-    const isRekeyAvailable = useIsRekeyAvailable(scope.chainId)
+    const isDelegationAvailable = useIsDelegationAvailable(scope.chainId)
 
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
             queryKey: getDelegatedAddressesQueryKey(acc.address, scope),
-            queryFn: () => fetchRekeyedAddresses(acc.address, scope),
+            queryFn: () => fetchDelegatedAddresses(acc.address, scope),
             staleTime: 30_000,
-            enabled: isRekeyAvailable,
+            enabled: isDelegationAvailable,
         })),
     })
 
@@ -68,8 +68,8 @@ export const useLedgerDelegatedScan = (
 
     return useMemo(() => {
         // A disabled query stays pending forever, so it must not read as scanning.
-        if (!isRekeyAvailable) {
-            return { rekeyed: [], isScanning: false }
+        if (!isDelegationAvailable) {
+            return { delegated: [], isScanning: false }
         }
         const derivedAddresses = new Set(derivedAccounts.map(a => a.address))
         const importedAddresses = new Set(
@@ -78,7 +78,7 @@ export const useLedgerDelegatedScan = (
             ),
         )
         const seen = new Set<string>()
-        const rekeyed: LedgerSelectableAccount[] = []
+        const delegated: LedgerSelectableAccount[] = []
 
         results.forEach((res, idx) => {
             const authAccount = derivedAccounts[idx]
@@ -93,14 +93,14 @@ export const useLedgerDelegatedScan = (
                     continue
                 }
                 seen.add(address)
-                rekeyed.push({ kind: 'rekeyed', address, authAccount })
+                delegated.push({ kind: 'delegated', address, authAccount })
             }
         })
 
         const isScanning = results.some(r => r.isPending)
-        return { rekeyed, isScanning }
+        return { delegated, isScanning }
         // `resultsSig` encodes everything we read from `results`; depending
         // on `results` itself would force a re-compute every render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, derivedAccounts, allAccounts, isRekeyAvailable])
+    }, [resultsSig, derivedAccounts, allAccounts, isDelegationAvailable])
 }

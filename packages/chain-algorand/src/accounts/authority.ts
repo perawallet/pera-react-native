@@ -26,6 +26,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../legacy-network'
+import { fetchAlgorandRekeyedAddresses } from './discovery'
 import { hasLocalCoSigner } from './multisig-participants'
 import { getAlgorandAuthAccount } from './signer-resolution'
 import {
@@ -253,6 +255,12 @@ const TARGET_KINDS: readonly AuthorityTargetKind[] = [
 ]
 
 export const algorandAuthority: AccountAuthorityOps = {
+    capability: 'rekey',
+    fetchDelegatedAddresses: (authorityAddress, scope) =>
+        fetchAlgorandRekeyedAddresses(
+            authorityAddress,
+            algorandNetworkOf(scope),
+        ),
     targetKinds: TARGET_KINDS,
     isDelegated,
     accountsDelegatedTo,

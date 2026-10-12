@@ -42,7 +42,7 @@ import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useToast } from '@hooks/useToast'
 import {
     useExitAccountFlow,
-    useRekeyScanNotice,
+    useDelegationScanNoticeResult,
     REKEY_SCAN_UNAVAILABLE,
 } from '@modules/onboarding/hooks'
 import type { OnboardingStackParamList } from '../../routes/types'
@@ -89,7 +89,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const reactNavigation = useNavigation()
 
     const { exitAccountFlow, exitFailedAccountFlow } = useExitAccountFlow()
-    const { scanRekeyed } = useRekeyScanNotice()
+    const { scanRekeyed } = useDelegationScanNoticeResult()
     const { setSelectedAccountId } = useSelectedAccountId()
     const { setAccounts } = useSetAccounts()
     const { seedIdOf } = useKMS()

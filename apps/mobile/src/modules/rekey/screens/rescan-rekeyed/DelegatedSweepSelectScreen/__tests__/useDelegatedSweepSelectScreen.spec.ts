@@ -65,7 +65,7 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-import { useRescanRekeyedSelectScreen } from '../useRescanRekeyedSelectScreen'
+import { useDelegatedSweepSelectScreen } from '../useDelegatedSweepSelectScreen'
 
 const IMPORTED = ['IMP_1', 'IMP_2']
 const CANDIDATES = ['CAND_1', 'CAND_2', 'CAND_3']
@@ -83,7 +83,7 @@ const sweepResult = (
     ...overrides,
 })
 
-describe('useRescanRekeyedSelectScreen', () => {
+describe('useDelegatedSweepSelectScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockScanAll.mockReset()
@@ -95,7 +95,7 @@ describe('useRescanRekeyedSelectScreen', () => {
         ]
     })
 
-    const renderScreen = () => renderHook(() => useRescanRekeyedSelectScreen())
+    const renderScreen = () => renderHook(() => useDelegatedSweepSelectScreen())
 
     it('runs a single-key scan on mount and populates imported + candidate addresses', async () => {
         mockScanAll.mockResolvedValueOnce(

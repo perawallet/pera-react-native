@@ -52,7 +52,7 @@ export * from './useAuthorityTargets'
 export * from './useLedgerAccountPreview'
 export * from './prefetchLedgerAccountPreview'
 export * from './useLedgerDelegatedScan'
-export * from './useIsRekeyAvailable'
+export * from './useIsDelegationAvailable'
 export * from './useOwnedAssets'
 export * from './useHDImportSession'
 export {

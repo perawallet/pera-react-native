@@ -44,6 +44,8 @@ export const registerTargetFixtureChain = (
     const adapter = {
         chainId: LEGACY_CHAIN_ID,
         authority: {
+            capability: 'rekey',
+            fetchDelegatedAddresses: async () => [],
             targetKinds,
             isDelegated: () => false,
             accountsDelegatedTo: () => [],

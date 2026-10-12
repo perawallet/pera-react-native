@@ -12,7 +12,7 @@
 
 import type { QueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchRekeyedAddresses } from '../chain-adapter'
+import { fetchDelegatedAddresses } from '../chain-adapter'
 import {
     getOnChainAccountStateQueryKey,
     getDelegatedAddressesQueryKey,
@@ -38,7 +38,7 @@ export const prefetchLedgerAccountPreview = async (
         }),
         queryClient.prefetchQuery({
             queryKey: getDelegatedAddressesQueryKey(address, scope),
-            queryFn: () => fetchRekeyedAddresses(address, scope),
+            queryFn: () => fetchDelegatedAddresses(address, scope),
         }),
     ])
 }

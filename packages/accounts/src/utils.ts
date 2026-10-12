@@ -108,14 +108,14 @@ export const isMultisigAccount = (
 export const hasSigningKeys = (account: WalletAccount): boolean =>
     Object.values(account.chains).some(entry => !!entry?.keyPairId)
 
-/** Signing capability for a single account, without following rekeys. */
+/** Signing capability for a single account, without following its authority. */
 export const canSignDirectly = (account: WalletAccount): boolean =>
     hasSigningKeys(account) || isHardwareWalletAccount(account)
 
 /**
- * Off-chain data has no auth-addr lookup — the dApp verifies against the
- * requested account's own pubkey — so rekey indirection is NOT followed: a
- * watch-rekeyed account cannot sign arbitrary data even with a local auth chain.
+ * Off-chain data has no authority lookup (the dApp verifies against the
+ * requested account's own pubkey), so delegation is NOT followed: a delegated
+ * watch account cannot sign arbitrary data even when its authority is held.
  */
 export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)

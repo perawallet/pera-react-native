@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import {
-    fetchRekeyedAddresses,
+    fetchDelegatedAddresses,
     addressOn,
     getDelegatedAddressesQueryKey,
     useAllAccounts,
@@ -57,7 +57,7 @@ export const useLegacyQuantumPrompt = (): UseLegacyQuantumPromptResult => {
     const lookups = useQueries({
         queries: legacyAddresses.map(address => ({
             queryKey: getDelegatedAddressesQueryKey(address, scope),
-            queryFn: () => fetchRekeyedAddresses(address, scope),
+            queryFn: () => fetchDelegatedAddresses(address, scope),
             staleTime: 30_000,
         })),
     })

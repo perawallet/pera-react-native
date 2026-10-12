@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { RescanRekeyedSelectScreen } from './RescanRekeyedSelectScreen'
+export { DelegatedSweepSelectScreen } from './DelegatedSweepSelectScreen'

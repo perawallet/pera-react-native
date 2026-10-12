@@ -113,7 +113,7 @@ export const useLedgerAccountInfoContent = (
         // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
-            preview.rekey.kind === 'delegatedTo'
+            preview.delegation.kind === 'delegatedTo'
                 ? watchDisplayAccount(preview.address, scope.chainId)
                 : ledgerDisplayAccount(
                       preview.address,
@@ -141,7 +141,7 @@ export const useLedgerAccountInfoContent = (
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
                 // already yields the right icon, no override needed.
-                ...(preview.rekey.kind === 'delegatedTo'
+                ...(preview.delegation.kind === 'delegatedTo'
                     ? { displayStateOverride: 'rekeyedSignable' as const }
                     : {}),
             },
@@ -169,12 +169,12 @@ export const useLedgerAccountInfoContent = (
             })),
         ]
 
-        if (preview.rekey.kind === 'delegatedTo') {
+        if (preview.delegation.kind === 'delegatedTo') {
             // Build a synth hardware account for the auth address (it's a Ledger
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
             // only reads kind/address/name for display.
             const authSynthAccount = ledgerDisplayAccount(
-                preview.rekey.authorityAddress,
+                preview.delegation.authorityAddress,
                 0,
                 scope.chainId,
             )
@@ -186,18 +186,18 @@ export const useLedgerAccountInfoContent = (
                 },
                 {
                     kind: 'authorityAccount',
-                    key: `rekey-${preview.rekey.authorityAddress}`,
+                    key: `rekey-${preview.delegation.authorityAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
                 },
             )
-        } else if (preview.rekey.kind === 'canSignFor') {
+        } else if (preview.delegation.kind === 'canSignFor') {
             list.push({
                 kind: 'sectionHeader',
                 key: 'h-rekey',
                 title: t('ledger.account_info.can_sign_for'),
             })
-            preview.rekey.addresses.forEach(addr => {
+            preview.delegation.addresses.forEach(addr => {
                 // These rekeyed addresses are watch accounts (no key on this device).
                 const watchSynth = watchDisplayAccount(addr, scope.chainId)
                 list.push({

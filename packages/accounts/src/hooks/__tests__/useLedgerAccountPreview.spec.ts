@@ -97,7 +97,7 @@ beforeEach(() => {
         isPending: false,
     })
     mocks.useDelegatedAddressesQuery.mockReturnValue({
-        rekeyedAddresses: [],
+        delegatedAddresses: [],
         isLoading: false,
         isError: false,
     })
@@ -276,7 +276,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: ['SOMEONE'],
+            delegatedAddresses: ['SOMEONE'],
             isLoading: false,
             isError: false,
         })
@@ -285,7 +285,7 @@ describe('useLedgerAccountPreview', () => {
             useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
         )
 
-        expect(result.current.preview?.rekey).toEqual({
+        expect(result.current.preview?.delegation).toEqual({
             kind: 'delegatedTo',
             authorityAddress: 'AUTHADDR',
         })
@@ -315,7 +315,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: ['R1', 'R2'],
+            delegatedAddresses: ['R1', 'R2'],
             isLoading: false,
             isError: false,
         })
@@ -324,7 +324,7 @@ describe('useLedgerAccountPreview', () => {
             useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
         )
 
-        expect(result.current.preview?.rekey).toEqual({
+        expect(result.current.preview?.delegation).toEqual({
             kind: 'canSignFor',
             addresses: ['R1', 'R2'],
         })
@@ -342,7 +342,7 @@ describe('useLedgerAccountPreview', () => {
             useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
         )
 
-        expect(result.current.preview?.rekey).toEqual({ kind: 'none' })
+        expect(result.current.preview?.delegation).toEqual({ kind: 'none' })
     })
 
     it('surfaces loading and error from the on-chain query', () => {
@@ -371,7 +371,7 @@ describe('useLedgerAccountPreview', () => {
         expect(errResult.current.isError).toBe(true)
     })
 
-    it('degrades rekey to none when the rekeyed-addresses query errors', () => {
+    it('degrades rekey to none when the delegated-addresses query errors', () => {
         mocks.useOnChainAccountStateQuery.mockReturnValue({
             data: onChainState(0),
             isLoading: false,
@@ -379,7 +379,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useDelegatedAddressesQuery.mockReturnValue({
-            rekeyedAddresses: undefined,
+            delegatedAddresses: undefined,
             isLoading: false,
             isError: true,
         })
@@ -387,6 +387,6 @@ describe('useLedgerAccountPreview', () => {
         const { result } = renderHook(() =>
             useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
         )
-        expect(result.current.preview?.rekey).toEqual({ kind: 'none' })
+        expect(result.current.preview?.delegation).toEqual({ kind: 'none' })
     })
 })
