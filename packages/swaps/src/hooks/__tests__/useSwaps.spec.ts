@@ -14,7 +14,10 @@ import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { FAKE_NATIVE_ASSET_ID, FAKE_RECEIVE_ASSET_ID } from '../../__tests__/fakeSwapAdapter'
+import {
+    FAKE_NATIVE_ASSET_ID,
+    FAKE_RECEIVE_ASSET_ID,
+} from '../../__tests__/fakeSwapAdapter'
 import { useSwapsStore } from '../../store'
 import { useSwaps } from '../useSwaps'
 

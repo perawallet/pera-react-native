@@ -44,8 +44,7 @@ export interface RequiredEventPayloads
         NavigationRequiredPayloads {}
 
 /** Events that MAY carry a payload (all fields optional). */
-export interface OptionalEventPayloads
-    extends NotificationsOptionalPayloads {}
+export interface OptionalEventPayloads extends NotificationsOptionalPayloads {}
 
 /** Event names that require a payload argument. */
 export type RequiredPayloadEvent = keyof RequiredEventPayloads

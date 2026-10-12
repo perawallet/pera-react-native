@@ -283,17 +283,13 @@ export const useSwapCosignResolver = ({
                     declineSignRequest: async (signRequestId: string) => {
                         const deviceId = deviceIdOf(handoff.scope)
                         if (!proposerAddress || !deviceId) return
-                        await addSignature(
-                            handoff.scope,
-                            signRequestId,
-                            [
-                                {
-                                    address: proposerAddress,
-                                    response: 'declined',
-                                    device_id: deviceId,
-                                },
-                            ],
-                        )
+                        await addSignature(handoff.scope, signRequestId, [
+                            {
+                                address: proposerAddress,
+                                response: 'declined',
+                                device_id: deviceId,
+                            },
+                        ])
                     },
                     recordSubmissionAttempt: params =>
                         recordSubmissionAttempt(params),

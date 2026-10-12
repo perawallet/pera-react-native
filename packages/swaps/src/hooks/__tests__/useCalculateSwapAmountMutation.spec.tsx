@@ -75,9 +75,12 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
     })
 
     test('calls calculateSwapAmount with the registered device id and returns result', async () => {
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(SCOPE), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)
@@ -95,9 +98,12 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
     test('omits device entirely before the device has registered', async () => {
         mocks.deviceIdOf.mockReturnValue(null)
 
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(SCOPE), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)
@@ -116,9 +122,12 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
             new Error('Request failed with status code 400'),
         )
 
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(SCOPE), {
-            wrapper: createThrowOnErrorWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createThrowOnErrorWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)

@@ -54,9 +54,16 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     })
 
     test('calls updateSwapStatus with swapId and data', async () => {
-        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useUpdateSwapStatusMutation({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate({
@@ -78,9 +85,16 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     test('sets isError on failure', async () => {
         vi.mocked(updateSwapStatus).mockRejectedValue(new Error('Server error'))
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useUpdateSwapStatusMutation({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate({
@@ -95,9 +109,16 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
     test('flags isError without re-throwing under the global throwOnError default', async () => {
         vi.mocked(updateSwapStatus).mockRejectedValue(new Error('Server error'))
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
-            wrapper: createThrowOnErrorWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useUpdateSwapStatusMutation({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+            {
+                wrapper: createThrowOnErrorWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate({

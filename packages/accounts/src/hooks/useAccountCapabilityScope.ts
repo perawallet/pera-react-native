@@ -61,7 +61,9 @@ export const useAccountCapabilityScope = (
     const chainOf = useCapabilityChainResolver(capability)
     const chainId = account ? chainOf(account) : undefined
     const networkId = useNetworkStore(state =>
-        chainId === undefined ? undefined : selectChainNetworkId(state, chainId),
+        chainId === undefined
+            ? undefined
+            : selectChainNetworkId(state, chainId),
     )
     return useMemo(
         () =>

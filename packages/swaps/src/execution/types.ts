@@ -11,7 +11,10 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type { ChainId, ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'

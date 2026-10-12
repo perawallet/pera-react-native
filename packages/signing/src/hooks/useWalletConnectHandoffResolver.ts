@@ -203,17 +203,13 @@ export const useWalletConnectHandoffResolver = ({
                 // sitting orphaned when the dApp session is gone.
                 cancelRequest: async () => {
                     if (!proposerAddress || hasReachedThreshold) return
-                    await addSignature(
-                        handoff.scope,
-                        handoff.signRequestId,
-                        [
-                            {
-                                address: proposerAddress,
-                                response: 'declined',
-                                device_id: handoff.deviceId,
-                            },
-                        ],
-                    )
+                    await addSignature(handoff.scope, handoff.signRequestId, [
+                        {
+                            address: proposerAddress,
+                            response: 'declined',
+                            device_id: handoff.deviceId,
+                        },
+                    ])
                 },
             })
         },

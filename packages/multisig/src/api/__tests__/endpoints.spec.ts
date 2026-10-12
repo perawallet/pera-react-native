@@ -201,7 +201,11 @@ describe('addSignature', () => {
                 signatures: [['sig1']],
             },
         ]
-        await addSignature({ chainId: 'algorand', networkId: 'testnet' }, 'sr-1', responses)
+        await addSignature(
+            { chainId: 'algorand', networkId: 'testnet' },
+            'sr-1',
+            responses,
+        )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',

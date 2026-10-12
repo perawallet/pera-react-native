@@ -31,7 +31,9 @@ export type SwapPairHistoryWidgetProps = {
     scope: ChainScope
 }
 
-export const SwapPairHistoryWidget = ({ scope }: SwapPairHistoryWidgetProps) => {
+export const SwapPairHistoryWidget = ({
+    scope,
+}: SwapPairHistoryWidgetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {

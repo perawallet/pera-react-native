@@ -43,9 +43,16 @@ describe('useCalculatePeraFeeMutation', () => {
             peraFeeAssetId: '0',
         } as never)
 
-        const { result } = renderHook(() => useCalculatePeraFeeMutation({ chainId: 'algorand', networkId: 'mainnet' }), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () =>
+                useCalculatePeraFeeMutation({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+            {
+                wrapper,
+            },
+        )
 
         await act(async () => {
             await result.current.mutateAsync({

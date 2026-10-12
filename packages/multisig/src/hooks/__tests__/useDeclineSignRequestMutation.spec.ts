@@ -124,13 +124,17 @@ describe('useDeclineSignRequestMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mocks.addSignature).toHaveBeenCalledWith({ chainId: 'algorand', networkId: 'testnet' }, 'sr-456', [
-            {
-                address: 'DECLINER_ADDR',
-                response: 'declined',
-                device_id: 'device-abc',
-            },
-        ])
+        expect(mocks.addSignature).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'testnet' },
+            'sr-456',
+            [
+                {
+                    address: 'DECLINER_ADDR',
+                    response: 'declined',
+                    device_id: 'device-abc',
+                },
+            ],
+        )
     })
 
     test('invalidates sign request detail query on success', async () => {

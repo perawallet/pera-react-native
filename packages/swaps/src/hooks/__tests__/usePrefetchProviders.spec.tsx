@@ -48,8 +48,6 @@ describe('usePrefetchProviders', () => {
         })
 
         // prefetchQuery fires the queryFn asynchronously
-        await vi.waitFor(() =>
-            expect(fetchMock).toHaveBeenCalledWith(SCOPE),
-        )
+        await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith(SCOPE))
     })
 })
