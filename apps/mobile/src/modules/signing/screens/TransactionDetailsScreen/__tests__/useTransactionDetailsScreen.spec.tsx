@@ -113,8 +113,9 @@ describe('useTransactionDetailsScreen', () => {
 
         expect(result.current.renderState.kind).toBe('content')
         if (result.current.renderState.kind === 'content') {
-            const { family, transaction } =
+            const { family, transaction: native } =
                 result.current.renderState.transaction
+            const transaction = native as PeraDisplayableTransaction
             expect(family).toBe('algorand')
             expect(transaction.id).toBe('TX123')
             expect(transaction.paymentTransaction?.amount).toBe(2_500_000n)

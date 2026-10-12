@@ -10,34 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { transactionBodyRegistry } from '../registry'
+import type { DetailBodyProps } from '../types'
 
-export type TransactionDetailBodyProps = {
-    transaction: TransactionNative
-    onRelatedTransactionPress?: (related: TransactionNative) => void
-}
+export type TransactionDetailBodyProps = DetailBodyProps
 
-export const TransactionDetailBody = ({
-    transaction,
-    onRelatedTransactionPress,
-}: TransactionDetailBodyProps) => {
-    const { detailBody: DetailBody } =
-        transactionBodyRegistry[transaction.family]
-    const { family } = transaction
+export const TransactionDetailBody = (props: TransactionDetailBodyProps) => {
+    const DetailBody =
+        transactionBodyRegistry[props.transaction.family]?.detailBody
 
-    const handleRelatedTransactionPress = useCallback(
-        (related: TransactionNative['transaction']) => {
-            onRelatedTransactionPress?.({ family, transaction: related })
-        },
-        [family, onRelatedTransactionPress],
-    )
-
-    return (
-        <DetailBody
-            transaction={transaction.transaction}
-            onRelatedTransactionPress={handleRelatedTransactionPress}
-        />
-    )
+    return DetailBody ? <DetailBody {...props} /> : null
 }

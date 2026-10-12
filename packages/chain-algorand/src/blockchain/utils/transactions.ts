@@ -12,13 +12,15 @@
 
 import { TransactionType, type OnApplicationComplete } from 'algosdk'
 import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import type {
     AlgorandTransactionKind,
     AlgorandTransactionView,
     AssetConfigType,
     AssetTransferType,
-    PeraDisplayableTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+} from '../models/transaction-view'
 import { encodeAlgorandAddress } from './addresses'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -291,9 +293,6 @@ const ASSET_TRANSFER_TYPE_MAP = {
 /**
  * Classify an Algorand transaction view into a detailed transaction kind,
  * including asset transfer sub-types (opt-in, opt-out, clawback).
- *
- * Use this when you already have a displayable transaction (e.g. from the indexer).
- * For raw PeraTransaction objects, use classifyPeraTransaction instead.
  */
 export const classifyDisplayableTransaction = (
     tx: AlgorandTransactionView,
@@ -302,28 +301,6 @@ export const classifyDisplayableTransaction = (
 
     if (baseType === 'asset-transfer') {
         const subType = getAssetTransferType(tx)
-        return (
-            ASSET_TRANSFER_TYPE_MAP[
-                subType as keyof typeof ASSET_TRANSFER_TYPE_MAP
-            ] ?? 'asset-transfer'
-        )
-    }
-
-    return baseType
-}
-
-export const classifyPeraTransaction = (
-    tx: PeraTransaction,
-): AlgorandTransactionKind => {
-    const displayTx = mapToDisplayableTransaction(tx)
-    if (!displayTx) {
-        return 'unknown'
-    }
-
-    const baseType = getTransactionType(displayTx)
-
-    if (baseType === 'asset-transfer') {
-        const subType = getAssetTransferType(displayTx)
         return (
             ASSET_TRANSFER_TYPE_MAP[
                 subType as keyof typeof ASSET_TRANSFER_TYPE_MAP

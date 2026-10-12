@@ -16,10 +16,8 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { screen } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import type {
-    AlgorandTransactionView,
-    TransactionNative,
-} from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type {
     SignRequestSource,
     TransactionWarning,
@@ -39,6 +37,12 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/transactions')
     >('@packages/chain-algorand/src/blockchain/utils/transactions')),
+    ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/models/transaction-view')
+    >('@packages/chain-algorand/src/blockchain/models/transaction-view')),
+    ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
+    >('@packages/chain-algorand/src/blockchain/utils/warnings')),
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/addresses')
     >('@packages/chain-algorand/src/blockchain/utils/addresses')),
@@ -93,7 +97,9 @@ const renderReview = (
     transaction: TransactionNative,
     origin: { source?: SignRequestSource; verifiedOrigin?: string } = {},
 ) => {
-    mockPipeline.allTransactions = [transaction.transaction]
+    mockPipeline.allTransactions = [
+        transaction.transaction as AlgorandTransactionView,
+    ]
     const Review = () => (
         <TransactionReviewBody
             transaction={transaction}

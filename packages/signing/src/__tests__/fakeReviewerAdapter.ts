@@ -27,7 +27,6 @@ export const fakeReviewerAdapter = (
     decoder: {
         decode: vi.fn(async () => ({
             totalFees: 0n,
-            transactionSummaries: [],
             signableAddresses: [],
         })),
     },

@@ -4,6 +4,7 @@
 
 import { defineRule } from 'lanekeep'
 import {
+    CHAIN_UI_MODULES,
     COMPOSITION_ROOTS,
     TEST_PATHS,
     TRANSITIONAL_ALLOWLIST,
@@ -39,7 +40,7 @@ export default defineRule({
         message:
             'only a composition root or the chain package itself may import a chain package',
         remediation:
-            'Reach the chain through getProvider().chains, or the chain hooks built on it. Types every chain shares belong in @perawallet/wallet-core-chain-contract and state every chain shares in @perawallet/wallet-core-chain-shared; both are free to import. A direct import couples the importer to one chain, so adding the next chain means special-casing every such file. Type-only imports count, and a chain package may not import another chain package. The composition roots, test paths and the transitional allowlist of whole-move shims are listed, each with a reason, in the rule; a new entry needs one too.',
+            'Reach the chain through getProvider().chains, or the chain hooks built on it. Types every chain shares belong in @perawallet/wallet-core-chain-contract and state every chain shares in @perawallet/wallet-core-chain-shared; both are free to import. A direct import couples the importer to one chain, so adding the next chain means special-casing every such file. Type-only imports count, and a chain package may not import another chain package. The composition roots, the chain UI modules, test paths and the transitional allowlist of whole-move shims are listed, each with a reason, in the rule; a new entry needs one too.',
         examples: {
             bad: "// in packages/accounts/src/hooks/useAccountBalances.ts\nimport { algorandChain } from '@perawallet/wallet-core-chain-algorand'",
             good: '// in packages/accounts/src/hooks/useAccountBalances.ts\nconst chain = getProvider().chains.get(chainId)',
@@ -74,6 +75,10 @@ export default defineRule({
         // Leading slash so a repo-relative path still matches on a directory boundary.
         const filePath = `/${ctx.filePath}`
         if (filePath.includes(dirOf(pkg))) return
+        const isOwnChainUi = CHAIN_UI_MODULES.some(
+            entry => matchesPath(filePath, entry.path) && entry.pkg === pkg,
+        )
+        if (isOwnChainUi) return
         const isAllowListed = TRANSITIONAL_ALLOWLIST.some(
             entry =>
                 matchesPath(filePath, entry.path) &&

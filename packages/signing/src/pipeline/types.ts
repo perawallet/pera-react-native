@@ -17,7 +17,6 @@ import type {
     PeraTransaction,
     PeraSignedTransaction,
     SignedTransaction,
-    AlgorandTransactionKind,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -269,15 +268,6 @@ export interface SignableGroup {
     originalIndices?: number[]
 }
 
-export interface AlgorandTransactionSummary {
-    type: AlgorandTransactionKind
-    sender: string
-    receiver?: string
-    amount?: bigint
-    assetId?: bigint
-    note?: string
-}
-
 export interface AnalysisWarning {
     type:
         | 'high-fee'
@@ -293,8 +283,6 @@ export interface AnalysisWarning {
 export interface SignableAnalysis {
     totalFees: bigint
 
-    transactionSummaries: AlgorandTransactionSummary[]
-
     warnings: AnalysisWarning[]
 
     /**
@@ -309,7 +297,7 @@ export interface SignableAnalysis {
 /** What a group does, before any warning or risk is attached. */
 export type DecodedGroup = Pick<
     SignableAnalysis,
-    'totalFees' | 'transactionSummaries' | 'signableAddresses'
+    'totalFees' | 'signableAddresses'
 >
 
 export interface AnalysisContext {

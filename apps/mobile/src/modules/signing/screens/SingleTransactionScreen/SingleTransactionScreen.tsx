@@ -14,6 +14,7 @@ import { PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewBody } from '@modules/signing/family-bodies/TransactionReviewBody'
+import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
     type TransactionSignRequest,
@@ -56,7 +57,7 @@ export const SingleTransactionScreen = () => {
             <PWView style={styles.contentContainer}>
                 {/* The signing pipeline carries only Algorand transactions. */}
                 <TransactionReviewBody
-                    transaction={{ family: 'algorand', transaction }}
+                    transaction={toAlgorandNative(transaction)}
                     source={request.sourceMetadata}
                     verifiedOrigin={request.verifiedOrigin}
                 />

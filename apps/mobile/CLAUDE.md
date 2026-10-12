@@ -63,5 +63,8 @@ anything deeper. Tests are exempt.
   `src/utils`. Infrastructure (`components/core`, `bottom-sheet`, `security`) never imports a feature.
 - The developer gallery (`settings/screens/developer`) is allow-listed; a module needing a narrower
   entry documents it in the file and in the rule's `EXTRA_ENTRIES`.
+- A chain's own UI (`modules/algorand`) is the only app code that reads that chain's transaction
+  shapes or imports its chain package; everything else passes `TransactionNative` through opaque.
+  Each such module is listed in `CHAIN_UI_MODULES` (`lanekeep/shared/chain-package-allowlist.ts`).
 - A test that mocks a collaborator mocks the file the entry re-exports from, or the entry itself; a
   mock of some other path under the module no longer intercepts the import.

@@ -14,6 +14,7 @@ import { memo } from 'react'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
+import { algorandTransactionIconName } from '@modules/algorand/icons'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -62,7 +63,7 @@ const TransactionListItemView = ({
             onLongPress={handleLongPress}
             left={
                 <TransactionIcon
-                    type={iconType}
+                    name={algorandTransactionIconName(iconType)}
                     size='md'
                 />
             }

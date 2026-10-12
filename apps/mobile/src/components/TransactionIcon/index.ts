@@ -11,7 +11,4 @@
  */
 
 export { TransactionIcon } from './TransactionIcon'
-export type {
-    TransactionIconProps,
-    TransactionIconType,
-} from './TransactionIcon'
+export type { TransactionIconProps } from './TransactionIcon'

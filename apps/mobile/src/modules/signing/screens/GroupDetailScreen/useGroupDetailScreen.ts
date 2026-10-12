@@ -17,6 +17,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
     type GroupTransactionItem,
@@ -42,10 +43,7 @@ export const useGroupDetailScreen = () => {
     const handleTransactionPress = useCallback(
         (item: SingleTransactionItem) => {
             navigation.navigate('TransactionDetails', {
-                transaction: {
-                    family: 'algorand',
-                    transaction: item.transaction,
-                },
+                transaction: toAlgorandNative(item.transaction),
                 isExternal: item.isExternal,
             })
         },

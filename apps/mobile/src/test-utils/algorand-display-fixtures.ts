@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import type {
-    AlgorandTransactionView,
-    TransactionNative,
-} from '@perawallet/wallet-core-chain-contract'
+import {
+    toAlgorandNative,
+    type AlgorandTransactionView,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO25_TEST_ADDRESS,
     HD_TEST_ADDRESS,
@@ -177,18 +178,13 @@ const assetTransferVariant: Record<
 
 export const buildAlgorandAssetTransferFixture = (
     variant: AlgorandAssetTransferVariant,
-): TransactionNative => ({
-    family: 'algorand',
-    transaction: {
+): TransactionNative =>
+    toAlgorandNative({
         ...byKind['asset-transfer'](),
         assetTransferTransaction: assetTransferVariant[variant],
-    },
-})
+    })
 
 export const buildAlgorandDisplayFixture = (
     kind: AlgorandDisplayFixtureKind,
     overrides: Partial<AlgorandTransactionView> = {},
-): TransactionNative => ({
-    family: 'algorand',
-    transaction: { ...byKind[kind](), ...overrides },
-})
+): TransactionNative => toAlgorandNative({ ...byKind[kind](), ...overrides })

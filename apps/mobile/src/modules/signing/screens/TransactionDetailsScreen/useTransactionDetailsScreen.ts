@@ -20,12 +20,14 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    readAlgorandNative,
+    toAlgorandNative,
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type AlgorandTransactionView,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
@@ -74,7 +76,10 @@ export const useTransactionDetailsScreen =
 
         const detailQuery = useTransactionDetailQuery({
             transactionId:
-                transactionId || paramTransaction?.transaction.id || '',
+                transactionId ||
+                (paramTransaction &&
+                    readAlgorandNative(paramTransaction)?.id) ||
+                '',
             isEnabled: !paramTransaction && !!transactionId,
         })
 
@@ -101,7 +106,7 @@ export const useTransactionDetailsScreen =
             }
             // Both sources here (indexer, Algorand history row) are Algorand-only.
             const fetched = detailQuery.data ?? localTransaction
-            return fetched ? { family: 'algorand', transaction: fetched } : null
+            return fetched ? toAlgorandNative(fetched) : null
         }, [paramTransaction, detailQuery.data, localTransaction])
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
@@ -138,7 +143,7 @@ export const useTransactionDetailsScreen =
         const handleTransactionPress = useCallback(
             (tx: AlgorandTransactionView) => {
                 navigation.push('TransactionDetails', {
-                    transaction: { family: 'algorand', transaction: tx },
+                    transaction: toAlgorandNative(tx),
                     groupId,
                 })
             },
@@ -169,7 +174,9 @@ export const useTransactionDetailsScreen =
             renderState,
             groupTransactions,
             currentTransactionId:
-                transaction?.transaction.id ?? transactionId ?? '',
+                (transaction && readAlgorandNative(transaction)?.id) ??
+                transactionId ??
+                '',
             isExternal: isExternal ?? false,
             handleTransactionPress,
             handleRelatedTransactionPress,

@@ -39,7 +39,7 @@ import {
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
-import { GroupTransactionListScreen } from '@modules/transactions/routes'
+import { GroupTransactionListScreen } from '@modules/algorand/routes'
 import { useIsOnboarding } from '@modules/onboarding'
 import { MigrationSplashScreen } from '@modules/migration'
 

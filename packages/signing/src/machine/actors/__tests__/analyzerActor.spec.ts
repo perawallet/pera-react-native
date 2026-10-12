@@ -38,7 +38,6 @@ const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 
 const decoded = (totalFees: bigint): DecodedGroup => ({
     totalFees,
-    transactionSummaries: [],
     signableAddresses: [],
 })
 

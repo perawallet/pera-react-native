@@ -12,6 +12,7 @@
 
 import {
     Address,
+    aggregateTransactionWarnings,
     encodeTransactionRaw,
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
@@ -84,7 +85,6 @@ import {
     algorandTransactionDecoder,
     algorandWarningDetector,
 } from './review'
-import { aggregateTransactionWarnings } from './warnings'
 
 export const algorandReviewerAdapter: ReviewerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,

@@ -71,7 +71,6 @@ const mockRequest: TransactionSignRequest = {
 
 const mockAnalysis: SignableAnalysis = {
     totalFees: 1000n,
-    transactionSummaries: [],
     warnings: [],
     signableAddresses: [MOCK_ADDRESS],
     riskLevel: 'low',
@@ -1010,7 +1009,6 @@ describe('signingMachine', () => {
         beforeEach(() => {
             secondDecode.mockReset().mockResolvedValue({
                 totalFees: 7n,
-                transactionSummaries: [],
                 signableAddresses: [MOCK_ADDRESS],
             })
             secondAutoApproveLocal.mockReset().mockReturnValue(true)

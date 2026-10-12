@@ -41,7 +41,7 @@ import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerifi
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
-import { ViewTextDetailsContent } from '@modules/transactions/components/ViewTextDetailsContent'
+import { ViewTextDetailsContent } from '@modules/algorand/components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'

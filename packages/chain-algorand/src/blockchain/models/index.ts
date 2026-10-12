@@ -55,3 +55,4 @@ export type PeraEncodedTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
 ) => Promise<Uint8Array[]>
+export * from './transaction-view'

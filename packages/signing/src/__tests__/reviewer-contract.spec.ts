@@ -64,12 +64,6 @@ const fixtureReviewer: ReviewerChainAdapter = {
                 totalFees: isSigner
                     ? txnsOf(group).reduce((sum, txn) => sum + txn.fee, 0n)
                     : 0n,
-                transactionSummaries: txnsOf(group).map(txn => ({
-                    type: txn.isOpaque
-                        ? ('unknown' as const)
-                        : ('payment' as const),
-                    sender: txn.sender,
-                })),
                 signableAddresses: isSigner ? [group.signerAddress] : [],
             }
         },
@@ -77,8 +71,7 @@ const fixtureReviewer: ReviewerChainAdapter = {
     warnings: {
         detect: (group, decoded) =>
             decoded.signableAddresses.length > 0 &&
-            (txnsOf(group).some(t => t.isRisky) ||
-                decoded.transactionSummaries.some(s => s.type === 'unknown'))
+            txnsOf(group).some(t => t.isRisky || t.isOpaque)
                 ? [
                       {
                           type: 'suspicious',
