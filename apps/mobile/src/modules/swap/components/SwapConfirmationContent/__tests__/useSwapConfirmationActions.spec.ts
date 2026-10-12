@@ -31,6 +31,15 @@ const makeQuote = (quoteIdStr?: string): SwapQuote =>
         },
     }) as SwapQuote
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mockTrackEvent,
+}))
+
 const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
 const mockInfoToast = vi.fn()
@@ -90,11 +99,66 @@ describe('useSwapConfirmationActions', () => {
         vi.clearAllMocks()
     })
 
+    it('reports a completed swap with its chain, keeping the existing properties', async () => {
+        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-done'),
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            'swapscr_assets_completed',
+            expect.objectContaining({
+                chain_id: 'algorand',
+                input_asa_id: '0',
+                output_asa_id: '31566704',
+            }),
+        )
+    })
+
+    it('reports a failed swap with its chain, keeping the existing properties', async () => {
+        mockExecute.mockResolvedValueOnce({
+            kind: 'error',
+            phase: 'submission',
+            message: 'Pool drained',
+        })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-failed'),
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            'swapscr_assets_failed',
+            expect.objectContaining({
+                chain_id: 'algorand',
+                input_asa_id: '0',
+                output_asa_id: '31566704',
+            }),
+        )
+    })
+
     it('resolves with confirm when execute succeeds', async () => {
         mockExecute.mockResolvedValueOnce({ kind: 'success' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-1') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-1'),
+            }),
         )
 
         await act(async () => {
@@ -112,7 +176,10 @@ describe('useSwapConfirmationActions', () => {
         mockExecute.mockResolvedValueOnce({ kind: 'cancelled' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-2') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-2'),
+            }),
         )
 
         await act(async () => {
@@ -131,7 +198,10 @@ describe('useSwapConfirmationActions', () => {
         })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-3') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-3'),
+            }),
         )
 
         await act(async () => {
@@ -157,7 +227,10 @@ describe('useSwapConfirmationActions', () => {
         })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-3b') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-3b'),
+            }),
         )
 
         await act(async () => {
@@ -173,7 +246,7 @@ describe('useSwapConfirmationActions', () => {
 
     it('does nothing when quoteIdStr is missing', async () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote() }),
+            useSwapConfirmationActions({ scope: SCOPE, quote: makeQuote() }),
         )
 
         await act(async () => {
@@ -196,7 +269,10 @@ describe('useSwapConfirmationActions', () => {
         )
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-4') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-4'),
+            }),
         )
 
         await act(async () => {
@@ -219,7 +295,10 @@ describe('useSwapConfirmationActions', () => {
         mockExecute.mockResolvedValueOnce({ kind: 'stale-quote' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-8') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-8'),
+            }),
         )
 
         await act(async () => {
@@ -234,7 +313,10 @@ describe('useSwapConfirmationActions', () => {
         mockExecute.mockResolvedValueOnce({ kind: 'verifying-previous' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-9') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-9'),
+            }),
         )
 
         await act(async () => {
@@ -253,7 +335,10 @@ describe('useSwapConfirmationActions', () => {
 
     it('handleClose dismisses when idle', () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-5') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-5'),
+            }),
         )
 
         act(() => {
@@ -266,7 +351,10 @@ describe('useSwapConfirmationActions', () => {
 
     it('handleClose cancels the in-flight execution while preparing instead of trapping', () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-6') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-6'),
+            }),
         )
 
         act(() => {
@@ -281,7 +369,10 @@ describe('useSwapConfirmationActions', () => {
 
     it('handleClose stays blocked once the swap has committed (signing onward)', () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-6') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-6'),
+            }),
         )
 
         act(() => {
@@ -295,7 +386,10 @@ describe('useSwapConfirmationActions', () => {
 
     it('resets execution state on mount', () => {
         renderHook(() =>
-            useSwapConfirmationActions({ quote: makeQuote('quote-7') }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-7'),
+            }),
         )
 
         expect(mockReset).toHaveBeenCalledTimes(1)

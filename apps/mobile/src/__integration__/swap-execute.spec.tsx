@@ -34,6 +34,8 @@ import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
 } from '@perawallet/wallet-core-swaps'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const QUOTE_ID = 'quote-tinyman-1'
 const SWAP_ID = '12345'
@@ -72,9 +74,15 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
         }
         server.use(mockPrepareTransactions({ response }))
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation(
+                    useSelectedScope(LEGACY_CHAIN_ID),
+                ),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({ quote: QUOTE_ID })
 
@@ -121,9 +129,15 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
             ),
         )
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation(
+                    useSelectedScope(LEGACY_CHAIN_ID),
+                ),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({ quote: QUOTE_ID })
 
@@ -155,9 +169,13 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useUpdateSwapStatusMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapId: SWAP_ID,
@@ -194,9 +212,13 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useUpdateSwapStatusMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         result.current.mutate({
             swapId: SWAP_ID,
@@ -247,9 +269,15 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
 
         onlineManager.setOnline(false)
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation(
+                    useSelectedScope(LEGACY_CHAIN_ID),
+                ),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         // User kicks off prepare while offline: it fails fast (rejects)
         // rather than pausing. The transport is never reached.

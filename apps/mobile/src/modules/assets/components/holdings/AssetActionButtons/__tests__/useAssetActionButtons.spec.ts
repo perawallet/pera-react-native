@@ -10,11 +10,36 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useAssetActionButtons } from '../useAssetActionButtons'
+
+// The real useSwapScope is this one line; the package barrel drags in stores
+// the global mocks can't satisfy.
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { useAccountCapabilityScope } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-accounts')
+    >('@perawallet/wallet-core-accounts')
+    return {
+        useSwapScope: (account: WalletAccount | null) =>
+            useAccountCapabilityScope(account, 'swap'),
+    }
+})
+
+const onAlgorand: WalletAccount = {
+    id: 'algo',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'ALGO-ADDR' } },
+}
+
+const onEthereumOnly: WalletAccount = {
+    id: 'eth',
+    custody: { kind: 'local', seed: null },
+    chains: { ethereum: { address: '0xabc' } },
+}
 
 describe('useAssetActionButtons', () => {
     beforeEach(() => {
@@ -22,7 +47,7 @@ describe('useAssetActionButtons', () => {
     })
 
     it('offers both actions at the Algorand defaults', () => {
-        const { result } = renderHook(() => useAssetActionButtons())
+        const { result } = renderHook(() => useAssetActionButtons(onAlgorand))
 
         expect(result.current).toEqual({ canSwap: true, canBuy: true })
     })
@@ -35,9 +60,25 @@ describe('useAssetActionButtons', () => {
         (capability, expected) => {
             setCapabilityOverrides({ [capability]: false })
 
-            const { result } = renderHook(() => useAssetActionButtons())
+            const { result } = renderHook(() =>
+                useAssetActionButtons(onAlgorand),
+            )
 
             expect(result.current).toEqual(expected)
         },
     )
+
+    it('drops swap for an account with no address on a swap chain', () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly),
+        )
+
+        expect(result.current.canSwap).toBe(false)
+    })
+
+    it('drops swap without an account', () => {
+        const { result } = renderHook(() => useAssetActionButtons(null))
+
+        expect(result.current.canSwap).toBe(false)
+    })
 })

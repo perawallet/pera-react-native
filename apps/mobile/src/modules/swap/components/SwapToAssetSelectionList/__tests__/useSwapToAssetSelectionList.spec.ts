@@ -43,13 +43,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     PeraAssetVerificationTier: {},
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
-
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: mockUseQueryClient,
 }))
@@ -103,6 +96,7 @@ const mockAssetBalances = [
 const mockOnAssetSelected = vi.fn()
 
 const defaultParams = {
+    scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
     fromAssetId: '31566704',
     onAssetSelected: mockOnAssetSelected,
 }

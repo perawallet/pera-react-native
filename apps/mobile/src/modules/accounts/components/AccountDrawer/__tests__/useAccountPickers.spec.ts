@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockNavigate = vi.fn()
 const mockSigningAccounts: { current: { id: string }[] } = { current: [] }
+const mockSwapSigningAccounts: { current: { id: string }[] } = { current: [] }
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -38,11 +39,16 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwapSigningAccounts: () => mockSwapSigningAccounts.current,
+}))
+
 import {
     useAccountPickers,
     useCardPicker,
     usePortfolioPicker,
     useSigningPicker,
+    useSwapPicker,
 } from '../useAccountPickers'
 
 describe('useCardPicker', () => {
@@ -91,10 +97,12 @@ describe('useAccountPickers', () => {
             'card',
             'portfolio',
             'select',
+            'swap',
         ])
         expect(result.current.card.onSelected).toBeDefined()
         expect(result.current.portfolio.onSelected).toBeUndefined()
         expect(result.current.select.onSelected).toBeUndefined()
+        expect(result.current.swap.onSelected).toBeUndefined()
     })
 })
 
@@ -103,6 +111,18 @@ describe('useSigningPicker', () => {
         mockSigningAccounts.current = [{ id: 'A' }]
 
         const { result } = renderHook(() => useSigningPicker())
+
+        expect(result.current.accountFilter?.({ id: 'A' } as never)).toBe(true)
+        expect(result.current.accountFilter?.({ id: 'B' } as never)).toBe(false)
+    })
+})
+
+describe('useSwapPicker', () => {
+    it('only lists the accounts that can sign on their swap chain', () => {
+        mockSigningAccounts.current = [{ id: 'A' }, { id: 'B' }]
+        mockSwapSigningAccounts.current = [{ id: 'A' }]
+
+        const { result } = renderHook(() => useSwapPicker())
 
         expect(result.current.accountFilter?.({ id: 'A' } as never)).toBe(true)
         expect(result.current.accountFilter?.({ id: 'B' } as never)).toBe(false)

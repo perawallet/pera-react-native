@@ -136,6 +136,19 @@ vi.mock('../../../hooks', async () => ({
     useCardErrorToast: () => mockWithdrawErrorToast,
 }))
 
+// The real useSwapScope is this one line; the package barrel drags in stores
+// the global mocks can't satisfy.
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { useAccountCapabilityScope } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-accounts')
+    >('@perawallet/wallet-core-accounts')
+    return {
+        useSwapScope: (
+            account: Parameters<typeof useAccountCapabilityScope>[0],
+        ) => useAccountCapabilityScope(account, 'swap'),
+    }
+})
+
 vi.mock('../../../hooks/useOpenFundingTypeSheet', () => ({
     useOpenFundingTypeSheet: () => mockOpenFundingTypeSheet,
 }))

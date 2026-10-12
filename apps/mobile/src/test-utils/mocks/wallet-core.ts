@@ -64,6 +64,18 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
             slippage.mul(100).toString(),
         useProvidersQuery: vi.fn(() => ({ data: [] })),
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+        // An account on Algorand swaps there, as it does at the build defaults.
+        useSwapScope: vi.fn(
+            (account: { chains?: { algorand?: unknown } } | null) =>
+                account?.chains?.algorand
+                    ? { chainId: 'algorand', networkId: 'mainnet' }
+                    : null,
+        ),
+        useSwapChainResolver: vi.fn(
+            () => (account: { chains?: { algorand?: unknown } }) =>
+                account.chains?.algorand ? 'algorand' : undefined,
+        ),
+        useSwapSigningAccounts: vi.fn(() => []),
     }
 })
 
