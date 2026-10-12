@@ -50,6 +50,30 @@ export type EnqueueTransactionSigning = (
 ) => Promise<Nullable<SignRequest>>
 
 /**
+ * What a chain makes of one WalletConnect v2 request. `operation` params are
+ * already off the JSON-RPC envelope. `public-data` is answered without asking
+ * the user; a `null` answer refuses it as naming a chain this network isn't.
+ */
+export type WalletConnectRequestRoute =
+    | { kind: 'operation'; type: WalletOperationType; params: unknown }
+    | {
+          kind: 'public-data'
+          answer: (
+              addresses: readonly string[],
+              networkId: NetworkId,
+          ) => Nullable<unknown>
+      }
+    | { kind: 'unsupported' }
+
+export interface WalletConnectV2ChainSupport {
+    /** Every method the chain answers, in the order an approved namespace declares them. */
+    readonly methods: readonly string[]
+    /** The subset of `methods` that asks the user, listed as a proposal's permissions. */
+    readonly signingMethods: readonly string[]
+    handleRequest(method: string, params: unknown): WalletConnectRequestRoute
+}
+
+/**
  * The per-chain half of answering a dApp's signing request. Shared by every
  * dApp transport, so a chain parses its payloads in one place.
  */
@@ -104,7 +128,15 @@ export interface DappRequestChainAdapter {
                 knownAddresses: readonly string[],
             ): { ok: true } | { ok: false; reason: string }
         }
+        /** Omitted by a chain v2 never serves; such a chain gets no v2 namespace. */
+        readonly v2?: WalletConnectV2ChainSupport
     }
+    /**
+     * Points this chain's network selection at `networkId`, which the caller
+     * has already resolved through `walletConnect.networkForCaip2ChainId`.
+     * Omitted by a chain whose network a dApp may not switch.
+     */
+    switchChain?(networkId: NetworkId): void
     /**
      * The registry's full validation for a `sign-transactions` payload, for
      * every transport; `message` reaches the peer.
