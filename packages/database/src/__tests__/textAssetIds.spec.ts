@@ -150,7 +150,7 @@ describe('text asset id migration', () => {
         await runMigrations(db, migrations)
 
         expect(await columnNames(db, 'account_asset_holdings')).toContain(
-            'is_frozen',
+            'native',
         )
         expect(await columnNames(db, 'assets_pera')).toContain('first_seen_at')
     })
