@@ -19,6 +19,7 @@ import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
 import { registerChain } from './register'
+import { ALGORAND_MESSAGE_TITLE_KEYS } from './signing/message/messageSigner'
 import { ALGORAND_TRANSFER_TITLE_KEYS } from './transactions/transfer-builder'
 
 export const chainModule: ChainModule = {
@@ -27,7 +28,10 @@ export const chainModule: ChainModule = {
     capabilityRestrictions: algorandCapabilityRestrictions,
     // The adapters are module-level instances that don't read the context yet.
     register: _ctx => registerChain(),
-    i18nKeys: () => ALGORAND_TRANSFER_TITLE_KEYS,
+    i18nKeys: () => [
+        ...ALGORAND_TRANSFER_TITLE_KEYS,
+        ...ALGORAND_MESSAGE_TITLE_KEYS,
+    ],
     remoteConfigDefaults: algorandRemoteConfigDefaults,
     pinnedHosts: algorandPinnedHosts,
 }

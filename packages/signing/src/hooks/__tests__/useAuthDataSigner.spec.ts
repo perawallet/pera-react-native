@@ -13,6 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    MessageRequest,
+    SigningRequest,
+} from '@perawallet/wallet-core-chain-contract'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import { messageSignerChainAdapters } from '../../message-signer'
 import { CannotSignError } from '../../pipeline/errors'
@@ -50,6 +54,20 @@ const authData: AuthData = {
 }
 const metadata: AuthDataMetadata = { scope: 1, encoding: 'base64' }
 
+const planFor = (request: MessageRequest): SigningRequest[] => [
+    {
+        requestIndex: 0,
+        signer: request.signer,
+        scheme: 'ed25519',
+        payload: new Uint8Array([4]),
+    },
+]
+
+const assembleFirst = vi.fn((request: MessageRequest, signatures) => ({
+    scope: request.scope,
+    signature: signatures[0],
+}))
+
 describe('useAuthDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -57,34 +75,32 @@ describe('useAuthDataSigner', () => {
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([9])])
     })
 
-    test('hands the request and the current accounts to the registered signer', async () => {
-        const signature = new Uint8Array([1, 2, 3])
-        const signAuthData = vi.fn().mockResolvedValue(signature)
-        registerFakeMessageSignerAdapter({ signAuthData })
+    test('plans an auth-data request for the account with the current accounts, and returns the signature', async () => {
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
+        })
         mockAccounts = [account]
         const { result } = renderHook(() => useAuthDataSigner())
 
         await expect(
             result.current.signAuthData(account, authData, metadata),
-        ).resolves.toBe(signature)
+        ).resolves.toEqual(new Uint8Array([9]))
 
-        expect(signAuthData).toHaveBeenCalledWith(
-            expect.anything(),
-            account,
-            authData,
-            metadata,
-            [account],
+        expect(adapter.plan).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'auth-data',
+                signer: 'ADDR',
+                payload: { authData, metadata },
+            }),
+            { account, accounts: [account] },
         )
     })
 
-    test('binds signPayloads to the KMS under the signing key domain', async () => {
+    test('signs the planned payload through the KMS under the signing key domain', async () => {
         registerFakeMessageSignerAdapter({
-            signAuthData: vi.fn(async (deps, acct) => {
-                const [sig] = await deps.signPayloads(acct.keyPairId!, [
-                    new Uint8Array([4]),
-                ])
-                return sig
-            }),
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
         })
         const { result } = renderHook(() => useAuthDataSigner())
 
@@ -98,8 +114,10 @@ describe('useAuthDataSigner', () => {
     })
 
     test('passes the accounts current at call time, not at first render', async () => {
-        const signAuthData = vi.fn().mockResolvedValue(new Uint8Array())
-        registerFakeMessageSignerAdapter({ signAuthData })
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
+        })
         mockAccounts = [account]
         const { result, rerender } = renderHook(() => useAuthDataSigner())
 
@@ -108,7 +126,9 @@ describe('useAuthDataSigner', () => {
         rerender()
         await result.current.signAuthData(account, authData, metadata)
 
-        expect(signAuthData.mock.calls[0][4]).toEqual([revoked])
+        expect(vi.mocked(adapter.plan).mock.calls[0][1].accounts).toEqual([
+            revoked,
+        ])
     })
 
     test('refuses and never touches the KMS when no message signer is registered', async () => {

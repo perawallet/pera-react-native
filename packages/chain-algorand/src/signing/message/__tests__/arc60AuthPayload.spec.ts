@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -23,7 +23,7 @@ import type {
     AuthData,
     AuthDataMetadata,
 } from '@perawallet/wallet-core-signing'
-import { signArc60AuthRequest } from '../signArc60AuthRequest'
+import { arc60AuthPayloadFor } from '../arc60AuthPayload'
 import { ARC60_SCOPE_AUTH } from '../arc60'
 import {
     Arc60BadJsonError,
@@ -32,9 +32,6 @@ import {
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
 } from '../arc60-errors'
-
-const signPayloads = vi.fn()
-const deps = { signPayloads }
 
 const MATCHING_HD_PATH = "m/44'/283'/0'/0/1"
 
@@ -123,122 +120,109 @@ const sign = (
     authData: AuthData,
     metadata: AuthDataMetadata = validMetadata,
     accounts: WalletAccount[] = [],
-) => signArc60AuthRequest(deps, account, authData, metadata, accounts)
+) => arc60AuthPayloadFor(account, authData, metadata, accounts)
 
-describe('signArc60AuthRequest', () => {
+describe('arc60AuthPayloadFor', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         useAccountChainStateStore.getState().resetState()
-        signPayloads.mockResolvedValue([new Uint8Array([0])])
     })
 
-    test('rejects unsupported scope', async () => {
-        await expect(
+    test('rejects unsupported scope', () => {
+        expect(() =>
             sign(hdAccount, validAuthData, { scope: 99, encoding: 'base64' }),
-        ).rejects.toBeInstanceOf(Arc60InvalidScopeError)
+        ).toThrow(Arc60InvalidScopeError)
     })
 
-    test('rejects hardware wallet accounts', async () => {
-        await expect(
-            sign(hardwareAccount, validAuthData),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+    test('rejects hardware wallet accounts', () => {
+        expect(() => sign(hardwareAccount, validAuthData)).toThrow(
+            Arc60InvalidSignerError,
+        )
     })
 
-    test('rejects when authenticatorData rpIdHash mismatches', async () => {
+    test('rejects when authenticatorData rpIdHash mismatches', () => {
         const tampered = new Uint8Array(validAuthenticatorData)
         tampered[0] ^= 0xff
-        await expect(
+        expect(() =>
             sign(hdAccount, { ...validAuthData, authenticatorData: tampered }),
-        ).rejects.toBeInstanceOf(Arc60DomainMismatchError)
+        ).toThrow(Arc60DomainMismatchError)
     })
 
-    test('signs an HD account with the sha256(data)||sha256(authenticatorData) payload', async () => {
-        const sigBytes = new Uint8Array([1, 2, 3])
-        signPayloads.mockResolvedValue([sigBytes])
+    test('signs an HD account with the sha256(data)||sha256(authenticatorData) payload', () => {
+        const payload = sign(hdAccount, validAuthData)
 
-        const signature = await sign(hdAccount, validAuthData)
-
-        expect(signature).toEqual(sigBytes)
-        expect(signPayloads).toHaveBeenCalledTimes(1)
-        const [keyPairId, items] = signPayloads.mock.calls[0]
-        expect(keyPairId).toBe('key-hd-child')
-        const payload = items[0] as Uint8Array
         expect(payload.slice(0, 32)).toEqual(sha256(samplePayload))
         expect(payload.slice(32)).toEqual(sha256(validAuthenticatorData))
         expect(payload.length).toBe(64)
     })
 
-    test('rejects when hdPath does not match the signer derivation', async () => {
-        await expect(
+    test('rejects when hdPath does not match the signer derivation', () => {
+        expect(() =>
             sign(hdAccount, { ...validAuthData, hdPath: "m/44'/283'/0'/0/99" }),
-        ).rejects.toBeInstanceOf(Arc60FailedHdPathError)
+        ).toThrow(Arc60FailedHdPathError)
     })
 
-    test('accepts a matching hdPath', async () => {
-        await expect(
+    test('accepts a matching hdPath', () => {
+        expect(
             sign(hdAccount, { ...validAuthData, hdPath: MATCHING_HD_PATH }),
-        ).resolves.toBeInstanceOf(Uint8Array)
+        ).toBeInstanceOf(Uint8Array)
     })
 
-    test('rejects hdPath on Algo25 accounts', async () => {
-        await expect(
+    test('rejects hdPath on Algo25 accounts', () => {
+        expect(() =>
             sign(algo25Account, {
                 ...validAuthData,
                 data: dataFor('ALGO25_ADDR'),
                 signer: 'ALGO25_ADDR',
                 hdPath: "m/44'/283'/0'/0/0",
             }),
-        ).rejects.toBeInstanceOf(Arc60FailedHdPathError)
+        ).toThrow(Arc60FailedHdPathError)
     })
 
-    test('signs an Algo25 account with no MX prefix', async () => {
+    test('signs an Algo25 account with no MX prefix', () => {
         const algo25Siwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
 
-        await sign(algo25Account, {
+        const payload = sign(algo25Account, {
             ...validAuthData,
             data: encodeToBase64(algo25Siwa),
             signer: 'ALGO25_ADDR',
         })
 
-        const [keyPairId, items] = signPayloads.mock.calls[0]
-        expect(keyPairId).toBe('key-algo25-ed25519')
-        const payload = items[0] as Uint8Array
         expect(payload[0]).not.toBe('M'.charCodeAt(0))
         expect(payload[1]).not.toBe('X'.charCodeAt(0))
         expect(payload.slice(0, 32)).toEqual(sha256(algo25Siwa))
     })
 
-    test('rejects when the message domain does not match the request domain', async () => {
+    test('rejects when the message domain does not match the request domain', () => {
         const mismatched = new TextEncoder().encode(
             buildSiwa({ domain: 'evil.io' }),
         )
-        await expect(
+        expect(() =>
             sign(hdAccount, {
                 ...validAuthData,
                 data: encodeToBase64(mismatched),
             }),
-        ).rejects.toBeInstanceOf(Arc60BadJsonError)
+        ).toThrow(Arc60BadJsonError)
     })
 
-    test('rejects when the message account_address does not match the request signer', async () => {
-        await expect(
+    test('rejects when the message account_address does not match the request signer', () => {
+        expect(() =>
             sign(hdAccount, { ...validAuthData, data: dataFor('OTHER_ADDR') }),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+        ).toThrow(Arc60InvalidSignerError)
     })
 
-    test('rejects when payload is not canonical SIWA JSON', async () => {
+    test('rejects when payload is not canonical SIWA JSON', () => {
         const nonSiwa = new TextEncoder().encode('{"not":"siwa"}')
-        await expect(
+        expect(() =>
             sign(hdAccount, {
                 ...validAuthData,
                 data: encodeToBase64(nonSiwa),
             }),
-        ).rejects.toBeInstanceOf(Arc60BadJsonError)
+        ).toThrow(Arc60BadJsonError)
     })
 
-    test('rejects a rekeyed algo25 naming itself as signer even though it holds its key', async () => {
+    test('rejects a rekeyed algo25 naming itself as signer even though it holds its key', () => {
         // Once ORIG_ADDR is rekeyed, control belongs to AUTH_ADDR on chain;
         // a proof made with ORIG_ADDR's old key must not authenticate it.
         const original = {
@@ -247,7 +231,7 @@ describe('signArc60AuthRequest', () => {
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 
-        await expect(
+        expect(() =>
             sign(
                 original,
                 {
@@ -258,67 +242,69 @@ describe('signArc60AuthRequest', () => {
                 validMetadata,
                 [original],
             ),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
-        expect(signPayloads).not.toHaveBeenCalled()
+        ).toThrow(Arc60InvalidSignerError)
     })
 
-    test('rejects a watch-rekeyed account even when the auth has keys', async () => {
+    test('rejects a watch-rekeyed account even when the auth has keys', () => {
         const watchSource = {
             address: 'WATCH_ADDR',
             custody: { kind: 'watch' },
         } as unknown as WalletAccount
         seedAuthority('WATCH_ADDR', 'AUTH_ADDR')
 
-        await expect(
+        expect(() =>
             sign(watchSource, {
                 ...validAuthData,
                 data: dataFor('WATCH_ADDR'),
                 signer: 'WATCH_ADDR',
             }),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+        ).toThrow(Arc60InvalidSignerError)
     })
 
-    test('signs for a quantum account, on the same arm as Algo25', async () => {
-        const signature = await sign(quantumAccount, {
+    test('signs for a quantum account, on the same arm as Algo25', () => {
+        const payload = sign(quantumAccount, {
             ...validAuthData,
             data: dataFor('QUANTUM_ADDR'),
             signer: 'QUANTUM_ADDR',
         })
 
-        expect(signature).toBeInstanceOf(Uint8Array)
-        expect(signPayloads.mock.calls[0][0]).toBe('key-quantum-falcon')
+        expect(payload).toHaveLength(64)
     })
 
-    test('rejects an hdPath for a quantum account, as it does for algo25', async () => {
-        await expect(
+    test('rejects an hdPath for a quantum account, as it does for algo25', () => {
+        expect(() =>
             sign(quantumAccount, {
                 ...validAuthData,
                 data: dataFor('QUANTUM_ADDR'),
                 signer: 'QUANTUM_ADDR',
                 hdPath: "m/44'/283'/0'/0/0",
             }),
-        ).rejects.toBeInstanceOf(Arc60FailedHdPathError)
+        ).toThrow(Arc60FailedHdPathError)
     })
 
-    test('rejects a Ledger account (raw-byte signing unsupported on device)', async () => {
+    test('rejects a Ledger account (raw-byte signing unsupported on device)', () => {
         const ledger = {
             ...hardwareAccount,
             address: 'LED_ADDR',
         } as unknown as WalletAccount
 
-        await expect(
+        expect(() =>
             sign(ledger, {
                 ...validAuthData,
                 data: dataFor('LED_ADDR'),
                 signer: 'LED_ADDR',
             }),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+        ).toThrow(Arc60InvalidSignerError)
     })
 
-    test('rejects a rekey revoked since the list was last read', async () => {
+    test('rejects a rekey revoked since the list was last read', () => {
         const rekeyed = {
             ...algo25Account,
             address: 'ORIG_ADDR',
+        } as unknown as WalletAccount
+        const authAccount = {
+            ...algo25Account,
+            address: 'AUTH_ADDR',
         } as unknown as WalletAccount
         seedAuthority('ORIG_ADDR', 'AUTH_ADDR')
 
@@ -330,13 +316,13 @@ describe('signArc60AuthRequest', () => {
             signer: 'AUTH_ADDR',
         }
 
-        await sign(rekeyed, sigData, validMetadata, [rekeyed])
-        expect(signPayloads).toHaveBeenCalledTimes(1)
+        expect(
+            sign(authAccount, sigData, validMetadata, [rekeyed]),
+        ).toBeInstanceOf(Uint8Array)
 
         seedAuthority('ORIG_ADDR', null)
-        await expect(
-            sign(rekeyed, sigData, validMetadata, [rekeyed]),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
-        expect(signPayloads).toHaveBeenCalledTimes(1)
+        expect(() =>
+            sign(authAccount, sigData, validMetadata, [rekeyed]),
+        ).toThrow(Arc60InvalidSignerError)
     })
 })

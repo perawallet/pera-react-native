@@ -13,10 +13,11 @@
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { messageSignerFor } from '../message-signer'
+import { authDataMessageRequest, signMessages } from '../message-signer'
 
 export type UseAuthDataSignerResult = {
     /**
@@ -35,8 +36,16 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const accounts = useAllAccounts()
 
     const signAuthData = useCallback<LocalAuthDataSigningFunction>(
-        async (account, authData, metadata) =>
-            messageSignerFor(LEGACY_CHAIN_ID, account.address).signAuthData(
+        async (account, authData, metadata) => {
+            const [signed] = await signMessages(
+                [
+                    authDataMessageRequest(
+                        getSelectedScope(LEGACY_CHAIN_ID),
+                        account.address,
+                        { authData, metadata },
+                    ),
+                ],
+                { account, accounts },
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -45,11 +54,9 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
                             payloads,
                         ),
                 },
-                account,
-                authData,
-                metadata,
-                accounts,
-            ),
+            )
+            return signed.signature.bytes
+        },
         // `accounts` backs the signer's rekey cross-check; without it the
         // callback would validate against the account list as of first render
         // and fail open on a rekey revoked after mount.

@@ -170,10 +170,13 @@ describe('chainModule', () => {
         )
     })
 
-    it('declares the i18n keys its transfer summaries carry', () => {
+    it('declares the i18n keys its transfer and message summaries carry', () => {
         expect(chainModule.i18nKeys()).toEqual([
             'transactions.list_item.send',
             'transactions.list_item.opt_in',
+            'signing.arbitrary_data_view.body',
+            'signing.arc60_view.title',
+            'signing.arc60_view.siwa_invalid',
         ])
     })
 })
