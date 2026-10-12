@@ -69,7 +69,8 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
-        // Transport routing and multisig-template keying must follow the SAME
+        // Planned results already name the key holder (below). Otherwise,
+        // transport routing and multisig-template keying must follow the SAME
         // account the signing dispatcher routed on: the account whose key (or
         // multisig template) authorizes the signature. resolveSigningAccount
         // applies the rules — rekey hop for transactions (so a sender rekeyed
@@ -79,13 +80,17 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
         const signedType = signingResults[0]?.signedData.type ?? 'transactions'
-        const authAccount = resolveSigningAccount(
-            signerAccount,
-            source,
-            signedType === 'signed-transactions' ? 'transactions' : signedType,
-            allAccounts,
-            scope.chainId,
-        )
+        // A planner already named the key holder, so a rekey isn't followed twice.
+        const authAccount =
+            signedType === 'signed-transactions'
+                ? signerAccount
+                : resolveSigningAccount(
+                      signerAccount,
+                      source,
+                      signedType,
+                      allAccounts,
+                      scope.chainId,
+                  )
 
         const authAddress = chainAccountOf(authAccount, scope.chainId)?.address
         if (authAddress === undefined) {

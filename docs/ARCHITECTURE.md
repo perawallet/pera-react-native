@@ -269,6 +269,16 @@ with the key of the account the request names in the scheme it names, and `assem
 signed transaction. No other path hands chain-neutral bytes to the key store, so a request can't
 have arbitrary bytes signed, which is what `eth_sign` would allow.
 
+A request's `signer` is the address whose key produces the signature, not the account it is for:
+the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one
+request per multisig participant), so the pipeline never follows a rekey a second time. Only keys
+the review lists as `signableAddresses` sign, so a payload can't add a signer the user never
+approved: Algorand's reviewer lists every planned signer the wallet holds and refuses an authority a
+wallet sender isn't rekeyed to. A listed key the wallet can't use locally is left to its holder.
+Algorand's
+payload names its multisig parameters, and planning refuses ones that don't derive to the address
+that signs; assembly needs the threshold, so co-signing below it stays with the multisig transports.
+
 ## State management
 
 Zustand holds client state (user settings, wallet accounts). TanStack Query holds server state

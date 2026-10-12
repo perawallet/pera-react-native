@@ -12,10 +12,10 @@
 
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import {
+    Address,
     OnApplicationComplete,
     Transaction,
     TransactionType,
-    type Address,
 } from 'algosdk'
 import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import {
@@ -51,6 +51,7 @@ vi.mock('../../blockchain', async importOriginal => ({
 import { encodeTransactionRaw, getExpectedGenesisHash } from '../../blockchain'
 import { algorandReviewerAdapter } from '../adapter'
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
+import { generateMultisigAddress } from '../../multisig/address'
 import {
     TEST_SUGGESTED_PARAMS,
     makeUnsignedAlgorandTransaction,
@@ -86,6 +87,17 @@ const transactionsGroup = (
             transactions,
             indicesToSign: transactions.map((_, i) => i),
             rawTransactionsBase64,
+        },
+    }) as unknown as SignableGroup
+
+const chainNeutralGroup = (payload: unknown): SignableGroup =>
+    ({
+        signerAddress: WALLET.toString(),
+        source: { type: 'local' },
+        data: {
+            type: 'transactions',
+            transactions: [{ ...makeUnsignedAlgorandTransaction(), payload }],
+            chainData: {},
         },
     }) as unknown as SignableGroup
 
@@ -435,7 +447,57 @@ describe('algorandReviewerAdapter review parts', () => {
         ).rejects.toBeInstanceOf(GenesisHashMismatchError)
     })
 
-    it("refuses chain-neutral transactions for good, since it can't explain them", async () => {
+    it('reviews a chain-neutral transaction as the Algorand transaction it carries', async () => {
+        const neutral = {
+            signerAddress: WALLET.toString(),
+            source: { type: 'local' },
+            data: {
+                type: 'transactions',
+                transactions: [
+                    {
+                        ...makeUnsignedAlgorandTransaction(),
+                        payload: { transaction: KINDS.rekey },
+                    },
+                ],
+                chainData: {},
+            },
+        } as unknown as SignableGroup
+
+        expect(await review(neutral)).toEqual(
+            await review(transactionsGroup([KINDS.rekey])),
+        )
+    })
+
+    it('lists every multisig participant the wallet holds as a signer', async () => {
+        const addresses = [WALLET, SECOND, OTHER].map(a => a.toString())
+        const msig = generateMultisigAddress(1, 2, addresses)
+        const neutral = chainNeutralGroup({
+            transaction: makeTestPaymentTx(Address.fromString(msig), {
+                receiver: OTHER,
+            }),
+            multisig: { version: 1, threshold: 2, addresses },
+        })
+
+        const analysis = await review(neutral)
+
+        expect(analysis.signableAddresses).toEqual([
+            WALLET.toString(),
+            SECOND.toString(),
+        ])
+    })
+
+    it("refuses an authority a wallet sender isn't rekeyed to", async () => {
+        const neutral = chainNeutralGroup({
+            transaction: KINDS.payment,
+            authorizer: SECOND.toString(),
+        })
+
+        await expect(review(neutral)).rejects.toBeInstanceOf(
+            InvalidSignableDataError,
+        )
+    })
+
+    it("refuses for good a chain-neutral payload the planner can't read", async () => {
         const group = {
             signerAddress: WALLET.toString(),
             source: { type: 'local' },

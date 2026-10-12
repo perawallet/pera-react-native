@@ -87,7 +87,16 @@ describe('signing an Ethereum transaction through the machine', () => {
 
     it("produces exactly the raw transaction viem's signTransaction does", async () => {
         reviewerChainAdapters.register(
-            fakeReviewerAdapter({ chainId: 'ethereum' }),
+            fakeReviewerAdapter({
+                chainId: 'ethereum',
+                decoder: {
+                    decode: async () => ({
+                        totalFees: 0n,
+                        transactionSummaries: [],
+                        signableAddresses: [SENDER],
+                    }),
+                },
+            }),
         )
         const { kms, calls } = createVectorKeyStore()
         const request: TransactionSignRequest = {

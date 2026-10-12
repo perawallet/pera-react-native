@@ -19,6 +19,7 @@ import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import {
     addressCodecs,
     keyDerivations,
+    transactionPlanners,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
@@ -61,6 +62,7 @@ import { algorandNameServiceAdapter } from './nfd'
 import { algorandBackupAdapter, algorandMigrationAdapter } from './backup'
 import { algorandCardAdapter } from './card'
 import { algorandMultisigAdapter } from './multisig'
+import { algorandTransactionPlanner } from './signing/planner'
 import { algorandRampAdapter } from './onramp'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { algorandDeviceAdapter } from './device'
@@ -100,6 +102,7 @@ export const registerChain = (): void => {
     broadcasterChainAdapters.register(algorandBroadcasterAdapter)
     reviewerChainAdapters.register(algorandReviewerAdapter)
     plannerChainAdapters.register(algorandPlannerAdapter)
+    transactionPlanners.register(algorandTransactionPlanner)
     localKeySignerChainAdapters.register(algorandLocalKeySignerAdapter)
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)

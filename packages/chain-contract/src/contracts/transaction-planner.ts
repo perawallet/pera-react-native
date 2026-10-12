@@ -33,12 +33,13 @@ export interface TransactionPlanner {
     plan(transaction: UnsignedTransaction): SigningRequest[]
     /**
      * Throws unless `signatures` are enough for the transaction, each from its
-     * planned signer in its planned scheme.
+     * planned signer in its planned scheme. May verify them first, so it can
+     * answer asynchronously.
      */
     assemble(
         transaction: UnsignedTransaction,
         signatures: Signature[],
-    ): SignedTransaction
+    ): SignedTransaction | Promise<SignedTransaction>
 }
 
 export const transactionPlanners =

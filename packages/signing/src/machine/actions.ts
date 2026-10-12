@@ -23,11 +23,12 @@ import {
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    SignableGroup,
-    SigningResult,
-    SourceCallbacks,
-    SourceMetadata,
+import {
+    isUnsignedTransactionsData,
+    type SignableGroup,
+    type SigningResult,
+    type SourceCallbacks,
+    type SourceMetadata,
 } from '../pipeline/types'
 import {
     CannotSignError,
@@ -79,13 +80,18 @@ export const buildGroupSignerMap = (
                 'signer account not found in wallet',
             )
         }
-        const authAccount = resolveSigningAccount(
-            signerAccount,
-            group.source,
-            group.data.type,
-            allAccounts,
-            chainId,
-        )
+        // A planner already names the key holder, so a rekey isn't followed twice.
+        const authAccount =
+            group.data.type === 'transactions' &&
+            isUnsignedTransactionsData(group.data)
+                ? signerAccount
+                : resolveSigningAccount(
+                      signerAccount,
+                      group.source,
+                      group.data.type,
+                      allAccounts,
+                      chainId,
+                  )
         map.set(
             group.signerAddress,
             resolveSignerCredential(authAccount, chainId),
@@ -238,21 +244,20 @@ const buildUnsignedTransactionGroups = (
         if (tx.scope.networkId !== scope.networkId) {
             throw new ScopeChangedError(tx.scope, scope)
         }
-        if (signers.size !== 1) {
-            throw new InvalidSignableDataError(
-                'a chain-neutral transaction must have exactly one signer',
-            )
-        }
-        const [signer] = signers
-        const account = findAccountByAddressOn(
-            allAccounts,
-            scope.chainId,
-            signer,
+        // Keyed to the first key the wallet can sign with here, else the first
+        // it holds; the review lists every held signer.
+        const held = [...signers].flatMap(
+            signer =>
+                findAccountByAddressOn(allAccounts, scope.chainId, signer) ??
+                [],
         )
+        const account =
+            held.find(candidate => candidate.custody.kind === 'local') ??
+            held[0]
         if (!account) continue
         // The wallet's spelling, so the group key and every later lookup agree.
-        const signerAddress =
-            chainAccountOf(account, scope.chainId)?.address ?? signer
+        const signerAddress = chainAccountOf(account, scope.chainId)?.address
+        if (!signerAddress) continue
 
         const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
         entry.txs.push(tx)

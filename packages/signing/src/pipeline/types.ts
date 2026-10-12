@@ -297,7 +297,10 @@ export interface SignableAnalysis {
 
     warnings: AnalysisWarning[]
 
-    /** Addresses that need to provide signatures. */
+    /**
+     * The wallet's addresses that sign. A chain-neutral transaction is signed
+     * only with these keys, so this is what the user approves.
+     */
     signableAddresses: string[]
 
     riskLevel: 'low' | 'medium' | 'high'

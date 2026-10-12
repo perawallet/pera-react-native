@@ -39,6 +39,12 @@ export const transactionPlannerContractTests = (
 ): void => {
     const { transaction } = fixtures
 
+    // Whether the planner answers now or later, a refusal is a rejection.
+    const assemble = async (
+        planner: TransactionPlanner,
+        signatures: Signature[],
+    ) => planner.assemble(transaction, signatures)
+
     const signAll = (requests: SigningRequest[]): Promise<Signature[]> =>
         Promise.all(
             requests.map(async request => ({
@@ -99,15 +105,15 @@ export const transactionPlannerContractTests = (
             const planner = makePlanner()
             const signatures = await signAll(planner.plan(transaction))
 
-            const signed = planner.assemble(transaction, signatures)
+            const signed = await assemble(planner, signatures)
 
             expect(signed.scope).toEqual(transaction.scope)
             expect(signed.id).not.toBe('')
             expect(signed.bytes.length).toBeGreaterThan(0)
         })
 
-        it('refuses to assemble without signatures', () => {
-            expect(() => makePlanner().assemble(transaction, [])).toThrow()
+        it('refuses to assemble without signatures', async () => {
+            await expect(assemble(makePlanner(), [])).rejects.toThrow()
         })
 
         it('refuses a signature in another scheme than planned', async () => {
@@ -116,24 +122,21 @@ export const transactionPlannerContractTests = (
             const otherScheme =
                 first.scheme === 'secp256k1' ? 'ed25519' : 'secp256k1'
 
-            expect(() =>
-                planner.assemble(transaction, [
-                    { ...first, scheme: otherScheme },
-                    ...rest,
-                ]),
-            ).toThrow()
+            await expect(
+                assemble(planner, [{ ...first, scheme: otherScheme }, ...rest]),
+            ).rejects.toThrow()
         })
 
         it('refuses a signature from anyone but its planned signer', async () => {
             const planner = makePlanner()
             const [first, ...rest] = await signAll(planner.plan(transaction))
 
-            expect(() =>
-                planner.assemble(transaction, [
+            await expect(
+                assemble(planner, [
                     { ...first, signer: fixtures.stranger },
                     ...rest,
                 ]),
-            ).toThrow()
+            ).rejects.toThrow()
         })
     })
 }

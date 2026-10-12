@@ -38,7 +38,6 @@ import {
     type SigningResult,
 } from '../../../pipeline/types'
 import { resolveSignerCredential } from '../../utils/resolveSignerCredential'
-import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type PlannedSignerInput = {
     groups: AnalyzedSignableGroup[]
@@ -46,8 +45,6 @@ export type PlannedSignerInput = {
     scope: ChainScope
     keyStore: Pick<ChainKeyStore, 'sign'>
 }
-
-type GroupKey = { keyPairId: string; scheme: SigningRequest['scheme'] }
 
 /** Signs chain-neutral groups through their chain's planner (see docs/ARCHITECTURE.md). */
 export const signPlannedGroups = async ({
@@ -58,73 +55,64 @@ export const signPlannedGroups = async ({
 }: PlannedSignerInput): Promise<SigningResult[]> => {
     const planner = transactionPlanners.get(scope.chainId)
 
-    // The key dispatch chose this group's custody from, so the two agree on
-    // who signs, a rekey included.
-    const keyOf = (group: AnalyzedSignableGroup): GroupKey => {
-        const signer = findAccountByAddressOn(
+    // Only keys the review listed sign, so a payload can't add a signer the
+    // user never approved. A listed key the wallet can't use here is left to
+    // its holder; the planner can't recover a signer, so the scheme must match.
+    const keyFor = (
+        request: SigningRequest,
+        reviewed: readonly string[],
+    ): string | undefined => {
+        if (
+            !reviewed.some(address =>
+                isSameAddress(scope.chainId, address, request.signer),
+            )
+        ) {
+            return undefined
+        }
+        const account = findAccountByAddressOn(
             allAccounts,
             scope.chainId,
-            group.signerAddress,
+            request.signer,
         )
-        if (!signer) {
-            throw new CannotSignError(group.signerAddress, 'not in this wallet')
+        const keyPairId = account && signingKeyOn(account, scope.chainId)
+        if (!account || account.custody.kind !== 'local' || !keyPairId) {
+            return undefined
         }
-        const account = resolveSigningAccount(
-            signer,
-            group.source,
-            'transactions',
-            allAccounts,
-            scope.chainId,
-        )
-        if (account.custody.kind !== 'local') {
-            throw new CannotSignError(group.signerAddress, 'no local key')
-        }
-        const { scheme } = resolveSignerCredential(account, scope.chainId)
-        const keyPairId = signingKeyOn(account, scope.chainId)
-        if (!keyPairId) {
+        if (
+            resolveSignerCredential(account, scope.chainId).scheme !==
+            request.scheme
+        ) {
             throw new CannotSignError(
-                group.signerAddress,
-                'no key on this chain',
+                request.signer,
+                `no ${request.scheme} key on this chain`,
             )
         }
-        return { keyPairId, scheme }
+        return keyPairId
     }
 
     const signTransaction = async (
         transaction: UnsignedTransaction,
         group: AnalyzedSignableGroup,
-        key: GroupKey,
     ): Promise<SignedTransaction> => {
-        const requests = planOrRefuse(planner, transaction)
-        // Checked before any signature, so a refusal signs nothing. The planner
-        // can't recover a signer from a signature, so the key must be exact.
-        for (const request of requests) {
-            if (
-                !isSameAddress(
-                    scope.chainId,
-                    request.signer,
-                    group.signerAddress,
-                )
-            ) {
-                throw new InvalidSignableDataError(
-                    'a planned signature is for another account than the one reviewed',
-                )
-            }
-            if (request.scheme !== key.scheme) {
-                throw new CannotSignError(
-                    group.signerAddress,
-                    `no ${request.scheme} key on this chain`,
-                )
-            }
+        // Every key is resolved before any signs, so a refusal signs nothing.
+        const held = planOrRefuse(planner, transaction).flatMap(request => {
+            const keyPairId = keyFor(request, group.analysis.signableAddresses)
+            return keyPairId ? [{ request, keyPairId }] : []
+        })
+        if (held.length === 0) {
+            throw new CannotSignError(
+                group.signerAddress,
+                'the wallet holds none of the keys this transaction needs',
+            )
         }
         const signatures: Signature[] = []
-        for (const request of requests) {
+        for (const { request, keyPairId } of held) {
             signatures.push({
                 requestIndex: request.requestIndex,
                 signer: request.signer,
                 scheme: request.scheme,
                 bytes: await keyStore.sign(
-                    key.keyPairId,
+                    keyPairId,
                     request.payload,
                     SIGNING_KEY_DOMAIN,
                 ),
@@ -143,10 +131,9 @@ export const signPlannedGroups = async ({
                 'only chain-neutral transactions are signed through a planner',
             )
         }
-        const key = keyOf(group)
         const signed: SignedTransaction[] = []
         for (const transaction of group.data.transactions) {
-            signed.push(await signTransaction(transaction, group, key))
+            signed.push(await signTransaction(transaction, group))
         }
         results.push({
             signedData: { type: 'signed-transactions', signed },
@@ -172,13 +159,13 @@ const planOrRefuse = (
 }
 
 // The same signatures assemble the same way, so retrying can't help.
-const assembleOrRefuse = (
+const assembleOrRefuse = async (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
     signatures: Signature[],
-): SignedTransaction => {
+): Promise<SignedTransaction> => {
     try {
-        return planner.assemble(transaction, signatures)
+        return await planner.assemble(transaction, signatures)
     } catch (error) {
         throw new SigningError(
             messageOf(error),

@@ -596,17 +596,29 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
         ).toThrow(ChainAdapterNotRegisteredError)
     })
 
-    it('refuses a transaction that needs more than one signer', () => {
+    it('keys a transaction several signers sign to the first one the wallet holds', () => {
         registerFakeTransactionPlanner(
             fakeTransactionPlanner(transaction => [
-                ...planFromPayload(transaction),
-                { ...planFromPayload(transaction)[0], signer: ALSO_OURS },
+                { ...planFromPayload(transaction)[0], signer: STRANGER },
+                { ...planFromPayload(transaction)[0], requestIndex: 1 },
+                {
+                    ...planFromPayload(transaction)[0],
+                    requestIndex: 2,
+                    signer: ALSO_OURS,
+                },
             ]),
         )
 
-        expect(() =>
-            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
-        ).toThrow(InvalidSignableDataError)
+        const context = resolveInitialContext(
+            input([makeUnsignedTransaction(OURS)]),
+        )
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: OURS,
+                originalIndices: [0],
+            }),
+        ])
     })
 
     it("groups under the wallet's spelling of a signer the planner spells differently", () => {

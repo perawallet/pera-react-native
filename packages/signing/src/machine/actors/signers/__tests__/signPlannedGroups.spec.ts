@@ -58,12 +58,14 @@ const localAccount = (
 
 const neutralGroup = (
     transactions = [makeUnsignedTransaction(OURS)],
+    reviewed: string[] = [OURS, AUTH],
 ): AnalyzedSignableGroup =>
     ({
         data: { type: 'transactions', transactions, chainData: {} },
         source: { type: 'local' },
         signerAddress: OURS,
         originalIndices: transactions.map((_, i) => i),
+        analysis: { signableAddresses: reviewed },
     }) as unknown as AnalyzedSignableGroup
 
 const flipped = (bytes: Uint8Array): Uint8Array => bytes.map(b => b ^ 0xff)
@@ -137,7 +139,36 @@ describe('signPlannedGroups', () => {
         })
     })
 
-    it('refuses a planned signature for any account but the reviewed one, signing nothing', async () => {
+    it('signs each held key a transaction plans, leaving the others to their holders', async () => {
+        planning(transaction => [
+            ...planFromPayload(transaction),
+            {
+                ...planFromPayload(transaction)[0],
+                requestIndex: 1,
+                signer: AUTH,
+            },
+            {
+                ...planFromPayload(transaction)[0],
+                requestIndex: 2,
+                signer: '0xSOMEONE_ELSE',
+            },
+        ])
+
+        const [result] = await run(
+            [neutralGroup()],
+            [localAccount(), localAccount(AUTH, 'auth-key')],
+        )
+
+        expect(sign.mock.calls.map(([keyPairId]) => keyPairId)).toEqual([
+            'eth-key',
+            'auth-key',
+        ])
+        expect(result.signedData).toMatchObject({
+            signed: [{ id: `signed-by-${OURS},${AUTH}` }],
+        })
+    })
+
+    it("never signs with a held key the review didn't list", async () => {
         planning(transaction => [
             ...planFromPayload(transaction),
             {
@@ -147,18 +178,49 @@ describe('signPlannedGroups', () => {
             },
         ])
 
-        await expect(
-            run(
-                [neutralGroup()],
-                [localAccount(), localAccount(AUTH, 'auth-key')],
-            ),
-        ).rejects.toBeInstanceOf(InvalidSignableDataError)
+        await run(
+            [neutralGroup(undefined, [OURS])],
+            [localAccount(), localAccount(AUTH, 'auth-key')],
+        )
+
+        expect(sign.mock.calls.map(([keyPairId]) => keyPairId)).toEqual([
+            'eth-key',
+        ])
+    })
+
+    it('leaves a participant whose key is not on this device to its holder', async () => {
+        planning(transaction => [
+            ...planFromPayload(transaction),
+            {
+                ...planFromPayload(transaction)[0],
+                requestIndex: 1,
+                signer: AUTH,
+            },
+        ])
+        const watched = localAccount(AUTH, 'auth-key', {
+            custody: { kind: 'watch' },
+        })
+
+        await run([neutralGroup()], [localAccount(), watched])
+
+        expect(sign.mock.calls.map(([keyPairId]) => keyPairId)).toEqual([
+            'eth-key',
+        ])
+    })
+
+    it('refuses a transaction none of whose keys the wallet holds, signing nothing', async () => {
+        planning(transaction => [
+            { ...planFromPayload(transaction)[0], signer: '0xSOMEONE_ELSE' },
+        ])
+
+        await expect(run([neutralGroup()])).rejects.toBeInstanceOf(
+            CannotSignError,
+        )
         expect(sign).not.toHaveBeenCalled()
     })
 
-    it('signs with the key a rekey hands the account to, as dispatch chose', async () => {
+    it('signs with the key the planner names, never following a rekey again', async () => {
         seedAuthority(OURS, AUTH, SECOND_CHAIN_SCOPE)
-        // The borrowed Algorand rules find a rekey target by its Algorand address.
         const auth = localAccount(AUTH, 'auth-key', {
             chains: {
                 ethereum: { address: AUTH, keyPairId: 'auth-key' },
@@ -169,7 +231,7 @@ describe('signPlannedGroups', () => {
         await run([neutralGroup()], [localAccount(), auth])
 
         expect(sign.mock.calls.map(([keyPairId]) => keyPairId)).toEqual([
-            'auth-key',
+            'eth-key',
         ])
     })
 
