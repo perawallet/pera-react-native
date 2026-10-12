@@ -12,8 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { signingKeyOn } from '@perawallet/wallet-core-accounts'
-import { algo25Account, TEST_CHAIN_ID } from '../../__tests__/accounts'
+import type {
+    MessageRequest,
+    SigningRequest,
+} from '@perawallet/wallet-core-chain-contract'
+import { algo25Account } from '../../__tests__/accounts'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import { messageSignerChainAdapters } from '../../message-signer'
 import { CannotSignError } from '../../pipeline/errors'
@@ -28,55 +31,84 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    useAllAccounts: () => [],
+}))
+
 const account = algo25Account('ADDR', { keyPairId: 'key-1' })
+
+const planFor = vi.fn((request: MessageRequest): SigningRequest[] => [
+    {
+        requestIndex: 0,
+        signer: request.signer,
+        scheme: 'ed25519',
+        payload: new TextEncoder().encode(
+            (request.payload as { data: string }).data,
+        ),
+    },
+])
 
 describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSignDataWithKey.mockResolvedValue([new Uint8Array([9])])
-    })
-
-    test('hands the account and a flat item list to the registered signer', async () => {
-        const signature = [new Uint8Array([1, 2, 3])]
-        const signArbitraryData = vi.fn().mockResolvedValue(signature)
-        registerFakeMessageSignerAdapter({ signArbitraryData })
-        const { result } = renderHook(() => useArbitraryDataSigner())
-
-        await expect(
-            result.current.signArbitraryData('algorand', account, ['a', 'b']),
-        ).resolves.toBe(signature)
-        await result.current.signArbitraryData('algorand', account, 'single')
-
-        expect(signArbitraryData).toHaveBeenNthCalledWith(
-            1,
-            expect.anything(),
-            account,
-            ['a', 'b'],
-        )
-        expect(signArbitraryData).toHaveBeenNthCalledWith(
-            2,
-            expect.anything(),
-            account,
-            ['single'],
+        mockSignDataWithKey.mockImplementation(
+            async (_key, _domain, payloads: Uint8Array[]) =>
+                payloads.map((_, index) => new Uint8Array([index + 1])),
         )
     })
 
-    test('binds signPayloads to the KMS under the signing key domain', async () => {
-        registerFakeMessageSignerAdapter({
-            signArbitraryData: vi.fn(async (deps, acct) =>
-                deps.signPayloads(signingKeyOn(acct, TEST_CHAIN_ID)!, [
-                    new Uint8Array([4]),
-                ]),
-            ),
+    test('plans one arbitrary-data request per item, naming the account, and returns the signatures in order', async () => {
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: planFor,
+            assemble: vi.fn((request, signatures) => ({
+                scope: request.scope,
+                signature: signatures[0],
+            })),
         })
         const { result } = renderHook(() => useArbitraryDataSigner())
 
-        await result.current.signArbitraryData('algorand', account, 'x')
+        const signatures = await result.current.signArbitraryData(
+            'algorand',
+            account,
+            ['a', 'b'],
+        )
+        await result.current.signArbitraryData('algorand', account, 'single')
 
+        expect(signatures).toEqual([new Uint8Array([1]), new Uint8Array([2])])
+        expect(adapter.plan).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+                method: 'arbitrary-data',
+                signer: 'ADDR',
+                payload: { data: 'a' },
+            }),
+            { account, accounts: [] },
+        )
+        expect(adapter.plan).toHaveBeenNthCalledWith(
+            3,
+            expect.objectContaining({ payload: { data: 'single' } }),
+            expect.anything(),
+        )
+    })
+
+    test('signs every payload in one KMS call under the signing key domain', async () => {
+        registerFakeMessageSignerAdapter({
+            plan: planFor,
+            assemble: vi.fn((request, signatures) => ({
+                scope: request.scope,
+                signature: signatures[0],
+            })),
+        })
+        const { result } = renderHook(() => useArbitraryDataSigner())
+
+        await result.current.signArbitraryData('algorand', account, ['a', 'b'])
+
+        expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
         expect(mockSignDataWithKey).toHaveBeenCalledWith(
             'key-1',
             'pera.accounts',
-            [new Uint8Array([4])],
+            [new TextEncoder().encode('a'), new TextEncoder().encode('b')],
         )
     })
 
@@ -91,8 +123,8 @@ describe('useArbitraryDataSigner', () => {
     })
 
     test('refuses an account with no address on the chain before reaching the signer', async () => {
-        const signArbitraryData = vi.fn()
-        registerFakeMessageSignerAdapter({ signArbitraryData })
+        const plan = vi.fn()
+        registerFakeMessageSignerAdapter({ plan })
         const { result } = renderHook(() => useArbitraryDataSigner())
 
         await expect(
@@ -102,7 +134,7 @@ describe('useArbitraryDataSigner', () => {
                 'x',
             ),
         ).rejects.toBeInstanceOf(CannotSignError)
-        expect(signArbitraryData).not.toHaveBeenCalled()
+        expect(plan).not.toHaveBeenCalled()
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 })

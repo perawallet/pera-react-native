@@ -13,6 +13,7 @@
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
+import { fetchAlgorandChangeSignal } from './change-signal'
 import {
     summarizeAlgorandChainState,
     toAlgorandChainState,
@@ -44,6 +45,8 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     fetchAccountState: (address, scope, hint) =>
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
+    fetchChangeSignal: (addresses, scope, cursor) =>
+        fetchAlgorandChangeSignal(addresses, algorandNetworkOf(scope), cursor),
     toChainState: toAlgorandChainState,
     summarizeChainState: summarizeAlgorandChainState,
     fetchAssetOptInRounds: (address, scope) =>

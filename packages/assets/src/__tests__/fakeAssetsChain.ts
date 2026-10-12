@@ -40,6 +40,7 @@ export const fakeAssetsAdapter = (
     overrides: Partial<AssetsChainAdapter> = {},
 ): AssetsChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
+    priceProvider: 'pera',
     maxPriceIdsPerRequest: 100,
     getNativeAsset: () => FAKE_NATIVE_ASSET,
     syncAssets: vi.fn(async () => undefined),
@@ -58,8 +59,7 @@ export const fakeAssetsAdapter = (
         clawbackAddress: null,
     })),
     searchAssets: vi.fn(async () => ({ results: [], nextCursor: undefined })),
-    fetchNativeUsdPrice: vi.fn(async () => new Decimal(0)),
-    fetchUsdPrices: vi.fn(async () => []),
+    getPrices: vi.fn(async () => []),
     ...overrides,
 })
 

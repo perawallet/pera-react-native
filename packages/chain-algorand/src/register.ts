@@ -24,15 +24,12 @@ import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
-import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
-import { algorandHistoryAdapter, algorandSendFlowAdapter } from './transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
-import { algorandLedgerAppDriver } from './ledger/driver'
-import { algorandSwapAdapter } from './swaps'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
@@ -40,6 +37,18 @@ import {
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
+import { cardChainAdapters } from '@perawallet/wallet-core-card'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
+import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
+import {
+    algorandHistoryAdapter,
+    algorandSendFlowAdapter,
+    algorandTransferAdapter,
+} from './transactions'
+import { algorandLedgerAppDriver } from './ledger/driver'
+import { algorandSwapAdapter } from './swaps'
 import {
     algorandBroadcasterAdapter,
     algorandLocalKeySignerAdapter,
@@ -49,15 +58,13 @@ import {
 } from './signing'
 import { algorandAssetsAdapter } from './assets'
 import { algorandNameServiceAdapter } from './nfd'
-import { cardChainAdapters } from '@perawallet/wallet-core-card'
-import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
-import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { algorandBackupAdapter, algorandMigrationAdapter } from './backup'
 import { algorandCardAdapter } from './card'
 import { algorandMultisigAdapter } from './multisig'
 import { algorandRampAdapter } from './onramp'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { algorandDeviceAdapter } from './device'
+import { algorandNodeBackends } from './blockchain/node-backends'
 import {
     algorandAccountPresentation,
     algorandAccountsAdapter,
@@ -78,12 +85,14 @@ export const registerChain = (): void => {
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
     accountPresentationChainAdapters.register(algorandAccountPresentation)
+    nodeBackendAdapters.register(algorandNodeBackends)
     assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
     dappRequestChainAdapters.register(algorandDappRequestAdapter)
     sendFlowChainAdapters.register(algorandSendFlowAdapter)
     historyChainAdapters.register(algorandHistoryAdapter)
+    transferChainAdapters.register(algorandTransferAdapter)
     nameServiceChainAdapters.register(algorandNameServiceAdapter)
     cardChainAdapters.register(algorandCardAdapter)
     rampChainAdapters.register(algorandRampAdapter)

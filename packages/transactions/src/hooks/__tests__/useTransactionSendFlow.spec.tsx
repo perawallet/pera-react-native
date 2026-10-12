@@ -18,10 +18,7 @@ import {
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    microAlgosToAlgos,
-    PeraServiceUnavailableError,
-} from '@perawallet/wallet-core-shared'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     useTransactionSendFlow,
     InvalidSendParamsError,
@@ -118,7 +115,7 @@ const SENDER_ACCOUNT: WalletAccount = {
 /** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
 const accountState = (balance: bigint, minBalance: bigint) => ({
     nativeBalanceBaseUnits: new Decimal(balance.toString()),
-    minBalance: microAlgosToAlgos(minBalance),
+    reserveBalance: new Decimal(minBalance.toString()),
     holdings: [],
 })
 

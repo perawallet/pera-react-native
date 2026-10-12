@@ -120,7 +120,18 @@ export type TransactionIconKind =
     | 'contract-call'
     | 'approval'
     | 'opt-in'
+    | 'opt-out'
+    | 'asset-config'
+    | 'asset-freeze'
+    /** Participation records. */
+    | 'consensus'
     | 'unknown'
+
+export interface BalanceChange {
+    assetRef: AssetRef
+    /** Signed base units: negative left the account, positive arrived. */
+    value: Decimal
+}
 
 export interface TransactionSummary {
     kind:
@@ -134,7 +145,12 @@ export interface TransactionSummary {
     title: LocalizedText
     direction: 'in' | 'out' | 'self' | 'none'
     counterparty?: string
+    /** Shown instead of the counterparty's name when set. */
+    subtitle?: LocalizedText
+    /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
     amount?: { assetRef: AssetRef; value: Decimal }
+    /** Shown instead of `amount` when set. */
+    balanceChanges?: BalanceChange[]
     icon: TransactionIconKind
 }
 
@@ -169,14 +185,24 @@ export interface TransactionRecord {
     chainData: ChainTransactionData
 }
 
-export type TransactionIntent = {
+export type TransferIntent = {
     kind: 'transfer'
     from: string
     to: string
     assetRef: AssetRef
+    /** Base units. */
     amount: Decimal
     note?: string
 }
+
+/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+export type AssetOptInIntent = {
+    kind: 'asset-opt-in'
+    account: string
+    assetRef: AssetRef
+}
+
+export type TransactionIntent = TransferIntent | AssetOptInIntent
 
 export interface BuildContext {
     scope: ChainScope
@@ -238,6 +264,7 @@ export interface DeriveOpts {
 
 export interface PaymentUriOpts {
     assetRef?: AssetRef
+    /** Whole base units of the asset (microAlgos for ALGO). */
     amount?: Decimal
     label?: string
     note?: string
@@ -253,9 +280,11 @@ export interface MessageSummary {
 
 export interface MessageRequest {
     scope: ChainScope
+    /** The kind of signature asked for; a chain's message signer lists the methods it signs. */
+    method: string
     signer: string
+    /** Chain-native; only the owning adapter reads it. */
     payload: unknown
-    summary: MessageSummary
 }
 
 export interface SignedMessage {

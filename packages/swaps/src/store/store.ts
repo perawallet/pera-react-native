@@ -11,9 +11,9 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
 import {
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -35,7 +35,7 @@ const initialState = {
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = create<SwapsState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
@@ -52,7 +52,7 @@ export const useSwapsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             partialize: state => ({
                 slippage: state.slippage,
                 isLocalCurrencyInput: state.isLocalCurrencyInput,

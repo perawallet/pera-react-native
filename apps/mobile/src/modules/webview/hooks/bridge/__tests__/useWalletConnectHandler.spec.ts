@@ -62,6 +62,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
             typeof import('../../../../../../../../packages/shared/src/utils/hydration-gate')
         >('../../../../../../../../packages/shared/src/utils/hydration-gate')
     ).gateWritesOnHydration,
+    guardedPersist: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/shared/src/utils/guarded-persist-core')
+        >(
+            '../../../../../../../../packages/shared/src/utils/guarded-persist-core',
+        )
+    ).createGuardedPersist({ critical: vi.fn(), warn: vi.fn() }),
 }))
 
 // The real `useConnectionPairing` runs here — only the registry underneath it

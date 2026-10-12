@@ -33,10 +33,10 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     insertAssetHolding,
-    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -171,16 +171,12 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             scope: MAINNET_SCOPE,
             amount: '10000000',
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
@@ -251,16 +247,12 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             scope: MAINNET_SCOPE,
             amount: '10000000',
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: address,
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
     }
 
@@ -398,16 +390,12 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             amount: '10000000',
             isFrozen: true,
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         const InputAmountStub = () => <View testID='input-amount-stub' />

@@ -170,10 +170,7 @@ export const fakeAccountStateSnapshot = (
     nativeBaseUnits = 0,
     overrides: Partial<AccountStateSnapshot> = {},
 ): AccountStateSnapshot => ({
-    nativeBalance: new Decimal(nativeBaseUnits).div(100),
     nativeBalanceBaseUnits: new Decimal(nativeBaseUnits),
-    minBalance: new Decimal(0),
-    authorityAddress: null,
     chainState: { family: 'evm', nonce: { latest: 0, pending: 0 } },
     holdings: [
         {
@@ -226,7 +223,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     fetchAccountState: vi.fn(),
     toChainState: vi.fn(observed => ({
         family: 'algorand' as const,
-        minBalance: observed.minBalance ?? new Decimal(0),
+        minBalance: new Decimal(0),
         status: 'Offline' as const,
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,

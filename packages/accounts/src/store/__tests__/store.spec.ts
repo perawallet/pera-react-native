@@ -988,7 +988,7 @@ describe('services/accounts/store', () => {
             ).toContainEqual(added)
         })
 
-        test('leaves storage untouched, and keeps dropping writes, when the migration throws', async () => {
+        test('quarantines the payload, rather than letting the next write erase it, when the migration throws', async () => {
             const persisted = JSON.stringify({
                 state: legacyState(),
                 version: 3,
@@ -1006,10 +1006,16 @@ describe('services/accounts/store', () => {
                 .getState()
                 .setAccounts([account('watch', 'NEW-ADDR')])
 
-            expect(module.useAccountsStore.persist.hasHydrated()).toBe(false)
-            expect(getProvider().keyValueStorage.getItem(STORE_KEY)).toBe(
-                persisted,
-            )
+            const { readQuarantinedStates } =
+                await import('@perawallet/wallet-core-shared')
+            expect(
+                readQuarantinedStates(getProvider().keyValueStorage, STORE_KEY),
+            ).toEqual([
+                expect.objectContaining({
+                    reason: 'migrate-failed',
+                    raw: persisted,
+                }),
+            ])
         })
 
         test('hydrating a legacy payload twice yields identical state', async () => {

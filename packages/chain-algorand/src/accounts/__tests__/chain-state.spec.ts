@@ -18,43 +18,13 @@ import {
 } from '../chain-state'
 
 describe('toAlgorandChainState', () => {
-    it('converts display-unit minBalance to microAlgos and carries the rest', () => {
-        const state = toAlgorandChainState({
-            minBalance: new Decimal('0.1'),
-            status: 'Online',
-            authorityAddress: 'AUTH',
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 2,
-            totalAppsOptedIn: 3,
-        })
-
-        expect(state).toEqual({
-            family: 'algorand',
-            minBalance: new Decimal(100000),
-            status: 'Online',
-            authAddress: 'AUTH',
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 2,
-            totalAppsOptedIn: 3,
-        })
-    })
-
     it('leaves the authority out when null', () => {
         expect(
             toAlgorandChainState({ authorityAddress: null }),
         ).not.toHaveProperty('authAddress')
     })
 
-    it('reads an unknown status as Offline', () => {
-        expect(
-            toAlgorandChainState({
-                authorityAddress: null,
-                status: 'Weird',
-            }).status,
-        ).toBe('Offline')
-    })
-
-    it('takes the column defaults for a bare authority', () => {
+    it('takes the never-synced defaults for a bare authority', () => {
         expect(toAlgorandChainState({ authorityAddress: 'X' })).toEqual({
             family: 'algorand',
             minBalance: new Decimal(0),
@@ -69,11 +39,14 @@ describe('toAlgorandChainState', () => {
 
 describe('summarizeAlgorandChainState', () => {
     it('reads the minimum balance as the reserve and the opted-in assets as held tokens', () => {
-        const state = toAlgorandChainState({
-            minBalance: new Decimal('0.2'),
-            authorityAddress: null,
+        const state = {
+            family: 'algorand',
+            minBalance: new Decimal(200000),
+            status: 'Offline',
             totalAssetsOptedIn: 2,
-        })
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+        } as const
 
         expect(summarizeAlgorandChainState(state)).toEqual({
             reserveBalance: new Decimal(200000),

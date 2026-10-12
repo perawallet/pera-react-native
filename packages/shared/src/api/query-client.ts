@@ -27,7 +27,6 @@ import {
 import {
     config,
     configuredScopes,
-    getAlgorandChainConfig,
     getPeraServicesConfig,
     hasPeraService,
     type PeraService,
@@ -37,7 +36,6 @@ import type {
     RequestRetryOverrides,
     ResponseConfiguration,
 } from '../models/queries'
-import type { Network } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
 import {
     PeraNetworkError,
@@ -46,10 +44,9 @@ import {
 } from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
 import { readIntegrityToken } from './integrity-token-provider'
+import { nodeBackendAdapters, type NodeBackendName } from './node-backends'
 
 type BackendInstances = {
-    algod: KyInstance
-    indexer: KyInstance
     pera: KyInstance
     backup: KyInstance
 }
@@ -194,7 +191,7 @@ const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
     })
 }
 
-const createFetchClient = (clients: Map<string, BackendInstances>) => {
+const createFetchClient = () => {
     return async <TData, TVariables = unknown>(
         requestConfig: RequestConfiguration<TVariables>,
     ): Promise<ResponseConfiguration<TData>> => {
@@ -220,21 +217,7 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new PeraServiceUnavailableError(scope, requestConfig.service)
         }
 
-        const backends = clients.get(scopeClientKey(scope))
-
-        if (!backends) {
-            throw new Error(
-                'Could not get backends for ' + scopeClientKey(scope),
-            )
-        }
-
-        const client = backends[requestConfig.backend]
-
-        if (!client) {
-            throw new Error(
-                'Could not get KY client for ' + requestConfig.backend,
-            )
-        }
+        const client = clientFor(scope, requestConfig.backend)
 
         try {
             const path = requestConfig.url.startsWith('/')
@@ -452,26 +435,6 @@ const createTokenHeaderClient = (
         retry: peraRetryConfig,
     })
 
-const createChainClients = (
-    scope: ChainScope,
-): Pick<BackendInstances, 'algod' | 'indexer'> => {
-    const { algodUrl, indexerUrl, algodToken, indexerToken } =
-        getAlgorandChainConfig(scope)
-
-    return {
-        algod: createTokenHeaderClient(
-            algodUrl,
-            'X-Algo-API-Token',
-            algodToken,
-        ),
-        indexer: createTokenHeaderClient(
-            indexerUrl,
-            'X-Indexer-API-Token',
-            indexerToken,
-        ),
-    }
-}
-
 // An in-memory key, deliberately not toScopeKey: that validates the chain id
 // against the compiled-in union and throws for a test's fixture chain, and
 // nothing keyed by it is persisted.
@@ -511,7 +474,6 @@ const buildClientsFor = (scope: ChainScope): BackendInstances => {
     }
 
     return {
-        ...createChainClients(scope),
         pera: createPeraClient(backendUrl),
         backup: createBackupClient(),
     }
@@ -524,9 +486,8 @@ let clientsInitialized = false
 // `vi.fn()`s and an eager build crashes their collection.
 //
 // Builds EVERY configured scope, not just the one needed. Do not replace with
-// a per-scope build-on-miss: updateBackendHeaders / updateNodeEndpoints can run
-// before any request has, and would then silently skip the scopes nothing had
-// requested yet.
+// a per-scope build-on-miss: updateBackendHeaders can run before any request
+// has, and would then silently skip the scopes nothing had requested yet.
 const ensureClientsBuilt = (): void => {
     if (clientsInitialized) return
     clientsInitialized = true
@@ -536,48 +497,54 @@ const ensureClientsBuilt = (): void => {
     }
 }
 
-/**
- * Rebuilds a single network's algod/indexer ky instances against new endpoints.
- * Called from a `blockchain` subscription to the custom-network config store,
- * because `shared` cannot import `blockchain` and builds its clients only once.
- * The `pera` instance is left untouched — the custom-network config only
- * carries chain endpoints.
- *
- * Tokens arrive with the endpoints and are never re-read here, so the ky
- * clients use exactly what the caller resolved — a custom node's
- * developer-entered tokens included, which a token-protected node needs on
- * every ky-transport read (indexer history, indexer asset lookups).
- */
-export const updateNodeEndpoints = (
-    network: Network,
-    endpoints: {
-        algodUrl: string
-        indexerUrl: string
-        algodToken: string
-        indexerToken: string
-    },
-): void => {
-    // Must go through the gate, not `clients.get(…)` with an early
-    // return: the map is lazily populated, so a bail-on-miss would
-    // silently discard an override written before that network's first request.
-    ensureClientsBuilt()
-    const key = scopeClientKey(scopeForLegacyNetwork(network))
-    const existing = clients.get(key)
-    if (!existing) return
+// Keyed by scopeClientKey and backend. Built from the chain's registered
+// backends on first use, so a chain registering after the Pera clients were
+// built is still reached; updateBackendHeaders never touches these, so a Pera
+// credential can't reach a chain node.
+const nodeClients = new Map<string, KyInstance>()
 
-    clients.set(key, {
-        ...existing,
-        algod: createTokenHeaderClient(
-            endpoints.algodUrl,
-            'X-Algo-API-Token',
-            endpoints.algodToken,
-        ),
-        indexer: createTokenHeaderClient(
-            endpoints.indexerUrl,
-            'X-Indexer-API-Token',
-            endpoints.indexerToken,
-        ),
-    })
+const nodeClientFor = (
+    scope: ChainScope,
+    backend: NodeBackendName,
+): KyInstance => {
+    const key = `${scopeClientKey(scope)}/${backend}`
+    const cached = nodeClients.get(key)
+    if (cached) return cached
+    const node = nodeBackendAdapters.get(scope.chainId).backendsFor(scope)[
+        backend
+    ]
+    if (!node) {
+        throw new Error(`${scopeClientKey(scope)} has no ${backend} node`)
+    }
+    const client = createTokenHeaderClient(
+        node.url,
+        node.tokenHeader,
+        node.token,
+    )
+    nodeClients.set(key, client)
+    return client
+}
+
+/**
+ * Drops every node client, so the next request re-reads the chain's backends.
+ * A chain calls it when its endpoints change, e.g. a custom node is saved.
+ */
+export const resetNodeClients = (): void => {
+    nodeClients.clear()
+}
+
+const clientFor = (
+    scope: ChainScope,
+    backend: RequestConfiguration['backend'],
+): KyInstance => {
+    if (backend !== 'pera' && backend !== 'backup') {
+        return nodeClientFor(scope, backend)
+    }
+    const backends = clients.get(scopeClientKey(scope))
+    if (!backends) {
+        throw new Error('Could not get backends for ' + scopeClientKey(scope))
+    }
+    return backends[backend]
 }
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
@@ -604,16 +571,10 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
 
     clients.forEach((client, key) => {
         clients.set(key, {
-            // algod/indexer deliberately excluded: they carry their own
-            // X-Algo-API-Token / X-Indexer-API-Token and never ran
-            // setStandardHeaders on the normal path. Re-applying it here would
-            // ship a Pera credential to chain hosts that may be third-party.
-            algod: client.algod,
-            indexer: client.indexer,
             pera: applyHeaders(client.pera),
             backup: applyHeaders(client.backup),
         })
     })
 }
 
-export const queryClient = createFetchClient(clients)
+export const queryClient = createFetchClient()

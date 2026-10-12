@@ -26,10 +26,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
     MultisigUnsupportedError,
+    RootKeyDiscoveryUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
@@ -158,22 +159,10 @@ export type AccountHoldingSnapshot = {
 
 /** One read of an account's balance, holdings and signer, as the syncer persists it. */
 export type AccountStateSnapshot = {
-    /** Display units of the chain's native asset. */
-    nativeBalance: Decimal
     /** Base units of the chain's native asset. */
     nativeBalanceBaseUnits: Decimal
     /** Persisted to `account_chain_state`; amounts inside are in base units. */
     chainState: AccountChainState
-    /** Display units of the chain's native asset; zero on a chain with no reserve. */
-    minBalance: Decimal
-    // Algorand's resource counts and participation status. A chain without
-    // the concept omits them and the balance row keeps its column defaults.
-    totalAssetsOptedIn?: number
-    totalCreatedAssets?: number
-    totalAppsOptedIn?: number
-    status?: string
-    /** The account's signer when it isn't the account's own key. */
-    authorityAddress: Nullable<string>
     /** Includes the native asset, so reads sort and page it like any holding. */
     holdings: AccountHoldingSnapshot[]
     /**
@@ -183,32 +172,24 @@ export type AccountStateSnapshot = {
     observedRound: Nullable<number>
 }
 
-/** An `account_balances` row, or a legacy authority with no row. */
-export type ObservedChainState = Pick<
-    AccountStateSnapshot,
-    'authorityAddress'
-> &
-    Partial<
-        Pick<
-            AccountStateSnapshot,
-            | 'minBalance'
-            | 'status'
-            | 'totalAssetsOptedIn'
-            | 'totalCreatedAssets'
-            | 'totalAppsOptedIn'
-        >
-    >
+/** An authority recorded outside a sync, with no `account_chain_state` row behind it. */
+export type ObservedChainState = { authorityAddress: Nullable<string> }
 
 export type AccountChangeSignal = {
     /** Whether any of the addresses changed after the cursor. */
     changed: boolean
-    /** The chain position (block or round) to pass as the next cursor. */
+    /**
+     * The chain position (block or round) to pass as the next cursor. After a
+     * change it is only a fallback: the caller checkpoints on the lowest
+     * `observedRound` its reads returned, since a change-signal source ahead
+     * of the node the reads came from would otherwise skip a change.
+     */
     cursor: number
 }
 
 export type AccountStateReadHint = {
-    /** Resources the account held at its last sync; 0 when never synced. */
-    priorResourceCount: number
+    /** What the last sync on this scope persisted; undefined when it never synced. */
+    priorChainState: Optional<AccountChainState>
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
@@ -275,10 +256,8 @@ export interface AccountsChainAdapter {
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
     /**
-     * The chain's `AccountChainState` for state read back from storage; a sync
-     * already carries it as `AccountStateSnapshot.chainState`. A field left out
-     * takes its `account_balances` column default. `minBalance` arrives in
-     * display units.
+     * The chain's `AccountChainState` for an account known only by its
+     * authority; every other field takes the chain's never-synced default.
      */
     toChainState(observed: ObservedChainState): AccountChainState
     /** The chain-neutral facts `AccountState` carries beside `chainState`. */
@@ -310,8 +289,12 @@ export interface AccountsChainAdapter {
         addresses: string[],
         scope: ChainScope,
     ): Promise<Map<string, boolean>>
-    /** Public keys from an in-memory root key, for discovery before the seed is persisted. */
-    createPublicKeyGetter(rootKey: Uint8Array): GetPublicKey
+    /**
+     * Public keys from the in-memory XHD root key `prepareHDMasterKey`
+     * returns, for discovery before the seed is persisted. Absent on a chain
+     * whose keys don't derive from that root.
+     */
+    createPublicKeyGetter?(rootKey: Uint8Array): GetPublicKey
     /**
      * Keystore id of the HD child at these coordinates, computed without
      * deriving. Stored accounts reference this id, so its format never changes,
@@ -429,6 +412,16 @@ export const requireMultisigNative = (
         throw new MultisigUnsupportedError(adapter.chainId)
     }
     return adapter.multisigNative
+}
+
+/** Throws {@link RootKeyDiscoveryUnsupportedError} on a chain whose keys don't derive from the XHD root. */
+export const requirePublicKeyGetter = (
+    adapter: AccountsChainAdapter,
+): NonNullable<AccountsChainAdapter['createPublicKeyGetter']> => {
+    if (!adapter.createPublicKeyGetter) {
+        throw new RootKeyDiscoveryUnsupportedError(adapter.chainId)
+    }
+    return adapter.createPublicKeyGetter.bind(adapter)
 }
 
 /** Empty, without a request, on a chain that declares no `authority`. */

@@ -23,7 +23,6 @@ import {
     refreshAccountHoldings,
     getAccountHoldings,
 } from '../holdingsRepository'
-import { upsertAccountBalance, getAccountBalance } from '../balancesRepository'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
@@ -44,18 +43,6 @@ describe('holdings across the asset cache rebuild', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrationsBefore('0010_text_asset_ids'))
-        await upsertAccountBalance({
-            db,
-            accountAddress: 'ADDR1',
-            scope: MAINNET_SCOPE,
-            algoBalance: 5n,
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            minBalance: 0n,
-            status: 'Offline',
-            authorityAddress: null,
-        })
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
@@ -67,16 +54,6 @@ describe('holdings across the asset cache rebuild', () => {
 
     afterEach(() => {
         teardown()
-    })
-
-    it('keeps the balance row', async () => {
-        const balance = await getAccountBalance({
-            db,
-            accountAddress: 'ADDR1',
-            scope: MAINNET_SCOPE,
-        })
-
-        expect(balance?.algoBalance.toString()).toBe('5')
     })
 
     it('reports the next sync of the same holdings as a change, so asset and price syncs run', async () => {

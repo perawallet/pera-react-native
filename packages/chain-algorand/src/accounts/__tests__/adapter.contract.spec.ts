@@ -71,7 +71,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ],
         nativeAssetId: '0',
-        nativeBalance: new Decimal('2.5'),
+        nativeBalanceBaseUnits: new Decimal(2_500_000),
         heldAssetId: '31566704',
     },
     empty: {
@@ -99,6 +99,26 @@ accountsContractTests(() => algorandAccountsAdapter, {
             HttpResponse.json({}, { status: 503 }),
         ),
     ],
+    changeSignal: {
+        addresses: [FUNDED, EMPTY],
+        cursor: 1000,
+        changed: {
+            handlers: [
+                http.post('*/v1/accounts/should-refresh/', () =>
+                    HttpResponse.json({ refresh: true, round: 1010 }),
+                ),
+            ],
+            nextCursor: 1010,
+        },
+        unchanged: {
+            handlers: [
+                http.post('*/v1/accounts/should-refresh/', () =>
+                    HttpResponse.json({ refresh: false, round: 1005 }),
+                ),
+            ],
+            nextCursor: 1005,
+        },
+    },
     rootKey: fromSeed(new Uint8Array(64).fill(1)),
     hdPath: {
         details: { account: 1, keyIndex: 3 },

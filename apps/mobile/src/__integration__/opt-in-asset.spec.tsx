@@ -33,13 +33,13 @@ import {
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
+    seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
     useAccountsStore,
     type WalletAccount,
     getAccountHoldings,
     insertAssetHolding,
-    upsertAccountBalance,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
@@ -409,16 +409,12 @@ describe('Flow: Opt out of an asset', () => {
             scope: MAINNET_SCOPE,
             amount: '0',
         })
-        await upsertAccountBalance({
+        await seedAlgorandAccountState({
             accountAddress: addressOf(sender),
             scope: MAINNET_SCOPE,
-            algoBalance: new Decimal(5_000_000),
+            nativeBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
             minBalance: new Decimal(200_000),
-            status: 'Offline',
-            authorityAddress: null,
         })
 
         server.use(
@@ -448,6 +444,7 @@ describe('Flow: Opt out of an asset', () => {
             asset: USDC_TEST_ASSET,
             amount: new Decimal(0),
             algoValue: new Decimal(0),
+            fiatValue: null,
             isFrozen: false,
         }
 
@@ -528,6 +525,7 @@ describe('Flow: Opt out of an asset', () => {
             asset: USDC_TEST_ASSET,
             amount: new Decimal('1.5'),
             algoValue: new Decimal(0),
+            fiatValue: null,
             isFrozen: false,
         }
 

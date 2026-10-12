@@ -14,9 +14,12 @@ import type { Decimal } from 'decimal.js'
 import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type {
     AccountChainState,
+    AssetOptInIntent,
     AssetRef,
     ChainTransactionData,
+    TransactionIntent,
     TransactionSummary,
+    TransferIntent,
     UnsignedTransaction,
 } from '../domain'
 import type { ChainFamily } from '../identity'
@@ -68,5 +71,20 @@ describe('AssetRef', () => {
 describe('UnsignedTransaction', () => {
     it('keeps the payload opaque', () => {
         expectTypeOf<UnsignedTransaction['payload']>().toEqualTypeOf<unknown>()
+    })
+})
+
+describe('TransactionIntent', () => {
+    it('is a transfer or an asset opt-in, told apart by kind', () => {
+        expectTypeOf<TransactionIntent>().toEqualTypeOf<
+            TransferIntent | AssetOptInIntent
+        >()
+        expectTypeOf<TransactionIntent['kind']>().toEqualTypeOf<
+            'transfer' | 'asset-opt-in'
+        >()
+    })
+
+    it('carries a transfer amount as a Decimal', () => {
+        expectTypeOf<TransferIntent['amount']>().toEqualTypeOf<Decimal>()
     })
 })

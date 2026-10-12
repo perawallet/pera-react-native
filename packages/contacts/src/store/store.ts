@@ -11,7 +11,6 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import type {
     Contact,
@@ -21,6 +20,7 @@ import type {
 } from '../models'
 import { ContactNotFoundError, DuplicateAddressError } from '../errors'
 import {
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -91,7 +91,7 @@ export const migrateContactsState = (
 export const useContactsStore: UseBoundStore<
     WithPersist<StoreApi<ContactsState>, unknown>
 > = create<ContactsState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             setSelectedContact: (contact: Nullable<Contact>) =>
@@ -134,7 +134,7 @@ export const useContactsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: STORE_VERSION,
             migrate: migrateContactsState,
             partialize: (state): PersistedContactsState => ({

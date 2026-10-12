@@ -33,12 +33,13 @@ const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 // metadata + USD price per row) via getAccountHoldingsPage, and ALGO is itself
 // a holding row (base units / microalgos, 6 decimals) — no separate IN-list
 // metadata/price queries and no client-side ALGO append.
-const mockGetAccountBalance = vi.fn()
+const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldingsPage = vi.fn()
 const mockFetchAndPersistAccount = vi.fn()
 
 vi.mock('../../db', () => ({
-    getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountChainStateRow: (...args: unknown[]) =>
+        mockGetAccountChainStateRow(...args),
     getAccountHoldingsPage: (...args: unknown[]) =>
         mockGetAccountHoldingsPage(...args),
 }))
@@ -124,7 +125,9 @@ afterEach(() => {
 describe('useAccountBalances', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
         mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
@@ -362,9 +365,9 @@ describe('useAccountBalances', () => {
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
     })
 
-    it('falls back to fetchAndPersistAccount when the balance row is missing', async () => {
+    it('falls back to fetchAndPersistAccount when the chain-state row is missing', async () => {
         const newAccount = testAccount('local', 'NEW_ADDR', { id: '2' })
-        mockGetAccountBalance.mockReturnValueOnce(undefined)
+        mockGetAccountChainStateRow.mockReturnValueOnce(undefined)
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_656_000, 1)])
 
         const { result } = renderHook(
@@ -384,8 +387,10 @@ describe('useAccountBalances', () => {
         expect(algo?.amount).toEqual(new Decimal('1.656'))
     })
 
-    it('does not call fetchAndPersistAccount when the balance row is present', async () => {
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+    it('does not call fetchAndPersistAccount when the chain-state row is present', async () => {
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account], SCOPE),
@@ -395,12 +400,74 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
     })
+
+    describe('fiatValue', () => {
+        const renderBalances = async () => {
+            const { result } = renderHook(
+                () => useAccountBalancesQuery([account], SCOPE),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            return result.current.accountBalances.get('ADDR1')
+        }
+        const fiatOf = (
+            data: Awaited<ReturnType<typeof renderBalances>>,
+            assetId: string,
+        ) => data?.assetBalances.find(b => b.assetId === assetId)?.fiatValue
+
+        it('is null for an unpriced or unsynced holding and a Decimal otherwise', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(5_000_000, 2),
+                asaRow('456', 1000, 2, 10),
+                asaRow('999', 100, 0, null),
+                asaRow('777', 100, 0, 0),
+                asaRow('789', 1_000_000, null, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(fiatOf(data, '0')).toEqual(new Decimal(10))
+            expect(fiatOf(data, '456')).toEqual(new Decimal(100))
+            expect(fiatOf(data, '999')).toBeNull()
+            expect(fiatOf(data, '777')).toEqual(new Decimal(0))
+            expect(fiatOf(data, '789')).toBeNull()
+            expect(data?.fiatValue).toEqual(new Decimal(110))
+            expect(data?.fiatValue).toEqual(data?.usdValue)
+        })
+
+        it('is null for the account when the native asset is held but unpriced', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(1_000_000, null),
+                asaRow('456', 1000, 2, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(data?.fiatValue).toBeNull()
+            expect(fiatOf(data, '456')).toEqual(new Decimal(100))
+            expect(data?.usdValue).toEqual(new Decimal(100))
+            expect(data?.algoValue).toEqual(new Decimal(1))
+        })
+
+        it('is a Decimal for the account when the unpriced native balance is zero', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                algoRow(0, null),
+                asaRow('456', 1000, 2, 10),
+            ])
+
+            const data = await renderBalances()
+
+            expect(data?.fiatValue).toEqual(new Decimal(100))
+        })
+    })
 })
 
 describe('useAccountAssetBalanceQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
         mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })

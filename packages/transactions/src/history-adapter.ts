@@ -14,7 +14,11 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
+    type Page,
+    type PageRef,
     type PeraDisplayableTransaction,
+    type TransactionRecord,
+    type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -102,6 +106,14 @@ export interface HistoryChainAdapter {
         txId: string,
         scope: ChainScope,
     ): Promise<Nullable<string>>
+    /** Newest first, every summary read from `address`'s side. Throws on another chain's scope. */
+    getTransactionHistory(
+        address: string,
+        scope: ChainScope,
+        page?: PageRef,
+    ): Promise<Page<TransactionRecord>>
+    /** The list row for a stored item, read from `address`'s side. */
+    summarize(item: TransactionHistoryItem, address: string): TransactionSummary
     toDisplayable(
         item: TransactionHistoryItem,
     ): Nullable<PeraDisplayableTransaction>

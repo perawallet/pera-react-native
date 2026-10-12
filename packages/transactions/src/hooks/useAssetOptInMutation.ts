@@ -18,7 +18,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import {
-    algosToMicroAlgosBigInt,
     assertOnline,
     formatCurrency,
     microAlgosToAlgos,
@@ -103,7 +102,7 @@ export const useAssetOptInMutation = (
                 )
                 const balance = toBigInt(accountState.nativeBalanceBaseUnits)
                 const balanceNeeded =
-                    algosToMicroAlgosBigInt(accountState.minBalance) +
+                    toBigInt(accountState.reserveBalance) +
                     assetOptInMinBalance +
                     feeTotal
                 if (balance < balanceNeeded) {

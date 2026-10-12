@@ -8,6 +8,7 @@
     // Must match CONTRACT_SUITES in vitest.config.ts. Typecheck-only: the
     // build's program excludes the specs that import these.
     "paths": {
+      "@perawallet/wallet-core-assets/testing/adapter-contract": ["../assets/src/__tests__/assets-adapter-contract.ts"],
       "@perawallet/wallet-core-accounts/testing": ["../accounts/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-shared/test-handlers": ["../shared/src/test-handlers.ts"],
       "@perawallet/wallet-core-backup/testing": ["../backup/src/__tests__/testing.ts"],
@@ -19,7 +20,7 @@
       "@perawallet/wallet-core-onramp/testing": ["../onramp/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-signing/testing": ["../signing/src/__tests__/testing.ts"],
       "@perawallet/wallet-core-swaps/testing": ["../swaps/src/__tests__/adapter-contract.ts"],
-      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/testing.ts"],
       "@perawallet/wallet-extension-hardware-wallet/testing": ["../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts"]
     }
   },

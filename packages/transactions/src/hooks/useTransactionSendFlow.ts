@@ -37,7 +37,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    algosToMicroAlgosBigInt,
     displayUnitsToBaseUnits,
     logger,
     type Nullable,
@@ -139,7 +138,7 @@ export const useTransactionSendFlow = (
             const currentBalance = toBigInt(
                 receiverState.nativeBalanceBaseUnits,
             )
-            const currentMbr = algosToMicroAlgosBigInt(receiverState.minBalance)
+            const currentMbr = toBigInt(receiverState.reserveBalance)
 
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderFee = resolveMinFeeForSender(scope.chainId, {

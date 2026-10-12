@@ -163,6 +163,8 @@ export const useLedgerAccountInfoContent = (
                     algoValue: algoUsdPrice.isZero()
                         ? new Decimal(0)
                         : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
+                    // The preview's usdPrice is 0 when unknown, so it can't tell unpriced from worthless.
+                    fiatValue: null,
                 } satisfies AssetWithAccountBalance,
                 usdPrice: asset.usdPrice,
                 hasKnownDecimals: asset.hasKnownDecimals,

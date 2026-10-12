@@ -150,13 +150,18 @@ export {
 export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
 export {
+    arbitraryDataMessageRequest,
+    authDataMessageRequest,
     buildSiwxAuthData,
     canSignMessage,
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     parseAuthDataWireRequest,
     signsMessageVerifiably,
+    signMessages,
+    type ArbitraryDataMessagePayload,
     type BuildSiwxAuthDataArgs,
+    type MessagePlanContext,
     type MessageSignerChainAdapter,
     type MessageSignKind,
     type MessageSigningDeps,

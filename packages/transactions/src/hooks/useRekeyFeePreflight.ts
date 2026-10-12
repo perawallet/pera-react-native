@@ -11,8 +11,12 @@
  */
 
 import { useMemo } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    nativeAssetDecimals,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 
 import type { Decimal } from 'decimal.js'
 
@@ -46,10 +50,12 @@ export const useRekeyFeePreflight = (
 
     const isUnderfunded = useMemo(() => {
         if (!feeAlgos || !accountState) return false
-        return accountState.nativeBalance
-            .minus(accountState.minBalance)
-            .lessThan(feeAlgos)
-    }, [feeAlgos, accountState])
+        const reserve = baseUnitsToDisplayUnits(
+            accountState.reserveBalance,
+            nativeAssetDecimals(scope.chainId),
+        )
+        return accountState.nativeBalance.minus(reserve).lessThan(feeAlgos)
+    }, [feeAlgos, accountState, scope.chainId])
 
     return { isUnderfunded }
 }

@@ -11,4 +11,5 @@
  */
 
 export * from './feeCalculator'
+export * from './getMinimumFeeConfig'
 export * from './useMinimumFeeConfig'

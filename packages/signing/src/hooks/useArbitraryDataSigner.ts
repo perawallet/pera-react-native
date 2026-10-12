@@ -11,12 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import { chainAccountOf } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { messageSignerFor } from '../message-signer'
+import { arbitraryDataMessageRequest, signMessages } from '../message-signer'
 import { CannotSignError } from '../pipeline/errors'
 
 export type UseArbitraryDataSignerResult = {
@@ -29,6 +33,7 @@ export type UseArbitraryDataSignerResult = {
 // The caller names the request's chain; the signer resolves the account's address there.
 export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const { signDataWithKey } = useKMS()
+    const accounts = useAllAccounts()
 
     const signArbitraryData = useCallback<
         UseArbitraryDataSignerResult['signArbitraryData']
@@ -41,7 +46,14 @@ export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
                     `it has no address on chain ${chainId}`,
                 )
             }
-            return messageSignerFor(chainId, address).signArbitraryData(
+            const scope = getSelectedScope(chainId)
+            const signed = await signMessages(
+                [data]
+                    .flat()
+                    .map(item =>
+                        arbitraryDataMessageRequest(scope, address, item),
+                    ),
+                { account, accounts },
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -50,11 +62,10 @@ export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
                             payloads,
                         ),
                 },
-                account,
-                [data].flat(),
             )
+            return signed.map(message => message.signature.bytes)
         },
-        [signDataWithKey],
+        [signDataWithKey, accounts],
     )
 
     return { signArbitraryData }

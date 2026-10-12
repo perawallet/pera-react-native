@@ -11,12 +11,15 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     isLegacyNetwork,
     scopeFromNetworkColumn,
 } from '@perawallet/wallet-core-chain-contract'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { SwapHandoffRecord, SwapHandoffState } from '../models'
 
@@ -66,7 +69,7 @@ export const migrateSwapHandoffState = (
 export const useSwapHandoffStore: UseBoundStore<
     WithPersist<StoreApi<SwapHandoffState>, unknown>
 > = create<SwapHandoffState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             registerHandoff: (record: SwapHandoffRecord) =>
@@ -101,7 +104,7 @@ export const useSwapHandoffStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 2,
             migrate: migrateSwapHandoffState,
             partialize: state => ({ handoffs: state.handoffs }),

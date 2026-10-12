@@ -11,7 +11,6 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     LaunchAccountModes,
     type AccountChains,
@@ -25,6 +24,7 @@ import {
 } from '../models'
 import {
     gateWritesOnHydration,
+    guardedPersist,
     logger,
     registerStore,
     type WithPersist,
@@ -464,7 +464,7 @@ const initialState = {
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
 > = create<AccountsState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             getSelectedAccount: () => {
@@ -804,7 +804,8 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             ...gateWritesOnHydration<AccountsState, unknown>(
-                createJSONStorage(() => getProvider().keyValueStorage),
+                STORE_NAME,
+                () => getProvider().keyValueStorage,
             ),
             version: STORE_VERSION,
             // `migrate` decodes records through the chain adapters, which

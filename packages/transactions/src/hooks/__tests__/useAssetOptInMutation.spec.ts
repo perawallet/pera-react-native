@@ -19,10 +19,7 @@ import {
     QueryClientProvider,
 } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    microAlgosToAlgos,
-    NoConnectionError,
-} from '@perawallet/wallet-core-shared'
+import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     useAssetOptInMutation,
     AlreadyOptedInError,
@@ -76,7 +73,7 @@ const accountState = (
     heldAssetIds: bigint[] = [],
 ) => ({
     nativeBalanceBaseUnits: new Decimal(balance.toString()),
-    minBalance: microAlgosToAlgos(minBalance),
+    reserveBalance: new Decimal(minBalance.toString()),
     holdings: heldAssetIds.map(assetId => ({
         assetId: String(assetId),
         amount: new Decimal(0),

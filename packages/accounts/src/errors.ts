@@ -194,6 +194,12 @@ export class MultisigUnsupportedError extends ChainFeatureUnsupportedError {
     }
 }
 
+export class RootKeyDiscoveryUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Discovery from an in-memory root key', chainId)
+    }
+}
+
 export class PrivateKeyRevealUnsupportedError extends AccountError {
     readonly accountId: string
 

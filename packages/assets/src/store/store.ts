@@ -11,9 +11,12 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { AssetPreferencesState, AssetSortMode } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'asset-preferences-store'
@@ -28,7 +31,7 @@ const initialState = {
 export const useAssetPreferencesStore: UseBoundStore<
     WithPersist<StoreApi<AssetPreferencesState>, unknown>
 > = create<AssetPreferencesState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setAssetSortMode: (mode: AssetSortMode) => {
@@ -47,7 +50,7 @@ export const useAssetPreferencesStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 2,
             partialize: state => ({
                 assetSortMode: state.assetSortMode,

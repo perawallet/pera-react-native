@@ -125,6 +125,24 @@ describe('useSortedAccounts', () => {
         ])
     })
 
+    test('sorts by algoValue even when fiatValue is unknown', () => {
+        useAccountsStore.setState({ sortMode: 'balanceDesc' })
+        const withNullFiat = new Map([
+            ['ADDR_A', { algoValue: new Decimal(100), fiatValue: null }],
+            ['ADDR_B', { algoValue: new Decimal(50), fiatValue: null }],
+            ['ADDR_C', { algoValue: new Decimal(200), fiatValue: null }],
+        ])
+        const { result } = renderHook(() =>
+            useSortedAccounts(accounts, withNullFiat, FAKE_CHAIN_ID),
+        )
+
+        expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
+            'ADDR_C',
+            'ADDR_A',
+            'ADDR_B',
+        ])
+    })
+
     test('sorts manually by manualAccountOrder', () => {
         useAccountsStore.setState({
             sortMode: 'manual',

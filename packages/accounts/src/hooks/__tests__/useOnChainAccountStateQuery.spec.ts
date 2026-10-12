@@ -14,6 +14,8 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { Decimal } from 'decimal.js'
+import type { AccountStateSnapshot } from '../../chain-adapter'
 import { getOnChainAccountStateQueryKey } from '../querykeys'
 import {
     fetchOnChainAccountState,
@@ -30,6 +32,15 @@ const ADDRESS = 'FAKE-ADDRESS'
 
 const fetchAccountState = () =>
     vi.mocked(fakeAccountsChain().adapter.fetchAccountState)
+
+// The fake chain stands in for Algorand here, so its native asset has 6 decimals.
+const summarized = (snapshot: AccountStateSnapshot) => ({
+    ...snapshot,
+    nativeBalance: snapshot.nativeBalanceBaseUnits.div(1_000_000),
+    reserveBalance: new Decimal(0),
+    heldTokenCount: 0,
+    authorityAddress: null,
+})
 
 describe('useOnChainAccountStateQuery', () => {
     let queryClient: QueryClient
@@ -57,17 +68,17 @@ describe('useOnChainAccountStateQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.data).toBe(snapshot)
+        expect(result.current.data).toEqual(summarized(snapshot))
         expect(fetchAccountState()).toHaveBeenCalledWith(
             ADDRESS,
             TESTNET_SCOPE,
-            { priorResourceCount: 0 },
+            { priorChainState: undefined },
         )
         expect(
             queryClient.getQueryData(
                 getOnChainAccountStateQueryKey(ADDRESS, TESTNET_SCOPE),
             ),
-        ).toBe(snapshot)
+        ).toBe(result.current.data)
     })
 
     test('serves the fresh cache on remount instead of refetching', async () => {
@@ -120,6 +131,6 @@ describe('fetchOnChainAccountState', () => {
 
         await expect(
             fetchOnChainAccountState(ADDRESS, MAINNET_SCOPE),
-        ).resolves.toBe(snapshot)
+        ).resolves.toEqual(summarized(snapshot))
     })
 })

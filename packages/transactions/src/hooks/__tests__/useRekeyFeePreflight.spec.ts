@@ -27,6 +27,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         mockUseOnChainAccountStateQuery(address, scope),
 }))
 
+// The fixture chain prices its native asset in 6-decimal base units.
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    nativeAssetDecimals: () => 6,
+}))
+
 const SCOPE: ChainScope = {
     chainId: 'fixturehex' as ChainId,
     networkId: 'devnet',
@@ -34,11 +40,11 @@ const SCOPE: ChainScope = {
 const SOURCE_ADDRESS = 'SOURCE'.padEnd(58, 'A')
 const FEE_ALGOS = new Decimal('0.001')
 
-/** Base-unit inputs; the snapshot's balance and reserve are display units. */
+/** Base-unit inputs; the state's balance is in display units, its reserve in base units. */
 const liveState = (balance: bigint, minBalance: bigint) => ({
     data: {
         nativeBalance: new Decimal(balance.toString()).div(1_000_000),
-        minBalance: new Decimal(minBalance.toString()).div(1_000_000),
+        reserveBalance: new Decimal(minBalance.toString()),
     },
 })
 

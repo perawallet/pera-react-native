@@ -16,10 +16,11 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { messageSignerFor } from '../message-signer'
+import { authDataMessageRequest, signMessages } from '../message-signer'
 import { CannotSignError } from '../pipeline/errors'
 
 export type UseAuthDataSignerResult = {
@@ -49,7 +50,14 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
                     `it has no address on chain ${chainId}`,
                 )
             }
-            return messageSignerFor(chainId, address).signAuthData(
+            const [signed] = await signMessages(
+                [
+                    authDataMessageRequest(getSelectedScope(chainId), address, {
+                        authData,
+                        metadata,
+                    }),
+                ],
+                { account, accounts },
                 {
                     signPayloads: (keyPairId, payloads) =>
                         signDataWithKey(
@@ -58,11 +66,8 @@ export const useAuthDataSigner = (): UseAuthDataSignerResult => {
                             payloads,
                         ),
                 },
-                account,
-                authData,
-                metadata,
-                accounts,
             )
+            return signed.signature.bytes
         },
         // `accounts` backs the signer's rekey cross-check; without it the
         // callback would validate against the account list as of first render

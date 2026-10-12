@@ -13,8 +13,17 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type ChainScope,
+    type MessageRequest,
+    type MessageSummary,
+    type Signature,
+    type SignedMessage,
+    type SigningRequest,
 } from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { LocalKeySigningDeps, WithChain } from './chain-adapter'
 import { CannotSignError } from './pipeline/errors'
 import type {
@@ -46,7 +55,7 @@ export type ParsedAuthData =
     | { type: 'siwx'; siwx: SiwxMessage }
     | { type: 'error'; message: string }
 
-/** What a message signer may use to sign: never a key or the KMS. */
+/** How the host signs a planned payload with the account's own key; adapters never receive it. */
 export type MessageSigningDeps = Pick<LocalKeySigningDeps, 'signPayloads'>
 
 export type BuildSiwxAuthDataArgs = {
@@ -66,6 +75,41 @@ export type BuildSiwxAuthDataArgs = {
 /** What a message signer is asked to sign. */
 export type MessageSignKind = 'arbitraryData' | 'authData'
 
+export type MessagePlanContext = {
+    /** The record `request.signer` names, signed with its own key and never followed through rekey. */
+    account: WalletAccount
+    /** Every wallet account, for checks that read another record. Read at call time. */
+    accounts: WalletAccount[]
+}
+
+/** The `MessageRequest.payload` for method `'arbitrary-data'`: one base64 item. */
+export type ArbitraryDataMessagePayload = { data: string }
+
+const ARBITRARY_DATA_METHOD = 'arbitrary-data'
+const AUTH_DATA_METHOD = 'auth-data'
+
+export const arbitraryDataMessageRequest = (
+    scope: ChainScope,
+    signer: string,
+    data: string,
+): MessageRequest => ({
+    scope,
+    method: ARBITRARY_DATA_METHOD,
+    signer,
+    payload: { data } satisfies ArbitraryDataMessagePayload,
+})
+
+export const authDataMessageRequest = (
+    scope: ChainScope,
+    signer: string,
+    payload: AuthDataPayload,
+): MessageRequest => ({
+    scope,
+    method: AUTH_DATA_METHOD,
+    signer,
+    payload,
+})
+
 /** The chain-specific legs of signing a message; registered by the chain package. */
 export interface MessageSignerChainAdapter {
     chainId: ChainId
@@ -77,20 +121,19 @@ export interface MessageSignerChainAdapter {
      * {@link canSign}, so the review blocks it instead of refusing the request.
      */
     signsVerifiably(account: WalletAccount, kind: MessageSignKind): boolean
-    /** One signature per base64 item, with the account's own key; never follows rekey. */
-    signArbitraryData(
-        deps: MessageSigningDeps,
-        account: WalletAccount,
-        data: string[],
-    ): Promise<Uint8Array[]>
-    /** Validates, then signs with the account's own key. */
-    signAuthData(
-        deps: MessageSigningDeps,
-        account: WalletAccount,
-        authData: AuthData,
-        metadata: AuthDataMetadata,
-        accounts: WalletAccount[],
-    ): Promise<Uint8Array>
+    /** A method the chain doesn't list is refused by omission. */
+    supports(method: string): boolean
+    /** What the review shows. Never throws for a supported method, even on a payload `plan` refuses. */
+    describe(request: MessageRequest): MessageSummary
+    /**
+     * The bytes to sign, `requestIndex` 0..n-1 in order, each signer the
+     * account's own address on the request's chain.
+     * @throws for an unsupported method, a malformed payload, a signer other
+     * than `context.account`, or the chain's own refusals.
+     */
+    plan(request: MessageRequest, context: MessagePlanContext): SigningRequest[]
+    /** @throws unless `signatures` answer `plan(request)` one for one. */
+    assemble(request: MessageRequest, signatures: Signature[]): SignedMessage
     /**
      * The host-side checks every signer shares.
      * @throws when the request must be rejected.
@@ -162,3 +205,71 @@ export const buildSiwxAuthData: WithChain<
     MessageSignerChainAdapter['buildSiwxAuthData']
 > = (chainId, ...args) =>
     messageSignerChainAdapters.get(chainId).buildSiwxAuthData(...args)
+
+/**
+ * Plans every request before the first key-store call, so a refused item never
+ * leaves a sibling signed, then signs all payloads in one call.
+ */
+export const signMessages = async (
+    requests: MessageRequest[],
+    context: MessagePlanContext,
+    deps: MessageSigningDeps,
+): Promise<SignedMessage[]> => {
+    if (requests.length === 0) {
+        return []
+    }
+    const { account } = context
+    const planned = requests.map(request => {
+        const own = chainAccountOf(account, request.scope.chainId)
+        const address = own?.address ?? ''
+        const adapter = messageSignerFor(request.scope.chainId, request.signer)
+        if (!adapter.supports(request.method)) {
+            throw new CannotSignError(
+                request.signer,
+                `unsupported message method ${request.method}`,
+            )
+        }
+        const plan = adapter.plan(request, context)
+        // Message signing never follows rekey: only the account's own key signs.
+        if (plan.some(item => item.signer !== address)) {
+            throw new CannotSignError(
+                address,
+                'a message must be signed by the account it names',
+            )
+        }
+        return { adapter, request, plan, address, keyPairId: own?.keyPairId }
+    })
+    const [{ address, keyPairId }] = planned
+    if (!keyPairId) {
+        throw new CannotSignError(address, 'the account has no signing key')
+    }
+    // The key store signs the batch in one call, under one key.
+    if (planned.some(item => item.keyPairId !== keyPairId)) {
+        throw new CannotSignError(
+            address,
+            'messages signed together must share a signing key',
+        )
+    }
+
+    const payloads = planned.flatMap(({ plan }) =>
+        plan.map(item => item.payload),
+    )
+    const results = await deps.signPayloads(keyPairId, payloads)
+    if (results.length !== payloads.length) {
+        throw new Error('The key store returned the wrong number of signatures')
+    }
+
+    let offset = 0
+    return planned.map(({ adapter, request, plan }) => {
+        const signatures = plan.map(
+            ({ requestIndex, signer, scheme }, index): Signature => ({
+                requestIndex,
+                signer,
+                scheme,
+                bytes: results[offset + index],
+            }),
+        )
+        offset += plan.length
+        return adapter.assemble(request, signatures)
+    })
+}

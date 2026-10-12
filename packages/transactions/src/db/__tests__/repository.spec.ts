@@ -57,6 +57,8 @@ describe('transaction repository', () => {
             chainId: 'algorand',
             fetchHistory: vi.fn(),
             fetchMoreHistory: vi.fn(),
+            getTransactionHistory: vi.fn(),
+            summarize: vi.fn(),
             toDisplayable: vi.fn(),
             resolveAssetFacts: (assetId, facts) =>
                 String(assetId) === '0'

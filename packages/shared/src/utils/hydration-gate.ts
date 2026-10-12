@@ -10,29 +10,38 @@
  limitations under the License
  */
 
-import type { PersistOptions, PersistStorage } from 'zustand/middleware'
+import type {
+    GuardedPersistOptions,
+    QuarantinableStorage,
+} from './guarded-persist-core'
 
 /**
  * zustand's persist writes on every `set`, hydrated or not. For a store that
- * skips hydration, a `set` before it runs, or after one whose read or
- * migration threw, would replace the persisted state with the in-memory
- * defaults. These options drop writes from the start of each hydration until
- * it has merged what storage held, which is also where persist writes a
- * migrated state back.
+ * skips hydration, a `set` before it runs, or after one whose read threw,
+ * would replace the persisted state with the in-memory defaults. These
+ * options drop writes to the store's own key from the start of each hydration
+ * until it has merged what storage held, which is also where persist writes a
+ * migrated state back. Other keys, such as the quarantine copy, pass through.
  */
-export const gateWritesOnHydration = <S, P>(
-    storage: PersistStorage<P> | undefined,
-): Pick<PersistOptions<S, P>, 'storage' | 'merge'> => {
+export const gateWritesOnHydration = <S, U = S>(
+    name: string,
+    getStorage: () => QuarantinableStorage,
+): Pick<GuardedPersistOptions<S, U>, 'storage' | 'merge'> => {
     let isWritable = false
     return {
-        storage: storage && {
-            getItem: name => {
-                isWritable = false
-                return storage.getItem(name)
-            },
-            setItem: (name, value) =>
-                isWritable ? storage.setItem(name, value) : undefined,
-            removeItem: name => storage.removeItem(name),
+        storage: () => {
+            const storage = getStorage()
+            return {
+                getItem: key => {
+                    if (key === name) isWritable = false
+                    return storage.getItem(key)
+                },
+                setItem: (key, value) => {
+                    if (key === name && !isWritable) return
+                    storage.setItem(key, value)
+                },
+                removeItem: key => storage.removeItem(key),
+            }
         },
         merge: (persisted, current) => {
             const merged = { ...current, ...(persisted as Partial<S>) }

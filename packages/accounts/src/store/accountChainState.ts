@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
 
-/** Keyed like the `account_balances` row: scope key, then the account's address on that scope. */
+/** Keyed like the `account_chain_state` row: scope key, then the account's address on that scope. */
 export type AccountChainStateSlice = Partial<
     Record<ChainScopeKey, Readonly<Record<string, AccountChainState>>>
 >
@@ -37,16 +37,28 @@ export type AccountChainStateStore = {
     resetState(): void
 }
 
-const isEqualValue = (a: unknown, b: unknown): boolean =>
-    Decimal.isDecimal(a) && Decimal.isDecimal(b) ? a.eq(b) : a === b
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && value.constructor === Object
 
-const isEqualState = (a: AccountChainState, b: AccountChainState): boolean => {
-    const left = a as Record<string, unknown>
-    const right = b as Record<string, unknown>
-    return [...new Set([...Object.keys(left), ...Object.keys(right)])].every(
-        key => isEqualValue(left[key], right[key]),
-    )
+const isEqualValue = (a: unknown, b: unknown): boolean => {
+    if (Decimal.isDecimal(a) && Decimal.isDecimal(b)) return a.eq(b)
+    if (isPlainObject(a) && isPlainObject(b)) return isEqualRecord(a, b)
+    return a === b
 }
+
+const isEqualRecord = (
+    left: Record<string, unknown>,
+    right: Record<string, unknown>,
+): boolean =>
+    [...new Set([...Object.keys(left), ...Object.keys(right)])].every(key =>
+        isEqualValue(left[key], right[key]),
+    )
+
+export const isEqualAccountChainState = (
+    a: AccountChainState,
+    b: AccountChainState,
+): boolean =>
+    isEqualRecord(a as Record<string, unknown>, b as Record<string, unknown>)
 
 // In memory only: SQLite already holds the durable copy and hydration refills
 // this before bootstrap completes.
@@ -58,7 +70,7 @@ export const useAccountChainStateStore = create<AccountChainStateStore>(
         setAccountChainState: (scope, address, state) => {
             const key = toScopeKey(scope)
             const held = get().states[key]?.[address]
-            if (held && isEqualState(held, state)) return
+            if (held && isEqualAccountChainState(held, state)) return
             set(prev => ({
                 states: {
                     ...prev.states,

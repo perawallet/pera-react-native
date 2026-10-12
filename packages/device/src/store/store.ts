@@ -11,7 +11,6 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     rekeyLegacyNetworkRecord,
@@ -19,6 +18,7 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    guardedPersist,
     registerStore,
     type Network,
     type WithPersist,
@@ -82,7 +82,7 @@ const initialState = {
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
 > = create<DeviceState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             setPushToken: (token: Nullable<string>) => {
@@ -119,7 +119,7 @@ export const useDeviceStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 2,
             migrate: migrateDeviceState,
             // pendingRegistrationNetworks is deliberately not persisted: the

@@ -156,6 +156,7 @@ export const useSwapToAssetSelectionList = ({
                 assetId,
                 amount: item.balance ?? new Decimal(0),
                 algoValue: new Decimal(0),
+                fiatValue: null,
                 isFrozen: false,
             })
         },

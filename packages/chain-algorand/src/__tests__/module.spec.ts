@@ -34,6 +34,7 @@ import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
@@ -46,7 +47,11 @@ import { algorandDappRequestAdapter } from '../connect'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
+    algorandTransferAdapter,
 } from '../transactions'
+import { ALGORAND_MESSAGE_TITLE_KEYS } from '../signing/message/messageSigner'
+import { ALGORAND_HISTORY_SUMMARY_KEYS } from '../transactions/summarize'
+import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandAssetsAdapter } from '../assets'
@@ -73,6 +78,7 @@ const resetAdapters = () => {
     dappRequestChainAdapters.reset()
     sendFlowChainAdapters.reset()
     historyChainAdapters.reset()
+    transferChainAdapters.reset()
     nameServiceChainAdapters.reset()
     cardChainAdapters.reset()
     rampChainAdapters.reset()
@@ -92,6 +98,7 @@ const expectAdaptersRegistered = () => {
     )
     expect(sendFlowChainAdapters.get('algorand')).toBe(algorandSendFlowAdapter)
     expect(historyChainAdapters.get('algorand')).toBe(algorandHistoryAdapter)
+    expect(transferChainAdapters.get('algorand')).toBe(algorandTransferAdapter)
     expect(nameServiceChainAdapters.get('algorand')).toBe(
         algorandNameServiceAdapter,
     )
@@ -161,6 +168,22 @@ describe('chainModule', () => {
         })
         expect(() => swapChainAdapters.get('algorand')).toThrow(notRegistered)
         expect(() => cardChainAdapters.get('algorand')).toThrow(notRegistered)
+        expect(() => transferChainAdapters.get('algorand')).toThrow(
+            notRegistered,
+        )
+    })
+
+    it('declares every i18n key its summaries carry, once each', () => {
+        const keys = chainModule.i18nKeys()
+
+        expect(new Set(keys).size).toBe(keys.length)
+        expect(keys).toEqual(
+            expect.arrayContaining([
+                ...ALGORAND_TRANSFER_TITLE_KEYS,
+                ...ALGORAND_MESSAGE_TITLE_KEYS,
+                ...ALGORAND_HISTORY_SUMMARY_KEYS,
+            ]),
+        )
     })
 })
 

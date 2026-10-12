@@ -27,6 +27,7 @@ import {
     accountKindId,
     accountsChainAdapters,
     fetchDelegatedAddresses,
+    requirePublicKeyGetter,
     requireSingleKeyAccounts,
     type AccountsChainAdapter,
     type MintedAccount,
@@ -41,7 +42,8 @@ import {
 } from './account-state-contract'
 
 export interface AccountsContractFixtures extends AccountStateContractFixtures {
-    rootKey: Uint8Array
+    /** Required when the adapter derives public keys from the XHD root. */
+    rootKey?: Uint8Array
     hdPath: {
         details: HdIndex
         matching: string
@@ -160,9 +162,19 @@ export const accountsContractTests = (
 
         accountStateCases(makeAdapter, fixtures, server)
 
-        it('derives public keys per coordinate that its codec encodes as valid addresses', async () => {
+        it('derives public keys per coordinate that its codec encodes as valid addresses, or refuses', async () => {
             const adapter = makeAdapter()
-            const getPublicKey = adapter.createPublicKeyGetter(fixtures.rootKey)
+            if (!adapter.createPublicKeyGetter) {
+                expect(() => requirePublicKeyGetter(adapter)).toThrow(
+                    expect.objectContaining({ chainId: adapter.chainId }),
+                )
+                return
+            }
+
+            expect(fixtures.rootKey).toBeDefined()
+            const getPublicKey = requirePublicKeyGetter(adapter)(
+                fixtures.rootKey!,
+            )
             const at = (account: number, keyIndex: number) =>
                 getPublicKey({ account, keyIndex })
 

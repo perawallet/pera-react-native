@@ -155,7 +155,7 @@ vi.mock('@modules/transactions/hooks', () => ({
 // Both in base units; the snapshot carries the minimum balance in display units.
 const recipientState = (amount: number, minBalanceBaseUnits: number) => ({
     nativeBalanceBaseUnits: new Decimal(amount),
-    minBalance: new Decimal(minBalanceBaseUnits).div(1_000_000),
+    reserveBalance: new Decimal(minBalanceBaseUnits),
 })
 
 describe('useTransactionConfirmationScreen', () => {

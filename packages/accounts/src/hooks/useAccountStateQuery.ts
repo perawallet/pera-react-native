@@ -12,14 +12,19 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import type {
-    AccountState,
-    ChainScope,
+import {
+    nativeAssetDecimals,
+    type AccountState,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { addressOn } from '../credentials'
-import { getAccountBalance } from '../db'
+import { getAccountChainStateRow } from '../db'
 import type { WalletAccount } from '../models'
 import { MODULE_PREFIX } from './querykeys'
 
@@ -52,18 +57,23 @@ export const useAccountStateQuery = (
         queryKey: getAccountStateQueryKey(address, scope),
         enabled: !!address,
         queryFn: async (): Promise<AccountState> => {
-            const balance = await getAccountBalance({
+            const row = await getAccountChainStateRow({
                 accountAddress: address,
                 scope,
             })
             const adapter = accountsChainAdapters.get(scope.chainId)
-            const chainState = adapter.toChainState(
-                balance ?? { authorityAddress: null },
-            )
+            const chainState =
+                row?.chainData ??
+                adapter.toChainState({ authorityAddress: null })
             return {
                 address,
                 scope,
-                nativeBalance: balance?.algoBalance ?? new Decimal(0),
+                nativeBalance: row
+                    ? baseUnitsToDisplayUnits(
+                          row.nativeBalance,
+                          nativeAssetDecimals(scope.chainId),
+                      )
+                    : new Decimal(0),
                 ...adapter.summarizeChainState(chainState),
                 chainState,
             }

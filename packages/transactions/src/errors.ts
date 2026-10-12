@@ -18,6 +18,10 @@ import {
     messageKeysFor,
     toError,
 } from '@perawallet/wallet-core-shared'
+import type {
+    ChainId,
+    TransactionIntent,
+} from '@perawallet/wallet-core-chain-contract'
 
 /**
  * Base blockchain error
@@ -51,6 +55,13 @@ export class InvalidSendParamsError extends TransactionError {
                 errorParams: params,
             },
         })
+    }
+}
+
+export class UnsupportedTransactionIntentError extends TransactionError {
+    constructor(kind: TransactionIntent['kind'], chainId: ChainId) {
+        super(`${chainId} cannot build a ${kind} intent`)
+        this.name = 'UnsupportedTransactionIntentError'
     }
 }
 

@@ -36,7 +36,6 @@ import {
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
-    displayUnitsToBaseUnitsBigInt,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -155,13 +154,12 @@ export const useTransactionConfirmationScreen =
                           amount: toBigInt(
                               recipientAccountState.nativeBalanceBaseUnits,
                           ),
-                          minBalance: displayUnitsToBaseUnitsBigInt(
-                              recipientAccountState.minBalance,
-                              nativeAsset.decimals,
+                          minBalance: toBigInt(
+                              recipientAccountState.reserveBalance,
                           ),
                       }
                     : undefined,
-            [recipientAccountState, nativeAsset.decimals],
+            [recipientAccountState],
         )
         const isRecipientInfoPending =
             isAlgoSend && !!destination && recipientAccountInfoPending

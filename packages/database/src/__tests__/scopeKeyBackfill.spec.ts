@@ -241,6 +241,8 @@ describe('scope key backfill migration', () => {
 
             for (const table of NETWORK_TABLES) {
                 if (table === 'submission_attempts') continue
+                // 0013 drops it.
+                if (table === 'account_balances') continue
                 expect(await countByNetwork(test.db, table)).toEqual({})
             }
             expect(

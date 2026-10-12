@@ -29,7 +29,7 @@ import type {
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
-    getAccountBalance,
+    getAccountChainStateRow,
     getAccountHoldingsPage,
     type AccountHoldingsFilters,
     type AccountHoldingsPageRow,
@@ -47,14 +47,14 @@ async function readAccountFromDb(
     scope: ChainScope,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    // If this account has no balance row yet the background sync either
+    // If this account has no chain-state row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
-    const balance = await getAccountBalance({
+    const row = await getAccountChainStateRow({
         accountAddress: address,
         scope,
     })
-    if (!balance) {
+    if (!row) {
         try {
             await fetchAndPersistAccount(address, scope)
         } catch (error) {
@@ -176,9 +176,10 @@ export const useAccountBalancesQuery = (
             const holdings = r.data?.holdings ?? []
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
-            const usdAlgoPrice =
-                holdings.find(h => h.assetId === nativeAsset.assetId)
-                    ?.usdPrice ?? new Decimal(0)
+            const nativeHolding = holdings.find(
+                h => h.assetId === nativeAsset.assetId,
+            )
+            const usdAlgoPrice = nativeHolding?.usdPrice ?? new Decimal(0)
 
             let algoValue = new Decimal(0)
             // Accumulated in the same pass as `algoValue`: the portfolio
@@ -201,6 +202,7 @@ export const useAccountBalancesQuery = (
                             amount: new Decimal(0),
                             algoValue: new Decimal(0),
                             usdPrice: holding.usdPrice ?? undefined,
+                            fiatValue: null,
                             isFrozen: holding.isFrozen ?? false,
                         }
                     }
@@ -223,15 +225,25 @@ export const useAccountBalancesQuery = (
                         amount: assetAmount,
                         algoValue: algoAssetValue,
                         usdPrice: usdAssetPrice,
+                        fiatValue:
+                            holding.usdPrice === null
+                                ? null
+                                : assetAmount.times(holding.usdPrice),
                         isFrozen: holding.isFrozen ?? false,
                     }
                 },
             )
 
+            const isNativeUnpriced =
+                !!nativeHolding &&
+                nativeHolding.usdPrice === null &&
+                !nativeHolding.amount.isZero()
+
             return {
                 assetBalances,
                 algoValue,
                 usdValue,
+                fiatValue: isNativeUnpriced ? null : usdValue,
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,

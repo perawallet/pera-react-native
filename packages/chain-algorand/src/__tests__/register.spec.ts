@@ -30,10 +30,12 @@ import { algorandDappRequestAdapter } from '../connect'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
+    algorandTransferAdapter,
 } from '../transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from '../ledger'
@@ -59,6 +61,8 @@ import {
 } from '../signing'
 import { algorandBackupAdapter, algorandMigrationAdapter } from '../backup'
 import { algorandCardAdapter } from '../card'
+import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
+import { algorandNodeBackends } from '../blockchain/node-backends'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
@@ -78,6 +82,7 @@ describe('registerChain', () => {
         dappRequestChainAdapters.reset()
         sendFlowChainAdapters.reset()
         historyChainAdapters.reset()
+        transferChainAdapters.reset()
         nameServiceChainAdapters.reset()
         cardChainAdapters.reset()
         rampChainAdapters.reset()
@@ -93,6 +98,7 @@ describe('registerChain', () => {
         accountPresentationChainAdapters.reset()
         backupChainAdapters.reset()
         migrationChainAdapters.reset()
+        nodeBackendAdapters.reset()
         deviceChainAdapters.reset()
     })
 
@@ -124,11 +130,22 @@ describe('registerChain', () => {
         )
     })
 
+    it('registers the Algorand algod and indexer backends', () => {
+        registerChain()
+
+        expect(nodeBackendAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandNodeBackends,
+        )
+    })
+
     it('registers the Algorand assets adapter', () => {
         registerChain()
 
         expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandAssetsAdapter,
+        )
+        expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID).priceProvider).toBe(
+            'pera',
         )
     })
 
@@ -169,6 +186,14 @@ describe('registerChain', () => {
 
         expect(historyChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandHistoryAdapter,
+        )
+    })
+
+    it('registers the Algorand transfer adapter', () => {
+        registerChain()
+
+        expect(transferChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandTransferAdapter,
         )
     })
 

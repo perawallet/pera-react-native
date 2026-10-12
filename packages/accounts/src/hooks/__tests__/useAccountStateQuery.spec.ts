@@ -23,28 +23,33 @@ import {
 } from '../../__tests__/fakeAccountsChain'
 import { useAccountStateQuery } from '../useAccountStateQuery'
 
-const mockGetAccountBalance = vi.hoisted(() => vi.fn())
+const mockGetAccountChainStateRow = vi.hoisted(() => vi.fn())
 
 vi.mock('../../db', () => ({
-    getAccountBalance: mockGetAccountBalance,
+    getAccountChainStateRow: mockGetAccountChainStateRow,
 }))
 
-const storedBalance = {
-    accountAddress: 'ADDR',
-    algoBalance: new Decimal('1.5'),
-    minBalance: new Decimal('0.1'),
+const storedChainState = {
+    family: 'algorand',
+    minBalance: new Decimal(100_000),
     status: 'Online',
     totalAssetsOptedIn: 1,
     totalCreatedAssets: 0,
     totalAppsOptedIn: 0,
     authAddress: 'AUTH',
+} as const
+
+const storedRow = {
+    accountAddress: 'ADDR',
+    nativeBalance: new Decimal(1_500_000),
+    chainData: storedChainState,
 }
 
 describe('useAccountStateQuery', () => {
     let wrapper: React.FC<{ children: React.ReactNode }>
 
     beforeEach(() => {
-        mockGetAccountBalance.mockReset()
+        mockGetAccountChainStateRow.mockReset()
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -56,8 +61,8 @@ describe('useAccountStateQuery', () => {
             )
     })
 
-    test('reads the stored balance row on the scope and asks the chain for its state and summary', async () => {
-        mockGetAccountBalance.mockResolvedValue(storedBalance)
+    test('reads the stored chain-state row on the scope and asks the chain for its summary', async () => {
+        mockGetAccountChainStateRow.mockResolvedValue(storedRow)
         const account = testAccount('local', 'ADDR')
 
         const { result } = renderHook(
@@ -68,26 +73,23 @@ describe('useAccountStateQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         const { toChainState, summarizeChainState } =
             fakeAccountsChain().adapter
-        expect(mockGetAccountBalance).toHaveBeenCalledWith({
+        expect(mockGetAccountChainStateRow).toHaveBeenCalledWith({
             accountAddress: 'ADDR',
             scope: TESTNET_SCOPE,
         })
-        expect(toChainState).toHaveBeenCalledWith(storedBalance)
-        expect(summarizeChainState).toHaveBeenCalledWith(
-            vi.mocked(toChainState).mock.results[0].value,
-        )
+        expect(toChainState).not.toHaveBeenCalled()
+        expect(summarizeChainState).toHaveBeenCalledWith(storedChainState)
         expect(result.current.data).toEqual({
             address: 'ADDR',
             scope: TESTNET_SCOPE,
             nativeBalance: new Decimal('1.5'),
-            reserveBalance: new Decimal('0.1'),
-            heldTokenCount: 0,
-            chainState: vi.mocked(toChainState).mock.results[0].value,
+            ...vi.mocked(summarizeChainState).mock.results[0].value,
+            chainState: storedChainState,
         })
     })
 
     test('an account never synced reads as empty, with no authority', async () => {
-        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
 
         const { result } = renderHook(
             () =>
@@ -115,7 +117,7 @@ describe('useAccountStateQuery', () => {
         )
 
         expect(result.current.isPending).toBe(true)
-        expect(mockGetAccountBalance).not.toHaveBeenCalled()
+        expect(mockGetAccountChainStateRow).not.toHaveBeenCalled()
     })
 
     test.each([null, undefined])('is disabled for no account (%s)', account => {
@@ -125,11 +127,11 @@ describe('useAccountStateQuery', () => {
         )
 
         expect(result.current.isPending).toBe(true)
-        expect(mockGetAccountBalance).not.toHaveBeenCalled()
+        expect(mockGetAccountChainStateRow).not.toHaveBeenCalled()
     })
 
     test('keys the cache per address', async () => {
-        mockGetAccountBalance.mockResolvedValue(storedBalance)
+        mockGetAccountChainStateRow.mockResolvedValue(storedRow)
 
         const first = renderHook(
             () =>
@@ -152,6 +154,6 @@ describe('useAccountStateQuery', () => {
 
         expect(first.result.current.data?.address).toBe('ONE')
         expect(second.result.current.data?.address).toBe('TWO')
-        expect(mockGetAccountBalance).toHaveBeenCalledTimes(2)
+        expect(mockGetAccountChainStateRow).toHaveBeenCalledTimes(2)
     })
 })

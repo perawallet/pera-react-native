@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
@@ -20,8 +19,7 @@ const mocks = vi.hoisted(() => ({
     fetchOnChainAsset: vi.fn(),
     fetchAssetAuthorities: vi.fn(),
     searchAssetPage: vi.fn(),
-    fetchNativeUsdPrice: vi.fn(),
-    fetchUsdPrices: vi.fn(),
+    fetchPeraUsdPrices: vi.fn(),
 }))
 
 vi.mock('../sync/asset-syncer', () => ({
@@ -33,15 +31,15 @@ vi.mock('../details', () => ({
     fetchAssetAuthorities: mocks.fetchAssetAuthorities,
 }))
 vi.mock('../search', () => ({ searchAssetPage: mocks.searchAssetPage }))
-vi.mock('../../pricing/prices', () => ({
-    fetchNativeUsdPrice: mocks.fetchNativeUsdPrice,
-    fetchUsdPrices: mocks.fetchUsdPrices,
+vi.mock('../../pricing/provider', () => ({
+    fetchPeraUsdPrices: mocks.fetchPeraUsdPrices,
 }))
 
 import { algorandAssetsAdapter } from '../adapter'
 import { ALGORAND_NATIVE_ASSET } from '../native-asset'
 
 const testnet: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+const ref = { chainId: 'algorand', assetId: '1' } as const
 const foreign = {
     chainId: 'other',
     networkId: 'mainnet',
@@ -74,14 +72,11 @@ describe('algorandAssetsAdapter', () => {
     })
 
     it('passes the scope network to search and the price sources', async () => {
-        mocks.fetchNativeUsdPrice.mockResolvedValue(new Decimal('0.2'))
-
         await algorandAssetsAdapter.searchAssets(
             { query: 'usdc', cursor: 'C', hasCollectible: true },
             testnet,
         )
-        await algorandAssetsAdapter.fetchNativeUsdPrice(testnet)
-        await algorandAssetsAdapter.fetchUsdPrices(['1'], testnet)
+        await algorandAssetsAdapter.getPrices([ref], testnet)
 
         expect(mocks.searchAssetPage).toHaveBeenCalledWith({
             query: 'usdc',
@@ -89,14 +84,17 @@ describe('algorandAssetsAdapter', () => {
             hasCollectible: true,
             network: 'testnet',
         })
-        expect(mocks.fetchNativeUsdPrice).toHaveBeenCalledWith('testnet')
-        expect(mocks.fetchUsdPrices).toHaveBeenCalledWith(['1'], 'testnet')
+        expect(mocks.fetchPeraUsdPrices).toHaveBeenCalledWith([ref], 'testnet')
     })
 
     it('refuses a scope that is not an Algorand network', async () => {
         await expect(
             algorandAssetsAdapter.fetchOnChainAsset('1', foreign),
         ).rejects.toThrow('Not an Algorand scope')
+        await expect(
+            algorandAssetsAdapter.getPrices([ref], foreign),
+        ).rejects.toThrow('Not an Algorand scope')
         expect(mocks.fetchOnChainAsset).not.toHaveBeenCalled()
+        expect(mocks.fetchPeraUsdPrices).not.toHaveBeenCalled()
     })
 })

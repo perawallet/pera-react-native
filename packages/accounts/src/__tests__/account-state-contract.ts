@@ -43,8 +43,8 @@ export interface AccountStateContractFixtures {
     /** An account holding the native asset. */
     funded: ChainState & {
         nativeAssetId: string
-        /** Display units. */
-        nativeBalance: Decimal
+        /** Base units. */
+        nativeBalanceBaseUnits: Decimal
         /** Another asset it holds; omit on a chain that reads native holdings only. */
         heldAssetId?: string
     }
@@ -83,19 +83,19 @@ export const accountStateCases = (
         const state = await makeOps().fetchAccountState(
             fixtures.funded.address,
             scope,
-            { priorResourceCount: 0 },
+            { priorChainState: undefined },
         )
 
-        expect(state.nativeBalance.toString()).toBe(
-            fixtures.funded.nativeBalance.toString(),
+        expect(state.nativeBalanceBaseUnits.toString()).toBe(
+            fixtures.funded.nativeBalanceBaseUnits.toString(),
         )
         const heldIds = state.holdings.map(h => h.assetId)
         expect(heldIds).toContain(fixtures.funded.nativeAssetId)
         if (fixtures.funded.heldAssetId !== undefined) {
             expect(heldIds).toContain(fixtures.funded.heldAssetId)
         }
-        if (state.authorityAddress !== null) {
-            expect(codec.isValid(state.authorityAddress)).toBe(true)
+        if ('authAddress' in state.chainState && state.chainState.authAddress) {
+            expect(codec.isValid(state.chainState.authAddress)).toBe(true)
         }
     })
 

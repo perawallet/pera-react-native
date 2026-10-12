@@ -11,59 +11,67 @@
  */
 
 import { describe, expect, test, vi } from 'vitest'
-import type { PersistStorage } from 'zustand/middleware'
 import { gateWritesOnHydration } from '../hydration-gate'
 
 type State = { count: number }
 
-const createStorage = () =>
-    ({
-        getItem: vi.fn(() => ({ state: { count: 1 }, version: 0 })),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }) satisfies PersistStorage<State>
+const STORE = 'store'
+
+const createStorage = () => ({
+    getItem: vi.fn((_key: string): string | null => '{"state":{"count":1}}'),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+})
 
 describe('gateWritesOnHydration', () => {
     test('drops writes until a hydration has merged what storage held', () => {
         const storage = createStorage()
-        const gated = gateWritesOnHydration<State, State>(storage)
-        const value = { state: { count: 2 }, version: 0 }
+        const gated = gateWritesOnHydration<State>(STORE, () => storage)
+        const kv = gated.storage()
 
-        gated.storage!.setItem('store', value)
+        kv.setItem(STORE, '2')
         expect(storage.setItem).not.toHaveBeenCalled()
 
-        gated.storage!.getItem('store')
-        gated.storage!.setItem('store', value)
+        kv.getItem(STORE)
+        kv.setItem(STORE, '2')
         expect(storage.setItem).not.toHaveBeenCalled()
 
         expect(gated.merge!({ count: 1 }, { count: 0 })).toEqual({ count: 1 })
-        gated.storage!.setItem('store', value)
-        expect(storage.setItem).toHaveBeenCalledWith('store', value)
+        kv.setItem(STORE, '2')
+        expect(storage.setItem).toHaveBeenCalledWith(STORE, '2')
     })
 
     test('closes the gate again when the next hydration starts', () => {
         const storage = createStorage()
-        const gated = gateWritesOnHydration<State, State>(storage)
+        const gated = gateWritesOnHydration<State>(STORE, () => storage)
+        const kv = gated.storage()
         gated.merge!({ count: 1 }, { count: 0 })
 
-        gated.storage!.getItem('store')
-        gated.storage!.setItem('store', { state: { count: 3 }, version: 0 })
+        kv.getItem(STORE)
+        kv.setItem(STORE, '3')
 
         expect(storage.setItem).not.toHaveBeenCalled()
     })
 
-    test('passes removals through whether or not hydration ran', () => {
+    test('passes writes to other keys through before hydration', () => {
         const storage = createStorage()
-        const gated = gateWritesOnHydration<State, State>(storage)
+        const kv = gateWritesOnHydration<State>(STORE, () => storage).storage()
 
-        gated.storage!.removeItem('store')
+        kv.getItem(`${STORE}::quarantine`)
+        kv.setItem(`${STORE}::quarantine`, '[]')
 
-        expect(storage.removeItem).toHaveBeenCalledWith('store')
+        expect(storage.setItem).toHaveBeenCalledWith(
+            `${STORE}::quarantine`,
+            '[]',
+        )
     })
 
-    test('leaves storage unset when the store has none', () => {
-        expect(
-            gateWritesOnHydration<State, State>(undefined).storage,
-        ).toBeUndefined()
+    test('passes removals through whether or not hydration ran', () => {
+        const storage = createStorage()
+        const kv = gateWritesOnHydration<State>(STORE, () => storage).storage()
+
+        kv.removeItem(STORE)
+
+        expect(storage.removeItem).toHaveBeenCalledWith(STORE)
     })
 })

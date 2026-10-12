@@ -11,8 +11,8 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -40,7 +40,7 @@ const initialState = {
 export const useOnrampStore: UseBoundStore<
     WithPersist<StoreApi<OnrampState>, unknown>
 > = create<OnrampState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setSelectedSourceTokenId: (id: Nullable<string>) =>
@@ -52,7 +52,7 @@ export const useOnrampStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // Only the destination sticks across sessions; the source is
             // session-only so it's unset on every fresh entry.
             partialize: state => ({

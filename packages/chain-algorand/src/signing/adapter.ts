@@ -47,8 +47,12 @@ import { mergeSigningResults } from './mergeSigningResults'
 import { validateArc60AuthRequest } from './message/arc60'
 import { isArc60WirePayload, parseArc60WireRequest } from './message/arc60-wire'
 import { parseArc60ForDisplay } from './message/parseArc60ForDisplay'
-import { signArbitraryData } from './message/signArbitraryData'
-import { signArc60AuthRequest } from './message/signArc60AuthRequest'
+import {
+    assembleAlgorandMessage,
+    describeAlgorandMessage,
+    planAlgorandMessage,
+    supportsAlgorandMessageMethod,
+} from './message/messageSigner'
 import { buildSiwxAuthData } from './message/siwx'
 import { resolveMinFeeForSender } from './minFeeResolver'
 import { simulateInnerTransactions } from './simulateImpact'
@@ -150,8 +154,10 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     // ARC-60 and arbitrary-data signatures are Ed25519-only, so no dApp can
     // verify a quantum account's Falcon signature yet.
     signsVerifiably: account => !isQuantumAccount(account),
-    signArbitraryData,
-    signAuthData: signArc60AuthRequest,
+    supports: supportsAlgorandMessageMethod,
+    describe: describeAlgorandMessage,
+    plan: planAlgorandMessage,
+    assemble: assembleAlgorandMessage,
     validateAuthData: validateArc60AuthRequest,
     parseAuthDataForDisplay: parseArc60ForDisplay,
     isAuthDataWirePayload: isArc60WirePayload,

@@ -35,6 +35,10 @@ export {
     type KeyRegistrationTxParams,
 } from './chain-adapter'
 export {
+    transferChainAdapters,
+    type TransferChainAdapter,
+} from './transfer-adapter'
+export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
@@ -75,6 +79,7 @@ export {
 export {
     TransactionError,
     InvalidSendParamsError,
+    UnsupportedTransactionIntentError,
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
     NonZeroBalanceError,

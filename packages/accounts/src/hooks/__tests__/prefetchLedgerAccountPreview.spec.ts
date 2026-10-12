@@ -61,7 +61,7 @@ describe('prefetchLedgerAccountPreview', () => {
         expect(mocks.fetchAccountState).toHaveBeenCalledWith(
             'ADDR',
             MAINNET_SCOPE,
-            { priorResourceCount: 0 },
+            { priorChainState: undefined },
         )
         expect(mocks.fetchDelegatedAddresses).toHaveBeenCalledWith(
             'ADDR',
