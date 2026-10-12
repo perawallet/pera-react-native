@@ -236,6 +236,7 @@ export interface DeriveOpts {
 
 export interface PaymentUriOpts {
     assetRef?: AssetRef
+    /** Whole base units of the asset (microAlgos for ALGO). */
     amount?: Decimal
     label?: string
     note?: string
