@@ -75,6 +75,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: { getItem: () => null },
         passkeyAutofill: { refreshCredentialIdentities: async () => {} },
+        deviceInfo: { getDevicePlatform: () => 'ios' },
     }),
     getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
     // The import derives with `derivePasskeyMainKey`'s default `subtle`.

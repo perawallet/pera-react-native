@@ -167,6 +167,30 @@ describe('passkeyBackupInputs', () => {
         expect(inputs?.counter).toBe(0)
     })
 
+    it("backs up an extension credential's original user id in standard base64", async () => {
+        // The extension keeps `user.id` only as base64url `userHandleOriginal`.
+        const key = await buildReproducibleKey('alice', {
+            userHandle: 'alice',
+            userHandleOriginal: '-_8AAQ',
+        })
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs?.userId).toBe('+/8AAQ==')
+    })
+
+    it('prefers a stored user id over the original user handle', async () => {
+        const key = await buildReproducibleKey('alice', {
+            userHandle: 'alice',
+            userId: 'dXNlcg==',
+            userHandleOriginal: '-_8AAQ',
+        })
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs?.userId).toBe('dXNlcg==')
+    })
+
     it('hands back the private key that reproduced the stored public key', async () => {
         const key = await buildReproducibleKey('alice', { userName: 'alice' })
 
