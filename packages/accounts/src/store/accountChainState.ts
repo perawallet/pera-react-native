@@ -40,7 +40,7 @@ export type AccountChainStateStore = {
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && value.constructor === Object
 
-const isEqualValue = (a: unknown, b: unknown): boolean => {
+export const isEqualChainData = (a: unknown, b: unknown): boolean => {
     if (Decimal.isDecimal(a) && Decimal.isDecimal(b)) return a.eq(b)
     if (isPlainObject(a) && isPlainObject(b)) return isEqualRecord(a, b)
     return a === b
@@ -51,7 +51,7 @@ const isEqualRecord = (
     right: Record<string, unknown>,
 ): boolean =>
     [...new Set([...Object.keys(left), ...Object.keys(right)])].every(key =>
-        isEqualValue(left[key], right[key]),
+        isEqualChainData(left[key], right[key]),
     )
 
 export const isEqualAccountChainState = (

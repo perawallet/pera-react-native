@@ -29,7 +29,7 @@ const NATIVE_ASSET_ID = '0'
 /** The native balance in base units (6 decimals); holdings beside it in base units. */
 const onChainState = (
     nativeBaseUnits: number,
-    holdings: { assetId: string; amount: number; isFrozen: boolean }[] = [],
+    holdings: { assetId: string; amount: number; isFrozen?: boolean }[] = [],
     authorityAddress: string | null = null,
 ): AccountStateSnapshot => ({
     nativeBalance: new Decimal(nativeBaseUnits).div(1_000_000),
@@ -41,11 +41,13 @@ const onChainState = (
         {
             assetId: NATIVE_ASSET_ID,
             amount: new Decimal(nativeBaseUnits),
-            isFrozen: false,
         },
-        ...holdings.map(holding => ({
-            ...holding,
-            amount: new Decimal(holding.amount),
+        ...holdings.map(({ assetId, amount, isFrozen }) => ({
+            assetId,
+            amount: new Decimal(amount),
+            ...(isFrozen === undefined
+                ? {}
+                : { native: { family: 'algorand' as const, isFrozen } }),
         })),
     ],
     observedRound: null,
@@ -104,7 +106,7 @@ beforeEach(() => {
 })
 
 describe('useLedgerAccountPreview', () => {
-    it('composes ALGO balance and total fiat value', () => {
+    it('composes native balance and total fiat value', () => {
         mocks.useOnChainAccountStateQuery.mockReturnValue({
             data: onChainState(3_000_000),
             isLoading: false,
@@ -117,13 +119,37 @@ describe('useLedgerAccountPreview', () => {
         )
 
         expect(result.current.isLoading).toBe(false)
-        expect(result.current.preview?.algoBalance.toString()).toBe('3')
+        expect(result.current.preview?.nativeBalance.toString()).toBe('3')
         expect(result.current.preview?.totalFiatValue?.toString()).toBe('6')
         expect(result.current.preview?.assets).toHaveLength(1)
-        expect(result.current.preview?.assets[0].isAlgo).toBe(true)
+        expect(result.current.preview?.assets[0].isNative).toBe(true)
         expect(result.current.preview?.assets[0].unitName).toBe('ALGO')
         expect(result.current.preview?.assets[0].decimals).toBe(6)
         expect(result.current.preview?.assets[0].usdPrice.toString()).toBe('2')
+    })
+
+    it('reports the restriction a holding carries and none for the native asset', () => {
+        mocks.useOnChainAccountStateQuery.mockReturnValue({
+            data: onChainState(1_000_000, [
+                { assetId: '31', amount: 1, isFrozen: true },
+                { assetId: '32', amount: 1, isFrozen: false },
+                { assetId: '33', amount: 1 },
+            ]),
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountPreview('ADDR', MAINNET_SCOPE),
+        )
+
+        expect(result.current.preview?.assets.map(a => a.restriction)).toEqual([
+            null,
+            'transferBlocked',
+            null,
+            null,
+        ])
     })
 
     it('includes ASA holdings with metadata, fiat value and verification tier', () => {
@@ -202,7 +228,7 @@ describe('useLedgerAccountPreview', () => {
         expect(asa?.verificationTier).toBe('unverified')
         expect(asa?.hasKnownDecimals).toBe(false)
         expect(asa?.fiatValue?.toString()).toBe('0')
-        expect(asa?.isAlgo).toBe(false)
+        expect(asa?.isNative).toBe(false)
     })
 
     it('excludes unknown-decimals holdings from fiat totals even when a price exists', () => {

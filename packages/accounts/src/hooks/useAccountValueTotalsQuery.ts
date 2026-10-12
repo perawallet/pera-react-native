@@ -14,26 +14,21 @@ import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useStableIdList, type Nullable } from '@perawallet/wallet-core-shared'
-import {
-    useAssetPricesQuery,
-    useNativeAsset,
-} from '@perawallet/wallet-core-assets'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '../models'
 import { chainAccountOf } from '../credentials/accessors'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'
+import { valueAccountTotals } from './valueAccountTotals'
 
 export type AccountValueTotals = {
-    /** Account value expressed in ALGO (display units). */
-    algoValue: Decimal
+    /** Account value expressed in the native asset (display units). */
+    nativeValue: Decimal
     /**
-     * Account value in USD (display units); `null` when ALGO is held but its
-     * price has never synced, so the value is genuinely unknown — not 0.
+     * Account value in USD (display units); `null` when the native asset is
+     * held but its price has never synced, so the value is genuinely unknown —
+     * not 0.
      */
     usdValue: Nullable<Decimal>
     /**
@@ -51,7 +46,7 @@ export type AccountValueTotalsMap = Map<string, AccountValueTotals>
 
 export type UseAccountValueTotalsQueryResult = {
     accountValueTotals: AccountValueTotalsMap
-    portfolioAlgoValue: Decimal
+    portfolioNativeValue: Decimal
     /** `null` when any account's USD value is unknown — see `usdValue`. */
     portfolioUsdValue: Nullable<Decimal>
     isPending: boolean
@@ -62,7 +57,7 @@ export type UseAccountValueTotalsQueryResult = {
 }
 
 const EMPTY_RESULT_BASE = {
-    portfolioAlgoValue: new Decimal(0),
+    portfolioNativeValue: new Decimal(0),
     portfolioUsdValue: new Decimal(0),
     isPending: false,
     isFetched: false,
@@ -84,9 +79,9 @@ export const useAccountValueTotalsQuery = (
     scope: ChainScope,
     enabled?: boolean,
 ): UseAccountValueTotalsQueryResult => {
-    // See the usdValue derivation: only a Pera-backed network can be missing a
-    // price it ought to have.
-    const isPricedNetwork = isPeraBackedNetwork(legacyNetworkOf(scope))
+    // See `valueAccountTotals`: only a chain with a price source can be
+    // missing a price it ought to have.
+    const hasPricing = useChainCapability(scope.chainId, 'pricing')
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass fresh array literals per render; only
@@ -118,11 +113,6 @@ export const useAccountValueTotalsQuery = (
     }, [addresses, enabled, scope])
 
     const results = useQueries({ queries })
-    const nativeAssetId = useNativeAsset().assetId
-    const { data: algoPrices } = useAssetPricesQuery([nativeAssetId])
-    const nativeUsdPrice = algoPrices?.get(nativeAssetId)?.usdPrice
-    const usdAlgoPrice = nativeUsdPrice ?? new Decimal(0)
-    const usdAlgoPriceKey = nativeUsdPrice?.toString() ?? 'unpriced'
 
     // Stable stand-in for `results`, whose array identity churns per render.
     const resultsSig = results
@@ -144,42 +134,17 @@ export const useAccountValueTotalsQuery = (
             }
         }
 
-        let portfolioAlgoValue = new Decimal(0)
+        let portfolioNativeValue = new Decimal(0)
         let portfolioUsdValue: Nullable<Decimal> = new Decimal(0)
         const accountValueTotals: AccountValueTotalsMap = new Map(
             addresses.map((address, i) => {
                 const r = results[i]
-                const algoAmount = r?.data?.algoAmount ?? new Decimal(0)
-                const nonAlgoUsdValue =
-                    r?.data?.nonAlgoUsdValue ?? new Decimal(0)
+                const { nativeValue, usdValue, fiatValue } = valueAccountTotals(
+                    r?.data,
+                    hasPricing,
+                )
 
-                // Same derivation as useAccountSummaryQuery: ALGO contributes
-                // its raw amount to the ALGO-denominated total (1:1,
-                // price-independent); non-ALGO holdings convert via the
-                // ALGO/USD rate, or drop out of the ALGO total while the rate
-                // is unknown.
-                //
-                // The USD total needs that rate for any ALGO held, so a
-                // never-synced install (no price rows) can't express it at
-                // all — `null`, not 0. Pricing 10 ALGO at $0.00 is the fake
-                // number the offline epic forbids. Networks with no Pera
-                // backend are excluded: a zero rate is the deliberate answer
-                // there, not a missing one.
-                const usdValue =
-                    usdAlgoPrice.isZero() &&
-                    !algoAmount.isZero() &&
-                    isPricedNetwork
-                        ? null
-                        : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
-                const fiatValue =
-                    nativeUsdPrice === undefined && !algoAmount.isZero()
-                        ? null
-                        : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
-                const algoValue = usdAlgoPrice.isZero()
-                    ? algoAmount
-                    : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))
-
-                portfolioAlgoValue = portfolioAlgoValue.plus(algoValue)
+                portfolioNativeValue = portfolioNativeValue.plus(nativeValue)
                 // One unknown account makes the portfolio total unknown —
                 // silently summing the rest would understate it.
                 portfolioUsdValue =
@@ -190,7 +155,7 @@ export const useAccountValueTotalsQuery = (
                 return [
                     address,
                     {
-                        algoValue,
+                        nativeValue,
                         usdValue,
                         fiatValue,
                         isPending: r?.isPending ?? false,
@@ -204,7 +169,7 @@ export const useAccountValueTotalsQuery = (
 
         return {
             accountValueTotals,
-            portfolioAlgoValue,
+            portfolioNativeValue,
             portfolioUsdValue,
             isPending: results.some(r => r.isPending),
             isFetched: results.every(r => r.isFetched),
@@ -212,9 +177,8 @@ export const useAccountValueTotalsQuery = (
             isError: results.some(r => r.isError),
             isPaused: results.some(r => r.isPaused),
         }
-        // `results` / `usdAlgoPrice` / `nativeUsdPrice` are read inside but
-        // deliberately not deps — `resultsSig` / `usdAlgoPriceKey` are their
-        // stable stand-ins.
+        // `results` is read inside but deliberately not a dep — `resultsSig`
+        // is its stable stand-in.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts, usdAlgoPriceKey])
+    }, [resultsSig, addresses, hasAccounts, hasPricing])
 }

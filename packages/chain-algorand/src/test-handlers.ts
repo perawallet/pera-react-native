@@ -27,6 +27,13 @@ export {
 } from './assets/api/search-msw-handlers'
 
 export {
+    mockAccountsBalanceHistory,
+    mockAccountAssetBalanceHistory,
+    type MockAccountsBalanceHistoryParams,
+    type MockAccountAssetBalanceHistoryParams,
+} from './accounts/portfolio-msw-handlers'
+
+export {
     mockAssetPrices,
     type MockAssetPricesParams,
 } from './pricing/msw-handlers'

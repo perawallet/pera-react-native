@@ -21,7 +21,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAssetFrozen,
+    getHoldingRestriction,
     isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -127,20 +127,22 @@ export const executeAlgorandSwap = async (
 
     const accountAddress = account ? algorandAddressOf(account) : undefined
 
-    const [isInFrozen, isOutFrozen] = accountAddress
+    const [inRestriction, outRestriction] = accountAddress
         ? await Promise.all([
-              isAssetFrozen({
+              getHoldingRestriction({
                   accountAddress,
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
-              isAssetFrozen({
+              getHoldingRestriction({
                   accountAddress,
                   assetId: quote.assetOut.assetId,
                   scope,
               }),
           ])
-        : [false, false]
+        : [null, null]
+    const isInFrozen = inRestriction !== null
+    const isOutFrozen = outRestriction !== null
 
     if (isInFrozen || isOutFrozen) {
         return failed({

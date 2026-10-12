@@ -17,6 +17,8 @@ import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import {
+    mockAccountAssetBalanceHistory,
+    mockAccountsBalanceHistory,
     mockAlgodAccountInformation,
     mockIndexerSearchForAccounts,
 } from '../../test-handlers'
@@ -118,6 +120,86 @@ accountsContractTests(() => algorandAccountsAdapter, {
             ],
             nextCursor: 1005,
         },
+    },
+    history: {
+        addresses: [FUNDED],
+        assetId: '31566704',
+        period: 'one-week',
+        currency: 'USD',
+        handlers: [
+            mockAccountsBalanceHistory({
+                response: {
+                    results: [
+                        {
+                            datetime: '2024-01-01T00:00:00Z',
+                            usd_value: '100.5',
+                            algo_value: '500',
+                            round: 1,
+                        },
+                    ],
+                },
+            }),
+            mockAccountAssetBalanceHistory({
+                address: FUNDED,
+                assetId: '31566704',
+                response: {
+                    results: [
+                        {
+                            datetime: '2024-01-01T00:00:00Z',
+                            amount: '10.5',
+                            usd_value: '25',
+                            round: 1,
+                        },
+                    ],
+                },
+            }),
+        ],
+        portfolio: [
+            {
+                timestamp: Date.parse('2024-01-01T00:00:00Z'),
+                usdValue: new Decimal('100.5'),
+                nativeValue: new Decimal('500'),
+            },
+        ],
+        balance: [
+            {
+                timestamp: Date.parse('2024-01-01T00:00:00Z'),
+                amount: new Decimal('10.5'),
+                usdValue: new Decimal('25'),
+            },
+        ],
+    },
+    acquisitionOrder: {
+        address: FUNDED,
+        handlers: [
+            http.get(`*/v2/accounts/${FUNDED}/assets`, () =>
+                HttpResponse.json({
+                    'current-round': 1000,
+                    assets: [
+                        {
+                            'asset-id': 10,
+                            amount: 1,
+                            'is-frozen': false,
+                            'opted-in-at-round': 100,
+                        },
+                        {
+                            'asset-id': 20,
+                            amount: 1,
+                            'is-frozen': false,
+                            'opted-in-at-round': 200,
+                        },
+                    ],
+                }),
+            ),
+        ],
+        expected: [
+            ['10', 100],
+            ['20', 200],
+        ],
+    },
+    holdingNative: {
+        restricted: { family: 'algorand', isFrozen: true },
+        unrestricted: { family: 'algorand', isFrozen: false },
     },
     rootKey: fromSeed(new Uint8Array(64).fill(1)),
     hdPath: {

@@ -47,6 +47,13 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
 }))
 
 // The syncer would reach the chain; the rows under test are seeded directly.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainCapability: () => true,
+}))
+
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(async () => undefined),
     fetchAndPersistAccount: vi.fn(async () => undefined),
@@ -151,7 +158,7 @@ describe('portfolio values for Algorand accounts', () => {
                 {
                     assetId: '400',
                     amount: new Decimal(2000),
-                    isFrozen: true,
+                    native: { family: 'algorand', isFrozen: true },
                 },
                 { assetId: '500', amount: new Decimal(0) },
             ],
@@ -175,10 +182,10 @@ describe('portfolio values for Algorand accounts', () => {
                 h.assetId,
                 {
                     amount: str(h.amount),
-                    algoValue: str(h.algoValue),
+                    nativeValue: str(h.nativeValue),
                     usdPrice: str(h.usdPrice ?? null),
                     fiatValue: str(h.fiatValue),
-                    isFrozen: h.isFrozen,
+                    restriction: h.restriction,
                     hasAsset: h.asset !== undefined,
                 },
             ]),
@@ -186,90 +193,90 @@ describe('portfolio values for Algorand accounts', () => {
         expect(holdings).toEqual({
             '0': {
                 amount: '10',
-                algoValue: '10',
+                nativeValue: '10',
                 usdPrice: '0.25',
                 fiatValue: '2.5',
-                isFrozen: false,
+                restriction: null,
                 hasAsset: true,
             },
             '100': {
                 amount: '4',
-                algoValue: '8',
+                nativeValue: '8',
                 usdPrice: '0.5',
                 fiatValue: '2',
-                isFrozen: false,
+                restriction: null,
                 hasAsset: true,
             },
             '200': {
                 amount: '15',
-                algoValue: '0',
+                nativeValue: '0',
                 usdPrice: '0',
                 fiatValue: null,
-                isFrozen: false,
+                restriction: null,
                 hasAsset: true,
             },
             '300': {
                 amount: '0',
-                algoValue: '0',
+                nativeValue: '0',
                 usdPrice: '2',
                 fiatValue: null,
-                isFrozen: false,
+                restriction: null,
                 hasAsset: false,
             },
             '400': {
                 amount: '2',
-                algoValue: '10',
+                nativeValue: '10',
                 usdPrice: '1.25',
                 fiatValue: '2.5',
-                isFrozen: true,
+                restriction: 'transferBlocked',
                 hasAsset: true,
             },
             '500': {
                 amount: '0',
-                algoValue: '0',
+                nativeValue: '0',
                 usdPrice: '0',
                 fiatValue: null,
-                isFrozen: false,
+                restriction: null,
                 hasAsset: true,
             },
         })
         expect({
-            algoValue: str(account?.algoValue ?? null),
+            nativeValue: str(account?.nativeValue ?? null),
             usdValue: str(account?.usdValue ?? null),
             fiatValue: str(account?.fiatValue ?? null),
-            portfolioAlgoValue: str(balances.portfolioAlgoValue),
+            portfolioNativeValue: str(balances.portfolioNativeValue),
         }).toEqual({
-            algoValue: '28',
+            nativeValue: '28',
             usdValue: '7',
             fiatValue: '7',
-            portfolioAlgoValue: '28',
+            portfolioNativeValue: '28',
         })
 
         const total = totals.accountValueTotals.get('ADDR1')
         expect({
-            algoValue: str(total?.algoValue ?? null),
+            nativeValue: str(total?.nativeValue ?? null),
             usdValue: str(total?.usdValue ?? null),
             fiatValue: str(total?.fiatValue ?? null),
-            portfolioAlgoValue: str(totals.portfolioAlgoValue),
+            portfolioNativeValue: str(totals.portfolioNativeValue),
             portfolioUsdValue: str(totals.portfolioUsdValue),
         }).toEqual({
-            algoValue: '28',
+            nativeValue: '28',
             usdValue: '7',
             fiatValue: '7',
-            portfolioAlgoValue: '28',
+            portfolioNativeValue: '28',
             portfolioUsdValue: '7',
         })
 
         expect({
-            algoAmount: str(summary.algoAmount),
+            nativeAmount: str(summary.nativeAmount),
             portfolioUsdValue: str(summary.portfolioUsdValue),
-            portfolioAlgoValue: str(summary.portfolioAlgoValue),
+            portfolioNativeValue: str(summary.portfolioNativeValue),
             holdingsCount: summary.holdingsCount,
             isComplete: summary.isComplete,
         }).toEqual({
-            algoAmount: '10',
+            nativeAmount: '10',
             portfolioUsdValue: '7',
-            portfolioAlgoValue: '28',
+            portfolioNativeValue: '28',
             holdingsCount: 6,
             isComplete: false,
         })
@@ -295,7 +302,7 @@ describe('portfolio values for Algorand accounts', () => {
 
         const account = balances.accountBalances.get('ADDR2')
         expect({
-            algoValue: str(account?.algoValue ?? null),
+            nativeValue: str(account?.nativeValue ?? null),
             usdValue: str(account?.usdValue ?? null),
             fiatValue: str(account?.fiatValue ?? null),
             nativeFiat: str(
@@ -303,7 +310,7 @@ describe('portfolio values for Algorand accounts', () => {
                     ?.fiatValue ?? null,
             ),
         }).toEqual({
-            algoValue: '3',
+            nativeValue: '3',
             usdValue: '0.5',
             fiatValue: null,
             nativeFiat: null,
@@ -311,25 +318,25 @@ describe('portfolio values for Algorand accounts', () => {
 
         const total = totals.accountValueTotals.get('ADDR2')
         expect({
-            algoValue: str(total?.algoValue ?? null),
+            nativeValue: str(total?.nativeValue ?? null),
             usdValue: str(total?.usdValue ?? null),
             fiatValue: str(total?.fiatValue ?? null),
             portfolioUsdValue: str(totals.portfolioUsdValue),
         }).toEqual({
-            algoValue: '3',
+            nativeValue: '3',
             usdValue: null,
             fiatValue: null,
             portfolioUsdValue: null,
         })
 
         expect({
-            algoAmount: str(summary.algoAmount),
+            nativeAmount: str(summary.nativeAmount),
             portfolioUsdValue: str(summary.portfolioUsdValue),
-            portfolioAlgoValue: str(summary.portfolioAlgoValue),
+            portfolioNativeValue: str(summary.portfolioNativeValue),
         }).toEqual({
-            algoAmount: '3',
+            nativeAmount: '3',
             portfolioUsdValue: null,
-            portfolioAlgoValue: '3',
+            portfolioNativeValue: '3',
         })
     })
 })

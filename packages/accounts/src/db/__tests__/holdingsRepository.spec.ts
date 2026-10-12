@@ -27,7 +27,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     getAccountHoldings,
-    isAssetFrozen,
+    getHoldingRestriction,
     insertAssetHolding,
     addToAssetHolding,
     deleteAssetHoldings,
@@ -107,11 +107,17 @@ describe('account holdings repository', () => {
             expect(result[0].amount).toEqual(new Decimal(999))
         })
 
-        it('persists the frozen flag and reports an isFrozen-only change', async () => {
+        it('round-trips native holding data and reports a native-only change', async () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 5000n, isFrozen: true }],
+                holdings: [
+                    {
+                        assetId: '100',
+                        amount: new Decimal(5000),
+                        native: { family: 'algorand', isFrozen: true },
+                    },
+                ],
                 scope: MAINNET_SCOPE,
             })
 
@@ -120,13 +126,22 @@ describe('account holdings repository', () => {
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
             })
-            expect(page[0].isFrozen).toBe(true)
+            expect(page[0].native).toEqual({
+                family: 'algorand',
+                isFrozen: true,
+            })
 
-            // Unfreeze with the same amount — must still be detected as a change.
+            // Same amount, different native data — must still be a change.
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 5000n, isFrozen: false }],
+                holdings: [
+                    {
+                        assetId: '100',
+                        amount: new Decimal(5000),
+                        native: { family: 'algorand', isFrozen: false },
+                    },
+                ],
                 scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
@@ -136,7 +151,35 @@ describe('account holdings repository', () => {
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
             })
-            expect(after[0].isFrozen).toBe(false)
+            expect(after[0].native).toEqual({
+                family: 'algorand',
+                isFrozen: false,
+            })
+        })
+
+        it('writes nothing when the native data is unchanged', async () => {
+            const holdings = () => [
+                {
+                    assetId: '100',
+                    amount: new Decimal(5000),
+                    native: { family: 'algorand' as const, isFrozen: false },
+                },
+            ]
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: holdings(),
+                scope: MAINNET_SCOPE,
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: holdings(),
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(changed).toBe(false)
         })
 
         it('handles empty holdings', async () => {
@@ -339,7 +382,11 @@ describe('account holdings repository', () => {
 
         it('returns false on a repeat sync of an unchanged frozen holding', async () => {
             const holdings = [
-                { assetId: '100', amount: new Decimal(10), isFrozen: true },
+                {
+                    assetId: '100',
+                    amount: new Decimal(10),
+                    native: { family: 'algorand' as const, isFrozen: true },
+                },
             ]
             await refreshAccountHoldings({
                 db,
@@ -437,9 +484,9 @@ describe('account holdings repository', () => {
             ])
         })
 
-        it('hideOptedInNfts excludes only zero-balance collectibles', async () => {
+        it('hideZeroBalanceNfts excludes only zero-balance collectibles', async () => {
             // Owned NFT '300' is kept, opted-in '400' is dropped, unknown '500' kept.
-            expect(await idsOf({ hideOptedInNfts: true })).toEqual([
+            expect(await idsOf({ hideZeroBalanceNfts: true })).toEqual([
                 '100',
                 '200',
                 '300',
@@ -453,13 +500,13 @@ describe('account holdings repository', () => {
             ).toEqual(['100'])
         })
 
-        it('combines hideZeroBalance with hideOptedInNfts', async () => {
-            // hideZeroBalance drops '200', '400', '500'; hideOptedInNfts is
+        it('combines hideZeroBalance with hideZeroBalanceNfts', async () => {
+            // hideZeroBalance drops '200', '400', '500'; hideZeroBalanceNfts is
             // already covered by hideZeroBalance for collectibles.
             expect(
                 await idsOf({
                     hideZeroBalance: true,
-                    hideOptedInNfts: true,
+                    hideZeroBalanceNfts: true,
                 }),
             ).toEqual(['100', '300'])
         })
@@ -543,7 +590,7 @@ describe('account holdings repository', () => {
             expect(result.map(r => r.assetId).sort()).toEqual(['100', '200'])
         })
 
-        it('defaults isFrozen to false when the caller omits it', async () => {
+        it('stores no native data when the caller omits it', async () => {
             await insertAssetHolding({
                 db,
                 accountAddress: 'ADDR1',
@@ -557,81 +604,69 @@ describe('account holdings repository', () => {
                 scope: MAINNET_SCOPE,
             })
 
-            expect(result[0].isFrozen).toBe(false)
+            expect(result[0].native).toBeNull()
         })
     })
 
-    describe('isAssetFrozen', () => {
+    describe('getHoldingRestriction', () => {
         const seed = async () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
                 holdings: [
-                    { assetId: '100', amount: new Decimal(1), isFrozen: true },
-                    { assetId: '200', amount: new Decimal(2), isFrozen: false },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(1),
+                        native: { family: 'algorand', isFrozen: true },
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(2),
+                        native: { family: 'algorand', isFrozen: false },
+                    },
+                    { assetId: '300', amount: new Decimal(3) },
                 ],
             })
         }
 
-        it('is true for a frozen holding', async () => {
+        const restrictionOf = (
+            assetId: string,
+            accountAddress = 'ADDR1',
+            scope = MAINNET_SCOPE,
+        ) => getHoldingRestriction({ db, accountAddress, assetId, scope })
+
+        it('blocks transfers of a frozen holding', async () => {
             await seed()
 
-            await expect(
-                isAssetFrozen({
-                    db,
-                    accountAddress: 'ADDR1',
-                    assetId: '100',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).resolves.toBe(true)
+            await expect(restrictionOf('100')).resolves.toBe('transferBlocked')
         })
 
-        it('is false for a holding that is not frozen', async () => {
+        it('is null for a holding that is not frozen', async () => {
             await seed()
 
-            await expect(
-                isAssetFrozen({
-                    db,
-                    accountAddress: 'ADDR1',
-                    assetId: '200',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).resolves.toBe(false)
+            await expect(restrictionOf('200')).resolves.toBeNull()
         })
 
-        it('is false when there is no holding row — nothing to be frozen', async () => {
+        it('is null for a holding with no native data', async () => {
             await seed()
 
-            await expect(
-                isAssetFrozen({
-                    db,
-                    accountAddress: 'ADDR1',
-                    assetId: '999',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).resolves.toBe(false)
+            await expect(restrictionOf('300')).resolves.toBeNull()
+        })
+
+        it('is null when there is no holding row, so nothing restricts it', async () => {
+            await seed()
+
+            await expect(restrictionOf('999')).resolves.toBeNull()
         })
 
         it('scopes to the account and network', async () => {
             await seed()
 
+            await expect(restrictionOf('100', 'ADDR2')).resolves.toBeNull()
             await expect(
-                isAssetFrozen({
-                    db,
-                    accountAddress: 'ADDR2',
-                    assetId: '100',
-                    scope: MAINNET_SCOPE,
-                }),
-            ).resolves.toBe(false)
-            await expect(
-                isAssetFrozen({
-                    db,
-                    accountAddress: 'ADDR1',
-                    assetId: '100',
-                    scope: TESTNET_SCOPE,
-                }),
-            ).resolves.toBe(false)
+                restrictionOf('100', 'ADDR1', TESTNET_SCOPE),
+            ).resolves.toBeNull()
         })
     })
 
@@ -980,7 +1015,7 @@ describe('account holdings repository', () => {
     })
 
     describe('getAssetHolderAddresses', () => {
-        it('returns owners before opted-in-only accounts, scoped to the network', async () => {
+        it('returns owners before zero-balance accounts, scoped to the network', async () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR_OPTED_IN',

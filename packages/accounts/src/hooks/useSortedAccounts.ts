@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
-    AccountAlgoValues,
+    AccountNativeValues,
     AccountSortMode,
     WalletAccount,
 } from '../models'
@@ -33,7 +33,7 @@ type UseSortedAccountsResult = {
 /** `accountBalances` is keyed by each account's address on `chainId`, which also names unnamed accounts. */
 export const useSortedAccounts = (
     accounts: WalletAccount[],
-    accountBalances: AccountAlgoValues,
+    accountBalances: AccountNativeValues,
     chainId: ChainId,
 ): UseSortedAccountsResult => {
     const sortMode = useAccountsStore(state => state.sortMode)
@@ -53,7 +53,7 @@ export const useSortedAccounts = (
             const address = chainAccountOf(account, chainId)?.address
             return (
                 (address
-                    ? accountBalances.get(address)?.algoValue
+                    ? accountBalances.get(address)?.nativeValue
                     : undefined) ?? new Decimal(-1)
             )
         }

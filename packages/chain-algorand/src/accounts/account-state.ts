@@ -73,7 +73,10 @@ async function fetchAccountSnapshot(
                 asset => ({
                     assetId: `${asset.assetId}`,
                     amount: new Decimal((asset.amount ?? 0n).toString()),
-                    isFrozen: asset.isFrozen ?? false,
+                    native: {
+                        family: 'algorand',
+                        isFrozen: asset.isFrozen ?? false,
+                    },
                 }),
             )
             return { info, holdings, observedRound: toRound(info.round) }
@@ -116,7 +119,10 @@ async function fetchAllHoldings(
             holdings.push({
                 assetId: `${asset.assetId}`,
                 amount: new Decimal((asset.amount ?? 0n).toString()),
-                isFrozen: asset.isFrozen ?? false,
+                native: {
+                    family: 'algorand',
+                    isFrozen: asset.isFrozen ?? false,
+                },
             })
         }
         next = page.nextToken
@@ -143,7 +149,7 @@ export async function fetchAlgorandAccountState(
     holdings.unshift({
         assetId: algorandDescriptor.nativeAsset.ref.assetId,
         amount: new Decimal(info.amount.toString()),
-        isFrozen: false,
+        native: { family: 'algorand', isFrozen: false },
     })
 
     const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0

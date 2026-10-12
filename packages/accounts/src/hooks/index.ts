@@ -12,7 +12,7 @@
 
 export * from './useAccountBalancesQuery'
 export * from './useAccountStateQuery'
-export * from './useAccountOptInRoundsQuery'
+export * from './useHoldingAcquisitionOrderQuery'
 export * from './useOnChainAccountStateQuery'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'

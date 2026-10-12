@@ -14,13 +14,22 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
 
+/** What a chain restricts about a holding, in terms every chain shares. */
+export const HoldingRestrictions = {
+    /** The holding can neither send nor receive. */
+    transferBlocked: 'transferBlocked',
+} as const
+
+export type HoldingRestriction =
+    (typeof HoldingRestrictions)[keyof typeof HoldingRestrictions]
+
 export type AssetWithAccountBalance = {
     assetId: string
     asset?: PeraAsset
     /** Asset amount in display units (divided by 10^decimals) */
     amount: Decimal
-    /** Value of this holding in ALGOs (display units) */
-    algoValue: Decimal
+    /** Value of this holding in the chain's native asset (display units) */
+    nativeValue: Decimal
     /** USD price per whole unit of the asset, joined from the DB read. */
     usdPrice?: Decimal
     /**
@@ -28,13 +37,13 @@ export type AssetWithAccountBalance = {
      * USD price or its decimals haven't synced, so it is unknown, not 0.
      */
     fiatValue: Nullable<Decimal>
-    /** Holding-level freeze from algod — frozen assets can't be transferred. */
-    isFrozen: boolean
+    /** `null` when the chain places no restriction on the holding. */
+    restriction: Nullable<HoldingRestriction>
 }
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
-    portfolioAlgoValue: Decimal
+    portfolioNativeValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -44,7 +53,7 @@ export type AccountBalancesWithTotals = {
 
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
-    algoValue: Decimal
+    nativeValue: Decimal
     /** Total value of the account's holdings in USD (display units). */
     usdValue: Decimal
     /**
@@ -61,12 +70,15 @@ export type AccountBalance = {
 export type AccountBalances = Map<string, AccountBalance>
 
 /**
- * Per-address ALGO-denominated values — the minimal shape balance-ranking
- * consumers (e.g. `useSortedAccounts`) need. Structural on purpose: both the
- * full `AccountBalances` map and `useAccountValueTotalsQuery`'s cheap totals
- * map satisfy it.
+ * Per-address values in the chain's native asset — the minimal shape
+ * balance-ranking consumers (e.g. `useSortedAccounts`) need. Structural on
+ * purpose: both the full `AccountBalances` map and
+ * `useAccountValueTotalsQuery`'s cheap totals map satisfy it.
  */
-export type AccountAlgoValues = Map<string, Pick<AccountBalance, 'algoValue'>>
+export type AccountNativeValues = Map<
+    string,
+    Pick<AccountBalance, 'nativeValue'>
+>
 
 /**
  * Per-address fiat values for ranking and summing across chains;
@@ -74,35 +86,12 @@ export type AccountAlgoValues = Map<string, Pick<AccountBalance, 'algoValue'>>
  */
 export type AccountFiatValues = Map<string, Pick<AccountBalance, 'fiatValue'>>
 
-export type AccountBalanceResponse = {
-    results: AccountAssetBalanceResponse[]
-}
-
-export type AccountAssetBalanceResponse = {
-    asset_id: string
-    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
-    amount: string
-    fraction_decimals: number
-    balance_usd_value: string
-}
-
 export type AccountBalanceHistoryItem = {
     datetime: Date
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
-    algoValue: Decimal
-    round: number
-}
-
-export type AccountBalanceHistoryResponseItem = {
-    datetime: string
-    usd_value: string
-    algo_value: string
-    round: number
-}
-
-export type AccountBalanceHistoryResponse = {
-    results: AccountBalanceHistoryResponseItem[]
+    /** Display units of the chain's native asset. */
+    nativeValue: Decimal
 }
 
 export type AccountAssetBalanceHistoryItem = {
@@ -111,20 +100,4 @@ export type AccountAssetBalanceHistoryItem = {
     amount: Decimal
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
-    round: number
-}
-
-export type AccountAssetsBalanceHistory = AccountAssetBalanceHistoryItem[]
-
-export type AccountAssetBalanceHistoryResponseItem = {
-    datetime: string
-    /** Asset amount in display units — this endpoint has no algo_value field */
-    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
-    amount: string
-    usd_value: string
-    round: number
-}
-
-export type AccountAssetBalanceHistoryResponse = {
-    results: AccountAssetBalanceHistoryResponseItem[]
 }

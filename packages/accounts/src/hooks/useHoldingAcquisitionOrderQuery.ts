@@ -12,37 +12,39 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchAssetOptInRounds } from '../chain-adapter'
-import { getAccountOptInRoundsQueryKey } from './querykeys'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { fetchHoldingAcquisitionOrder } from '../chain-adapter'
+import { getHoldingAcquisitionOrderQueryKey } from './querykeys'
 
-// Opt-in rounds only change when holdings change, and every sync tick already
+// The order only changes when holdings change, and every sync tick already
 // invalidates this key; the window just bounds redundant refetches in between.
-const OPT_IN_ROUNDS_STALE_TIME_MS = 60_000
+const ACQUISITION_ORDER_STALE_TIME_MS = 60_000
 
 // Shared fallback so a loading/disabled result keeps a stable reference and
 // doesn't churn consumers' memos.
-const EMPTY_OPT_IN_ROUNDS: ReadonlyMap<string, number> = new Map()
+const EMPTY_ACQUISITION_ORDER: ReadonlyMap<string, number> = new Map()
 
-export type UseAccountOptInRoundsQueryResult = {
-    /** Opt-in round per held asset, keyed by decimal asset-id string. */
-    optInRounds: ReadonlyMap<string, number>
+export type UseHoldingAcquisitionOrderQueryResult = {
+    /** When each held asset was acquired, keyed by asset id; higher means later. */
+    acquisitionOrder: ReadonlyMap<string, number>
     isPending: boolean
 }
 
-export const useAccountOptInRoundsQuery = (
+export const useHoldingAcquisitionOrderQuery = (
     address: string | undefined,
     scope: ChainScope,
     enabled = true,
-): UseAccountOptInRoundsQueryResult => {
+): UseHoldingAcquisitionOrderQueryResult => {
+    const canManageAssets = useChainCapability(scope.chainId, 'manageAssets')
     const { data, isPending, isFetching } = useQuery({
-        queryKey: getAccountOptInRoundsQueryKey(address ?? '', scope),
-        queryFn: () => fetchAssetOptInRounds(address ?? '', scope),
-        enabled: !!address && enabled,
-        staleTime: OPT_IN_ROUNDS_STALE_TIME_MS,
+        queryKey: getHoldingAcquisitionOrderQueryKey(address ?? '', scope),
+        queryFn: () => fetchHoldingAcquisitionOrder(address ?? '', scope),
+        enabled: !!address && enabled && canManageAssets,
+        staleTime: ACQUISITION_ORDER_STALE_TIME_MS,
     })
 
     return {
-        optInRounds: data ?? EMPTY_OPT_IN_ROUNDS,
+        acquisitionOrder: data ?? EMPTY_ACQUISITION_ORDER,
         // A disabled query stays 'pending' forever in React Query v5; gate on
         // isFetching so this is only true during a live load.
         isPending: isPending && isFetching,

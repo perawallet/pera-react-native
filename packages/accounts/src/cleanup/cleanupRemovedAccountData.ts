@@ -44,7 +44,7 @@ export type CleanupRemovedAccountDataResult = {
 
 /**
  * Removes an account's holdings and chain-state rows, prunes any assets and prices
- * no remaining account holds or is opted into, then runs any account-cleanup
+ * no remaining account holds, then runs any account-cleanup
  * handlers other packages registered (e.g. transaction-row pruning).
  * Idempotent — safe for an address with no data.
  */
@@ -87,12 +87,13 @@ export async function cleanupRemovedAccountData({
         const remaining = new Set(
             await getAllHeldAssetIdsForNetwork({ db, scope }),
         )
-        // ALGO is a holding row like any ASA, so it looks orphaned once the
-        // last account holding it is gone — but its metadata is a local
-        // constant seeded per network at bootstrap and nothing re-seeds it
-        // mid-session (the asset syncer skips it). Pruning it leaves every
-        // later ALGO read without decimals, which skeletons the asset row and
-        // strands Send on a spinner until the next cold start.
+        // The native asset is a holding row like any other, so it looks
+        // orphaned once the last account holding it is gone — but its metadata
+        // is a local constant seeded per network at bootstrap and nothing
+        // re-seeds it mid-session (the asset syncer skips it). Pruning it
+        // leaves every later native-asset read without decimals, which
+        // skeletons the asset row and strands Send on a spinner until the next
+        // cold start.
         const orphans = [...hadIds].filter(
             id => !remaining.has(id) && !isNativeAssetId(scope.chainId, id),
         )

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, and, like, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
@@ -23,31 +23,38 @@ import {
     AssetPricesSchema,
     nativeAssetFor,
 } from '@perawallet/wallet-core-assets'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 
 export type AccountPortfolioTotals = {
     /**
      * Display units, price-independent — separate from the USD aggregate so the
-     * header can render before the ALGO price syncs.
+     * header can render before the native asset's price syncs.
      */
-    algoAmount: Decimal
-    /** USD value of all non-ALGO holdings; rows without a price contribute 0. */
-    nonAlgoUsdValue: Decimal
-    /** Number of holdings rows (includes the ALGO holding). */
+    nativeAmount: Decimal
+    /** USD per whole unit of the native asset; null until its price syncs. */
+    nativeUsdPrice: Nullable<Decimal>
+    /** USD value of all non-native holdings; rows without a price contribute 0. */
+    nonNativeUsdValue: Decimal
+    /** Number of holdings rows (includes the native holding). */
     holdingsCount: number
     /** While > 0 the enrichment pass is in flight and the total is settling. */
     missingMetadataCount: number
 }
 
 /**
- * Splits the raw ALGO amount from the non-ALGO USD value so the header can
- * reflect the native balance before prices sync.
+ * Splits the native amount and price from the non-native USD value so the
+ * header can reflect the native balance before prices sync.
  *
- * Scales by `CAST('1e' || decimals AS REAL)` rather than `pow`, which SQLite
- * doesn't always ship. Sums are REAL — ample for a displayed total — and
- * wrapped back into Decimal for the app's money convention.
+ * The native amount and price are read as TEXT and scaled in JS, so a chain
+ * with 18 decimals loses nothing to REAL. Non-native values scale by
+ * `CAST('1e' || decimals AS REAL)` rather than `pow`, which SQLite doesn't
+ * always ship; that sum is REAL — ample for a displayed total — and wrapped
+ * back into Decimal for the app's money convention.
  */
 export async function getAccountPortfolioTotals({
     db = getDatabase(),
@@ -59,15 +66,20 @@ export async function getAccountPortfolioTotals({
     scope: ChainScope
 }): Promise<AccountPortfolioTotals> {
     const network = toScopeKey(scope)
+    const native = nativeAssetFor(scope.chainId)
     const rows = await db
         .select({
-            algoAmount: sql<Nullable<number>>`COALESCE(SUM(
-                CASE WHEN ${AccountAssetHoldingsSchema.assetId} = '0'
-                    THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL) / 1000000.0
-                    ELSE 0 END
-            ), 0)`,
-            nonAlgoUsd: sql<Nullable<number>>`COALESCE(SUM(
-                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> '0'
+            // The primary key leaves at most one native row, so MAX picks it.
+            nativeAmount: sql<Nullable<string>>`MAX(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} = ${native.assetId}
+                    THEN ${AccountAssetHoldingsSchema.amount} END
+            )`,
+            nativeUsdPrice: sql<Nullable<string>>`MAX(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} = ${native.assetId}
+                    THEN ${AssetPricesSchema.usdPrice} END
+            )`,
+            nonNativeUsd: sql<Nullable<number>>`COALESCE(SUM(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> ${native.assetId}
                     AND ${AssetsNodeSchema.decimals} IS NOT NULL
                     THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
                         / CAST('1e' || ${AssetsNodeSchema.decimals} AS REAL)
@@ -76,7 +88,7 @@ export async function getAccountPortfolioTotals({
             ), 0)`,
             count: sql<number>`COUNT(*)`,
             missingMetadata: sql<number>`COALESCE(SUM(
-                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> '0'
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> ${native.assetId}
                     AND ${AssetsNodeSchema.decimals} IS NULL
                     THEN 1 ELSE 0 END
             ), 0)`,
@@ -94,15 +106,22 @@ export async function getAccountPortfolioTotals({
 
     const row = rows[0]
     return {
-        algoAmount: new Decimal(row?.algoAmount ?? 0),
-        nonAlgoUsdValue: new Decimal(row?.nonAlgoUsd ?? 0),
+        nativeAmount: baseUnitsToDisplayUnits(
+            row?.nativeAmount ?? 0,
+            native.decimals,
+        ),
+        nativeUsdPrice:
+            row?.nativeUsdPrice != null
+                ? new Decimal(row.nativeUsdPrice)
+                : null,
+        nonNativeUsdValue: new Decimal(row?.nonNativeUsd ?? 0),
         holdingsCount: row?.count ?? 0,
         missingMetadataCount: row?.missingMetadata ?? 0,
     }
 }
 
 /**
- * Networks on which the account holds a non-zero ALGO balance.
+ * Networks of `chainId` on which the account holds a non-zero native balance.
  *
  * Deliberately unfiltered by network: a warning about losing access to an
  * account must not vanish because the user switched to a network where that
@@ -124,6 +143,8 @@ export async function getAccountFundedNetworks({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                // Another chain's native id could equal this one's.
+                like(AccountAssetHoldingsSchema.network, `${chainId}/%`),
                 eq(
                     AccountAssetHoldingsSchema.assetId,
                     nativeAssetFor(chainId).assetId,
