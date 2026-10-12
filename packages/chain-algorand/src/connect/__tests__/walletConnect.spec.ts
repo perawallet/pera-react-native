@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import {
+    ALGORAND_WC_V2_METHOD,
     algorandWalletConnectSupport as support,
+    createAlgorandWalletConnectV2Support,
     toCaip2ChainId,
 } from '../walletConnect'
 
@@ -242,5 +244,111 @@ describe('toWireResult', () => {
                 signatures: [new Uint8Array([1, 2, 3])],
             }),
         ).toEqual(['AQID'])
+    })
+})
+
+describe('createAlgorandWalletConnectV2Support', () => {
+    const ADDRESS = 'A'.repeat(58)
+    const makeV2 = () => {
+        const emptySignaturesFor = vi.fn(() => ({ [ADDRESS]: 'gA==' }))
+        return {
+            v2: createAlgorandWalletConnectV2Support(emptySignaturesFor),
+            emptySignaturesFor,
+        }
+    }
+    const answerFor = (params: unknown, networkId: string) => {
+        const { v2, emptySignaturesFor } = makeV2()
+        const route = v2.handleRequest(
+            ALGORAND_WC_V2_METHOD.getEmptySignatures,
+            params,
+        )
+        if (route.kind !== 'public-data') throw new Error('not public data')
+        return {
+            answer: route.answer([ADDRESS], networkId),
+            emptySignaturesFor,
+        }
+    }
+
+    it('declares its methods in the order an approved namespace lists them', () => {
+        const { v2 } = makeV2()
+
+        expect(v2.methods).toEqual([
+            'algo_signTxn',
+            'algo_signData',
+            'algo_getEmptySignatures',
+        ])
+        expect(v2.signingMethods).toEqual(['algo_signTxn', 'algo_signData'])
+    })
+
+    it('takes the transaction group out of the first positional slot', () => {
+        const group = [{ txn: 'AA==' }]
+
+        expect(
+            makeV2().v2.handleRequest(ALGORAND_WC_V2_METHOD.signTransactions, [
+                group,
+                { message: 'opts' },
+            ]),
+        ).toEqual({
+            kind: 'operation',
+            type: 'sign-transactions',
+            params: group,
+        })
+    })
+
+    it('passes a non-array transaction param through as it arrived', () => {
+        const params = { txns: [] }
+
+        expect(
+            makeV2().v2.handleRequest(
+                ALGORAND_WC_V2_METHOD.signTransactions,
+                params,
+            ),
+        ).toEqual({ kind: 'operation', type: 'sign-transactions', params })
+    })
+
+    it('passes sign-data params through unchanged', () => {
+        const params = { data: 'AA==', signer: 'A' }
+
+        expect(
+            makeV2().v2.handleRequest(ALGORAND_WC_V2_METHOD.signData, params),
+        ).toEqual({ kind: 'operation', type: 'sign-data', params })
+    })
+
+    it('does not serve algo_getAccounts', () => {
+        expect(makeV2().v2.handleRequest('algo_getAccounts', [])).toEqual({
+            kind: 'unsupported',
+        })
+    })
+
+    it('answers empty signatures for a request naming no chain', () => {
+        const { answer, emptySignaturesFor } = answerFor({}, Networks.mainnet)
+
+        expect(answer).toEqual({ [ADDRESS]: 'gA==' })
+        expect(emptySignaturesFor).toHaveBeenCalledWith([ADDRESS])
+    })
+
+    it("answers a request naming the network's own chain, bare or array-wrapped", () => {
+        expect(
+            answerFor({ chainId: MAINNET_CHAIN_ID }, Networks.mainnet).answer,
+        ).toEqual({ [ADDRESS]: 'gA==' })
+        expect(
+            answerFor([{ chainId: MAINNET_CHAIN_ID }], Networks.mainnet).answer,
+        ).toEqual({ [ADDRESS]: 'gA==' })
+    })
+
+    it('refuses a request naming another network without building signatures', () => {
+        const { answer, emptySignaturesFor } = answerFor(
+            { chainId: TESTNET_CHAIN_ID },
+            Networks.mainnet,
+        )
+
+        expect(answer).toBeNull()
+        expect(emptySignaturesFor).not.toHaveBeenCalled()
+    })
+
+    it('refuses any named chain on a custom network, which has no CAIP-2 id', () => {
+        expect(
+            answerFor({ chainId: MAINNET_CHAIN_ID }, Networks.custom).answer,
+        ).toBeNull()
     })
 })

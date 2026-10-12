@@ -14,6 +14,7 @@ import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig, Networks } from '@perawallet/wallet-core-config'
 import type {
     DappRequestChainAdapter,
+    WalletConnectV2ChainSupport,
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
@@ -205,6 +206,85 @@ const toWireResult = (result: WalletOperationResult): unknown =>
     result.type === 'sign-transactions'
         ? result.signed
         : result.signatures.map(signature => encodeToBase64(signature))
+
+/**
+ * Mirrors `AlgorandPermission` and `GET_EMPTY_SIGNATURES_METHOD` in
+ * `@perawallet/wallet-core-walletconnect`, duplicated for the same reason as
+ * the v1 chain ids above and pinned by walletconnect's `v2MethodParity.spec.ts`.
+ */
+export const ALGORAND_WC_V2_METHOD = {
+    signTransactions: 'algo_signTxn',
+    signData: 'algo_signData',
+    getEmptySignatures: 'algo_getEmptySignatures',
+} as const
+
+/**
+ * ARC-0001's transaction group arrives in the first positional slot. A
+ * non-array reaches the validator as it arrived, so its refusal describes what
+ * the dApp actually sent.
+ */
+const firstPositional = (params: unknown): unknown => {
+    if (!Array.isArray(params)) return params
+    const positional: unknown[] = params
+    return positional[0]
+}
+
+/**
+ * The spec sends `{ chainId }`, a v1 connector wraps it in an array; a request
+ * naming another network's chain is refused because rekey state is only
+ * tracked for the active one.
+ */
+const isEmptySignaturesRequestFor = (
+    params: unknown,
+    networkId: NetworkId,
+): boolean => {
+    const body = firstPositional(params)
+    if (typeof body !== 'object' || body === null) return true
+    const { chainId } = body as { chainId?: unknown }
+    return chainId === undefined || chainId === caip2ChainIdFor(networkId)
+}
+
+export const createAlgorandWalletConnectV2Support = (
+    emptySignaturesFor: (
+        addresses: readonly string[],
+    ) => Record<string, string>,
+): WalletConnectV2ChainSupport => ({
+    methods: [
+        ALGORAND_WC_V2_METHOD.signTransactions,
+        ALGORAND_WC_V2_METHOD.signData,
+        ALGORAND_WC_V2_METHOD.getEmptySignatures,
+    ],
+    signingMethods: [
+        ALGORAND_WC_V2_METHOD.signTransactions,
+        ALGORAND_WC_V2_METHOD.signData,
+    ],
+    handleRequest: (method, params) => {
+        switch (method) {
+            case ALGORAND_WC_V2_METHOD.signTransactions: {
+                return {
+                    kind: 'operation',
+                    type: 'sign-transactions',
+                    params: firstPositional(params),
+                }
+            }
+            case ALGORAND_WC_V2_METHOD.signData: {
+                return { kind: 'operation', type: 'sign-data', params }
+            }
+            case ALGORAND_WC_V2_METHOD.getEmptySignatures: {
+                return {
+                    kind: 'public-data',
+                    answer: (addresses, networkId) =>
+                        isEmptySignaturesRequestFor(params, networkId)
+                            ? emptySignaturesFor(addresses)
+                            : null,
+                }
+            }
+            default: {
+                return { kind: 'unsupported' }
+            }
+        }
+    },
+})
 
 /** Algorand's `DappRequestChainAdapter.walletConnect` member. */
 export const algorandWalletConnectSupport: DappRequestChainAdapter['walletConnect'] =
