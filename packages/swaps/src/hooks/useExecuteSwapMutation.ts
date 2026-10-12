@@ -11,6 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     getSignerFor,
@@ -26,7 +27,11 @@ import {
     SwapCosignUnsupportedError,
 } from '../chain-adapter'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
-import { updateSwapStatus } from '../api'
+import {
+    updateSwapStatus,
+    type PrepareTransactionsRequest,
+    type SwapStatusUpdateRequest,
+} from '../api'
 import { useSwapHandoffStore } from '../store'
 import { prepareSwapTransactions } from './usePrepareTransactionsMutation'
 import { useSwapScope } from './useSwapScope'
@@ -40,6 +45,30 @@ export const useExecuteSwapMutation = () => {
     const scope = useSwapScope(account)
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
+    // Mutations rather than bare calls, so a failure reaches the app's
+    // mutation-cache logging the way it did as standalone hooks.
+    const { mutateAsync: prepareOnScope } = useMutation({
+        mutationFn: ({
+            data,
+            scope: target,
+        }: {
+            data: PrepareTransactionsRequest
+            scope: ChainScope
+        }) => prepareSwapTransactions(data, target),
+        throwOnError: false,
+    })
+    const { mutateAsync: updateStatusOnScope } = useMutation({
+        mutationFn: ({
+            swapId,
+            data,
+            scope: target,
+        }: {
+            swapId: string
+            data: SwapStatusUpdateRequest
+            scope: ChainScope
+        }) => updateSwapStatus(swapId, data, target),
+        throwOnError: false,
+    })
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
         mutationFn: async variables => {
@@ -65,9 +94,9 @@ export const useExecuteSwapMutation = () => {
                     deviceId: deviceIdOf(scope),
                     addSignRequest,
                     prepareTransactions: data =>
-                        prepareSwapTransactions(data, scope),
+                        prepareOnScope({ data, scope }),
                     updateSwapStatus: ({ swapId, data }) =>
-                        updateSwapStatus(swapId, data, scope),
+                        updateStatusOnScope({ swapId, data, scope }),
                     registerHandoff,
                 },
             )

@@ -21,7 +21,6 @@ export {
     useAccountListPicker,
     useCardPicker,
     useSigningPicker,
-    useSwapPicker,
     type AccountDrawerPickerProps,
 } from './components/AccountDrawer'
 export { AccountErrorBoundary } from './components/AccountErrorBoundary'

@@ -12,6 +12,8 @@
 
 import { useState, useCallback, useRef } from 'react'
 import {
+    SwapAccountUnsupportedError,
+    SwapCosignUnsupportedError,
     useExecuteSwapMutation,
     type ExecuteSwapResult,
     type SwapExecutionFailure,
@@ -212,15 +214,36 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setTxIds([])
             cancelRequestedRef.current = false
 
-            const result = await executeSwap({
-                quote,
-                signingSource: {
-                    name: t('swap.signing.source_name'),
-                    description: t('swap.signing.source_description'),
-                },
-                onProgress: setStatus,
-                isCancelled: () => cancelRequestedRef.current,
-            })
+            let result: ExecuteSwapResult
+            try {
+                result = await executeSwap({
+                    quote,
+                    signingSource: {
+                        name: t('swap.signing.source_name'),
+                        description: t('swap.signing.source_description'),
+                    },
+                    onProgress: setStatus,
+                    isCancelled: () => cancelRequestedRef.current,
+                })
+            } catch (error) {
+                // Refused before anything ran: the account can't swap here.
+                // Anything else is unexpected and still escapes.
+                if (
+                    !(error instanceof SwapAccountUnsupportedError) &&
+                    !(error instanceof SwapCosignUnsupportedError)
+                ) {
+                    throw error
+                }
+                const copy = resolveErrorCopy(error, t, undefined, getMessage)
+                setStatus('error')
+                setError({ phase: 'prepare', message: copy.body })
+                return {
+                    kind: 'error',
+                    phase: 'prepare',
+                    message: copy.body,
+                    title: copy.title,
+                }
+            }
 
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
@@ -244,7 +267,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             return { kind: result.kind }
         },
-        [executeSwap, t, describeFailure],
+        [executeSwap, t, getMessage, describeFailure],
     )
 
     const reset = useCallback(() => {

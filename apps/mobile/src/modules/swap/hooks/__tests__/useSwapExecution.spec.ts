@@ -37,6 +37,8 @@ const mockResetMutation = vi.fn()
 // swaps package's `executeSwap`, covered by its own spec. This hook only maps
 // its results onto status and localized copy.
 vi.mock('@perawallet/wallet-core-swaps', () => ({
+    SwapAccountUnsupportedError: class SwapAccountUnsupportedError extends Error {},
+    SwapCosignUnsupportedError: class SwapCosignUnsupportedError extends Error {},
     useExecuteSwapMutation: () => ({
         mutateAsync: mockExecuteSwap,
         reset: mockResetMutation,
@@ -593,6 +595,20 @@ describe('useSwapExecution', () => {
 
         expect(result.current.status).toBe('preparing')
         expect(result.current.error).toBeNull()
+    })
+
+    it('reports a swap the account cannot run as an error, not a rejection', async () => {
+        const { SwapAccountUnsupportedError } =
+            await import('@perawallet/wallet-core-swaps')
+        mockExecuteSwap.mockRejectedValueOnce(new SwapAccountUnsupportedError())
+        const { result } = renderHook(() => useSwapExecution())
+
+        const outcome = await executeOnce(result.current.execute)
+
+        expect(outcome).toEqual(
+            expect.objectContaining({ kind: 'error', phase: 'prepare' }),
+        )
+        expect(result.current.status).toBe('error')
     })
 
     it('resets state', async () => {
