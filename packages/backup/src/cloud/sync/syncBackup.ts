@@ -17,10 +17,20 @@ import { decryptItemPayload } from '../crypto/itemPayload'
 import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
-import { buildLocalItems } from './buildLocalItems'
+import {
+    buildLocalItems,
+    refreshRecordsForPush,
+    withTrackedRecords,
+} from './buildLocalItems'
 import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
-import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { readableBackupChains } from './backupChains'
+import { isImportRetryDue } from './importRetry'
+import {
+    fetchDeltaOrRebuild,
+    unreadAccountDeltas,
+    withAccountRecordsUnread,
+} from './rebuildFromManifest'
 import { reconcile } from './reconcile'
 import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
@@ -29,6 +39,13 @@ import type { LocalItem, LocalSnapshot, SyncEngineDeps } from './types'
 const abortIfStopped = (deps: SyncEngineDeps): void => {
     if (deps.isAborted()) throw new BackupSyncAbortedError()
 }
+
+const sameChains = (
+    stored: readonly string[] | undefined,
+    current: readonly string[],
+): boolean =>
+    (stored ?? []).length === current.length &&
+    current.every((chainId, index) => stored?.[index] === chainId)
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
@@ -87,16 +104,12 @@ export const syncBackup = async (
     } finally {
         for (const passkey of passkeys) zeroBytes(passkey.privateKey)
     }
+    const otherItems = [
+        ...buildLocalContactItems(deps.listContacts(), now, deps.hashAddress),
+        ...passkeyItems,
+    ]
     const local: LocalSnapshot = {
-        items: [
-            ...accounts.items,
-            ...buildLocalContactItems(
-                deps.listContacts(),
-                now,
-                deps.hashAddress,
-            ),
-            ...passkeyItems,
-        ],
+        items: [...withTrackedRecords(accounts.items, state), ...otherItems],
         // Account-only: a contact cannot fail to serialize, and a credential
         // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
@@ -121,16 +134,29 @@ export const syncBackup = async (
         return { ...state, lastSyncResult: 'FAILED' }
     }
 
+    // Re-read what no delta will mention again: everything skipped, once a
+    // chain this client could not read becomes readable, or else a failed
+    // import that still has attempts left.
+    const readableChains = readableBackupChains()
+    const hasNewChains = !sameChains(next.readableChains, readableChains)
+    if (hasNewChains)
+        next = { ...withAccountRecordsUnread(next), readableChains }
+    const unread = unreadAccountDeltas(
+        next,
+        hasNewChains ? undefined : isImportRetryDue,
+    )
+
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
-        !hasPendingWork(next)
+        !hasPendingWork(next) &&
+        unread.length === 0
     ) {
         return { ...next, lastSyncedAt: now, lastSyncResult: 'SUCCESS' }
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const { deltas } = await fetchDeltaOrRebuild(
+    const { deltas: fetchedDeltas } = await fetchDeltaOrRebuild(
         deps,
         next,
         async () => manifest,
@@ -138,7 +164,7 @@ export const syncBackup = async (
     abortIfStopped(deps)
     next = await applyDeltas({
         state: next,
-        deltas,
+        deltas: [...unread, ...fetchedDeltas],
         deps: {
             network: deps.network,
             backupId: deps.backupId,
@@ -158,9 +184,10 @@ export const syncBackup = async (
 
     // 5. Push local changes (use the freshly-built local items).
     abortIfStopped(deps)
+    const refreshed = refreshRecordsForPush(next, accounts.items)
     next = await pushDirty({
-        state: next,
-        localItems: local.items,
+        state: refreshed.state,
+        localItems: [...refreshed.items, ...otherItems],
         deps: {
             network: deps.network,
             backupId: deps.backupId,

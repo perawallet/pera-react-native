@@ -33,6 +33,7 @@ import {
     type BackupItemKey,
     type SyncState,
 } from '../models'
+import { accountAddressesOf } from './serializeAccountItems'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
 import { withItemKeyHasher } from '../crypto/itemKeyHash'
 import {
@@ -77,6 +78,7 @@ import type {
     SyncEngineDeps,
     SerializeHdResolver,
     SerializeMnemonicResolver,
+    SerializePrivateKeyResolver,
 } from './types'
 
 const PERIODIC_SYNC_MS = 5 * 60 * 1000
@@ -91,6 +93,9 @@ export type BackupSyncManagerDeps = {
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
+    /** Hook-bound private-key reader, injected from RootComponent. Absent => a
+     *  private-key account is skipped, like any account whose resolver is missing. */
+    resolvePrivateKey?: SerializePrivateKeyResolver
     /** App-lock state from the app layer; nothing syncs or pulls while it holds. */
     isLocked: () => boolean
     listPasskeys: SyncEngineDeps['listPasskeys']
@@ -257,6 +262,7 @@ export class BackupSyncManager {
                                 hashAddress,
                                 resolveMnemonic: this.deps.resolveMnemonic,
                                 resolveHd: this.deps.resolveHd,
+                                resolvePrivateKey: this.deps.resolvePrivateKey,
                             }),
                         importAccounts: this.deps.importAccounts,
                         listContacts: () => this.deps.sources.listContacts(),
@@ -270,6 +276,16 @@ export class BackupSyncManager {
                 ),
             ),
         )
+    }
+
+    /** Every address of the local account holding `address`. Its record
+     *  answers to any of them, but a legacy item only to its own, and until
+     *  the first record lands a legacy item is all the backup has. */
+    private addressesOf(address: string): string[] {
+        const holder = this.deps.sources
+            .listAccounts()
+            .find(account => accountAddressesOf(account).includes(address))
+        return holder ? accountAddressesOf(holder) : [address]
     }
 
     /** Publishes the item as busy until the action settles, and hands a
@@ -337,12 +353,14 @@ export class BackupSyncManager {
     backUpAccount(address: string): Promise<BackupBackUpOutcome> {
         return this.trackAction('account', address, 'backUp', async () => {
             const epoch = this.stopEpoch
+            const addresses = this.addressesOf(address)
             const staged = await this.withExclusiveState(async state =>
-                markAccountForBackup(state, address),
+                addresses.reduce(markAccountForBackup, state),
             )
             if (!staged) return 'refused'
             await this.syncWhenIdle()
-            if (isAddressBackedUp(this.state.getSyncState(), address)) {
+            const synced = this.state.getSyncState()
+            if (addresses.every(each => isAddressBackedUp(synced, each))) {
                 return 'settled'
             }
             return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
@@ -388,20 +406,32 @@ export class BackupSyncManager {
 
     deleteAccountFromBackup(address: string): Promise<BackupActionOutcome> {
         return this.trackAction('account', address, 'delete', () =>
-            this.runDelete((state, deps) =>
-                deleteFromBackup({
-                    state,
-                    address,
-                    deps: reviewActionDeps(deps),
-                }),
-            ),
+            this.runDelete(async (state, deps) => {
+                // One address at a time, so the seed outlives every sibling
+                // that still derives from it and goes with the last.
+                let current = state
+                const keys: BackupItemKey[] = []
+                for (const each of this.addressesOf(address)) {
+                    const result = await deleteFromBackup({
+                        state: current,
+                        address: each,
+                        deps: reviewActionDeps(deps),
+                    })
+                    current = result.state
+                    keys.push(...result.keys)
+                }
+                return { state: current, keys }
+            }),
         )
     }
 
     /** Leaves the backup's copy in place, so the address returns to the review
      *  screen under "available from backup". */
     async keepAccountInBackup(address: string): Promise<boolean> {
-        return this.applyLocalEdit(state => keepAccountInBackup(state, address))
+        const addresses = this.addressesOf(address)
+        return this.applyLocalEdit(state =>
+            addresses.reduce(keepAccountInBackup, state),
+        )
     }
 
     backUpContact(address: string): Promise<BackupBackUpOutcome> {

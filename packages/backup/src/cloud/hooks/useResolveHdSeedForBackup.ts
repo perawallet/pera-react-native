@@ -79,7 +79,13 @@ export const useResolveHdSeedForBackup = (
     return useCallback<SerializeHdResolver>(
         async (account: LocalAccount) => {
             const adapter = backupAdapterFor(chainId)
-            const keyPairId = signingKeyOn(account, chainId)
+            // An account with no key on this chain still backs up its other
+            // chains; any of its keys finds the seed.
+            const scopeKeyPairId = signingKeyOn(account, chainId)
+            const keyPairId =
+                scopeKeyPairId ??
+                Object.values(account.chains).find(entry => entry?.keyPairId)
+                    ?.keyPairId
             const index = hdIndexOf(account)
             const seedKeyId = seedIdOf(keyPairId)
             if (!keyPairId || !index || !seedKeyId) return null
@@ -89,18 +95,20 @@ export const useResolveHdSeedForBackup = (
                     `${chainId}|${seedKeyId}`,
                     () => backupSeedReference(seedKeyId, chainId),
                 )
-                const publicKeyHex = await cached(
-                    publicKeys.current,
-                    `${chainId}|${keyPairId}`,
-                    async () => {
-                        const child = await adapter.deriveHdAccount(
-                            kmsCore,
-                            seedKeyId,
-                            index,
-                        )
-                        return bytesToHex(child.publicKey)
-                    },
-                )
+                const publicKeyHex = scopeKeyPairId
+                    ? await cached(
+                          publicKeys.current,
+                          `${chainId}|${scopeKeyPairId}`,
+                          async () => {
+                              const child = await adapter.deriveHdAccount(
+                                  kmsCore,
+                                  seedKeyId,
+                                  index,
+                              )
+                              return bytesToHex(child.publicKey)
+                          },
+                      )
+                    : null
                 const entropyHex = await readEntropyHex(
                     executeWithMnemonic,
                     keyPairId,

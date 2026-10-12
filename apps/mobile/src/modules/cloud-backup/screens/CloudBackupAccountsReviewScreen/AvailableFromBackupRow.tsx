@@ -12,7 +12,7 @@
 
 import { memo, useCallback } from 'react'
 import type { BackupItemKind } from '@perawallet/wallet-core-backup'
-import { PWButton } from '@components/core'
+import { PWButton, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
 import { useStyles } from './styles'
@@ -20,6 +20,8 @@ import { useStyles } from './styles'
 type AvailableFromBackupRowProps = {
     address: string
     type: BackupItemKind | null
+    /** Only a newer version of the app can add it back, so there is no Add. */
+    needsUpdate: boolean
     isBusy: boolean
     onAdd: (address: string) => void
     onDelete: (address: string) => Promise<void>
@@ -28,6 +30,7 @@ type AvailableFromBackupRowProps = {
 const AvailableFromBackupRowComponent = ({
     address,
     type,
+    needsUpdate,
     isBusy,
     onAdd,
     onDelete,
@@ -47,16 +50,26 @@ const AvailableFromBackupRowComponent = ({
             accountType={type}
             isBackedUp
             action={
-                <PWButton
-                    variant='secondary'
-                    icon='plus'
-                    paddingStyle='dense'
-                    title={t('cloud_backup.accounts.add_action')}
-                    style={styles.addButton}
-                    isLoading={isBusy}
-                    onPress={handleAdd}
-                    testID='add_from_backup_button'
-                />
+                needsUpdate ? (
+                    <PWText
+                        variant='caption'
+                        style={styles.updateHint}
+                        testID='add_from_backup_needs_update'
+                    >
+                        {t('cloud_backup.accounts.update_to_add')}
+                    </PWText>
+                ) : (
+                    <PWButton
+                        variant='secondary'
+                        icon='plus'
+                        paddingStyle='dense'
+                        title={t('cloud_backup.accounts.add_action')}
+                        style={styles.addButton}
+                        isLoading={isBusy}
+                        onPress={handleAdd}
+                        testID='add_from_backup_button'
+                    />
+                )
             }
             trailing={
                 <PWButton

@@ -21,6 +21,9 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
     storeState,
+    addChainAccountMock,
+    importAccountFromPrivateKeyMock,
+    findPathHolderMock,
     setAccountsMock,
     importAccountMock,
     importScopes,
@@ -44,6 +47,9 @@ const {
     }
     return {
         storeState: { accounts: [] as WalletAccount[] },
+        addChainAccountMock: vi.fn(),
+        importAccountFromPrivateKeyMock: vi.fn(),
+        findPathHolderMock: vi.fn(),
         setAccountsMock: vi.fn(),
         importAccountMock: vi.fn(),
         importScopes: [] as unknown[],
@@ -80,10 +86,20 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         }
         return selector ? selector(state) : state
     }
-    useAccountsStore.getState = () => ({ accounts: storeState.accounts })
+    useAccountsStore.getState = () => ({
+        accounts: storeState.accounts,
+        addChainAccount: addChainAccountMock,
+        importAccountFromPrivateKey: importAccountFromPrivateKeyMock,
+    })
 
     return {
         buildAccount,
+        chainAccountOf: (account: WalletAccount, chainId: string) =>
+            account.chains[chainId as 'algorand'],
+        hasCustody: (account: WalletAccount, kind: string) =>
+            account.custody.kind === kind,
+        findPathHolder: findPathHolderMock,
+        isSameAddress: (_chainId: string, a: string, b: string) => a === b,
         DuplicateAccountError,
         // Stands in for the chain's record encoding of the parameters.
         withMultisigParameters: (
@@ -127,7 +143,10 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     kmsCore: {},
-    hexToBytes: (hex: string) => new Uint8Array(hex.length / 2),
+    hexToBytes: (hex: string) =>
+        Uint8Array.from(hex.match(/../g) ?? [], byte =>
+            Number.parseInt(byte, 16),
+        ),
     // Mirrors the real null-on-unknown-word contract, so the fixtures below
     // exercise both the happy path and the reject path.
     mnemonicWordsToIndices: (words: string[]) => {
@@ -224,6 +243,7 @@ const held = (
 
 const watchAccount = (address: string): PulledAccount => ({
     address,
+    group: address,
     addressPayload: { type: 'watch', address, customName: null },
     secretsPayload: null,
 })
@@ -237,10 +257,15 @@ beforeEach(() => {
     submittedIndices = null
     seedKeysState.value = new Map()
     hasSeedWithEntropyMock.mockReturnValue(false)
+    findPathHolderMock.mockReturnValue(undefined)
     isValidAddressMock.mockReturnValue(true)
     addressCodecs.reset()
     addressCodecs.register({
         chainId: 'algorand',
+        isValid: isValidAddressMock,
+    } as never)
+    addressCodecs.register({
+        chainId: 'ethereum',
         isValid: isValidAddressMock,
     } as never)
     // The first-derived (acc0/idx0) child is the seed's own reference.
@@ -291,6 +316,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'ALGO25_ADDR',
+                group: 'ALGO25_ADDR',
                 addressPayload: {
                     type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
@@ -336,6 +362,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'PQ_CANONICAL',
+                group: 'PQ_CANONICAL',
                 addressPayload: {
                     type: FakeBackupKinds.quantum,
                     address: 'PQ_CANONICAL',
@@ -370,6 +397,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'ALGO25_ADDR',
+                group: 'ALGO25_ADDR',
                 addressPayload: {
                     type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
@@ -391,6 +419,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'ALGO25_ADDR',
+                group: 'ALGO25_ADDR',
                 addressPayload: {
                     type: FakeBackupKinds.standalone,
                     address: 'ALGO25_ADDR',
@@ -434,6 +463,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'LEDGER_ADDR',
+                group: 'LEDGER_ADDR',
                 addressPayload: {
                     type: 'hardware',
                     address: 'LEDGER_ADDR',
@@ -475,6 +505,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'MSIG_ADDR',
+                group: 'MSIG_ADDR',
                 addressPayload: {
                     type: 'multisig',
                     address: 'MSIG_ADDR',
@@ -516,6 +547,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'MSIG_ADDR',
+                group: 'MSIG_ADDR',
                 addressPayload: {
                     type: 'multisig',
                     address: 'MSIG_ADDR',
@@ -672,7 +704,7 @@ describe('useCloudBackupImport', () => {
         expect(setAccountsMock).not.toHaveBeenCalled()
     })
 
-    test('reports progress per backup entry, counting duplicates and failures', async () => {
+    test('reports progress per account, counting duplicates and failures', async () => {
         storeState.accounts = [held('DUPE_ADDR')]
         isValidAddressMock.mockImplementation(
             (addr?: string) => addr !== 'BAD_ADDR',
@@ -721,6 +753,7 @@ describe('useCloudBackupImport', () => {
             // main loop, so input order can't starve the child of its parent.
             {
                 address: 'HD_KEY_ADDR',
+                group: 'HD_KEY_ADDR',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'HD_KEY_ADDR',
@@ -736,6 +769,7 @@ describe('useCloudBackupImport', () => {
             },
             {
                 address: 'SEED_ADDR',
+                group: 'SEED_ADDR',
                 addressPayload: { type: 'hdSeed', address: 'SEED_ADDR' },
                 secretsPayload: {
                     type: 'hdSeed',
@@ -781,6 +815,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'FIRST',
+                group: 'FIRST',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
@@ -801,6 +836,7 @@ describe('useCloudBackupImport', () => {
             },
             {
                 address: 'ADDR-0-1',
+                group: 'ADDR-0-1',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
@@ -831,6 +867,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'FIRST',
+                group: 'FIRST',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
@@ -851,6 +888,7 @@ describe('useCloudBackupImport', () => {
             },
             {
                 address: 'ADDR-0-1',
+                group: 'ADDR-0-1',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'ADDR-0-1',
@@ -895,6 +933,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'FIRST',
+                group: 'FIRST',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
@@ -926,6 +965,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'SEED_ADDR',
+                group: 'SEED_ADDR',
                 addressPayload: { type: 'hdSeed', address: 'SEED_ADDR' },
                 // 95 bytes (190 hex chars) — not the expected 96-byte XHD root.
                 secretsPayload: {
@@ -950,6 +990,7 @@ describe('useCloudBackupImport', () => {
         const summary = await current.importAccounts([
             {
                 address: 'FIRST',
+                group: 'FIRST',
                 addressPayload: {
                     type: FakeBackupKinds.hdAccount,
                     address: 'FIRST',
@@ -987,3 +1028,550 @@ describe('useCloudBackupImport', () => {
         expect(setAccountsMock).not.toHaveBeenCalled()
     })
 })
+
+describe('useCloudBackupImport on another chain', () => {
+    const FIXTURE_KEY_HEX =
+        '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'
+
+    const hdSeedEntry = (): PulledAccount => ({
+        address: 'FIRST',
+        group: 'FIRST',
+        addressPayload: { type: 'hdSeed', address: 'FIRST' },
+        secretsPayload: {
+            type: 'hdSeed',
+            seed: A_HEX_96,
+            entropy: ENTROPY_HEX,
+            address: 'FIRST',
+        },
+    })
+
+    const hdChainEntry = (
+        address = '0xeth',
+        keyIndex = 1,
+        customName: string | null = 'Eth One',
+    ): PulledAccount => ({
+        address,
+        group: `FIRST/0/${keyIndex}`,
+        chain: 'ethereum',
+        addressPayload: {
+            type: 'hdChain',
+            address,
+            seedFirstDerivedAddress: 'FIRST',
+            account: 0,
+            keyIndex,
+            customName,
+        },
+        secretsPayload: null,
+    })
+
+    const hdWalletEntry = (): PulledAccount => ({
+        address: 'ADDR-0-1',
+        group: 'FIRST/0/1',
+        addressPayload: {
+            type: 'hdWallet',
+            address: 'ADDR-0-1',
+            seedFirstDerivedAddress: 'FIRST',
+            publicKey: 'bb',
+            account: 0,
+            change: 0,
+            keyIndex: 1,
+            derivationType: 9,
+            customName: 'Algo One',
+        },
+        secretsPayload: null,
+    })
+
+    const standaloneKeyEntry = (
+        secret: Partial<{ chain: string; privateKey: string }> | null = {},
+    ): PulledAccount =>
+        ({
+            address: '0xkey',
+            group: '0xkey',
+            chain: 'ethereum',
+            addressPayload: {
+                type: 'standaloneKey',
+                address: '0xkey',
+                customName: 'Imported',
+            },
+            secretsPayload:
+                secret === null
+                    ? null
+                    : {
+                          type: 'standaloneKey',
+                          chain: 'ethereum',
+                          address: '0xkey',
+                          privateKey: FIXTURE_KEY_HEX,
+                          ...secret,
+                      },
+        }) as PulledAccount
+
+    /** What the store does: add the chain entry to the account, or create one. */
+    const storeCreatesAccountAt = (address: string) =>
+        addChainAccountMock.mockImplementation(async () => {
+            const account = {
+                id: `acc-${address}`,
+                address,
+                chains: { ethereum: { address } },
+            }
+            storeState.accounts = [...storeState.accounts, account]
+            return account
+        })
+
+    beforeEach(() => {
+        persistHDMasterKeyMock.mockReset()
+        addChainAccountMock.mockReset()
+        importAccountFromPrivateKeyMock.mockReset()
+        storeCreatesAccountAt('0xeth')
+    })
+
+    describe('hdChain', () => {
+        test('derives the account through the store at the stored position, against the seed the batch carried', async () => {
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdSeedEntry(),
+                hdChainEntry(),
+            ])
+
+            expect(persistHDMasterKeyMock).toHaveBeenCalledTimes(1)
+            expect(addChainAccountMock).toHaveBeenCalledWith(
+                'id-0',
+                'ethereum',
+                { account: 0, keyIndex: 1 },
+                'Eth One',
+                '0xeth',
+            )
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('counts nothing when the call only added the chain to an account already held', async () => {
+            const existing = { id: 'held', address: 'ALGO', chains: {} }
+            storeState.accounts = [existing]
+            addChainAccountMock.mockImplementation(async () => ({
+                ...existing,
+                chains: { ethereum: { address: '0xeth' } },
+            }))
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdSeedEntry(),
+                hdChainEntry(),
+            ])
+
+            expect(summary).toMatchObject({ imported: 0, failed: [] })
+        })
+
+        test('derives against a seed the device already holds when the batch has no seed', async () => {
+            seedKeysState.value = new Map([['held-seed', {}]])
+            hasSeedWithEntropyMock.mockReturnValue(true)
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([hdChainEntry()])
+
+            expect(persistHDMasterKeyMock).not.toHaveBeenCalled()
+            expect(addChainAccountMock).toHaveBeenCalledWith(
+                'held-seed',
+                'ethereum',
+                { account: 0, keyIndex: 1 },
+                'Eth One',
+                '0xeth',
+            )
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('derives an hdWallet item that arrives alone against the held seed too', async () => {
+            seedKeysState.value = new Map([['held-seed', {}]])
+            hasSeedWithEntropyMock.mockReturnValue(true)
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([hdWalletEntry()])
+
+            expect(persistHDMasterKeyMock).not.toHaveBeenCalled()
+            expect(deriveHdAccountMock).toHaveBeenCalledWith(
+                expect.anything(),
+                'held-seed',
+                expect.objectContaining({ account: 0, keyIndex: 1 }),
+            )
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('persists no second copy of the seed when the same backup is restored twice', async () => {
+            const { current } = renderImport()
+            await current.importAccounts([hdSeedEntry(), hdChainEntry()])
+            seedKeysState.value = new Map([['id-0', {}]])
+            hasSeedWithEntropyMock.mockReturnValue(true)
+            storeState.accounts = []
+
+            // A fresh render, as a later sync would have: it reads the keystore again.
+            await renderImport().current.importAccounts([
+                hdSeedEntry(),
+                hdChainEntry(),
+            ])
+
+            expect(persistHDMasterKeyMock).toHaveBeenCalledTimes(1)
+            expect(addChainAccountMock).toHaveBeenLastCalledWith(
+                'id-0',
+                'ethereum',
+                expect.anything(),
+                expect.anything(),
+                expect.anything(),
+            )
+        })
+
+        test('imports the chains of an account in the order its record lists them', async () => {
+            deriveHdAccountMock.mockImplementation(async () => {
+                callOrder.push('hdWallet')
+                return {
+                    keyPairId: 'k',
+                    publicKey: new Uint8Array([1]),
+                    address: 'ADDR-0-1',
+                }
+            })
+            addChainAccountMock.mockImplementation(async () => {
+                callOrder.push('hdChain')
+                return { id: 'a', chains: { ethereum: { address: '0xeth' } } }
+            })
+            const { current } = renderImport()
+
+            await current.importAccounts([
+                hdChainEntry(),
+                hdWalletEntry(),
+                hdSeedEntry(),
+            ])
+
+            expect(callOrder).toEqual(['hdChain', 'hdWallet'])
+        })
+
+        test('reports progress per wallet account, not per chain entry or seed', async () => {
+            const onProgress = vi.fn()
+            const { current } = renderImport()
+
+            await current.importAccounts(
+                [
+                    hdChainEntry(),
+                    hdSeedEntry(),
+                    watchChainEntry('0xwatch'),
+                    hdWalletEntry(),
+                ],
+                onProgress,
+            )
+
+            expect(onProgress.mock.calls).toEqual([
+                [0, 2],
+                [1, 2],
+                [2, 2],
+            ])
+        })
+
+        test('merges an hdWallet item into the Ethereum-only account at its position', async () => {
+            const holder = {
+                id: 'eth-first',
+                address: '0xeth',
+                chains: { ethereum: { address: '0xeth' } },
+            }
+            storeState.accounts = [holder]
+            findPathHolderMock.mockReturnValue(holder)
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdSeedEntry(),
+                hdWalletEntry(),
+            ])
+
+            const stored = setAccountsMock.mock.calls.at(-1)?.[0]
+            expect(stored).toHaveLength(1)
+            expect(stored[0]).toMatchObject({
+                id: 'eth-first',
+                chains: {
+                    ethereum: { address: '0xeth' },
+                    algorand: { address: 'ADDR-0-1' },
+                },
+            })
+            expect(findPathHolderMock).toHaveBeenCalledWith(
+                expect.anything(),
+                'id-0',
+                { account: 0, keyIndex: 1 },
+            )
+            expect(summary.failed).toEqual([])
+        })
+
+        test('lands a held-seed wallet with no account of it as failed with the address, without aborting the batch', async () => {
+            seedKeysState.value = new Map([['held-seed', {}]])
+            hasSeedWithEntropyMock.mockReturnValue(true)
+            addChainAccountMock.mockRejectedValueOnce(
+                new Error('cannot derive'),
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdChainEntry('0xfirst', 0),
+                watchChainEntry('0xwatch'),
+            ])
+
+            expect(summary.failed).toEqual([
+                { address: '0xfirst', reason: 'cannot derive' },
+            ])
+            expect(summary.imported).toBe(1)
+        })
+
+        test('fails an item the store refuses for deriving another address', async () => {
+            addChainAccountMock.mockRejectedValue(
+                new Error(
+                    'Derived address 0xother does not match expected 0xeth',
+                ),
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdSeedEntry(),
+                hdChainEntry(),
+            ])
+
+            expect(summary.imported).toBe(0)
+            expect(summary.failed).toEqual([
+                {
+                    address: '0xeth',
+                    reason: expect.stringContaining('does not match'),
+                },
+            ])
+        })
+
+        test('counts a DuplicateAccountError from the store as skipped', async () => {
+            addChainAccountMock.mockRejectedValue(
+                new DuplicateAccountError('0xeth'),
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                hdSeedEntry(),
+                hdChainEntry(),
+            ])
+
+            expect(summary).toMatchObject({
+                imported: 0,
+                skippedDuplicate: 1,
+                failed: [],
+            })
+        })
+    })
+
+    describe('standaloneKey', () => {
+        const importedKey = () => ({
+            id: 'imp',
+            address: '0xkey',
+            chains: { ethereum: { address: '0xkey' } },
+        })
+
+        test('hands the store the decoded key and zeroes those bytes afterwards', async () => {
+            let handedOver: Uint8Array | undefined
+            let atCall: number[] = []
+            importAccountFromPrivateKeyMock.mockImplementation(
+                async (_chain: string, bytes: Uint8Array) => {
+                    handedOver = bytes
+                    atCall = Array.from(bytes)
+                    return importedKey()
+                },
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([standaloneKeyEntry()])
+
+            expect(importAccountFromPrivateKeyMock).toHaveBeenCalledWith(
+                'ethereum',
+                expect.any(Uint8Array),
+                'Imported',
+                '0xkey',
+            )
+            expect(atCall).toEqual(
+                Array.from({ length: 32 }, (_, index) => index + 1),
+            )
+            expect(handedOver?.every(byte => byte === 0)).toBe(true)
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('zeroes the bytes when the store throws', async () => {
+            let handedOver: Uint8Array | undefined
+            importAccountFromPrivateKeyMock.mockImplementation(
+                async (_chain: string, bytes: Uint8Array) => {
+                    handedOver = bytes
+                    throw new Error('keystore refused')
+                },
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([standaloneKeyEntry()])
+
+            expect(handedOver?.every(byte => byte === 0)).toBe(true)
+            expect(summary.failed).toEqual([
+                { address: '0xkey', reason: 'keystore refused' },
+            ])
+        })
+
+        test.each([
+            ['has no secret', null],
+            ['has a secret on another chain', { chain: 'algorand' }],
+        ])(
+            'fails an account that %s without calling the store',
+            async (_label, secret) => {
+                const { current } = renderImport()
+
+                const summary = await current.importAccounts([
+                    standaloneKeyEntry(secret),
+                ])
+
+                expect(importAccountFromPrivateKeyMock).not.toHaveBeenCalled()
+                expect(summary.failed).toHaveLength(1)
+                expect(summary.imported).toBe(0)
+            },
+        )
+
+        test('fails an account the store refuses for deriving another address', async () => {
+            importAccountFromPrivateKeyMock.mockRejectedValue(
+                new Error(
+                    'Derived address 0xother does not match expected 0xkey',
+                ),
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([standaloneKeyEntry()])
+
+            expect(summary.failed).toEqual([
+                {
+                    address: '0xkey',
+                    reason: expect.stringContaining('does not match'),
+                },
+            ])
+        })
+
+        test('counts a DuplicateAccountError from the store as skipped', async () => {
+            importAccountFromPrivateKeyMock.mockRejectedValue(
+                new DuplicateAccountError('0xkey'),
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([standaloneKeyEntry()])
+
+            expect(summary).toMatchObject({
+                imported: 0,
+                skippedDuplicate: 1,
+                failed: [],
+            })
+        })
+    })
+
+    describe('watch on another chain', () => {
+        test('joins the other chain of a watch account to the account its first chain created', async () => {
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                { ...watchAccount('WALGO'), group: 'WALGO' },
+                { ...watchChainEntry('0xwatch'), group: 'WALGO' },
+            ])
+
+            expect(storeState.accounts).toEqual([
+                expect.objectContaining({
+                    chains: {
+                        algorand: { address: 'WALGO' },
+                        ethereum: { address: '0xwatch' },
+                    },
+                }),
+            ])
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('keeps a chain the account already holds at another address, importing the entry as its own account', async () => {
+            const held = {
+                id: 'held',
+                address: 'WALGO',
+                custody: { kind: 'watch' },
+                chains: {
+                    algorand: { address: 'WALGO' },
+                    ethereum: { address: '0xold' },
+                },
+            }
+            storeState.accounts = [held as never]
+            const { current } = renderImport()
+
+            await current.importAccounts([
+                { ...watchAccount('WALGO'), group: 'WALGO' },
+                { ...watchChainEntry('0xwatch'), group: 'WALGO' },
+            ])
+
+            expect(storeState.accounts).toEqual([
+                held,
+                expect.objectContaining({
+                    chains: { ethereum: { address: '0xwatch' } },
+                }),
+            ])
+        })
+
+        test('builds the account on its own chain', async () => {
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                watchChainEntry('0xwatch'),
+            ])
+
+            expect(setAccountsMock.mock.calls.at(-1)?.[0]).toEqual([
+                expect.objectContaining({
+                    name: 'Eth watch',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xwatch' } },
+                }),
+            ])
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test('validates the address against its own chain codec', async () => {
+            isValidAddressMock.mockImplementation(
+                (address?: string) => address !== '0xbad',
+            )
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                watchChainEntry('0xbad'),
+            ])
+
+            expect(summary.failed).toEqual([
+                {
+                    address: '0xbad',
+                    reason: 'Invalid ethereum address: 0xbad',
+                },
+            ])
+        })
+
+        test('skips an address already held as a non-primary chain entry of another account', async () => {
+            storeState.accounts = [
+                {
+                    id: 'held',
+                    address: 'ALGO',
+                    chains: {
+                        algorand: { address: 'ALGO' },
+                        ethereum: { address: '0xwatch' },
+                    },
+                } as never,
+            ]
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                watchChainEntry('0xwatch'),
+            ])
+
+            expect(summary).toMatchObject({
+                imported: 0,
+                skippedDuplicate: 1,
+            })
+            expect(setAccountsMock).not.toHaveBeenCalled()
+        })
+    })
+})
+
+function watchChainEntry(address: string): PulledAccount {
+    return {
+        address,
+        group: address,
+        chain: 'ethereum',
+        addressPayload: { type: 'watch', address, customName: 'Eth watch' },
+        secretsPayload: null,
+    }
+}

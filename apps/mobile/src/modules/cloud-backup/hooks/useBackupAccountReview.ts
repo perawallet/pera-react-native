@@ -16,6 +16,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    accountBackupAddresses,
     deriveBackupAccountReview,
     backupBusyItemKey,
     useBackupReviewActionMutation,
@@ -72,7 +73,10 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
 
     const backupAccounts = useMemo(() => backupAccountsOf(accounts), [accounts])
     const addresses = useMemo(
-        () => backupAccounts.map(({ address }) => address),
+        () =>
+            backupAccounts.map(({ account }) =>
+                accountBackupAddresses(account),
+            ),
         [backupAccounts],
     )
 

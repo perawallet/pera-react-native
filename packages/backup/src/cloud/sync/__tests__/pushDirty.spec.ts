@@ -438,6 +438,49 @@ describe('pushDirty', () => {
         expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
     })
 
+    it('injects the last-write-wins timestamp into an account record', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const key = 'account-records/' + 'a'.repeat(64)
+        const state = createEmptySyncState('b')
+        state.items[key] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1_700_000_000,
+        }
+        const localItems: LocalItem[] = [
+            {
+                key,
+                type: BackupItemType.ACCOUNT,
+                contentHash: 'h',
+                address: 'W',
+                addresses: ['W'],
+                accountType: null,
+                payload: {
+                    formatVersion: 2,
+                    kind: 'watch',
+                    customName: null,
+                    chains: [{ chain: 'algorand', address: 'W' }],
+                },
+            },
+        ]
+
+        await pushDirty({ state, localItems, deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key,
+        })
+        expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
+    })
+
     it('pushes a settings item from its tracked document, with no local item', async () => {
         const deps = baseDeps()
         deps.batchUpsertItems.mockResolvedValue({

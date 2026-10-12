@@ -19,7 +19,7 @@ import {
     BackupItemStatus,
     BackupItemType,
     DeltaOperation,
-    accountItemKey,
+    accountRecordItemKey,
     createEmptySyncState,
     deriveBackupAccountReview,
     type SyncState,
@@ -36,15 +36,21 @@ import { TEST_SETTINGS } from './testSettings'
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const ADDRESS = 'ACCOUNTX'
-const ACCOUNT_KEY = accountItemKey(hashAddress(ADDRESS))
+const ACCOUNT_KEY = accountRecordItemKey(hashAddress(ADDRESS))
 const NOW = 1_000
 
 const localItem = (hash: string): LocalItem => ({
     key: ACCOUNT_KEY,
     type: BackupItemType.ACCOUNT,
     contentHash: hash,
-    payload: { type: 'watch', address: ADDRESS } as never,
+    payload: {
+        formatVersion: 2,
+        kind: 'watch',
+        customName: null,
+        chains: [{ chain: 'algorand', address: ADDRESS }],
+    },
     address: ADDRESS,
+    addresses: [ADDRESS],
     accountType: BackupAccountType.watch,
 })
 
@@ -62,6 +68,7 @@ const syncedState = (): SyncState => {
         localContentHash: 'h1',
         localUpdatedAt: null,
         address: ADDRESS,
+        addresses: [ADDRESS],
         accountType: BackupAccountType.watch,
     }
     return state
@@ -153,7 +160,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             deps,
         })
 
-        const review = deriveBackupAccountReview(afterPull, [ADDRESS])
+        const review = deriveBackupAccountReview(afterPull, [[ADDRESS]])
         expect(review.notBackedUp).toEqual([ADDRESS])
         expect(review.availableFromBackup).toEqual([])
     })
@@ -171,6 +178,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             localContentHash: null,
             localUpdatedAt: null,
             address: ADDRESS,
+            addresses: [ADDRESS],
             accountType: BackupAccountType.watch,
         }
 
@@ -212,6 +220,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             localContentHash: null,
             localUpdatedAt: null,
             address: ADDRESS,
+            addresses: [ADDRESS],
             accountType: BackupAccountType.watch,
         }
 
@@ -235,7 +244,11 @@ describe('an account deleted on one device and re-backed-up on another', () => {
 
         const review = deriveBackupAccountReview(afterPull, [])
         expect(review.availableFromBackup).toEqual([
-            { address: ADDRESS, type: BackupAccountType.watch },
+            {
+                address: ADDRESS,
+                type: BackupAccountType.watch,
+                needsUpdate: false,
+            },
         ])
 
         // And the next reconcile must not read that absence as a fresh delete.

@@ -16,14 +16,11 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
     createEmptySyncState,
-    isAccountItemKey,
-    isContactItemKey,
     isLegacyItemKey,
     trackedItemsFromManifest,
 } from '../models'
 import type {
     Argon2idConfig,
-    BackupItemKind,
     BackupId,
     BackupItemKey,
     ContactBackupPayload,
@@ -40,6 +37,8 @@ import type {
     SettingsImportFn,
     SyncImportFn,
 } from '../sync/types'
+import { readableBackupChains } from '../sync/backupChains'
+import { recordImportResults } from '../sync/importRetry'
 import { mergeRemoteSettings } from '../sync/settingsDocument'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
@@ -102,6 +101,13 @@ export type RestoreCloudBackupResult = {
     syncState: SyncState
     summary: ImportSummary
     contactSummary: ContactImportSummary
+    /** Accounts with at least one chain that failed to restore. `summary`
+     *  counts failures per chain address, which overstates an account that
+     *  restored without one of its chains. */
+    incompleteAccountCount: number
+    /** Accounts only a newer version of the app can restore. They stay in the
+     *  backup, untouched, for that version. */
+    newerAccountCount: number
 }
 
 /** Reads the category off a rejection from {@link restoreCloudBackup}. */
@@ -159,54 +165,16 @@ const importContactsSafely = async (
     }
 }
 
-type PulledAccountKinds = {
-    address: BackupItemKind
-    secrets: BackupItemKind | null
-}
-
-const accountTypesByAddress = (
-    accounts: PulledAccount[],
-): Map<string, PulledAccountKinds> =>
-    new Map(
-        accounts.map(({ address, addressPayload, secretsPayload }) => [
-            address,
-            {
-                address: addressPayload.type,
-                secrets: secretsPayload?.type ?? null,
-            },
-        ]),
-    )
-
-const accountTypeOf = (
-    key: BackupItemKey,
-    address: string,
-    types: Map<string, PulledAccountKinds>,
-): BackupItemKind | null => {
-    if (isContactItemKey(key)) return null
-    const pulled = types.get(address)
-    if (pulled === undefined) return null
-    // An address record and the key material filed under the same address are
-    // not the same type: an HD account's secret is the seed.
-    return isAccountItemKey(key) ? pulled.address : pulled.secrets
-}
-
-/** The manifest knows only keys, and a key is an HMAC of the address, so the
- *  pull is the only place these addresses exist. An item the pull could not
- *  read is left without one, which reads as unknown, never as "not ours". */
+/** The manifest knows only keys, and a key is an HMAC, so the pull is the only
+ *  place these identifiers exist. An item the pull could not read is left
+ *  without them, which reads as unknown, never as "not ours". */
 const trackedItemsFromPull = (
     pull: PullBackupItemsResult,
 ): Record<BackupItemKey, SyncItemState> => {
     const items = trackedItemsFromManifest(pull.manifestItems)
-    const types = accountTypesByAddress(pull.accounts)
-
-    for (const [key, address] of Object.entries(pull.addressByKey)) {
+    for (const [key, identifiers] of Object.entries(pull.trackedByKey)) {
         const tracked = items[key]
-        if (tracked === undefined) continue
-        items[key] = {
-            ...tracked,
-            address,
-            accountType: accountTypeOf(key, address, types),
-        }
+        if (tracked !== undefined) items[key] = { ...tracked, ...identifiers }
     }
     return items
 }
@@ -249,6 +217,17 @@ const importSettingsSafely = (
     }
 }
 
+const incompleteAccounts = (
+    accounts: readonly PulledAccount[],
+    { failed }: ImportSummary,
+): number => {
+    const groupOf = new Map(
+        accounts.map(({ address, group }) => [address, group]),
+    )
+    return new Set(failed.map(({ address }) => groupOf.get(address) ?? address))
+        .size
+}
+
 /** Every field starts unobserved, so the first sync records what the import
  *  wrote as this device's baseline rather than as an edit to push. */
 const withPulledSettings = (
@@ -267,17 +246,27 @@ const withPulledSettings = (
     }
 }
 
+/** The manifest leaves every item unread, so marking a failed import is all
+ *  it takes for the first syncs to retry it. */
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
-): SyncState => ({
-    ...createEmptySyncState(backupId),
-    lastKnownBackupHash: pull.backupGlobalHash,
-    lastSyncedSeq: pull.lastSeq,
-    lastSyncedAt: Date.now(),
-    lastSyncResult: 'SUCCESS',
-    items: withPulledSettings(trackedItemsFromPull(pull), pull.settings),
-})
+    failed: ImportSummary['failed'],
+): SyncState => {
+    const items = trackedItemsFromPull(pull)
+    recordImportResults(items, Object.keys(items), failed)
+    return {
+        ...createEmptySyncState(backupId),
+        lastKnownBackupHash: pull.backupGlobalHash,
+        lastSyncedSeq: pull.lastSeq,
+        lastSyncedAt: Date.now(),
+        lastSyncResult: 'SUCCESS',
+        // What this restore could read, so the first sync doesn't re-read the
+        // items it just skipped as unreadable.
+        readableChains: readableBackupChains(),
+        items: withPulledSettings(items, pull.settings),
+    }
+}
 
 const deriveKeys = async (
     mnemonic: string[],
@@ -361,9 +350,13 @@ export const restoreCloudBackup = async ({
 
         return {
             backupId,
-            syncState: syncStateFromPull(backupId, pull),
+            syncState: syncStateFromPull(backupId, pull, summary.failed),
             summary,
             contactSummary,
+            incompleteAccountCount: incompleteAccounts(pull.accounts, summary),
+            newerAccountCount: pull.skipped.filter(
+                ({ reason }) => reason === 'newer',
+            ).length,
         }
     } catch (error) {
         const category = categorize(error)

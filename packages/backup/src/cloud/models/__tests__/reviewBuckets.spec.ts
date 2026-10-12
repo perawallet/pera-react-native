@@ -13,8 +13,10 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerAlgorandAccountsAdapter } from '../../../__tests__/backupChainFixtures'
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
+    accountBackupAddresses,
     applyDeltas,
     buildLocalItems,
     reconcile,
@@ -23,11 +25,12 @@ import {
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     accountItemKey,
+    accountRecordItemKey,
     contactItemKey,
     passkeyItemKey,
     secretsItemKey,
 } from '../itemKeys'
-import { BackupAccountType } from '../payloads'
+import { BackupAccountType, chainBackupKind } from '../payloads'
 import {
     createEmptySyncState,
     trackedItemsFromManifest,
@@ -37,6 +40,7 @@ import {
 import { BackupItemStatus, BackupItemType, DeltaOperation } from '../types'
 import {
     areKeysDeletedFromBackup,
+    countNewerAccountRecords,
     deriveBackupAccountReview,
     deriveBackupContactReview,
     deriveBackupPasskeyReview,
@@ -47,10 +51,17 @@ import {
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const recordKey = (identity: string) =>
+    accountRecordItemKey(hashAddress(identity))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
 const passkeyKey = (credentialId: string) =>
     passkeyItemKey(hashAddress(credentialId))
+
+const newerRecord = {
+    formatVersion: 3,
+    chains: [{ chain: 'algorand', type: 'algo25', address: 'ALGO' }],
+}
 
 const tracked = (
     address: string,
@@ -70,7 +81,7 @@ const tracked = (
 
 describe('deriveBackupAccountReview', () => {
     it('reports every local account as not backed up without a sync state', () => {
-        const review = deriveBackupAccountReview(null, ['A', 'B'])
+        const review = deriveBackupAccountReview(null, [['A'], ['B']])
         expect(review.notBackedUp).toEqual(['A', 'B'])
         expect(review.backedUp.size).toBe(0)
         expect(review.availableFromBackup).toEqual([])
@@ -83,7 +94,7 @@ describe('deriveBackupAccountReview', () => {
             status: BackupItemStatus.IGNORED,
         })
 
-        const review = deriveBackupAccountReview(state, ['A', 'B'])
+        const review = deriveBackupAccountReview(state, [['A'], ['B']])
         expect([...review.backedUp]).toEqual(['A'])
         expect(review.notBackedUp).toEqual(['B'])
     })
@@ -92,7 +103,7 @@ describe('deriveBackupAccountReview', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A', { pendingDelete: true })
 
-        expect(deriveBackupAccountReview(state, ['A']).notBackedUp).toEqual([
+        expect(deriveBackupAccountReview(state, [['A']]).notBackedUp).toEqual([
             'A',
         ])
     })
@@ -104,9 +115,75 @@ describe('deriveBackupAccountReview', () => {
             isDirty: true,
         })
 
-        const review = deriveBackupAccountReview(state, ['A'])
+        const review = deriveBackupAccountReview(state, [['A']])
         expect(review.notBackedUp).toEqual(['A'])
         expect(review.backedUp.size).toBe(0)
+    })
+
+    describe('an account record on two chains', () => {
+        const recordOf = (overrides: Partial<SyncItemState> = {}) =>
+            tracked('ALGO', {
+                addresses: ['ALGO', '0xeth'],
+                accountType: chainBackupKind('hdWallet'),
+                ...overrides,
+            })
+
+        it('backs up the account whose primary any chain of a live record covers', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf()
+
+            const review = deriveBackupAccountReview(state, [['0xeth', 'ALGO']])
+
+            expect([...review.backedUp]).toEqual(['0xeth'])
+        })
+
+        it('shows one row for an account only the backup holds', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf({ pendingImport: true })
+
+            const review = deriveBackupAccountReview(state, [])
+
+            expect(review.availableFromBackup).toEqual([
+                {
+                    address: 'ALGO',
+                    type: chainBackupKind('hdWallet'),
+                    needsUpdate: false,
+                },
+            ])
+        })
+
+        it('hides a legacy item the live record covers', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf({ pendingImport: true })
+            state.items[accountKey('ALGO')] = tracked('ALGO', {
+                pendingImport: true,
+            })
+
+            const review = deriveBackupAccountReview(state, [])
+
+            expect(review.availableFromBackup).toHaveLength(1)
+        })
+
+        it('answers isAddressBackedUp for any of its chains', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf()
+
+            expect(isAddressBackedUp(state, '0xeth')).toBe(true)
+        })
+
+        it('marks a held record only a newer client can read as needing an update', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf({
+                pendingImport: true,
+                record: newerRecord,
+            })
+
+            const review = deriveBackupAccountReview(state, [])
+
+            expect(review.availableFromBackup).toEqual([
+                expect.objectContaining({ address: 'ALGO', needsUpdate: true }),
+            ])
+        })
     })
 
     it('surfaces a reviewed address the device does not hold', () => {
@@ -115,9 +192,9 @@ describe('deriveBackupAccountReview', () => {
             pendingImport: true,
         })
 
-        const review = deriveBackupAccountReview(state, ['A'])
+        const review = deriveBackupAccountReview(state, [['A']])
         expect(review.availableFromBackup).toEqual([
-            { address: 'GONE', type: null },
+            { address: 'GONE', type: null, needsUpdate: false },
         ])
         expect(review.notBackedUp).toEqual(['A'])
     })
@@ -131,7 +208,7 @@ describe('deriveBackupAccountReview', () => {
 
         expect(
             deriveBackupAccountReview(state, []).availableFromBackup,
-        ).toEqual([{ address: 'GONE', type: 'hardware' }])
+        ).toEqual([{ address: 'GONE', type: 'hardware', needsUpdate: false }])
     })
 
     /* The chain a restored device walks: a tombstone seeded from the manifest
@@ -189,7 +266,7 @@ describe('deriveBackupAccountReview', () => {
         })
 
         expect(deriveBackupAccountReview(next, []).availableFromBackup).toEqual(
-            [{ address: 'GONE', type: 'watch' }],
+            [{ address: 'GONE', type: 'watch', needsUpdate: false }],
         )
     })
 
@@ -201,7 +278,7 @@ describe('deriveBackupAccountReview', () => {
             pendingImport: true,
         })
 
-        const review = deriveBackupAccountReview(state, ['A'])
+        const review = deriveBackupAccountReview(state, [['A']])
         expect(review.backedUp.size).toBe(0)
         expect(review.availableFromBackup).toEqual([])
         expect(review.notBackedUp).toEqual(['A'])
@@ -211,7 +288,7 @@ describe('deriveBackupAccountReview', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A', { pendingImport: true })
 
-        const review = deriveBackupAccountReview(state, ['A'])
+        const review = deriveBackupAccountReview(state, [['A']])
         expect(review.availableFromBackup).toEqual([])
     })
 
@@ -220,9 +297,29 @@ describe('deriveBackupAccountReview', () => {
         state.items[accountKey('A')] = tracked('A')
         state.items[secretsKey('A')] = tracked('A')
 
-        expect([...deriveBackupAccountReview(state, ['A']).backedUp]).toEqual([
-            'A',
-        ])
+        expect([...deriveBackupAccountReview(state, [['A']]).backedUp]).toEqual(
+            ['A'],
+        )
+    })
+})
+
+describe('countNewerAccountRecords', () => {
+    const readableRecord = {
+        formatVersion: 2,
+        kind: 'algo25',
+        chains: [{ chain: 'algorand', address: 'B' }],
+    }
+
+    it('counts live records only a newer client can read', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = tracked('A', { record: newerRecord })
+        state.items[recordKey('B')] = tracked('B', { record: readableRecord })
+        state.items[recordKey('C')] = tracked('C', {
+            record: newerRecord,
+            status: BackupItemStatus.IGNORED,
+        })
+
+        expect(countNewerAccountRecords(state)).toBe(1)
     })
 })
 
@@ -241,7 +338,7 @@ describe('isAddressBackedUp', () => {
         state.items[accountKey('A')] = tracked('A', { pendingImport: true })
 
         expect(isAddressBackedUp(state, 'A')).toBe(false)
-        expect(deriveBackupAccountReview(state, ['A']).backedUp.size).toBe(0)
+        expect(deriveBackupAccountReview(state, [['A']]).backedUp.size).toBe(0)
     })
 
     it('agrees with the backedUp bucket for an account the server never saw', () => {
@@ -408,13 +505,14 @@ const backedUpAfterSync = async (
     const reconciled = reconcile(createEmptySyncState('did:pera:x'), local, 1)
     return deriveBackupAccountReview(
         uploaded ? markUploaded(reconciled) : reconciled,
-        accounts.flatMap(account => account.chains.algorand?.address ?? []),
+        accounts.map(accountBackupAddresses),
     ).backedUp
 }
 
 describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
     beforeEach(() => {
         registerFakeBackupAdapter()
+        registerAlgorandAccountsAdapter()
     })
 
     it('reports one account for a single algo25 account', async () => {

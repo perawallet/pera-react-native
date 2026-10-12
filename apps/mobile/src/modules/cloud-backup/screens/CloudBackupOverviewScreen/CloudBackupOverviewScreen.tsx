@@ -11,6 +11,7 @@
  */
 
 import { PWLoadingOverlay, PWScreen, PWText, PWView } from '@components/core'
+import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { OverviewRow } from '../../components/OverviewRow'
@@ -24,6 +25,7 @@ export const CloudBackupOverviewScreen = () => {
         credentialAddressLabel,
         accountsInSync,
         accountsNotBackedUp,
+        accountsNeedingUpdate,
         contactsInSync,
         contactsNotBackedUp,
         passkeysInSync,
@@ -43,6 +45,19 @@ export const CloudBackupOverviewScreen = () => {
             <PWScreen testID='cloud_backup_overview_screen'>
                 <PWView style={styles.container}>
                     <BackupSyncStatusRow />
+
+                    {accountsNeedingUpdate > 0 && (
+                        <InfoCallout
+                            icon='cloud-x'
+                            iconVariant='error'
+                            title={t('cloud_backup.overview.update_required')}
+                            body={t(
+                                'cloud_backup.overview.update_required_description',
+                                { count: accountsNeedingUpdate },
+                            )}
+                            testID='cloud_backup_overview_update_required'
+                        />
+                    )}
 
                     <PWView style={styles.section}>
                         <PWText
