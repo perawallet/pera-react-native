@@ -13,6 +13,7 @@
 import { execSync } from 'node:child_process'
 import {
     cpSync,
+    existsSync,
     mkdirSync,
     readFileSync,
     readdirSync,
@@ -26,6 +27,11 @@ import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { assertNoViem } from './bundle-content.mjs'
 import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
+import {
+    findMissingAssetReferences,
+    findUnreferencedScaleVariants,
+    vendorAssetPath,
+} from './expo-assets.mjs'
 import {
     assertReleaseEnv,
     assertStampedManifest,
@@ -157,6 +163,39 @@ execSync(`pnpm exec expo export --platform web --output-dir "${dist}"`, {
 // Chrome rejects unpacked extensions containing top-level names that start
 // with "_" (reserved, except _locales) — expo export emits _expo/.
 renameSync(path.join(dist, '_expo'), path.join(dist, 'expo-static'))
+// expo export always writes EAS Update's metadata.json; nothing in the
+// extension reads it.
+rmSync(path.join(dist, 'metadata.json'), { force: true })
+
+const assetsDir = path.join(dist, 'assets')
+const listAssetPaths = () =>
+    existsSync(assetsDir)
+        ? readdirSync(assetsDir, { recursive: true, withFileTypes: true })
+              .filter(entry => entry.isFile())
+              .map(entry =>
+                  path
+                      .relative(dist, path.join(entry.parentPath, entry.name))
+                      .split(path.sep)
+                      .join('/'),
+              )
+        : []
+
+// Package images ship under their pnpm store path; move them somewhere short
+// (see expo-assets.mjs) and point the bundle at the new path below.
+const vendorMoves = new Map()
+for (const assetPath of listAssetPaths()) {
+    const target = vendorAssetPath(assetPath)
+    if (target === null) continue
+    if ([...vendorMoves.values()].includes(target)) {
+        throw new Error(`two package assets would ship as ${target}`)
+    }
+    vendorMoves.set(assetPath, target)
+}
+for (const [from, to] of vendorMoves) {
+    mkdirSync(path.dirname(path.join(dist, to)), { recursive: true })
+    renameSync(path.join(dist, from), path.join(dist, to))
+}
+rmSync(path.join(assetsDir, '__node_modules'), { recursive: true, force: true })
 
 // Patch JS bundles: Metro bakes the chunk URL with the pre-rename "_expo/"
 // prefix; replace it so dynamic imports resolve to the renamed path.
@@ -173,10 +212,13 @@ try {
 }
 for (const file of chunkFiles) {
     const filePath = path.join(jsBundleDir, file)
-    const patched = readFileSync(filePath, 'utf8').replaceAll(
+    let patched = readFileSync(filePath, 'utf8').replaceAll(
         '/_expo/',
         '/expo-static/',
     )
+    for (const [from, to] of vendorMoves) {
+        patched = patched.replaceAll(`"/${from}"`, `"/${to}"`)
+    }
     writeFileSync(filePath, patched)
 }
 
@@ -528,6 +570,18 @@ for (const [name, maxBytes] of BUNDLE_LIMITS) {
             `${name} contains ${leaked.join(', ')} — the dapp handler graph leaked into it.`,
         )
     }
+}
+
+// 5. Drop the image scale variants the web bundle cannot load (see
+// expo-assets.mjs), then prove every asset it does load is still shipped.
+for (const variant of findUnreferencedScaleVariants(listAssetPaths(), uiCode)) {
+    rmSync(path.join(dist, variant))
+}
+const missingAssets = findMissingAssetReferences(uiCode, listAssetPaths())
+if (missingAssets.length > 0) {
+    throw new Error(
+        `the exported UI bundle loads assets dist does not contain: ${missingAssets.join(', ')}`,
+    )
 }
 
 console.info(`[extension] built ${dist}`)
