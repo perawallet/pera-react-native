@@ -53,6 +53,7 @@ export * from './useLedgerAccountPreview'
 export * from './prefetchLedgerAccountPreview'
 export * from './useLedgerDelegatedScan'
 export * from './useIsDelegationAvailable'
+export * from './useAccountCapabilityScope'
 export * from './useOwnedAssets'
 export * from './useHDImportSession'
 export {
