@@ -150,6 +150,7 @@ const startRealSyncManager = () => {
     )
     const passkeyImportHook = renderQueryHook(() =>
         useCloudBackupPasskeyImport(
+            LEGACY_CHAIN_ID,
             useResolveSeedEntropyForBackup(LEGACY_CHAIN_ID),
         ),
     )

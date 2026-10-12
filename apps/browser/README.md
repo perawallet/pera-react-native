@@ -12,7 +12,8 @@ The bundle stamps `manifest.json`: `version` is the numeric part of this
 package's `version` (Chrome accepts only integers and needs a higher one for
 every store upload), `version_name` keeps any pre-release tag, and non-production
 builds get "(development build)" or "(staging build)" appended to the
-description. Bump `version` in `package.json` to release.
+description. A tagged CI build takes the version from the tag instead; see
+`docs/RELEASE.md` for releasing to the Chrome Web Store.
 
     pnpm --filter browser bundle
 

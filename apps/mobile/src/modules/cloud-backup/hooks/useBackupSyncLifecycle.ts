@@ -153,6 +153,7 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const resolveMnemonic = useResolveMnemonicForBackup(scope.chainId)
     const listPasskeys = useListPasskeysForBackup(scope.chainId)
     const { importPasskeys } = useCloudBackupPasskeyImport(
+        scope.chainId,
         useResolveSeedEntropyForBackup(scope.chainId),
     )
 

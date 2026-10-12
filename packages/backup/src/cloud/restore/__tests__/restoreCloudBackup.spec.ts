@@ -75,6 +75,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: { getItem: () => null },
         passkeyAutofill: { refreshCredentialIdentities: async () => {} },
+        deviceInfo: { getDevicePlatform: () => 'ios' },
     }),
     getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
     // The import derives with `derivePasskeyMainKey`'s default `subtle`.
@@ -660,6 +661,7 @@ describe('restoreCloudBackup: passkey acceptance', () => {
 
         const { result } = renderHook(() =>
             useCloudBackupPasskeyImport(
+                'algorand',
                 useResolveSeedEntropyForBackup('algorand'),
             ),
         )
@@ -705,6 +707,7 @@ describe('restoreCloudBackup: passkey acceptance', () => {
 
         const { result } = renderHook(() =>
             useCloudBackupPasskeyImport(
+                'algorand',
                 useResolveSeedEntropyForBackup('algorand'),
             ),
         )

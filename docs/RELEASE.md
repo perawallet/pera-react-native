@@ -1,14 +1,14 @@
 ## Production store submission (tag `v.*`)
 
-An rc (`-rc.N`) or stable (`vX.Y.Z`) tag triggers the Bitrise `release-builds` pipeline → `ios-production` + `android-production`.
+An rc (`-rc.N`) or stable (`vX.Y.Z`) tag triggers the Bitrise `release-builds` pipeline → `ios-production` + `android-production` + `web-production`.
 
 Staging and production are built by separate pipelines so a nightly does not burn four build machines:
 
-| Tag              | Pipeline         | Builds                                  | Smoke gate |
-| ---------------- | ---------------- | --------------------------------------- | ---------- |
-| `vX.Y.Z-alpha.N` | `nightly-builds` | `ios-staging` + `android-staging`       | yes        |
-| `vX.Y.Z-rc.N`    | `release-builds` | `ios-production` + `android-production` | no         |
-| `vX.Y.Z`         | `release-builds` | `ios-production` + `android-production` | no         |
+| Tag              | Pipeline         | Builds                                                     | Smoke gate |
+| ---------------- | ---------------- | ---------------------------------------------------------- | ---------- |
+| `vX.Y.Z-alpha.N` | `nightly-builds` | `ios-staging` + `android-staging` + `web-staging`          | yes        |
+| `vX.Y.Z-rc.N`    | `release-builds` | `ios-production` + `android-production` + `web-production` | no         |
+| `vX.Y.Z`         | `release-builds` | `ios-production` + `android-production` + `web-production` | no         |
 
 The smoke gate only runs on staging builds: they are the only ones that bake `DISABLE_SCREEN_CAPTURE_PREVENTION`, and Appium cannot drive a `FLAG_SECURE` surface, so a production build hangs rather than failing usefully. An rc is therefore covered by the nightlies it descends from, not directly. Production is likewise not built nightly, so a production-only break (scheme, signing, flavor) surfaces at rc time rather than the next morning.
 
@@ -33,6 +33,12 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 
 - Builds an AAB and uploads it to the Play `internal` track (`fastlane android deploy_internal`), then builds an APK and distributes it to Firebase App Distribution (`pera,pera-alpha`). Both run sequentially within the one lane, and the Firebase step is intentionally fatal: a Firebase failure fails the workflow even after the Play upload has already succeeded.
 - Promotion to production (with staged rollout %) is manual from Play Console.
+
+### Browser extension
+
+- Builds a zip of `apps/browser/dist`, `pera-extension-web-<environment>-<tag>-<sha7>.zip`, with a `.sha256` beside it. Neither CI uploads to the Chrome Web Store: the production zip is uploaded by hand in the Chrome Web Store Developer Dashboard, after checking it against its `.sha256`. Review and publishing happen there too.
+- Upload only a `production` zip. A staging zip talks to the staging backend and carries "(staging build)" in its description.
+- The manifest `version` is the tag's `X.Y.Z` with the build number as a fourth part, and `version_name` is `X.Y.Z`. The store rejects a package whose `version` is not higher than the last one it accepted; the build number is what keeps two rcs of one version in order.
 
 ### Required Bitrise secrets
 
