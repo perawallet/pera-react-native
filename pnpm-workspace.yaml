@@ -95,7 +95,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.12.0
   msw: ^2.14.6
-  oxfmt: ^0.70.0
+  oxfmt: ^0.72.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
