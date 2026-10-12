@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
     useNetworkStore,
@@ -79,10 +82,10 @@ export const settleCosignAttempt = async (
     deps: SettleCosignAttemptDeps,
 ): Promise<void> => {
     const settledTxIds = new Set(txIds)
+    const settledScopeKey = toScopeKey(settled)
     const matching = Object.values(handoffs).filter(
         handoff =>
-            handoff.scope.chainId === settled.chainId &&
-            handoff.scope.networkId === settled.networkId &&
+            toScopeKey(handoff.scope) === settledScopeKey &&
             (handoff.submission?.txIds.some(id => settledTxIds.has(id)) ??
                 false),
     )
