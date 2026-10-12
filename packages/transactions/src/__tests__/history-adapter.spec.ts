@@ -34,6 +34,8 @@ const makeAdapter = (
     chainId: 'algorand',
     fetchHistory: vi.fn().mockResolvedValue(RESULT),
     fetchMoreHistory: vi.fn().mockResolvedValue(RESULT),
+    getTransactionHistory: vi.fn(),
+    summarize: vi.fn(),
     toDisplayable: vi.fn().mockReturnValue(null),
     ...overrides,
 })
