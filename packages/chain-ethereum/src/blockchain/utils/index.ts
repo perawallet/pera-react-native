@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export { InvalidCaip19Error, UnknownEvmNetworkError } from './caip19'
 export { createEvmClient, UnconfiguredEvmRpcError } from './createEvmClient'
 export { evmHttpTransport } from './evmHttpTransport'

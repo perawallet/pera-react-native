@@ -12,11 +12,21 @@
 
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import {
+    decodeAbiParameters,
+    decodeFunctionData,
+    encodeAbiParameters,
+    encodeFunctionResult,
+    getAddress,
+    isAddress,
+    isAddressEqual,
     keccak256,
+    multicall3Abi,
+    toFunctionSelector,
     type Hex,
     type RpcFeeHistory,
     type RpcTransactionReceipt,
 } from 'viem'
+import { MULTICALL3_ADDRESS } from './utils/erc20'
 
 export type EvmRpcResults = {
     eth_chainId: Hex
@@ -122,6 +132,84 @@ const errorReply = (id: JsonRpcRequest['id'], error: EvmRpcErrorFixture) => ({
     },
 })
 
+const respond = <M extends EvmRpcMethod>(
+    responder: EvmRpcResponder<M>,
+    params: readonly unknown[],
+): Outcome<M> =>
+    typeof responder === 'function' ? responder(params) : responder
+
+const GET_ETH_BALANCE_SELECTOR = toFunctionSelector('getEthBalance(address)')
+
+const isMulticall = (method: string, params: readonly unknown[]): boolean => {
+    const to = (params[0] as { to?: unknown } | undefined)?.to
+    return (
+        method === 'eth_call' &&
+        typeof to === 'string' &&
+        isAddress(to) &&
+        isAddressEqual(to, MULTICALL3_ADDRESS)
+    )
+}
+
+const revert = () => new EvmRpcErrorFixture(3, 'execution reverted')
+
+/**
+ * Runs Multicall3 `aggregate3` the way a node does, against the other
+ * fixtures: `getEthBalance` reads `eth_getBalance`, every other call is an
+ * `eth_call` to its target at the same block. A failing call that does not
+ * allow failure reverts the whole aggregate.
+ */
+const answerAggregate3 = (
+    params: readonly unknown[],
+    responses: Required<EvmRpcFixtures>['responses'],
+): Hex | EvmRpcErrorFixture => {
+    const [{ data }, blockTag] = params as [{ data: Hex }, unknown]
+    const decoded = decodeFunctionData({ abi: multicall3Abi, data })
+    if (decoded.functionName !== 'aggregate3') return revert()
+    const calls = decoded.args[0] as readonly {
+        target: Hex
+        allowFailure: boolean
+        callData: Hex
+    }[]
+    const results: { success: boolean; returnData: Hex }[] = []
+    for (const { target, allowFailure, callData } of calls) {
+        let outcome: Hex | EvmRpcErrorFixture
+        if (
+            isAddressEqual(target, MULTICALL3_ADDRESS) &&
+            callData.startsWith(GET_ETH_BALANCE_SELECTOR)
+        ) {
+            const [holder] = decodeAbiParameters(
+                [{ type: 'address' }],
+                `0x${callData.slice(GET_ETH_BALANCE_SELECTOR.length)}`,
+            )
+            // Lowercase, as viem sends an address to eth_getBalance.
+            const wei = respond(responses.eth_getBalance!, [
+                holder.toLowerCase(),
+                blockTag,
+            ])
+            outcome =
+                wei instanceof EvmRpcErrorFixture
+                    ? wei
+                    : encodeAbiParameters([{ type: 'uint256' }], [BigInt(wei)])
+        } else {
+            outcome = respond(responses.eth_call!, [
+                { to: target, data: callData },
+                blockTag,
+            ])
+        }
+        if (outcome instanceof EvmRpcErrorFixture) {
+            if (!allowFailure) return revert()
+            results.push({ success: false, returnData: '0x' })
+        } else {
+            results.push({ success: true, returnData: outcome })
+        }
+    }
+    return encodeFunctionResult({
+        abi: multicall3Abi,
+        functionName: 'aggregate3',
+        result: results,
+    })
+}
+
 const reply = (
     request: JsonRpcRequest,
     responses: Required<EvmRpcFixtures>['responses'],
@@ -138,10 +226,14 @@ const reply = (
             ),
         )
     }
+    const params = request.params ?? []
+    // A constant eth_call error is the node failing, so it fails a Multicall3
+    // call as a whole rather than each call inside it.
     const outcome =
-        typeof responder === 'function'
-            ? responder(request.params ?? [])
-            : responder
+        isMulticall(request.method, params) &&
+        !(responses.eth_call instanceof EvmRpcErrorFixture)
+            ? answerAggregate3(params, responses)
+            : respond(responder, params)
     return outcome instanceof EvmRpcErrorFixture
         ? errorReply(request.id, outcome)
         : { jsonrpc: '2.0', id: request.id, result: outcome }
@@ -183,3 +275,77 @@ export const evmRpcHandlers = ({
         }),
     ]
 }
+
+export type Erc20Fixture = {
+    name: string
+    symbol: string
+    decimals: number
+    /** Base units. */
+    totalSupply: bigint
+    /** Base units, keyed by checksummed holder; a holder left out has 0. */
+    balances?: Record<string, bigint>
+    /** Every call "succeeds" with empty return data, as a target with no code does. */
+    noCode?: boolean
+    /** Every call succeeds with fewer than 32 bytes of return data. */
+    shortReturn?: boolean
+}
+
+const ERC20_READS = {
+    name: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'string' }], [token.name]),
+    symbol: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'string' }], [token.symbol]),
+    decimals: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'uint8' }], [token.decimals]),
+    totalSupply: (token: Erc20Fixture) =>
+        encodeAbiParameters([{ type: 'uint256' }], [token.totalSupply]),
+} as const
+
+const ERC20_SELECTORS = Object.entries(ERC20_READS).map(
+    ([name, encode]) => [toFunctionSelector(`${name}()`), encode] as const,
+)
+
+const BALANCE_OF_SELECTOR = toFunctionSelector('balanceOf(address)')
+
+/** The encoded answer, or null where the contract would revert. */
+const answerErc20Call = (
+    tokens: Record<string, Erc20Fixture>,
+    to: Hex,
+    data: Hex,
+): Hex | null => {
+    const token = tokens[getAddress(to)]
+    if (!token) return null
+    if (token.noCode) return '0x'
+    if (token.shortReturn) return `0x${'00'.repeat(16)}`
+    if (data.startsWith(BALANCE_OF_SELECTOR)) {
+        const [holder] = decodeAbiParameters(
+            [{ type: 'address' }],
+            `0x${data.slice(BALANCE_OF_SELECTOR.length)}`,
+        )
+        return encodeAbiParameters(
+            [{ type: 'uint256' }],
+            [token.balances?.[getAddress(holder)] ?? 0n],
+        )
+    }
+    const encode = ERC20_SELECTORS.find(([selector]) =>
+        data.startsWith(selector),
+    )?.[1]
+    return encode ? encode(token) : null
+}
+
+/**
+ * `eth_call` answers for ERC-20 metadata and `balanceOf` reads, keyed by
+ * checksummed contract; anything else reverts. `evmRpcHandlers` runs each call
+ * of a Multicall3 `aggregate3` through it.
+ */
+export const erc20CallResponder =
+    (
+        tokens: Record<string, Erc20Fixture>,
+    ): ((params: readonly unknown[]) => Hex | EvmRpcErrorFixture) =>
+    params => {
+        const { to, data } = params[0] as { to: Hex; data: Hex }
+        return (
+            answerErc20Call(tokens, to, data) ??
+            new EvmRpcErrorFixture(3, 'execution reverted')
+        )
+    }

@@ -13,10 +13,14 @@
 import type * as ConfigModule from '@perawallet/wallet-core-config'
 
 export const PERA_URL = 'https://pera.test'
+export const TEST_API_KEY = 'test-api-key'
+/** What `vitest.setup.ts` makes `buildIntegrityHeaders` send. */
+export const TEST_INTEGRITY_TOKEN = 'test-integrity-token'
 
 /**
  * A config-module mock giving every Ethereum scope a Pera deployment that
- * serves block following, for specs reaching it through queryClient:
+ * serves block following, assets and prices, and the client an API key, for
+ * specs reaching it through queryClient:
  * `vi.mock('@perawallet/wallet-core-config', async original =>
  * (await import('./pera-backend')).withEthereumPeraBackend(original))`.
  */
@@ -26,6 +30,7 @@ export const withEthereumPeraBackend = async (
     const actual = await importOriginal()
     return {
         ...actual,
+        config: { ...actual.config, backendAPIKey: TEST_API_KEY },
         getPeraServicesConfig: scope =>
             scope.chainId === 'ethereum'
                 ? {
@@ -35,7 +40,7 @@ export const withEthereumPeraBackend = async (
                 : actual.getPeraServicesConfig(scope),
         hasPeraService: (scope, service) =>
             scope.chainId === 'ethereum'
-                ? service === 'blockFollowing'
+                ? ['blockFollowing', 'assets', 'prices'].includes(service)
                 : actual.hasPeraService(scope, service),
     }
 }

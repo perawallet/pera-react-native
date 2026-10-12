@@ -11,31 +11,50 @@
  */
 
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import {
+    peraEvmAssetHandlers,
+    rejectUnauthenticated,
+    type PeraEvmAssetFixtures,
+} from '../assets/api/msw-handlers'
 import { SHOULD_REFRESH_PATH, type ShouldRefreshResponse } from './endpoints'
 
 export type ShouldRefreshRequest = {
+    /** CAIP-2, e.g. `eip155:1`. */
+    chain: string
     account_addresses: string[]
-    last_refreshed_block: number | null
+    /** A block number on EVM; null when never synced. */
+    last_refreshed_round: number | null
 }
 
-export type PeraEvmFixtures = {
-    /** Defaults to every host. */
-    baseUrl?: string
-    /** A number is the HTTP status the endpoint fails with. */
+export type PeraEvmFixtures = PeraEvmAssetFixtures & {
+    /**
+     * A number is the HTTP status the endpoint fails with. Defaults to the
+     * backend's quiet chain: a refresh at block 1 on a null cursor (it always
+     * refreshes one), no refresh otherwise.
+     */
     blockFollowing?:
         | ShouldRefreshResponse
         | number
         | ((request: ShouldRefreshRequest) => ShouldRefreshResponse | number)
 }
 
-/** The Pera backend's Ethereum endpoints; block following only, until the spec covers the rest. */
+const quietChain = ({
+    last_refreshed_round,
+}: ShouldRefreshRequest): ShouldRefreshResponse =>
+    last_refreshed_round === null
+        ? { refresh: true, round: 1 }
+        : { refresh: false }
+
+/** The Pera backend's EVM endpoints. */
 export const peraEvmHandlers = ({
-    baseUrl = '*',
-    blockFollowing = { refresh: false, block: 1 },
+    blockFollowing = quietChain,
+    ...assetFixtures
 }: PeraEvmFixtures = {}): RequestHandler[] => [
     http.post(
-        `${baseUrl.replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
+        `${(assetFixtures.baseUrl ?? '*').replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
         async ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
             const outcome =
                 typeof blockFollowing === 'function'
                     ? blockFollowing(
@@ -47,4 +66,5 @@ export const peraEvmHandlers = ({
                 : HttpResponse.json(outcome)
         },
     ),
+    ...peraEvmAssetHandlers(assetFixtures),
 ]

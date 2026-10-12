@@ -177,6 +177,13 @@ const nativeAsset = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    // Chain modules register into it at bootstrap; nothing here reads it back.
+    assetsChainAdapters: {
+        register: vi.fn(),
+        get: vi.fn(),
+        has: vi.fn(() => false),
+        reset: vi.fn(),
+    },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>

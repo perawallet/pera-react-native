@@ -18,13 +18,20 @@ export {
     type EthereumAccountStateOps,
 } from './accounts'
 export {
+    createEthereumAssetsAdapter,
+    ETHEREUM_NATIVE_ASSET,
+    NativePriceUnavailableError,
+} from './assets'
+export {
     createEvmClient,
     EvmError,
     EvmErrorCode,
     evmHttpTransport,
+    InvalidCaip19Error,
     isEvmError,
     toEvmError,
     UnconfiguredEvmRpcError,
+    UnknownEvmNetworkError,
     type EvmErrorParams,
 } from './blockchain'
 export { ethereumModule } from './module'
