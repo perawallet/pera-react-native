@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { transferChainAdapters } from '@perawallet/wallet-core-transactions'
 import {
     addressCodecs,
     createChainRegistry,
@@ -22,6 +23,7 @@ import {
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
+import { ETHEREUM_TRANSFER_TITLE_KEYS } from '../transfer'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -77,6 +79,7 @@ describe('ethereumModule', () => {
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },
@@ -90,5 +93,10 @@ describe('ethereumModule', () => {
         expect(ethereumModule.i18nKeys()).toContain(
             'errors.evm.invalid_private_key',
         )
+        expect(ethereumModule.i18nKeys()).toEqual(
+            expect.arrayContaining([...ETHEREUM_TRANSFER_TITLE_KEYS]),
+        )
+        const keys = ethereumModule.i18nKeys()
+        expect(new Set(keys).size).toBe(keys.length)
     })
 })

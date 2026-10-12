@@ -25,6 +25,7 @@
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
     "decimal.js": "catalog:",
     "viem": "catalog:",
     "zod": "catalog:"

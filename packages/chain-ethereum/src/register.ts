@@ -24,23 +24,31 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    transferChainAdapters,
+    type TransferChainAdapter,
+} from '@perawallet/wallet-core-transactions'
+import {
     createEthereumAccountsAdapter,
     ethereumAddressCodec,
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { createEthereumTransferAdapter } from './transfer'
 
 // The registries ignore a repeat of the same instance but reject a new one, so
 // the context-bound adapters are built once; every context the app hands in
 // reads the same live stores.
 let accountsAdapter: AccountsChainAdapter | undefined
 let assetsAdapter: AssetsChainAdapter | undefined
+let transferAdapter: TransferChainAdapter | undefined
 
 export const registerChain = (ctx: ChainContext): void => {
     accountsAdapter ??= createEthereumAccountsAdapter(ctx)
     assetsAdapter ??= createEthereumAssetsAdapter(ctx)
+    transferAdapter ??= createEthereumTransferAdapter(ctx)
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
+    transferChainAdapters.register(transferAdapter)
 }

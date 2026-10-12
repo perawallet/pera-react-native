@@ -2549,6 +2549,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
