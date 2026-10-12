@@ -11,17 +11,14 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import {
-    persist,
-    createJSONStorage,
-    type StateStorage,
-} from 'zustand/middleware'
 import type { RemoteConfigStore } from '../models'
 import {
+    guardedPersist,
     logger,
     registerStore,
     type WithPersist,
     type Nullable,
+    type QuarantinableStorage,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -32,9 +29,9 @@ const getInitialState = (): Pick<RemoteConfigStore, 'configOverrides'> => ({
     configOverrides: {},
 })
 
-export const createRemoteConfigStore = (storage: StateStorage) =>
+export const createRemoteConfigStore = (storage: QuarantinableStorage) =>
     create<RemoteConfigStore>()(
-        persist(
+        guardedPersist(
             (set, get) => ({
                 ...getInitialState(),
                 setConfigOverride: (
@@ -53,7 +50,7 @@ export const createRemoteConfigStore = (storage: StateStorage) =>
             }),
             {
                 name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
+                storage: () => storage,
                 version: 1,
                 partialize: state => ({
                     configOverrides: state.configOverrides,
@@ -65,7 +62,7 @@ export const createRemoteConfigStore = (storage: StateStorage) =>
 export const useRemoteConfigStore: UseBoundStore<
     WithPersist<StoreApi<RemoteConfigStore>, unknown>
 > = create<RemoteConfigStore>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...getInitialState(),
             setConfigOverride: (
@@ -88,7 +85,7 @@ export const useRemoteConfigStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 configOverrides: state.configOverrides,

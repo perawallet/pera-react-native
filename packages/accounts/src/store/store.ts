@@ -11,7 +11,6 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     ACCOUNT_TYPE_RANK,
     LaunchAccountModes,
@@ -23,6 +22,7 @@ import {
     type WalletAccount,
 } from '../models'
 import {
+    guardedPersist,
     logger,
     registerStore,
     type Network,
@@ -301,7 +301,7 @@ const initialState = {
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
 > = create<AccountsState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             getSelectedAccount: () => {
@@ -664,7 +664,7 @@ export const useAccountsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: STORE_VERSION,
             migrate: migrateAccountsState,
             // The persisted accounts of a v3 payload may still carry the

@@ -11,7 +11,6 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     chainModeFor,
     defaultNetworkForTier,
@@ -27,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { config, type Network } from '@perawallet/wallet-core-config'
 import {
+    guardedPersist,
     registerStore,
     type BaseStoreState,
     type WithPersist,
@@ -247,7 +247,7 @@ export const migrateNetworkState = (
 export const useNetworkStore: UseBoundStore<
     WithPersist<StoreApi<NetworkState>, unknown>
 > = create<NetworkState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState(),
             setMode: mode =>
@@ -317,7 +317,7 @@ export const useNetworkStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: STORE_VERSION,
             partialize: state => ({
                 mode: state.mode,

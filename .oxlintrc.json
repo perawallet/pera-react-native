@@ -211,6 +211,11 @@
           {
             "paths": [
               {
+                "name": "zustand/middleware",
+                "importNames": ["persist", "createJSONStorage"],
+                "message": "Persist through guardedPersist from @perawallet/wallet-core-shared, which quarantines state it cannot restore instead of letting the next write erase it."
+              },
+              {
                 "name": "decimal.js",
                 "importNames": ["default"],
                 "message": "Import the named { Decimal } from decimal.js."

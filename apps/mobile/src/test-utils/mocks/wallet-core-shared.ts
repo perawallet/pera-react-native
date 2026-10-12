@@ -60,6 +60,17 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { stringifyTypedJson, parseTypedJson } = await vi.importActual<
         typeof import('@packages/shared/src/utils/json')
     >('@packages/shared/src/utils/json')
+    // Every real store persists through this, so a stub would hide its
+    // hydration. The core is the logger-free half: the real logger pulls in
+    // @perawallet/wallet-core-config, which many specs mock without `config`.
+    const { createGuardedPersist, readQuarantinedStates } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/guarded-persist-core')
+        >('@packages/shared/src/utils/guarded-persist-core')
+    const guardedPersist = createGuardedPersist({
+        critical: () => {},
+        warn: () => {},
+    })
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
@@ -522,6 +533,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ErrorCategory,
         useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
         registerStore: vi.fn(),
+        guardedPersist,
+        readQuarantinedStates,
         clearAllStores: vi.fn(),
         resetStoreRegistry: vi.fn(),
         getStoreRegistry: vi.fn(() => []),

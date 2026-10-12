@@ -11,12 +11,10 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { PersistStorage } from 'zustand/middleware'
 import type { SigningStore, SignRequest } from '../models'
 import { isInteractiveSource, type SourceType } from '../pipeline/types'
 import {
-    logger,
+    guardedPersist,
     generateOrderedUniqueId,
     registerStore,
     stringifyTypedJson,
@@ -24,34 +22,6 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-
-// Custom storage: round-trip safe serialization for bigint and Map, which
-// PeraTransaction fields (fee, amount, assetId, etc.) rely on.
-
-type PartializedState = { pendingSignRequests: SignRequest[] }
-
-const signingStoreStorage = (): PersistStorage<PartializedState> => ({
-    getItem: name => {
-        const str = getProvider().keyValueStorage.getItem(name)
-        if (!str) return null
-        try {
-            return parseTypedJson(str as string)
-        } catch (error) {
-            logger.warn(
-                'Failed to parse persisted signing-store; dropping persisted state',
-                { error },
-            )
-            getProvider().keyValueStorage.removeItem(name)
-            return null
-        }
-    },
-    setItem: (name, value) => {
-        getProvider().keyValueStorage.setItem(name, stringifyTypedJson(value))
-    },
-    removeItem: name => {
-        getProvider().keyValueStorage.removeItem(name)
-    },
-})
 
 /**
  * Re-validate a rehydrated sign-request before it is allowed back into the
@@ -103,9 +73,9 @@ export const wasRestoredFromStorage = (id: string): boolean =>
     restoredRequestIds.has(id)
 
 export const useSigningStore: UseBoundStore<
-    WithPersist<StoreApi<SigningStore>, PartializedState>
+    WithPersist<StoreApi<SigningStore>, unknown>
 > = create<SigningStore>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             addSignRequest: (request: SignRequest) => {
@@ -133,7 +103,11 @@ export const useSigningStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: signingStoreStorage(),
+            storage: () => getProvider().keyValueStorage,
+            // bigint and Map fields on PeraTransaction (fee, amount, assetId,
+            // etc.) need the typed JSON round-trip, not plain JSON.
+            serialize: value => stringifyTypedJson(value),
+            deserialize: raw => parseTypedJson(raw),
             version: 1,
             partialize: state => ({
                 // Persist only non-callback, non-deeplink requests:

@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AgeGateSource, AgeGateStatus } from './models'
 
@@ -38,7 +41,7 @@ const initialState: AgeGateState = {
 export const useAgeGateStore: UseBoundStore<
     WithPersist<StoreApi<AgeGateStore>, unknown>
 > = create<AgeGateStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setDecision: (status, source) => set({ status, source }),
@@ -46,7 +49,7 @@ export const useAgeGateStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 status: state.status,

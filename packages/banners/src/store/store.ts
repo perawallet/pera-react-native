@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BannersState } from '../models'
 
@@ -26,7 +29,7 @@ const initialState = {
 export const useBannersStore: UseBoundStore<
     WithPersist<StoreApi<BannersState>, unknown>
 > = create<BannersState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             dismissBanner: (id: string) => {
@@ -47,7 +50,7 @@ export const useBannersStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // autoOpenedBannerIds is intentionally NOT persisted — it's a
             // session-scoped flag so the carousel re-prompts each launch when
             // the server still flags a banner as 'select' or 'force'.

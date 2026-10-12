@@ -11,12 +11,12 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     isLegacyNetwork,
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    guardedPersist,
     registerStore,
     type BaseStoreState,
     type WithPersist,
@@ -80,7 +80,7 @@ export const migrateWalletConnectHandoffsState = (
 export const useWalletConnectHandoffsStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectHandoffsStore>, unknown>
 > = create<WalletConnectHandoffsStore>()(
-    persist(
+    guardedPersist(
         set => ({
             handoffs: {},
             register: handoff =>
@@ -101,7 +101,7 @@ export const useWalletConnectHandoffsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 2,
             migrate: migrateWalletConnectHandoffsState,
             partialize: state => ({ handoffs: state.handoffs }),

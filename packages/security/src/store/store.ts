@@ -11,9 +11,9 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { BiometricsDisabledReason, SecurityState } from '../models'
 import {
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -81,7 +81,7 @@ const sanitizeUnwrapFailures = (value: unknown): number =>
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
 > = create<SecurityState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             // Fails closed until AutoLockGuard's listener writes the real
@@ -121,7 +121,7 @@ export const useSecurityStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 autoLockStartedAt: state.autoLockStartedAt,

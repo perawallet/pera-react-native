@@ -1282,6 +1282,31 @@ describe('services/accounts/store', () => {
             )
         })
 
+        test('a payload whose migrate throws is quarantined rather than erased by the next write', async () => {
+            const raw = JSON.stringify({
+                state: { ...v0State, accounts: [null] },
+                version: 0,
+            })
+            getProvider().keyValueStorage.setItem('accounts-store', raw)
+
+            vi.resetModules()
+            const module = await import('../store')
+            await module.useAccountsStore.persist.rehydrate()
+            module.useAccountsStore.getState().setAccounts([])
+
+            const { readQuarantinedStates } =
+                await import('@perawallet/wallet-core-shared')
+            expect(module.useAccountsStore.getState().accounts).toEqual([])
+            expect(
+                readQuarantinedStates(
+                    getProvider().keyValueStorage,
+                    'accounts-store',
+                ),
+            ).toEqual([
+                expect.objectContaining({ reason: 'migrate-failed', raw }),
+            ])
+        })
+
         test('setAccounts keeps the custody an account was built with', () => {
             const accounts = (
                 [
