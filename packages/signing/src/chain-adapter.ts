@@ -18,6 +18,7 @@ import {
     type Arc0001ResolveContext,
     type Arc0001ResolveResult,
     type Arc0001SignTxnsRequest,
+    type AlgorandTransactionView,
     type PeraDisplayableTransaction,
     type PeraSignedTransaction,
     type PeraTransaction,
@@ -136,7 +137,7 @@ export interface ReviewerChainAdapter {
     classifyRequestStructure(listItems: TransactionListItem[]): RequestStructure
     /** `authorizerByIndex` keys index into `transactions`. */
     aggregateTransactionWarnings(
-        transactions: PeraDisplayableTransaction[],
+        transactions: AlgorandTransactionView[],
         userAccountAddresses: Set<string>,
         signableAddresses: Set<string>,
         authorizerByIndex?: Map<number, string>,

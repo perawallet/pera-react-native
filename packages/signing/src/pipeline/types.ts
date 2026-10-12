@@ -16,8 +16,8 @@ import type {
     ChainScope,
     PeraTransaction,
     PeraSignedTransaction,
-    PeraTransactionType,
     SignedTransaction,
+    AlgorandTransactionKind,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -270,7 +270,7 @@ export interface SignableGroup {
 }
 
 export interface AlgorandTransactionSummary {
-    type: PeraTransactionType
+    type: AlgorandTransactionKind
     sender: string
     receiver?: string
     amount?: bigint

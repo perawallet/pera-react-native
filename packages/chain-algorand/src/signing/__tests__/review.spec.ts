@@ -20,7 +20,7 @@ import {
 import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import {
     scopeForLegacyNetwork,
-    type PeraTransactionType,
+    type AlgorandTransactionKind,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -194,7 +194,7 @@ const KINDS = {
 }
 
 type Expected = {
-    summaryTypes: PeraTransactionType[]
+    summaryTypes: AlgorandTransactionKind[]
     /** Charged its transactions' own fees, rather than nothing. */
     isCharged: boolean
     warningTypes: AnalysisWarning['type'][]
@@ -206,7 +206,7 @@ const SIGNER = [WALLET.toString()]
 const EVERY_ACCOUNT = [WALLET.toString(), SECOND.toString()]
 
 const signed = (
-    summaryType: PeraTransactionType,
+    summaryType: AlgorandTransactionKind,
     warningTypes: AnalysisWarning['type'][] = [],
 ): Expected => ({
     summaryTypes: [summaryType],

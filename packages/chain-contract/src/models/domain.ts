@@ -194,6 +194,121 @@ export interface TransactionRecord {
     chainData: ChainTransactionData
 }
 
+export type AlgorandTransactionKind =
+    | 'payment'
+    | 'asset-transfer'
+    | 'asset-opt-in'
+    | 'asset-opt-out'
+    | 'asset-clawback'
+    | 'asset-config'
+    | 'asset-freeze'
+    | 'key-registration'
+    | 'app-call'
+    | 'state-proof'
+    | 'heartbeat'
+    | 'unknown'
+
+export type KeyRegType = 'online' | 'offline'
+
+export type AssetTransferType =
+    | 'transfer'
+    | 'opt-in'
+    | 'opt-out'
+    | 'clawback'
+    | 'unknown'
+
+export type AssetConfigType = 'create' | 'update' | 'destroy'
+
+// Field types are copied verbatim from the indexer shapes so a PeraDisplayableTransaction assigns to it.
+export interface AlgorandTransactionView {
+    id?: string
+    txType?: string
+    sender: string
+    /** microAlgos. */
+    fee: bigint
+    note?: Uint8Array
+    confirmedRound?: bigint
+    /** Unix ms. */
+    roundTimeMillis?: number
+    /** Raw public keys, while every other address here is a base32 string. */
+    authAddr?: { readonly publicKey: Uint8Array }
+    /** Raw public keys, while every other address here is a base32 string. */
+    rekeyTo?: { readonly publicKey: Uint8Array }
+    /** The chain-native unsigned transaction under review; only identity, truthiness and stringify are used. */
+    rawTransaction?: unknown
+    innerTxns?: AlgorandTransactionView[]
+    /** Set when only the local history row is available; `innerTxns` wins when present. */
+    innerTransactionCount?: number
+    paymentTransaction?: {
+        amount: bigint
+        receiver: string
+        closeAmount?: bigint
+        closeRemainderTo?: string
+    }
+    assetTransferTransaction?: {
+        amount: bigint
+        assetId: bigint
+        receiver: string
+        closeAmount?: bigint
+        closeTo?: string
+        /** Clawback source. */
+        sender?: string
+    }
+    assetConfigTransaction?: {
+        assetId?: bigint
+        params?: {
+            decimals: number
+            total: bigint
+            defaultFrozen?: boolean
+            manager?: string
+            reserve?: string
+            freeze?: string
+            clawback?: string
+            name?: string
+            unitName?: string
+            url?: string
+            metadataHash?: Uint8Array
+        }
+    }
+    assetFreezeTransaction?: {
+        address: string
+        assetId: bigint
+        newFreezeStatus: boolean
+    }
+    keyregTransaction?: {
+        nonParticipation?: boolean
+        selectionParticipationKey?: Uint8Array
+        stateProofKey?: Uint8Array
+        voteFirstValid?: bigint
+        voteKeyDilution?: bigint
+        voteLastValid?: bigint
+        voteParticipationKey?: Uint8Array
+    }
+    applicationTransaction?: {
+        applicationId: bigint
+        onCompletion?: string
+        applicationArgs?: Uint8Array[]
+        accounts?: { readonly publicKey: Uint8Array }[]
+        foreignApps?: bigint[]
+        foreignAssets?: bigint[]
+        boxReferences?: { app: number; name: Uint8Array }[]
+    }
+    heartbeatTransaction?: {
+        hbAddress: string
+        hbKeyDilution: bigint
+        hbVoteId: Uint8Array
+    }
+}
+
+/**
+ * A transaction as its own chain's review and detail UI reads it. A chain
+ * package adds its member, and only that chain's UI reads it.
+ */
+export type TransactionNative = {
+    family: 'algorand'
+    transaction: AlgorandTransactionView
+}
+
 export type TransferIntent = {
     kind: 'transfer'
     from: string

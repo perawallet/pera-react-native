@@ -12,13 +12,17 @@
 
 import type { Decimal } from 'decimal.js'
 import { assertType, describe, expectTypeOf, it } from 'vitest'
+import type { PeraDisplayableTransaction } from '../algorand-display'
 import type {
     AccountChainState,
+    AlgorandTransactionKind,
+    AlgorandTransactionView,
     AssetOptInIntent,
     AssetRef,
     ChainTransactionData,
     FeePreset,
     TransactionIntent,
+    TransactionNative,
     TransactionSummary,
     TransferIntent,
     UnsignedTransaction,
@@ -93,5 +97,76 @@ describe('TransactionIntent', () => {
 describe('FeePreset', () => {
     it('is slow, normal or fast', () => {
         expectTypeOf<FeePreset>().toEqualTypeOf<'slow' | 'normal' | 'fast'>()
+    })
+})
+
+describe('AlgorandTransactionView', () => {
+    type WithKind<K extends keyof PeraDisplayableTransaction> =
+        PeraDisplayableTransaction &
+            Required<Pick<PeraDisplayableTransaction, K>>
+
+    it('AlgorandTransactionKind has exactly the twelve kinds', () => {
+        expectTypeOf<AlgorandTransactionKind>().toEqualTypeOf<
+            | 'payment'
+            | 'asset-transfer'
+            | 'asset-opt-in'
+            | 'asset-opt-out'
+            | 'asset-clawback'
+            | 'asset-config'
+            | 'asset-freeze'
+            | 'key-registration'
+            | 'app-call'
+            | 'state-proof'
+            | 'heartbeat'
+            | 'unknown'
+        >()
+    })
+
+    it('accepts a PeraDisplayableTransaction of every kind', () => {
+        expectTypeOf<PeraDisplayableTransaction>().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'paymentTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'assetTransferTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'assetConfigTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'assetFreezeTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'keyregTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'applicationTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'heartbeatTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            WithKind<'stateProofTransaction'>
+        >().toExtend<AlgorandTransactionView>()
+        expectTypeOf<
+            NonNullable<PeraDisplayableTransaction['innerTxns']>[number]
+        >().toExtend<AlgorandTransactionView>()
+    })
+
+    it('keeps the raw transaction opaque', () => {
+        expectTypeOf<
+            AlgorandTransactionView['rawTransaction']
+        >().toEqualTypeOf<unknown>()
+    })
+
+    it('narrows TransactionNative on family', () => {
+        const narrow = (native: TransactionNative) => {
+            if (native.family === 'algorand') {
+                expectTypeOf(
+                    native.transaction,
+                ).toEqualTypeOf<AlgorandTransactionView>()
+            }
+        }
+        expectTypeOf(narrow).toBeFunction()
     })
 })

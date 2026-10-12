@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { encodeAlgorandAddress } from '../blockchain'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 
 export const aggregateTransactionWarnings = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: AlgorandTransactionView[],
     userAccountAddresses: Set<string>,
     signableAddresses: Set<string>,
     // Maps a transaction's index → the authorizing address (the dApp-supplied
