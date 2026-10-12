@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import type { DetailBodyProps } from '../../types'
 import { TransactionDisplay } from '../TransactionDisplay'
 
 export const AlgorandTransactionDetailBody = ({
     transaction,
     onRelatedTransactionPress,
-}: DetailBodyProps<PeraDisplayableTransaction>) => (
+}: DetailBodyProps<AlgorandTransactionView>) => (
     <TransactionDisplay
         transaction={transaction}
         onInnerTransactionsPress={onRelatedTransactionPress}

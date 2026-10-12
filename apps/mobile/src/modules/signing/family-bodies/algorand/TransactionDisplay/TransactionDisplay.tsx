@@ -12,7 +12,7 @@
 
 import { EmptyView } from '@components/EmptyView'
 import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     PaymentTransactionDisplay,
@@ -25,9 +25,9 @@ import {
 } from '@modules/transactions'
 
 export type TransactionDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
-    onInnerTransactionsPress?: (tx: PeraDisplayableTransaction) => void
+    onInnerTransactionsPress?: (tx: AlgorandTransactionView) => void
 }
 
 export const TransactionDisplay = ({

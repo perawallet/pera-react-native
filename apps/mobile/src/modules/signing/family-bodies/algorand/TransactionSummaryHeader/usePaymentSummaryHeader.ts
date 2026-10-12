@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 
 export const usePaymentSummaryHeader = (
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
 ) => {
     const { decimals: nativeDecimals } = useNativeAsset()
     const amount = useMemo(

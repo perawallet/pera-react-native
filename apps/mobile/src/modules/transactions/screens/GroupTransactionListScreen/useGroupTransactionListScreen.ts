@@ -18,7 +18,7 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useGroupTransactionsQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import type { RootStackParamList } from '@routes/types'
 
 type NavigationProp = NativeStackNavigationProp<
@@ -28,11 +28,11 @@ type NavigationProp = NativeStackNavigationProp<
 type ScreenRouteProp = RouteProp<RootStackParamList, 'GroupTransactionList'>
 
 type UseGroupTransactionListScreenResult = {
-    transactions: PeraDisplayableTransaction[]
+    transactions: AlgorandTransactionView[]
     isLoading: boolean
     isError: boolean
-    handleTransactionPress: (tx: PeraDisplayableTransaction) => void
-    keyExtractor: (item: PeraDisplayableTransaction, index: number) => string
+    handleTransactionPress: (tx: AlgorandTransactionView) => void
+    keyExtractor: (item: AlgorandTransactionView, index: number) => string
 }
 
 export const useGroupTransactionListScreen =
@@ -45,9 +45,9 @@ export const useGroupTransactionListScreen =
             useGroupTransactionsQuery({ groupId })
 
         const handleTransactionPress = useCallback(
-            (tx: PeraDisplayableTransaction) => {
+            (tx: AlgorandTransactionView) => {
                 navigation.navigate('TransactionDetails', {
-                    transaction: tx,
+                    transaction: { family: 'algorand', transaction: tx },
                     groupId,
                 })
             },
@@ -55,7 +55,7 @@ export const useGroupTransactionListScreen =
         )
 
         const keyExtractor = useCallback(
-            (item: PeraDisplayableTransaction, index: number) =>
+            (item: AlgorandTransactionView, index: number) =>
                 item.id ?? `tx-${index}`,
             [],
         )

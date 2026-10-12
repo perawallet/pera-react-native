@@ -21,12 +21,12 @@ import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
 import { useFeeAdjustment } from './useFeeAdjustment'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 export type FeeDisplayProps = {
-    transaction?: PeraDisplayableTransaction
+    transaction?: AlgorandTransactionView
     label?: string
 }
 type NavigationProp = StackNavigationProp<SigningStackParamList>
@@ -45,7 +45,9 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
         if (!transaction) {
             return
         }
-        navigation.navigate('TransactionDetails', { transaction })
+        navigation.navigate('TransactionDetails', {
+            transaction: { family: 'algorand', transaction },
+        })
     }
 
     return (

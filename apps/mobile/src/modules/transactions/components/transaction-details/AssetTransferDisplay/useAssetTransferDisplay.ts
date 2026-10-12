@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import { getAssetTransferType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -22,7 +22,7 @@ import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 
 export const useAssetTransferDisplay = (
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
     referenceAddress?: string,
 ) => {
     const styles = useStyles()

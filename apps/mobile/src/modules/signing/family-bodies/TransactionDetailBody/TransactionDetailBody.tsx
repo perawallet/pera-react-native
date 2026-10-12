@@ -11,12 +11,12 @@
  */
 
 import { useCallback } from 'react'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { transactionBodyRegistry } from '../registry'
-import type { FamilyTransaction } from '../types'
 
 export type TransactionDetailBodyProps = {
-    transaction: FamilyTransaction
-    onRelatedTransactionPress?: (related: FamilyTransaction) => void
+    transaction: TransactionNative
+    onRelatedTransactionPress?: (related: TransactionNative) => void
 }
 
 export const TransactionDetailBody = ({
@@ -28,7 +28,7 @@ export const TransactionDetailBody = ({
     const { family } = transaction
 
     const handleRelatedTransactionPress = useCallback(
-        (related: FamilyTransaction['transaction']) => {
+        (related: TransactionNative['transaction']) => {
             onRelatedTransactionPress?.({ family, transaction: related })
         },
         [family, onRelatedTransactionPress],

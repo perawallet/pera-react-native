@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -22,7 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { usePaymentSummaryHeader } from './usePaymentSummaryHeader'
 
 type PaymentSummaryHeaderProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const PaymentSummaryHeader = ({

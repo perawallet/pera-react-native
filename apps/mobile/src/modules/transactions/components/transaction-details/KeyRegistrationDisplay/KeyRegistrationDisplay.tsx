@@ -12,7 +12,7 @@
 
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -26,7 +26,7 @@ import { useMemo } from 'react'
 import { formatParticipationKey, getKeyRegType } from './utils'
 
 export type KeyRegistrationDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }
 

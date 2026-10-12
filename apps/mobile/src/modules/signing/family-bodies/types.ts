@@ -11,19 +11,13 @@
  */
 
 import type { ComponentType } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 
-/** A transaction tagged with the chain family whose bodies render it; one member per registered family. */
-export type FamilyTransaction = {
-    family: 'algorand'
-    transaction: PeraDisplayableTransaction
-}
-
-export type TransactionFamily = FamilyTransaction['family']
+export type TransactionFamily = TransactionNative['family']
 
 export type TransactionOfFamily<F extends TransactionFamily> = Extract<
-    FamilyTransaction,
+    TransactionNative,
     { family: F }
 >['transaction']
 

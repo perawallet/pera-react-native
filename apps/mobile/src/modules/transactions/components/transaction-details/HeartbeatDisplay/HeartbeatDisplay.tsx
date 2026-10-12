@@ -16,7 +16,7 @@ import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
 import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
@@ -26,7 +26,7 @@ import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { useStyles } from './styles'
 
 export type HeartbeatDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }
 

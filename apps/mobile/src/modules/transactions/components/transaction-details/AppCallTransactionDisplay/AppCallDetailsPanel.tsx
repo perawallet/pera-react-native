@@ -12,7 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
@@ -20,7 +20,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 
 export type AppCallDetailsPanelProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const AppCallDetailsPanel = ({

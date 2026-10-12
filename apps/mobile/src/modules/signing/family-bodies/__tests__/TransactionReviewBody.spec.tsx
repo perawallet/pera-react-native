@@ -16,7 +16,10 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { screen } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AlgorandTransactionView,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     SignRequestSource,
     TransactionWarning,
@@ -68,7 +71,7 @@ vi.mock('@components/AccountWithBalance', async () => {
 
 const mockPipeline = {
     currentRequest: null,
-    allTransactions: [] as PeraDisplayableTransaction[],
+    allTransactions: [] as AlgorandTransactionView[],
     signableAddresses: new Set<string>(),
     totalFee: new Decimal('0.001'),
     distinctWarnings: [] as TransactionWarning[],
@@ -87,13 +90,13 @@ const SIGNER_NAME = 'Fixture Signer'
 
 // FeeDisplay navigates to the details screen, so the body mounts inside a navigator.
 const renderReview = (
-    transaction: PeraDisplayableTransaction,
+    transaction: TransactionNative,
     origin: { source?: SignRequestSource; verifiedOrigin?: string } = {},
 ) => {
-    mockPipeline.allTransactions = [transaction]
+    mockPipeline.allTransactions = [transaction.transaction]
     const Review = () => (
         <TransactionReviewBody
-            transaction={{ family: 'algorand', transaction }}
+            transaction={transaction}
             source={origin.source}
             verifiedOrigin={origin.verifiedOrigin}
         />

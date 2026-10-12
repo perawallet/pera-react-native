@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { algorandSafeJsonStringify } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import {
     bottomSheetNotifier,
     PWIcon,
@@ -24,7 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type RawTransactionContentProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const RawTransactionContent = ({

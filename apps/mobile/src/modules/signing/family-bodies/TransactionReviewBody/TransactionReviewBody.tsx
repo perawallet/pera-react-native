@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { transactionBodyRegistry } from '../registry'
-import type { FamilyTransaction } from '../types'
 
 export type TransactionReviewBodyProps = {
-    transaction: FamilyTransaction
+    transaction: TransactionNative
     source?: SignRequestSource
     verifiedOrigin?: string
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
@@ -21,7 +21,7 @@ import type { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 
 export const usePaymentTransactionDisplay = (
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
     referenceAddress?: string,
 ) => {
     const payment = transaction.paymentTransaction

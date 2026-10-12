@@ -36,7 +36,10 @@ export const useTransactionListScreen = () => {
     const handleTransactionPress = useCallback(
         (item: SingleTransactionItem) => {
             navigation.navigate('TransactionDetails', {
-                transaction: item.transaction,
+                transaction: {
+                    family: 'algorand',
+                    transaction: item.transaction,
+                },
                 isExternal: item.isExternal,
             })
         },

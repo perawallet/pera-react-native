@@ -15,13 +15,13 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAssetTransferType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 
 export const useAssetTransferSummaryHeader = (
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
 ) => {
     const transferType = useMemo(
         () => getAssetTransferType(transaction),

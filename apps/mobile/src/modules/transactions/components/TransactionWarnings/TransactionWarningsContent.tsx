@@ -21,7 +21,7 @@ import {
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import {
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
@@ -33,7 +33,7 @@ import {
 } from './useTransactionWarnings'
 
 export type TransactionWarningsContentProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 type WarningDisplay = {

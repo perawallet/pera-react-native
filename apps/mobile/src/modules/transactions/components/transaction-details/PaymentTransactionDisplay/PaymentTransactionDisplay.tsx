@@ -12,7 +12,7 @@
 
 import { PWDivider, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -28,7 +28,7 @@ import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
     referenceAddress?: string
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }
 

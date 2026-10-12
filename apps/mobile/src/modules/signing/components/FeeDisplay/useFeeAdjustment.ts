@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type {
-    PeraDisplayableTransaction,
+    AlgorandTransactionView,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
@@ -53,7 +53,7 @@ const NOT_ADJUSTED: UseFeeAdjustmentResult = {
  *   ever absent it falls back to the transaction ID string.
  */
 export const useFeeAdjustment = (
-    transaction?: PeraDisplayableTransaction,
+    transaction?: AlgorandTransactionView,
 ): UseFeeAdjustmentResult => {
     const { feeAdjustments, currentRequest } = useSigningPipeline()
     const { decimals: nativeDecimals } = useNativeAsset()
@@ -121,7 +121,7 @@ export const useFeeAdjustment = (
 
 const matchesTransaction = (
     raw: PeraTransaction | undefined,
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
 ): boolean => {
     if (!raw) {
         return false

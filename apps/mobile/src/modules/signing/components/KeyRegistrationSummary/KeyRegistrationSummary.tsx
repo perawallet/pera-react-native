@@ -13,13 +13,13 @@
 import { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { getKeyRegType } from '@modules/transactions'
 import { useStyles } from './styles'
 
 export type KeyRegistrationSummaryProps = {
-    transaction?: PeraDisplayableTransaction
+    transaction?: AlgorandTransactionView
 }
 
 /**

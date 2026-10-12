@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -18,7 +18,7 @@ import { useCallback } from 'react'
 import { RawTransactionContent } from './RawTransactionContent'
 
 type RawTransactionButtonProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const RawTransactionButton = ({

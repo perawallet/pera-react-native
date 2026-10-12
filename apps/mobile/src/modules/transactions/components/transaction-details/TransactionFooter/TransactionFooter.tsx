@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWView } from '@components/core'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useTransactionFooter } from './useTransactionFooter'
@@ -20,7 +20,7 @@ import { RawTransactionButton } from '../RawTransactionButton'
 export const TransactionFooter = ({
     transaction,
 }: {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }) => {
     const { t } = useLanguage()
     const styles = useStyles()

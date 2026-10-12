@@ -21,7 +21,7 @@ import {
 import {
     type ChainId,
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
@@ -48,7 +48,7 @@ const addressesOn = (account: WalletAccount, chainId: ChainId): string[] => {
 }
 
 export const useTransactionWarnings = (
-    transaction: PeraDisplayableTransaction,
+    transaction: AlgorandTransactionView,
 ): UseTransactionWarningsResult => {
     const allAccounts = useAllAccounts()
     const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { KeyRegistrationSummary } from '@modules/signing/components/KeyRegistrationSummary'
 import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
@@ -22,7 +22,7 @@ export const AlgorandTransactionReviewBody = ({
     transaction,
     source,
     verifiedOrigin,
-}: ReviewBodyProps<PeraDisplayableTransaction>) => (
+}: ReviewBodyProps<AlgorandTransactionView>) => (
     <TransactionReviewLayout
         header={
             <TransactionSummaryHeader

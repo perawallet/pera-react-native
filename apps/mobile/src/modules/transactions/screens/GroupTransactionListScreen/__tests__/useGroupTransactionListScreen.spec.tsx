@@ -110,7 +110,7 @@ describe('useGroupTransactionListScreen', () => {
         result.current.handleTransactionPress(mockTx1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx1,
+            transaction: { family: 'algorand', transaction: mockTx1 },
             groupId: 'GROUP_ABC',
         })
     })

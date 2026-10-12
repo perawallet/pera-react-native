@@ -1124,7 +1124,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             },
             {
                 id: 'comp-transaction-summary-header',
-                label: 'TransactionSummaryHeader (needs PeraDisplayableTransaction)',
+                label: 'TransactionSummaryHeader (needs TransactionNative)',
                 launch: { kind: 'action', run: () => undefined },
             },
         ],

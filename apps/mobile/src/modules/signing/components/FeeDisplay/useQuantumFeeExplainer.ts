@@ -18,7 +18,7 @@ import {
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useCapability } from '@hooks/useCapability'
@@ -43,7 +43,7 @@ type UseQuantumFeeExplainerResult = {
  *   resolved primary signer address.
  */
 export const useQuantumFeeExplainer = (
-    transaction?: PeraDisplayableTransaction,
+    transaction?: AlgorandTransactionView,
 ): UseQuantumFeeExplainerResult => {
     // Platform part only: an existing quantum account still pays the premium
     // after remote config switches `quantumAccounts` off.

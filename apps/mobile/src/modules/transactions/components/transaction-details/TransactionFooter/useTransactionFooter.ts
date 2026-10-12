@@ -12,7 +12,7 @@
 
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useNetwork,
@@ -23,9 +23,7 @@ import { useWebView } from '@modules/webview'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
 
-export const useTransactionFooter = (
-    transaction: PeraDisplayableTransaction,
-) => {
+export const useTransactionFooter = (transaction: AlgorandTransactionView) => {
     const { networkConfig } = useNetwork()
     const { pushWebView } = useWebView()
 

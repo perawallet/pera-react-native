@@ -12,7 +12,7 @@
 
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -26,12 +26,12 @@ import { AppCallDetailsPanel } from './AppCallDetailsPanel'
 import { ApplicationDisplay } from '@modules/projects'
 
 export type AppCallTransactionDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
-    onInnerTransactionsPress?: (tx: PeraDisplayableTransaction) => void
+    onInnerTransactionsPress?: (tx: AlgorandTransactionView) => void
 }
 
-const isAppCreation = (tx: PeraDisplayableTransaction): boolean => {
+const isAppCreation = (tx: AlgorandTransactionView): boolean => {
     return tx.applicationTransaction?.applicationId === BigInt(0)
 }
 

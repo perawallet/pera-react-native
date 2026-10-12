@@ -16,13 +16,13 @@ import { PanelButton } from '@components/PanelButton'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useTheme } from '@rneui/themed'
 import { useTransactionWarnings } from './useTransactionWarnings'
 import { TransactionWarningsContent } from './TransactionWarningsContent'
 
 export type TransactionWarningsProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const TransactionWarnings = ({

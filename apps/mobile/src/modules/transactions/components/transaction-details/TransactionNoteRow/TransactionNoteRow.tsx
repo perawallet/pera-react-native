@@ -11,7 +11,7 @@
  */
 
 import { PWButton } from '@components/core'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { decodeBytesToText } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useMemo } from 'react'
@@ -22,7 +22,7 @@ import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
 export const TransactionNoteRow = ({
     transaction,
 }: {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }) => {
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()

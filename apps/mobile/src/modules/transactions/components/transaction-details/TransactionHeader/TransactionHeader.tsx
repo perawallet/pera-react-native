@@ -12,7 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionStatusBadge } from '../../TransactionStatusBadge'
 import { useMemo } from 'react'
@@ -25,7 +25,7 @@ export const TransactionHeader = ({
     transaction,
     isInnerTransaction = false,
 }: {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }) => {
     const { t } = useLanguage()

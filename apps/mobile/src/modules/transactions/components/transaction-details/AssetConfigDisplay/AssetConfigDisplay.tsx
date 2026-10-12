@@ -14,7 +14,7 @@ import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -29,7 +29,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCallback } from 'react'
 
 export type AssetConfigDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }
 

@@ -11,7 +11,7 @@
  */
 
 import { getAssetConfigType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
@@ -20,9 +20,7 @@ import {
     formatWithUnits,
 } from '@perawallet/wallet-core-shared'
 
-export const useAssetConfigDisplay = (
-    transaction: PeraDisplayableTransaction,
-) => {
+export const useAssetConfigDisplay = (transaction: AlgorandTransactionView) => {
     const assetConfig = transaction.assetConfigTransaction
 
     const configType = getAssetConfigType(transaction)

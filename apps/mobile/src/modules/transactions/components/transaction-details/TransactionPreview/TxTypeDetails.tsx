@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -30,7 +30,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
-const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
+const getInnerTransactionCount = (tx: AlgorandTransactionView): number => {
     return tx.innerTxns?.length ?? 0
 }
 
@@ -38,7 +38,7 @@ export const TxTypeDetails = ({
     tx,
     isExternal,
 }: {
-    tx: PeraDisplayableTransaction
+    tx: AlgorandTransactionView
     isExternal?: boolean
 }) => {
     const nativeAsset = useNativeAsset()

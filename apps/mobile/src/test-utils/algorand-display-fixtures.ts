@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AlgorandTransactionView,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO25_TEST_ADDRESS,
     HD_TEST_ADDRESS,
@@ -55,14 +58,11 @@ const base = {
     id: FIXTURE_TRANSACTION_ID,
     sender: FIXTURE_SENDER,
     fee: FIXTURE_FEE,
-    firstValid: 1000n,
-    lastValid: 2000n,
     confirmedRound: 1500n,
-    roundTime: 1_700_000_000,
     roundTimeMillis: 1_700_000_000_000,
-} satisfies PeraDisplayableTransaction
+} satisfies AlgorandTransactionView
 
-const payment = (): PeraDisplayableTransaction => ({
+const payment = (): AlgorandTransactionView => ({
     ...base,
     txType: 'pay',
     paymentTransaction: {
@@ -73,7 +73,7 @@ const payment = (): PeraDisplayableTransaction => ({
 
 const byKind: Record<
     AlgorandDisplayFixtureKind,
-    () => PeraDisplayableTransaction
+    () => AlgorandTransactionView
 > = {
     payment,
     'asset-transfer': () => ({
@@ -91,7 +91,6 @@ const byKind: Record<
         assetConfigTransaction: {
             assetId: FIXTURE_ASSET_ID,
             params: {
-                creator: FIXTURE_SENDER,
                 decimals: 6,
                 total: 1_000_000n,
                 manager: FIXTURE_SENDER,
@@ -137,15 +136,12 @@ const byKind: Record<
         heartbeatTransaction: {
             hbAddress: FIXTURE_RECEIVER,
             hbKeyDilution: 10_000n,
-            hbProof: {},
-            hbSeed: new Uint8Array(32),
             hbVoteId: new Uint8Array(32),
         },
     }),
     'state-proof': () => ({
         ...base,
         txType: 'stpf',
-        stateProofTransaction: { stateProofType: 0 },
     }),
     unknown: () => ({ ...base, txType: '' }),
 }
@@ -158,7 +154,7 @@ export const ALGORAND_ASSET_TRANSFER_VARIANTS: readonly AlgorandAssetTransferVar
 // Classified from the transfer's shape: self + zero amount, a close-to, or an asset sender.
 const assetTransferVariant: Record<
     AlgorandAssetTransferVariant,
-    NonNullable<PeraDisplayableTransaction['assetTransferTransaction']>
+    NonNullable<AlgorandTransactionView['assetTransferTransaction']>
 > = {
     'opt-in': {
         amount: 0n,
@@ -181,12 +177,18 @@ const assetTransferVariant: Record<
 
 export const buildAlgorandAssetTransferFixture = (
     variant: AlgorandAssetTransferVariant,
-): PeraDisplayableTransaction => ({
-    ...byKind['asset-transfer'](),
-    assetTransferTransaction: assetTransferVariant[variant],
+): TransactionNative => ({
+    family: 'algorand',
+    transaction: {
+        ...byKind['asset-transfer'](),
+        assetTransferTransaction: assetTransferVariant[variant],
+    },
 })
 
 export const buildAlgorandDisplayFixture = (
     kind: AlgorandDisplayFixtureKind,
-    overrides: Partial<PeraDisplayableTransaction> = {},
-): PeraDisplayableTransaction => ({ ...byKind[kind](), ...overrides })
+    overrides: Partial<AlgorandTransactionView> = {},
+): TransactionNative => ({
+    family: 'algorand',
+    transaction: { ...byKind[kind](), ...overrides },
+})

@@ -16,14 +16,14 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ExternalTransactionInfoContent } from '@modules/signing'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { classifyDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import type { GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'
 
 export type TransactionPreviewProps = {
-    transaction: PeraDisplayableTransaction
-    onPress?: (tx: PeraDisplayableTransaction) => void
+    transaction: AlgorandTransactionView
+    onPress?: (tx: AlgorandTransactionView) => void
     /**
      * When true, render the "Other signer" pill in the right slot. The pill
      * is tappable independently of the row and opens the

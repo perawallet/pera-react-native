@@ -11,16 +11,16 @@
  */
 
 import { PWView } from '@components/core'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { TransactionPreview } from '../TransactionPreview'
 
 export type GroupTransactionsPanelProps = {
-    groupTransactions: PeraDisplayableTransaction[]
+    groupTransactions: AlgorandTransactionView[]
     currentTransactionId: string
-    onGroupTransactionPress?: (tx: PeraDisplayableTransaction) => void
+    onGroupTransactionPress?: (tx: AlgorandTransactionView) => void
 }
 
 export const GroupTransactionsPanel = ({

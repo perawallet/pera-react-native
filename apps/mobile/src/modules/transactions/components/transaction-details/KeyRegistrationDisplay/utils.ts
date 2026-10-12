@@ -12,7 +12,7 @@
 
 import type {
     KeyRegType,
-    PeraDisplayableTransaction,
+    AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
@@ -23,7 +23,7 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
  * again", and a plain de-registration leaves it false. Branching on it alone
  * labelled every offline keyreg "Online".
  */
-export const getKeyRegType = (tx: PeraDisplayableTransaction): KeyRegType => {
+export const getKeyRegType = (tx: AlgorandTransactionView): KeyRegType => {
     const keyreg = tx.keyregTransaction
     return keyreg?.voteParticipationKey && !keyreg.nonParticipation
         ? 'online'

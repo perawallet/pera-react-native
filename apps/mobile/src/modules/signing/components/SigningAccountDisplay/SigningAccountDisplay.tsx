@@ -13,7 +13,7 @@
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 
 type SigningAccountDisplayProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
 }
 
 export const SigningAccountDisplay = ({

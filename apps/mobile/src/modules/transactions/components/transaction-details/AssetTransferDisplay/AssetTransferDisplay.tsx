@@ -13,7 +13,7 @@
 import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -32,7 +32,7 @@ import { useAssetTransferDisplay } from './useAssetTransferDisplay'
 
 export type AssetTransferDisplayProps = {
     referenceAddress?: string
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     isInnerTransaction?: boolean
 }
 

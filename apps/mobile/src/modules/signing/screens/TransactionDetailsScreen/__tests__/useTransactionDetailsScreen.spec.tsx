@@ -223,7 +223,9 @@ describe('useTransactionDetailsScreen', () => {
             id: undefined,
             txType: 'pay',
         } as unknown as PeraDisplayableTransaction
-        routeParams.current = { transaction: paramTransaction }
+        routeParams.current = {
+            transaction: { family: 'algorand', transaction: paramTransaction },
+        }
 
         const { result } = renderHook(() => useTransactionDetailsScreen())
 
@@ -282,12 +284,12 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: inner,
+            transaction: { family: 'algorand', transaction: inner },
             groupId: 'GROUP1',
         })
     })
 
-    it('pushes a new details screen with the unwrapped related transaction', () => {
+    it('pushes the related transaction as tagged', () => {
         routeParams.current = {
             transactionId: 'TX123',
             historyTransaction: historyItem,
@@ -304,7 +306,7 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: inner,
+            transaction: { family: 'algorand', transaction: inner },
             groupId: 'GROUP1',
         })
     })

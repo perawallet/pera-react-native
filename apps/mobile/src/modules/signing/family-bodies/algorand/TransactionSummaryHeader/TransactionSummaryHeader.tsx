@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
@@ -23,7 +23,7 @@ import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
 
 export type TransactionSummaryHeaderProps = {
-    transaction: PeraDisplayableTransaction
+    transaction: AlgorandTransactionView
     metadata?: SignRequestSource
     /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
     verifiedOrigin?: string

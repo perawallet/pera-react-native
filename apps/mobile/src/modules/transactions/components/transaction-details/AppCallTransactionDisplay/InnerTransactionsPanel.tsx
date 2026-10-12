@@ -11,15 +11,15 @@
  */
 
 import { PWView } from '@components/core'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { TransactionPreview } from '../TransactionPreview'
 
 export type InnerTransactionsPanelProps = {
-    innerTransactions: PeraDisplayableTransaction[]
-    onInnerTransactionPress?: (tx: PeraDisplayableTransaction) => void
+    innerTransactions: AlgorandTransactionView[]
+    onInnerTransactionPress?: (tx: AlgorandTransactionView) => void
 }
 
 export const InnerTransactionsPanel = ({
