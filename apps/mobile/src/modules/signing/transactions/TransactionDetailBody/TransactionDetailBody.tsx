@@ -16,8 +16,8 @@ import type { DetailBodyProps } from '../types'
 export type TransactionDetailBodyProps = DetailBodyProps
 
 export const TransactionDetailBody = (props: TransactionDetailBodyProps) => {
-    const DetailBody = chainUiFor(props.transaction.family).transactionBodies
-        ?.detailBody
+    const DetailBody = chainUiFor(props.transaction.family).transactionDetails
+        ?.DetailBody
 
     return DetailBody ? <DetailBody {...props} /> : null
 }

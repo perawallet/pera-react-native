@@ -16,8 +16,8 @@ import type { ReviewBodyProps } from '../types'
 export type TransactionReviewBodyProps = ReviewBodyProps
 
 export const TransactionReviewBody = (props: TransactionReviewBodyProps) => {
-    const ReviewBody = chainUiFor(props.transaction.family).transactionBodies
-        ?.reviewBody
+    const ReviewBody = chainUiFor(props.transaction.family).transactionDetails
+        ?.ReviewBody
 
     return ReviewBody ? <ReviewBody {...props} /> : null
 }

@@ -40,7 +40,7 @@ export type AssetAboutPresentation = {
 }
 
 /** What one chain family adds to the asset detail screen; a family with no entry gets the neutral layout. */
-export type AssetDetailsChainUi = {
+export type AssetDetailsDisplay = {
     /** Renders on the Markets tab, after About. */
     VerificationSection?: ComponentType<AssetChainSectionProps>
     /** Renders on the Markets tab, after the description. */

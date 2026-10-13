@@ -27,7 +27,7 @@ export type DetailBodyProps = {
     onRelatedTransactionPress?: (transaction: TransactionNative) => void
 }
 
-export type TransactionFamilyBodies = {
-    reviewBody: ComponentType<ReviewBodyProps>
-    detailBody: ComponentType<DetailBodyProps>
+export type TransactionDisplay = {
+    ReviewBody: ComponentType<ReviewBodyProps>
+    DetailBody: ComponentType<DetailBodyProps>
 }

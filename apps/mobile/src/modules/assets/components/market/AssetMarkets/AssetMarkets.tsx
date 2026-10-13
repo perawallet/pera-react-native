@@ -53,13 +53,13 @@ import { useCapability } from '@hooks/useCapability'
 import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
     AssetAboutPresentation,
-    AssetDetailsChainUi,
-} from '../../../types/chain-ui'
+    AssetDetailsDisplay,
+} from '../../../types/asset-details-display'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
     scope: ChainScope
-    assetDetailsUi: AssetDetailsChainUi
+    assetDetailsDisplay: AssetDetailsDisplay
     about: AssetAboutPresentation
 }
 
@@ -77,10 +77,10 @@ const Loading = () => {
 export const AssetMarkets = ({
     asset,
     scope,
-    assetDetailsUi,
+    assetDetailsDisplay,
     about,
 }: AssetMarketsProps) => {
-    const { VerificationSection, IssuerControlsSection } = assetDetailsUi
+    const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
     const styles = useStyles()
     const { usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =

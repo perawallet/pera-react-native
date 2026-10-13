@@ -26,6 +26,6 @@ export type {
     AssetAboutParams,
     AssetAboutPresentation,
     AssetChainSectionProps,
-    AssetDetailsChainUi,
+    AssetDetailsDisplay,
     AssetExplorerLink,
-} from './types/chain-ui'
+} from './types/asset-details-display'

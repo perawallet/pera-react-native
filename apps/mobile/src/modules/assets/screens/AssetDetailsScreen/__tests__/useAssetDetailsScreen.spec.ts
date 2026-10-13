@@ -23,7 +23,7 @@ import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { accountForType } from '@test-utils/accountCustody'
 import { useAssetDetailsScreen } from '../useAssetDetailsScreen'
-import { neutralAssetDetailsUi } from '../neutralAssetDetailsUi'
+import { neutralAssetDetailsDisplay } from '../neutralAssetDetailsDisplay'
 
 const mocks = vi.hoisted(() => ({
     account: null as WalletAccount | null,
@@ -102,12 +102,14 @@ describe('useAssetDetailsScreen', () => {
             ERC20_ID,
             result.current.scope,
         )
-        expect(result.current.assetDetailsUi).toBe(neutralAssetDetailsUi)
+        expect(result.current.assetDetailsDisplay).toBe(
+            neutralAssetDetailsDisplay,
+        )
         expect(
-            result.current.assetDetailsUi.VerificationSection,
+            result.current.assetDetailsDisplay.VerificationSection,
         ).toBeUndefined()
         expect(
-            result.current.assetDetailsUi.IssuerControlsSection,
+            result.current.assetDetailsDisplay.IssuerControlsSection,
         ).toBeUndefined()
         expect(result.current.about).toEqual({
             idLabelKey: 'asset_details.collectible.asset_id',
@@ -130,7 +132,9 @@ describe('useAssetDetailsScreen', () => {
             }),
         )
 
-        expect(result.current.assetDetailsUi).toBe(algorandChainUi.assetDetails)
+        expect(result.current.assetDetailsDisplay).toBe(
+            algorandChainUi.assetDetails,
+        )
         expect(result.current.about?.idLabelKey).toBe(
             'asset_details.about.asa_id',
         )

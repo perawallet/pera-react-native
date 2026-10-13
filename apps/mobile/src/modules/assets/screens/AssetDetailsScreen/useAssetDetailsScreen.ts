@@ -38,9 +38,9 @@ import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { chainUiFor } from '@modules/chain-ui'
 import type {
     AssetAboutPresentation,
-    AssetDetailsChainUi,
-} from '../../types/chain-ui'
-import { neutralAssetDetailsUi } from './neutralAssetDetailsUi'
+    AssetDetailsDisplay,
+} from '../../types/asset-details-display'
+import { neutralAssetDetailsDisplay } from './neutralAssetDetailsDisplay'
 
 export type UseAssetDetailsScreenParams = {
     assetId: string
@@ -56,7 +56,7 @@ export type UseAssetDetailsScreenResult = {
     isError: boolean
     headerPrimary: string
     headerSecondary: Optional<string>
-    assetDetailsUi: AssetDetailsChainUi
+    assetDetailsDisplay: AssetDetailsDisplay
     about: Nullable<AssetAboutPresentation>
 }
 
@@ -78,13 +78,13 @@ export const useAssetDetailsScreen = ({
         () => getProvider().chains.get(chainId).descriptor,
         [chainId],
     )
-    const assetDetailsUi =
-        chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsUi
+    const assetDetailsDisplay =
+        chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsDisplay
 
     const about = useMemo(
         () =>
             asset
-                ? assetDetailsUi.resolveAbout({
+                ? assetDetailsDisplay.resolveAbout({
                       asset,
                       scope,
                       descriptor,
@@ -94,7 +94,7 @@ export const useAssetDetailsScreen = ({
                       ),
                   })
                 : null,
-        [asset, assetDetailsUi, scope, descriptor, chainId, assetId],
+        [asset, assetDetailsDisplay, scope, descriptor, chainId, assetId],
     )
 
     const address = account
@@ -133,7 +133,7 @@ export const useAssetDetailsScreen = ({
         isError,
         headerPrimary,
         headerSecondary,
-        assetDetailsUi,
+        assetDetailsDisplay,
         about,
     }
 }

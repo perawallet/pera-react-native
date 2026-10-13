@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import type { AssetDetailsChainUi } from '../../types/chain-ui'
+import type { AssetDetailsDisplay } from '../../types/asset-details-display'
 import { extractDomain } from '../../utils/extractDomain'
 
 /** A chain with no entry in the chain-UI registry gets no sections and its descriptor's explorer link. */
-export const neutralAssetDetailsUi: AssetDetailsChainUi = {
+export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {
     resolveAbout: ({ asset, scope, descriptor, isNativeAsset }) => {
         const url = descriptor.explorer.assetUrl(scope.networkId, asset.assetId)
         return {

@@ -11,13 +11,13 @@
  */
 
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
-import type { AssetDetailsChainUi } from '@modules/assets'
-import type { TransactionFamilyBodies } from '@modules/signing'
+import type { AssetDetailsDisplay } from '@modules/assets'
+import type { TransactionDisplay } from '@modules/signing'
 
 /** Each slot's type belongs to its feature, which decides what a missing slot renders. */
 export type ChainUi = {
-    transactionBodies?: TransactionFamilyBodies
-    assetDetails?: AssetDetailsChainUi
+    transactionDetails?: TransactionDisplay
+    assetDetails?: AssetDetailsDisplay
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

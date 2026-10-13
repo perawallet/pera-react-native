@@ -19,14 +19,14 @@ describe('chainUiFor', () => {
         const ui = chainUiFor('algorand')
 
         expect(ui).toBe(algorandChainUi)
-        expect(ui.transactionBodies?.reviewBody).toBeDefined()
+        expect(ui.transactionDetails?.ReviewBody).toBeDefined()
         expect(ui.assetDetails?.resolveAbout).toBeDefined()
     })
 
     it('returns an entry with no slots for a family nobody registered', () => {
         const ui = chainUiFor('evm')
 
-        expect(ui.transactionBodies).toBeUndefined()
+        expect(ui.transactionDetails).toBeUndefined()
         expect(ui.assetDetails).toBeUndefined()
     })
 })

@@ -60,7 +60,7 @@ const AssetDetailsContent = ({
         isError,
         headerPrimary,
         headerSecondary,
-        assetDetailsUi,
+        assetDetailsDisplay,
         about,
     } = useAssetDetailsScreen({
         assetId,
@@ -145,7 +145,7 @@ const AssetDetailsContent = ({
                         <AssetMarkets
                             asset={asset}
                             scope={scope}
-                            assetDetailsUi={assetDetailsUi}
+                            assetDetailsDisplay={assetDetailsDisplay}
                             about={about}
                         />
                     )}

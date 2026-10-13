@@ -38,9 +38,9 @@ export const resolveAlgorandAssetAbout = ({
 }
 
 export const algorandChainUi: ChainUi = {
-    transactionBodies: {
-        reviewBody: AlgorandTransactionReviewBody,
-        detailBody: AlgorandTransactionDetailBody,
+    transactionDetails: {
+        ReviewBody: AlgorandTransactionReviewBody,
+        DetailBody: AlgorandTransactionDetailBody,
     },
     assetDetails: {
         VerificationSection: AssetVerificationCard,
