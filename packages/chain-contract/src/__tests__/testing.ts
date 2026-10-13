@@ -15,6 +15,7 @@
 export { descriptorContractTests } from './descriptor-contract'
 export {
     capabilityAdapterContractTests,
+    capabilityAdapterContractViolations,
     type CapabilityAdapterRegistries,
 } from './capability-adapter-contract'
 export { addressCodecContractTests } from './address-codec-contract'

@@ -16,7 +16,10 @@ import {
     type CapabilityAdapterName,
 } from '../capabilities/adapters'
 import type { ChainRegistry } from '../chain-registry'
-import { CHAIN_CAPABILITIES } from '../models/capabilities'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapability,
+} from '../models/capabilities'
 import type { ChainId } from '../models/identity'
 
 type Rule = 'default' | 'adapter'
@@ -47,22 +50,22 @@ const collectViolations = (
                 continue
             }
 
-            if (
-                !capabilities[capability] ||
-                !(capability in CAPABILITY_ADAPTERS)
-            ) {
+            if (!capabilities[capability]) {
                 continue
             }
 
-            const registryName =
-                CAPABILITY_ADAPTERS[
-                    capability as keyof typeof CAPABILITY_ADAPTERS
-                ]
-            if (!registries[registryName].has(chainId)) {
-                violations.push({
-                    rule: 'adapter',
-                    message: `chain "${chainId}" enables "${capability}" but the "${registryName}" registry has no adapter for it`,
-                })
+            const registryNames = (
+                CAPABILITY_ADAPTERS as Partial<
+                    Record<ChainCapability, readonly CapabilityAdapterName[]>
+                >
+            )[capability]
+            for (const registryName of registryNames ?? []) {
+                if (!registries[registryName].has(chainId)) {
+                    violations.push({
+                        rule: 'adapter',
+                        message: `chain "${chainId}" enables "${capability}" but the "${registryName}" registry has no adapter for it`,
+                    })
+                }
             }
         }
     }
@@ -85,8 +88,8 @@ const messagesFor = (
         .map(v => v.message)
 
 /**
- * Every chain package runs this against its own registered chain(s) and the
- * feature registries those chains register adapters into.
+ * The app's composition root runs this over every chain it ships and every
+ * registry `CAPABILITY_ADAPTERS` names.
  */
 export const capabilityAdapterContractTests = (
     chains: ChainRegistry,

@@ -170,6 +170,8 @@ test network only, say) declares the developer modes it is off in, in a chain mo
 `capabilityRestrictions` or in `routeCapabilityRestrictions`, rather than comparing a network. The
 restriction can only switch a capability off, and Feature Flags still overrides it. The UI gates through
 `useCapability` or `<CapabilityGuard>`, which follow the mode and per-chain network override live.
+A `routeCapabilityRestrictions` entry reads the mode of a `chain:` requirement's chain; any other
+requirement is restricted only while every registered chain's mode is.
 
 An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
 the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and

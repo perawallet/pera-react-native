@@ -16,19 +16,15 @@ import {
     type ChainCapability,
 } from '@perawallet/wallet-core-chain-contract'
 
+// Each needs an Ethereum adapter in every registry CAPABILITY_ADAPTERS lists for it; the app's parity spec fails otherwise.
 const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
-    'send',
     'receive',
-    'history',
     'assets',
     'pricing',
-    'messageSigning',
-    'dappConnect',
     'watchAccounts',
     'privateKeys',
     // Still behind the app-wide enable_cloud_backup flag, as for Algorand.
     'cloudBackup',
-    'mnemonicBackup',
 ])
 
 // Off unless listed, so a capability added later starts off for Ethereum.

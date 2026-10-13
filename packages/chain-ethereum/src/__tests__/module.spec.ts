@@ -32,17 +32,12 @@ const context: ChainContext = {
 } as unknown as ChainContext
 
 const ENABLED = [
-    'send',
     'receive',
-    'history',
     'assets',
     'pricing',
-    'messageSigning',
-    'dappConnect',
     'watchAccounts',
     'privateKeys',
     'cloudBackup',
-    'mnemonicBackup',
 ]
 
 describe('ethereumModule', () => {

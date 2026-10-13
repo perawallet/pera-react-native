@@ -13,31 +13,42 @@
 import type { ChainCapability } from '../models/capabilities'
 
 /**
- * Maps a capability that needs a real implementation to the name of the
- * feature registry that serves it. Values match the `feature` string each
- * registry passes to `createChainAdapterRegistry` (or, for the Ledger app
- * driver, its own equivalent), so an error message and this list name the
- * same thing.
+ * The feature registries a chain must hold an adapter in before it may enable
+ * each capability. Names match the `feature` string each registry passes to
+ * `createChainAdapterRegistry` (or, for the Ledger app driver, its own
+ * equivalent), so a parity failure names the registry to register into.
  *
- * A capability with no registry yet (`staking`, …) has no entry;
- * add one only once its registry exists, or the parity test would have
- * nothing to check it against.
+ * A capability with no entry goes unchecked. That is right when it needs no
+ * chain adapter of its own (chain-neutral code or the Pera backend serves it)
+ * or its feature has no registry yet (`staking`, …); add an entry whenever a
+ * chain could enable it without an adapter it needs.
  */
 export const CAPABILITY_ADAPTERS = {
-    send: 'send flow',
-    history: 'transaction history',
-    assets: 'assets',
-    pricing: 'assets',
-    messageSigning: 'message signer',
-    multisig: 'multisig',
-    secureBackup: 'backup',
-    swap: 'swap',
-    nameService: 'name service',
-    card: 'card',
-    onramp: 'ramp',
-    dappConnect: 'dapp-request',
-    ledger: 'ledger app driver',
-} as const satisfies Partial<Record<ChainCapability, string>>
+    send: [
+        'send flow',
+        'planner',
+        'reviewer',
+        'local-key signer',
+        'broadcaster',
+    ],
+    receive: ['addressCodec'],
+    history: ['transaction history'],
+    assets: ['assets'],
+    pricing: ['assets'],
+    messageSigning: ['message signer'],
+    dappConnect: ['dapp-request', 'planner', 'reviewer', 'local-key signer'],
+    watchAccounts: ['accounts', 'addressCodec'],
+    ledger: ['ledger app driver', 'planner', 'reviewer'],
+    multisig: ['multisig', 'planner', 'reviewer'],
+    swap: ['swap'],
+    card: ['card'],
+    nameService: ['name service'],
+    onramp: ['ramp'],
+    cloudBackup: ['accounts'],
+    mnemonicBackup: ['backup'],
+    secureBackup: ['backup'],
+    privateKeys: ['accounts'],
+} as const satisfies Partial<Record<ChainCapability, readonly string[]>>
 
 export type CapabilityAdapterName =
-    (typeof CAPABILITY_ADAPTERS)[keyof typeof CAPABILITY_ADAPTERS]
+    (typeof CAPABILITY_ADAPTERS)[keyof typeof CAPABILITY_ADAPTERS][number]
