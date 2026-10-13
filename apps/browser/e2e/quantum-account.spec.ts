@@ -32,6 +32,7 @@ import {
     selectAccountAndArmConnect,
     tapToConfirm,
     trackPageErrors,
+    standInForToolbarPopup,
 } from './approval-surface'
 import { dismissPinPromptIfPresent } from './pin-prompt'
 
@@ -110,6 +111,7 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+    await standInForToolbarPopup(context)
 
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
