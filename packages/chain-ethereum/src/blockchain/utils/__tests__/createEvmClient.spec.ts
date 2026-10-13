@@ -100,7 +100,7 @@ describe('createEvmClient', () => {
                 }),
             ).resolves.toMatchObject({
                 baseFeePerGas: [1_000_000_000n, 1_000_000_000n],
-                reward: [[1_000_000_000n]],
+                reward: [[1_000_000_000n, 1_000_000_000n, 1_000_000_000n]],
             })
         })
 

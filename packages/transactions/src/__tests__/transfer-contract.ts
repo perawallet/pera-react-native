@@ -12,12 +12,13 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type {
-    AssetOptInIntent,
-    BuildContext,
-    ChainId,
-    TransferIntent,
-    UnsignedTransaction,
+import {
+    FEE_PRESETS,
+    type AssetOptInIntent,
+    type BuildContext,
+    type ChainId,
+    type TransferIntent,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransferChainAdapter } from '../transfer-adapter'
 
@@ -143,6 +144,24 @@ export const transferContractTests = (
             expect(estimate.assetRef).toEqual(nativeTransfer.assetRef)
             expect(estimate.amount.gt(0)).toBe(true)
             expect(estimate.amount.isInteger()).toBe(true)
+            const { presets } = estimate
+            if (presets) {
+                expect(estimate.amount.equals(presets.normal.amount)).toBe(true)
+                expect(presets.slow.amount.lte(presets.normal.amount)).toBe(
+                    true,
+                )
+                expect(presets.normal.amount.lte(presets.fast.amount)).toBe(
+                    true,
+                )
+                for (const preset of FEE_PRESETS) {
+                    const { amount, maxAmount } = presets[preset]
+                    expect(amount.isInteger() && maxAmount.isInteger()).toBe(
+                        true,
+                    )
+                    expect(amount.gt(0)).toBe(true)
+                    expect(maxAmount.gte(amount)).toBe(true)
+                }
+            }
         })
 
         it("refuses another chain's scope", async () => {

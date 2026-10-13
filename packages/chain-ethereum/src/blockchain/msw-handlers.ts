@@ -68,7 +68,7 @@ export type EvmRpcFixtures = {
 
 const GWEI = '0x3b9aca00'
 
-/** Mainnet, an empty account at block 1, and a 1 gwei base fee. */
+/** Mainnet, an empty account at block 1, and a 1 gwei base fee and tip. */
 export const DEFAULT_EVM_RPC_RESPONSES: {
     [M in EvmRpcMethod]: EvmRpcResponder<M>
 } = {
@@ -81,7 +81,7 @@ export const DEFAULT_EVM_RPC_RESPONSES: {
         oldestBlock: '0x1',
         baseFeePerGas: [GWEI, GWEI],
         gasUsedRatio: [0.5],
-        reward: [[GWEI]],
+        reward: [[GWEI, GWEI, GWEI]],
     },
     eth_call: '0x',
     // The hash a node returns is the keccak of the signed payload.

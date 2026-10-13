@@ -216,11 +216,29 @@ export type TransactionIntent = TransferIntent | AssetOptInIntent
 export interface BuildContext {
     scope: ChainScope
     chainState?: AccountChainState
+    /** The speed to price at; unset means `'normal'`. A chain without presets ignores it. */
+    feePreset?: FeePreset
+}
+
+/** Slowest first, which is the display order. */
+export const FEE_PRESETS = ['slow', 'normal', 'fast'] as const
+
+export type FeePreset = (typeof FEE_PRESETS)[number]
+
+/** Both amounts are in base units of the native asset. */
+export interface FeePresetEstimate {
+    /** The expected cost. */
+    amount: Decimal
+    /** The most the transaction can be charged; the sender's balance must cover it on top of what it sends. */
+    maxAmount: Decimal
 }
 
 export interface FeeEstimate {
     assetRef: AssetRef
+    /** In base units of `assetRef`. With `presets` set, equals `presets[context.feePreset ?? 'normal'].amount`. */
     amount: Decimal
+    /** Set by a chain whose `protocol.feeModel` is `'gas'`. */
+    presets?: Record<FeePreset, FeePresetEstimate>
 }
 
 /** Opaque; only the adapter that issued it can interpret it. */
