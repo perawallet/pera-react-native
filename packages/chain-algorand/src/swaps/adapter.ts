@@ -24,7 +24,6 @@ import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
-import { submitRawSignedTransactionGroup } from '../signing'
 import { executeAlgorandSwap } from './executeSwap'
 
 // Swap groups arrive fully built from the backend, so the client only reads
@@ -45,9 +44,5 @@ export const algorandSwapAdapter: SwapChainAdapter = {
                 decodeSignedTransaction(bytes) as PeraSignedTransaction,
             encodeSignedTransactions,
         }),
-    submitSignedGroup: (scope, signedTransactions) =>
-        submitRawSignedTransactionGroup(
-            getAlgorandClient(scope),
-            signedTransactions,
-        ),
+    supportsCosignedSwaps: true,
 }

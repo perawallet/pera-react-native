@@ -16,7 +16,6 @@ import {
     createWalletAlgorandClient,
     getAlgorandClient,
 } from '../blockchain'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
@@ -58,13 +57,16 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
             encodeSignedTransactions,
             scope,
         ),
-    submitAndAutoRefresh: (signedTxns, options) =>
-        submitAndAutoRefresh(
-            createWalletAlgorandClient(useNetworkStore.getState().network),
+    submitAndAutoRefresh: (scope, signedTxns, options) => {
+        const network = algorandNetworkOf(scope)
+        return submitAndAutoRefresh(
+            network,
+            createWalletAlgorandClient(network),
             encodeSignedTransactions,
             signedTxns,
             options,
-        ),
+        )
+    },
     isRequestGroupAlreadySubmitted,
     findStaleGroupReason: request => findStaleGroupReason(request),
     // The test-only params stay off the adapter.

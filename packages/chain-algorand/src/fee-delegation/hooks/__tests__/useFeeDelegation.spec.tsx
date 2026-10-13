@@ -31,7 +31,6 @@ const {
 }))
 
 vi.mock('../../../blockchain', () => ({
-    useAlgorandClient: () => ({ kind: 'algokit-client' }),
     compactSignedResults: (signed: unknown[]) =>
         signed.filter(tx => tx !== null),
     // Order-sensitive byte match; with deterministic base64 inputs, comparing
@@ -47,7 +46,6 @@ vi.mock('../../../blockchain', () => ({
             new Uint8Array([...`TX${txn.id}`].map(c => c.charCodeAt(0))),
         encodeTransactionRaw: (txn: { id: string }) =>
             new Uint8Array([...txn.id].map(c => c.charCodeAt(0))),
-        encodeSignedTransactions: vi.fn(),
         // Decoders turn the base64-decoded bytes back into readable ids so
         // assertions can track slots through the flow. Decoded wallet slots
         // carry the requesting account as sender so the trust-anchor check
@@ -69,9 +67,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: addSignRequestMock }),
-}))
-
-vi.mock('../../../signing/submission/submitAndAutoRefresh', () => ({
     submitAndAutoRefresh: submitAndAutoRefreshMock,
 }))
 
@@ -189,7 +184,8 @@ describe('fee-delegation/useFeeDelegation', () => {
         // Submission: sponsor's pre-signed slot first, wallet signature after,
         // and the steps ran request → sign → submit.
         expect(submitAndAutoRefreshMock).toHaveBeenCalledTimes(1)
-        const orderedSigned = submitAndAutoRefreshMock.mock.calls[0]![2]
+        const [scope, orderedSigned] = submitAndAutoRefreshMock.mock.calls[0]!
+        expect(scope).toEqual({ chainId: 'algorand', networkId: 'mainnet' })
         expect(orderedSigned).toEqual([
             { sig: new Uint8Array([9]), txn: { id: 'sponsor' } },
             { kind: 'signed', txn: { id: 'optin' } },

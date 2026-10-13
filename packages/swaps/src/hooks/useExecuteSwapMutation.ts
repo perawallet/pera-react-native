@@ -54,7 +54,7 @@ export const useExecuteSwapMutation = (scope: ChainScope) => {
             if (
                 account &&
                 isMultisigAccount(account) &&
-                !adapter.submitSignedGroup
+                !adapter.supportsCosignedSwaps
             ) {
                 throw new SwapCosignUnsupportedError(adapter.chainId)
             }

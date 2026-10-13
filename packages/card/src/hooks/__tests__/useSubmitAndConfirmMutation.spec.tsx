@@ -72,7 +72,7 @@ describe('useSubmitAndConfirmMutation', () => {
 
         expect(mocks.submit).toHaveBeenCalledWith({
             ...PARAMS,
-            chainId: SCOPE.chainId,
+            scope: SCOPE,
         })
         expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith(
             SCOPE,

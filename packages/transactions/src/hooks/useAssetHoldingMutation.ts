@@ -88,7 +88,7 @@ export const useAssetHoldingMutation = <TParams>({
                             .transactions,
                     submit: unsignedTxs =>
                         submit({
-                            chainId: scope.chainId,
+                            scope,
                             unsignedTxs,
                             source,
                         }),

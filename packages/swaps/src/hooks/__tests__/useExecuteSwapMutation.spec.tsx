@@ -188,7 +188,10 @@ describe('useExecuteSwapMutation', () => {
 
     test('refuses a shared-account swap on a chain without co-sign support', async () => {
         mockSelectedAccount.current = account('JOINT', { kind: 'multisig' })
-        registerFakeSwapAdapter({ executeSwap, submitSignedGroup: undefined })
+        registerFakeSwapAdapter({
+            executeSwap,
+            supportsCosignedSwaps: false,
+        })
         const { result } = renderHook(() => useExecuteSwapMutation(SCOPE), {
             wrapper,
         })

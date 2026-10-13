@@ -21,7 +21,7 @@ import {
     swapChainAdapters,
     SwapCosignUnsupportedError,
 } from '../chain-adapter'
-import { fakeSwapAdapter } from './fakeSwapAdapter'
+import { fakeSwapAdapter, registerFakeBroadcaster } from './fakeSwapAdapter'
 
 describe('swapAdapterFor', () => {
     beforeEach(() => {
@@ -46,25 +46,29 @@ describe('swapAdapterFor', () => {
 })
 
 describe('submitCosignedSwapGroup', () => {
+    const submit = vi.fn()
+
     beforeEach(() => {
         swapChainAdapters.reset()
+        submit.mockReset()
+        registerFakeBroadcaster(submit)
     })
 
-    it("submits through the chain's co-sign support", async () => {
-        const submitSignedGroup = vi.fn().mockResolvedValue(['TX1'])
-        swapChainAdapters.register(fakeSwapAdapter({ submitSignedGroup }))
+    it("submits through the chain's broadcaster", async () => {
+        submit.mockResolvedValue(['TX1'])
+        swapChainAdapters.register(fakeSwapAdapter())
         const signed = [new Uint8Array([1])]
         const scope = scopeForLegacyNetwork('mainnet')
 
         const txIds = await submitCosignedSwapGroup(scope, signed)
 
         expect(txIds).toEqual(['TX1'])
-        expect(submitSignedGroup).toHaveBeenCalledWith(scope, signed)
+        expect(submit).toHaveBeenCalledWith(scope, signed)
     })
 
     it('refuses when the chain has no co-sign support', async () => {
         swapChainAdapters.register(
-            fakeSwapAdapter({ submitSignedGroup: undefined }),
+            fakeSwapAdapter({ supportsCosignedSwaps: false }),
         )
 
         await expect(
@@ -72,5 +76,6 @@ describe('submitCosignedSwapGroup', () => {
                 new Uint8Array([1]),
             ]),
         ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
+        expect(submit).not.toHaveBeenCalled()
     })
 })

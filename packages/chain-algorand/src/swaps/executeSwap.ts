@@ -27,10 +27,10 @@ import {
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
+    submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
 import { algorandAddressOf } from '../accounts/vocabulary'
-import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import {
     encodeToBase64,
@@ -380,21 +380,16 @@ export const executeAlgorandSwap = async (
         onProgress('submitting')
         for (const signedGroup of allSignedGroups) {
             if (signedGroup.length === 0) continue
-            const ids = await submitAndAutoRefresh(
-                algorandClient,
-                encodeSignedTransactions,
-                signedGroup,
-                {
-                    flow: 'swap',
-                    // No swapId means no stable identity — a blank key would
-                    // collide unrelated swaps, and the rebuild guard skips
-                    // them anyway.
-                    intentKey: prepareResult.swapIdStr
-                        ? { kind: 'swap', swapId: prepareResult.swapIdStr }
-                        : undefined,
-                    sender: accountAddress ?? quote.swapperAddress,
-                },
-            )
+            const ids = await submitAndAutoRefresh(scope, signedGroup, {
+                flow: 'swap',
+                // No swapId means no stable identity — a blank key would
+                // collide unrelated swaps, and the rebuild guard skips
+                // them anyway.
+                intentKey: prepareResult.swapIdStr
+                    ? { kind: 'swap', swapId: prepareResult.swapIdStr }
+                    : undefined,
+                sender: accountAddress ?? quote.swapperAddress,
+            })
             txIds.push(...ids)
         }
     } catch (e) {

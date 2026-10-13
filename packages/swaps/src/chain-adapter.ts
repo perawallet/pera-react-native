@@ -16,6 +16,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { submitSignedGroup } from '@perawallet/wallet-core-signing'
 import type {
     ExecuteSwapParams,
     ExecuteSwapResult,
@@ -39,14 +40,11 @@ export interface SwapChainAdapter {
         context: SwapExecutionContext,
     ): Promise<ExecuteSwapResult>
     /**
-     * Broadcasts a group the shared-account handoff finished co-signing.
-     * Resolves to the chain's transaction ids. A chain without it has no
-     * co-signed swaps: a shared-account swap is refused, never sent unsigned.
+     * Whether a shared-account handoff's co-signed group can finish here; the
+     * chain's broadcaster submits it. Without it a shared-account swap is
+     * refused, never sent unsigned.
      */
-    submitSignedGroup?(
-        scope: ChainScope,
-        signedTransactions: Uint8Array[],
-    ): Promise<string[]>
+    supportsCosignedSwaps: boolean
 }
 
 export class SwapCosignUnsupportedError extends AppError {
@@ -74,8 +72,8 @@ export const submitCosignedSwapGroup = (
     signedTransactions: Uint8Array[],
 ): Promise<string[]> => {
     const adapter = swapAdapterFor(scope)
-    if (!adapter.submitSignedGroup) {
+    if (!adapter.supportsCosignedSwaps) {
         return Promise.reject(new SwapCosignUnsupportedError(adapter.chainId))
     }
-    return adapter.submitSignedGroup(scope, signedTransactions)
+    return submitSignedGroup(scope, signedTransactions)
 }
